@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Espaço Lounge — ERP (Angular + Google Sheets)
 
 ## Contexto
@@ -75,3 +76,6 @@ Ajuste [src/environments/environment.production.ts](src/environments/environment
 | `docs/` | Fluxos, contrato da planilha, critérios SQL |
 | `src/app/app.component.*` | Shell da aplicação (navegação principal) |
 | `.editorconfig`, `.vscode/`, `tsconfig*.json` | Alinhados ao projeto gerado pelo Angular CLI 19 |
+=======
+# ERP-EspacoLounge
+>>>>>>> 921d357950b51738d6f7cd179bb04779e127981f
