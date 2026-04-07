@@ -1,0 +1,66 @@
+<div class="toolbar">
+  <h1>Agenda</h1>
+  <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+</div>
+
+<p class="hint">
+  Lista da aba <strong>Atendimentos</strong> da planilha (filtro por <strong>Data</strong>).
+</p>
+
+<div class="filtros">
+  <label>
+    <span>Data inicial</span>
+    <input type="date" [(ngModel)]="dataInicio" name="di" />
+  </label>
+  <label>
+    <span>Data final</span>
+    <input type="date" [(ngModel)]="dataFim" name="df" />
+  </label>
+  <button type="button" class="btn" (click)="carregar()">Atualizar</button>
+</div>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint">Carregando…</p>
+}
+
+@if (!carregando && !erro && itens.length === 0) {
+  <p class="hint">Nenhum atendimento neste período.</p>
+}
+
+@if (!carregando && itens.length > 0) {
+  <div class="table-wrap" role="region" aria-label="Lista de atendimentos">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Cliente</th>
+          <th>Serviços</th>
+          <th>Tamanho</th>
+          <th>Profissional</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of itens; track a.id) {
+          <tr>
+            <td>{{ a.data }}</td>
+            <td>{{ a.nomeCliente || '—' }}</td>
+            <td>{{ a.servicos || '—' }}</td>
+            <td>{{ a.tamanho || '—' }}</td>
+            <td>{{ a.profissional || '—' }}</td>
+            <td>
+              @if (valorNum(a.valor) !== null) {
+                {{ valorNum(a.valor)! | number: '1.2-2' }}
+              } @else {
+                —
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

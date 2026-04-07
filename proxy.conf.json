@@ -1,0 +1,12 @@
+{
+  "/gas": {
+    "target": "https://script.google.com",
+    "secure": true,
+    "changeOrigin": true,
+    "followRedirects": true,
+    "pathRewrite": {
+      "^/gas": "/macros/s/AKfycbxVhi5lrca8c37dCLi5uHAiYab7pQCI-5JmdOBsikgNdyvgEiYDBskOoL5jIhNORHjm/exec"
+    },
+    "logLevel": "warn"
+  }
+}

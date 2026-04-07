@@ -1,0 +1,53 @@
+<div class="toolbar">
+  <h1>Clientes</h1>
+  <a routerLink="/clientes/novo" class="btn primary">Novo cliente</a>
+</div>
+
+<label class="busca">
+  <span class="sr-only">Buscar</span>
+  <input
+    type="search"
+    [(ngModel)]="busca"
+    name="busca"
+    placeholder="Buscar por nome, telefone ou observações"
+    autocomplete="off"
+  />
+</label>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint">Carregando…</p>
+}
+
+@if (!carregando && !erro && filtrados.length === 0) {
+  <p class="hint">Nenhum cliente encontrado.</p>
+}
+
+@if (!carregando && filtrados.length > 0) {
+  <div class="table-wrap" role="region" aria-label="Lista de clientes">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Telefone</th>
+          <th>Observações</th>
+          <th class="col-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of filtrados; track c.id) {
+          <tr>
+            <td>{{ c.nome }}</td>
+            <td>{{ c.telefone || '—' }}</td>
+            <td>{{ c.observacoes || '—' }}</td>
+            <td class="col-acoes">
+              <a [routerLink]="['/clientes', c.id, 'editar']" class="link-editar">Editar</a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

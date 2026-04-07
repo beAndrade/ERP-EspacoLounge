@@ -1,0 +1,71 @@
+.toolbar {
+  margin-bottom: 1.25rem;
+
+  h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+  }
+}
+
+.link-back {
+  font-size: 0.95rem;
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 520px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+
+  span {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+}
+
+input,
+textarea {
+  min-height: var(--touch-min);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+}
+
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.btn {
+  min-height: var(--touch-min);
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  cursor: pointer;
+  font-weight: 700;
+  margin-top: 0.25rem;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

@@ -1,0 +1,49 @@
+<section class="hero">
+  <h1>Bem-vindo</h1>
+  <p class="lead">
+    Atalhos para o dia a dia do salão. Escolha uma tarefa abaixo.
+  </p>
+</section>
+
+@if (status === 'loading') {
+  <p class="hint" role="status">Verificando conexão com a planilha…</p>
+}
+@if (status === 'erro') {
+  <p class="alert" role="alert">{{ mensagemErro }}</p>
+}
+@if (status === 'ok') {
+  <p class="ok" role="status">Conexão com a planilha está funcionando.</p>
+}
+
+<ul class="cards">
+  <li>
+    <a routerLink="/agenda" class="card">
+      <span class="card-title">Agenda</span>
+      <span class="card-desc">Atendimentos da planilha, filtro por data</span>
+    </a>
+  </li>
+  <li>
+    <a routerLink="/agenda/novo" class="card">
+      <span class="card-title">Novo atendimento</span>
+      <span class="card-desc">Cliente, linha de Serviços, data e tamanho</span>
+    </a>
+  </li>
+  <li>
+    <a routerLink="/clientes" class="card">
+      <span class="card-title">Clientes</span>
+      <span class="card-desc">Lista e busca</span>
+    </a>
+  </li>
+  <li>
+    <a routerLink="/clientes/novo" class="card">
+      <span class="card-title">Novo cliente</span>
+      <span class="card-desc">Cadastro rápido na recepção</span>
+    </a>
+  </li>
+  <li>
+    <a routerLink="/servicos" class="card">
+      <span class="card-title">Serviços</span>
+      <span class="card-desc">O que está cadastrado na planilha</span>
+    </a>
+  </li>
+</ul>

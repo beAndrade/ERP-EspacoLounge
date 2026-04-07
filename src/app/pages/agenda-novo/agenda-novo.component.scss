@@ -1,0 +1,148 @@
+.toolbar {
+  margin-bottom: 1.25rem;
+
+  h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+  }
+}
+
+.link-back {
+  font-size: 0.95rem;
+}
+
+.hint {
+  color: var(--color-muted);
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 520px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+
+  span {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+}
+
+input,
+select,
+textarea {
+  min-height: var(--touch-min);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+}
+
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn {
+  min-height: var(--touch-min);
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-weight: 700;
+  margin-top: 0.25rem;
+
+  &.primary {
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+    border-color: var(--color-primary);
+  }
+
+  &.small {
+    min-height: 2.25rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    margin-top: 0;
+  }
+
+  &.danger {
+    border-color: #fecaca;
+    color: #991b1b;
+    background: #fef2f2;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.tipo-hint {
+  margin: -0.5rem 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.etapas-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid #e7e5e4;
+  background: #fafaf9;
+}
+
+.etapas-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.etapa-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resumo {
+  font-weight: 600;
+}
+
+.ref-cabelos {
+  font-size: 0.85rem;
+}

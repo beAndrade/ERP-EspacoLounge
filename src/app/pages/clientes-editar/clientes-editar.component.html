@@ -1,0 +1,37 @@
+<div class="toolbar">
+  <h1>Editar cliente</h1>
+  <a routerLink="/clientes" class="link-back">← Voltar à lista</a>
+</div>
+
+@if (carregando) {
+  <p class="hint">Carregando dados do cliente…</p>
+}
+
+@if (erro && !carregando) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+
+@if (!carregando && !erro) {
+  <p class="hint">ID: <code>{{ clienteId }}</code></p>
+
+  <form [formGroup]="form" (ngSubmit)="salvar()" class="form">
+    <label>
+      <span>Nome exibido</span>
+      <input type="text" formControlName="nome" required autocomplete="name" />
+    </label>
+
+    <label>
+      <span>Telefone</span>
+      <input type="tel" formControlName="telefone" autocomplete="tel" />
+    </label>
+
+    <label>
+      <span>Observações</span>
+      <textarea formControlName="notas" rows="3"></textarea>
+    </label>
+
+    <button type="submit" class="btn primary" [disabled]="salvando">
+      {{ salvando ? 'Salvando…' : 'Salvar alterações' }}
+    </button>
+  </form>
+}

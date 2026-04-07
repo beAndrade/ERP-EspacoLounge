@@ -1,0 +1,50 @@
+<div class="toolbar">
+  <h1>Serviços</h1>
+  <a routerLink="/" class="link-back">← Início</a>
+</div>
+
+<p class="hint">
+  Catálogo da aba <strong>Serviços</strong> (colunas da planilha). Edite preços e nomes direto na planilha.
+</p>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint">Carregando…</p>
+}
+
+@if (!carregando && !erro && itens.length === 0) {
+  <p class="hint">Nenhuma linha de serviço na planilha.</p>
+}
+
+@if (!carregando && itens.length > 0) {
+  <div class="table-wrap" role="region" aria-label="Lista de serviços">
+    <table>
+      <thead>
+        <tr>
+          <th>Linha</th>
+          <th>Serviço</th>
+          <th>Tipo</th>
+          <th>Valor base</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of itens; track s.id) {
+          <tr>
+            <td>{{ s.id }}</td>
+            <td>{{ rotuloServico(s) || '—' }}</td>
+            <td>{{ tipoServico(s) || '—' }}</td>
+            <td>
+              @if (valorBaseNum(s) !== null) {
+                {{ valorBaseNum(s)! | number: '1.2-2' }}
+              } @else {
+                —
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

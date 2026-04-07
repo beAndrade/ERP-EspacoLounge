@@ -1,0 +1,227 @@
+<div class="toolbar">
+  <h1>Novo atendimento</h1>
+  <a routerLink="/agenda" class="link-back">← Voltar à agenda</a>
+</div>
+
+@if (erro && !carregandoListas) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregandoListas) {
+  <p class="hint">Carregando dados…</p>
+}
+
+@if (!carregandoListas && !erro) {
+  @if (clientes.length === 0) {
+    <p class="hint">
+      Nenhum cliente com nome preenchido.
+      <a routerLink="/clientes/novo">Cadastrar cliente</a>
+    </p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="salvar()" class="form">
+    <label>
+      <span>Tipo</span>
+      <select formControlName="tipo">
+        @for (t of tiposAtendimento; track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+    </label>
+    <p class="hint tipo-hint">
+      Cada tipo preenche colunas diferentes em <strong>Atendimentos</strong>. Mega e Pacote geram várias linhas com o mesmo ID.
+    </p>
+
+    <label>
+      <span>Cliente</span>
+      <select formControlName="cliente_id" required>
+        <option value="">Selecione…</option>
+        @for (c of clientes; track c.id) {
+          <option [value]="c.id">{{ c.nome }} — {{ c.telefone || 'sem telefone' }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="row">
+      <label>
+        <span>Data</span>
+        <input type="date" formControlName="data" />
+      </label>
+      @if (tipoAtual === 'Serviço' && servicoPrecisaTamanho) {
+        <label>
+          <span>Tamanho (preço)</span>
+          <select formControlName="tamanho">
+            @for (t of tamanhos; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </label>
+      }
+    </div>
+
+    @if (tipoAtual === 'Serviço') {
+      <label>
+        <span>Serviço (aba Serviços — Fixo ou Tamanho)</span>
+        <select formControlName="servico_id" required>
+          <option value="">Selecione…</option>
+          @for (s of servicosTipoServico; track s.id) {
+            <option [value]="s.id">Linha {{ s.id }} — {{ rotuloServico(s) }}</option>
+          }
+        </select>
+      </label>
+      @if (servicosTipoServico.length === 0) {
+        <p class="alert" role="alert">
+          Não há linhas com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
+        </p>
+      }
+    }
+
+    @if (tipoAtual === 'Mega' || tipoAtual === 'Pacote') {
+      <label>
+        <span>{{ tipoAtual === 'Mega' ? 'Pacote (Regras Mega)' : 'Pacote (aba Pacotes)' }}</span>
+        <select formControlName="pacote" required>
+          <option value="">Selecione…</option>
+          @if (tipoAtual === 'Mega') {
+            @for (p of pacotesMegaUnicos; track p) {
+              <option [value]="p">{{ p }}</option>
+            }
+          } @else {
+            @for (item of pacotes; track item.pacote) {
+              <option [value]="item.pacote">{{ rotuloPacoteCatalogo(item) }}</option>
+            }
+          }
+        </select>
+      </label>
+      @if (tipoAtual === 'Mega' && pacotesMegaUnicos.length === 0) {
+        <p class="hint">Cadastre linhas em <strong>Regras Mega</strong> (Pacote + Etapa).</p>
+      }
+      @if (tipoAtual === 'Pacote' && pacotes.length === 0) {
+        <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
+      }
+    }
+
+    @if (tipoAtual === 'Produto') {
+      <label>
+        <span>Produto</span>
+        <select formControlName="produto" required>
+          <option value="">Selecione…</option>
+          @for (pr of produtos; track pr.produto) {
+            <option [value]="pr.produto">
+              {{ pr.produto }}
+              @if (pr.unidade) {
+                ({{ pr.unidade }})
+              }
+            </option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Quantidade</span>
+        <input type="number" formControlName="quantidade" min="0.01" step="any" />
+      </label>
+      @if (produtos.length === 0) {
+        <p class="hint">Cadastre produtos na aba <strong>Produtos</strong>.</p>
+      }
+    }
+
+    @if (tipoAtual === 'Cabelo') {
+      <label>
+        <span>Valor (manual, ex.: por grama)</span>
+        <input type="text" formControlName="valor_cabelo" inputmode="decimal" placeholder="ex.: 150 ou 150,50" />
+      </label>
+      <label>
+        <span>Detalhes (cor, método, gramas…)</span>
+        <textarea formControlName="detalhes_cabelo" rows="3" placeholder="Texto livre para o recibo / histórico"></textarea>
+      </label>
+      @if (cabelos.length > 0) {
+        <p class="hint ref-cabelos">
+          Referência da aba Cabelos ({{ cabelos.length }} linhas) — use os detalhes acima; a calculadora completa virá depois.
+        </p>
+      }
+    }
+
+    @if (
+      tipoAtual === 'Serviço' ||
+      tipoAtual === 'Pacote' ||
+      tipoAtual === 'Produto' ||
+      tipoAtual === 'Cabelo'
+    ) {
+      <label>
+        <span>Profissional</span>
+        <select formControlName="profissional" required>
+          <option value="">Selecione…</option>
+          @for (p of profissionais; track p) {
+            <option [value]="p">{{ p }}</option>
+          }
+        </select>
+      </label>
+      @if (profissionais.length === 0) {
+        <p class="alert" role="alert">
+          Não há profissionais na lista. Confira a aba <strong>Folha</strong> (cabeçalho <strong>Profissional</strong> nas primeiras linhas) e publique o <code>Code.gs</code> atualizado.
+        </p>
+      }
+    }
+
+    @if (tipoAtual === 'Mega' || tipoAtual === 'Pacote') {
+      <div class="etapas-block" formArrayName="etapas">
+        <div class="etapas-header">
+          <span>Etapas realizadas</span>
+          <button type="button" class="btn small" (click)="adicionarEtapa()">+ Etapa</button>
+        </div>
+        @for (_ of etapasArray.controls; track $index; let i = $index) {
+          <div class="etapa-row" [formGroupName]="i">
+            <label>
+              <span>Etapa</span>
+              <select formControlName="etapa" required>
+                <option value="">Selecione…</option>
+                @for (e of etapasSelectOptions(); track e) {
+                  <option [value]="e">{{ e }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span>Profissional</span>
+              <select formControlName="profissional" required>
+                <option value="">Selecione…</option>
+                @for (p of profissionais; track p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              </select>
+            </label>
+            @if (etapasArray.length > 1) {
+              <button type="button" class="btn small danger" (click)="removerEtapa(i)">
+                Remover
+              </button>
+            }
+          </div>
+        }
+      </div>
+      @if (profissionais.length === 0) {
+        <p class="alert" role="alert">
+          Para escolher profissional em cada etapa, a aba <strong>Folha</strong> precisa listar nomes na coluna <strong>Profissional</strong>.
+        </p>
+      }
+    }
+
+    <label>
+      <span>Observação (opcional)</span>
+      <textarea formControlName="observacao" rows="2" placeholder="Vai para Descrição nas linhas criadas"></textarea>
+    </label>
+
+    <p class="hint resumo">{{ resumoLinhas() }}</p>
+
+    <button
+      type="submit"
+      class="btn primary"
+      [disabled]="
+        salvando ||
+        clientes.length === 0 ||
+        profissionaisObrigatoriosSemLista ||
+        (tipoAtual === 'Serviço' && servicosTipoServico.length === 0) ||
+        (tipoAtual === 'Pacote' && pacotes.length === 0) ||
+        (tipoAtual === 'Produto' && produtos.length === 0)
+      "
+    >
+      {{ salvando ? 'Salvando…' : 'Salvar atendimento' }}
+    </button>
+  </form>
+}
