@@ -23,7 +23,9 @@ export class AgendaComponent implements OnInit {
 
   ngOnInit(): void {
     const hoje = new Date();
-    this.dataInicio = this.toYmd(hoje);
+    const inicio = new Date(hoje);
+    inicio.setDate(hoje.getDate() - 90);
+    this.dataInicio = this.toYmd(inicio);
     this.dataFim = this.toYmd(hoje);
     this.carregar();
   }

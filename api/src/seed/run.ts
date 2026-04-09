@@ -15,6 +15,7 @@ import {
 import {
   defaultXlsxPath,
   loadWorkbook,
+  parseFlexibleDateToIso,
   resolveSheet,
   rowObjectsCabelos,
   rowObjectsFirstWins,
@@ -213,8 +214,7 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
       const idCliente = pick(row, ['ID Cliente']);
       if (!idCliente || !clientIds.has(idCliente.trim())) continue;
       const dataRaw = pick(row, ['Data']);
-      const dataSql =
-        dataRaw && /^\d{4}-\d{2}-\d{2}/.test(dataRaw) ? dataRaw.slice(0, 10) : null;
+      const dataSql = dataRaw ? parseFlexibleDateToIso(dataRaw) : null;
       await db.insert(atendimentos).values({
         idAtendimento: idAt,
         data: dataSql,

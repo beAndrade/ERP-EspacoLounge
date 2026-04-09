@@ -43,15 +43,51 @@ export function sheetToMatrix(sheet: XLSX.WorkSheet): string[][] {
   }) as string[][];
 }
 
+/** Serial Excel (aprox. 1980–2070) → YYYY-MM-DD em UTC (evita erro de fuso em datas “só dia”). */
+function excelSerialToYmd(serial: number): string {
+  const utc = Date.UTC(1899, 11, 30) + Math.round(serial) * 86400000;
+  const d = new Date(utc);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function cellToString(v: unknown): string {
   if (v == null || v === '') return '';
   if (v instanceof Date) {
-    const y = v.getFullYear();
-    const m = String(v.getMonth() + 1).padStart(2, '0');
-    const d = String(v.getDate()).padStart(2, '0');
+    if (Number.isNaN(v.getTime())) return '';
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(v.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const n = Math.floor(v);
+    if (n >= 30000 && n <= 65000) {
+      return excelSerialToYmd(n);
+    }
+  }
   return String(v).trim();
+}
+
+/** Converte texto típico de planilha (BR) para ISO usado no Postgres. */
+export function parseFlexibleDateToIso(raw: string): string | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+  const m = t.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/);
+  if (m) {
+    const day = m[1].padStart(2, '0');
+    const month = m[2].padStart(2, '0');
+    const year = m[3];
+    return `${year}-${month}-${day}`;
+  }
+  const num = Number(t.replace(/\s/g, '').replace(',', '.'));
+  if (Number.isFinite(num) && num >= 30000 && num <= 65000) {
+    return excelSerialToYmd(Math.floor(num));
+  }
+  return null;
 }
 
 /** Primeira ocorrência de cada cabeçalho não vazio (evita duplicados Regras Mega). */
