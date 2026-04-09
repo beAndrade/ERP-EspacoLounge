@@ -10,12 +10,30 @@
 
 <div class="filtros">
   <label>
-    <span>De</span>
-    <input type="date" [(ngModel)]="dataInicio" name="di" />
+    <span>De (dd-mm-aaaa)</span>
+    <input
+      type="text"
+      [(ngModel)]="dataInicio"
+      name="di"
+      inputmode="numeric"
+      placeholder="09-01-2026"
+      maxlength="10"
+      autocomplete="off"
+      spellcheck="false"
+    />
   </label>
   <label>
-    <span>Até</span>
-    <input type="date" [(ngModel)]="dataFim" name="df" />
+    <span>Até (dd-mm-aaaa)</span>
+    <input
+      type="text"
+      [(ngModel)]="dataFim"
+      name="df"
+      inputmode="numeric"
+      placeholder="09-04-2026"
+      maxlength="10"
+      autocomplete="off"
+      spellcheck="false"
+    />
   </label>
   <button type="button" class="btn" (click)="carregar()">Atualizar lista</button>
 </div>

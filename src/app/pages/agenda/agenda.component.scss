@@ -27,12 +27,15 @@
     color: var(--color-muted);
   }
 
-  input[type='date'] {
+  input[type='date'],
+  input[type='text'] {
     min-height: var(--touch-min);
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius);
     border: 1px solid #d6d3d1;
     background: var(--color-surface);
+    min-width: 9.5rem;
+    font-variant-numeric: tabular-nums;
   }
 }
 
