@@ -1,6 +1,5 @@
-/** Produção: URL completa do Web App (termina em `/exec`), a mesma da implantação — não use URL de biblioteca nem `/gas`. */
+/** Produção: URL base da API Elysia (sem barra final). Configure antes do deploy. */
 export const environment = {
   production: true,
-  appsScriptUrl:
-    'https://script.google.com/macros/s/AKfycbxVhi5lrca8c37dCLi5uHAiYab7pQCI-5JmdOBsikgNdyvgEiYDBskOoL5jIhNORHjm/exec',
+  apiBaseUrl: 'https://SEU_HOST_API',
 };

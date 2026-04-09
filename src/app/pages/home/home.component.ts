@@ -26,7 +26,7 @@ export class HomeComponent implements OnInit {
         } else {
           this.status = 'erro';
           this.mensagemErro =
-            res.error?.message ?? 'Não foi possível falar com a planilha.';
+            res.error?.message ?? 'Não foi possível falar com a API.';
         }
       },
       error: (err: unknown) => {
@@ -43,12 +43,12 @@ export class HomeComponent implements OnInit {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 0) {
         return (
-          'Sem resposta da rede (status 0). Se o console mostrar CORS no domínio accounts.google.com, ' +
-          'reinicie o servidor após salvar proxy.conf.json com followRedirects: true, ou ajuste o deploy do Web App para "Qualquer pessoa".'
+          'Sem resposta da rede (status 0). Confirme que a API Elysia está a correr (ex.: npm run start na pasta api), ' +
+          'a URL em environment.apiBaseUrl e CORS (CORS_ORIGINS) se o front estiver noutro host.'
         );
       }
       return err.message || 'Falha na requisição.';
     }
-    return 'Não foi possível conectar. Confira o proxy, a URL do Apps Script e sua internet.';
+    return 'Não foi possível conectar à API. Confira environment.apiBaseUrl e se o servidor está acessível.';
   }
 }

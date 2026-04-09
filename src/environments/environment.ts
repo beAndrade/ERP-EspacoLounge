@@ -1,5 +1,5 @@
-/** Desenvolvimento: proxy em `proxy.conf.json` redireciona `/gas` para o Web App. */
+/** API Elysia (ver pasta `api/`). Em dev use a mesma origem com proxy ou URL directa. */
 export const environment = {
   production: false,
-  appsScriptUrl: '/gas',
+  apiBaseUrl: 'http://localhost:3000',
 };

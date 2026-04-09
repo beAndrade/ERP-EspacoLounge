@@ -1,0 +1,101 @@
+{
+  "$comment": "Planilha (cabeçalho linha 1) → colunas SQL em snake_case (api/src/db/schema.ts)",
+  "Clientes": {
+    "ID Cliente": "id_cliente",
+    "Nome Exibido": "nome_exibido",
+    "Telefone": "telefone",
+    "Observações": "observacoes"
+  },
+  "Serviços": {
+    "linha": "_sheet_row",
+    "Serviço": "servico",
+    "Tipo": "tipo",
+    "Valor Base": "valor_base",
+    "Comissão Fixa": "comissao_fixa",
+    "Comissão %": "comissao_pct",
+    "Preço Curto": "preco_curto",
+    "Preço Médio": "preco_medio",
+    "Preço Médio/Longo": "preco_medio_longo",
+    "Preço Longo": "preco_longo",
+    "Custo Fixo": "custo_fixo",
+    "Curto": "curto",
+    "Médio": "medio",
+    "M/L": "m_l",
+    "Longo": "longo"
+  },
+  "Pacotes": {
+    "Pacote": "pacote",
+    "Preço pacote": "preco_pacote",
+    "Preço Pacote": "preco_pacote",
+    "Preço": "preco_pacote"
+  },
+  "Produtos": {
+    "Produto": "produto",
+    "Categoria": "categoria",
+    "Custo": "custo",
+    "Preço": "preco",
+    "Preco": "preco",
+    "Estoque": "estoque",
+    "Estoque Inicial": "estoque_inicial",
+    "Unidade": "unidade"
+  },
+  "Regras Mega": {
+    "Pacote": "pacote",
+    "Etapa": "etapa",
+    "Valor": "valor",
+    "Comissão": "comissao",
+    "Comissao": "comissao"
+  },
+  "Folha": {
+    "Profissional": "profissional",
+    "Mês": "mes",
+    "Total Comissão": "total_comissao",
+    "Total Pago": "total_pago",
+    "Saldo": "saldo",
+    "Status": "status"
+  },
+  "Pagamentos": {
+    "Data": "data",
+    "Profissional": "profissional",
+    "Tipo": "tipo",
+    "Valor": "valor",
+    "Mês Ref": "mes_ref",
+    "Observação": "observacao"
+  },
+  "Despesas": {
+    "Data": "data",
+    "Tipo": "tipo",
+    "Categoria": "categoria",
+    "Descrição": "descricao",
+    "Valor": "valor"
+  },
+  "Atendimentos": {
+    "ID Atendimento": "id_atendimento",
+    "Data": "data",
+    "ID Cliente": "id_cliente",
+    "Nome Cliente": "nome_cliente",
+    "Tipo": "tipo",
+    "Pacote": "pacote",
+    "Etapa": "etapa",
+    "Produto": "produto",
+    "Serviços": "servicos",
+    "Tamanho": "tamanho",
+    "Profissional": "profissional",
+    "Valor": "valor",
+    "Valor Manual": "valor_manual",
+    "Comissão": "comissao",
+    "Desconto": "desconto",
+    "Descrição": "descricao",
+    "Descrição Manual": "descricao_manual",
+    "Custo": "custo",
+    "Lucro": "lucro"
+  },
+  "Cabelos": {
+    "Cor": "cor",
+    "Tamanho (cm)": "tamanho_cm",
+    "Tamanho": "tamanho_cm",
+    "Método": "metodo",
+    "Metodo": "metodo",
+    "Valor Base": "valor_base"
+  }
+}

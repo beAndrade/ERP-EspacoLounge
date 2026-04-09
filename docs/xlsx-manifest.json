@@ -1,0 +1,717 @@
+{
+  "source": "docs/ERP Espaço Lounge.xlsx",
+  "sheet_names": [
+    "Atendimentos",
+    "Recibo",
+    "Cabelos",
+    "Clientes",
+    "Pagamentos",
+    "Folha",
+    "Recibo Funcionárias",
+    "Despesas",
+    "Regras Mega",
+    "Pacotes",
+    "Serviços",
+    "Produtos",
+    "Dashboard",
+    "Config"
+  ],
+  "sheets": [
+    {
+      "name": "Atendimentos",
+      "headers": [
+        "ID Atendimento",
+        "Data",
+        "ID Cliente",
+        "Nome Cliente",
+        "Tipo",
+        "Pacote",
+        "Etapa",
+        "Produto",
+        "Serviços",
+        "Tamanho",
+        "Profissional",
+        "Valor",
+        "Valor Manual",
+        "Comissão",
+        "Desconto",
+        "Descrição",
+        "Descrição Manual",
+        "Custo",
+        "Lucro"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "ID Atendimento",
+          "inferred_type": "text",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 2,
+          "header_sheet": "Data",
+          "inferred_type": "date_like",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 3,
+          "header_sheet": "ID Cliente",
+          "inferred_type": "text",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 4,
+          "header_sheet": "Nome Cliente",
+          "inferred_type": "text",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 5,
+          "header_sheet": "Tipo",
+          "inferred_type": "text",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 6,
+          "header_sheet": "Pacote",
+          "inferred_type": "text",
+          "non_empty_samples": 6
+        },
+        {
+          "index": 7,
+          "header_sheet": "Etapa",
+          "inferred_type": "text",
+          "non_empty_samples": 6
+        },
+        {
+          "index": 8,
+          "header_sheet": "Produto",
+          "inferred_type": "text",
+          "non_empty_samples": 2
+        },
+        {
+          "index": 9,
+          "header_sheet": "Serviços",
+          "inferred_type": "text",
+          "non_empty_samples": 6
+        },
+        {
+          "index": 10,
+          "header_sheet": "Tamanho",
+          "inferred_type": "text",
+          "non_empty_samples": 6
+        },
+        {
+          "index": 11,
+          "header_sheet": "Profissional",
+          "inferred_type": "text",
+          "non_empty_samples": 12
+        },
+        {
+          "index": 12,
+          "header_sheet": "Valor",
+          "inferred_type": "number_like",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 13,
+          "header_sheet": "Valor Manual",
+          "inferred_type": "number_like",
+          "non_empty_samples": 1
+        },
+        {
+          "index": 14,
+          "header_sheet": "Comissão",
+          "inferred_type": "number_like",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 15,
+          "header_sheet": "Desconto",
+          "inferred_type": "empty",
+          "non_empty_samples": 0
+        },
+        {
+          "index": 16,
+          "header_sheet": "Descrição",
+          "inferred_type": "text",
+          "non_empty_samples": 15
+        },
+        {
+          "index": 17,
+          "header_sheet": "Descrição Manual",
+          "inferred_type": "text",
+          "non_empty_samples": 1
+        },
+        {
+          "index": 18,
+          "header_sheet": "Custo",
+          "inferred_type": "number_like",
+          "non_empty_samples": 13
+        },
+        {
+          "index": 19,
+          "header_sheet": "Lucro",
+          "inferred_type": "number_like",
+          "non_empty_samples": 15
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Recibo",
+      "headers": [],
+      "columns": [],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Cabelos",
+      "headers": [
+        "Cor:",
+        "Castanho",
+        "",
+        "",
+        "Cor",
+        "Tamanho (cm)",
+        "Método",
+        "Valor Base"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Cor:",
+          "inferred_type": "text",
+          "non_empty_samples": 8
+        },
+        {
+          "index": 2,
+          "header_sheet": "Castanho",
+          "inferred_type": "number_like",
+          "non_empty_samples": 8
+        },
+        {
+          "index": 3,
+          "header_sheet": "",
+          "inferred_type": "empty",
+          "non_empty_samples": 0
+        },
+        {
+          "index": 4,
+          "header_sheet": "",
+          "inferred_type": "empty",
+          "non_empty_samples": 0
+        },
+        {
+          "index": 5,
+          "header_sheet": "Cor",
+          "inferred_type": "text",
+          "non_empty_samples": 30
+        },
+        {
+          "index": 6,
+          "header_sheet": "Tamanho (cm)",
+          "inferred_type": "number_like",
+          "non_empty_samples": 30
+        },
+        {
+          "index": 7,
+          "header_sheet": "Método",
+          "inferred_type": "text",
+          "non_empty_samples": 30
+        },
+        {
+          "index": 8,
+          "header_sheet": "Valor Base",
+          "inferred_type": "number_like",
+          "non_empty_samples": 30
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Clientes",
+      "headers": [
+        "ID Cliente",
+        "Nome Exibido",
+        "Telefone",
+        "Observações"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "ID Cliente",
+          "inferred_type": "text",
+          "non_empty_samples": 25
+        },
+        {
+          "index": 2,
+          "header_sheet": "Nome Exibido",
+          "inferred_type": "text",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 3,
+          "header_sheet": "Telefone",
+          "inferred_type": "number_like",
+          "non_empty_samples": 1
+        },
+        {
+          "index": 4,
+          "header_sheet": "Observações",
+          "inferred_type": "empty",
+          "non_empty_samples": 0
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Pagamentos",
+      "headers": [
+        "Data",
+        "Profissional",
+        "Tipo",
+        "Valor",
+        "Mês Ref",
+        "Observação"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Data",
+          "inferred_type": "date_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 2,
+          "header_sheet": "Profissional",
+          "inferred_type": "text",
+          "non_empty_samples": 2
+        },
+        {
+          "index": 3,
+          "header_sheet": "Tipo",
+          "inferred_type": "text",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 4,
+          "header_sheet": "Valor",
+          "inferred_type": "number_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 5,
+          "header_sheet": "Mês Ref",
+          "inferred_type": "date_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 6,
+          "header_sheet": "Observação",
+          "inferred_type": "empty",
+          "non_empty_samples": 0
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Folha",
+      "headers": [
+        "Profissional",
+        "Mês",
+        "Total Comissão",
+        "Total Pago",
+        "Saldo",
+        "Status"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Profissional",
+          "inferred_type": "text",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 2,
+          "header_sheet": "Mês",
+          "inferred_type": "date_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 3,
+          "header_sheet": "Total Comissão",
+          "inferred_type": "number_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 4,
+          "header_sheet": "Total Pago",
+          "inferred_type": "number_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 5,
+          "header_sheet": "Saldo",
+          "inferred_type": "number_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 6,
+          "header_sheet": "Status",
+          "inferred_type": "text",
+          "non_empty_samples": 3
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Recibo Funcionárias",
+      "headers": [
+        "",
+        "",
+        "ESPAÇO LOUNGE"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "",
+          "inferred_type": "text",
+          "non_empty_samples": 1
+        },
+        {
+          "index": 2,
+          "header_sheet": "",
+          "inferred_type": "text",
+          "non_empty_samples": 1
+        },
+        {
+          "index": 3,
+          "header_sheet": "ESPAÇO LOUNGE",
+          "inferred_type": "text",
+          "non_empty_samples": 9
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Despesas",
+      "headers": [
+        "Data",
+        "Tipo",
+        "Categoria",
+        "Descrição",
+        "Valor"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Data",
+          "inferred_type": "date_like",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 2,
+          "header_sheet": "Tipo",
+          "inferred_type": "text",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 3,
+          "header_sheet": "Categoria",
+          "inferred_type": "text",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 4,
+          "header_sheet": "Descrição",
+          "inferred_type": "text",
+          "non_empty_samples": 3
+        },
+        {
+          "index": 5,
+          "header_sheet": "Valor",
+          "inferred_type": "number_like",
+          "non_empty_samples": 3
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Regras Mega",
+      "headers": [
+        "Pacote",
+        "Etapa",
+        "Valor",
+        "Comissão",
+        "Chave",
+        "Pacote",
+        "Etapa",
+        "Valor",
+        "Comissão"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Pacote",
+          "inferred_type": "text",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 2,
+          "header_sheet": "Etapa",
+          "inferred_type": "text",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 3,
+          "header_sheet": "Valor",
+          "inferred_type": "number_like",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 4,
+          "header_sheet": "Comissão",
+          "inferred_type": "number_like",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 5,
+          "header_sheet": "Chave",
+          "inferred_type": "text",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 6,
+          "header_sheet": "Pacote",
+          "inferred_type": "text",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 7,
+          "header_sheet": "Etapa",
+          "inferred_type": "text",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 8,
+          "header_sheet": "Valor",
+          "inferred_type": "number_like",
+          "non_empty_samples": 18
+        },
+        {
+          "index": 9,
+          "header_sheet": "Comissão",
+          "inferred_type": "number_like",
+          "non_empty_samples": 18
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Pacotes",
+      "headers": [
+        "Pacote",
+        "Preço pacote"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Pacote",
+          "inferred_type": "text",
+          "non_empty_samples": 6
+        },
+        {
+          "index": 2,
+          "header_sheet": "Preço pacote",
+          "inferred_type": "number_like",
+          "non_empty_samples": 6
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Serviços",
+      "headers": [
+        "Serviço",
+        "Tipo",
+        "Valor Base",
+        "Comissão Fixa",
+        "Comissão %",
+        "Preço Curto",
+        "Preço Médio",
+        "Preço Médio/Longo",
+        "Preço Longo",
+        "Custo Fixo",
+        "Curto",
+        "Médio",
+        "M/L",
+        "Longo"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Serviço",
+          "inferred_type": "text",
+          "non_empty_samples": 30
+        },
+        {
+          "index": 2,
+          "header_sheet": "Tipo",
+          "inferred_type": "text",
+          "non_empty_samples": 25
+        },
+        {
+          "index": 3,
+          "header_sheet": "Valor Base",
+          "inferred_type": "number_like",
+          "non_empty_samples": 26
+        },
+        {
+          "index": 4,
+          "header_sheet": "Comissão Fixa",
+          "inferred_type": "number_like",
+          "non_empty_samples": 24
+        },
+        {
+          "index": 5,
+          "header_sheet": "Comissão %",
+          "inferred_type": "number_like",
+          "non_empty_samples": 5
+        },
+        {
+          "index": 6,
+          "header_sheet": "Preço Curto",
+          "inferred_type": "number_like",
+          "non_empty_samples": 5
+        },
+        {
+          "index": 7,
+          "header_sheet": "Preço Médio",
+          "inferred_type": "number_like",
+          "non_empty_samples": 5
+        },
+        {
+          "index": 8,
+          "header_sheet": "Preço Médio/Longo",
+          "inferred_type": "number_like",
+          "non_empty_samples": 5
+        },
+        {
+          "index": 9,
+          "header_sheet": "Preço Longo",
+          "inferred_type": "number_like",
+          "non_empty_samples": 5
+        },
+        {
+          "index": 10,
+          "header_sheet": "Custo Fixo",
+          "inferred_type": "number_like",
+          "non_empty_samples": 12
+        },
+        {
+          "index": 11,
+          "header_sheet": "Curto",
+          "inferred_type": "number_like",
+          "non_empty_samples": 4
+        },
+        {
+          "index": 12,
+          "header_sheet": "Médio",
+          "inferred_type": "number_like",
+          "non_empty_samples": 4
+        },
+        {
+          "index": 13,
+          "header_sheet": "M/L",
+          "inferred_type": "number_like",
+          "non_empty_samples": 4
+        },
+        {
+          "index": 14,
+          "header_sheet": "Longo",
+          "inferred_type": "number_like",
+          "non_empty_samples": 4
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Produtos",
+      "headers": [
+        "Produto",
+        "Categoria",
+        "Custo",
+        "Preço",
+        "Estoque",
+        "Estoque Inicial"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Produto",
+          "inferred_type": "text",
+          "non_empty_samples": 30
+        },
+        {
+          "index": 2,
+          "header_sheet": "Categoria",
+          "inferred_type": "text",
+          "non_empty_samples": 30
+        },
+        {
+          "index": 3,
+          "header_sheet": "Custo",
+          "inferred_type": "number_like",
+          "non_empty_samples": 28
+        },
+        {
+          "index": 4,
+          "header_sheet": "Preço",
+          "inferred_type": "number_like",
+          "non_empty_samples": 28
+        },
+        {
+          "index": 5,
+          "header_sheet": "Estoque",
+          "inferred_type": "number_like",
+          "non_empty_samples": 30
+        },
+        {
+          "index": 6,
+          "header_sheet": "Estoque Inicial",
+          "inferred_type": "number_like",
+          "non_empty_samples": 30
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Dashboard",
+      "headers": [
+        "Período:",
+        "Hoje"
+      ],
+      "columns": [
+        {
+          "index": 1,
+          "header_sheet": "Período:",
+          "inferred_type": "text",
+          "non_empty_samples": 2
+        },
+        {
+          "index": 2,
+          "header_sheet": "Hoje",
+          "inferred_type": "date_like",
+          "non_empty_samples": 2
+        }
+      ],
+      "row_count_estimate": 0
+    },
+    {
+      "name": "Config",
+      "headers": [],
+      "columns": [],
+      "row_count_estimate": 0
+    }
+  ]
+}

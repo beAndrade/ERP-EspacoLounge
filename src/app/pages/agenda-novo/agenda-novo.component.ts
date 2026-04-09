@@ -111,7 +111,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.erro =
-          'Não foi possível carregar dados. Confira a planilha, o proxy e o Apps Script.';
+          'Não foi possível carregar dados. Confira a API, a base de dados e o seed (pasta api).';
         this.carregandoListas = false;
       },
     });
