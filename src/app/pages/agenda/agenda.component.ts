@@ -1,14 +1,18 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, LOCALE_ID, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { AtendimentoListaItem } from '../../core/models/api.models';
+
+registerLocaleData(localePt);
 
 @Component({
   selector: 'app-agenda',
   standalone: true,
   imports: [RouterLink, FormsModule, DecimalPipe],
+  providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda.component.html',
   styleUrl: './agenda.component.scss',
 })
@@ -52,9 +56,22 @@ export class AgendaComponent implements OnInit {
       });
   }
 
+  /** Mostra data no formato dia-mês-ano (ex.: 09-04-2026). */
+  dataDdMmAaaa(ymd: string): string {
+    const s = (ymd || '').trim();
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+    if (!m) return s || '—';
+    return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+
   valorNum(v: unknown): number | null {
     if (v == null || v === '') return null;
-    const n = Number(v);
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    let t = String(v).trim().replace(/\s/g, '');
+    if (t.includes(',') && /\d,\d{2}$/.test(t)) {
+      t = t.replace(/\./g, '').replace(',', '.');
+    }
+    const n = Number(t);
     return Number.isFinite(n) ? n : null;
   }
 

@@ -4,20 +4,20 @@
 </div>
 
 <p class="hint">
-  Atendimentos na base de dados (mesma informação da planilha de referência). Por defeito mostra os
-  <strong>últimos 90 dias</strong>; ajuste as datas se precisar de outro período.
+  Lista simples: <strong>quando</strong>, <strong>quem</strong>, <strong>o quê</strong> e <strong>quanto</strong>.
+  Por padrão mostra os últimos 90 dias — mude as datas abaixo se precisar.
 </p>
 
 <div class="filtros">
   <label>
-    <span>Data inicial</span>
+    <span>De</span>
     <input type="date" [(ngModel)]="dataInicio" name="di" />
   </label>
   <label>
-    <span>Data final</span>
+    <span>Até</span>
     <input type="date" [(ngModel)]="dataFim" name="df" />
   </label>
-  <button type="button" class="btn" (click)="carregar()">Atualizar</button>
+  <button type="button" class="btn" (click)="carregar()">Atualizar lista</button>
 </div>
 
 @if (erro) {
@@ -38,20 +38,16 @@
         <tr>
           <th>Data</th>
           <th>Cliente</th>
-          <th>Serviços</th>
-          <th>Tamanho</th>
-          <th>Profissional</th>
+          <th>Descrição</th>
           <th>Valor</th>
         </tr>
       </thead>
       <tbody>
-        @for (a of itens; track a.id) {
+        @for (a of itens; track $index) {
           <tr>
-            <td>{{ a.data }}</td>
+            <td>{{ dataDdMmAaaa(a.data) }}</td>
             <td>{{ a.nomeCliente || '—' }}</td>
-            <td>{{ a.servicos || '—' }}</td>
-            <td>{{ a.tamanho || '—' }}</td>
-            <td>{{ a.profissional || '—' }}</td>
+            <td>{{ a.descricao || '—' }}</td>
             <td>
               @if (valorNum(a.valor) !== null) {
                 {{ valorNum(a.valor)! | number: '1.2-2' }}

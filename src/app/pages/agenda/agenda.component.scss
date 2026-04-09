@@ -95,7 +95,13 @@ td {
 th {
   font-weight: 600;
   color: var(--color-muted);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-size: 0.9rem;
+}
+
+/* Descrição costuma ser o texto mais longo */
+th:nth-child(3),
+td:nth-child(3) {
+  min-width: 10rem;
+  max-width: 32rem;
+  word-break: break-word;
 }

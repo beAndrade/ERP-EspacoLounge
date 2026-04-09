@@ -172,13 +172,13 @@ export class SheetsApiService {
   }
 
   private normalizeAtendimento(raw: Record<string, unknown>): AtendimentoListaItem {
+    const descCol = String(raw['Descrição'] ?? raw['Descricao'] ?? '').trim();
+    const servicos = String(raw['Serviços'] ?? raw['Servicos'] ?? '').trim();
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
       data: this.formatDataCell(raw['Data']),
-      nomeCliente: String(raw['Nome Cliente'] ?? ''),
-      servicos: String(raw['Serviços'] ?? raw['Servicos'] ?? ''),
-      tamanho: String(raw['Tamanho'] ?? ''),
-      profissional: String(raw['Profissional'] ?? ''),
+      nomeCliente: String(raw['Nome Cliente'] ?? '').trim(),
+      descricao: descCol || servicos,
       valor: raw['Valor'],
     };
   }

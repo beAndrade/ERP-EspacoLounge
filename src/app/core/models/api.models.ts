@@ -29,11 +29,11 @@ export interface Servico {
 /** Item da lista Agenda (aba Atendimentos), normalizado para a UI. */
 export interface AtendimentoListaItem {
   id: string;
+  /** Sempre `AAAA-MM-DD` (para ordenar); na tela usa-se formato dia-mês-ano. */
   data: string;
   nomeCliente: string;
-  servicos: string;
-  tamanho: string;
-  profissional: string;
+  /** Coluna Descrição da planilha; se vazia, usa Serviços como texto de apoio. */
+  descricao: string;
   valor: unknown;
 }
 
