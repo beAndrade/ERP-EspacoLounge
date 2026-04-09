@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: espaco_lounge
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - espaco_pg:/var/lib/postgresql/data
 

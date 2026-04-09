@@ -1,4 +1,5 @@
 import { cors } from '@elysiajs/cors';
+import { node } from '@elysiajs/node';
 import { Elysia, t } from 'elysia';
 import { eq } from 'drizzle-orm';
 import { db } from './db';
@@ -28,7 +29,7 @@ function corsOrigins(): string[] | true {
   return ['http://localhost:4200'];
 }
 
-const app = new Elysia()
+const app = new Elysia({ adapter: node() })
   .use(
     cors({
       origin: corsOrigins(),
@@ -133,13 +134,14 @@ const app = new Elysia()
       return fail('SERVER', msg);
     }
   })
-  .listen({
-    port: Number(process.env.PORT) || 3000,
-    hostname: '0.0.0.0',
-  });
+  .listen(
+    {
+      port: Number(process.env.PORT) || 3000,
+      hostname: '0.0.0.0',
+    },
+    ({ hostname, port }) => {
+      console.log(`API em http://${hostname}:${port}`);
+    },
+  );
 
 export type App = typeof app;
-
-console.log(
-  `Elysia em http://${app.server?.hostname}:${app.server?.port}`,
-);

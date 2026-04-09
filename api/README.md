@@ -80,6 +80,7 @@ Todas as respostas: `{ ok: boolean, data: T | null, error: { code, message } | n
 
 ## Stack
 
-- [Elysia](https://elysiajs.com/) + [Drizzle ORM](https://orm.drizzle.team/) + [postgres.js](https://github.com/porsager/postgres)
+- [Elysia](https://elysiajs.com/) com adaptador [**@elysiajs/node**](https://github.com/elysiajs/node) (o `.listen()` nativo do Elysia exige Bun; no Windows/Node use sempre este adapter).
+- [Drizzle ORM](https://orm.drizzle.team/) + [postgres.js](https://github.com/porsager/postgres)
 
-O plano original recomendava Bun; este projeto usa **Node + tsx** de forma equivalente (`package.json`).
+Em desenvolvimento o projeto usa **Node + tsx**; com Bun instalado pode trocar os scripts se preferir.
