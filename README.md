@@ -1,77 +1,97 @@
-# Espaço Lounge — ERP (Angular + Google Sheets)
+# Espaço Lounge — ERP (Angular + API + PostgreSQL)
 
-## Contexto
+Sistema interno para o salão: agenda, clientes, catálogo de serviços e atendimentos. O **front** é Angular 19; a **fonte de verdade** passou a ser **PostgreSQL**, servida por uma API em **Elysia** na pasta `api/`. A planilha **ERP Espaço Lounge** (export em `docs/ERP Espaço Lounge.xlsx`) continua sendo o modelo de colunas e o ponto de partida para **popular o banco** via seed.
 
-**Espaço Lounge** é um ERP leve para salão de beleza: **recepção** (agenda, clientes, serviços) e dados operacionais gravados numa **planilha Google** que funciona como base de dados. Não há servidor próprio no MVP: o **Google Apps Script** expõe um **Web App** (`doGet` / `doPost`) que lê e escreve nas abas (**Clientes**, **Serviços**, **Atendimentos**, etc.), alinhadas ao ficheiro de referência **`ERP Espaço Lounge.xlsx`** na raiz do repositório.
+O código antigo do **Google Apps Script** (`apps-script/Code.gs`) fica no repositório como referência e para quem ainda mantiver um fluxo paralelo na planilha — o caminho principal de desenvolvimento hoje é **API + Postgres**.
 
-- **Front-end:** Angular 19 (standalone), interface em **português (pt-BR)**, `HttpClient` para o endpoint do script (ver `src/app/core/services/sheets-api.service.ts`).
-- **Desenvolvimento:** `ng serve` com **proxy** (`proxy.conf.json`) para `/gas` → URL do deploy `/exec`, evitando CORS e tratando redirects de login (secção abaixo).
-- **Produção:** URL do Web App configurada em `environment.production.ts`; CORS pode exigir proxy no mesmo domínio ou deploy com acesso público adequado.
+---
 
-Documentação complementar:
+## O que você precisa instalado
 
-| Documento | Conteúdo |
-|-----------|----------|
-| [docs/FLUXOS_E_TELAS.md](docs/FLUXOS_E_TELAS.md) | Personas (recepção, técnico, dono), telas e fluxos mínimos |
-| [docs/CONTRATO_PLANILHA.md](docs/CONTRATO_PLANILHA.md) | Abas, colunas, ações da API (`listClientes`, `getCliente`, `updateCliente`, …) |
-| [docs/CRITERIOS_SQL.md](docs/CRITERIOS_SQL.md) | Critérios para eventual migração para SQL |
-| [apps-script/README.md](apps-script/README.md) | Colar `Code.gs`, implantar Web App, testar `health` |
+- Node.js 20+ e npm  
+- Docker (só para subir o Postgres local, se quiser usar o `docker-compose` de `api/`)  
+- Python 3 + `openpyxl` se for rodar os scripts de manifesto do XLSX em `scripts/`
 
-Sempre que alterar `apps-script/Code.gs`, **publique uma nova versão** da implantação na planilha; o Angular só reflete mudanças de API após isso.
+---
 
-## Pré-requisitos
+## Subir o banco e a API
 
-- Node.js 20+ e npm
-- Conta Google e planilha com as abas descritas em [docs/CONTRATO_PLANILHA.md](docs/CONTRATO_PLANILHA.md)
-- Apps Script publicado (veja [apps-script/README.md](apps-script/README.md))
+Na pasta `api/`:
 
-## Configuração
+1. Copie `.env.example` para `.env` e ajuste `DATABASE_URL` (porta **5432** ou **5433**, conforme o mapeamento do Docker).
+2. `docker compose up -d` — sobe o Postgres.
+3. `npm install`
+4. `npm run db:migrate` — cria as tabelas.
+5. `npm run db:seed` — lê o XLSX em `docs/` e enche o banco (**apaga dados anteriores** nessas tabelas).
+6. `npm start` — API em `http://localhost:3000`.
 
-1. **Planilha:** use o modelo **ERP Espaço Lounge** (abas **Clientes**, **Serviços**, **Atendimentos**, etc.). O contrato reflete o export `ERP Espaço Lounge.xlsx` na raiz do repositório — veja [docs/CONTRATO_PLANILHA.md](docs/CONTRATO_PLANILHA.md). O nome da aba de catálogo tem acento: **Serviços**.
-2. **Apps Script:** copie `apps-script/Code.gs` para o editor da planilha, implante como aplicativo da web e copie a URL `/exec`.
-3. **Proxy (desenvolvimento):** edite [proxy.conf.json](proxy.conf.json) e substitua `COLE_SEU_DEPLOYMENT_ID` pelo ID da URL (trecho entre `/macros/s/` e `/exec`).
-4. **Instalação e servidor local:**
+No PowerShell, se `npm` reclamar de política de execução, use `npm.cmd start`.
+
+Detalhes extras (CORS, variáveis, troubleshooting): **`api/README.md`**.
+
+---
+
+## Subir o Angular
+
+Na **raiz** do repositório:
 
 ```bash
 npm install
 npm start
 ```
 
-Abra `http://localhost:4200`. As chamadas vão para `/gas`, que o proxy encaminha ao Apps Script.
+Abra `http://localhost:4200`. Em desenvolvimento, `src/environments/environment.ts` aponta `apiBaseUrl` para `http://localhost:3000`. A API precisa estar rodando ao mesmo tempo.
 
-### 302 / CORS com `accounts.google.com`
+---
 
-O Web App estava pedindo **login Google** (deploy sem “qualquer pessoa”). O navegador seguia o **302** até `accounts.google.com` e o **XHR falhava em CORS**.
+## Git: commits por etapa
 
-Neste projeto o [proxy.conf.json](proxy.conf.json) usa **`followRedirects: true`**: o **Node** segue o redirect; o Angular fala só com `localhost`, sem CORS no domínio do Google. A resposta ainda pode ser **HTML de login** — aí o app mostra mensagem orientando o deploy.
+Sempre que fechar um bloco de trabalho (feature, correção, doc, ajuste de config), faça um **commit** com mensagem clara em português. Isso facilita revisão, rollback e histórico. O assistente no Cursor também deve seguir isso: ao terminar uma etapa, **preparar e sugerir o commit** (ou executar `git add` / `git commit` quando fizer sentido).
 
-**Correção definitiva:** no Apps Script, **Implantar → Gerenciar implantações → Editar** → **Quem tem acesso:** **Qualquer pessoa** ou **Qualquer pessoa, mesmo anônima** → **Nova versão** → **Implantar**. Teste `.../exec?action=health` em **aba anônima** (tem que vir JSON). Veja [apps-script/README.md](apps-script/README.md).
+---
 
-Depois de alterar `proxy.conf.json`, reinicie o `ng serve`.
+## Planilha, XLSX e documentação
 
-## Testes unitários (Karma, padrão Angular CLI)
+- **`docs/CONTRATO_PLANILHA.md`** — abas, colunas e comportamento esperado (espelho do modelo da planilha).
+- **`docs/ERP Espaço Lounge.xlsx`** — referência estrutural; o seed da API usa esse ficheiro (ou outro caminho via `XLSX_PATH` no `.env` da API).
+- **`docs/xlsx-manifest.json`** — gerado com `python scripts/xlsx_manifest.py` (inventário de abas/colunas).
+- **`docs/column-mapping.json`** — mapeamento cabeçalho da planilha ↔ colunas SQL.
+- **`docs/FLUXOS_E_TELAS.md`**, **`docs/CRITERIOS_SQL.md`** — contexto de produto e decisões.
+
+Atualizou a planilha “oficial”? Troque o XLSX em `docs/`, rode de novo o seed na API (em ambiente de dev) e, se quiser, regenere o manifesto.
+
+---
+
+## Proxy `/gas` (legado)
+
+O ficheiro **`proxy.conf.json`** ainda pode apontar para um Web App do Apps Script (`/gas` → URL `/exec`). O fluxo **atual** do app em dev usa a **API REST** direto, sem passar por esse proxy. Só é útil se você mantiver testes ou um build antigo contra o Google.
+
+---
+
+## Testes e build de produção
 
 ```bash
-npm test
+npm test          # Karma / unitários do Angular
+npm run build     # artefatos em dist/
 ```
 
-## Produção
+Para produção, configure `src/environments/environment.production.ts` com a **URL pública da API** (sem barra no final) e faça o deploy do front e da API separadamente.
 
-```bash
-npm run build
-```
+---
 
-Ajuste [src/environments/environment.production.ts](src/environments/environment.production.ts) com a URL completa do `/exec`. Se o navegador bloquear por CORS, coloque o front atrás de um proxy no mesmo domínio ou use outra estratégia de hospedagem documentada no plano do projeto.
+## Pastas principais
 
-## Estrutura
+| Caminho | Para que serve |
+|--------|----------------|
+| `src/app/` | Telas e rotas do Angular |
+| `src/app/core/services/sheets-api.service.ts` | Cliente HTTP da API (nome histórico; fala com Elysia) |
+| `api/` | API Elysia, Drizzle, migrações, Docker, seed |
+| `apps-script/` | Script Google legado + README de deploy |
+| `docs/` | Contrato da planilha, fluxos, critérios, XLSX de referência |
+| `scripts/` | Utilitários Python (dump/manifesto do XLSX) |
 
-| Pasta / arquivo | Conteúdo |
-|-----------------|----------|
-| `src/app/pages/*` | Telas: início, agenda (lista + **novo atendimento** por tipo: Serviço, Mega, Pacote, Cabelo, Produto), **clientes** (lista, novo, editar), serviços |
-| `src/app/core/services/sheets-api.service.ts` | `HttpClient` → Web App (POST com `text/plain` + JSON) |
-| `src/environments/` | `environment.ts` (dev) e `environment.production.ts` (URL do `/exec`) |
-| `apps-script/Code.gs` | `doGet` / `doPost` e acesso à planilha |
-| `scripts/dump_xlsx.py` | Utilitário opcional para inspecionar o XLSX de referência |
-| `docs/` | Fluxos, contrato da planilha, critérios SQL |
-| `src/app/app.component.*` | Shell da aplicação (navegação principal) |
-| `.editorconfig`, `.vscode/`, `tsconfig*.json` | Alinhados ao projeto gerado pelo Angular CLI 19 |
+---
+
+## Licença / uso
+
+Uso interno do projeto Espaço Lounge; ajuste conforme a política da sua empresa.

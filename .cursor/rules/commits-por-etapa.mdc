@@ -1,0 +1,10 @@
+---
+description: Ao concluir uma etapa de trabalho, versionar com Git (commit claro em PT-BR).
+alwaysApply: true
+---
+
+# Commits por etapa
+
+- Ao **terminar uma etapa** (feature, bugfix, documentação, config), faça **`git add`** nos ficheiros pertinentes e um **`git commit`** com mensagem curta e clara em **português** (imperativo ou descritivo: "Corrige listen da API no Node", "Atualiza README e fluxo com Postgres").
+- **Não** acumule várias frentes grandes num único commit sem necessidade; prefira commits pequenos e legíveis.
+- Se o repositório ainda não tiver `git init`, pergunte ao utilizador antes de inicializar, exceto se ele já pediu fluxo Git explicitamente.
