@@ -14,6 +14,7 @@ import {
   RegraMegaItem,
   Servico,
 } from '../models/api.models';
+import { enriquecerRotuloPacote } from '../utils/pacote-descricao';
 
 @Injectable({ providedIn: 'root' })
 export class SheetsApiService {
@@ -171,15 +172,60 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  /** Marca o atendimento (todas as linhas com o mesmo id) como pronto para cobrança. */
+  finalizarCobranca(idAtendimento: string): Observable<{ atualizadas: number }> {
+    const params = new HttpParams().set('acao', 'finalizar');
+    return this.http
+      .post<ApiResponse<{ atualizadas: number }>>(
+        this.url('/api/atendimentos'),
+        { id_atendimento: idAtendimento },
+        { params },
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
   private normalizeAtendimento(raw: Record<string, unknown>): AtendimentoListaItem {
-    const descCol = String(raw['Descrição'] ?? raw['Descricao'] ?? '').trim();
+    const descricaoApi = String(raw['Descrição'] ?? raw['Descricao'] ?? '').trim();
+    const descManual = String(
+      raw['Descrição Manual'] ?? raw['Descricao Manual'] ?? '',
+    ).trim();
     const servicos = String(raw['Serviços'] ?? raw['Servicos'] ?? '').trim();
+    const tipo = String(raw['Tipo'] ?? '').trim();
+    const pacote = String(raw['Pacote'] ?? '').trim();
+    const etapa = String(raw['Etapa'] ?? '').trim();
+    const produto = String(raw['Produto'] ?? '').trim();
+
+    let descricao = descricaoApi;
+    if (!descricao) {
+      descricao = descManual || servicos;
+      const tipoN = tipo.toLowerCase();
+      if (!descricao && (tipoN === 'pacote' || tipoN === 'mega')) {
+        const parts = [pacote, etapa].filter(Boolean);
+        if (parts.length) descricao = parts.join(' · ');
+      }
+      if (!descricao && produto) descricao = produto;
+    }
+
+    descricao = enriquecerRotuloPacote({
+      texto: descricao,
+      tipo,
+      pacote,
+      etapa,
+    });
+
+    const cs = raw['cobranca_status'];
+    const cobrancaStatus =
+      cs === undefined || cs === null
+        ? null
+        : String(cs).trim() || null;
+
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
       data: this.formatDataCell(raw['Data']),
       nomeCliente: String(raw['Nome Cliente'] ?? '').trim(),
-      descricao: descCol || servicos,
+      descricao,
       valor: raw['Valor'],
+      cobrancaStatus,
     };
   }
 
@@ -189,6 +235,12 @@ export class SheetsApiService {
       const s = v.trim();
       if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
       if (s.includes('T') && /^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+      const dm = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.exec(s);
+      if (dm) {
+        const dd = dm[1].padStart(2, '0');
+        const mm = dm[2].padStart(2, '0');
+        return `${dm[3]}-${mm}-${dd}`;
+      }
       return s;
     }
     return String(v);

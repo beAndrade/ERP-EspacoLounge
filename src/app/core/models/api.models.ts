@@ -32,9 +32,11 @@ export interface AtendimentoListaItem {
   /** Sempre `AAAA-MM-DD` (para ordenar); na tela usa-se formato dia-mês-ano. */
   data: string;
   nomeCliente: string;
-  /** Coluna Descrição da planilha; se vazia, usa Serviços como texto de apoio. */
+  /** Texto exibido (API já enriquece Pacote, colunas P/Q, etc.). */
   descricao: string;
   valor: unknown;
+  /** `finalizada` = marcado em “Finalizar serviço” (pronto para cobrança). */
+  cobrancaStatus?: string | null;
 }
 
 export interface AtendimentoCriadoResumo {

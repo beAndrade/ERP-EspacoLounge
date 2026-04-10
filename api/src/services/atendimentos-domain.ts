@@ -3,6 +3,7 @@
  */
 import { and, asc, eq } from 'drizzle-orm';
 import type { Db } from '../db';
+import { descricaoParaListaLinha } from '../lib/descricao-lista';
 import {
   atendimentos,
   clientes,
@@ -296,6 +297,8 @@ async function appendAtendimentoLinha(
     valorManual?: string;
     comissao: string;
     descricao: string;
+    /** Espelha texto em **Descrição Manual** (planilha) quando distinto de `descricao`. */
+    descricaoManual?: string;
   },
 ): Promise<void> {
   const dataSql = parseDataSql(o.dataStr);
@@ -316,7 +319,7 @@ async function appendAtendimentoLinha(
     comissao: o.comissao,
     desconto: '',
     descricao: o.descricao,
-    descricaoManual: '',
+    descricaoManual: o.descricaoManual ?? '',
     custo: '',
     lucro: '',
   });
@@ -467,6 +470,7 @@ async function createAtendimentoMega(
       valor: regra.valor,
       comissao: regra.comissao,
       descricao: obs,
+      descricaoManual: obs,
     });
   }
   return {
@@ -522,6 +526,7 @@ async function createAtendimentoPacote(
     valor: preco,
     comissao: '',
     descricao: obs,
+    descricaoManual: obs,
   });
   for (const st of etapas) {
     const etapaNome = String(st.etapa || '').trim();
@@ -545,6 +550,7 @@ async function createAtendimentoPacote(
       valor: '0',
       comissao: regra.comissao,
       descricao: obs,
+      descricaoManual: obs,
     });
   }
   return {
@@ -719,11 +725,27 @@ export async function listAtendimentosRaw(
       'Valor Manual': a.valorManual,
       Comissão: a.comissao,
       Desconto: a.desconto,
-      Descrição: a.descricao,
+      Descrição: descricaoParaListaLinha(a),
       'Descrição Manual': a.descricaoManual,
       Custo: a.custo,
       Lucro: a.lucro,
+      cobranca_status: a.cobrancaStatus ?? null,
       id: a.idAtendimento,
     };
   });
+}
+
+/** Marca todas as linhas com o mesmo `ID Atendimento` como finalizadas (prontas para cobrança). */
+export async function finalizarCobrancaPorIdAtendimento(
+  db: Db,
+  idAtendimento: string,
+): Promise<number> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+  const rows = await db
+    .update(atendimentos)
+    .set({ cobrancaStatus: 'finalizada' })
+    .where(eq(atendimentos.idAtendimento, id))
+    .returning({ id: atendimentos.id });
+  return rows.length;
 }

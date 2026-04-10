@@ -1,0 +1,156 @@
+<div class="toolbar">
+  <h1>Atendimentos</h1>
+  <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+</div>
+
+<p class="hint">
+  Visão rápida em <strong>cards</strong> — um card por cliente no dia. Toque no card para ver cada serviço.
+</p>
+
+<div class="dia-toggle" role="group" aria-label="Dia a mostrar">
+  <button
+    type="button"
+    class="chip"
+    [class.active]="dia === 'hoje'"
+    (click)="setDia('hoje')"
+  >
+    Hoje
+  </button>
+  <button
+    type="button"
+    class="chip"
+    [class.active]="dia === 'amanha'"
+    (click)="setDia('amanha')"
+  >
+    Amanhã
+  </button>
+</div>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint">Carregando…</p>
+}
+
+@if (!carregando && !erro && grupos.length === 0) {
+  <p class="hint">Nenhum atendimento para {{ tituloPeriodo().toLowerCase() }}.</p>
+}
+
+@if (!carregando && grupos.length > 0) {
+  <ul class="cards" aria-label="Atendimentos do dia">
+    @for (g of grupos; track g.id) {
+      <li class="card-wrap">
+        @if (g.linhas.length === 1) {
+          <div class="card card--static">
+            <span class="card-data">{{ dataDdMmAaaa(g.data) }}</span>
+            <span class="card-headline">
+              <span class="card-nome">{{ g.nomeCliente }}</span>
+              @if (cobrancaFinalizada(g)) {
+                <span class="badge-cobranca">Cobrança ok</span>
+              } @else {
+                <span class="badge-aberto">{{ statusCobrancaLabel(g) }}</span>
+              }
+            </span>
+            <span class="card-desc">{{ resumoCard(g) }}</span>
+            <span class="card-valor">
+              @if (g.valorTotal !== null) {
+                {{ g.valorTotal | number: '1.2-2' }}
+              } @else {
+                —
+              }
+            </span>
+          </div>
+          <div class="card-acoes">
+            @if (!cobrancaFinalizada(g)) {
+              <button
+                type="button"
+                class="btn-finalizar"
+                [disabled]="finalizandoIdAt === g.linhas[0].id"
+                (click)="finalizar(g, $event)"
+              >
+                @if (finalizandoIdAt === g.linhas[0].id) {
+                  A guardar…
+                } @else {
+                  Finalizar serviço
+                }
+              </button>
+            } @else {
+              <p class="hint-done">Serviço finalizado — pode cobrar ao cliente.</p>
+            }
+          </div>
+        } @else {
+          <button
+            type="button"
+            class="card"
+            [class.card--open]="isExpandido(g)"
+            [attr.aria-expanded]="isExpandido(g)"
+            (click)="toggleGrupo(g.id)"
+          >
+            <span class="card-data">{{ dataDdMmAaaa(g.data) }}</span>
+            <span class="card-headline">
+              <span class="card-nome">{{ g.nomeCliente }}</span>
+              @if (cobrancaFinalizada(g)) {
+                <span class="badge-cobranca">Cobrança ok</span>
+              } @else {
+                <span class="badge-aberto">{{ statusCobrancaLabel(g) }}</span>
+              }
+            </span>
+            <span class="card-desc">{{ resumoCard(g) }}</span>
+            <span class="card-valor">
+              @if (g.valorTotal !== null) {
+                {{ g.valorTotal | number: '1.2-2' }}
+              } @else {
+                —
+              }
+            </span>
+            <span class="card-hint" aria-hidden="true">
+              {{ isExpandido(g) ? 'Recolher' : 'Ver serviços' }}
+            </span>
+          </button>
+          @if (isExpandido(g)) {
+            <div
+              class="card-detalhes"
+              role="region"
+              [attr.aria-label]="'Serviços de ' + g.nomeCliente"
+            >
+              <p class="detalhes-titulo">Serviços realizados</p>
+              <ul class="detalhes-lista">
+                @for (linha of g.linhas; track $index) {
+                  <li>
+                    <span class="detalhes-desc">{{ linha.descricao || '—' }}</span>
+                    <span class="detalhes-valor">
+                      @if (valorNum(linha.valor) !== null) {
+                        {{ valorNum(linha.valor)! | number: '1.2-2' }}
+                      } @else {
+                        —
+                      }
+                    </span>
+                  </li>
+                }
+              </ul>
+              <div class="card-acoes card-acoes--dentro">
+                @if (!cobrancaFinalizada(g)) {
+                  <button
+                    type="button"
+                    class="btn-finalizar"
+                    [disabled]="finalizandoIdAt === g.linhas[0].id"
+                    (click)="finalizar(g, $event)"
+                  >
+                    @if (finalizandoIdAt === g.linhas[0].id) {
+                      A guardar…
+                    } @else {
+                      Finalizar serviço
+                    }
+                  </button>
+                } @else {
+                  <p class="hint-done">Serviço finalizado — pode cobrar ao cliente.</p>
+                }
+              </div>
+            </div>
+          }
+        }
+      </li>
+    }
+  </ul>
+}

@@ -1,0 +1,116 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+  }
+
+  input[type='date'],
+  input[type='text'] {
+    min-height: var(--touch-min);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid #d6d3d1;
+    background: var(--color-surface);
+    min-width: 9.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.btn {
+  min-height: var(--touch-min);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &.primary {
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+    border-color: var(--color-primary);
+  }
+
+  &:hover {
+    filter: brightness(0.97);
+  }
+}
+
+.hint {
+  color: var(--color-muted);
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  border: 1px solid #e7e5e4;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+th {
+  font-weight: 600;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+th:nth-child(3),
+td:nth-child(3) {
+  min-width: 10rem;
+  max-width: 32rem;
+  word-break: break-word;
+}

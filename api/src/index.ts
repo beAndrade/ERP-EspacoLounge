@@ -2,10 +2,14 @@ import { cors } from '@elysiajs/cors';
 import { node } from '@elysiajs/node';
 import { Elysia, t } from 'elysia';
 import { eq } from 'drizzle-orm';
-import { db } from './db';
+import { db, ensureSchemaPatches } from './db';
 import { clientes } from './db/schema';
 import { fail, ok } from './lib/envelope';
-import { createAtendimento, listAtendimentosRaw } from './services/atendimentos-domain';
+import {
+  createAtendimento,
+  finalizarCobrancaPorIdAtendimento,
+  listAtendimentosRaw,
+} from './services/atendimentos-domain';
 import {
   getClienteById,
   listCabelosApi,
@@ -27,6 +31,28 @@ function corsOrigins(): string[] | true {
     /* ignore */
   }
   return ['http://localhost:4200'];
+}
+
+await ensureSchemaPatches();
+
+const bodyFinalizar = t.Object({ id_atendimento: t.String() });
+
+async function execFinalizarCobranca(body: { id_atendimento?: string }) {
+  try {
+    const id = String(body.id_atendimento || '').trim();
+    if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
+    const n = await finalizarCobrancaPorIdAtendimento(db, id);
+    if (!n) {
+      return fail(
+        'NOT_FOUND',
+        'Nenhuma linha encontrada para este atendimento',
+      );
+    }
+    return ok({ atualizadas: n });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return fail('SERVER', msg);
+  }
 }
 
 const app = new Elysia({ adapter: node() })
@@ -117,15 +143,40 @@ const app = new Elysia({ adapter: node() })
   .get('/api/profissionais', async () =>
     ok({ items: await listProfissionaisApi(db) }),
   )
+  .post(
+    '/api/finalizar-cobranca',
+    async ({ body }) => execFinalizarCobranca(body),
+    { body: bodyFinalizar },
+  )
+  .post(
+    '/api/atendimentos/finalizar',
+    async ({ body }) => execFinalizarCobranca(body),
+    { body: bodyFinalizar },
+  )
   .get('/api/atendimentos', async ({ query }) => {
-    const items = await listAtendimentosRaw(
-      db,
-      query.dataInicio,
-      query.dataFim,
-    );
-    return ok({ items });
+    try {
+      const items = await listAtendimentosRaw(
+        db,
+        query.dataInicio,
+        query.dataFim,
+      );
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
   })
-  .post('/api/atendimentos', async ({ body }) => {
+  .post('/api/atendimentos', async ({ body, query }) => {
+    const b = (body ?? {}) as Record<string, unknown>;
+    const qAcao = String(query?.acao ?? '').trim().toLowerCase();
+    const bAcao = String(b.acao ?? '').trim().toLowerCase();
+    const isFinalizar = qAcao === 'finalizar' || bAcao === 'finalizar';
+    if (isFinalizar) {
+      const idAt = String(
+        b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
+      ).trim();
+      return execFinalizarCobranca({ id_atendimento: idAt });
+    }
     try {
       const result = await createAtendimento(db, body as never);
       return ok(result);

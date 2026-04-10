@@ -1,41 +1,24 @@
 <div class="toolbar">
   <h1>Agenda</h1>
-  <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+  <div class="toolbar-actions">
+    <a routerLink="/agenda/lista" class="btn">Ver em lista</a>
+    <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+  </div>
 </div>
 
 <p class="hint">
-  Lista simples: <strong>quando</strong>, <strong>quem</strong>, <strong>o quê</strong> e <strong>quanto</strong>.
-  Por padrão mostra os últimos 90 dias — mude as datas abaixo se precisar.
+  Calendário do mês — clique num dia para ver os atendimentos. Um único pedido carrega o mês inteiro.
 </p>
 
-<div class="filtros">
-  <label>
-    <span>De (dd-mm-aaaa)</span>
-    <input
-      type="text"
-      [(ngModel)]="dataInicio"
-      name="di"
-      inputmode="numeric"
-      placeholder="09-01-2026"
-      maxlength="10"
-      autocomplete="off"
-      spellcheck="false"
-    />
-  </label>
-  <label>
-    <span>Até (dd-mm-aaaa)</span>
-    <input
-      type="text"
-      [(ngModel)]="dataFim"
-      name="df"
-      inputmode="numeric"
-      placeholder="09-04-2026"
-      maxlength="10"
-      autocomplete="off"
-      spellcheck="false"
-    />
-  </label>
-  <button type="button" class="btn" (click)="carregar()">Atualizar lista</button>
+<div class="cal-nav">
+  <button type="button" class="btn" (click)="mesAnterior()" aria-label="Mês anterior">
+    ←
+  </button>
+  <h2 class="cal-titulo">{{ tituloMes() }}</h2>
+  <button type="button" class="btn" (click)="mesSeguinte()" aria-label="Mês seguinte">
+    →
+  </button>
+  <button type="button" class="btn ghost" (click)="irMesAtual()">Hoje</button>
 </div>
 
 @if (erro) {
@@ -45,37 +28,70 @@
   <p class="hint">Carregando…</p>
 }
 
-@if (!carregando && !erro && itens.length === 0) {
-  <p class="hint">Nenhum atendimento neste período.</p>
+@if (!carregando && !erro) {
+  <div class="cal-wrap" role="grid" aria-label="Calendário mensal">
+    <div class="cal-head" role="row">
+      @for (d of diasSemana; track d) {
+        <div class="cal-th" role="columnheader">{{ d }}</div>
+      }
+    </div>
+    <div class="cal-body">
+      @for (c of celulas(); track $index) {
+        @if (c.dia === null) {
+          <div class="cal-cell cal-cell--empty" aria-hidden="true"></div>
+        } @else {
+          <button
+            type="button"
+            class="cal-cell"
+            [class.cal-cell--hoje]="c.ymd === hojeYmd()"
+            [class.cal-cell--tem]="contagem(c.ymd) > 0"
+            (click)="abrirDia(c.ymd)"
+          >
+            <span class="cal-dia">{{ c.dia }}</span>
+            @if (contagem(c.ymd) > 0) {
+              <span class="cal-badge">{{ contagem(c.ymd) }}</span>
+            }
+          </button>
+        }
+      }
+    </div>
+  </div>
 }
 
-@if (!carregando && itens.length > 0) {
-  <div class="table-wrap" role="region" aria-label="Lista de atendimentos">
-    <table>
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Cliente</th>
-          <th>Descrição</th>
-          <th>Valor</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (a of itens; track $index) {
-          <tr>
-            <td>{{ dataDdMmAaaa(a.data) }}</td>
-            <td>{{ a.nomeCliente || '—' }}</td>
-            <td>{{ a.descricao || '—' }}</td>
-            <td>
-              @if (valorNum(a.valor) !== null) {
-                {{ valorNum(a.valor)! | number: '1.2-2' }}
-              } @else {
-                —
-              }
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+@if (diaSelecionado) {
+  <div
+    class="overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dia-panel-title"
+    (click)="fecharPainel()"
+  >
+    <div class="panel" (click)="$event.stopPropagation()">
+      <div class="panel-head">
+        <h2 id="dia-panel-title">{{ tituloDiaSelecionado() }}</h2>
+        <button type="button" class="btn panel-close" (click)="fecharPainel()">
+          Fechar
+        </button>
+      </div>
+      @if (itensDoDia().length === 0) {
+        <p class="hint">Nenhum atendimento neste dia.</p>
+      } @else {
+        <ul class="panel-list">
+          @for (a of itensDoDia(); track $index) {
+            <li>
+              <span class="panel-nome">{{ a.nomeCliente || '—' }}</span>
+              <span class="panel-desc">{{ a.descricao || '—' }}</span>
+              <span class="panel-valor">
+                @if (valorNum(a.valor) !== null) {
+                  {{ valorNum(a.valor)! | number: '1.2-2' }}
+                } @else {
+                  —
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
   </div>
 }

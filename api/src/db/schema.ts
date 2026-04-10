@@ -112,6 +112,8 @@ export const atendimentos = pgTable(
     descricaoManual: text('descricao_manual'),
     custo: text('custo'),
     lucro: text('lucro'),
+    /** `aberta` (ou null) = em curso; `finalizada` = pronto para cobrar ao cliente */
+    cobrancaStatus: text('cobranca_status'),
   },
   (t) => [
     index('atendimentos_data_idx').on(t.data),

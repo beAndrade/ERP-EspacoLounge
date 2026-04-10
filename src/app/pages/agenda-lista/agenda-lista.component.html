@@ -1,0 +1,84 @@
+<div class="toolbar">
+  <h1>Agenda — lista</h1>
+  <div class="toolbar-actions">
+    <a routerLink="/agenda" class="btn">Calendário</a>
+    <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+  </div>
+</div>
+
+<p class="hint">
+  Lista simples: <strong>quando</strong>, <strong>quem</strong>, <strong>o quê</strong> e <strong>quanto</strong>.
+  Por padrão mostra os últimos 90 dias — mude as datas abaixo se precisar.
+</p>
+
+<div class="filtros">
+  <label>
+    <span>De (dd-mm-aaaa)</span>
+    <input
+      type="text"
+      [(ngModel)]="dataInicio"
+      name="di"
+      inputmode="numeric"
+      placeholder="09-01-2026"
+      maxlength="10"
+      autocomplete="off"
+      spellcheck="false"
+    />
+  </label>
+  <label>
+    <span>Até (dd-mm-aaaa)</span>
+    <input
+      type="text"
+      [(ngModel)]="dataFim"
+      name="df"
+      inputmode="numeric"
+      placeholder="09-04-2026"
+      maxlength="10"
+      autocomplete="off"
+      spellcheck="false"
+    />
+  </label>
+  <button type="button" class="btn" (click)="carregar()">Atualizar lista</button>
+</div>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint">Carregando…</p>
+}
+
+@if (!carregando && !erro && itens.length === 0) {
+  <p class="hint">Nenhum atendimento neste período.</p>
+}
+
+@if (!carregando && itens.length > 0) {
+  <div class="table-wrap" role="region" aria-label="Lista de atendimentos">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Cliente</th>
+          <th>Descrição</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of itens; track $index) {
+          <tr>
+            <td>{{ dataDdMmAaaa(a.data) }}</td>
+            <td>{{ a.nomeCliente || '—' }}</td>
+            <td>{{ a.descricao || '—' }}</td>
+            <td>
+              @if (valorNum(a.valor) !== null) {
+                {{ valorNum(a.valor)! | number: '1.2-2' }}
+              } @else {
+                —
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
