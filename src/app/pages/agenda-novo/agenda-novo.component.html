@@ -1,6 +1,6 @@
 <div class="toolbar">
   <h1>Novo atendimento</h1>
-  <a routerLink="/agenda" class="link-back">← Voltar à agenda</a>
+  <a routerLink="/atendimentos" class="link-back">← Voltar aos atendimentos</a>
 </div>
 
 @if (erro && !carregandoListas) {
@@ -41,33 +41,77 @@
       </select>
     </label>
 
-    <div class="row">
-      <label>
-        <span>Data</span>
-        <input type="date" formControlName="data" />
-      </label>
-      @if (tipoAtual === 'Serviço' && servicoPrecisaTamanho) {
-        <label>
-          <span>Tamanho (preço)</span>
-          <select formControlName="tamanho">
-            @for (t of tamanhos; track t) {
-              <option [value]="t">{{ t }}</option>
-            }
-          </select>
-        </label>
-      }
-    </div>
+    <label class="data-field">
+      <span>Data</span>
+      <div
+        class="data-field__wrap"
+        (click)="abrirPickerData(dataInput, $event)"
+      >
+        <span class="data-field__display" aria-hidden="true">{{
+          dataExibicao()
+        }}</span>
+        <input
+          #dataInput
+          type="date"
+          formControlName="data"
+          class="data-field__native"
+          [attr.aria-label]="'Data do atendimento, ' + dataExibicao()"
+        />
+      </div>
+      <span class="hint data-field__hint">Toque no campo para abrir o calendário (formato dd-mm-aaaa).</span>
+    </label>
 
     @if (tipoAtual === 'Serviço') {
-      <label>
-        <span>Serviço (aba Serviços — Fixo ou Tamanho)</span>
-        <select formControlName="servico_id" required>
-          <option value="">Selecione…</option>
-          @for (s of servicosTipoServico; track s.id) {
-            <option [value]="s.id">Linha {{ s.id }} — {{ rotuloServico(s) }}</option>
-          }
-        </select>
-      </label>
+      <div class="servicos-block" formArrayName="servicosItens">
+        <div class="servicos-header">
+          <span>Serviços (aba Serviços — Fixo ou Tamanho)</span>
+          <button type="button" class="btn small" (click)="adicionarServico()">+ Serviço</button>
+        </div>
+        @for (ctrl of servicosItensArray.controls; track $index; let i = $index) {
+          <div class="servico-row" [formGroupName]="i">
+            <label class="servico-row__field">
+              <span>Serviço</span>
+              <select formControlName="servico_id" required>
+                <option value="">Selecione…</option>
+                @for (s of servicosTipoServico; track s.id) {
+                  <option [value]="s.id">{{ rotuloServico(s) }}</option>
+                }
+              </select>
+            </label>
+            @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
+              <label class="servico-row__field servico-row__field--tamanho">
+                <span>Tamanho (preço)</span>
+                <select formControlName="tamanho">
+                  @for (t of tamanhos; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
+              </label>
+            }
+            <label class="servico-row__field">
+              <span>Profissional</span>
+              <select formControlName="profissional" required>
+                <option value="">Selecione…</option>
+                @for (p of profissionais; track p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              </select>
+            </label>
+            <div class="servico-row__actions">
+              @if (servicosItensArray.length > 1) {
+                <button type="button" class="btn small danger" (click)="removerServico(i)">
+                  Remover
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      @if (profissionais.length === 0) {
+        <p class="alert" role="alert">
+          Não há profissionais na lista. Confira a aba <strong>Folha</strong> (cabeçalho <strong>Profissional</strong> nas primeiras linhas) e publique o <code>Code.gs</code> atualizado.
+        </p>
+      }
       @if (servicosTipoServico.length === 0) {
         <p class="alert" role="alert">
           Não há linhas com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
@@ -82,10 +126,10 @@
           <option value="">Selecione…</option>
           @if (tipoAtual === 'Mega') {
             @for (p of pacotesMegaUnicos; track p) {
-              <option [value]="p">{{ p }}</option>
+              <option [value]="p">{{ rotuloPacoteMegaOpcao(p) }}</option>
             }
           } @else {
-            @for (item of pacotes; track item.pacote) {
+            @for (item of pacotesOrdenados; track item.pacote) {
               <option [value]="item.pacote">{{ rotuloPacoteCatalogo(item) }}</option>
             }
           }
@@ -100,51 +144,154 @@
     }
 
     @if (tipoAtual === 'Produto') {
-      <label>
-        <span>Produto</span>
-        <select formControlName="produto" required>
-          <option value="">Selecione…</option>
-          @for (pr of produtos; track pr.produto) {
-            <option [value]="pr.produto">
-              {{ pr.produto }}
-              @if (pr.unidade) {
-                ({{ pr.unidade }})
+      <div class="servicos-block" formArrayName="produtosItens">
+        <div class="servicos-header">
+          <span>Produtos (aba Produtos)</span>
+          <button type="button" class="btn small" (click)="adicionarProduto()">
+            + Produto
+          </button>
+        </div>
+        @for (ctrl of produtosItensArray.controls; track $index; let i = $index) {
+          <div class="servico-row" [formGroupName]="i">
+            <label class="servico-row__field">
+              <span>Produto</span>
+              <select formControlName="produto" required>
+                <option value="">Selecione…</option>
+                @for (pr of produtos; track pr.produto) {
+                  <option [value]="pr.produto">
+                    {{ pr.produto }}
+                    @if (pr.unidade) {
+                      ({{ pr.unidade }})
+                    }
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="servico-row__field servico-row__field--tamanho">
+              <span>Quantidade</span>
+              <input
+                type="number"
+                formControlName="quantidade"
+                min="0.01"
+                step="any"
+              />
+            </label>
+            <div class="servico-row__actions">
+              @if (produtosItensArray.length > 1) {
+                <button
+                  type="button"
+                  class="btn small danger"
+                  (click)="removerProduto(i)"
+                >
+                  Remover
+                </button>
               }
-            </option>
-          }
-        </select>
-      </label>
-      <label>
-        <span>Quantidade</span>
-        <input type="number" formControlName="quantidade" min="0.01" step="any" />
-      </label>
+            </div>
+          </div>
+        }
+      </div>
       @if (produtos.length === 0) {
         <p class="hint">Cadastre produtos na aba <strong>Produtos</strong>.</p>
       }
     }
 
     @if (tipoAtual === 'Cabelo') {
+      @if (cabelos.length > 0) {
+        <div class="cabelo-calc">
+          <span class="cabelo-calc__titulo">Calculadora — aba Cabelos</span>
+          <p class="hint cabelo-calc__hint">
+            Escolha a combinação da planilha (Cor × Tamanho em cm × Método), indique o
+            <strong>peso em gramas</strong> medido na balança e aplique o total. Fórmula:
+            <strong>valor da tabela × (gramas ÷ 100)</strong>, com 2 casas decimais (R$).
+            Pode corrigir o valor final à mão se precisar.
+          </p>
+          <div class="cabelo-calc__grid">
+            <label class="cabelo-calc__field">
+              <span>Cor</span>
+              <select
+                [value]="calcCabeloCor"
+                (change)="onCalcCabeloCorChange($event)"
+              >
+                <option value="">Selecione…</option>
+                @for (x of cabelosCoresLista(); track x) {
+                  <option [value]="x">{{ x }}</option>
+                }
+              </select>
+            </label>
+            <label class="cabelo-calc__field">
+              <span>Tamanho (cm)</span>
+              <select
+                [value]="calcCabeloTamanhoCm"
+                (change)="onCalcCabeloTamanhoChange($event)"
+              >
+                <option value="">Selecione…</option>
+                @for (x of cabelosTamanhosLista(); track x) {
+                  <option [value]="x">{{ x }}</option>
+                }
+              </select>
+            </label>
+            <label class="cabelo-calc__field">
+              <span>Método</span>
+              <select
+                [value]="calcCabeloMetodo"
+                (change)="onCalcCabeloMetodoChange($event)"
+              >
+                <option value="">Selecione…</option>
+                @for (x of cabelosMetodosLista(); track x) {
+                  <option [value]="x">{{ x }}</option>
+                }
+              </select>
+            </label>
+            <label class="cabelo-calc__field cabelo-calc__field--gramas">
+              <span>Peso medido (g)</span>
+              <input
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="ex.: 350"
+                [value]="calcCabeloGramas"
+                (input)="onCalcCabeloGramasInput($event)"
+              />
+            </label>
+          </div>
+          @if (valorCalculadoraCabeloPreview(); as prev) {
+            <p class="cabelo-calc__preview">Valor base (tabela): <strong>{{ prev }}</strong></p>
+          }
+          @if (valorCalculadoraCabeloTotalPreview(); as tot) {
+            <p class="cabelo-calc__preview cabelo-calc__preview--total">
+              Total do atendimento: <strong>{{ tot }}</strong>
+            </p>
+          }
+          <button
+            type="button"
+            class="btn small"
+            (click)="aplicarValorCalculadoraCabelo()"
+          >
+            Aplicar valor calculado
+          </button>
+        </div>
+      } @else {
+        <p class="hint">
+          Não há linhas na aba <strong>Cabelos</strong> — use apenas o valor manual abaixo.
+        </p>
+      }
       <label>
-        <span>Valor (manual, ex.: por grama)</span>
+        <span>Valor (manual ou pela calculadora)</span>
         <input type="text" formControlName="valor_cabelo" inputmode="decimal" placeholder="ex.: 150 ou 150,50" />
+        @if (
+          form.controls.valor_cabelo.errors?.['valorCabeloInvalido'] &&
+          form.controls.valor_cabelo.touched
+        ) {
+          <span class="field-error">Informe um valor numérico maior que zero.</span>
+        }
       </label>
       <label>
         <span>Detalhes (cor, método, gramas…)</span>
         <textarea formControlName="detalhes_cabelo" rows="3" placeholder="Texto livre para o recibo / histórico"></textarea>
       </label>
-      @if (cabelos.length > 0) {
-        <p class="hint ref-cabelos">
-          Referência da aba Cabelos ({{ cabelos.length }} linhas) — use os detalhes acima; a calculadora completa virá depois.
-        </p>
-      }
     }
 
-    @if (
-      tipoAtual === 'Serviço' ||
-      tipoAtual === 'Pacote' ||
-      tipoAtual === 'Produto' ||
-      tipoAtual === 'Cabelo'
-    ) {
+    @if (tipoAtual === 'Cabelo') {
       <label>
         <span>Profissional</span>
         <select formControlName="profissional" required>
@@ -214,6 +361,7 @@
       class="btn primary"
       [disabled]="
         salvando ||
+        form.invalid ||
         clientes.length === 0 ||
         profissionaisObrigatoriosSemLista ||
         (tipoAtual === 'Serviço' && servicosTipoServico.length === 0) ||

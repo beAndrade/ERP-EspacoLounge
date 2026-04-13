@@ -27,7 +27,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
-  max-width: 520px;
+  max-width: 42rem;
 }
 
 label {
@@ -51,6 +51,60 @@ textarea {
   border-radius: var(--radius);
   border: 1px solid #d6d3d1;
   background: var(--color-surface);
+}
+
+.data-field__wrap {
+  position: relative;
+  display: block;
+  min-height: var(--touch-min);
+  cursor: pointer;
+}
+
+/* Por cima do input: o clique chega ao contentor e abrimos o picker em TS. */
+.data-field__display {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+/* Abaixo do texto: mantém foco por Tab e o valor do formulário. */
+.data-field__native {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.data-field__native:focus {
+  outline: none;
+}
+
+.data-field__wrap:focus-within .data-field__display {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: 2px;
+}
+
+.data-field__hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 textarea {
@@ -108,7 +162,14 @@ textarea {
   font-size: 0.85rem;
 }
 
-.etapas-block {
+.field-error {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.etapas-block,
+.servicos-block {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -118,7 +179,8 @@ textarea {
   background: #fafaf9;
 }
 
-.etapas-header {
+.etapas-header,
+.servicos-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -139,10 +201,93 @@ textarea {
   }
 }
 
+.servico-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid #e7e5e4;
+
+  &:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+}
+
+.servico-row__field {
+  flex: 1 1 11rem;
+  min-width: 0;
+  margin: 0;
+
+  &--tamanho {
+    flex: 0 1 9.5rem;
+  }
+}
+
+.servico-row__actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  padding-bottom: 0.05rem;
+}
+
 .resumo {
   font-weight: 600;
 }
 
-.ref-cabelos {
+.cabelo-calc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid #e7e5e4;
+  background: #fafaf9;
+  margin-bottom: 0.25rem;
+}
+
+.cabelo-calc__titulo {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.cabelo-calc__hint {
+  margin: 0;
   font-size: 0.85rem;
+}
+
+.cabelo-calc__grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  align-items: end;
+}
+
+.cabelo-calc__field {
+  margin: 0;
+  min-width: 0;
+
+  &--gramas {
+    grid-column: 1 / -1;
+
+    @media (min-width: 640px) {
+      grid-column: auto;
+    }
+  }
+}
+
+.cabelo-calc__preview {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+
+  &--total {
+    color: var(--color-text);
+    font-weight: 600;
+  }
 }
