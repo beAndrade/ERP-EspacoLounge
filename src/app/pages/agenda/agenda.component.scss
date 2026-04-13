@@ -201,37 +201,43 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
   margin-bottom: 1rem;
 
   h2 {
     margin: 0;
     font-size: 1.2rem;
     font-variant-numeric: tabular-nums;
+    flex: 1 1 10rem;
+    min-width: 0;
   }
+}
+
+.panel-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .panel-close {
   flex-shrink: 0;
 }
 
-.panel-list {
+.panel-groups {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.panel-list li {
-  display: grid;
-  gap: 0.2rem 0.75rem;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    'nome valor'
-    'desc valor';
-  padding-bottom: 0.75rem;
+.panel-grupo {
+  padding-bottom: 1rem;
   border-bottom: 1px solid #f5f5f4;
 
   &:last-child {
@@ -240,24 +246,49 @@
   }
 }
 
+.panel-grupo-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.panel-sublista {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.35rem;
+  border-left: 2px solid #e7e5e4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.panel-sublista li {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
 .panel-nome {
-  grid-area: nome;
   font-weight: 700;
   font-size: 1rem;
+  min-width: 0;
 }
 
 .panel-desc {
-  grid-area: desc;
   font-size: 0.9rem;
   color: var(--color-muted);
   word-break: break-word;
 }
 
 .panel-valor {
-  grid-area: valor;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  align-self: start;
   text-align: right;
   white-space: nowrap;
+
+  &--total {
+    font-size: 1.05rem;
+  }
 }

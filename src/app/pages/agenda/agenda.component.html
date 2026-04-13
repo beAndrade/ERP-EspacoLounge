@@ -69,25 +69,46 @@
     <div class="panel" (click)="$event.stopPropagation()">
       <div class="panel-head">
         <h2 id="dia-panel-title">{{ tituloDiaSelecionado() }}</h2>
-        <button type="button" class="btn panel-close" (click)="fecharPainel()">
-          Fechar
-        </button>
+        <div class="panel-head-actions">
+          @if (diaSelecionado) {
+            <a
+              class="btn primary"
+              [routerLink]="['/agenda/novo']"
+              [queryParams]="{ data: diaSelecionado }"
+            >
+              Novo atendimento
+            </a>
+          }
+          <button type="button" class="btn panel-close" (click)="fecharPainel()">
+            Fechar
+          </button>
+        </div>
       </div>
-      @if (itensDoDia().length === 0) {
+      @if (gruposDia().length === 0) {
         <p class="hint">Nenhum atendimento neste dia.</p>
       } @else {
-        <ul class="panel-list">
-          @for (a of itensDoDia(); track $index) {
-            <li>
-              <span class="panel-nome">{{ a.nomeCliente || '—' }}</span>
-              <span class="panel-desc">{{ a.descricao || '—' }}</span>
-              <span class="panel-valor">
-                @if (valorNum(a.valor) !== null) {
-                  {{ valorNum(a.valor)! | number: '1.2-2' }}
-                } @else {
-                  —
+        <ul class="panel-groups">
+          @for (gr of gruposDia(); track gr.trackId) {
+            <li class="panel-grupo">
+              <div class="panel-grupo-head">
+                <span class="panel-nome">{{ gr.nomeCliente }}</span>
+                <span class="panel-valor panel-valor--total">
+                  @if (gr.total !== null) {
+                    R$ {{ gr.total | number: '1.2-2' }}
+                  } @else {
+                    —
+                  }
+                </span>
+              </div>
+              <ul class="panel-sublista">
+                @for (lin of gr.linhas; track $index) {
+                  <li>
+                    <span class="panel-desc">{{
+                      linhaResumoAtendimentoLista(lin)
+                    }}</span>
+                  </li>
                 }
-              </span>
+              </ul>
             </li>
           }
         </ul>

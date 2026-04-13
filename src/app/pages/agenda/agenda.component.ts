@@ -5,7 +5,9 @@ import localePt from '@angular/common/locales/pt';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { AtendimentoListaItem } from '../../core/models/api.models';
 import {
-  dataDdMmAaaa,
+  dataDdMmBarraAaaa,
+  linhaResumoAtendimentoLista,
+  ordenarLinhasAtendimentoInPlace,
   toYmd,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
@@ -14,6 +16,14 @@ registerLocaleData(localePt);
 
 /** Célula do calendário: vazio (fora do mês) ou número do dia. */
 type CelulaCalendario = { dia: number | null; ymd: string | null };
+
+/** Atendimentos do dia agrupados (mesmo ID = mesmo card). */
+interface AgendaGrupoDia {
+  trackId: string;
+  nomeCliente: string;
+  linhas: AtendimentoListaItem[];
+  total: number | null;
+}
 
 @Component({
   selector: 'app-agenda',
@@ -26,8 +36,9 @@ type CelulaCalendario = { dia: number | null; ymd: string | null };
 export class AgendaComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
 
-  readonly dataDdMmAaaa = dataDdMmAaaa;
+  readonly dataDdMmBarraAaaa = dataDdMmBarraAaaa;
   readonly valorNum = valorMonetarioParaNumero;
+  readonly linhaResumoAtendimentoLista = linhaResumoAtendimentoLista;
 
   /** Primeiro dia do mês em exibição (hora local). */
   mesRef = this.inicioDoMes(new Date());
@@ -78,18 +89,47 @@ export class AgendaComponent implements OnInit {
     return this.porDia.get(ymd) ?? 0;
   }
 
-  itensDoDia(): AtendimentoListaItem[] {
+  /** Linhas do dia agrupadas por atendimento (ID), com total por grupo. */
+  gruposDia(): AgendaGrupoDia[] {
     if (!this.diaSelecionado) return [];
     const key = this.diaSelecionado;
-    return this.itensMes
-      .filter((a) => (a.data || '').slice(0, 10) === key)
-      .slice()
-      .sort((a, b) => a.nomeCliente.localeCompare(b.nomeCliente));
+    const items = this.itensMes.filter((a) => (a.data || '').slice(0, 10) === key);
+    const map = new Map<string, AtendimentoListaItem[]>();
+    for (const a of items) {
+      const idAt = String(a.id || '').trim();
+      const grupKey = idAt
+        ? `id:${idAt}`
+        : `nome:${(a.nomeCliente || '').trim().toLowerCase()}`;
+      if (!map.has(grupKey)) map.set(grupKey, []);
+      map.get(grupKey)!.push(a);
+    }
+    const grupos: AgendaGrupoDia[] = [];
+    for (const [trackId, linhas] of map) {
+      ordenarLinhasAtendimentoInPlace(linhas);
+      let sum = 0;
+      let tem = false;
+      for (const l of linhas) {
+        const v = valorMonetarioParaNumero(l.valor);
+        if (v !== null) {
+          sum += v;
+          tem = true;
+        }
+      }
+      grupos.push({
+        trackId,
+        nomeCliente: linhas[0].nomeCliente?.trim() || '—',
+        linhas,
+        total: tem ? Math.round(sum * 100) / 100 : null,
+      });
+    }
+    return grupos.sort((a, b) =>
+      a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR'),
+    );
   }
 
   tituloDiaSelecionado(): string {
     if (!this.diaSelecionado) return '';
-    return dataDdMmAaaa(this.diaSelecionado);
+    return dataDdMmBarraAaaa(this.diaSelecionado);
   }
 
   abrirDia(ymd: string | null): void {
@@ -143,13 +183,22 @@ export class AgendaComponent implements OnInit {
     this.api.listAgendamentos(di, df).subscribe({
       next: (items) => {
         this.itensMes = items;
-        const map = new Map<string, number>();
+        const map = new Map<string, Set<string>>();
         for (const a of items) {
           const key = (a.data || '').slice(0, 10);
           if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
-          map.set(key, (map.get(key) ?? 0) + 1);
+          const idAt = String(a.id || '').trim();
+          const grupKey = idAt
+            ? `id:${idAt}`
+            : `nome:${(a.nomeCliente || '').trim().toLowerCase()}`;
+          if (!map.has(key)) map.set(key, new Set());
+          map.get(key)!.add(grupKey);
         }
-        this.porDia = map;
+        const out = new Map<string, number>();
+        for (const [k, set] of map) {
+          out.set(k, set.size);
+        }
+        this.porDia = out;
         this.carregando = false;
       },
       error: (e: Error) => {
