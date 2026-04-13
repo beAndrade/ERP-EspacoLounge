@@ -112,8 +112,12 @@ export const atendimentos = pgTable(
     descricaoManual: text('descricao_manual'),
     custo: text('custo'),
     lucro: text('lucro'),
-    /** `aberta` (ou null) = em curso; `finalizada` = pronto para cobrar ao cliente */
+    /** `aberta` (ou null) = em curso; `finalizada` = serviço encerrado na receção */
     cobrancaStatus: text('cobranca_status'),
+    /** Só após `finalizada`: `pendente` ou null = a cobrar; `confirmado` = pago */
+    pagamentoStatus: text('pagamento_status'),
+    /** Preenchido ao confirmar pagamento (ex.: Dinheiro, Pix, Cartão). */
+    pagamentoMetodo: text('pagamento_metodo'),
   },
   (t) => [
     index('atendimentos_data_idx').on(t.data),

@@ -35,7 +35,8 @@ export type CreateAtendimentoPayload =
       tipo: 'Pacote';
       cliente_id: string;
       data: string;
-      profissional: string;
+      /** Linha de cobrança; opcional (UI só preenche profissionais nas etapas). */
+      profissional?: string;
       pacote: string;
       etapas: { etapa: string; profissional: string }[];
       observacao?: string;
@@ -44,7 +45,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Produto';
       cliente_id: string;
       data: string;
-      profissional: string;
+      profissional?: string;
       produto: string;
       quantidade: number;
       observacao?: string;
@@ -126,16 +127,32 @@ function parsePercentCell(cell: unknown): number {
   return n;
 }
 
+/**
+ * Número a partir de células BR (1.234,56) ou só com ponto decimal (358.00).
+ * Não remover o ponto antes de saber o formato — "358.00" não pode virar "35800".
+ */
 function toNumberPt(v: unknown): number | null {
   if (v === '' || v == null) return null;
-  if (typeof v === 'number') return v;
-  const s = String(v)
+  if (typeof v === 'number') {
+    return Number.isFinite(v) ? v : null;
+  }
+  let t = String(v)
     .replace(/R\$/gi, '')
+    .replace(/\u00a0/g, ' ')
     .replace(/\s/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
-  const n = parseFloat(s);
+    .trim();
+  if (!t) return null;
+  if (t.includes(',')) {
+    t = t.replace(/\./g, '').replace(',', '.');
+  }
+  const n = parseFloat(t.replace(/[^\d.-]/g, ''));
   return Number.isNaN(n) ? null : n;
+}
+
+/** Texto fixo para coluna Desconto e recibo (pt-BR). */
+function formatMoedaReciboPt(n: number): string {
+  const r = Math.round(n * 100) / 100;
+  return `R$ ${r.toFixed(2).replace('.', ',')}`;
 }
 
 function comissaoFromPercentAndValor(
@@ -499,7 +516,6 @@ async function createAtendimentoPacote(
     throw new Error('cliente_id, data e pacote são obrigatórios para Pacote');
   }
   const profCob = String(p.profissional || '').trim();
-  if (!profCob) throw new Error('Profissional é obrigatório');
   const etapas = p.etapas || [];
   if (!etapas.length) {
     throw new Error('Inclua ao menos uma etapa realizada para Pacote');
@@ -576,7 +592,6 @@ async function createAtendimentoProduto(
   const dataStr = String(p.data || '').trim();
   const nomeProd = String(p.produto || '').trim();
   const profissional = String(p.profissional || '').trim();
-  if (!profissional) throw new Error('Profissional é obrigatório');
   if (!clienteId || !dataStr || !nomeProd) {
     throw new Error('cliente_id, data e produto são obrigatórios para Produto');
   }
@@ -692,14 +707,19 @@ export async function listAtendimentosRaw(
   db: Db,
   dataInicio?: string,
   dataFim?: string,
+  idAtendimento?: string,
 ): Promise<Record<string, unknown>[]> {
   const rows = await db
     .select()
     .from(atendimentos)
     .orderBy(asc(atendimentos.data), asc(atendimentos.id));
 
+  const idF = String(idAtendimento || '').trim();
+
   const filtered = rows.filter((a) => {
+    if (idF && String(a.idAtendimento).trim() !== idF) return false;
     const ymd = ymdFromAtendimentoDate(a.data as string | Date | null);
+    if (idF) return true;
     if (!dataInicio && !dataFim) return true;
     if (!ymd) return false;
     if (dataInicio && ymd < dataInicio) return false;
@@ -730,22 +750,120 @@ export async function listAtendimentosRaw(
       Custo: a.custo,
       Lucro: a.lucro,
       cobranca_status: a.cobrancaStatus ?? null,
+      pagamento_status: a.pagamentoStatus ?? null,
+      /** Duplicado em camelCase para clientes que serializam JSON sem chaves com underscore. */
+      pagamento_metodo: a.pagamentoMetodo ?? null,
+      pagamentoMetodo: a.pagamentoMetodo ?? null,
       id: a.idAtendimento,
     };
   });
 }
 
-/** Marca todas as linhas com o mesmo `ID Atendimento` como finalizadas (prontas para cobrança). */
+/** Marca todas as linhas com o mesmo `ID Atendimento` como finalizadas; pagamento fica pendente. */
 export async function finalizarCobrancaPorIdAtendimento(
+  db: Db,
+  idAtendimento: string,
+  descontoRaw?: unknown,
+): Promise<number> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+
+  const rows = await db
+    .select()
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, id))
+    .orderBy(asc(atendimentos.id));
+
+  if (rows.length === 0) return 0;
+
+  let descontoStr = '';
+  const trimmed = String(descontoRaw ?? '').trim();
+  if (trimmed) {
+    const n = toNumberPt(trimmed);
+    if (n === null || n < 0) {
+      throw new Error(
+        'Desconto inválido. Use valor em reais (ex.: 10 ou 10,50 ou R$ 10,00).',
+      );
+    }
+    if (n > 0) {
+      descontoStr = formatMoedaReciboPt(n);
+    }
+  }
+
+  let atualizadas = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const patch: {
+      cobrancaStatus: string;
+      pagamentoStatus: string;
+      desconto: string;
+      descricao?: string;
+    } = {
+      cobrancaStatus: 'finalizada',
+      pagamentoStatus: 'pendente',
+      desconto: descontoStr,
+    };
+
+    if (descontoStr && i === 0) {
+      const baseDesc = String(r.descricao ?? '').trim();
+      const suffix = `Desconto: ${descontoStr}`;
+      if (!baseDesc.includes('Desconto:')) {
+        patch.descricao = baseDesc ? `${baseDesc} — ${suffix}` : suffix;
+      }
+    }
+
+    await db.update(atendimentos).set(patch).where(eq(atendimentos.id, r.id));
+    atualizadas += 1;
+  }
+
+  return atualizadas;
+}
+
+/** Remove todas as linhas com o mesmo `ID Atendimento`. */
+export async function excluirAtendimentoPorIdAtendimento(
   db: Db,
   idAtendimento: string,
 ): Promise<number> {
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
   const rows = await db
-    .update(atendimentos)
-    .set({ cobrancaStatus: 'finalizada' })
+    .delete(atendimentos)
     .where(eq(atendimentos.idAtendimento, id))
+    .returning({ id: atendimentos.id });
+  return rows.length;
+}
+
+const METODOS_PAGAMENTO_OK = new Set(['Dinheiro', 'Pix', 'Cartão']);
+
+/** Confirma pagamento em todas as linhas já finalizadas com o mesmo `ID Atendimento`. */
+export async function confirmarPagamentoPorIdAtendimento(
+  db: Db,
+  idAtendimento: string,
+  metodoPagamento?: string,
+): Promise<number> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+  const metodo = String(metodoPagamento || '').trim();
+  if (!metodo) {
+    throw new Error(
+      'Método de pagamento é obrigatório (Dinheiro, Pix ou Cartão).',
+    );
+  }
+  if (!METODOS_PAGAMENTO_OK.has(metodo)) {
+    throw new Error('Método de pagamento inválido. Use Dinheiro, Pix ou Cartão.');
+  }
+  const rows = await db
+    .update(atendimentos)
+    .set({
+      pagamentoStatus: 'confirmado',
+      pagamentoMetodo: metodo,
+    })
+    .where(
+      and(
+        eq(atendimentos.idAtendimento, id),
+        eq(atendimentos.cobrancaStatus, 'finalizada'),
+      ),
+    )
     .returning({ id: atendimentos.id });
   return rows.length;
 }

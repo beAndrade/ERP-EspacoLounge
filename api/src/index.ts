@@ -6,7 +6,9 @@ import { db, ensureSchemaPatches } from './db';
 import { clientes } from './db/schema';
 import { fail, ok } from './lib/envelope';
 import {
+  confirmarPagamentoPorIdAtendimento,
   createAtendimento,
+  excluirAtendimentoPorIdAtendimento,
   finalizarCobrancaPorIdAtendimento,
   listAtendimentosRaw,
 } from './services/atendimentos-domain';
@@ -35,13 +37,19 @@ function corsOrigins(): string[] | true {
 
 await ensureSchemaPatches();
 
-const bodyFinalizar = t.Object({ id_atendimento: t.String() });
+const bodyFinalizar = t.Object({
+  id_atendimento: t.String(),
+  desconto: t.Optional(t.String()),
+});
 
-async function execFinalizarCobranca(body: { id_atendimento?: string }) {
+async function execFinalizarCobranca(body: {
+  id_atendimento?: string;
+  desconto?: string;
+}) {
   try {
     const id = String(body.id_atendimento || '').trim();
     if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
-    const n = await finalizarCobrancaPorIdAtendimento(db, id);
+    const n = await finalizarCobrancaPorIdAtendimento(db, id, body.desconto);
     if (!n) {
       return fail(
         'NOT_FOUND',
@@ -49,6 +57,44 @@ async function execFinalizarCobranca(body: { id_atendimento?: string }) {
       );
     }
     return ok({ atualizadas: n });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return fail('SERVER', msg);
+  }
+}
+
+async function execConfirmarPagamento(body: {
+  id_atendimento?: string;
+  metodo?: string;
+}) {
+  try {
+    const id = String(body.id_atendimento || '').trim();
+    if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
+    const metodo =
+      body.metodo != null ? String(body.metodo).trim() : undefined;
+    const n = await confirmarPagamentoPorIdAtendimento(db, id, metodo);
+    if (!n) {
+      return fail(
+        'NOT_FOUND',
+        'Nenhuma linha finalizada encontrada para confirmar pagamento',
+      );
+    }
+    return ok({ atualizadas: n });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return fail('SERVER', msg);
+  }
+}
+
+async function execExcluirAtendimento(body: { id_atendimento?: string }) {
+  try {
+    const id = String(body.id_atendimento || '').trim();
+    if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
+    const n = await excluirAtendimentoPorIdAtendimento(db, id);
+    if (!n) {
+      return fail('NOT_FOUND', 'Nenhuma linha encontrada para excluir');
+    }
+    return ok({ removidas: n });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return fail('SERVER', msg);
@@ -155,10 +201,15 @@ const app = new Elysia({ adapter: node() })
   )
   .get('/api/atendimentos', async ({ query }) => {
     try {
+      const q = query as Record<string, string | undefined>;
+      const idAt = String(
+        q.idAtendimento ?? q.id_atendimento ?? '',
+      ).trim();
       const items = await listAtendimentosRaw(
         db,
         query.dataInicio,
         query.dataFim,
+        idAt || undefined,
       );
       return ok({ items });
     } catch (e) {
@@ -171,11 +222,30 @@ const app = new Elysia({ adapter: node() })
     const qAcao = String(query?.acao ?? '').trim().toLowerCase();
     const bAcao = String(b.acao ?? '').trim().toLowerCase();
     const isFinalizar = qAcao === 'finalizar' || bAcao === 'finalizar';
+    const isConfirmarPagamento =
+      qAcao === 'confirmar-pagamento' || bAcao === 'confirmar-pagamento';
+    const isExcluir = qAcao === 'excluir' || bAcao === 'excluir';
     if (isFinalizar) {
       const idAt = String(
         b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
       ).trim();
-      return execFinalizarCobranca({ id_atendimento: idAt });
+      const desconto =
+        b.desconto != null ? String(b.desconto) : undefined;
+      return execFinalizarCobranca({ id_atendimento: idAt, desconto });
+    }
+    if (isConfirmarPagamento) {
+      const idAt = String(
+        b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
+      ).trim();
+      const metodo =
+        b.metodo != null ? String(b.metodo).trim() : undefined;
+      return execConfirmarPagamento({ id_atendimento: idAt, metodo });
+    }
+    if (isExcluir) {
+      const idAt = String(
+        b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
+      ).trim();
+      return execExcluirAtendimento({ id_atendimento: idAt });
     }
     try {
       const result = await createAtendimento(db, body as never);

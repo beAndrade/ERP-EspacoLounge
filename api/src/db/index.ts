@@ -20,4 +20,14 @@ export async function ensureSchemaPatches(): Promise<void> {
       'ALTER TABLE "atendimentos" ADD COLUMN IF NOT EXISTS "cobranca_status" text',
     ),
   );
+  await db.execute(
+    sql.raw(
+      'ALTER TABLE "atendimentos" ADD COLUMN IF NOT EXISTS "pagamento_status" text',
+    ),
+  );
+  await db.execute(
+    sql.raw(
+      'ALTER TABLE "atendimentos" ADD COLUMN IF NOT EXISTS "pagamento_metodo" text',
+    ),
+  );
 }
