@@ -1,9 +1,19 @@
+import type { AtendimentoListaItem } from '../models/api.models';
+
 /** Data API (AAAA-MM-DD) → dd-mm-aaaa para exibição */
 export function dataDdMmAaaa(ymd: string): string {
   const s = (ymd || '').trim();
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
   if (!m) return s || '—';
   return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+/** Data API (AAAA-MM-DD) → dd/mm/aaaa (cards Atendimentos, etc.) */
+export function dataDdMmBarraAaaa(ymd: string): string {
+  const s = (ymd || '').trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return s || '—';
+  return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
 export function toDdMmYyyy(d: Date): string {
@@ -76,4 +86,74 @@ export function valorMonetarioParaNumero(v: unknown): number | null {
 
   const n = parseFloat(t.replace(/[^\d.-]/g, ''));
   return Number.isFinite(n) ? n : null;
+}
+
+/** Prioridade na ordenação (igual aos cards em Atendimentos). */
+export function linhaSortPriorityAtendimento(l: AtendimentoListaItem): number {
+  const t = (l.tipo || '').trim().toLowerCase();
+  const et = (l.etapa || '').trim();
+  if ((t === 'pacote' || t === 'mega') && !et) return 0;
+  if (t === 'pacote' || t === 'mega') return 1;
+  return 2;
+}
+
+/**
+ * Ordena linhas do mesmo atendimento in-place (cabeça Pacote/Mega sem etapa primeiro, etc.).
+ * Usado nos cards e ao pré-preencher edição em Novo atendimento.
+ */
+export function ordenarLinhasAtendimentoInPlace(
+  linhas: AtendimentoListaItem[],
+): void {
+  linhas.sort((x, y) => {
+    const px = linhaSortPriorityAtendimento(x);
+    const py = linhaSortPriorityAtendimento(y);
+    if (px !== py) return px - py;
+    const ex = (x.etapa || '').trim();
+    const ey = (y.etapa || '').trim();
+    if (ex && ey) return ex.localeCompare(ey, 'pt-BR');
+    return (x.descricao || '').localeCompare(y.descricao || '', 'pt-BR');
+  });
+}
+
+/** Uma linha de atendimento para listas (cards, modal da agenda, etc.). */
+export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
+  const t = (l.tipo || '').trim().toLowerCase();
+  if (t === 'produto') {
+    const nome = (l.produtoNome || '').trim();
+    const desc = (l.descricao || '').trim();
+    if (nome && desc && desc !== nome) {
+      return `${nome} — ${desc}`;
+    }
+    return nome || desc || '—';
+  }
+  if (t === 'pacote') {
+    const pac = (l.pacote || '').trim();
+    const et = (l.etapa || '').trim();
+    if (!et) {
+      return pac ? `Pacote • ${pac}` : '—';
+    }
+    return et || pac || '—';
+  }
+  if (t === 'mega') {
+    const pac = (l.pacote || '').trim();
+    const et = (l.etapa || '').trim();
+    if (!et) {
+      return pac || '—';
+    }
+    return et || pac || '—';
+  }
+  if (t === 'serviço') {
+    const nome = (l.servicosRef || '').trim();
+    const tam = (l.tamanho || '').trim();
+    if (nome && tam) {
+      return `${nome} — ${tam}`;
+    }
+    return nome || (l.descricao || '').trim() || '—';
+  }
+  const nomeServ = (l.servicosRef || '').trim();
+  const tamServ = (l.tamanho || '').trim();
+  if (nomeServ && tamServ) {
+    return `${nomeServ} — ${tamServ}`;
+  }
+  return (l.descricao || '').trim() || '—';
 }

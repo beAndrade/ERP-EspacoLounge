@@ -116,10 +116,14 @@ export class SheetsApiService {
   listAgendamentos(
     dataInicio?: string,
     dataFim?: string,
+    idAtendimento?: string,
   ): Observable<AtendimentoListaItem[]> {
     let params = new HttpParams();
     if (dataInicio) params = params.set('dataInicio', dataInicio);
     if (dataFim) params = params.set('dataFim', dataFim);
+    if (idAtendimento?.trim()) {
+      params = params.set('idAtendimento', idAtendimento.trim());
+    }
     return this.http
       .get<ApiResponse<{ items: Record<string, unknown>[] }>>(
         this.url('/api/atendimentos'),
@@ -173,12 +177,46 @@ export class SheetsApiService {
   }
 
   /** Marca o atendimento (todas as linhas com o mesmo id) como pronto para cobrança. */
-  finalizarCobranca(idAtendimento: string): Observable<{ atualizadas: number }> {
+  finalizarCobranca(
+    idAtendimento: string,
+    descontoReais?: string,
+  ): Observable<{ atualizadas: number }> {
     const params = new HttpParams().set('acao', 'finalizar');
+    const body: { id_atendimento: string; desconto?: string } = {
+      id_atendimento: idAtendimento,
+    };
+    const d = String(descontoReais ?? '').trim();
+    if (d) body.desconto = d;
     return this.http
       .post<ApiResponse<{ atualizadas: number }>>(
         this.url('/api/atendimentos'),
-        { id_atendimento: idAtendimento },
+        body,
+        { params },
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  confirmarPagamento(
+    idAtendimento: string,
+    metodoPagamento: string,
+  ): Observable<{ atualizadas: number }> {
+    const params = new HttpParams().set('acao', 'confirmar-pagamento');
+    const met = String(metodoPagamento || '').trim();
+    return this.http
+      .post<ApiResponse<{ atualizadas: number }>>(
+        this.url('/api/atendimentos'),
+        { id_atendimento: idAtendimento, metodo: met },
+        { params },
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  excluirAtendimento(idAtendimento: string): Observable<{ removidas: number }> {
+    const params = new HttpParams().set('acao', 'excluir');
+    return this.http
+      .post<ApiResponse<{ removidas: number }>>(
+        this.url('/api/atendimentos'),
+        { id_atendimento: idAtendimento, acao: 'excluir' },
         { params },
       )
       .pipe(map((raw) => this.unwrap(raw)));
@@ -219,14 +257,67 @@ export class SheetsApiService {
         ? null
         : String(cs).trim() || null;
 
+    const ps = raw['pagamento_status'];
+    const pagamentoStatus =
+      ps === undefined || ps === null
+        ? null
+        : String(ps).trim() || null;
+
+    const pagamentoMetodo = this.pickPagamentoMetodoFromRow(raw);
+
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
       data: this.formatDataCell(raw['Data']),
       nomeCliente: String(raw['Nome Cliente'] ?? '').trim(),
+      idCliente: String(raw['ID Cliente'] ?? '').trim() || null,
+      tipo: tipo ? tipo : null,
+      produtoNome: produto ? produto : null,
+      servicosRef: servicos || null,
+      tamanho: String(raw['Tamanho'] ?? '').trim() || null,
+      profissional: String(raw['Profissional'] ?? '').trim() || null,
+      pacote: pacote || null,
+      etapa: etapa || null,
       descricao,
       valor: raw['Valor'],
+      desconto: String(raw['Desconto'] ?? '').trim() || null,
       cobrancaStatus,
+      pagamentoStatus,
+      pagamentoMetodo,
     };
+  }
+
+  /** Lê método de pagamento gravado na linha (várias chaves possíveis na API / planilha). */
+  private pickPagamentoMetodoFromRow(
+    raw: Record<string, unknown>,
+  ): string | null {
+    const tryKeys = [
+      'pagamento_metodo',
+      'pagamentoMetodo',
+      'Método Pagamento',
+      'Metodo Pagamento',
+      'Metodo pagamento',
+      'Pagamento Metodo',
+    ] as const;
+    for (const k of tryKeys) {
+      const v = raw[k];
+      if (v !== undefined && v !== null && String(v).trim()) {
+        return String(v).trim();
+      }
+    }
+    for (const k of Object.keys(raw)) {
+      const nk = k.replace(/\s+/g, '').toLowerCase();
+      if (
+        nk === 'pagamentometodo' ||
+        nk === 'metodopagamento' ||
+        nk === 'metodopagamentoconfirmado'
+      ) {
+        const v = raw[k];
+        if (v !== undefined && v !== null && String(v).trim()) {
+          return String(v).trim();
+        }
+      }
+    }
+    return null;
   }
 
   private formatDataCell(v: unknown): string {

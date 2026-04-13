@@ -32,11 +32,33 @@ export interface AtendimentoListaItem {
   /** Sempre `AAAA-MM-DD` (para ordenar); na tela usa-se formato dia-mês-ano. */
   data: string;
   nomeCliente: string;
+  /** ID do cliente (aba Clientes), para pré-preencher “Novo atendimento”. */
+  idCliente?: string | null;
+  /** Coluna Tipo (Serviço, Produto, Mega, …). */
+  tipo?: string | null;
+  /** Coluna Produto quando tipo Produto. */
+  produtoNome?: string | null;
+  /** Coluna Serviços (nome gravado na linha). */
+  servicosRef?: string | null;
+  /** Coluna Tamanho. */
+  tamanho?: string | null;
+  /** Coluna Profissional. */
+  profissional?: string | null;
+  /** Coluna Pacote. */
+  pacote?: string | null;
+  /** Coluna Etapa. */
+  etapa?: string | null;
   /** Texto exibido (API já enriquece Pacote, colunas P/Q, etc.). */
   descricao: string;
   valor: unknown;
+  /** Coluna Desconto (ex.: após finalizar cobrança). */
+  desconto?: string | null;
   /** `finalizada` = marcado em “Finalizar serviço” (pronto para cobrança). */
   cobrancaStatus?: string | null;
+  /** Após finalizar: `pendente` até confirmar; `confirmado` quando pago. */
+  pagamentoStatus?: string | null;
+  /** Preenchido ao confirmar pagamento (Dinheiro, Pix, Cartão). */
+  pagamentoMetodo?: string | null;
 }
 
 export interface AtendimentoCriadoResumo {
@@ -110,7 +132,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Pacote';
       cliente_id: string;
       data: string;
-      profissional: string;
+      profissional?: string;
       pacote: string;
       etapas: AtendimentoEtapaPayload[];
       observacao?: string;
@@ -119,7 +141,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Produto';
       cliente_id: string;
       data: string;
-      profissional: string;
+      profissional?: string;
       produto: string;
       quantidade: number;
       observacao?: string;
