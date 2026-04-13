@@ -4,7 +4,9 @@
 </div>
 
 <p class="hint">
-  Visão rápida em <strong>cards</strong> — um card por cliente no dia. Toque no card para ver cada serviço.
+  Visão rápida em <strong>cards</strong> — um card por atendimento no dia. Toque no
+  <strong>título de cada bloco</strong> para mostrar ou ocultar os cartões; toque no
+  card para ver cada linha.
 </p>
 
 <div class="dia-toggle" role="group" aria-label="Dia a mostrar">
@@ -37,120 +39,250 @@
   <p class="hint">Nenhum atendimento para {{ tituloPeriodo().toLowerCase() }}.</p>
 }
 
-@if (!carregando && grupos.length > 0) {
-  <ul class="cards" aria-label="Atendimentos do dia">
-    @for (g of grupos; track g.id) {
-      <li class="card-wrap">
-        @if (g.linhas.length === 1) {
-          <div class="card card--static">
-            <span class="card-data">{{ dataDdMmAaaa(g.data) }}</span>
-            <span class="card-headline">
-              <span class="card-nome">{{ g.nomeCliente }}</span>
-              @if (cobrancaFinalizada(g)) {
-                <span class="badge-cobranca">Cobrança ok</span>
-              } @else {
-                <span class="badge-aberto">{{ statusCobrancaLabel(g) }}</span>
-              }
-            </span>
-            <span class="card-desc">{{ resumoCard(g) }}</span>
-            <span class="card-valor">
-              @if (g.valorTotal !== null) {
-                {{ g.valorTotal | number: '1.2-2' }}
-              } @else {
-                —
-              }
-            </span>
-          </div>
-          <div class="card-acoes">
-            @if (!cobrancaFinalizada(g)) {
-              <button
-                type="button"
-                class="btn-finalizar"
-                [disabled]="finalizandoIdAt === g.linhas[0].id"
-                (click)="finalizar(g, $event)"
-              >
-                @if (finalizandoIdAt === g.linhas[0].id) {
-                  A guardar…
-                } @else {
-                  Finalizar serviço
-                }
-              </button>
-            } @else {
-              <p class="hint-done">Serviço finalizado — pode cobrar ao cliente.</p>
-            }
-          </div>
+@if (!carregando && !erro) {
+  @for (sec of secoes(); track sec.id) {
+    <section
+      class="bloco-grupos"
+      [class.bloco-grupos--collapsed]="!isSecaoExpandida(sec.id)"
+      [attr.aria-label]="sec.titulo"
+    >
+      <h2 class="bloco-grupos__titulo">
+        <button
+          type="button"
+          class="bloco-grupos__trigger"
+          [id]="secaoTriggerId(sec.id)"
+          [attr.aria-expanded]="isSecaoExpandida(sec.id)"
+          [attr.aria-controls]="secaoPanelId(sec.id)"
+          (click)="toggleSecao(sec.id)"
+        >
+          <span class="bloco-grupos__titulo-text">{{ sec.titulo }}</span>
+          <span class="bloco-grupos__contagem">{{ sec.lista.length }}</span>
+          <span class="bloco-grupos__chevron" aria-hidden="true">▼</span>
+        </button>
+      </h2>
+      <div
+        class="bloco-grupos__panel"
+        [id]="secaoPanelId(sec.id)"
+        role="region"
+        [attr.aria-labelledby]="secaoTriggerId(sec.id)"
+        [hidden]="!isSecaoExpandida(sec.id)"
+      >
+        @if (sec.lista.length === 0) {
+          <p class="bloco-grupos__vazio">Nenhum atendimento neste grupo.</p>
         } @else {
-          <button
-            type="button"
-            class="card"
-            [class.card--open]="isExpandido(g)"
-            [attr.aria-expanded]="isExpandido(g)"
-            (click)="toggleGrupo(g.id)"
-          >
-            <span class="card-data">{{ dataDdMmAaaa(g.data) }}</span>
-            <span class="card-headline">
-              <span class="card-nome">{{ g.nomeCliente }}</span>
-              @if (cobrancaFinalizada(g)) {
-                <span class="badge-cobranca">Cobrança ok</span>
-              } @else {
-                <span class="badge-aberto">{{ statusCobrancaLabel(g) }}</span>
-              }
-            </span>
-            <span class="card-desc">{{ resumoCard(g) }}</span>
-            <span class="card-valor">
-              @if (g.valorTotal !== null) {
-                {{ g.valorTotal | number: '1.2-2' }}
-              } @else {
-                —
-              }
-            </span>
-            <span class="card-hint" aria-hidden="true">
-              {{ isExpandido(g) ? 'Recolher' : 'Ver serviços' }}
-            </span>
-          </button>
-          @if (isExpandido(g)) {
-            <div
-              class="card-detalhes"
-              role="region"
-              [attr.aria-label]="'Serviços de ' + g.nomeCliente"
-            >
-              <p class="detalhes-titulo">Serviços realizados</p>
-              <ul class="detalhes-lista">
-                @for (linha of g.linhas; track $index) {
-                  <li>
-                    <span class="detalhes-desc">{{ linha.descricao || '—' }}</span>
-                    <span class="detalhes-valor">
-                      @if (valorNum(linha.valor) !== null) {
-                        {{ valorNum(linha.valor)! | number: '1.2-2' }}
-                      } @else {
-                        —
-                      }
-                    </span>
-                  </li>
-                }
-              </ul>
-              <div class="card-acoes card-acoes--dentro">
-                @if (!cobrancaFinalizada(g)) {
+          <ul class="cards" [attr.aria-label]="'Atendimentos: ' + sec.titulo">
+            @for (g of sec.lista; track g.id) {
+              <li class="card-wrap">
+                <div class="card-top">
+                  <div class="card-data-row">
+                    <span class="card-data">{{ dataDdMmBarraAaaa(g.data) }}</span>
+                    @if (!cobrancaFinalizada(g) && idClienteParaNovoServico(g)) {
+                      <a
+                        class="btn primary btn-servicos-extra"
+                        [routerLink]="['/agenda/novo']"
+                        [queryParams]="queryParamsNovoServicoMesmoCliente(g)"
+                        [attr.aria-label]="
+                          'Novo atendimento de serviço para ' + g.nomeCliente
+                        "
+                      >
+                        + Serviços
+                      </a>
+                    }
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="card"
+                  [class.card--open]="isExpandido(g)"
+                  [attr.aria-expanded]="isExpandido(g)"
+                  (click)="toggleGrupo(g.id)"
+                >
+                  <span class="card-nome">{{ g.nomeCliente }}</span>
+                  <span class="card-desc">{{ resumoCard(g) }}</span>
+                  <span
+                    class="status-pill"
+                    [class.status-pill--aberto]="!cobrancaFinalizada(g)"
+                    [class.status-pill--pendente]="
+                      cobrancaFinalizada(g) && !pagamentoConfirmado(g)
+                    "
+                    [class.status-pill--pago]="pagamentoConfirmado(g)"
+                  >
+                    @if (!cobrancaFinalizada(g)) {
+                      {{ statusPillLabel(g) }}
+                    } @else if (!pagamentoConfirmado(g)) {
+                      <span class="status-pill__icon" aria-hidden="true">⚠</span>
+                      <span>{{ statusPillLabel(g) }}</span>
+                    } @else {
+                      <span class="status-pill__icon" aria-hidden="true">✓</span>
+                      <span>{{ statusPillLabel(g) }}</span>
+                    }
+                  </span>
+                  <span class="card-valor">
+                    @if (valorCardExibicao(g) !== null) {
+                      R$ {{ valorCardExibicao(g)! | number: '1.2-2' }}
+                    } @else {
+                      —
+                    }
+                  </span>
+                  <span class="card-hint" aria-hidden="true">
+                    {{ isExpandido(g) ? 'Recolher' : 'Ver detalhes' }}
+                  </span>
+                </button>
+                <div class="card-toolbar" (click)="$event.stopPropagation()">
                   <button
                     type="button"
-                    class="btn-finalizar"
-                    [disabled]="finalizandoIdAt === g.linhas[0].id"
-                    (click)="finalizar(g, $event)"
+                    class="btn-text"
+                    (click)="editar(g, $event)"
                   >
-                    @if (finalizandoIdAt === g.linhas[0].id) {
-                      A guardar…
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-text btn-text--danger"
+                    [disabled]="excluindoIdAt === g.linhas[0].id"
+                    (click)="excluir(g, $event)"
+                  >
+                    @if (excluindoIdAt === g.linhas[0].id) {
+                      Excluindo…
                     } @else {
-                      Finalizar serviço
+                      Excluir
                     }
                   </button>
-                } @else {
-                  <p class="hint-done">Serviço finalizado — pode cobrar ao cliente.</p>
+                </div>
+                @if (isExpandido(g)) {
+                  <div
+                    class="card-detalhes"
+                    role="region"
+                    [attr.aria-label]="'Linhas de ' + g.nomeCliente"
+                  >
+                    <p class="detalhes-titulo">Itens do atendimento</p>
+                    <ul class="detalhes-lista">
+                      @for (linha of g.linhas; track $index) {
+                        <li>
+                          <span class="detalhes-desc">{{
+                            linhaDetalheTexto(linha)
+                          }}</span>
+                          <span class="detalhes-valor">
+                            @if (valorNum(linha.valor) !== null) {
+                              R$ {{ valorNum(linha.valor)! | number: '1.2-2' }}
+                            } @else {
+                              —
+                            }
+                          </span>
+                        </li>
+                      }
+                      @if (descontoExibicaoNum(g); as dsc) {
+                        <li class="detalhes-lista__desconto">
+                          <span class="detalhes-desc">Desconto</span>
+                          <span class="detalhes-valor">
+                            − R$ {{ dsc | number: '1.2-2' }}
+                          </span>
+                        </li>
+                      }
+                      @if (mostrarLinhaTotalComDesconto(g)) {
+                        <li class="detalhes-lista__total">
+                          <span class="detalhes-desc">Total</span>
+                          <span class="detalhes-valor">
+                            R$
+                            {{
+                              totalLinhaExibicao(g)! | number: '1.2-2'
+                            }}
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                    <div class="card-acoes card-acoes--dentro">
+                      @if (!cobrancaFinalizada(g)) {
+                        <div
+                          class="desconto-cobranca"
+                          (click)="$event.stopPropagation()"
+                        >
+                          <label class="desconto-cobranca__field">
+                            <span>Desconto para o cliente</span>
+                            <div class="desconto-cobranca__row">
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                placeholder="R$ 0,00"
+                                autocomplete="off"
+                                [value]="descontoDraft(g.id)"
+                                (input)="onDescontoDraftInput(g.id, $event)"
+                              />
+                              <button
+                                type="button"
+                                class="btn-desconto-incluir"
+                                [disabled]="
+                                  incluirDescontoDisabled(g) ||
+                                  finalizandoIdAt === g.linhas[0].id
+                                "
+                                (click)="incluirDesconto(g, $event)"
+                              >
+                                Incluir
+                              </button>
+                            </div>
+                          </label>
+                          <button
+                            type="button"
+                            class="btn-desconto-remover"
+                            [disabled]="!temDescontoIncluido(g)"
+                            (click)="removerDesconto(g, $event)"
+                          >
+                            Remover desconto
+                          </button>
+                          
+                        </div>
+                        <button
+                          type="button"
+                          class="btn-finalizar"
+                          [disabled]="finalizandoIdAt === g.linhas[0].id"
+                          (click)="finalizar(g, $event)"
+                        >
+                          @if (finalizandoIdAt === g.linhas[0].id) {
+                            A guardar…
+                          } @else {
+                            Finalizar serviço
+                          }
+                        </button>
+                      } @else if (!pagamentoConfirmado(g)) {
+                        <div
+                          class="metodo-pagamento"
+                          (click)="$event.stopPropagation()"
+                        >
+                          <label class="metodo-pagamento__field">
+                            <span>Método de pagamento</span>
+                            <select
+                              class="metodo-pagamento__select"
+                              [value]="metodoPagamentoSelecionado(g)"
+                              (change)="onMetodoPagamentoChange(g, $event)"
+                            >
+                              <option value="">Selecione…</option>
+                              @for (m of metodosPagamento; track m) {
+                                <option [value]="m">{{ m }}</option>
+                              }
+                            </select>
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          class="btn-confirmar-pagamento"
+                          [disabled]="confirmarPagamentoDisabled(g)"
+                          (click)="confirmarPagamento(g, $event)"
+                        >
+                          @if (confirmandoPagamentoIdAt === g.linhas[0].id) {
+                            A guardar…
+                          } @else {
+                            Confirmar pagamento
+                          }
+                        </button>
+                      }
+                    </div>
+                  </div>
                 }
-              </div>
-            </div>
-          }
+              </li>
+            }
+          </ul>
         }
-      </li>
-    }
-  </ul>
+      </div>
+    </section>
+  }
 }
