@@ -42,8 +42,10 @@ export interface AtendimentoListaItem {
   servicosRef?: string | null;
   /** Coluna Tamanho. */
   tamanho?: string | null;
-  /** Coluna Profissional. */
+  /** Nome do profissional (resolvido a partir de `folha` na API). */
   profissional?: string | null;
+  /** ID na Folha (`atendimentos.profissional_id`). */
+  profissional_id?: number | null;
   /** Coluna Pacote. */
   pacote?: string | null;
   /** Coluna Etapa. */
@@ -97,6 +99,12 @@ export interface CabeloCatalogoItem {
   valor_base: unknown;
 }
 
+/** Linha da aba Folha (`folha.id` + nome para exibição). */
+export interface ProfissionalListaItem {
+  id: number;
+  nome: string;
+}
+
 export type TipoAtendimento =
   | 'Serviço'
   | 'Mega'
@@ -106,7 +114,7 @@ export type TipoAtendimento =
 
 export interface AtendimentoEtapaPayload {
   etapa: string;
-  profissional: string;
+  profissional_id: number;
 }
 
 /** União de payloads para createAgendamento / createAtendimento. */
@@ -115,7 +123,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Serviço';
       cliente_id: string;
       data: string;
-      profissional: string;
+      profissional_id: number;
       servico_id: string;
       tamanho?: string;
       observacao?: string;
@@ -132,7 +140,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Pacote';
       cliente_id: string;
       data: string;
-      profissional?: string;
+      profissional_id?: number | null;
       pacote: string;
       etapas: AtendimentoEtapaPayload[];
       observacao?: string;
@@ -141,7 +149,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Produto';
       cliente_id: string;
       data: string;
-      profissional?: string;
+      profissional_id?: number | null;
       produto: string;
       quantidade: number;
       observacao?: string;
@@ -150,7 +158,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Cabelo';
       cliente_id: string;
       data: string;
-      profissional: string;
+      profissional_id: number;
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;

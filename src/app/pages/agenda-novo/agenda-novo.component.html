@@ -91,9 +91,9 @@
             <label class="servico-row__field">
               <span>Profissional</span>
               <select formControlName="profissional" required>
-                <option value="">Selecione…</option>
-                @for (p of profissionais; track p) {
-                  <option [value]="p">{{ p }}</option>
+                <option [ngValue]="null">Selecione…</option>
+                @for (p of profissionais; track p.id) {
+                  <option [ngValue]="p.id">{{ p.nome }}</option>
                 }
               </select>
             </label>
@@ -140,6 +140,19 @@
       }
       @if (tipoAtual === 'Pacote' && pacotes.length === 0) {
         <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
+      }
+      @if (tipoAtual === 'Pacote') {
+        <p class="hint">
+          O pacote (ex.: 1 mecha, 2 mechas) define o <strong>valor cobrado</strong> na primeira linha.
+          Essa linha <strong>não precisa de profissional</strong>. A comissão é por <strong>etapa</strong>
+          — preencha o profissional em cada etapa abaixo.
+        </p>
+      }
+      @if (tipoAtual === 'Mega') {
+        <p class="hint">
+          No <strong>Mega</strong> cada linha gravada é uma <strong>etapa</strong> com valor próprio;
+          escolha o profissional em cada etapa (comissão por etapa).
+        </p>
       }
     }
 
@@ -295,9 +308,9 @@
       <label>
         <span>Profissional</span>
         <select formControlName="profissional" required>
-          <option value="">Selecione…</option>
-          @for (p of profissionais; track p) {
-            <option [value]="p">{{ p }}</option>
+          <option [ngValue]="null">Selecione…</option>
+          @for (p of profissionais; track p.id) {
+            <option [ngValue]="p.id">{{ p.nome }}</option>
           }
         </select>
       </label>
@@ -328,9 +341,9 @@
             <label>
               <span>Profissional</span>
               <select formControlName="profissional" required>
-                <option value="">Selecione…</option>
-                @for (p of profissionais; track p) {
-                  <option [value]="p">{{ p }}</option>
+                <option [ngValue]="null">Selecione…</option>
+                @for (p of profissionais; track p.id) {
+                  <option [ngValue]="p.id">{{ p.nome }}</option>
                 }
               </select>
             </label>

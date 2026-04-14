@@ -11,6 +11,7 @@ import {
   CreateAtendimentoPayload,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
+  ProfissionalListaItem,
   RegraMegaItem,
   Servico,
 } from '../models/api.models';
@@ -104,9 +105,11 @@ export class SheetsApiService {
       );
   }
 
-  listProfissionais(): Observable<string[]> {
+  listProfissionais(): Observable<ProfissionalListaItem[]> {
     return this.http
-      .get<ApiResponse<{ items: string[] }>>(this.url('/api/profissionais'))
+      .get<ApiResponse<{ items: ProfissionalListaItem[] }>>(
+        this.url('/api/profissionais'),
+      )
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.items),
@@ -265,6 +268,10 @@ export class SheetsApiService {
 
     const pagamentoMetodo = this.pickPagamentoMetodoFromRow(raw);
 
+    const profissional_id = this.parseProfissionalIdCell(
+      raw['profissional_id'] ?? raw['Profissional ID'],
+    );
+
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
       data: this.formatDataCell(raw['Data']),
@@ -275,6 +282,7 @@ export class SheetsApiService {
       servicosRef: servicos || null,
       tamanho: String(raw['Tamanho'] ?? '').trim() || null,
       profissional: String(raw['Profissional'] ?? '').trim() || null,
+      profissional_id,
       pacote: pacote || null,
       etapa: etapa || null,
       descricao,
@@ -318,6 +326,15 @@ export class SheetsApiService {
       }
     }
     return null;
+  }
+
+  private parseProfissionalIdCell(v: unknown): number | null {
+    if (v === undefined || v === null || v === '') return null;
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
+      return Math.trunc(v);
+    }
+    const n = parseInt(String(v).trim(), 10);
+    return !Number.isNaN(n) && n > 0 ? n : null;
   }
 
   private formatDataCell(v: unknown): string {

@@ -18,6 +18,7 @@ import {
   CreateAtendimentoPayload,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
+  ProfissionalListaItem,
   RegraMegaItem,
   Servico,
   TipoAtendimento,
@@ -139,8 +140,8 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
   pacotes: PacoteCatalogoItem[] = [];
   produtos: ProdutoCatalogoItem[] = [];
   cabelos: CabeloCatalogoItem[] = [];
-  /** Nomes da coluna Profissional (aba Folha). */
-  profissionais: string[] = [];
+  /** Linhas da Folha (`id` + nome) para selects e `profissional_id` na API. */
+  profissionais: ProfissionalListaItem[] = [];
 
   carregandoListas = true;
   salvando = false;
@@ -165,7 +166,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
     ]),
     cliente_id: ['', Validators.required],
     data: ['', Validators.required],
-    profissional: [''],
+    profissional: [null as number | null],
     observacao: [''],
     pacote: [''],
     valor_cabelo: [''],
@@ -189,7 +190,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       produtos: this.api.listProdutos(),
       cabelos: this.api.listCabelos(),
       profissionais: this.api.listProfissionais().pipe(
-        catchError(() => of([] as string[])),
+        catchError(() => of([] as ProfissionalListaItem[])),
       ),
     }).subscribe({
       next: (r) => {
@@ -263,6 +264,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         pacote: '',
         valor_cabelo: '',
         detalhes_cabelo: '',
+        profissional: null,
       });
       this.ajustarArraysPorTipo();
       this.aplicarValidadoresPorTipo();
@@ -615,11 +617,13 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
 
   adicionarEtapa(): void {
     this.etapasArray.push(this.novoGrupoEtapa());
+    this.aplicarValidadoresPorTipo();
   }
 
   removerEtapa(i: number): void {
     if (this.etapasArray.length <= 1) return;
     this.etapasArray.removeAt(i);
+    this.aplicarValidadoresPorTipo();
   }
 
   salvar(): void {
@@ -687,6 +691,19 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
     return String(nomePacote || '').trim();
   }
 
+  /** ID Folha para o form a partir da linha da API (id gravado ou nome legado). */
+  private profissionalValorForm(row: AtendimentoListaItem): number | null {
+    const rid = row.profissional_id;
+    if (rid != null && Number(rid) > 0) {
+      const id = Number(rid);
+      if (this.profissionais.some((p) => p.id === id)) return id;
+    }
+    const nome = (row.profissional || '').trim();
+    if (!nome) return null;
+    const hit = this.profissionais.find((p) => p.nome.trim() === nome);
+    return hit ? hit.id : null;
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
@@ -729,7 +746,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
           tipo: 'Produto',
           cliente_id: l0.idCliente || '',
           data: dataYmd,
-          profissional: '',
+          profissional: null,
           observacao: stripQtdSuffixObservacao(l0.descricao || ''),
           pacote: '',
           valor_cabelo: '',
@@ -747,7 +764,10 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
             tamanho: this.fb.nonNullable.control<string>(
               (row.tamanho || 'Curto').trim() || 'Curto',
             ),
-            profissional: [row.profissional || '', Validators.required],
+            profissional: [
+              this.profissionalValorForm(row),
+              Validators.required,
+            ],
           }),
         );
       }
@@ -769,7 +789,10 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         this.etapasArray.push(
           this.fb.group({
             etapa: [row.etapa || '', Validators.required],
-            profissional: [row.profissional || '', Validators.required],
+            profissional: [
+              this.profissionalValorForm(row),
+              Validators.required,
+            ],
           }),
         );
       }
@@ -794,7 +817,10 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         this.etapasArray.push(
           this.fb.group({
             etapa: [row.etapa || '', Validators.required],
-            profissional: [row.profissional || '', Validators.required],
+            profissional: [
+              this.profissionalValorForm(row),
+              Validators.required,
+            ],
           }),
         );
       }
@@ -807,7 +833,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
           cliente_id: l0.idCliente || '',
           data: dataYmd,
           pacote: l0.pacote || '',
-          profissional: '',
+          profissional: null,
           observacao: obsMegaPacote,
           valor_cabelo: '',
           detalhes_cabelo: '',
@@ -821,7 +847,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
           tipo: 'Cabelo',
           cliente_id: row.idCliente || '',
           data: dataYmd,
-          profissional: row.profissional || '',
+          profissional: this.profissionalValorForm(row),
           valor_cabelo: this.valorCampoCabeloDeApi(row.valor),
           detalhes_cabelo: row.descricao || '',
           observacao: '',
@@ -879,7 +905,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
   private novoGrupoEtapa(): FormGroup {
     return this.fb.group({
       etapa: ['', Validators.required],
-      profissional: ['', Validators.required],
+      profissional: [null as number | null, Validators.required],
     });
   }
 
@@ -887,7 +913,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
     return this.fb.group({
       servico_id: ['', Validators.required],
       tamanho: this.fb.nonNullable.control<string>('Curto'),
-      profissional: ['', Validators.required],
+      profissional: [null as number | null, Validators.required],
     });
   }
 
@@ -932,10 +958,16 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
   private aplicarValidadoresPorTipo(): void {
     const t = this.tipoAtual;
 
-    const precisaProf = t === 'Cabelo';
-    this.form.controls.profissional.setValidators(
-      precisaProf ? [Validators.required] : [],
-    );
+    /** Só **Cabelo** usa o `profissional` raiz; Mega/Pacote usam profissional por **etapa** (comissão). */
+    const profRoot = this.form.controls.profissional;
+    if (t === 'Cabelo') {
+      profRoot.enable({ emitEvent: false });
+      profRoot.setValidators([Validators.required]);
+    } else {
+      profRoot.clearValidators();
+      profRoot.reset(null, { emitEvent: false });
+      profRoot.disable({ emitEvent: false });
+    }
 
     this.form.controls.pacote.setValidators(
       t === 'Mega' || t === 'Pacote' ? [Validators.required] : [],
@@ -988,12 +1020,14 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       const itens = this.servicosItensArray.getRawValue() as {
         servico_id: string;
         tamanho: string;
-        profissional: string;
+        profissional: number | null;
       }[];
       if (itens.length < 1) return false;
       for (const it of itens) {
         if (!String(it.servico_id ?? '').trim()) return false;
-        if (!String(it.profissional ?? '').trim()) return false;
+        if (it.profissional == null || !(Number(it.profissional) > 0)) {
+          return false;
+        }
       }
       return true;
     }
@@ -1019,7 +1053,8 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       return true;
     }
     if (tipo === 'Cabelo') {
-      if (!String(raw['profissional'] ?? '').trim()) return false;
+      const pid = raw['profissional'];
+      if (pid == null || pid === '' || !(Number(pid) > 0)) return false;
       const v = this.parseValorPt(String(raw['valor_cabelo'] ?? ''));
       return v != null && v > 0;
     }
@@ -1030,8 +1065,8 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
     for (let i = 0; i < this.etapasArray.length; i++) {
       const g = this.etapasArray.at(i);
       const e = String(g.get('etapa')?.value ?? '').trim();
-      const p = String(g.get('profissional')?.value ?? '').trim();
-      if (!e || !p) return false;
+      const p = g.get('profissional')?.value;
+      if (!e || p == null || !(Number(p) > 0)) return false;
     }
     return this.etapasArray.length >= 1;
   }
@@ -1049,19 +1084,20 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       const itens = this.servicosItensArray.getRawValue() as {
         servico_id: string;
         tamanho: string;
-        profissional: string;
+        profissional: number | null;
       }[];
       const out: CreateAtendimentoPayload[] = [];
       for (const it of itens) {
         const servico_id = String(it.servico_id ?? '').trim();
         if (!servico_id) continue;
-        const profissional = String(it.profissional ?? '').trim();
+        const profissional_id = Number(it.profissional);
+        if (!(profissional_id > 0)) continue;
         const svc = this.servicoPorId(servico_id);
         const base = {
           tipo: 'Serviço' as const,
           cliente_id,
           data: dataYmd,
-          profissional,
+          profissional_id,
           servico_id,
           observacao,
         };
@@ -1081,7 +1117,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       const pacote = String(raw['pacote'] ?? '').trim();
       const etapas = this.etapasArray.getRawValue() as {
         etapa: string;
-        profissional: string;
+        profissional: number | null;
       }[];
       return [
         {
@@ -1091,7 +1127,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
           pacote,
           etapas: etapas.map((x) => ({
             etapa: x.etapa.trim(),
-            profissional: x.profissional.trim(),
+            profissional_id: Number(x.profissional),
           })),
           observacao,
         },
@@ -1101,17 +1137,21 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       const pacote = String(raw['pacote'] ?? '').trim();
       const etapas = this.etapasArray.getRawValue() as {
         etapa: string;
-        profissional: string;
+        profissional: number | null;
       }[];
+      const cob = raw['profissional'];
+      const cobId =
+        cob != null && cob !== '' && Number(cob) > 0 ? Number(cob) : undefined;
       return [
         {
           tipo: 'Pacote',
           cliente_id,
           data: dataYmd,
+          ...(cobId != null ? { profissional_id: cobId } : {}),
           pacote,
           etapas: etapas.map((x) => ({
             etapa: x.etapa.trim(),
-            profissional: x.profissional.trim(),
+            profissional_id: Number(x.profissional),
           })),
           observacao,
         },
@@ -1148,7 +1188,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
           tipo: 'Cabelo',
           cliente_id,
           data: dataYmd,
-          profissional: String(raw['profissional'] ?? '').trim(),
+          profissional_id: Number(raw['profissional']),
           valor: v,
           observacao,
           detalhes_cabelo: det || undefined,
