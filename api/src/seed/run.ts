@@ -37,6 +37,7 @@ function pick(
 async function truncateAll() {
   await db.execute(sql.raw(`
     TRUNCATE TABLE
+      movimentacoes,
       atendimentos,
       pagamentos,
       despesas,

@@ -105,6 +105,38 @@ export interface ProfissionalListaItem {
   nome: string;
 }
 
+/** Categoria do razão financeiro (`GET /api/categorias-financeiras`). */
+export interface CategoriaFinanceiraItem {
+  id: number;
+  nome: string;
+  natureza: 'receita' | 'despesa';
+  slug: string;
+  ordem: number;
+}
+
+/** Linha de `movimentacoes` na API Node. */
+export interface MovimentacaoListaItem {
+  id: number;
+  data_mov: string;
+  natureza: 'receita' | 'despesa';
+  valor: string;
+  categoria_id: number;
+  descricao: string | null;
+  id_atendimento: string | null;
+  metodo_pagamento: string | null;
+  origem: string;
+  created_at: string;
+}
+
+/** Resumo diário (`GET /api/caixa/dia?data=`). */
+export interface CaixaDiaResumo {
+  data: string;
+  total_receitas: string;
+  total_despesas: string;
+  saldo_dia: string;
+  receitas_por_metodo: { metodo: string; total: string }[];
+}
+
 export type TipoAtendimento =
   | 'Serviço'
   | 'Mega'

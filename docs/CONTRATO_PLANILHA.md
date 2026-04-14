@@ -159,15 +159,35 @@ Leitura flexível: `Cor`, `Tamanho (cm)` ou `Tamanho`, `Método` ou `Metodo`, `V
 
 ### `Atendimentos` (substitui o modelo antigo “Agendamentos”)
 
-Cabeçalhos da linha 1 (conforme export):
+Cabeçalhos da linha 1 (conforme export; a lista evolui com o produto):
 
-`ID Atendimento`, `Data`, `ID Cliente`, `Nome Cliente`, `Tipo`, `Pacote`, `Etapa`, `Produto`, `Serviços`, `Tamanho`, **`Profissional`** (nome, derivado de `folha` via join), **`profissional_id`** (opcional na exportação; na BD é **`profissional_id` → `folha.id`**), `Valor`, `Valor Manual`, `Comissão`, `Desconto`, `Descrição`, `Descrição Manual`, `Custo`, `Lucro` (+ colunas vazias até o fim da linha).
+`ID Atendimento`, `Data`, **`Início`**, **`Fim`**, `ID Cliente`, `Nome Cliente`, `Tipo`, `Pacote`, `Etapa`, `Produto`, `Serviços`, `Tamanho`, **`Profissional`** (nome, derivado de `folha` via join), **`profissional_id`** (opcional na exportação; na BD é **`profissional_id` → `folha.id`**), `Valor`, `Valor Manual`, `Comissão`, `Desconto`, `Descrição`, `Descrição Manual`, `Custo`, `Lucro` (+ colunas vazias até o fim da linha).
+
+Na **base Postgres** já existem também (podem ou não existir na planilha exportada, conforme versão do ficheiro): **`cobranca_status`**, **`pagamento_status`**, **`pagamento_metodo`**, mapeados para o fluxo receção/cobrança descrito mais abaixo.
 
 **Várias linhas, mesmo `ID Atendimento`:** usado em **Mega** (1 linha por etapa) e **Pacote** (1 linha de cobrança + 1 por etapa).
 
 `**ID Atendimento`:** gerado como `**aaaammdd` + `-` + `ID Cliente`** (ex.: `20260401-CL0001`), usando a **data do atendimento** do payload e o `**cliente_id`**. Todas as linhas do mesmo lançamento (Mega/Pacote) partilham o mesmo ID. *Dois atendimentos no mesmo dia para o mesmo cliente repetem o mesmo ID* — nesse caso trate na planilha ou peça sufixo no futuro.
 
 **Inserção:** cada linha é gravada na **primeira linha em que a coluna `ID Atendimento` está vazia** (a partir da linha 2), em vez de `appendRow` no fim da grelha.
+
+#### Esboço — horário na agenda (`Início` / `Fim`)
+
+Objetivo: suportar **agenda em grelha** (eixo vertical = tempo, eixo horizontal = `profissional_id`) sem abandonar a coluna **`Data`** (dia civil do atendimento, filtro principal atual).
+
+| Conceito | Planilha (cabeçalho sugerido) | Postgres (`atendimentos`) | Regras (esboço) |
+| -------- | ----------------------------- | --------------------------- | ---------------- |
+| Início do slot | `Início` | `inicio` (`timestamptz`, nullable) | Instante em que o serviço **começa** naquela linha. **Opcional** no MVP: células vazias = agenda só por dia, como hoje. |
+| Fim do slot | `Fim` | `fim` (`timestamptz`, nullable) | Instante previsto de **término** (ou fim real, conforme política da app). Deve ser **>= `inicio`** quando ambos preenchidos. |
+| Dia lógico | `Data` | `data` (`date`) | Continua a ser a referência para `listAgendamentos` / `GET /api/atendimentos` por intervalo de dias. Quando `inicio`/`fim` existirem, **`Data`** deve ser o **mesmo dia civil** que `inicio` (timezone da loja ou UTC acordado — fechar na implementação). |
+
+**Mega / Pacote:** cada linha (etapa ou cobrança) pode ter **pares `Início`/`Fim` distintos** por profissional e horário.
+
+**API (Node):** a listagem normalizada deve passar a expor, quando existirem, chaves estáveis em JSON (esboço: `inicio`, `fim` em **ISO 8601**, ex. `2026-05-15T11:00:00-03:00`), além de `data` em `YYYY-MM-DD`.
+
+**Importação / ETL / Google Sheets:** aceitar texto ou datetime nas colunas `Início` e `Fim` com o mesmo espírito que **`Data`** (vários formatos legíveis); células vazias persistem como `NULL` na BD.
+
+**Validação futura (não obrigatória no primeiro passo):** impedir sobreposição de intervalos no mesmo `profissional_id` é regra de **aplicação** ou *constraint* defensiva, não parte mínima deste contrato.
 
 
 | `Tipo` (payload) | Linhas       | Preenchimento principal (script)                                                                                                                                                           |
@@ -179,9 +199,22 @@ Cabeçalhos da linha 1 (conforme export):
 | **Cabelo**       | 1            | `Valor` manual; `Comissão` vazio; `Descrição` = detalhes + observação                                                                                                                      |
 
 
-**Filtro `listAgendamentos`:** compara a coluna `**Data*`* com `dataInicio` / `dataFim` (`YYYY-MM-DD`), aceitando célula como data ou texto compatível.
+**Filtro `listAgendamentos`:** compara a coluna **`Data`** com `dataInicio` / `dataFim` (`YYYY-MM-DD`), aceitando célula como data ou texto compatível. Filtros por intervalo de **hora** (quando `inicio`/`fim` estiverem preenchidos) ficam para extensão da API ou camada de apresentação.
 
-**Resposta normalizada (Agenda / API):** objetos com `id`, `data`, `nomeCliente`, `servicos`, `tamanho`, **`profissional`** (nome), **`profissional_id`** (inteiro = `folha.id`, quando gravado), `valor`, estados de cobrança/pagamento, etc., para telas **Agenda**, **Atendimentos** e futura **agenda visual** (eixo horizontal = `profissional_id`).
+**Resposta normalizada (Agenda / API):** objetos com `id`, `data`, `nomeCliente`, `servicos`, `tamanho`, **`profissional`** (nome), **`profissional_id`** (inteiro = `folha.id`, quando gravado), **`inicio`**, **`fim`** (opcionais; ISO 8601 quando existirem na BD), `valor`, estados de cobrança/pagamento, etc., para telas **Agenda**, **Atendimentos** e **agenda visual** (eixo horizontal = `profissional_id`, posição vertical = intervalo `inicio`–`fim`).
+
+#### Confirmação de pagamento e razão financeira (API Postgres)
+
+Na **API Node** (não no fluxo antigo do Apps Script), ao **confirmar pagamento** (`POST /api/atendimentos` com `acao=confirmar-pagamento` ou equivalente), o servidor:
+
+1. Atualiza, na mesma transação, todas as linhas **`atendimentos`** com o mesmo `ID Atendimento` que já estão com cobrança **`finalizada`**, passando **`pagamento_status`** para **`confirmado`** e gravando **`pagamento_metodo`** (Dinheiro, Pix ou Cartão).
+2. Calcula o **total líquido** do grupo (soma dos valores efetivos das linhas − desconto, alinhado à lógica de finalizar cobrança).
+3. Insere **uma** linha em **`movimentacoes`** (receita, `origem = atendimento_confirmacao`) com esse total, **categoria** derivada do **tipo predominante** entre as linhas (Serviço → `receita_servicos`, Mega → `receita_mega`, Pacote → `receita_pacotes`, Produto → `receita_produtos`, Cabelo → `receita_cabelo`), **desempate** na ordem Pacote > Mega > Serviço > Produto > Cabelo.
+4. A idempotência é garantida por **índice único parcial** em `id_atendimento` para receitas com essa origem: repetições da confirmação **não duplicam** a movimentação.
+
+A resposta de sucesso inclui **`movimentacao_id`** quando foi criada ou reutilizada a receita de confirmação, ou **`null`** quando o total líquido é zero (confirmação de pagamento ainda assim é gravada nos atendimentos).
+
+**Leitura e caixa (fase 1):** `GET /api/categorias-financeiras`, `GET /api/movimentacoes` (filtros opcionais `dataInicio`, `dataFim`, `natureza`), `GET /api/caixa/dia?data=YYYY-MM-DD` (agregação diária a partir de `movimentacoes`). **Lançamento manual:** `POST /api/movimentacoes` com `data_mov`, `natureza`, `valor`, `categoria_id` e campos opcionais.
 
 ---
 

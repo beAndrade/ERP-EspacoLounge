@@ -7,8 +7,11 @@ import {
   AtendimentoCriadoResumo,
   AtendimentoListaItem,
   CabeloCatalogoItem,
+  CaixaDiaResumo,
+  CategoriaFinanceiraItem,
   Cliente,
   CreateAtendimentoPayload,
+  MovimentacaoListaItem,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
   ProfissionalListaItem,
@@ -140,6 +143,46 @@ export class SheetsApiService {
       );
   }
 
+  listCategoriasFinanceiras(): Observable<CategoriaFinanceiraItem[]> {
+    return this.http
+      .get<ApiResponse<{ items: CategoriaFinanceiraItem[] }>>(
+        this.url('/api/categorias-financeiras'),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  listMovimentacoes(params: {
+    dataInicio: string;
+    dataFim: string;
+    natureza?: 'receita' | 'despesa';
+  }): Observable<MovimentacaoListaItem[]> {
+    let hp = new HttpParams()
+      .set('dataInicio', params.dataInicio)
+      .set('dataFim', params.dataFim);
+    if (params.natureza) hp = hp.set('natureza', params.natureza);
+    return this.http
+      .get<ApiResponse<{ items: MovimentacaoListaItem[] }>>(
+        this.url('/api/movimentacoes'),
+        { params: hp },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  getCaixaDia(data: string): Observable<CaixaDiaResumo> {
+    const params = new HttpParams().set('data', data.trim().slice(0, 10));
+    return this.http
+      .get<ApiResponse<CaixaDiaResumo>>(this.url('/api/caixa/dia'), {
+        params,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
   createCliente(payload: {
     nome: string;
     telefone?: string;
@@ -202,15 +245,16 @@ export class SheetsApiService {
   confirmarPagamento(
     idAtendimento: string,
     metodoPagamento: string,
-  ): Observable<{ atualizadas: number }> {
+  ): Observable<{ atualizadas: number; movimentacao_id?: number | null }> {
     const params = new HttpParams().set('acao', 'confirmar-pagamento');
     const met = String(metodoPagamento || '').trim();
     return this.http
-      .post<ApiResponse<{ atualizadas: number }>>(
-        this.url('/api/atendimentos'),
-        { id_atendimento: idAtendimento, metodo: met },
-        { params },
-      )
+      .post<
+        ApiResponse<{
+          atualizadas: number;
+          movimentacao_id?: number | null;
+        }>
+      >(this.url('/api/atendimentos'), { id_atendimento: idAtendimento, metodo: met }, { params })
       .pipe(map((raw) => this.unwrap(raw)));
   }
 

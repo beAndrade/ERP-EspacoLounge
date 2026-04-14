@@ -14,6 +14,11 @@ import {
   regrasMega,
   servicos,
 } from '../db/schema';
+import {
+  inserirReceitaConfirmacaoPagamento,
+  slugCategoriaReceitaPredominante,
+  totalLiquidoConfirmacao,
+} from './finance-domain';
 
 export type CreateAtendimentoPayload =
   | {
@@ -960,12 +965,17 @@ export async function excluirAtendimentoPorIdAtendimento(
 
 const METODOS_PAGAMENTO_OK = new Set(['Dinheiro', 'Pix', 'Cartão']);
 
+export type ConfirmarPagamentoResult = {
+  linhasAtualizadas: number;
+  movimentacaoId: number | null;
+};
+
 /** Confirma pagamento em todas as linhas já finalizadas com o mesmo `ID Atendimento`. */
 export async function confirmarPagamentoPorIdAtendimento(
   db: Db,
   idAtendimento: string,
   metodoPagamento?: string,
-): Promise<number> {
+): Promise<ConfirmarPagamentoResult> {
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
   const metodo = String(metodoPagamento || '').trim();
@@ -977,18 +987,67 @@ export async function confirmarPagamentoPorIdAtendimento(
   if (!METODOS_PAGAMENTO_OK.has(metodo)) {
     throw new Error('Método de pagamento inválido. Use Dinheiro, Pix ou Cartão.');
   }
-  const rows = await db
-    .update(atendimentos)
-    .set({
-      pagamentoStatus: 'confirmado',
-      pagamentoMetodo: metodo,
-    })
-    .where(
-      and(
-        eq(atendimentos.idAtendimento, id),
-        eq(atendimentos.cobrancaStatus, 'finalizada'),
-      ),
-    )
-    .returning({ id: atendimentos.id });
-  return rows.length;
+
+  return await db.transaction(async (tx) => {
+    const candidatas = await tx
+      .select()
+      .from(atendimentos)
+      .where(
+        and(
+          eq(atendimentos.idAtendimento, id),
+          eq(atendimentos.cobrancaStatus, 'finalizada'),
+        ),
+      )
+      .orderBy(asc(atendimentos.id));
+
+    if (candidatas.length === 0) {
+      return { linhasAtualizadas: 0, movimentacaoId: null };
+    }
+
+    const updated = await tx
+      .update(atendimentos)
+      .set({
+        pagamentoStatus: 'confirmado',
+        pagamentoMetodo: metodo,
+      })
+      .where(
+        and(
+          eq(atendimentos.idAtendimento, id),
+          eq(atendimentos.cobrancaStatus, 'finalizada'),
+        ),
+      )
+      .returning({ id: atendimentos.id });
+
+    let dataMov = ymdFromAtendimentoDate(
+      candidatas[0]!.data as string | Date | null,
+    );
+    if (!dataMov) {
+      dataMov = new Date().toISOString().slice(0, 10);
+    }
+
+    const total = totalLiquidoConfirmacao(candidatas);
+    const slug = slugCategoriaReceitaPredominante(candidatas);
+    const nomeCliente = String(candidatas[0]?.nomeCliente || '').trim();
+    const descricao = `Confirmação pagamento ${id}${nomeCliente ? ` — ${nomeCliente}` : ''}`;
+
+    let movimentacaoId: number | null = null;
+    if (updated.length > 0 && total > 0) {
+      movimentacaoId = await inserirReceitaConfirmacaoPagamento(
+        tx as unknown as Db,
+        {
+          idAtendimento: id,
+          dataMov,
+          valorTotal: total,
+          categoriaSlug: slug,
+          metodoPagamento: metodo,
+          descricao,
+        },
+      );
+    }
+
+    return {
+      linhasAtualizadas: updated.length,
+      movimentacaoId,
+    };
+  });
 }

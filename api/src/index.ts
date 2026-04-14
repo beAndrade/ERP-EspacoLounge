@@ -13,6 +13,12 @@ import {
   listAtendimentosRaw,
 } from './services/atendimentos-domain';
 import {
+  criarMovimentacaoManual,
+  getCaixaDiaApi,
+  listCategoriasFinanceirasApi,
+  listMovimentacoesApi,
+} from './services/finance-domain';
+import {
   getClienteById,
   listCabelosApi,
   listClientesNormalized,
@@ -72,14 +78,17 @@ async function execConfirmarPagamento(body: {
     if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
     const metodo =
       body.metodo != null ? String(body.metodo).trim() : undefined;
-    const n = await confirmarPagamentoPorIdAtendimento(db, id, metodo);
-    if (!n) {
+    const r = await confirmarPagamentoPorIdAtendimento(db, id, metodo);
+    if (!r.linhasAtualizadas) {
       return fail(
         'NOT_FOUND',
         'Nenhuma linha finalizada encontrada para confirmar pagamento',
       );
     }
-    return ok({ atualizadas: n });
+    return ok({
+      atualizadas: r.linhasAtualizadas,
+      movimentacao_id: r.movimentacaoId,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return fail('SERVER', msg);
@@ -188,6 +197,74 @@ const app = new Elysia({ adapter: node() })
   .get('/api/cabelos', async () => ok({ items: await listCabelosApi(db) }))
   .get('/api/profissionais', async () =>
     ok({ items: await listProfissionaisApi(db) }),
+  )
+  .get('/api/categorias-financeiras', async () =>
+    ok({ items: await listCategoriasFinanceirasApi(db) }),
+  )
+  .get('/api/movimentacoes', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const nat = q.natureza;
+      const items = await listMovimentacoesApi(db, {
+        dataInicio: q.dataInicio ?? q.data_inicio,
+        dataFim: q.dataFim ?? q.data_fim,
+        natureza:
+          nat === 'receita' || nat === 'despesa' ? nat : undefined,
+      });
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .get('/api/caixa/dia', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const data = String(q.data ?? '').trim();
+      if (!data) return fail('VALIDATION', 'Query data é obrigatória (YYYY-MM-DD)');
+      const resumo = await getCaixaDiaApi(db, data);
+      return ok(resumo);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .post(
+    '/api/movimentacoes',
+    async ({ body }) => {
+      try {
+        const b = body as Record<string, unknown>;
+        const id = await criarMovimentacaoManual(db, {
+          data_mov: String(b.data_mov ?? ''),
+          natureza: b.natureza === 'despesa' ? 'despesa' : 'receita',
+          valor: Number(b.valor),
+          categoria_id: Number(b.categoria_id),
+          descricao:
+            b.descricao != null ? String(b.descricao) : undefined,
+          metodo_pagamento:
+            b.metodo_pagamento != null
+              ? String(b.metodo_pagamento)
+              : undefined,
+          id_atendimento:
+            b.id_atendimento != null ? String(b.id_atendimento) : undefined,
+        });
+        return ok({ id });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        data_mov: t.String(),
+        natureza: t.Union([t.Literal('receita'), t.Literal('despesa')]),
+        valor: t.Number(),
+        categoria_id: t.Number(),
+        descricao: t.Optional(t.String()),
+        metodo_pagamento: t.Optional(t.String()),
+        id_atendimento: t.Optional(t.String()),
+      }),
+    },
   )
   .post(
     '/api/finalizar-cobranca',

@@ -1,4 +1,22 @@
-import { date, index, integer, pgTable, serial, text } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  numeric,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
+
+export const naturezaFinanceiraEnum = pgEnum('natureza_financeira', [
+  'receita',
+  'despesa',
+]);
 
 export const clientes = pgTable('clientes', {
   idCliente: text('id_cliente').primaryKey(),
@@ -93,6 +111,10 @@ export const atendimentos = pgTable(
     id: serial('id').primaryKey(),
     idAtendimento: text('id_atendimento').notNull(),
     data: date('data'),
+    /** Início do slot na agenda visual (`timestamptz`); opcional enquanto só se usa o dia em `data`. */
+    inicio: timestamp('inicio', { withTimezone: true }),
+    /** Fim do slot na agenda visual (`timestamptz`); opcional. */
+    fim: timestamp('fim', { withTimezone: true }),
     idCliente: text('id_cliente')
       .notNull()
       .references(() => clientes.idCliente),
@@ -125,5 +147,45 @@ export const atendimentos = pgTable(
     index('atendimentos_id_cliente_idx').on(t.idCliente),
     index('atendimentos_id_atendimento_idx').on(t.idAtendimento),
     index('atendimentos_profissional_id_idx').on(t.profissionalId),
+  ],
+);
+
+export const categoriasFinanceiras = pgTable('categorias_financeiras', {
+  id: serial('id').primaryKey(),
+  nome: text('nome').notNull(),
+  natureza: naturezaFinanceiraEnum('natureza').notNull(),
+  slug: text('slug').notNull().unique(),
+  ordem: integer('ordem').default(0).notNull(),
+  ativo: boolean('ativo').default(true).notNull(),
+});
+
+export const movimentacoes = pgTable(
+  'movimentacoes',
+  {
+    id: serial('id').primaryKey(),
+    dataMov: date('data_mov').notNull(),
+    natureza: naturezaFinanceiraEnum('natureza').notNull(),
+    valor: numeric('valor', { precision: 14, scale: 2 }).notNull(),
+    categoriaId: integer('categoria_id')
+      .notNull()
+      .references(() => categoriasFinanceiras.id),
+    descricao: text('descricao'),
+    idAtendimento: text('id_atendimento'),
+    metodoPagamento: text('metodo_pagamento'),
+    /** Ex.: `atendimento_confirmacao`, `manual`. */
+    origem: text('origem').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('movimentacoes_data_mov_idx').on(t.dataMov),
+    index('movimentacoes_categoria_id_idx').on(t.categoriaId),
+    index('movimentacoes_id_atendimento_idx').on(t.idAtendimento),
+    uniqueIndex('movimentacoes_confirm_receita_id_at_idx')
+      .on(t.idAtendimento)
+      .where(
+        sql`${t.origem} = 'atendimento_confirmacao' AND ${t.natureza} = 'receita'`,
+      ),
   ],
 );

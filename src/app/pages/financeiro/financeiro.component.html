@@ -1,0 +1,112 @@
+<div class="toolbar">
+  <h1>Financeiro</h1>
+  <a routerLink="/" class="link-back">← Início</a>
+</div>
+
+<p class="hint">
+  Resumo do dia e movimentações na mesma data (API Postgres). Lançamentos manuais ficam para uma próxima versão.
+</p>
+
+<div class="filtros">
+  <label>
+    <span>Data</span>
+    <input type="date" [(ngModel)]="dataYmd" name="dataYmd" />
+  </label>
+  <button type="button" class="btn primary" (click)="carregar()">Atualizar</button>
+</div>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint" role="status">Carregando…</p>
+}
+
+@if (!carregando && !erro && caixa) {
+  <section class="resumo" aria-label="Resumo do dia">
+    <div class="resumo-card">
+      <span class="resumo-label">Receitas</span>
+      <strong class="resumo-valor receita">{{
+        valorNum(caixa.total_receitas) | currency: 'BRL' : 'symbol' : '1.2-2'
+      }}</strong>
+    </div>
+    <div class="resumo-card">
+      <span class="resumo-label">Despesas</span>
+      <strong class="resumo-valor despesa">{{
+        valorNum(caixa.total_despesas) | currency: 'BRL' : 'symbol' : '1.2-2'
+      }}</strong>
+    </div>
+    <div class="resumo-card destaque">
+      <span class="resumo-label">Saldo do dia</span>
+      <strong class="resumo-valor">{{
+        valorNum(caixa.saldo_dia) | currency: 'BRL' : 'symbol' : '1.2-2'
+      }}</strong>
+    </div>
+  </section>
+
+  @if (caixa.receitas_por_metodo.length > 0) {
+    <div class="por-metodo">
+      <h2 class="subtitulo">Receitas por método</h2>
+      <ul>
+        @for (x of caixa.receitas_por_metodo; track $index) {
+          <li>
+            <span>{{ x.metodo }}</span>
+            <span>{{
+              valorNum(x.total) | currency: 'BRL' : 'symbol' : '1.2-2'
+            }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  <h2 class="subtitulo">Movimentações do dia</h2>
+  @if (movimentacoes.length === 0) {
+    <p class="hint">Nenhuma movimentação nesta data.</p>
+  } @else {
+    <div class="table-wrap" role="region" aria-label="Movimentações">
+      <table>
+        <thead>
+          <tr>
+            <th>Registo</th>
+            <th>Natureza</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th>Método</th>
+            <th>Origem</th>
+            <th>ID atendimento</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of movimentacoes; track m.id) {
+            <tr>
+              <td class="num">
+                {{ m.data_mov | date: 'dd/MM/yy' }}
+                {{ m.created_at | date: 'HH:mm' }}
+              </td>
+              <td>
+                <span
+                  class="pill"
+                  [class.receita]="m.natureza === 'receita'"
+                  [class.despesa]="m.natureza === 'despesa'"
+                  >{{ m.natureza }}</span
+                >
+              </td>
+              <td>{{ categoriaNome(m.categoria_id) }}</td>
+              <td class="num">
+                {{
+                  valorNum(m.valor) | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}
+              </td>
+              <td>{{ m.metodo_pagamento ?? '—' }}</td>
+              <td>{{ rotuloOrigem(m.origem) }}</td>
+              <td class="mono">{{ m.id_atendimento ?? '—' }}</td>
+              <td>{{ m.descricao ?? '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}
