@@ -12,6 +12,7 @@ import {
   regrasMega,
   servicos,
 } from '../db/schema';
+import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
 import {
   defaultXlsxPath,
   loadWorkbook,
@@ -208,6 +209,16 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
 
   const shAt = resolveSheet(wb, ['Atendimentos']);
   if (shAt) {
+    const folhaRows = await db
+      .select({ id: folha.id, nome: folha.profissional })
+      .from(folha);
+    const nomeParaId = new Map<string, number>();
+    const idsFolha = new Set<number>();
+    for (const f of folhaRows) {
+      idsFolha.add(f.id);
+      const n = String(f.nome || '').trim();
+      if (n && !nomeParaId.has(n)) nomeParaId.set(n, f.id);
+    }
     for (const row of rowObjectsFirstWins(sheetToMatrix(shAt))) {
       const idAt = pick(row, ['ID Atendimento']).trim();
       if (!idAt) continue;
@@ -215,6 +226,19 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
       if (!idCliente || !clientIds.has(idCliente.trim())) continue;
       const dataRaw = pick(row, ['Data']);
       const dataSql = dataRaw ? parseFlexibleDateToIso(dataRaw) : null;
+      const profCell =
+        pick(row, ['profissional_id', 'Profissional ID']) ||
+        pick(row, ['Profissional']);
+      let profissionalId: number | null = null;
+      if (profCell) {
+        const t = String(profCell).trim();
+        const asNum = parseInt(t, 10);
+        if (!Number.isNaN(asNum) && String(asNum) === t && idsFolha.has(asNum)) {
+          profissionalId = asNum;
+        } else if (t) {
+          profissionalId = nomeParaId.get(t) ?? null;
+        }
+      }
       await db.insert(atendimentos).values({
         idAtendimento: idAt,
         data: dataSql,
@@ -226,10 +250,12 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
         produto: pick(row, ['Produto']) || null,
         servicos: pick(row, ['Serviços', 'Servicos']) || null,
         tamanho: pick(row, ['Tamanho']) || null,
-        profissional: pick(row, ['Profissional']) || null,
+        profissionalId,
         valor: pick(row, ['Valor']) || null,
         valorManual: pick(row, ['Valor Manual']) || null,
-        comissao: pick(row, ['Comissão', 'Comissao']) || null,
+        comissao:
+          normalizeComissaoParaBD(pick(row, ['Comissão', 'Comissao'])) ||
+          null,
         desconto: pick(row, ['Desconto']) || null,
         descricao: pick(row, ['Descrição', 'Descricao']) || null,
         descricaoManual:

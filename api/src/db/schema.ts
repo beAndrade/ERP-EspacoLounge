@@ -103,7 +103,8 @@ export const atendimentos = pgTable(
     produto: text('produto'),
     servicos: text('servicos'),
     tamanho: text('tamanho'),
-    profissional: text('profissional'),
+    /** Referência à linha da aba Folha (`folha.id`); nome para exibição vem do join. */
+    profissionalId: integer('profissional_id').references(() => folha.id),
     valor: text('valor'),
     valorManual: text('valor_manual'),
     comissao: text('comissao'),
@@ -123,5 +124,6 @@ export const atendimentos = pgTable(
     index('atendimentos_data_idx').on(t.data),
     index('atendimentos_id_cliente_idx').on(t.idCliente),
     index('atendimentos_id_atendimento_idx').on(t.idAtendimento),
+    index('atendimentos_profissional_id_idx').on(t.profissionalId),
   ],
 );

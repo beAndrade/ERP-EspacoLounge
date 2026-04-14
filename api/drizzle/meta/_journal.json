@@ -15,6 +15,13 @@
       "when": 1775697913000,
       "tag": "0001_atendimentos_cobranca_status",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775697914000,
+      "tag": "0002_atendimentos_profissional_id",
+      "breakpoints": true
     }
   ]
 }

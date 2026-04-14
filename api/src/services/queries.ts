@@ -119,26 +119,29 @@ export async function listCabelosApi(db: Db) {
   }));
 }
 
-/** Mesma heurística que Code.gs (simplificada: cabeçalho na linha 1). */
-export async function listProfissionaisApi(db: Db): Promise<string[]> {
+export type ProfissionalFolhaItem = { id: number; nome: string };
+
+/** Lista linhas da Folha com `id` estável (para `atendimentos.profissional_id`). */
+export async function listProfissionaisApi(
+  db: Db,
+): Promise<ProfissionalFolhaItem[]> {
   const rows = await db
-    .select({ profissional: folha.profissional })
+    .select({ id: folha.id, nome: folha.profissional })
     .from(folha)
     .orderBy(asc(folha.profissional));
-  const seen = new Set<string>();
-  const out: string[] = [];
+  const seenNome = new Set<string>();
+  const out: ProfissionalFolhaItem[] = [];
   for (const r of rows) {
-    const name = String(r.profissional || '').trim();
+    const name = String(r.nome || '').trim();
     if (!name || name.length > 80) continue;
     const low = name.toLowerCase();
     if (low === 'profissional') continue;
     if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(name)) continue;
     if (/^r\$\s*[\d.,-]+$/i.test(name.replace(/\s/g, ''))) continue;
-    if (!seen.has(name)) {
-      seen.add(name);
-      out.push(name);
-    }
+    if (seenNome.has(name)) continue;
+    seenNome.add(name);
+    out.push({ id: r.id, nome: name });
   }
-  out.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  out.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   return out;
 }

@@ -1,12 +1,14 @@
 /**
  * Regras alinhadas a apps-script/Code.gs (createAtendimento_ e auxiliares).
  */
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../db';
 import { descricaoParaListaLinha } from '../lib/descricao-lista';
+import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
 import {
   atendimentos,
   clientes,
+  folha,
   pacotes,
   produtos,
   regrasMega,
@@ -18,7 +20,8 @@ export type CreateAtendimentoPayload =
       tipo: 'Serviço';
       cliente_id: string;
       data: string;
-      profissional: string;
+      /** ID da linha na tabela `folha` (aba Folha). */
+      profissional_id: number;
       servico_id: string;
       tamanho?: string;
       observacao?: string;
@@ -28,24 +31,24 @@ export type CreateAtendimentoPayload =
       cliente_id: string;
       data: string;
       pacote: string;
-      etapas: { etapa: string; profissional: string }[];
+      etapas: { etapa: string; profissional_id: number }[];
       observacao?: string;
     }
   | {
       tipo: 'Pacote';
       cliente_id: string;
       data: string;
-      /** Linha de cobrança; opcional (UI só preenche profissionais nas etapas). */
-      profissional?: string;
+      /** Linha de cobrança; opcional. */
+      profissional_id?: number | null;
       pacote: string;
-      etapas: { etapa: string; profissional: string }[];
+      etapas: { etapa: string; profissional_id: number }[];
       observacao?: string;
     }
   | {
       tipo: 'Produto';
       cliente_id: string;
       data: string;
-      profissional?: string;
+      profissional_id?: number | null;
       produto: string;
       quantidade: number;
       observacao?: string;
@@ -54,7 +57,7 @@ export type CreateAtendimentoPayload =
       tipo: 'Cabelo';
       cliente_id: string;
       data: string;
-      profissional: string;
+      profissional_id: number;
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;
@@ -63,7 +66,7 @@ export type CreateAtendimentoPayload =
       servico_id: string;
       cliente_id: string;
       data: string;
-      profissional?: string;
+      profissional_id?: number | null;
       tamanho?: string;
       observacao?: string;
     };
@@ -296,6 +299,61 @@ async function findProdutoPreco(db: Db, nome: string): Promise<string | null> {
   return p != null && p !== '' ? String(p) : null;
 }
 
+async function assertFolhaIdExists(db: Db, id: number): Promise<void> {
+  const [r] = await db
+    .select({ id: folha.id })
+    .from(folha)
+    .where(eq(folha.id, id))
+    .limit(1);
+  if (!r) {
+    throw new Error(`profissional_id inválido: ${id} não existe na Folha`);
+  }
+}
+
+/**
+ * Resolve `folha.id` a partir de `profissional_id` ou, em legado, do nome em `profissional`.
+ */
+async function resolveProfissionalIdToInt(
+  db: Db,
+  opts: { profissional_id?: unknown; profissional?: unknown },
+  required: boolean,
+): Promise<number | null> {
+  const rawId = opts.profissional_id;
+  if (rawId != null && rawId !== '') {
+    const n =
+      typeof rawId === 'number' && Number.isFinite(rawId)
+        ? Math.trunc(rawId)
+        : parseInt(String(rawId).trim(), 10);
+    if (!Number.isNaN(n) && n > 0) {
+      await assertFolhaIdExists(db, n);
+      return n;
+    }
+    if (required) throw new Error('profissional_id inválido');
+  }
+  const nome = String(opts.profissional ?? '').trim();
+  if (!nome) {
+    if (required) {
+      throw new Error('Profissional é obrigatório (profissional_id da Folha)');
+    }
+    return null;
+  }
+  const rows = await db
+    .select({ id: folha.id, nome: folha.profissional })
+    .from(folha);
+  for (const row of rows) {
+    const t = String(row.nome || '').trim();
+    if (t === nome) {
+      return row.id;
+    }
+  }
+  if (required) {
+    throw new Error(
+      `Profissional "${nome}" não encontrado na Folha (use profissional_id)`,
+    );
+  }
+  return null;
+}
+
 async function appendAtendimentoLinha(
   db: Db,
   o: {
@@ -309,7 +367,7 @@ async function appendAtendimentoLinha(
     produto: string;
     servicos: string;
     tamanho: string;
-    profissional: string;
+    profissionalId: number | null;
     valor: string;
     valorManual?: string;
     comissao: string;
@@ -330,10 +388,10 @@ async function appendAtendimentoLinha(
     produto: o.produto,
     servicos: o.servicos,
     tamanho: o.tamanho,
-    profissional: o.profissional,
+    profissionalId: o.profissionalId,
     valor: o.valor,
     valorManual: o.valorManual ?? '',
-    comissao: o.comissao,
+    comissao: normalizeComissaoParaBD(o.comissao),
     desconto: '',
     descricao: o.descricao,
     descricaoManual: o.descricaoManual ?? '',
@@ -396,11 +454,17 @@ async function createAtendimentoServico(
       'cliente_id, servico_id (linha na aba Serviços) e data são obrigatórios',
     );
   }
-  const profissional = String(
-    'profissional' in p ? p.profissional || '' : '',
-  ).trim();
-  if (!profissional && !legacy) {
-    throw new Error('Profissional é obrigatório');
+  const rec = p as Record<string, unknown>;
+  const profissionalId = await resolveProfissionalIdToInt(
+    db,
+    {
+      profissional_id: rec['profissional_id'],
+      profissional: rec['profissional'],
+    },
+    !legacy,
+  );
+  if (profissionalId == null && !legacy) {
+    throw new Error('Profissional é obrigatório (profissional_id)');
   }
   let tamanhoParam = String('tamanho' in p ? p.tamanho || '' : '').trim();
   const nomeCliente = await findClienteNome(db, clienteId);
@@ -428,7 +492,7 @@ async function createAtendimentoServico(
     produto: '',
     servicos: nomeServico,
     tamanho: vc.tamanhoParaPlanilha,
-    profissional,
+    profissionalId,
     valor: vc.valor,
     comissao: vc.comissao,
     descricao: String('observacao' in p ? p.observacao || '' : '').trim(),
@@ -467,9 +531,17 @@ async function createAtendimentoMega(
   const obs = String(p.observacao || '').trim();
   for (const st of etapas) {
     const etapaNome = String(st.etapa || '').trim();
-    const prof = String(st.profissional || '').trim();
-    if (!etapaNome || !prof) {
-      throw new Error('Cada etapa exige etapa e profissional');
+    const stRec = st as Record<string, unknown>;
+    const profId = await resolveProfissionalIdToInt(
+      db,
+      {
+        profissional_id: stRec['profissional_id'],
+        profissional: stRec['profissional'],
+      },
+      true,
+    );
+    if (!etapaNome || profId == null) {
+      throw new Error('Cada etapa exige etapa e profissional_id');
     }
     const regra = await findRegraMega(db, pacote, etapaNome);
     await appendAtendimentoLinha(db, {
@@ -483,7 +555,7 @@ async function createAtendimentoMega(
       produto: '',
       servicos: '',
       tamanho: '',
-      profissional: prof,
+      profissionalId: profId,
       valor: regra.valor,
       comissao: regra.comissao,
       descricao: obs,
@@ -515,7 +587,14 @@ async function createAtendimentoPacote(
   if (!clienteId || !dataStr || !pacote) {
     throw new Error('cliente_id, data e pacote são obrigatórios para Pacote');
   }
-  const profCob = String(p.profissional || '').trim();
+  const profCob = await resolveProfissionalIdToInt(
+    db,
+    {
+      profissional_id: p.profissional_id,
+      profissional: (p as Record<string, unknown>)['profissional'],
+    },
+    false,
+  );
   const etapas = p.etapas || [];
   if (!etapas.length) {
     throw new Error('Inclua ao menos uma etapa realizada para Pacote');
@@ -538,7 +617,7 @@ async function createAtendimentoPacote(
     produto: '',
     servicos: '',
     tamanho: '',
-    profissional: profCob,
+    profissionalId: profCob,
     valor: preco,
     comissao: '',
     descricao: obs,
@@ -546,9 +625,17 @@ async function createAtendimentoPacote(
   });
   for (const st of etapas) {
     const etapaNome = String(st.etapa || '').trim();
-    const prof = String(st.profissional || '').trim();
-    if (!etapaNome || !prof) {
-      throw new Error('Cada etapa exige etapa e profissional');
+    const stRec = st as Record<string, unknown>;
+    const profId = await resolveProfissionalIdToInt(
+      db,
+      {
+        profissional_id: stRec['profissional_id'],
+        profissional: stRec['profissional'],
+      },
+      true,
+    );
+    if (!etapaNome || profId == null) {
+      throw new Error('Cada etapa exige etapa e profissional_id');
     }
     const regra = await findRegraMega(db, pacote, etapaNome);
     await appendAtendimentoLinha(db, {
@@ -562,7 +649,7 @@ async function createAtendimentoPacote(
       produto: '',
       servicos: '',
       tamanho: '',
-      profissional: prof,
+      profissionalId: profId,
       valor: '0',
       comissao: regra.comissao,
       descricao: obs,
@@ -591,7 +678,14 @@ async function createAtendimentoProduto(
   const clienteId = String(p.cliente_id || '').trim();
   const dataStr = String(p.data || '').trim();
   const nomeProd = String(p.produto || '').trim();
-  const profissional = String(p.profissional || '').trim();
+  const profissionalId = await resolveProfissionalIdToInt(
+    db,
+    {
+      profissional_id: p.profissional_id,
+      profissional: (p as Record<string, unknown>)['profissional'],
+    },
+    false,
+  );
   if (!clienteId || !dataStr || !nomeProd) {
     throw new Error('cliente_id, data e produto são obrigatórios para Produto');
   }
@@ -626,7 +720,7 @@ async function createAtendimentoProduto(
     produto: nomeProd,
     servicos: '',
     tamanho: '',
-    profissional,
+    profissionalId,
     valor: String(valorTotal),
     comissao: '',
     descricao: obs,
@@ -652,8 +746,15 @@ async function createAtendimentoCabelo(
 }> {
   const clienteId = String(p.cliente_id || '').trim();
   const dataStr = String(p.data || '').trim();
-  const profissional = String(p.profissional || '').trim();
-  if (!profissional) throw new Error('Profissional é obrigatório');
+  const profissionalId = await resolveProfissionalIdToInt(
+    db,
+    {
+      profissional_id: p.profissional_id,
+      profissional: (p as Record<string, unknown>)['profissional'],
+    },
+    true,
+  );
+  if (profissionalId == null) throw new Error('Profissional é obrigatório');
   if (!clienteId || !dataStr) {
     throw new Error('cliente_id e data são obrigatórios para Cabelo');
   }
@@ -680,7 +781,7 @@ async function createAtendimentoCabelo(
     produto: '',
     servicos: '',
     tamanho: '',
-    profissional,
+    profissionalId,
     valor: String(valorNum),
     comissao: '',
     descricao: obs,
@@ -727,8 +828,31 @@ export async function listAtendimentosRaw(
     return true;
   });
 
+  const folhaIds = Array.from(
+    new Set(
+      filtered
+        .map((a) => a.profissionalId)
+        .filter((x): x is number => x != null && Number(x) > 0),
+    ),
+  );
+  const nomePorFolhaId = new Map<number, string>();
+  if (folhaIds.length > 0) {
+    const fh = await db
+      .select({ id: folha.id, nome: folha.profissional })
+      .from(folha)
+      .where(inArray(folha.id, folhaIds));
+    for (const f of fh) {
+      nomePorFolhaId.set(f.id, String(f.nome || '').trim());
+    }
+  }
+
   return filtered.map((a) => {
     const dataStr = ymdFromAtendimentoDate(a.data as string | Date | null);
+    const pid =
+      a.profissionalId != null && Number(a.profissionalId) > 0
+        ? Number(a.profissionalId)
+        : null;
+    const profNome = pid != null ? nomePorFolhaId.get(pid) ?? '' : '';
     return {
       'ID Atendimento': a.idAtendimento,
       Data: dataStr,
@@ -740,7 +864,8 @@ export async function listAtendimentosRaw(
       Produto: a.produto,
       Serviços: a.servicos,
       Tamanho: a.tamanho,
-      Profissional: a.profissional,
+      Profissional: profNome,
+      profissional_id: pid,
       Valor: a.valor,
       'Valor Manual': a.valorManual,
       Comissão: a.comissao,
