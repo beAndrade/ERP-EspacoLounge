@@ -35,22 +35,31 @@ function pick(
   return '';
 }
 
+/** Host/porta/base para o utilizador bater certo com `db:migrate` (senha omitida). */
+function resumoDatabaseUrlParaLog(raw: string): string {
+  const semSenha = raw.replace(/:\/\/([^/:]+):([^@]+)@/, '://$1:****@');
+  const curto = semSenha.length > 140 ? `${semSenha.slice(0, 140)}…` : semSenha;
+  return curto;
+}
+
 /** Falha cedo com mensagem clara se `npm run db:migrate` ainda não foi aplicado. */
 async function assertSchemaMigradoParaSeed(): Promise<void> {
   const rows = await db.execute(sql.raw(`
-    SELECT
-      to_regclass('public.clientes') IS NOT NULL AS ok_clientes,
-      to_regclass('public.movimentacoes') IS NOT NULL AS ok_movimentacoes
+    SELECT count(*)::int AS n
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name IN ('clientes', 'movimentacoes')
   `));
-  const row = rows[0] as
-    | { ok_clientes?: boolean; ok_movimentacoes?: boolean }
-    | undefined;
-  const okC = row?.ok_clientes === true;
-  const okM = row?.ok_movimentacoes === true;
-  if (!okC || !okM) {
+  const first = Array.from(rows as Iterable<Record<string, unknown>>)[0];
+  const n = Number(first?.n ?? 0);
+  if (n < 2) {
+    const url =
+      process.env.DATABASE_URL ??
+      'postgresql://postgres:postgres@localhost:5432/espaco_lounge';
+    const onde = resumoDatabaseUrlParaLog(url);
     throw new Error(
-      'Esquema da base inexistente ou incompleto (faltam tabelas como clientes ou movimentacoes). ' +
-        'Na pasta api, execute primeiro: npm run db:migrate',
+      `Esquema incompleto nesta base (${onde}): faltam tabelas public.clientes ou public.movimentacoes (encontradas ${n}/2). ` +
+        'Confirme que DATABASE_URL é o mesmo no migrate e no seed; na pasta api: npm run db:migrate',
     );
   }
 }
