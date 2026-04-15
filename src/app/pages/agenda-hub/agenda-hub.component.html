@@ -79,10 +79,11 @@
         <div class="grid-body__times" aria-hidden="true">
           @for (slot of slotsHoras; track slot) {
             <div
-              class="grid-body__time"
-              [style.top.%]="slotTopPct(slot) + slotAlturaPct() / 2"
+              class="grid-body__time-slot"
+              [style.top.%]="slotTopPct(slot)"
+              [style.height.%]="slotAlturaPct()"
             >
-              {{ slot }}
+              <span class="grid-body__time">{{ slot }}</span>
             </div>
           }
         </div>
@@ -103,8 +104,8 @@
                 <button
                   type="button"
                   class="day-col__card"
-                  [style.top]="cardTopStyle(ev)"
-                  [style.height]="cardHeightStyle(ev)"
+                  [style.top.%]="topPct(ev)"
+                  [style.height.%]="alturaPct(ev)"
                   [style.borderLeftColor]="corGrupo(ev.id)"
                   [disabled]="!idAtendimento(ev)"
                   [attr.aria-label]="

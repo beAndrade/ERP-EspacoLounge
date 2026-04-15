@@ -248,21 +248,29 @@ $agenda-slot-rows: 24;
   background-repeat: repeat-y;
 }
 
-.grid-body__time {
+/* Ocupa a mesma faixa % que um slot (30 min); o texto centra-se dentro com respiro real. */
+.grid-body__time-slot {
   position: absolute;
   left: 3px;
   right: 3px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+}
+
+.grid-body__time {
+  display: inline-block;
+  max-width: 100%;
   font-size: 0.82rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--color-muted);
   text-align: center;
-  padding-block: 0.65rem;
-  padding-inline: 5px;
-  transform: translateY(-50%);
+  line-height: 1.25;
+  padding-block: 0.55rem;
+  padding-inline: 4px;
 }
 
 .grid-body__cols {
