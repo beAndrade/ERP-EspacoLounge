@@ -81,10 +81,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS "atendimento_itens_uq_produto"
   WHERE "tipo" = 'produto'::"atendimento_item_tipo";
 
 -- Backfill serviços (nome na coluna `servicos` = catálogo)
+-- DISTINCT ON: várias linhas `atendimentos` com o mesmo pedido + serviço + tamanho
+-- violariam o índice único na mesma instrução INSERT (NOT EXISTS não vê linhas ainda inseridas).
 INSERT INTO "atendimento_itens" (
   "id_atendimento", "tipo", "servico_id", "produto_id", "quantidade", "profissional_id", "tamanho"
 )
-SELECT
+SELECT DISTINCT ON (
+  a."id_atendimento",
+  s."id",
+  coalesce(NULLIF(trim(a."tamanho"), ''), '')
+)
   a."id_atendimento",
   'servico'::"atendimento_item_tipo",
   s."id",
@@ -108,13 +114,18 @@ WHERE lower(trim(coalesce(a."tipo", ''))) IN ('serviço', 'servico')
       AND ai."tipo" = 'servico'::"atendimento_item_tipo"
       AND ai."servico_id" = s."id"
       AND coalesce(ai."tamanho", '') = coalesce(NULLIF(trim(a."tamanho"), ''), '')
-  );
+  )
+ORDER BY
+  a."id_atendimento",
+  s."id",
+  coalesce(NULLIF(trim(a."tamanho"), ''), ''),
+  a."id";
 
 -- Backfill produtos (quantidade via "Qtd:" na descrição, senão 1)
 INSERT INTO "atendimento_itens" (
   "id_atendimento", "tipo", "servico_id", "produto_id", "quantidade", "profissional_id", "tamanho"
 )
-SELECT
+SELECT DISTINCT ON (a."id_atendimento", p."id")
   a."id_atendimento",
   'produto'::"atendimento_item_tipo",
   NULL,
@@ -143,4 +154,5 @@ WHERE lower(trim(coalesce(a."tipo", ''))) = 'produto'
     WHERE ai."id_atendimento" = a."id_atendimento"
       AND ai."tipo" = 'produto'::"atendimento_item_tipo"
       AND ai."produto_id" = p."id"
-  );
+  )
+ORDER BY a."id_atendimento", p."id", a."id";
