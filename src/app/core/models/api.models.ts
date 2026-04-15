@@ -103,6 +103,10 @@ export interface AtendimentoItemCatalogo {
   quantidade: number;
   profissional_id: number | null;
   tamanho: string | null;
+  /** Preenchido pela API a partir de `produtos.produto`. */
+  produto_nome?: string | null;
+  /** Preenchido pela API a partir de `servicos.servico`. */
+  servico_nome?: string | null;
 }
 
 export interface ProdutoCatalogoItem {

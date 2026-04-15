@@ -326,6 +326,8 @@ export class SheetsApiService {
           const o = x as Record<string, unknown>;
           const tipo = o['tipo'];
           if (tipo !== 'servico' && tipo !== 'produto') return null;
+          const produtoNomeRaw = o['produto_nome'] ?? o['produtoNome'];
+          const servicoNomeRaw = o['servico_nome'] ?? o['servicoNome'];
           return {
             tipo,
             servico_id:
@@ -340,6 +342,14 @@ export class SheetsApiService {
             tamanho:
               o['tamanho'] != null && String(o['tamanho']).trim()
                 ? String(o['tamanho']).trim()
+                : null,
+            produto_nome:
+              produtoNomeRaw != null && String(produtoNomeRaw).trim()
+                ? String(produtoNomeRaw).trim()
+                : null,
+            servico_nome:
+              servicoNomeRaw != null && String(servicoNomeRaw).trim()
+                ? String(servicoNomeRaw).trim()
                 : null,
           };
         })

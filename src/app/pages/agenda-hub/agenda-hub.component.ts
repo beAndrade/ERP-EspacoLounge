@@ -10,6 +10,7 @@ import { diffMinutesEntreHorarios } from '../../core/utils/sql-local-datetime';
 import {
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
+  resumosItensCatalogoUnicos,
   toYmd,
 } from '../../core/utils/atendimento-display';
 import { AtendimentosComponent } from '../atendimentos/atendimentos.component';
@@ -346,7 +347,10 @@ export class AgendaHubComponent implements OnInit {
     return (b.linhas[0]?.nomeCliente || '').trim() || '—';
   }
 
-  /** Uma entrada por linha de atendimento (sem duplicar texto igual). */
+  /**
+   * Linhas do pedido + itens da pivot (`atendimento_itens`), sem duplicar o mesmo texto.
+   * A API replica `itens_catalogo` em todas as linhas do mesmo `id_atendimento`.
+   */
   itensResumoBloco(b: AgendaHubBloco): string[] {
     const out: string[] = [];
     const seen = new Set<string>();
@@ -355,6 +359,21 @@ export class AgendaHubComponent implements OnInit {
       if (!txt || seen.has(txt)) continue;
       seen.add(txt);
       out.push(txt);
+    }
+    let catalogo = b.linhas[0]?.itens_catalogo ?? b.linhas[0]?.itens;
+    if (!catalogo?.length) {
+      for (const l of b.linhas) {
+        const c = l.itens_catalogo ?? l.itens;
+        if (c?.length) {
+          catalogo = c;
+          break;
+        }
+      }
+    }
+    for (const t of resumosItensCatalogoUnicos(catalogo)) {
+      if (seen.has(t)) continue;
+      seen.add(t);
+      out.push(t);
     }
     return out;
   }

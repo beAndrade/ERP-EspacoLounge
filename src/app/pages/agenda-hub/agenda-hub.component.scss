@@ -258,7 +258,7 @@ $agenda-slot-rows: 31;
   right: 3px;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   overflow: hidden;
   pointer-events: none;
@@ -276,8 +276,7 @@ $agenda-slot-rows: 31;
   color: var(--color-muted);
   text-align: center;
   line-height: 1.25;
-  padding-block: 0.45rem;
-  padding-inline: 4px;
+  padding: 0 4px;
 }
 
 .grid-body__cols {
