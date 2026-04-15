@@ -100,20 +100,20 @@
                   [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome"
                 ></button>
               }
-              @for (ev of eventosNaColuna(p.id); track ev.linha_id ?? ev.id) {
+              @for (bloco of blocosNaColuna(p.id); track bloco.trackKey) {
                 <button
                   type="button"
                   class="day-col__card"
-                  [style.top.%]="topPct(ev)"
-                  [style.height.%]="alturaPct(ev)"
-                  [style.borderLeftColor]="corGrupo(ev.id)"
-                  [disabled]="!idAtendimento(ev)"
+                  [style.top.%]="topPctBloco(bloco)"
+                  [style.height.%]="alturaPctBloco(bloco)"
+                  [style.borderLeftColor]="corGrupo(idAtendimentoBloco(bloco))"
+                  [disabled]="!idAtendimentoBloco(bloco)"
                   [attr.aria-label]="
-                    'Ver detalhes na receção: ' + rotuloSlot(ev)
+                    'Ver detalhes na receção: ' + rotuloBloco(bloco)
                   "
-                  (click)="abrirDetalhesNaRececao(ev, $event)"
+                  (click)="abrirDetalhesNaRececaoBloco(bloco, $event)"
                 >
-                  <span class="day-col__card-text">{{ rotuloSlot(ev) }}</span>
+                  <span class="day-col__card-text">{{ rotuloBloco(bloco) }}</span>
                 </button>
               }
             </div>

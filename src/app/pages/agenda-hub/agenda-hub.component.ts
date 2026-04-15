@@ -22,8 +22,17 @@ type CelulaCalendario = { dia: number | null; ymd: string | null };
  * Nº de linhas de 30 min no SCSS: `(GRID_END_MIN - GRID_START_MIN) / 30` (= 31).
  */
 const GRID_START_MIN = 8 * 60;
+/** Fim exclusivo da timeline (8:00 → 23:30). */
 const GRID_END_MIN = 23 * 60 + 30;
 const GRID_RANGE = GRID_END_MIN - GRID_START_MIN;
+/** Último slot de 30 min a começar na grelha (23:00). */
+const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
+
+/** Um cartão na grelha = mesmo `id` + mesmo profissional (várias linhas = um bloco). */
+type AgendaHubBloco = {
+  trackKey: string;
+  linhas: AtendimentoListaItem[];
+};
 
 @Component({
   selector: 'app-agenda-hub',
@@ -207,6 +216,37 @@ export class AgendaHubComponent implements OnInit {
     return rows;
   }
 
+  /**
+   * Linhas agrupadas por atendimento (`id`) no mesmo profissional — um bloco visual
+   * do início mais cedo ao fim mais tarde (ex.: 3 linhas de 30 min = 1h30 num só cartão).
+   */
+  blocosNaColuna(profId: number): AgendaHubBloco[] {
+    const rows = this.eventosNaColuna(profId);
+    const map = new Map<string, AtendimentoListaItem[]>();
+    let legacySeq = 0;
+    for (const r of rows) {
+      const id = String(r.id || '').trim();
+      const key = id
+        ? `id:${id}`
+        : `linha:${profId}-${r.linha_id ?? legacySeq++}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(r);
+    }
+    const out: AgendaHubBloco[] = [];
+    for (const [trackKey, linhas] of map) {
+      ordenarLinhasAtendimentoInPlace(linhas);
+      out.push({ trackKey, linhas });
+    }
+    out.sort((a, b) => {
+      const ea = this.extentMinutosBloco(a);
+      const eb = this.extentMinutosBloco(b);
+      const sa = ea?.start ?? Infinity;
+      const sb = eb?.start ?? Infinity;
+      return sa - sb;
+    });
+    return out;
+  }
+
   corGrupo(idAt: string): string {
     let h = 0;
     for (let i = 0; i < idAt.length; i++) {
@@ -216,24 +256,11 @@ export class AgendaHubComponent implements OnInit {
     return `hsl(${hue} 55% 42%)`;
   }
 
-  topPct(ev: AtendimentoListaItem): number {
-    const m = minutosMeiaNoiteEmBrasilia(ev.inicio, this.diaYmd);
-    if (m === null) return 0;
-    const t = Math.max(GRID_START_MIN, Math.min(GRID_END_MIN, m));
-    return ((t - GRID_START_MIN) / GRID_RANGE) * 100;
-  }
-
   /**
-   * Duração em minutos: preferência `fim − inicio` no dia da grelha (API naive);
-   * senão `diffMinutesEntreHorarios`; fallback 30 min.
+   * Duração de uma linha: primeiro `diffMinutesEntreHorarios` (funciona com ISO legado);
+   * depois `fim − inicio` no dia da grelha; fallback 30 min.
    */
   private duracaoMinutosAgendamento(ev: AtendimentoListaItem): number {
-    const dia = this.diaYmd;
-    const mi = minutosMeiaNoiteEmBrasilia(ev.inicio, dia);
-    const mf = minutosMeiaNoiteEmBrasilia(ev.fim, dia);
-    if (mi != null && mf != null && mf > mi) {
-      return mf - mi;
-    }
     const iniS = ev.inicio ? String(ev.inicio).trim() : '';
     const fS = ev.fim ? String(ev.fim).trim() : '';
     if (iniS && fS) {
@@ -242,47 +269,101 @@ export class AgendaHubComponent implements OnInit {
         return d;
       }
     }
+    const dia = this.diaYmd;
+    const mi = minutosMeiaNoiteEmBrasilia(ev.inicio, dia);
+    const mf = minutosMeiaNoiteEmBrasilia(ev.fim, dia);
+    if (mi != null && mf != null && mf > mi) {
+      return mf - mi;
+    }
     return 30;
   }
 
-  /** Altura do cartão = duração em % da grelha (não ultrapassa o fundo). */
-  alturaPct(ev: AtendimentoListaItem): number {
-    const iniS = ev.inicio ? String(ev.inicio).trim() : '';
-    if (!iniS) {
+  /** Início / fim em minutos desde 00:00 (dia da grelha) para o bloco inteiro. */
+  private extentMinutosBloco(
+    b: AgendaHubBloco,
+  ): { start: number; end: number } | null {
+    const dia = this.diaYmd;
+    let startMin = Infinity;
+    let endMax = -Infinity;
+    for (const l of b.linhas) {
+      const mi = minutosMeiaNoiteEmBrasilia(l.inicio, dia);
+      if (mi == null) continue;
+      startMin = Math.min(startMin, mi);
+      const mf = minutosMeiaNoiteEmBrasilia(l.fim, dia);
+      const d = this.duracaoMinutosAgendamento(l);
+      const end = mf != null && mf > mi ? mf : mi + d;
+      endMax = Math.max(endMax, end);
+    }
+    if (
+      !Number.isFinite(startMin) ||
+      !Number.isFinite(endMax) ||
+      endMax <= startMin
+    ) {
+      return null;
+    }
+    return { start: startMin, end: endMax };
+  }
+
+  topPctBloco(b: AgendaHubBloco): number {
+    const ex = this.extentMinutosBloco(b);
+    if (!ex) return 0;
+    const t = Math.max(
+      GRID_START_MIN,
+      Math.min(GRID_LAST_SLOT_START_MIN, ex.start),
+    );
+    return ((t - GRID_START_MIN) / GRID_RANGE) * 100;
+  }
+
+  /** Altura em % = (fim − início) do bloco, limitada ao fundo da grelha. */
+  alturaPctBloco(b: AgendaHubBloco): number {
+    const ex = this.extentMinutosBloco(b);
+    if (!ex) {
       return (30 / GRID_RANGE) * 100;
     }
-    let durMin = this.duracaoMinutosAgendamento(ev);
-    durMin = Math.max(5, Math.min(GRID_RANGE, durMin));
-    const hPct = (durMin / GRID_RANGE) * 100;
-    const top = this.topPct(ev);
+    const startVis = Math.max(
+      GRID_START_MIN,
+      Math.min(GRID_LAST_SLOT_START_MIN, ex.start),
+    );
+    const endVis = Math.min(GRID_END_MIN, Math.max(ex.end, startVis + 30));
+    let dur = Math.max(30, endVis - startVis);
+    dur = Math.min(dur, GRID_RANGE);
+    const top = this.topPctBloco(b);
+    const hPct = (dur / GRID_RANGE) * 100;
     return Math.min(hPct, Math.max(0, 100 - top));
   }
 
-  /** Horário de início em Brasília no dia da grelha, para o texto do cartão. */
-  horaInicioCard(ev: AtendimentoListaItem): string {
-    const m = minutosMeiaNoiteEmBrasilia(ev.inicio, this.diaYmd);
-    if (m == null) return '';
-    const mf = Math.floor(m);
+  horaBloco(b: AgendaHubBloco): string {
+    const ex = this.extentMinutosBloco(b);
+    if (!ex) return '';
+    const mf = Math.floor(ex.start);
     const hh = Math.floor(mf / 60) % 24;
     const mm = mf % 60;
     return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
   }
 
-  rotuloSlot(ev: AtendimentoListaItem): string {
-    const hora = this.horaInicioCard(ev);
+  rotuloBloco(b: AgendaHubBloco): string {
+    const hora = this.horaBloco(b);
+    const nome = (b.linhas[0]?.nomeCliente || '').trim() || '—';
+    const descs = [
+      ...new Set(
+        b.linhas
+          .map((l) => (l.descricao || '').trim())
+          .filter(Boolean),
+      ),
+    ];
+    const desc =
+      descs.length <= 1 ? (descs[0] ?? '') : descs.join(' · ');
     const prefix = hora ? `${hora} · ` : '';
-    const nome = (ev.nomeCliente || '').trim() || '—';
-    const desc = (ev.descricao || '').trim();
     return desc ? `${prefix}${nome} — ${desc}` : `${prefix}${nome}`;
   }
 
-  idAtendimento(ev: AtendimentoListaItem): string {
-    return String(ev.id || '').trim();
+  idAtendimentoBloco(b: AgendaHubBloco): string {
+    return String(b.linhas[0]?.id || '').trim();
   }
 
-  abrirDetalhesNaRececao(ev: AtendimentoListaItem, e: Event): void {
+  abrirDetalhesNaRececaoBloco(b: AgendaHubBloco, e: Event): void {
     e.stopPropagation();
-    const id = this.idAtendimento(ev);
+    const id = this.idAtendimentoBloco(b);
     if (!id) return;
     this.rececao?.expandirGrupoPorIdAtendimento(id);
   }
