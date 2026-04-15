@@ -3,9 +3,9 @@ import type { Db } from '../db';
 import {
   cabelos,
   clientes,
-  folha,
   pacotes,
   produtos,
+  profissionais,
   regrasMega,
   servicos,
 } from '../db/schema';
@@ -46,7 +46,7 @@ export async function getClienteById(db: Db, id: string) {
 }
 
 export async function listServicosForApi(db: Db) {
-  const rows = await db.select().from(servicos).orderBy(asc(servicos.linha));
+  const rows = await db.select().from(servicos).orderBy(asc(servicos.id));
   return rows
     .map((r) => {
       const empty =
@@ -56,9 +56,10 @@ export async function listServicosForApi(db: Db) {
         r.precoCurto == null;
       if (empty) return null;
       return {
-        id: String(r.linha),
+        id: String(r.id),
         Serviço: r.servico,
         Tipo: r.tipo,
+        duracao_minutos: r.duracaoMinutos ?? 30,
         'Valor Base': r.valorBase,
         'Comissão Fixa': r.comissaoFixa,
         'Comissão %': r.comissaoPct,
@@ -103,6 +104,7 @@ export async function listProdutosApi(db: Db) {
   return rows
     .filter((r) => r.produto?.trim())
     .map((r) => ({
+      id: r.id,
       produto: String(r.produto).trim(),
       preco: r.preco,
       unidade: r.unidade != null ? String(r.unidade) : '',
@@ -121,27 +123,18 @@ export async function listCabelosApi(db: Db) {
 
 export type ProfissionalFolhaItem = { id: number; nome: string };
 
-/** Lista linhas da Folha com `id` estável (para `atendimentos.profissional_id`). */
+/** Lista cadastro `profissionais` (`atendimentos.profissional_id` → `profissionais.id`). */
 export async function listProfissionaisApi(
   db: Db,
 ): Promise<ProfissionalFolhaItem[]> {
   const rows = await db
-    .select({ id: folha.id, nome: folha.profissional })
-    .from(folha)
-    .orderBy(asc(folha.profissional));
-  const seenNome = new Set<string>();
-  const out: ProfissionalFolhaItem[] = [];
-  for (const r of rows) {
-    const name = String(r.nome || '').trim();
-    if (!name || name.length > 80) continue;
-    const low = name.toLowerCase();
-    if (low === 'profissional') continue;
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(name)) continue;
-    if (/^r\$\s*[\d.,-]+$/i.test(name.replace(/\s/g, ''))) continue;
-    if (seenNome.has(name)) continue;
-    seenNome.add(name);
-    out.push({ id: r.id, nome: name });
-  }
-  out.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-  return out;
+    .select({ id: profissionais.id, nome: profissionais.nome })
+    .from(profissionais)
+    .orderBy(asc(profissionais.nome));
+  return rows
+    .map((r) => ({
+      id: r.id,
+      nome: String(r.nome || '').trim(),
+    }))
+    .filter((x) => x.nome);
 }
