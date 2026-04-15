@@ -1,6 +1,8 @@
 <div class="toolbar">
-  <h1>Atendimentos</h1>
-  <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+  <h1>{{ modoAgendaHub ? 'Receção do dia' : 'Atendimentos' }}</h1>
+  @if (!modoAgendaHub) {
+    <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+  }
 </div>
 
 <p class="hint">
@@ -9,24 +11,26 @@
   card para ver cada linha.
 </p>
 
-<div class="dia-toggle" role="group" aria-label="Dia a mostrar">
-  <button
-    type="button"
-    class="chip"
-    [class.active]="dia === 'hoje'"
-    (click)="setDia('hoje')"
-  >
-    Hoje
-  </button>
-  <button
-    type="button"
-    class="chip"
-    [class.active]="dia === 'amanha'"
-    (click)="setDia('amanha')"
-  >
-    Amanhã
-  </button>
-</div>
+@if (!modoAgendaHub) {
+  <div class="dia-toggle" role="group" aria-label="Dia a mostrar">
+    <button
+      type="button"
+      class="chip"
+      [class.active]="dia === 'hoje'"
+      (click)="setDia('hoje')"
+    >
+      Hoje
+    </button>
+    <button
+      type="button"
+      class="chip"
+      [class.active]="dia === 'amanha'"
+      (click)="setDia('amanha')"
+    >
+      Amanhã
+    </button>
+  </div>
+}
 
 @if (erro) {
   <p class="alert" role="alert">{{ erro }}</p>
@@ -93,6 +97,7 @@
                 <button
                   type="button"
                   class="card"
+                  [attr.id]="domIdGrupoResumo(g)"
                   [class.card--open]="isExpandido(g)"
                   [attr.aria-expanded]="isExpandido(g)"
                   (click)="toggleGrupo(g.id)"

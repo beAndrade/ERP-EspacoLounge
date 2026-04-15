@@ -1,0 +1,387 @@
+.hub-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.hub-toolbar .btn-novo {
+  min-height: var(--touch-min);
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.hub-toolbar .btn-novo:hover {
+  filter: brightness(1.05);
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.hint {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.hub-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.hub-sidebar {
+  flex: 0 0 16rem;
+  max-width: 100%;
+}
+
+.mini-cal {
+  background: var(--color-surface);
+  border: 1px solid #e7e5e4;
+  border-radius: var(--radius);
+  padding: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.mini-cal__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.mini-cal__titulo {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.btn-icon {
+  border: none;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.btn-hoje {
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.45rem;
+  cursor: pointer;
+}
+
+.mini-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.mini-cal__dow {
+  text-align: center;
+  font-size: 0.65rem;
+  color: var(--color-muted);
+  padding: 0.15rem 0;
+}
+
+.mini-cal__cell {
+  position: relative;
+  border: none;
+  background: var(--color-bg);
+  border-radius: 6px;
+  min-height: 2rem;
+  cursor: pointer;
+  padding: 0.15rem;
+  font-size: 0.8rem;
+
+  &--empty {
+    background: transparent;
+    cursor: default;
+  }
+
+  &--hoje {
+    outline: 1px solid var(--color-primary);
+  }
+
+  &--selected {
+    background: #fce7f3;
+    font-weight: 700;
+  }
+}
+
+.mini-cal__num {
+  display: block;
+}
+
+.mini-cal__badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 0.6rem;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999px;
+  min-width: 0.95rem;
+  padding: 0 3px;
+}
+
+.prof-filtros {
+  background: var(--color-surface);
+  border: 1px solid #e7e5e4;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+.prof-filtros__titulo {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.prof-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  margin: 0.35rem 0;
+  cursor: pointer;
+}
+
+.hub-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.dia-cab {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+
+  &--status {
+    min-height: 0;
+  }
+}
+
+/* Altura fixa da faixa horária: % em cartões/slots exige bloco de contenção definido. */
+$agenda-timeline-h: 28rem;
+$agenda-slot-rows: 24;
+
+.grid-wrap {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid #e7e5e4;
+  border-radius: var(--radius);
+}
+
+.grid-head {
+  display: flex;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.grid-head__corner {
+  width: 3.5rem;
+  flex-shrink: 0;
+}
+
+.grid-head__cell {
+  flex: 1;
+  min-width: 7rem;
+  padding: 0.5rem 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  border-left: 1px solid #f5f5f4;
+}
+
+.grid-body {
+  display: flex;
+  align-items: stretch;
+  height: $agenda-timeline-h;
+  min-height: $agenda-timeline-h;
+}
+
+.grid-body__times {
+  width: 3.5rem;
+  flex-shrink: 0;
+  border-right: 1px solid #f5f5f4;
+  position: relative;
+  height: 100%;
+  align-self: stretch;
+  /* Mesmas linhas horizontais que nas colunas do dia */
+  background-image: linear-gradient(
+    to bottom,
+    rgba(120, 113, 108, 0.18) 0,
+    rgba(120, 113, 108, 0.18) 1px,
+    transparent 1px,
+    transparent 100%
+  );
+  background-size: 100% calc(100% / $agenda-slot-rows);
+  background-repeat: repeat-y;
+}
+
+.grid-body__time {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+  text-align: center;
+  padding: 0 2px;
+  transform: translateY(-50%);
+}
+
+.grid-body__cols {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
+.day-col {
+  flex: 1;
+  min-width: 7rem;
+  min-height: 0;
+  height: 100%;
+  position: relative;
+  border-left: 1px solid #f5f5f4;
+  /* Linhas horizontais a cada 30 min (8h–20h = 24 intervalos) */
+  background-image: linear-gradient(
+    to bottom,
+    rgba(120, 113, 108, 0.18) 0,
+    rgba(120, 113, 108, 0.18) 1px,
+    transparent 1px,
+    transparent 100%
+  );
+  background-size: 100% calc(100% / $agenda-slot-rows);
+  background-repeat: repeat-y;
+}
+
+.day-col__slot {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.day-col__slot:hover {
+  background: rgba(157, 23, 77, 0.08);
+}
+
+.day-col__card {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  box-sizing: border-box;
+  min-height: 0;
+  margin: 0;
+  padding: 0.15rem 0.35rem;
+  text-align: left;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: inherit;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-left-width: 4px;
+  border-radius: 6px;
+  overflow: hidden;
+  z-index: 2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.day-col__card:hover:not(:disabled) {
+  filter: brightness(0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.day-col__card:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.day-col__card-text {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hub-rececao {
+  margin-top: 0.5rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  box-sizing: border-box;
+  background: rgba(28, 25, 23, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  /* Margem visível em relação à viewport (evita painel colado às bordas). */
+  padding: clamp(1rem, 4vmin, 2rem) clamp(1rem, 4vw, 2.25rem)
+    clamp(1.5rem, 5vmin, 2.5rem);
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: min(720px, calc(100vw - 2 * clamp(1rem, 4vw, 2.25rem)));
+  margin: clamp(0.5rem, 2vh, 1.25rem) auto clamp(1rem, 3vh, 2rem);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  border: 1px solid #e7e5e4;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  max-height: min(
+    calc(100vh - clamp(2.5rem, 8vmin, 4rem)),
+    calc(100dvh - clamp(2.5rem, 8vmin, 4rem))
+  );
+  overflow-y: auto;
+  /* Respiro interno em relação ao formulário (app-agenda-novo). */
+  padding: clamp(0.85rem, 2.2vw, 1.15rem) clamp(1rem, 2.8vw, 1.35rem)
+    clamp(1rem, 2.5vw, 1.25rem);
+}

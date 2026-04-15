@@ -1,4 +1,14 @@
-import { Component, inject, LOCALE_ID, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  LOCALE_ID,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DecimalPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
@@ -41,9 +51,19 @@ interface GrupoClienteDia {
   templateUrl: './atendimentos.component.html',
   styleUrl: './atendimentos.component.scss',
 })
-export class AtendimentosComponent implements OnInit {
+export class AtendimentosComponent implements OnInit, OnChanges {
   private readonly api = inject(SheetsApiService);
   private readonly router = inject(Router);
+
+  /** Quando true, mostra o dia em `dataAgenda` e esconde o toggle Hoje/Amanhã. */
+  @Input() modoAgendaHub = false;
+  /** `AAAA-MM-DD` quando embutido na agenda. */
+  @Input() dataAgenda: string | null = null;
+  /** Incrementar no pai para forçar novo carregamento. */
+  @Input() reloadKey = 0;
+
+  /** Emitido após exclusão (e após recarregar a lista) quando embutido na agenda — atualiza grelha no pai. */
+  @Output() agendaDadosAlterados = new EventEmitter<void>();
 
   /** Data no topo do card: dd/mm/aaaa */
   readonly dataDdMmBarraAaaa = dataDdMmBarraAaaa;
@@ -78,7 +98,16 @@ export class AtendimentosComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    if (this.modoAgendaHub) {
+      return;
+    }
     this.carregar();
+  }
+
+  ngOnChanges(ch: SimpleChanges): void {
+    if (!this.modoAgendaHub) return;
+    if (!(ch['dataAgenda'] || ch['reloadKey'])) return;
+    if (this.dataAgendaValida()) this.carregar();
   }
 
   setDia(d: DiaCards): void {
@@ -94,6 +123,10 @@ export class AtendimentosComponent implements OnInit {
   }
 
   private dataAlvo(): Date {
+    if (this.modoAgendaHub && this.dataAgendaValida()) {
+      const [y, m, d] = this.dataAgenda!.trim().split('-').map((x) => parseInt(x, 10));
+      return new Date(y, m - 1, d);
+    }
     const d = new Date();
     if (this.dia === 'amanha') {
       d.setDate(d.getDate() + 1);
@@ -101,7 +134,15 @@ export class AtendimentosComponent implements OnInit {
     return d;
   }
 
+  private dataAgendaValida(): boolean {
+    const s = this.dataAgenda?.trim();
+    return !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  }
+
   tituloPeriodo(): string {
+    if (this.modoAgendaHub && this.dataAgendaValida()) {
+      return dataDdMmBarraAaaa(this.dataAgenda!.trim());
+    }
     return this.dia === 'hoje' ? 'Hoje' : 'Amanhã';
   }
 
@@ -124,6 +165,47 @@ export class AtendimentosComponent implements OnInit {
 
   toggleGrupo(id: string): void {
     this.grupoExpandidoId = this.grupoExpandidoId === id ? null : id;
+  }
+
+  /** ID estável no DOM para focar/rolar até o card (evita `\u0001` em `g.id`). */
+  domIdGrupoResumo(g: GrupoClienteDia): string {
+    const idAt = g.linhas[0]?.id?.trim();
+    if (idAt) return `atend-resumo-${encodeURIComponent(idAt)}`;
+    return `atend-grupo-${encodeURIComponent(g.id)}`;
+  }
+
+  /**
+   * Abre o card desse atendimento na receção (ex.: clique na grelha da agenda).
+   * Garante que o bloco da secção correspondente fica visível.
+   */
+  expandirGrupoPorIdAtendimento(idAtendimento: string): void {
+    const id = idAtendimento.trim();
+    if (!id) return;
+    const g = this.grupos.find((x) =>
+      x.linhas.some((l) => String(l.id || '').trim() === id),
+    );
+    if (!g) return;
+    this.grupoExpandidoId = g.id;
+    if (!this.cobrancaFinalizada(g)) {
+      this.secoesExpandidas = { ...this.secoesExpandidas, aberto: true };
+    } else if (!this.pagamentoConfirmado(g)) {
+      this.secoesExpandidas = {
+        ...this.secoesExpandidas,
+        'pagamento-pendente': true,
+      };
+    } else {
+      this.secoesExpandidas = {
+        ...this.secoesExpandidas,
+        'pagamento-ok': true,
+      };
+    }
+    const anchor = this.domIdGrupoResumo(g);
+    queueMicrotask(() => {
+      document.getElementById(anchor)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    });
   }
 
   descontoDraft(grupoId: string): string {
@@ -514,7 +596,9 @@ export class AtendimentosComponent implements OnInit {
         if (this.grupoExpandidoId === g.id) {
           this.grupoExpandidoId = null;
         }
-        this.carregar();
+        this.carregar(() => {
+          if (this.modoAgendaHub) this.agendaDadosAlterados.emit();
+        });
       },
       error: (e: Error) => {
         this.excluindoIdAt = null;
@@ -525,7 +609,7 @@ export class AtendimentosComponent implements OnInit {
     });
   }
 
-  carregar(): void {
+  carregar(onComplete?: () => void): void {
     this.carregando = true;
     this.erro = '';
     const d = this.dataAlvo();
@@ -538,6 +622,7 @@ export class AtendimentosComponent implements OnInit {
         this.metodoPagamentoPorGrupo = {};
         this.grupos = this.agruparPorIdAtendimento(items);
         this.carregando = false;
+        onComplete?.();
       },
       error: (e: Error) => {
         this.erro =
