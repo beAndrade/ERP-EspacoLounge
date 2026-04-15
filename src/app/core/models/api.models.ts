@@ -18,7 +18,7 @@ export interface Cliente {
 }
 
 /**
- * Linha da aba Serviços; `id` = número da linha na planilha (primeira linha de dados = 2).
+ * Linha da aba Serviços; `id` = PK `servicos.id` (= número da linha na planilha, primeira linha de dados = 2).
  * Demais chaves = cabeçalhos da linha 1 (ex.: Serviço, Tipo, Valor Base).
  */
 export interface Servico {
@@ -29,8 +29,14 @@ export interface Servico {
 /** Item da lista Agenda (aba Atendimentos), normalizado para a UI. */
 export interface AtendimentoListaItem {
   id: string;
+  /** PK da linha em `atendimentos` (única por registo). */
+  linha_id?: number;
   /** Sempre `AAAA-MM-DD` (para ordenar); na tela usa-se formato dia-mês-ano. */
   data: string;
+  /** `YYYY-MM-DD HH:mm:ss` (relógio do salão, sem timezone) quando existir na BD. */
+  inicio?: string | null;
+  /** `YYYY-MM-DD HH:mm:ss` quando existir na BD. */
+  fim?: string | null;
   nomeCliente: string;
   /** ID do cliente (aba Clientes), para pré-preencher “Novo atendimento”. */
   idCliente?: string | null;
@@ -42,10 +48,12 @@ export interface AtendimentoListaItem {
   servicosRef?: string | null;
   /** Coluna Tamanho. */
   tamanho?: string | null;
-  /** Nome do profissional (resolvido a partir de `folha` na API). */
+  /** Nome do profissional (resolvido a partir de `profissionais` na API). */
   profissional?: string | null;
-  /** ID na Folha (`atendimentos.profissional_id`). */
+  /** FK `profissionais.id` (`atendimentos.profissional_id`). */
   profissional_id?: number | null;
+  /** Itens de catálogo na pivot `atendimento_itens` para este `id_atendimento`. */
+  itens_catalogo?: AtendimentoItemCatalogo[];
   /** Coluna Pacote. */
   pacote?: string | null;
   /** Coluna Etapa. */
@@ -85,7 +93,18 @@ export interface PacoteCatalogoItem {
   preco: unknown;
 }
 
+/** Item da pivot `atendimento_itens` na resposta de listagem. */
+export interface AtendimentoItemCatalogo {
+  tipo: 'servico' | 'produto';
+  servico_id: number | null;
+  produto_id: number | null;
+  quantidade: number;
+  profissional_id: number | null;
+  tamanho: string | null;
+}
+
 export interface ProdutoCatalogoItem {
+  id: number;
   produto: string;
   preco: unknown;
   unidade: string;
@@ -99,7 +118,7 @@ export interface CabeloCatalogoItem {
   valor_base: unknown;
 }
 
-/** Linha da aba Folha (`folha.id` + nome para exibição). */
+/** Cadastro `profissionais` (lista `/api/profissionais`). */
 export interface ProfissionalListaItem {
   id: number;
   nome: string;
@@ -149,8 +168,14 @@ export interface AtendimentoEtapaPayload {
   profissional_id: number;
 }
 
+/** Opcional na criação: `YYYY-MM-DD HH:mm:ss` na primeira linha (ou única). */
+export type AgendaSlotCriacaoOpcional = {
+  inicio?: string;
+  fim?: string;
+};
+
 /** União de payloads para createAgendamento / createAtendimento. */
-export type CreateAtendimentoPayload =
+export type CreateAtendimentoPayload = (
   | {
       tipo: 'Serviço';
       cliente_id: string;
@@ -159,6 +184,13 @@ export type CreateAtendimentoPayload =
       servico_id: string;
       tamanho?: string;
       observacao?: string;
+      /** Vários serviços no mesmo pedido; cada entrada → linha em `atendimentos` + `atendimento_itens`. */
+      itens_servicos?: {
+        servico_id: string;
+        quantidade: number;
+        profissional_id?: number | null;
+        tamanho?: string;
+      }[];
     }
   | {
       tipo: 'Mega';
@@ -194,4 +226,6 @@ export type CreateAtendimentoPayload =
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;
-    };
+    }
+) &
+  AgendaSlotCriacaoOpcional;

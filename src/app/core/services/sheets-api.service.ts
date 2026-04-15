@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   ApiResponse,
   AtendimentoCriadoResumo,
+  AtendimentoItemCatalogo,
   AtendimentoListaItem,
   CabeloCatalogoItem,
   CaixaDiaResumo,
@@ -316,9 +317,57 @@ export class SheetsApiService {
       raw['profissional_id'] ?? raw['Profissional ID'],
     );
 
+    const itensRaw = raw['itens_catalogo'];
+    let itens_catalogo: AtendimentoItemCatalogo[] | undefined;
+    if (Array.isArray(itensRaw)) {
+      itens_catalogo = itensRaw
+        .map((x) => {
+          if (!x || typeof x !== 'object') return null;
+          const o = x as Record<string, unknown>;
+          const tipo = o['tipo'];
+          if (tipo !== 'servico' && tipo !== 'produto') return null;
+          return {
+            tipo,
+            servico_id:
+              o['servico_id'] != null ? Number(o['servico_id']) : null,
+            produto_id:
+              o['produto_id'] != null ? Number(o['produto_id']) : null,
+            quantidade: Math.max(1, Number(o['quantidade']) || 1),
+            profissional_id:
+              o['profissional_id'] != null
+                ? Number(o['profissional_id'])
+                : null,
+            tamanho:
+              o['tamanho'] != null && String(o['tamanho']).trim()
+                ? String(o['tamanho']).trim()
+                : null,
+          };
+        })
+        .filter(Boolean) as AtendimentoItemCatalogo[];
+      if (itens_catalogo.length === 0) itens_catalogo = undefined;
+    }
+
+    const linhaRaw = raw['linha_id'];
+    const linha_id =
+      linhaRaw != null && linhaRaw !== ''
+        ? Number(linhaRaw)
+        : undefined;
+    const inicio =
+      raw['inicio'] != null && String(raw['inicio']).trim()
+        ? String(raw['inicio']).trim()
+        : null;
+    const fim =
+      raw['fim'] != null && String(raw['fim']).trim()
+        ? String(raw['fim']).trim()
+        : null;
+
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
+      linha_id:
+        linha_id != null && Number.isFinite(linha_id) ? linha_id : undefined,
       data: this.formatDataCell(raw['Data']),
+      inicio,
+      fim,
       nomeCliente: String(raw['Nome Cliente'] ?? '').trim(),
       idCliente: String(raw['ID Cliente'] ?? '').trim() || null,
       tipo: tipo ? tipo : null,
@@ -327,6 +376,7 @@ export class SheetsApiService {
       tamanho: String(raw['Tamanho'] ?? '').trim() || null,
       profissional: String(raw['Profissional'] ?? '').trim() || null,
       profissional_id,
+      itens_catalogo,
       pacote: pacote || null,
       etapa: etapa || null,
       descricao,
