@@ -1,3 +1,6 @@
+/* Largura da coluna esquerda (mini-cal + filtros); alinha o botão da toolbar ao bloco do calendário. */
+$hub-sidebar-w: 16rem;
+
 .hub-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -7,6 +10,8 @@
 }
 
 .hub-toolbar .btn-novo {
+  box-sizing: border-box;
+  width: min(#{$hub-sidebar-w}, 100%);
   min-height: var(--touch-min);
   padding: 0.55rem 1.25rem;
   border-radius: var(--radius);
@@ -45,7 +50,7 @@
 }
 
 .hub-sidebar {
-  flex: 0 0 16rem;
+  flex: 0 0 $hub-sidebar-w;
   max-width: 100%;
 }
 
@@ -245,8 +250,8 @@ $agenda-slot-rows: 24;
 
 .grid-body__time {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 3px;
+  right: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,7 +260,7 @@ $agenda-slot-rows: 24;
   font-variant-numeric: tabular-nums;
   color: var(--color-muted);
   text-align: center;
-  padding: 0 2px;
+  padding: 0 5px;
   transform: translateY(-50%);
 }
 
@@ -289,14 +294,15 @@ $agenda-slot-rows: 24;
 
 .day-col__slot {
   position: absolute;
-  left: 1px;
-  right: 1px;
+  left: 4px;
+  right: 4px;
   margin: 0;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .day-col__slot:hover {
