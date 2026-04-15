@@ -114,17 +114,22 @@
                   (click)="abrirDetalhesNaRececaoBloco(bloco, $event)"
                 >
                   <span class="day-col__card-body">
-                    <span class="day-col__card-time">{{ horaBloco(bloco) }}</span>
-                    <span class="day-col__card-nome">{{
-                      nomeClienteBloco(bloco)
-                    }}</span>
+                    <span class="day-col__card-linha1">
+                      <span class="day-col__card-time">{{ horaBloco(bloco) }}</span>
+                      <span class="day-col__card-sep" aria-hidden="true">·</span>
+                      <span class="day-col__card-nome">{{
+                        nomeClienteBloco(bloco)
+                      }}</span>
+                    </span>
                     @let itensCard = itensResumoBloco(bloco);
                     @if (itensCard.length) {
-                      <ul class="day-col__card-itens">
-                        @for (item of itensCard; track item) {
-                          <li>{{ item }}</li>
-                        }
-                      </ul>
+                      <div class="day-col__card-linha2">
+                        <ul class="day-col__card-itens">
+                          @for (item of itensCard; track item) {
+                            <li>{{ item }}</li>
+                          }
+                        </ul>
+                      </div>
                     }
                   </span>
                 </button>

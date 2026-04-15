@@ -225,12 +225,10 @@ $agenda-slot-rows: 31;
 }
 
 .grid-body {
-  box-sizing: border-box;
   display: flex;
   align-items: stretch;
   height: $agenda-timeline-h;
   min-height: $agenda-timeline-h;
-  padding-block: 0.65rem;
 }
 
 .grid-body__times {
@@ -370,26 +368,48 @@ $agenda-slot-rows: 31;
 .day-col__card-body {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
   min-width: 0;
   width: 100%;
+}
+
+/* 1ª linha: horário + nome do cliente */
+.day-col__card-linha1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.35rem;
+  line-height: 1.2;
+  min-width: 0;
 }
 
 .day-col__card-time {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--color-text, #1c1917);
+  flex-shrink: 0;
+}
+
+.day-col__card-sep {
+  color: var(--color-muted, #78716c);
+  font-weight: 500;
+  user-select: none;
 }
 
 .day-col__card-nome {
   font-weight: 600;
-  line-height: 1.2;
+  min-width: 0;
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
+/* 2ª linha: itens do atendimento */
+.day-col__card-linha2 {
+  min-width: 0;
+}
+
 .day-col__card-itens {
-  margin: 0.1rem 0 0;
+  margin: 0;
   padding-left: 1rem;
   list-style: disc;
   font-size: 0.68rem;
@@ -398,7 +418,7 @@ $agenda-slot-rows: 31;
   color: var(--color-muted, #78716c);
 
   li {
-    margin: 0.12rem 0;
+    margin: 0.08rem 0;
     overflow-wrap: break-word;
     word-break: break-word;
   }
