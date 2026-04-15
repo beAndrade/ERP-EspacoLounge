@@ -83,7 +83,14 @@
       "idx": 11,
       "version": "7",
       "when": 1775697923000,
-      "tag": "0011_atendimento_itens_chk_e_backfill_mega_pacote_cabelo",
+      "tag": "0011_atendimento_itens_colunas_e_drop_chk",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1775697924000,
+      "tag": "0012_atendimento_itens_chk_e_backfill_mega_pacote_cabelo",
       "breakpoints": true
     }
   ]
