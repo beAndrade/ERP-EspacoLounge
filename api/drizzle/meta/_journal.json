@@ -64,6 +64,13 @@
       "when": 1775697920000,
       "tag": "0008_servicos_duracao_por_tamanho",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775697921000,
+      "tag": "0009_empty_string_to_null_text",
+      "breakpoints": true
     }
   ]
 }

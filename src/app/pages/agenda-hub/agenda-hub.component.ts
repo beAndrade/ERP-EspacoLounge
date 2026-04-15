@@ -8,6 +8,7 @@ import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { minutosMeiaNoiteEmBrasilia } from '../../core/utils/brasilia-time';
 import { diffMinutesEntreHorarios } from '../../core/utils/sql-local-datetime';
 import {
+  linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
   toYmd,
 } from '../../core/utils/atendimento-display';
@@ -341,20 +342,33 @@ export class AgendaHubComponent implements OnInit {
     return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
   }
 
+  nomeClienteBloco(b: AgendaHubBloco): string {
+    return (b.linhas[0]?.nomeCliente || '').trim() || '—';
+  }
+
+  /** Uma entrada por linha de atendimento (sem duplicar texto igual). */
+  itensResumoBloco(b: AgendaHubBloco): string[] {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const l of b.linhas) {
+      const txt = linhaResumoAtendimentoLista(l).trim();
+      if (!txt || seen.has(txt)) continue;
+      seen.add(txt);
+      out.push(txt);
+    }
+    return out;
+  }
+
+  /** Texto plano para aria-label / leitores. */
   rotuloBloco(b: AgendaHubBloco): string {
     const hora = this.horaBloco(b);
-    const nome = (b.linhas[0]?.nomeCliente || '').trim() || '—';
-    const descs = [
-      ...new Set(
-        b.linhas
-          .map((l) => (l.descricao || '').trim())
-          .filter(Boolean),
-      ),
-    ];
-    const desc =
-      descs.length <= 1 ? (descs[0] ?? '') : descs.join(' · ');
-    const prefix = hora ? `${hora} · ` : '';
-    return desc ? `${prefix}${nome} — ${desc}` : `${prefix}${nome}`;
+    const nome = this.nomeClienteBloco(b);
+    const itens = this.itensResumoBloco(b);
+    const partes: string[] = [];
+    if (hora) partes.push(hora);
+    partes.push(nome);
+    if (itens.length) partes.push(itens.join('; '));
+    return partes.join(' · ');
   }
 
   idAtendimentoBloco(b: AgendaHubBloco): string {
