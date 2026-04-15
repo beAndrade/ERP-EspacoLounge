@@ -52,7 +52,11 @@ export interface AtendimentoListaItem {
   profissional?: string | null;
   /** FK `profissionais.id` (`atendimentos.profissional_id`). */
   profissional_id?: number | null;
-  /** Itens de catálogo na pivot `atendimento_itens` para este `id_atendimento`. */
+  /**
+   * Itens na pivot `atendimento_itens` (serviço/produto com FK ao catálogo).
+   * Pacote/Mega não gravam linhas nessa pivot — o pedido aparece nas linhas
+   * `atendimentos` (campos `tipo`, `pacote`, `etapa`).
+   */
   itens_catalogo?: AtendimentoItemCatalogo[];
   /** Espelho de `itens_catalogo` na primeira linha do pedido (API pode enviar só uma das chaves). */
   itens?: AtendimentoItemCatalogo[];
@@ -103,10 +107,6 @@ export interface AtendimentoItemCatalogo {
   quantidade: number;
   profissional_id: number | null;
   tamanho: string | null;
-  /** Preenchido pela API a partir de `produtos.produto`. */
-  produto_nome?: string | null;
-  /** Preenchido pela API a partir de `servicos.servico`. */
-  servico_nome?: string | null;
 }
 
 export interface ProdutoCatalogoItem {

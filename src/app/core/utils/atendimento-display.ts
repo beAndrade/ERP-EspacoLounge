@@ -1,7 +1,4 @@
-import type {
-  AtendimentoItemCatalogo,
-  AtendimentoListaItem,
-} from '../models/api.models';
+import type { AtendimentoListaItem } from '../models/api.models';
 
 /** Data API (AAAA-MM-DD) → dd-mm-aaaa para exibição */
 export function dataDdMmAaaa(ymd: string): string {
@@ -135,28 +132,29 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     if (!et) {
       return pac ? `Pacote • ${pac}` : '—';
     }
+    /* Com etapa: sempre incluir o pacote (antes só aparecia a etapa). */
+    if (pac && et) {
+      return `${pac} — ${et}`;
+    }
     return et || pac || '—';
   }
   if (t === 'mega') {
     const pac = (l.pacote || '').trim();
     const et = (l.etapa || '').trim();
     if (!et) {
-      return pac || '—';
+      return pac ? `Mega • ${pac}` : '—';
+    }
+    if (pac && et) {
+      return `${pac} — ${et}`;
     }
     return et || pac || '—';
   }
-  if (t === 'serviço' || t === 'servico') {
+  if (t === 'serviço') {
     const nome = (l.servicosRef || '').trim();
     const tam = (l.tamanho || '').trim();
     if (nome && tam) {
       return `${nome} — ${tam}`;
     }
-    return nome || (l.descricao || '').trim() || '—';
-  }
-  if (t === 'cabelo') {
-    const nome = (l.servicosRef || '').trim();
-    const tam = (l.tamanho || '').trim();
-    if (nome && tam) return `${nome} — ${tam}`;
     return nome || (l.descricao || '').trim() || '—';
   }
   const nomeServ = (l.servicosRef || '').trim();
@@ -165,41 +163,4 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     return `${nomeServ} — ${tamServ}`;
   }
   return (l.descricao || '').trim() || '—';
-}
-
-/** Texto para um item da pivot `atendimento_itens` (ex.: lista em cards da agenda). */
-export function resumoItemCatalogo(c: AtendimentoItemCatalogo): string {
-  const q = Math.max(1, Number(c.quantidade) || 1);
-  const qSuf = q > 1 ? ` ×${q}` : '';
-  if (c.tipo === 'produto') {
-    const nome = (c.produto_nome || '').trim();
-    if (nome) return `${nome}${qSuf}`;
-    const id = c.produto_id != null && Number(c.produto_id) > 0 ? c.produto_id : null;
-    return id != null ? `Produto #${id}${qSuf}` : `Produto${qSuf}`;
-  }
-  const nome = (c.servico_nome || '').trim();
-  const tam = (c.tamanho || '').trim();
-  const base =
-    nome ||
-    (c.servico_id != null && Number(c.servico_id) > 0
-      ? `Serviço #${c.servico_id}`
-      : 'Serviço');
-  const mid = tam ? `${base} — ${tam}` : base;
-  return `${mid}${qSuf}`;
-}
-
-/** Entradas únicas da pivot do pedido (evita repetir o mesmo bloco em várias linhas). */
-export function resumosItensCatalogoUnicos(
-  itens: AtendimentoItemCatalogo[] | undefined | null,
-): string[] {
-  if (!itens?.length) return [];
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const it of itens) {
-    const t = resumoItemCatalogo(it).trim();
-    if (!t || seen.has(t)) continue;
-    seen.add(t);
-    out.push(t);
-  }
-  return out;
 }

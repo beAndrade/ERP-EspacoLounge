@@ -10,7 +10,6 @@ import { diffMinutesEntreHorarios } from '../../core/utils/sql-local-datetime';
 import {
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
-  resumosItensCatalogoUnicos,
   toYmd,
 } from '../../core/utils/atendimento-display';
 import { AtendimentosComponent } from '../atendimentos/atendimentos.component';
@@ -348,32 +347,35 @@ export class AgendaHubComponent implements OnInit {
   }
 
   /**
-   * Linhas do pedido + itens da pivot (`atendimento_itens`), sem duplicar o mesmo texto.
-   * A API replica `itens_catalogo` em todas as linhas do mesmo `id_atendimento`.
+   * Uma entrada por linha de atendimento (sem duplicar texto igual).
+   * Pacote com cabeça + etapas: omite a linha só-cabeça (`Pacote • nome`) se já
+   * existirem linhas com o mesmo pacote e etapa preenchida (evita repetir o nome).
    */
   itensResumoBloco(b: AgendaHubBloco): string[] {
+    const linhas = b.linhas;
+    const temPacoteComEtapas = linhas.some((l) => {
+      const t = (l.tipo || '').trim().toLowerCase();
+      return (
+        t === 'pacote' &&
+        (l.etapa || '').trim().length > 0 &&
+        (l.pacote || '').trim().length > 0
+      );
+    });
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const l of b.linhas) {
+    for (const l of linhas) {
+      const t = (l.tipo || '').trim().toLowerCase();
+      if (
+        temPacoteComEtapas &&
+        t === 'pacote' &&
+        !(l.etapa || '').trim()
+      ) {
+        continue;
+      }
       const txt = linhaResumoAtendimentoLista(l).trim();
       if (!txt || seen.has(txt)) continue;
       seen.add(txt);
       out.push(txt);
-    }
-    let catalogo = b.linhas[0]?.itens_catalogo ?? b.linhas[0]?.itens;
-    if (!catalogo?.length) {
-      for (const l of b.linhas) {
-        const c = l.itens_catalogo ?? l.itens;
-        if (c?.length) {
-          catalogo = c;
-          break;
-        }
-      }
-    }
-    for (const t of resumosItensCatalogoUnicos(catalogo)) {
-      if (seen.has(t)) continue;
-      seen.add(t);
-      out.push(t);
     }
     return out;
   }
