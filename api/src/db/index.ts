@@ -67,4 +67,52 @@ BEGIN
   END IF;
 END $$;
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'duracao_curto'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "duracao_curto" integer;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'duracao_medio'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "duracao_medio" integer;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'duracao_m_l'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "duracao_m_l" integer;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'duracao_longo'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "duracao_longo" integer;
+  END IF;
+END $$;
+`));
 }

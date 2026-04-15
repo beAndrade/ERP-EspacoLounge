@@ -42,6 +42,11 @@ export const servicos = pgTable('servicos', {
   tipo: text('tipo'),
   /** Duração prevista do serviço (minutos), p.ex. para agenda e horário final. */
   duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
+  /** Para `tipo = Tamanho`: minutos por faixa (null = usar `duracao_minutos`). */
+  duracaoCurto: integer('duracao_curto'),
+  duracaoMedio: integer('duracao_medio'),
+  duracaoMedioLongo: integer('duracao_m_l'),
+  duracaoLongo: integer('duracao_longo'),
   valorBase: text('valor_base'),
   comissaoFixa: text('comissao_fixa'),
   comissaoPct: text('comissao_pct'),

@@ -106,11 +106,37 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
           : NaN;
       const duracaoMinutos =
         Number.isFinite(durN) && durN >= 5 && durN <= 24 * 60 ? durN : 30;
+      const pickDur = (labels: string[]) => {
+        const raw = pick(row, labels);
+        if (raw == null || String(raw).trim() === '') return undefined;
+        const n = parseInt(String(raw).replace(/\D/g, ''), 10);
+        return Number.isFinite(n) && n >= 5 && n <= 24 * 60 ? n : undefined;
+      };
       await db.insert(servicos).values({
         id: sheetRow,
         servico: pick(row, ['Serviço', 'Servico']) || null,
         tipo: row['Tipo'] || null,
         duracaoMinutos,
+        duracaoCurto: pickDur([
+          'Duração Curto (min)',
+          'Duracao Curto (min)',
+          'duracao_curto',
+        ]),
+        duracaoMedio: pickDur([
+          'Duração Médio (min)',
+          'Duracao Medio (min)',
+          'duracao_medio',
+        ]),
+        duracaoMedioLongo: pickDur([
+          'Duração M/L (min)',
+          'Duracao M/L (min)',
+          'duracao_m_l',
+        ]),
+        duracaoLongo: pickDur([
+          'Duração Longo (min)',
+          'Duracao Longo (min)',
+          'duracao_longo',
+        ]),
         valorBase: pick(row, ['Valor Base']) || null,
         comissaoFixa: pick(row, ['Comissão Fixa', 'Comissao Fixa']) || null,
         comissaoPct: pick(row, ['Comissão %', 'Comissao %']) || null,

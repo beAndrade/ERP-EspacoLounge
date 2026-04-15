@@ -1310,38 +1310,69 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (c.get('itemTipo')?.value !== 'Serviço') continue;
       const sid = String(c.get('servico_id')?.value ?? '').trim();
       if (!sid) continue;
-      sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
+      const tam = String(c.get('tamanho')?.value ?? 'Curto').trim();
+      sum += this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
     }
     return Math.max(15, sum || 15);
   }
 
-  private duracaoMinutosDoServico(s: Servico | undefined): number {
+  /**
+   * Fixo → `duracao_minutos`.
+   * Tamanho / legado Serviço → colunas `duracao_*` conforme tamanho, ou padrão.
+   */
+  private duracaoMinutosDoServico(
+    s: Servico | undefined,
+    tamanhoCtx?: string,
+  ): number {
     if (!s) return 30;
-    const raw =
-      s['duracao_minutos'] ??
-      s['Duração Minutos'] ??
-      s['Duracao Minutos'] ??
-      s['duracaoMinutos'];
-    const n = Number(raw);
+    const padrao = (): number => {
+      const raw =
+        s['duracao_minutos'] ??
+        s['Duração Minutos'] ??
+        s['Duracao Minutos'] ??
+        s['duracaoMinutos'];
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 5 && n <= 24 * 60) return Math.round(n);
+      return 30;
+    };
+    const tipo = String(s['Tipo'] ?? '').trim().toLowerCase();
+    if (tipo === 'fixo') return padrao();
+
+    const tam = (tamanhoCtx || 'Curto').trim();
+    const keyMap: Record<string, string> = {
+      Curto: 'duracao_curto',
+      Médio: 'duracao_medio',
+      'M/L': 'duracao_m_l',
+      Longo: 'duracao_longo',
+    };
+    const key = keyMap[tam] ?? 'duracao_curto';
+    const rawD = s[key];
+    const n = Number(rawD);
     if (Number.isFinite(n) && n >= 5 && n <= 24 * 60) return Math.round(n);
-    return 30;
+    return padrao();
   }
 
   private slotsSequenciaisParaPayloadServico(
     dataYmd: string,
     horaIniBruto: string,
-    preparados: { servico_id: string }[],
+    preparados: { servico_id: string; tamanho?: string }[],
   ): ({ inicio: string; fim: string } | null)[] {
     const hi = normalizarHoraHHmm(horaIniBruto);
     if (!hi || !/^\d{4}-\d{2}-\d{2}$/.test(dataYmd)) {
       return preparados.map(() => null);
     }
-    const anchor = slotInicioFimBrasilia(dataYmd, hi, 30);
+    const d0 = preparados.length
+      ? this.duracaoMinutosDoServico(
+          this.servicoPorId(preparados[0].servico_id),
+          preparados[0].tamanho,
+        )
+      : 30;
+    const anchor = slotInicioFimBrasilia(dataYmd, hi, d0);
     let cur = anchor ? parseSqlLocalDateTime(anchor.inicio) : null;
     if (!cur) return preparados.map(() => null);
     return preparados.map((pr) => {
       const svc = this.servicoPorId(pr.servico_id);
-      const d = this.duracaoMinutosDoServico(svc);
+      const d = this.duracaoMinutosDoServico(svc, pr.tamanho);
       const ini = formatSqlLocalDateTime(cur!);
       const next = addMinutesToParts(cur!, d);
       const fim = formatSqlLocalDateTime(next);
@@ -1414,7 +1445,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const slotPairs = this.slotsSequenciaisParaPayloadServico(
       dataYmd,
       horaIni,
-      servicosPrep,
+      servicosPrep.map((p) => ({
+        servico_id: p.servico_id,
+        tamanho: p.tamanho,
+      })),
     );
     const out: CreateAtendimentoPayload[] = [];
     let servicoIdx = 0;

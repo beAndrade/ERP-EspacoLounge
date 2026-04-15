@@ -228,6 +228,34 @@ function tipoServicoCatalogo(srv: ServicoRow): 'Fixo' | 'Tamanho' | 'LegacyServi
   return '';
 }
 
+/** Duração em minutos: Fixo → `duracao_minutos`; Tamanho/Legacy → coluna do tamanho ou padrão. */
+function duracaoMinutosServicoCatalogo(
+  srv: ServicoRow,
+  cat: ReturnType<typeof tipoServicoCatalogo>,
+  tamanhoParam: string,
+  legacy: boolean,
+): number {
+  const base = srv.duracaoMinutos ?? 30;
+  const fallback = Math.min(Math.max(base, 5), 24 * 60);
+  if (legacy && !cat) return fallback;
+  if (cat === 'Fixo' || cat === '') return fallback;
+  const t = (tamanhoParam || 'Curto').trim();
+  const colMap: Partial<Record<string, keyof ServicoRow>> = {
+    Curto: 'duracaoCurto',
+    Médio: 'duracaoMedio',
+    'M/L': 'duracaoMedioLongo',
+    Longo: 'duracaoLongo',
+  };
+  const col = colMap[t];
+  if (col) {
+    const v = srv[col];
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 5 && v <= 24 * 60) {
+      return Math.round(v);
+    }
+  }
+  return fallback;
+}
+
 function valorEComissaoServico(
   srv: ServicoRow,
   cat: ReturnType<typeof tipoServicoCatalogo>,
@@ -553,6 +581,8 @@ async function resolveProfissionalIdToInt(
 function parseInicioFimOpcional(
   inicioRaw: unknown,
   fimRaw: unknown,
+  /** Quando só `inicio` vem preenchido (minutos). Padrão 30 = compatível com fluxos antigos. */
+  duracaoSeFimAusenteMin = 30,
 ): { inicio: string | null; fim: string | null } {
   const parseOne = (v: unknown): string | null => {
     if (v === undefined || v === null || v === '') return null;
@@ -573,7 +603,11 @@ function parseInicioFimOpcional(
   if (inicio && !fim) {
     const p = parseSqlLocalDateTime(inicio);
     if (p) {
-      fim = formatSqlLocalDateTime(addMinutesToParts(p, 30));
+      const dm = Math.max(
+        5,
+        Math.min(24 * 60, Math.round(duracaoSeFimAusenteMin)),
+      );
+      fim = formatSqlLocalDateTime(addMinutesToParts(p, dm));
     }
   }
   return { inicio, fim };
@@ -683,7 +717,6 @@ async function createAtendimentoServico(
   const rec = p as Record<string, unknown>;
   const nomeCliente = await findClienteNome(db, clienteId);
   const idAt = makeIdAtendimento(dataStr, clienteId);
-  const slot = parseInicioFimOpcional(rec['inicio'], rec['fim']);
   const obs = String('observacao' in p ? p.observacao || '' : '').trim();
 
   type ItemRec = {
@@ -736,6 +769,21 @@ async function createAtendimentoServico(
       tamanho: 'tamanho' in p ? String(p.tamanho || '') : undefined,
     });
   }
+
+  const firstIt = itensNorm[0];
+  const srvFirst = await readServicoRow(db, firstIt.servicoLine);
+  const catFirst = tipoServicoCatalogo(srvFirst);
+  let tamFirst = String(firstIt.tamanho || '').trim();
+  if (!legacy && catFirst === 'Tamanho' && !tamFirst) {
+    tamFirst = 'Curto';
+  }
+  const durSlot = duracaoMinutosServicoCatalogo(
+    srvFirst,
+    catFirst,
+    tamFirst || 'Curto',
+    legacy,
+  );
+  const slot = parseInicioFimOpcional(rec['inicio'], rec['fim'], durSlot);
 
   const bodyProf = await resolveProfissionalIdToInt(
     db,
