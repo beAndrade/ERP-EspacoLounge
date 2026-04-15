@@ -194,7 +194,8 @@ $hub-sidebar-w: 16rem;
 /* Altura fixa da faixa horária: % em cartões/slots exige bloco de contenção definido.
  * Mais alto = mais px por linha de 30 min (respiro nos rótulos sem overflow entre faixas). */
 $agenda-timeline-h: 40rem;
-$agenda-slot-rows: 24;
+/* Sincronizar com (GRID_END_MIN - GRID_START_MIN) / 30 no TS (= 31). */
+$agenda-slot-rows: 31;
 
 .grid-wrap {
   overflow-x: auto;
@@ -237,7 +238,7 @@ $agenda-slot-rows: 24;
   position: relative;
   height: 100%;
   align-self: stretch;
-  /* Mesmas linhas horizontais que nas colunas do dia */
+  /* Mesmas linhas horizontais que nas colunas (8h–23h30, 31 intervalos) */
   background-image: linear-gradient(
     to bottom,
     rgba(120, 113, 108, 0.18) 0,
@@ -277,7 +278,7 @@ $agenda-slot-rows: 24;
   color: var(--color-muted);
   text-align: center;
   line-height: 1.25;
-  /* ~altura da faixa = $agenda-timeline-h / 24; não ultrapassar ~0.5rem + linha sem cortar. */
+  /* ~altura da faixa = $agenda-timeline-h / $agenda-slot-rows; não ultrapassar ~0.5rem + linha sem cortar. */
   padding-block: 0.45rem;
   padding-inline: 4px;
   overflow: hidden;
@@ -301,7 +302,7 @@ $agenda-slot-rows: 24;
   height: 100%;
   position: relative;
   border-left: 1px solid #f5f5f4;
-  /* Linhas horizontais a cada 30 min (8h–20h = 24 intervalos) */
+  /* Linhas horizontais a cada 30 min (8h–23h30, 31 intervalos) */
   background-image: linear-gradient(
     to bottom,
     rgba(120, 113, 108, 0.18) 0,
@@ -337,22 +338,24 @@ $agenda-slot-rows: 24;
   box-sizing: border-box;
   min-height: 0;
   margin: 0;
-  padding: 0.15rem 0.35rem;
+  padding: 0.2rem 0.35rem;
   text-align: left;
   font: inherit;
   font-size: 0.72rem;
-  line-height: 1.2;
+  line-height: 1.25;
   color: inherit;
   cursor: pointer;
   background: #fff;
   border: 1px solid #e7e5e4;
   border-left-width: 4px;
   border-radius: 6px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   z-index: 2;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: stretch;
   min-width: 0;
 }
 
@@ -368,11 +371,12 @@ $agenda-slot-rows: 24;
 
 .day-col__card-text {
   display: block;
-  flex: 1;
+  flex: 1 1 auto;
+  align-self: stretch;
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .hub-rececao {

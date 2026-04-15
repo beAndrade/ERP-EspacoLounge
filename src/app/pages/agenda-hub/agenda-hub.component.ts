@@ -16,13 +16,14 @@ import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 
 type CelulaCalendario = { dia: number | null; ymd: string | null };
 
-/** Hora inicial e final da grelha (dia), em minutos desde 00:00. */
+/**
+ * Grelha do dia em minutos desde 00:00.
+ * `GRID_END_MIN` = fim **exclusivo** da timeline (último rótulo 23:00, faixa até 23:30).
+ * Nº de linhas de 30 min no SCSS: `(GRID_END_MIN - GRID_START_MIN) / 30` (= 31).
+ */
 const GRID_START_MIN = 8 * 60;
-const GRID_END_MIN = 20 * 60;
+const GRID_END_MIN = 23 * 60 + 30;
 const GRID_RANGE = GRID_END_MIN - GRID_START_MIN;
-
-/** Inset vertical (px) nos cartões de atendimento; sincronizar com lógica em `cardTopStyle` / `cardHeightStyle`. */
-const CARD_GRID_INSET_PX = 2;
 
 @Component({
   selector: 'app-agenda-hub',
@@ -222,30 +223,39 @@ export class AgendaHubComponent implements OnInit {
     return ((t - GRID_START_MIN) / GRID_RANGE) * 100;
   }
 
-  /** Altura do cartão = duração real entre `inicio` e `fim`, em % da grelha. */
-  alturaPct(ev: AtendimentoListaItem): number {
+  /**
+   * Duração em minutos: preferência `fim − inicio` no dia da grelha (API naive);
+   * senão `diffMinutesEntreHorarios`; fallback 30 min.
+   */
+  private duracaoMinutosAgendamento(ev: AtendimentoListaItem): number {
+    const dia = this.diaYmd;
+    const mi = minutosMeiaNoiteEmBrasilia(ev.inicio, dia);
+    const mf = minutosMeiaNoiteEmBrasilia(ev.fim, dia);
+    if (mi != null && mf != null && mf > mi) {
+      return mf - mi;
+    }
     const iniS = ev.inicio ? String(ev.inicio).trim() : '';
     const fS = ev.fim ? String(ev.fim).trim() : '';
-    if (!iniS) return (30 / GRID_RANGE) * 100;
-    const diff =
-      fS && iniS ? diffMinutesEntreHorarios(iniS, fS) : null;
-    let durMin =
-      diff != null && Number.isFinite(diff) && diff > 0 ? diff : 30;
+    if (iniS && fS) {
+      const d = diffMinutesEntreHorarios(iniS, fS);
+      if (d != null && Number.isFinite(d) && d > 0) {
+        return d;
+      }
+    }
+    return 30;
+  }
+
+  /** Altura do cartão = duração em % da grelha (não ultrapassa o fundo). */
+  alturaPct(ev: AtendimentoListaItem): number {
+    const iniS = ev.inicio ? String(ev.inicio).trim() : '';
+    if (!iniS) {
+      return (30 / GRID_RANGE) * 100;
+    }
+    let durMin = this.duracaoMinutosAgendamento(ev);
     durMin = Math.max(5, Math.min(GRID_RANGE, durMin));
-    return (durMin / GRID_RANGE) * 100;
-  }
-
-  /** `top` com pequeno inset para não colar às linhas horizontais. */
-  cardTopStyle(ev: AtendimentoListaItem): string {
-    const pct = this.topPct(ev);
-    return `calc(${pct}% + ${CARD_GRID_INSET_PX}px)`;
-  }
-
-  /** `height` descontando inset superior e inferior (mantém proporção da duração). */
-  cardHeightStyle(ev: AtendimentoListaItem): string {
-    const pct = this.alturaPct(ev);
-    const cut = CARD_GRID_INSET_PX * 2;
-    return `calc(max(1.1rem, ${pct}% - ${cut}px))`;
+    const hPct = (durMin / GRID_RANGE) * 100;
+    const top = this.topPct(ev);
+    return Math.min(hPct, Math.max(0, 100 - top));
   }
 
   /** Horário de início em Brasília no dia da grelha, para o texto do cartão. */
