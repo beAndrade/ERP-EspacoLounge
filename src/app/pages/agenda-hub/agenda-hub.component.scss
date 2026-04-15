@@ -260,8 +260,8 @@ $agenda-slot-rows: 24;
   font-variant-numeric: tabular-nums;
   color: var(--color-muted);
   text-align: center;
-  /* Respiro vertical do rótulo (08:00, …) em relação às linhas da grelha */
-  padding: 6px 5px;
+  padding-block: 0.65rem;
+  padding-inline: 5px;
   transform: translateY(-50%);
 }
 
