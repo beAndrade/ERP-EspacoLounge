@@ -94,7 +94,7 @@
                   type="button"
                   class="day-col__slot"
                   [style.top.%]="slotTopPct(slot)"
-                  [style.height]="slotAlturaComMargemVertical()"
+                  [style.height.%]="slotAlturaPct()"
                   (click)="abrirNovo(p.id, slot)"
                   [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome"
                 ></button>
@@ -103,8 +103,8 @@
                 <button
                   type="button"
                   class="day-col__card"
-                  [style.top.%]="topPct(ev)"
-                  [style.height.%]="alturaPct(ev)"
+                  [style.top]="cardTopStyle(ev)"
+                  [style.height]="cardHeightStyle(ev)"
                   [style.borderLeftColor]="corGrupo(ev.id)"
                   [disabled]="!idAtendimento(ev)"
                   [attr.aria-label]="

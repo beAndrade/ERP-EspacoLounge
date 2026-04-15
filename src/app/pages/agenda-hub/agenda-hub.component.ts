@@ -21,11 +21,8 @@ const GRID_START_MIN = 8 * 60;
 const GRID_END_MIN = 20 * 60;
 const GRID_RANGE = GRID_END_MIN - GRID_START_MIN;
 
-/**
- * Margem vertical (px) nos slots (`margin-top`/`margin-bottom` no SCSS).
- * A altura em % desconta o dobro para o caixa de borda caber na faixa da grelha.
- */
-const SLOT_MARGIN_BLOCK_PX = 4;
+/** Inset vertical (px) nos cartões de atendimento; sincronizar com lógica em `cardTopStyle` / `cardHeightStyle`. */
+const CARD_GRID_INSET_PX = 2;
 
 @Component({
   selector: 'app-agenda-hub',
@@ -238,6 +235,19 @@ export class AgendaHubComponent implements OnInit {
     return (durMin / GRID_RANGE) * 100;
   }
 
+  /** `top` com pequeno inset para não colar às linhas horizontais. */
+  cardTopStyle(ev: AtendimentoListaItem): string {
+    const pct = this.topPct(ev);
+    return `calc(${pct}% + ${CARD_GRID_INSET_PX}px)`;
+  }
+
+  /** `height` descontando inset superior e inferior (mantém proporção da duração). */
+  cardHeightStyle(ev: AtendimentoListaItem): string {
+    const pct = this.alturaPct(ev);
+    const cut = CARD_GRID_INSET_PX * 2;
+    return `calc(max(1.1rem, ${pct}% - ${cut}px))`;
+  }
+
   /** Horário de início em Brasília no dia da grelha, para o texto do cartão. */
   horaInicioCard(ev: AtendimentoListaItem): string {
     const m = minutosMeiaNoiteEmBrasilia(ev.inicio, this.diaYmd);
@@ -287,12 +297,6 @@ export class AgendaHubComponent implements OnInit {
 
   slotAlturaPct(): number {
     return 100 / Math.max(1, this.slotsHoras.length);
-  }
-
-  /** Altura da faixa descontando `margin-top` + `margin-bottom` dos slots (px). */
-  slotAlturaComMargemVertical(): string {
-    const h = this.slotAlturaPct();
-    return `calc(${h}% - ${SLOT_MARGIN_BLOCK_PX * 2}px)`;
   }
 
   private inicioDoMes(d: Date): Date {
