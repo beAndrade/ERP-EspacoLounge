@@ -1,8 +1,7 @@
 ---
 description: Ao concluir uma etapa de trabalho, versionar com Git (commit claro em PT-BR).
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Commits por etapa
 
 - Ao **terminar uma etapa** (feature, bugfix, documentação, config), faça **`git add`** nos ficheiros pertinentes e um **`git commit`** com mensagem curta e clara em **português** (imperativo ou descritivo: "Corrige listen da API no Node", "Atualiza README e fluxo com Postgres").
