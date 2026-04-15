@@ -160,6 +160,8 @@ export interface CaixaDiaResumo {
 
 export type TipoAtendimento =
   | 'Serviço'
+  /** Vários itens no mesmo pedido: linhas alternam Serviço (catálogo) e Produto. */
+  | 'Misto'
   | 'Mega'
   | 'Pacote'
   | 'Cabelo'

@@ -52,6 +52,21 @@
   max-width: 42rem;
 }
 
+.itens-atendimento {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e7e5e4;
+  border-radius: var(--radius);
+  background: #fafaf9;
+
+  &__titulo {
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+}
+
 label {
   display: flex;
   flex-direction: column;
@@ -246,6 +261,10 @@ textarea {
 
   &--tamanho {
     flex: 0 1 9.5rem;
+  }
+
+  &--tipo-linha {
+    flex: 1 1 14rem;
   }
 }
 

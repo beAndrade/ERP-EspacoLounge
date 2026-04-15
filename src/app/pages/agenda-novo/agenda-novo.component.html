@@ -29,18 +29,6 @@
 
   <form [formGroup]="form" (ngSubmit)="salvar()" class="form">
     <label>
-      <span>Tipo</span>
-      <select formControlName="tipo">
-        @for (t of tiposAtendimento; track t) {
-          <option [value]="t">{{ t }}</option>
-        }
-      </select>
-    </label>
-    <p class="hint tipo-hint">
-      Cada tipo preenche colunas diferentes em <strong>Atendimentos</strong>. Mega e Pacote geram várias linhas com o mesmo ID.
-    </p>
-
-    <label>
       <span>Cliente</span>
       <select formControlName="cliente_id" required>
         <option value="">Selecione…</option>
@@ -69,6 +57,25 @@
       </div>
       <span class="hint data-field__hint">Toque no campo para abrir o calendário (formato dd-mm-aaaa).</span>
     </label>
+
+    <section class="itens-atendimento" aria-labelledby="itens-atendimento-titulo">
+      <h2 id="itens-atendimento-titulo" class="itens-atendimento__titulo">
+        Itens do atendimento
+      </h2>
+
+      <label>
+        <span>Tipo</span>
+        <select formControlName="tipo">
+          @for (t of tiposAtendimento; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </label>
+      <p class="hint tipo-hint">
+        Cada tipo preenche colunas diferentes em <strong>Atendimentos</strong>.
+        <strong>Misto</strong> permite várias linhas de serviço (catálogo) e produto no mesmo pedido (mesmo ID).
+        Mega e Pacote geram várias linhas com o mesmo ID.
+      </p>
 
     @if (tipoAtual === 'Serviço') {
       <label>
@@ -129,13 +136,132 @@
       </div>
       @if (profissionais.length === 0) {
         <p class="alert" role="alert">
-          Não há profissionais na lista. Confira a aba <strong>Folha</strong> (cabeçalho <strong>Profissional</strong> nas primeiras linhas) e publique o <code>Code.gs</code> atualizado.
+          Não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha e publique o <code>Code.gs</code> atualizado, se aplicável.
         </p>
       }
       @if (servicosTipoServico.length === 0) {
         <p class="alert" role="alert">
           Não há linhas com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
         </p>
+      }
+    }
+
+    @if (tipoAtual === 'Misto') {
+      @if (mistoTemLinhaServico()) {
+        <label>
+          <span>Horário inicial</span>
+          <input type="time" formControlName="hora_inicial" />
+          <span class="hint"
+            >Relógio do salão (Brasil); aplica-se às linhas de <strong>Serviço</strong> (horários em sequência).</span>
+        </label>
+        <p class="hint horario-final-hint">
+          Horário final (calculado, só serviços):
+          <strong>{{ horarioFinalExibicao() }}</strong>
+          — soma das durações (minutos) de cada serviço na base de dados.
+        </p>
+      }
+      <div class="servicos-block" formArrayName="linhasMisto">
+        <div class="servicos-header">
+          <span>Linhas (serviço de catálogo ou produto)</span>
+          <button type="button" class="btn small" (click)="adicionarLinhaMisto()">
+            + Linha
+          </button>
+        </div>
+        @for (ctrl of linhasMistoArray.controls; track $index; let i = $index) {
+          <div class="servico-row servico-row--misto" [formGroupName]="i">
+            <label class="servico-row__field servico-row__field--tipo-linha">
+              <span>Tipo de linha</span>
+              <select
+                formControlName="itemTipo"
+                (change)="onItemTipoMistoChange()"
+              >
+                <option value="Serviço">Serviço (catálogo)</option>
+                <option value="Produto">Produto</option>
+              </select>
+            </label>
+            @if (ctrl.get('itemTipo')?.value === 'Serviço') {
+              <label class="servico-row__field">
+                <span>Serviço</span>
+                <select formControlName="servico_id" required>
+                  <option value="">Selecione…</option>
+                  @for (s of servicosTipoServico; track s.id) {
+                    <option [value]="s.id">{{ rotuloServico(s) }}</option>
+                  }
+                </select>
+              </label>
+              @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
+                <label class="servico-row__field servico-row__field--tamanho">
+                  <span>Tamanho (preço)</span>
+                  <select formControlName="tamanho">
+                    @for (t of tamanhos; track t) {
+                      <option [value]="t">{{ t }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              <label class="servico-row__field">
+                <span>Profissional</span>
+                <select formControlName="profissional" required>
+                  <option [ngValue]="null">Selecione…</option>
+                  @for (p of profissionais; track p.id) {
+                    <option [ngValue]="p.id">{{ p.nome }}</option>
+                  }
+                </select>
+              </label>
+            } @else {
+              <label class="servico-row__field">
+                <span>Produto</span>
+                <select formControlName="produto" required>
+                  <option value="">Selecione…</option>
+                  @for (pr of produtos; track pr.produto) {
+                    <option [value]="pr.produto">
+                      {{ pr.produto }}
+                      @if (pr.unidade) {
+                        ({{ pr.unidade }})
+                      }
+                    </option>
+                  }
+                </select>
+              </label>
+              <label class="servico-row__field servico-row__field--tamanho">
+                <span>Quantidade</span>
+                <input
+                  type="number"
+                  formControlName="quantidade"
+                  min="0.01"
+                  step="any"
+                />
+              </label>
+            }
+            <div class="servico-row__actions">
+              @if (linhasMistoArray.length > 1) {
+                <button
+                  type="button"
+                  class="btn small danger"
+                  (click)="removerLinhaMisto(i)"
+                >
+                  Remover
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      <p class="hint">
+        A ordem das linhas define a ordem dos registos e, nos <strong>serviços</strong>, os horários em sequência a partir do horário inicial.
+      </p>
+      @if (profissionais.length === 0 && mistoTemLinhaServico()) {
+        <p class="alert" role="alert">
+          Há linha de serviço, mas não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha.
+        </p>
+      }
+      @if (mistoTemLinhaServico() && servicosTipoServico.length === 0) {
+        <p class="alert" role="alert">
+          Não há linhas com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
+        </p>
+      }
+      @if (mistoTemLinhaProduto() && produtos.length === 0) {
+        <p class="hint">Cadastre produtos na aba <strong>Produtos</strong>.</p>
       }
     }
 
@@ -336,7 +462,7 @@
       </label>
       @if (profissionais.length === 0) {
         <p class="alert" role="alert">
-          Não há profissionais na lista. Confira a aba <strong>Folha</strong> (cabeçalho <strong>Profissional</strong> nas primeiras linhas) e publique o <code>Code.gs</code> atualizado.
+          Não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha e publique o <code>Code.gs</code> atualizado, se aplicável.
         </p>
       }
     }
@@ -377,10 +503,12 @@
       </div>
       @if (profissionais.length === 0) {
         <p class="alert" role="alert">
-          Para escolher profissional em cada etapa, a aba <strong>Folha</strong> precisa listar nomes na coluna <strong>Profissional</strong>.
+          Para escolher profissional em cada etapa, a lista de <strong>Profissionais</strong> precisa estar preenchida (API ou planilha).
         </p>
       }
     }
+
+    </section>
 
     <label>
       <span>Observação (opcional)</span>
@@ -398,6 +526,10 @@
         clientes.length === 0 ||
         profissionaisObrigatoriosSemLista ||
         (tipoAtual === 'Serviço' && servicosTipoServico.length === 0) ||
+        (tipoAtual === 'Misto' &&
+          mistoTemLinhaServico() &&
+          servicosTipoServico.length === 0) ||
+        (tipoAtual === 'Misto' && mistoTemLinhaProduto() && produtos.length === 0) ||
         (tipoAtual === 'Pacote' && pacotes.length === 0) ||
         (tipoAtual === 'Produto' && produtos.length === 0)
       "

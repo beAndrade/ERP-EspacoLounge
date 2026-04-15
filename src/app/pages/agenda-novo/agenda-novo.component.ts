@@ -160,6 +160,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   readonly tiposAtendimento: TipoAtendimento[] = [
     'Serviço',
+    'Misto',
     'Mega',
     'Pacote',
     'Cabelo',
@@ -175,7 +176,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   pacotes: PacoteCatalogoItem[] = [];
   produtos: ProdutoCatalogoItem[] = [];
   cabelos: CabeloCatalogoItem[] = [];
-  /** Linhas da Folha (`id` + nome) para selects e `profissional_id` na API. */
+  /** Lista de profissionais (`id` + nome) para selects e `profissional_id` na API. */
   profissionais: ProfissionalListaItem[] = [];
 
   carregandoListas = true;
@@ -212,6 +213,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     detalhes_cabelo: [''],
     servicosItens: this.fb.array<FormGroup>([]),
     produtosItens: this.fb.array<FormGroup>([]),
+    /** Só tipo `Misto`: cada linha é Serviço (catálogo) ou Produto. */
+    linhasMisto: this.fb.array<FormGroup>([]),
     etapas: this.fb.array<FormGroup>([]),
     /** Horário inicial (tipo Serviço); fim é calculado a partir das durações na BD. */
     hora_inicial: [''],
@@ -351,7 +354,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
     this.slotFormSub = this.form.valueChanges.subscribe(() => {
       if (this.prefillEmCurso) return;
-      if (this.form.controls.tipo.value !== 'Serviço') return;
+      const tv = this.form.controls.tipo.value;
+      if (tv !== 'Serviço' && tv !== 'Misto') return;
       this.slotAgenda = null;
     });
   }
@@ -377,6 +381,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   get produtosItensArray(): FormArray<FormGroup> {
     return this.form.controls.produtosItens;
+  }
+
+  get linhasMistoArray(): FormArray<FormGroup> {
+    return this.form.controls.linhasMisto;
   }
 
   get tipoAtual(): TipoAtendimento {
@@ -478,16 +486,33 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return t === 'tamanho' || t === 'serviço' || t === 'servico';
   }
 
-  /** Sem nomes na Folha não dá para cumprir profissional obrigatório só com dropdown. */
+  /** Sem profissionais na lista não dá para cumprir profissional obrigatório só com dropdown. */
   get profissionaisObrigatoriosSemLista(): boolean {
     if (this.profissionais.length > 0) return false;
     const t = this.tipoAtual;
+    if (t === 'Misto') {
+      return this.linhasMistoArray
+        .getRawValue()
+        .some((row: { itemTipo?: string }) => row.itemTipo === 'Serviço');
+    }
     return (
       t === 'Serviço' ||
       t === 'Mega' ||
       t === 'Pacote' ||
       t === 'Cabelo'
     );
+  }
+
+  mistoTemLinhaServico(): boolean {
+    return this.linhasMistoArray
+      .getRawValue()
+      .some((r: { itemTipo?: string }) => r.itemTipo === 'Serviço');
+  }
+
+  mistoTemLinhaProduto(): boolean {
+    return this.linhasMistoArray
+      .getRawValue()
+      .some((r: { itemTipo?: string }) => r.itemTipo === 'Produto');
   }
 
   get pacotesMegaUnicos(): string[] {
@@ -732,6 +757,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       const n = this.produtosItensArray.length;
       return `${n} linha(s) em Atendimentos (um registo por produto)`;
     }
+    if (t === 'Misto') {
+      const n = this.linhasMistoArray.length;
+      return `${n} linha(s) no mesmo pedido (serviços e/ou produtos, mesmo ID)`;
+    }
     return '1 linha em Atendimentos';
   }
 
@@ -754,6 +783,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   removerServico(i: number): void {
     if (this.servicosItensArray.length <= 1) return;
     this.servicosItensArray.removeAt(i);
+    this.aplicarValidadoresPorTipo();
+  }
+
+  adicionarLinhaMisto(): void {
+    this.linhasMistoArray.push(this.novoGrupoLinhaMisto());
+    this.aplicarValidadoresPorTipo();
+  }
+
+  removerLinhaMisto(i: number): void {
+    if (this.linhasMistoArray.length <= 1) return;
+    this.linhasMistoArray.removeAt(i);
+    this.aplicarValidadoresPorTipo();
+  }
+
+  /** Ao mudar Serviço ↔ Produto numa linha Misto, recalcula validadores (hora, campos por linha). */
+  onItemTipoMistoChange(): void {
     this.aplicarValidadoresPorTipo();
   }
 
@@ -870,6 +915,71 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
     while (this.produtosItensArray.length) {
       this.produtosItensArray.removeAt(0);
+    }
+    while (this.linhasMistoArray.length) {
+      this.linhasMistoArray.removeAt(0);
+    }
+
+    const tiposLinha = sorted.map((r) => mapTipoFromApi(r.tipo || ''));
+    const edicaoMisto =
+      tiposLinha.some((x) => x === 'Serviço') &&
+      tiposLinha.some((x) => x === 'Produto');
+
+    if (edicaoMisto) {
+      for (const row of sorted) {
+        const ta = mapTipoFromApi(row.tipo || '');
+        if (ta === 'Serviço') {
+          const nomeServ = (row.servicosRef || '').trim();
+          const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
+          const g = this.novoGrupoLinhaMisto('Serviço');
+          g.patchValue(
+            {
+              servico_id: sid,
+              tamanho: (row.tamanho || 'Curto').trim() || 'Curto',
+              profissional: this.profissionalValorForm(row),
+            },
+            { emitEvent: false },
+          );
+          this.linhasMistoArray.push(g);
+        } else if (ta === 'Produto') {
+          const q = parseQuantidadeFromDescricao(row.descricao || '');
+          const g = this.novoGrupoLinhaMisto('Produto');
+          g.patchValue(
+            {
+              produto: row.produtoNome || '',
+              quantidade: q > 0 ? q : 1,
+            },
+            { emitEvent: false },
+          );
+          this.linhasMistoArray.push(g);
+        }
+      }
+      if (this.linhasMistoArray.length < 1) {
+        this.linhasMistoArray.push(this.novoGrupoLinhaMisto());
+      }
+      const servRowsOnly = sorted.filter(
+        (r) => mapTipoFromApi(r.tipo || '') === 'Serviço',
+      );
+      this.form.patchValue(
+        {
+          tipo: 'Misto',
+          cliente_id: l0.idCliente || '',
+          data: dataYmd,
+          hora_inicial:
+            servRowsOnly.length > 0
+              ? this.menorHoraInicialServicoEdicao(servRowsOnly, dataYmd)
+              : '',
+          observacao: '',
+          pacote: '',
+          valor_cabelo: '',
+          detalhes_cabelo: '',
+        },
+        { emitEvent: false },
+      );
+      this.prefillEmCurso = false;
+      this.ajustarArraysPorTipo();
+      this.aplicarValidadoresPorTipo();
+      return;
     }
 
     if (tipoApi === 'Produto') {
@@ -1072,6 +1182,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  private novoGrupoLinhaMisto(
+    itemTipo: 'Serviço' | 'Produto' = 'Serviço',
+  ): FormGroup {
+    return this.fb.group({
+      itemTipo: this.fb.nonNullable.control<'Serviço' | 'Produto'>(itemTipo),
+      servico_id: [''],
+      tamanho: this.fb.nonNullable.control<string>('Curto'),
+      profissional: [null as number | null],
+      produto: [''],
+      quantidade: [1, [Validators.required, Validators.min(0.01)]],
+    });
+  }
+
   private ajustarArraysPorTipo(): void {
     const t = this.tipoAtual;
     if (t === 'Mega' || t === 'Pacote') {
@@ -1099,6 +1222,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       while (this.produtosItensArray.length > 0) {
         this.produtosItensArray.removeAt(0);
+      }
+    }
+    if (t === 'Misto') {
+      while (this.linhasMistoArray.length < 1) {
+        this.linhasMistoArray.push(this.novoGrupoLinhaMisto());
+      }
+    } else {
+      while (this.linhasMistoArray.length > 0) {
+        this.linhasMistoArray.removeAt(0);
       }
     }
   }
@@ -1151,8 +1283,44 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       qtd?.updateValueAndValidity({ emitEvent: false });
     }
 
+    for (let i = 0; i < this.linhasMistoArray.length; i++) {
+      const g = this.linhasMistoArray.at(i);
+      const itemTipo = String(g.get('itemTipo')?.value ?? '').trim();
+      const sid = g.get('servico_id');
+      const tam = g.get('tamanho');
+      const profL = g.get('profissional');
+      const prod = g.get('produto');
+      const qtd = g.get('quantidade');
+      if (t === 'Misto') {
+        if (itemTipo === 'Serviço') {
+          sid?.setValidators([Validators.required]);
+          tam?.setValidators([]);
+          profL?.setValidators([Validators.required]);
+          prod?.setValidators([]);
+          qtd?.setValidators([]);
+        } else {
+          sid?.setValidators([]);
+          tam?.setValidators([]);
+          profL?.setValidators([]);
+          prod?.setValidators([Validators.required]);
+          qtd?.setValidators([Validators.required, Validators.min(0.01)]);
+        }
+      } else {
+        sid?.setValidators([]);
+        tam?.setValidators([]);
+        profL?.setValidators([]);
+        prod?.setValidators([]);
+        qtd?.setValidators([]);
+      }
+      sid?.updateValueAndValidity({ emitEvent: false });
+      tam?.updateValueAndValidity({ emitEvent: false });
+      profL?.updateValueAndValidity({ emitEvent: false });
+      prod?.updateValueAndValidity({ emitEvent: false });
+      qtd?.updateValueAndValidity({ emitEvent: false });
+    }
+
     const horaIni = this.form.controls.hora_inicial;
-    if (t === 'Serviço') {
+    if (t === 'Serviço' || (t === 'Misto' && this.mistoTemLinhaServico())) {
       horaIni.setValidators([Validators.required]);
     } else {
       horaIni.clearValidators();
@@ -1184,6 +1352,33 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!String(it.servico_id ?? '').trim()) return false;
         if (it.profissional == null || !(Number(it.profissional) > 0)) {
           return false;
+        }
+      }
+      return true;
+    }
+    if (tipo === 'Misto') {
+      const linhas = this.linhasMistoArray.getRawValue() as {
+        itemTipo: 'Serviço' | 'Produto';
+        servico_id: string;
+        profissional: number | null;
+        produto: string;
+        quantidade: number;
+      }[];
+      if (linhas.length < 1) return false;
+      const precisaHora = linhas.some((r) => r.itemTipo === 'Serviço');
+      if (precisaHora && !normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))) {
+        return false;
+      }
+      for (const r of linhas) {
+        if (r.itemTipo === 'Serviço') {
+          if (!String(r.servico_id ?? '').trim()) return false;
+          if (r.profissional == null || !(Number(r.profissional) > 0)) {
+            return false;
+          }
+        } else {
+          if (!String(r.produto ?? '').trim()) return false;
+          const q = Number(r.quantidade);
+          if (Number.isNaN(q) || q <= 0) return false;
         }
       }
       return true;
@@ -1255,9 +1450,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.slotAgenda = null;
   }
 
-  /** Exibe o fim previsto (HH:mm em Brasília no dia da data) para tipo Serviço. */
+  /** Exibe o fim previsto (HH:mm em Brasília no dia da data) para tipo Serviço ou Misto (linhas de serviço). */
   horarioFinalExibicao(): string {
-    if (this.form.controls.tipo.value !== 'Serviço') return '—';
+    const tv = this.form.controls.tipo.value;
+    if (tv !== 'Serviço' && tv !== 'Misto') return '—';
+    if (tv === 'Misto' && !this.mistoTemLinhaServico()) return '—';
     const dataYmd = normalizarDataIso(
       String(this.form.controls.data.value ?? ''),
     );
@@ -1265,7 +1462,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       String(this.form.controls.hora_inicial.value ?? ''),
     );
     if (!dataYmd || !hi) return '—';
-    const totalMin = this.duracaoTotalServicosSelecionados();
+    const totalMin = this.duracaoMinutosAgendaServicos();
     const anchor = slotInicioFimBrasilia(dataYmd, hi, 30);
     if (!anchor) return '—';
     const cur = parseSqlLocalDateTime(anchor.inicio);
@@ -1274,14 +1471,30 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return `${String(end.hh).padStart(2, '0')}:${String(end.mm).padStart(2, '0')}`;
   }
 
-  private duracaoTotalServicosSelecionados(): number {
-    if (this.form.controls.tipo.value !== 'Serviço') return 0;
-    const itens = this.servicosItensArray.getRawValue() as { servico_id: string }[];
+  /** Soma durações (min) dos serviços de catálogo no fluxo atual (Serviço ou Misto). */
+  private duracaoMinutosAgendaServicos(): number {
+    const tv = this.form.controls.tipo.value;
     let sum = 0;
-    for (const it of itens) {
-      const sid = String(it.servico_id ?? '').trim();
-      if (!sid) continue;
-      sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
+    if (tv === 'Serviço') {
+      const itens = this.servicosItensArray.getRawValue() as {
+        servico_id: string;
+      }[];
+      for (const it of itens) {
+        const sid = String(it.servico_id ?? '').trim();
+        if (!sid) continue;
+        sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
+      }
+    } else if (tv === 'Misto') {
+      const linhas = this.linhasMistoArray.getRawValue() as {
+        itemTipo: string;
+        servico_id: string;
+      }[];
+      for (const r of linhas) {
+        if (r.itemTipo !== 'Serviço') continue;
+        const sid = String(r.servico_id ?? '').trim();
+        if (!sid) continue;
+        sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
+      }
     }
     return Math.max(15, sum || 15);
   }
@@ -1405,6 +1618,108 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             tamanho: pr.tamanho ?? 'Curto',
             ...slotPatch,
           });
+        }
+      }
+      return out;
+    }
+    if (tipo === 'Misto') {
+      const linhas = this.linhasMistoArray.getRawValue() as {
+        itemTipo: 'Serviço' | 'Produto';
+        servico_id: string;
+        tamanho: string;
+        profissional: number | null;
+        produto: string;
+        quantidade: number;
+      }[];
+      const horaIni = String(raw['hora_inicial'] ?? '');
+      type Prep = {
+        servico_id: string;
+        profissional_id: number;
+        st: string;
+        base: {
+          tipo: 'Serviço';
+          cliente_id: string;
+          data: string;
+          profissional_id: number;
+          servico_id: string;
+          observacao?: string;
+        };
+        tamanho?: string;
+      };
+      const servicosPrep: Prep[] = [];
+      for (const r of linhas) {
+        if (r.itemTipo !== 'Serviço') continue;
+        const servico_id = String(r.servico_id ?? '').trim();
+        if (!servico_id) continue;
+        const profissional_id = Number(r.profissional);
+        if (!(profissional_id > 0)) continue;
+        const svc = this.servicoPorId(servico_id);
+        const base = {
+          tipo: 'Serviço' as const,
+          cliente_id,
+          data: dataYmd,
+          profissional_id,
+          servico_id,
+          observacao,
+        };
+        const st = String(svc?.['Tipo'] ?? '').toLowerCase();
+        servicosPrep.push({
+          servico_id,
+          profissional_id,
+          st,
+          base,
+          tamanho: String(r.tamanho ?? 'Curto').trim(),
+        });
+      }
+      const slotPairs = this.slotsSequenciaisParaPayloadServico(
+        dataYmd,
+        horaIni,
+        servicosPrep,
+      );
+      const out: CreateAtendimentoPayload[] = [];
+      let servicoIdx = 0;
+      let primeiroPayload = true;
+      for (const r of linhas) {
+        if (r.itemTipo === 'Serviço') {
+          const servico_id = String(r.servico_id ?? '').trim();
+          if (!servico_id) continue;
+          const profissional_id = Number(r.profissional);
+          if (!(profissional_id > 0)) continue;
+          const pr = servicosPrep[servicoIdx];
+          const sp = slotPairs[servicoIdx];
+          servicoIdx += 1;
+          if (!pr) continue;
+          const slotPatch =
+            sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
+          if (pr.st === 'fixo') {
+            out.push({ ...pr.base, ...slotPatch });
+          } else {
+            out.push({
+              ...pr.base,
+              tamanho: pr.tamanho ?? 'Curto',
+              ...slotPatch,
+            });
+          }
+          primeiroPayload = false;
+        } else {
+          const nome = String(r.produto ?? '').trim();
+          if (!nome) continue;
+          const q = Number(r.quantidade);
+          if (Number.isNaN(q) || q <= 0) continue;
+          out.push(
+            this.mergeSlot(
+              {
+                tipo: 'Produto',
+                cliente_id,
+                data: dataYmd,
+                produto: nome,
+                quantidade: q,
+                observacao,
+              },
+              primeiroPayload,
+            ),
+          );
+          primeiroPayload = false;
         }
       }
       return out;
