@@ -1,7 +1,16 @@
-<div class="toolbar">
-  <h1>Novo atendimento</h1>
-  <a routerLink="/atendimentos" class="link-back">← Voltar aos atendimentos</a>
-</div>
+@if (!modoModal) {
+  <div class="toolbar">
+    <h1>{{ tituloFormulario() }}</h1>
+    <a routerLink="/agenda" class="link-back">← Voltar à agenda</a>
+  </div>
+} @else {
+  <div class="toolbar toolbar--modal">
+    <h1>{{ tituloFormulario() }}</h1>
+    <button type="button" class="btn-fechar" (click)="cancelarModal.emit()">
+      Fechar
+    </button>
+  </div>
+}
 
 @if (erro && !carregandoListas) {
   <p class="alert" role="alert">{{ erro }}</p>
@@ -62,6 +71,17 @@
     </label>
 
     @if (tipoAtual === 'Serviço') {
+      <label>
+        <span>Horário inicial</span>
+        <input type="time" formControlName="hora_inicial" />
+        <span class="hint"
+          >Relógio do salão (Brasil); o valor é gravado tal como aparece, sem UTC.</span>
+      </label>
+      <p class="hint horario-final-hint">
+        Horário final (calculado):
+        <strong>{{ horarioFinalExibicao() }}</strong>
+        — soma das durações (minutos) de cada serviço na base de dados.
+      </p>
       <div class="servicos-block" formArrayName="servicosItens">
         <div class="servicos-header">
           <span>Serviços (aba Serviços — Fixo ou Tamanho)</span>

@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
-import { AtendimentosComponent } from './pages/atendimentos/atendimentos.component';
 import { AgendaComponent } from './pages/agenda/agenda.component';
+import { AgendaHubComponent } from './pages/agenda-hub/agenda-hub.component';
 import { AgendaListaComponent } from './pages/agenda-lista/agenda-lista.component';
 import { AgendaNovoComponent } from './pages/agenda-novo/agenda-novo.component';
 import { ClientesComponent } from './pages/clientes/clientes.component';
@@ -12,10 +12,11 @@ import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
-  { path: 'atendimentos', component: AtendimentosComponent },
+  { path: 'atendimentos', redirectTo: 'agenda', pathMatch: 'full' },
   { path: 'agenda/novo', component: AgendaNovoComponent },
   { path: 'agenda/lista', component: AgendaListaComponent },
-  { path: 'agenda', component: AgendaComponent },
+  { path: 'agenda/calendario', component: AgendaComponent },
+  { path: 'agenda', component: AgendaHubComponent },
   { path: 'clientes', component: ClientesComponent },
   { path: 'clientes/novo', component: ClientesNovoComponent },
   { path: 'clientes/:id/editar', component: ClientesEditarComponent },

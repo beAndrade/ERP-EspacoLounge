@@ -1,4 +1,26 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
+import {
+  minutosMeiaNoiteEmBrasilia,
+  normalizarHoraHHmm,
+  slotInicioFimBrasilia,
+} from '../../core/utils/brasilia-time';
+import {
+  addMinutesToParts,
+  civilNaiveSalaoParaUtcMs,
+  formatSqlLocalDateTime,
+  parseSqlLocalDateTime,
+  ymdOfParts,
+} from '../../core/utils/sql-local-datetime';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   AbstractControl,
@@ -9,7 +31,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { catchError, forkJoin, of, Subscription, switchMap, take } from 'rxjs';
+import { catchError, forkJoin, of, Subscription, switchMap } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import {
   AtendimentoListaItem,
@@ -117,11 +139,24 @@ function ordenarEtapasParaSelect(nomes: string[]): string[] {
   templateUrl: './agenda-novo.component.html',
   styleUrl: './agenda-novo.component.scss',
 })
-export class AgendaNovoComponent implements OnInit, OnDestroy {
+export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  /** Quando true, esconde navegação global do formulário (uso dentro de modal). */
+  @Input() modoModal = false;
+  /** Pré-preenche data, primeira linha de serviço e slot (hora local). */
+  @Input() contextoSlot: {
+    data: string;
+    profissional_id: number;
+    /** Vazio = abrir só com data (e opcionalmente profissional). */
+    hora?: string;
+  } | null = null;
+
+  @Output() salvoComSucesso = new EventEmitter<void>();
+  @Output() cancelarModal = new EventEmitter<void>();
 
   readonly tiposAtendimento: TipoAtendimento[] = [
     'Serviço',
@@ -151,7 +186,11 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
   idAtendimentoEmEdicao: string | null = null;
   private prefillEmCurso = false;
 
+  /** Início/fim `YYYY-MM-DD HH:mm:ss` para a primeira linha criada (clique na grelha). */
+  private slotAgenda: { inicio: string; fim: string } | null = null;
+
   private tipoSub?: Subscription;
+  private slotFormSub?: Subscription;
 
   /** Seleção da calculadora Cabelos (aba planilha: Cor × Tamanho × Método → Valor base). */
   calcCabeloCor = '';
@@ -174,6 +213,8 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
     servicosItens: this.fb.array<FormGroup>([]),
     produtosItens: this.fb.array<FormGroup>([]),
     etapas: this.fb.array<FormGroup>([]),
+    /** Horário inicial (tipo Serviço); fim é calculado a partir das durações na BD. */
+    hora_inicial: [''],
   });
 
   ngOnInit(): void {
@@ -208,43 +249,79 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         this.produtos = r.produtos;
         this.cabelos = r.cabelos;
         this.profissionais = r.profissionais ?? [];
-        this.carregandoListas = false;
         this.ajustarArraysPorTipo();
         this.aplicarValidadoresPorTipo();
-        this.route.queryParamMap.pipe(take(1)).subscribe((qm) => {
-          const at = qm.get('atendimento')?.trim();
-          if (at) {
-            this.idAtendimentoEmEdicao = at;
-            this.api.listAgendamentos(undefined, undefined, at).subscribe({
+
+        if (this.modoModal) {
+          this.aplicarContextoSlotInput();
+          this.carregandoListas = false;
+        } else {
+          const qm = this.route.snapshot.queryParamMap;
+          const atEdit = qm.get('atendimento')?.trim();
+          if (atEdit) {
+            this.idAtendimentoEmEdicao = atEdit;
+            this.erro = '';
+            this.api.listAgendamentos(undefined, undefined, atEdit).subscribe({
               next: (items) => {
                 if (items.length > 0) {
                   this.aplicarEdicaoNoForm(items);
+                } else {
+                  this.idAtendimentoEmEdicao = null;
+                  this.erro =
+                    'Atendimento não encontrado ou sem linhas para este ID.';
                 }
-                void this.router.navigate(['/agenda/novo'], {
-                  replaceUrl: true,
-                  queryParams: {},
-                });
+                this.carregandoListas = false;
               },
               error: () => {
                 this.erro =
                   'Não foi possível carregar o atendimento para edição.';
+                this.idAtendimentoEmEdicao = null;
+                this.carregandoListas = false;
               },
             });
-            return;
+          } else {
+            const cid = qm.get('cliente_id')?.trim();
+            const dat = qm.get('data')?.trim();
+            const pidStr = qm.get('profissional_id')?.trim();
+            const hora = qm.get('hora')?.trim();
+            if (cid) this.form.patchValue({ cliente_id: cid });
+            if (dat && /^\d{4}-\d{2}-\d{2}$/.test(dat)) {
+              this.form.patchValue({ data: dat });
+            }
+            const datOk =
+              dat && /^\d{4}-\d{2}-\d{2}$/.test(dat) ? dat : '';
+            if (datOk && pidStr && /^\d+$/.test(pidStr)) {
+              const pid = parseInt(pidStr, 10);
+              if (pid > 0) {
+                this.prefillEmCurso = true;
+                this.form.patchValue(
+                  { data: datOk, tipo: 'Serviço' },
+                  { emitEvent: false },
+                );
+                this.ajustarArraysPorTipo();
+                this.aplicarValidadoresPorTipo();
+                const g0 = this.servicosItensArray.at(0);
+                if (g0) {
+                  g0.patchValue({ profissional: pid }, { emitEvent: false });
+                }
+                const hn = normalizarHoraHHmm(hora ?? '');
+                this.form.patchValue(
+                  { hora_inicial: hn ?? '' },
+                  { emitEvent: false },
+                );
+                this.prefillEmCurso = false;
+              }
+            }
+            if (cid || dat || pidStr || hora) {
+              void this.router.navigate(['/agenda/novo'], {
+                replaceUrl: true,
+                queryParams: {},
+              });
+            }
+            this.aplicarContextoSlotInput();
+            this.carregandoListas = false;
           }
-          const cid = qm.get('cliente_id')?.trim();
-          const dat = qm.get('data')?.trim();
-          if (cid) this.form.patchValue({ cliente_id: cid });
-          if (dat && /^\d{4}-\d{2}-\d{2}$/.test(dat)) {
-            this.form.patchValue({ data: dat });
-          }
-          if (cid || dat) {
-            void this.router.navigate(['/agenda/novo'], {
-              replaceUrl: true,
-              queryParams: {},
-            });
-          }
-        });
+        }
       },
       error: () => {
         this.erro =
@@ -255,6 +332,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
 
     this.tipoSub = this.form.controls.tipo.valueChanges.subscribe(() => {
       if (this.prefillEmCurso) return;
+      this.slotAgenda = null;
       this.erro = '';
       this.calcCabeloCor = '';
       this.calcCabeloTamanhoCm = '';
@@ -265,14 +343,28 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         valor_cabelo: '',
         detalhes_cabelo: '',
         profissional: null,
+        hora_inicial: '',
       });
       this.ajustarArraysPorTipo();
       this.aplicarValidadoresPorTipo();
     });
+
+    this.slotFormSub = this.form.valueChanges.subscribe(() => {
+      if (this.prefillEmCurso) return;
+      if (this.form.controls.tipo.value !== 'Serviço') return;
+      this.slotAgenda = null;
+    });
+  }
+
+  ngOnChanges(ch: SimpleChanges): void {
+    if (!ch['contextoSlot'] && !ch['modoModal']) return;
+    if (this.carregandoListas) return;
+    this.aplicarContextoSlotInput();
   }
 
   ngOnDestroy(): void {
     this.tipoSub?.unsubscribe();
+    this.slotFormSub?.unsubscribe();
   }
 
   get etapasArray(): FormArray<FormGroup> {
@@ -289,6 +381,56 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
 
   get tipoAtual(): TipoAtendimento {
     return this.form.controls.tipo.getRawValue();
+  }
+
+  /** Título da página/modal: edição vs criação. */
+  tituloFormulario(): string {
+    return this.idAtendimentoEmEdicao?.trim()
+      ? 'Editar atendimento'
+      : 'Novo atendimento';
+  }
+
+  /** `HH:mm` para `<input type="time">` a partir de `inicio` (SQL local ou ISO legado). */
+  private horaInicialEdicaoDeInicio(
+    inicio: string | null | undefined,
+    dataYmd: string,
+  ): string {
+    const dia = dataYmd.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return '';
+    const raw = String(inicio ?? '').trim();
+    if (!raw) return '';
+    const p = parseSqlLocalDateTime(raw);
+    if (p && ymdOfParts(p) === dia) {
+      return normalizarHoraHHmm(`${p.hh}:${p.mm}`) ?? '';
+    }
+    const m = minutosMeiaNoiteEmBrasilia(raw, dia);
+    if (m == null) return '';
+    const hh = Math.floor(m / 60) % 24;
+    const mm = Math.floor(m) % 60;
+    return normalizarHoraHHmm(`${hh}:${mm}`) ?? '';
+  }
+
+  /** Primeira hora do dia (menor instante) entre linhas de serviço em edição. */
+  private menorHoraInicialServicoEdicao(
+    rows: AtendimentoListaItem[],
+    dataYmd: string,
+  ): string {
+    const dia = dataYmd.slice(0, 10);
+    let best: ReturnType<typeof parseSqlLocalDateTime> = null;
+    let bestMs = Infinity;
+    for (const row of rows) {
+      const p = parseSqlLocalDateTime(String(row.inicio ?? '').trim());
+      if (!p || ymdOfParts(p) !== dia) continue;
+      const ms = civilNaiveSalaoParaUtcMs(p);
+      if (Number.isFinite(ms) && ms < bestMs) {
+        bestMs = ms;
+        best = p;
+      }
+    }
+    if (best) {
+      return normalizarHoraHHmm(`${best.hh}:${best.mm}`) ?? '';
+    }
+    return this.horaInicialEdicaoDeInicio(rows[0]?.inicio, dataYmd);
   }
 
   /** Data do formulário em dd-mm-aaaa (valor interno continua AAAA-MM-DD). */
@@ -661,7 +803,12 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       next: () => {
         this.salvando = false;
         this.idAtendimentoEmEdicao = null;
-        void this.router.navigate(['/atendimentos']);
+        this.slotAgenda = null;
+        if (this.modoModal) {
+          this.salvoComSucesso.emit();
+        } else {
+          void this.router.navigate(['/agenda']);
+        }
       },
       error: (e: Error) => {
         this.erro =
@@ -776,6 +923,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
           tipo: 'Serviço',
           cliente_id: l0.idCliente || '',
           data: dataYmd,
+          hora_inicial: this.menorHoraInicialServicoEdicao(sorted, dataYmd),
           observacao: '',
           pacote: '',
           valor_cabelo: '',
@@ -1003,6 +1151,14 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       qtd?.updateValueAndValidity({ emitEvent: false });
     }
 
+    const horaIni = this.form.controls.hora_inicial;
+    if (t === 'Serviço') {
+      horaIni.setValidators([Validators.required]);
+    } else {
+      horaIni.clearValidators();
+    }
+    horaIni.updateValueAndValidity({ emitEvent: false });
+
     for (const k of ['profissional', 'pacote', 'valor_cabelo'] as const) {
       this.form.controls[k].updateValueAndValidity({ emitEvent: false });
     }
@@ -1017,6 +1173,7 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
     if (!dataYmd) return false;
 
     if (tipo === 'Serviço') {
+      if (!normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))) return false;
       const itens = this.servicosItensArray.getRawValue() as {
         servico_id: string;
         tamanho: string;
@@ -1071,6 +1228,111 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
     return this.etapasArray.length >= 1;
   }
 
+  private aplicarContextoSlotInput(): void {
+    const c = this.contextoSlot;
+    if (!c?.data || !/^\d{4}-\d{2}-\d{2}$/.test(c.data.trim().slice(0, 10))) {
+      return;
+    }
+    const dataOk = c.data.trim().slice(0, 10);
+    this.prefillEmCurso = true;
+    this.form.patchValue(
+      { data: dataOk, tipo: 'Serviço' },
+      { emitEvent: false },
+    );
+    this.ajustarArraysPorTipo();
+    this.aplicarValidadoresPorTipo();
+    const g0 = this.servicosItensArray.at(0);
+    if (g0 && c.profissional_id > 0) {
+      g0.patchValue({ profissional: c.profissional_id }, { emitEvent: false });
+    }
+    const horaBruta = String(c.hora ?? '').trim();
+    const hn = normalizarHoraHHmm(horaBruta);
+    this.form.patchValue(
+      { hora_inicial: hn ?? '' },
+      { emitEvent: false },
+    );
+    this.prefillEmCurso = false;
+    this.slotAgenda = null;
+  }
+
+  /** Exibe o fim previsto (HH:mm em Brasília no dia da data) para tipo Serviço. */
+  horarioFinalExibicao(): string {
+    if (this.form.controls.tipo.value !== 'Serviço') return '—';
+    const dataYmd = normalizarDataIso(
+      String(this.form.controls.data.value ?? ''),
+    );
+    const hi = normalizarHoraHHmm(
+      String(this.form.controls.hora_inicial.value ?? ''),
+    );
+    if (!dataYmd || !hi) return '—';
+    const totalMin = this.duracaoTotalServicosSelecionados();
+    const anchor = slotInicioFimBrasilia(dataYmd, hi, 30);
+    if (!anchor) return '—';
+    const cur = parseSqlLocalDateTime(anchor.inicio);
+    if (!cur) return '—';
+    const end = addMinutesToParts(cur, totalMin);
+    return `${String(end.hh).padStart(2, '0')}:${String(end.mm).padStart(2, '0')}`;
+  }
+
+  private duracaoTotalServicosSelecionados(): number {
+    if (this.form.controls.tipo.value !== 'Serviço') return 0;
+    const itens = this.servicosItensArray.getRawValue() as { servico_id: string }[];
+    let sum = 0;
+    for (const it of itens) {
+      const sid = String(it.servico_id ?? '').trim();
+      if (!sid) continue;
+      sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
+    }
+    return Math.max(15, sum || 15);
+  }
+
+  private duracaoMinutosDoServico(s: Servico | undefined): number {
+    if (!s) return 30;
+    const raw =
+      s['duracao_minutos'] ??
+      s['Duração Minutos'] ??
+      s['Duracao Minutos'] ??
+      s['duracaoMinutos'];
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 5 && n <= 24 * 60) return Math.round(n);
+    return 30;
+  }
+
+  private slotsSequenciaisParaPayloadServico(
+    dataYmd: string,
+    horaIniBruto: string,
+    preparados: { servico_id: string }[],
+  ): ({ inicio: string; fim: string } | null)[] {
+    const hi = normalizarHoraHHmm(horaIniBruto);
+    if (!hi || !/^\d{4}-\d{2}-\d{2}$/.test(dataYmd)) {
+      return preparados.map(() => null);
+    }
+    const anchor = slotInicioFimBrasilia(dataYmd, hi, 30);
+    let cur = anchor ? parseSqlLocalDateTime(anchor.inicio) : null;
+    if (!cur) return preparados.map(() => null);
+    return preparados.map((pr) => {
+      const svc = this.servicoPorId(pr.servico_id);
+      const d = this.duracaoMinutosDoServico(svc);
+      const ini = formatSqlLocalDateTime(cur!);
+      const next = addMinutesToParts(cur!, d);
+      const fim = formatSqlLocalDateTime(next);
+      cur = next;
+      return { inicio: ini, fim };
+    });
+  }
+
+  private mergeSlot(
+    p: CreateAtendimentoPayload,
+    usar: boolean,
+  ): CreateAtendimentoPayload {
+    if (!usar || !this.slotAgenda) return p;
+    return {
+      ...p,
+      inicio: this.slotAgenda.inicio,
+      fim: this.slotAgenda.fim,
+    };
+  }
+
   private montarPayloads(
     tipo: TipoAtendimento,
     raw: Record<string, unknown>,
@@ -1086,7 +1348,21 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         tamanho: string;
         profissional: number | null;
       }[];
-      const out: CreateAtendimentoPayload[] = [];
+      const horaIni = String(raw['hora_inicial'] ?? '');
+      const preparados: {
+        servico_id: string;
+        profissional_id: number;
+        st: string;
+        base: {
+          tipo: 'Serviço';
+          cliente_id: string;
+          data: string;
+          profissional_id: number;
+          servico_id: string;
+          observacao?: string;
+        };
+        tamanho?: string;
+      }[] = [];
       for (const it of itens) {
         const servico_id = String(it.servico_id ?? '').trim();
         if (!servico_id) continue;
@@ -1102,12 +1378,32 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
           observacao,
         };
         const st = String(svc?.['Tipo'] ?? '').toLowerCase();
-        if (st === 'fixo') {
-          out.push(base);
+        preparados.push({
+          servico_id,
+          profissional_id,
+          st,
+          base,
+          tamanho: String(it.tamanho ?? 'Curto').trim(),
+        });
+      }
+      const slotPairs = this.slotsSequenciaisParaPayloadServico(
+        dataYmd,
+        horaIni,
+        preparados,
+      );
+      const out: CreateAtendimentoPayload[] = [];
+      for (let i = 0; i < preparados.length; i++) {
+        const pr = preparados[i];
+        const sp = slotPairs[i];
+        const slotPatch =
+          sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
+        if (pr.st === 'fixo') {
+          out.push({ ...pr.base, ...slotPatch });
         } else {
           out.push({
-            ...base,
-            tamanho: String(it.tamanho ?? 'Curto').trim(),
+            ...pr.base,
+            tamanho: pr.tamanho ?? 'Curto',
+            ...slotPatch,
           });
         }
       }
@@ -1120,17 +1416,20 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         profissional: number | null;
       }[];
       return [
-        {
-          tipo: 'Mega',
-          cliente_id,
-          data: dataYmd,
-          pacote,
-          etapas: etapas.map((x) => ({
-            etapa: x.etapa.trim(),
-            profissional_id: Number(x.profissional),
-          })),
-          observacao,
-        },
+        this.mergeSlot(
+          {
+            tipo: 'Mega',
+            cliente_id,
+            data: dataYmd,
+            pacote,
+            etapas: etapas.map((x) => ({
+              etapa: x.etapa.trim(),
+              profissional_id: Number(x.profissional),
+            })),
+            observacao,
+          },
+          true,
+        ),
       ];
     }
     if (tipo === 'Pacote') {
@@ -1143,18 +1442,21 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       const cobId =
         cob != null && cob !== '' && Number(cob) > 0 ? Number(cob) : undefined;
       return [
-        {
-          tipo: 'Pacote',
-          cliente_id,
-          data: dataYmd,
-          ...(cobId != null ? { profissional_id: cobId } : {}),
-          pacote,
-          etapas: etapas.map((x) => ({
-            etapa: x.etapa.trim(),
-            profissional_id: Number(x.profissional),
-          })),
-          observacao,
-        },
+        this.mergeSlot(
+          {
+            tipo: 'Pacote',
+            cliente_id,
+            data: dataYmd,
+            ...(cobId != null ? { profissional_id: cobId } : {}),
+            pacote,
+            etapas: etapas.map((x) => ({
+              etapa: x.etapa.trim(),
+              profissional_id: Number(x.profissional),
+            })),
+            observacao,
+          },
+          true,
+        ),
       ];
     }
     if (tipo === 'Produto') {
@@ -1168,14 +1470,19 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
         if (!nome) continue;
         const q = Number(it.quantidade);
         if (Number.isNaN(q) || q <= 0) continue;
-        out.push({
-          tipo: 'Produto',
-          cliente_id,
-          data: dataYmd,
-          produto: nome,
-          quantidade: q,
-          observacao,
-        });
+        out.push(
+          this.mergeSlot(
+            {
+              tipo: 'Produto',
+              cliente_id,
+              data: dataYmd,
+              produto: nome,
+              quantidade: q,
+              observacao,
+            },
+            out.length === 0,
+          ),
+        );
       }
       return out;
     }
@@ -1184,15 +1491,18 @@ export class AgendaNovoComponent implements OnInit, OnDestroy {
       if (v == null) return [];
       const det = String(raw['detalhes_cabelo'] ?? '').trim();
       return [
-        {
-          tipo: 'Cabelo',
-          cliente_id,
-          data: dataYmd,
-          profissional_id: Number(raw['profissional']),
-          valor: v,
-          observacao,
-          detalhes_cabelo: det || undefined,
-        },
+        this.mergeSlot(
+          {
+            tipo: 'Cabelo',
+            cliente_id,
+            data: dataYmd,
+            profissional_id: Number(raw['profissional']),
+            valor: v,
+            observacao,
+            detalhes_cabelo: det || undefined,
+          },
+          true,
+        ),
       ];
     }
     return [];
