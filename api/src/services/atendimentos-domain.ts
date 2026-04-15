@@ -1349,65 +1349,22 @@ export async function listAtendimentosRaw(
       .select()
       .from(atendimentoItens)
       .where(inArray(atendimentoItens.idAtendimento, idsAt));
-    const produtoIds = new Set<number>();
-    const servicoIds = new Set<number>();
-    for (const row of itensRows) {
-      if (row.produtoId != null && Number(row.produtoId) > 0) {
-        produtoIds.add(Number(row.produtoId));
-      }
-      if (row.servicoId != null && Number(row.servicoId) > 0) {
-        servicoIds.add(Number(row.servicoId));
-      }
-    }
-    const nomePorProdutoId = new Map<number, string>();
-    if (produtoIds.size > 0) {
-      const pr = await db
-        .select({ id: produtos.id, nome: produtos.produto })
-        .from(produtos)
-        .where(inArray(produtos.id, [...produtoIds]));
-      for (const r of pr) {
-        nomePorProdutoId.set(r.id, String(r.nome || '').trim());
-      }
-    }
-    const nomePorServicoId = new Map<number, string>();
-    if (servicoIds.size > 0) {
-      const sr = await db
-        .select({ id: servicos.id, nome: servicos.servico })
-        .from(servicos)
-        .where(inArray(servicos.id, [...servicoIds]));
-      for (const r of sr) {
-        nomePorServicoId.set(r.id, String(r.nome || '').trim());
-      }
-    }
     for (const row of itensRows) {
       const k = String(row.idAtendimento || '').trim();
       const arr = itensPorPedido.get(k) ?? [];
-      const pid =
-        row.produtoId != null && Number(row.produtoId) > 0
-          ? Number(row.produtoId)
-          : null;
-      const sid =
-        row.servicoId != null && Number(row.servicoId) > 0
-          ? Number(row.servicoId)
-          : null;
-      const item: Record<string, unknown> = {
+      arr.push({
         tipo: row.tipo,
         servico_id: row.servicoId,
         produto_id: row.produtoId,
         quantidade: row.quantidade,
         profissional_id: row.profissionalId,
         tamanho: row.tamanho,
-      };
-      if (row.tipo === 'produto' && pid != null) {
-        item.produto_nome = nomePorProdutoId.get(pid) ?? null;
-      }
-      if (row.tipo === 'servico' && sid != null) {
-        item.servico_nome = nomePorServicoId.get(sid) ?? null;
-      }
-      arr.push(item);
+      });
       itensPorPedido.set(k, arr);
     }
   }
+
+  const primeiroRegistoPorIdAt = new Set<string>();
 
   return filtered.map((a) => {
     const dataStr = ymdFromAtendimentoDate(a.data as string | Date | null);
@@ -1418,7 +1375,10 @@ export async function listAtendimentosRaw(
     const profNome = pid != null ? nomePorProfId.get(pid) ?? '' : '';
     const idAtKey = String(a.idAtendimento || '').trim();
     const catalogo =
-      idAtKey.length > 0 ? (itensPorPedido.get(idAtKey) ?? []) : [];
+      idAtKey && !primeiroRegistoPorIdAt.has(idAtKey)
+        ? (primeiroRegistoPorIdAt.add(idAtKey),
+          itensPorPedido.get(idAtKey) ?? [])
+        : undefined;
     return {
       linha_id: a.id,
       'ID Atendimento': a.idAtendimento,
@@ -1449,7 +1409,7 @@ export async function listAtendimentosRaw(
       pagamento_metodo: a.pagamentoMetodo ?? null,
       pagamentoMetodo: a.pagamentoMetodo ?? null,
       id: a.idAtendimento,
-      ...(catalogo.length > 0
+      ...(catalogo !== undefined
         ? {
             itens_catalogo: catalogo,
             itens: catalogo,
