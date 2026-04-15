@@ -1,4 +1,8 @@
 -- Normaliza cadeias vazias para NULL em colunas de texto opcionais (dados legados / import).
+-- Colunas usadas abaixo mas não criadas em migrações anteriores (alinhado a `schema.ts`).
+ALTER TABLE "atendimentos" ADD COLUMN IF NOT EXISTS "pagamento_status" text;
+ALTER TABLE "atendimentos" ADD COLUMN IF NOT EXISTS "pagamento_metodo" text;
+
 UPDATE "atendimentos" SET "nome_cliente" = NULL WHERE "nome_cliente" = '';
 UPDATE "atendimentos" SET "tipo" = NULL WHERE "tipo" = '';
 UPDATE "atendimentos" SET "pacote" = NULL WHERE "pacote" = '';
