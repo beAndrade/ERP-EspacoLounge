@@ -94,7 +94,7 @@
                   type="button"
                   class="day-col__slot"
                   [style.top.%]="slotTopPct(slot)"
-                  [style.height.%]="slotAlturaPct()"
+                  [style.height]="slotAlturaComMargemVertical()"
                   (click)="abrirNovo(p.id, slot)"
                   [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome"
                 ></button>

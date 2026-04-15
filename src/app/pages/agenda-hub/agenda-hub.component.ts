@@ -21,6 +21,12 @@ const GRID_START_MIN = 8 * 60;
 const GRID_END_MIN = 20 * 60;
 const GRID_RANGE = GRID_END_MIN - GRID_START_MIN;
 
+/**
+ * Margem vertical (px) nos slots (`margin-top`/`margin-bottom` no SCSS).
+ * A altura em % desconta o dobro para o caixa de borda caber na faixa da grelha.
+ */
+const SLOT_MARGIN_BLOCK_PX = 4;
+
 @Component({
   selector: 'app-agenda-hub',
   standalone: true,
@@ -281,6 +287,12 @@ export class AgendaHubComponent implements OnInit {
 
   slotAlturaPct(): number {
     return 100 / Math.max(1, this.slotsHoras.length);
+  }
+
+  /** Altura da faixa descontando `margin-top` + `margin-bottom` dos slots (px). */
+  slotAlturaComMargemVertical(): string {
+    const h = this.slotAlturaPct();
+    return `calc(${h}% - ${SLOT_MARGIN_BLOCK_PX * 2}px)`;
   }
 
   private inicioDoMes(d: Date): Date {
