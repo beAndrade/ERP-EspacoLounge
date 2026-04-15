@@ -132,13 +132,20 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     if (!et) {
       return pac ? `Pacote • ${pac}` : '—';
     }
+    /* Com etapa: sempre incluir o pacote (antes só aparecia a etapa). */
+    if (pac && et) {
+      return `${pac} — ${et}`;
+    }
     return et || pac || '—';
   }
   if (t === 'mega') {
     const pac = (l.pacote || '').trim();
     const et = (l.etapa || '').trim();
     if (!et) {
-      return pac || '—';
+      return pac ? `Mega • ${pac}` : '—';
+    }
+    if (pac && et) {
+      return `${pac} — ${et}`;
     }
     return et || pac || '—';
   }

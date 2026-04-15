@@ -1,0 +1,12 @@
+---
+description: PT-BR no chat; feature em branch feature/* a partir de main; avisar push no fim.
+alwaysApply: false
+---
+# Idioma
+
+- Respostas **sempre em português do Brasil (PT-BR)**.
+
+# Git (projeto solo)
+
+- **Nova feature:** `git fetch origin` → `git checkout main && git pull origin main` → `git checkout -b feature/nome-curto` (resolver `git status` antes se houver alterações por commitar).
+- **Ao terminar a feature:** `git add` / `git commit` (PT-BR, regra *commits-por-etapa*) → **avisar** o utilizador para fazer `git push -u origin feature/<nome>` (push é sempre dele).

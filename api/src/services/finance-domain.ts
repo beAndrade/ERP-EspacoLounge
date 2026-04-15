@@ -69,6 +69,7 @@ export function totalLiquidoConfirmacao(rows: AtendLinha[]): number {
   return Math.round(sum * 100) / 100;
 }
 
+/** Contagem por `tipo` nas linhas `atendimentos`; a pivot `atendimento_itens` não altera este fluxo. */
 export function slugCategoriaReceitaPredominante(rows: AtendLinha[]): string {
   const counts = new Map<string, number>();
   for (const r of rows) {

@@ -6,11 +6,22 @@ import type { Db } from '../db';
 import { descricaoParaListaLinha } from '../lib/descricao-lista';
 import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
 import {
+  addMinutesToParts,
+  formatSqlLocalDateTime,
+  instantEmDateParaSqlLocalBrasil,
+  isoInstantParaSqlLocalBrasil,
+  normalizeSqlLocalString,
+  parseSqlLocalDateTime,
+} from '../lib/sql-local-datetime';
+import {
+  atendimentoItens,
   atendimentos,
+  atendimentosPedido,
   clientes,
   folha,
   pacotes,
   produtos,
+  profissionais,
   regrasMega,
   servicos,
 } from '../db/schema';
@@ -25,11 +36,18 @@ export type CreateAtendimentoPayload =
       tipo: 'Serviço';
       cliente_id: string;
       data: string;
-      /** ID da linha na tabela `folha` (aba Folha). */
+      /** ID em `profissionais` (lista `/api/profissionais`). */
       profissional_id: number;
       servico_id: string;
       tamanho?: string;
       observacao?: string;
+      /** Vários serviços no mesmo pedido (`id_atendimento`); cada entrada gera linha em `atendimentos` + item na pivot. */
+      itens_servicos?: {
+        servico_id: string;
+        quantidade: number;
+        profissional_id?: number | null;
+        tamanho?: string;
+      }[];
     }
   | {
       tipo: 'Mega';
@@ -57,6 +75,12 @@ export type CreateAtendimentoPayload =
       produto: string;
       quantidade: number;
       observacao?: string;
+      /** Vários produtos no mesmo pedido; cada entrada gera linha em `atendimentos` + item na pivot. */
+      itens_produtos?: {
+        produto_id: number;
+        quantidade: number;
+        profissional_id?: number | null;
+      }[];
     }
   | {
       tipo: 'Cabelo';
@@ -96,7 +120,10 @@ export function ymdCompactFromDataStr(dataStr: string): string {
   if (!Number.isNaN(d.getTime())) {
     return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
   }
-  return ymdCompactFromDataStr(new Date().toISOString().slice(0, 10));
+  const n = new Date();
+  return ymdCompactFromDataStr(
+    `${n.getFullYear()}-${pad2(n.getMonth() + 1)}-${pad2(n.getDate())}`,
+  );
 }
 
 export function makeIdAtendimento(dataStr: string, clienteId: string): string {
@@ -201,6 +228,34 @@ function tipoServicoCatalogo(srv: ServicoRow): 'Fixo' | 'Tamanho' | 'LegacyServi
   return '';
 }
 
+/** Duração em minutos: Fixo → `duracao_minutos`; Tamanho/Legacy → coluna do tamanho ou padrão. */
+function duracaoMinutosServicoCatalogo(
+  srv: ServicoRow,
+  cat: ReturnType<typeof tipoServicoCatalogo>,
+  tamanhoParam: string,
+  legacy: boolean,
+): number {
+  const base = srv.duracaoMinutos ?? 30;
+  const fallback = Math.min(Math.max(base, 5), 24 * 60);
+  if (legacy && !cat) return fallback;
+  if (cat === 'Fixo' || cat === '') return fallback;
+  const t = (tamanhoParam || 'Curto').trim();
+  const colMap: Partial<Record<string, keyof ServicoRow>> = {
+    Curto: 'duracaoCurto',
+    Médio: 'duracaoMedio',
+    'M/L': 'duracaoMedioLongo',
+    Longo: 'duracaoLongo',
+  };
+  const col = colMap[t];
+  if (col) {
+    const v = srv[col];
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 5 && v <= 24 * 60) {
+      return Math.round(v);
+    }
+  }
+  return fallback;
+}
+
 function valorEComissaoServico(
   srv: ServicoRow,
   cat: ReturnType<typeof tipoServicoCatalogo>,
@@ -255,7 +310,7 @@ async function readServicoRow(db: Db, lineNum: number): Promise<ServicoRow> {
   const [r] = await db
     .select()
     .from(servicos)
-    .where(eq(servicos.linha, lineNum))
+    .where(eq(servicos.id, lineNum))
     .limit(1);
   if (!r) throw new Error(`Linha inválida na aba Serviços: ${lineNum}`);
   return r;
@@ -304,19 +359,168 @@ async function findProdutoPreco(db: Db, nome: string): Promise<string | null> {
   return p != null && p !== '' ? String(p) : null;
 }
 
-async function assertFolhaIdExists(db: Db, id: number): Promise<void> {
+async function assertProfissionalIdExists(db: Db, id: number): Promise<void> {
   const [r] = await db
-    .select({ id: folha.id })
-    .from(folha)
-    .where(eq(folha.id, id))
+    .select({ id: profissionais.id })
+    .from(profissionais)
+    .where(eq(profissionais.id, id))
     .limit(1);
   if (!r) {
-    throw new Error(`profissional_id inválido: ${id} não existe na Folha`);
+    throw new Error(`profissional_id inválido: ${id} não existe em profissionais`);
   }
 }
 
+async function ensurePedidoHeader(
+  db: Db,
+  idAtendimento: string,
+  idCliente: string,
+): Promise<void> {
+  await db
+    .insert(atendimentosPedido)
+    .values({
+      idAtendimento,
+      idCliente: idCliente.trim(),
+    })
+    .onConflictDoNothing();
+}
+
+async function insertPivotServico(
+  db: Db,
+  o: {
+    idAtendimento: string;
+    servicoId: number;
+    quantidade: number;
+    profissionalId: number | null;
+    tamanho: string | null;
+  },
+): Promise<void> {
+  const tam = o.tamanho && o.tamanho.trim() ? o.tamanho.trim() : null;
+  await db.insert(atendimentoItens).values({
+    idAtendimento: o.idAtendimento,
+    tipo: 'servico',
+    servicoId: o.servicoId,
+    produtoId: null,
+    quantidade: o.quantidade,
+    profissionalId: o.profissionalId,
+    tamanho: tam,
+  });
+}
+
+async function insertPivotProduto(
+  db: Db,
+  o: {
+    idAtendimento: string;
+    produtoId: number;
+    quantidade: number;
+    profissionalId: number | null;
+  },
+): Promise<void> {
+  await db.insert(atendimentoItens).values({
+    idAtendimento: o.idAtendimento,
+    tipo: 'produto',
+    servicoId: null,
+    produtoId: o.produtoId,
+    quantidade: o.quantidade,
+    profissionalId: o.profissionalId,
+    tamanho: null,
+  });
+}
+
+async function findProdutoIdPorNome(db: Db, nome: string): Promise<number> {
+  const rows = await db
+    .select({ id: produtos.id })
+    .from(produtos)
+    .where(eq(produtos.produto, nome.trim()))
+    .limit(1);
+  const id = rows[0]?.id;
+  if (id == null) throw new Error(`Produto não encontrado: "${nome}"`);
+  return id;
+}
+
+async function readProdutoRowPorId(
+  db: Db,
+  produtoId: number,
+): Promise<typeof produtos.$inferSelect> {
+  const [r] = await db
+    .select()
+    .from(produtos)
+    .where(eq(produtos.id, produtoId))
+    .limit(1);
+  if (!r) throw new Error(`produto_id inválido: ${produtoId}`);
+  return r;
+}
+
+/** Evita violar índice único (`servico_id` + `tamanho` por pedido) ao fundir linhas iguais. */
+function mergeItensServicoNorm(
+  itens: {
+    servicoLine: number;
+    quantidade: number;
+    profissional_id?: unknown;
+    tamanho?: string;
+  }[],
+): typeof itens {
+  const map = new Map<
+    string,
+    {
+      servicoLine: number;
+      quantidade: number;
+      profissional_id?: unknown;
+      tamanho?: string;
+    }
+  >();
+  for (const it of itens) {
+    const tam = String(it.tamanho || '').trim();
+    const key = `${it.servicoLine}\t${tam}`;
+    const cur = map.get(key);
+    if (!cur) {
+      map.set(key, {
+        servicoLine: it.servicoLine,
+        quantidade: it.quantidade,
+        profissional_id: it.profissional_id,
+        tamanho: tam || undefined,
+      });
+    } else {
+      cur.quantidade += it.quantidade;
+      if (
+        (cur.profissional_id === undefined || cur.profissional_id === null) &&
+        it.profissional_id != null &&
+        it.profissional_id !== ''
+      ) {
+        cur.profissional_id = it.profissional_id;
+      }
+    }
+  }
+  return [...map.values()];
+}
+
+function mergeItensProdutoNorm(
+  itens: {
+    produtoId: number;
+    quantidade: number;
+    profissional_id?: unknown;
+  }[],
+): typeof itens {
+  const map = new Map<number, (typeof itens)[0]>();
+  for (const it of itens) {
+    const cur = map.get(it.produtoId);
+    if (!cur) {
+      map.set(it.produtoId, { ...it });
+    } else {
+      cur.quantidade += it.quantidade;
+      if (
+        (cur.profissional_id === undefined || cur.profissional_id === null) &&
+        it.profissional_id != null &&
+        it.profissional_id !== ''
+      ) {
+        cur.profissional_id = it.profissional_id;
+      }
+    }
+  }
+  return [...map.values()];
+}
+
 /**
- * Resolve `folha.id` a partir de `profissional_id` ou, em legado, do nome em `profissional`.
+ * Resolve `profissionais.id`; aceita legado `folha.id` se `folha.profissional_id` estiver preenchido.
  */
 async function resolveProfissionalIdToInt(
   db: Db,
@@ -330,21 +534,36 @@ async function resolveProfissionalIdToInt(
         ? Math.trunc(rawId)
         : parseInt(String(rawId).trim(), 10);
     if (!Number.isNaN(n) && n > 0) {
-      await assertFolhaIdExists(db, n);
-      return n;
+      const [pr] = await db
+        .select({ id: profissionais.id })
+        .from(profissionais)
+        .where(eq(profissionais.id, n))
+        .limit(1);
+      if (pr) return n;
+      const [fh] = await db
+        .select({ pid: folha.profissionalId })
+        .from(folha)
+        .where(eq(folha.id, n))
+        .limit(1);
+      if (fh?.pid != null) {
+        await assertProfissionalIdExists(db, fh.pid);
+        return fh.pid;
+      }
+      if (required) throw new Error('profissional_id inválido');
+      return null;
     }
     if (required) throw new Error('profissional_id inválido');
   }
   const nome = String(opts.profissional ?? '').trim();
   if (!nome) {
     if (required) {
-      throw new Error('Profissional é obrigatório (profissional_id da Folha)');
+      throw new Error('Profissional é obrigatório (profissional_id de /api/profissionais)');
     }
     return null;
   }
   const rows = await db
-    .select({ id: folha.id, nome: folha.profissional })
-    .from(folha);
+    .select({ id: profissionais.id, nome: profissionais.nome })
+    .from(profissionais);
   for (const row of rows) {
     const t = String(row.nome || '').trim();
     if (t === nome) {
@@ -353,10 +572,45 @@ async function resolveProfissionalIdToInt(
   }
   if (required) {
     throw new Error(
-      `Profissional "${nome}" não encontrado na Folha (use profissional_id)`,
+      `Profissional "${nome}" não encontrado (use profissional_id de /api/profissionais)`,
     );
   }
   return null;
+}
+
+function parseInicioFimOpcional(
+  inicioRaw: unknown,
+  fimRaw: unknown,
+  /** Quando só `inicio` vem preenchido (minutos). Padrão 30 = compatível com fluxos antigos. */
+  duracaoSeFimAusenteMin = 30,
+): { inicio: string | null; fim: string | null } {
+  const parseOne = (v: unknown): string | null => {
+    if (v === undefined || v === null || v === '') return null;
+    if (v instanceof Date) {
+      return instantEmDateParaSqlLocalBrasil(v);
+    }
+    const s = String(v).trim();
+    if (!s) return null;
+    const norm = normalizeSqlLocalString(s);
+    if (norm) return norm;
+    if (/T/i.test(s) && (s.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(s))) {
+      return isoInstantParaSqlLocalBrasil(s);
+    }
+    return null;
+  };
+  let inicio = parseOne(inicioRaw);
+  let fim = parseOne(fimRaw);
+  if (inicio && !fim) {
+    const p = parseSqlLocalDateTime(inicio);
+    if (p) {
+      const dm = Math.max(
+        5,
+        Math.min(24 * 60, Math.round(duracaoSeFimAusenteMin)),
+      );
+      fim = formatSqlLocalDateTime(addMinutesToParts(p, dm));
+    }
+  }
+  return { inicio, fim };
 }
 
 async function appendAtendimentoLinha(
@@ -379,12 +633,16 @@ async function appendAtendimentoLinha(
     descricao: string;
     /** Espelha texto em **Descrição Manual** (planilha) quando distinto de `descricao`. */
     descricaoManual?: string;
+    inicio?: string | null;
+    fim?: string | null;
   },
 ): Promise<void> {
   const dataSql = parseDataSql(o.dataStr);
   await db.insert(atendimentos).values({
     idAtendimento: o.idAt,
     data: dataSql,
+    inicio: o.inicio ?? null,
+    fim: o.fim ?? null,
     idCliente: o.clienteId,
     nomeCliente: o.nomeCliente,
     tipo: o.tipo,
@@ -452,59 +710,174 @@ async function createAtendimentoServico(
   nomeCliente: string;
 }> {
   const clienteId = String(p.cliente_id || '').trim();
-  const linhaServico = parseInt(String(p.servico_id || ''), 10);
   const dataStr = String(p.data || '').trim();
-  if (!clienteId || !linhaServico || !dataStr) {
-    throw new Error(
-      'cliente_id, servico_id (linha na aba Serviços) e data são obrigatórios',
-    );
+  if (!clienteId || !dataStr) {
+    throw new Error('cliente_id e data são obrigatórios');
   }
   const rec = p as Record<string, unknown>;
-  const profissionalId = await resolveProfissionalIdToInt(
+  const nomeCliente = await findClienteNome(db, clienteId);
+  const idAt = makeIdAtendimento(dataStr, clienteId);
+  const obs = String('observacao' in p ? p.observacao || '' : '').trim();
+
+  type ItemRec = {
+    servico_id?: unknown;
+    quantidade?: unknown;
+    profissional_id?: unknown;
+    tamanho?: unknown;
+  };
+
+  const rawItens = rec['itens_servicos'];
+  const fromArray = Array.isArray(rawItens) && rawItens.length > 0;
+
+  const itensNorm: {
+    servicoLine: number;
+    quantidade: number;
+    profissional_id?: unknown;
+    tamanho?: string;
+  }[] = [];
+
+  if (fromArray) {
+    for (const it of rawItens as ItemRec[]) {
+      const servicoLine = parseInt(String(it.servico_id ?? ''), 10);
+      const q = Number(it.quantidade);
+      if (!servicoLine || Number.isNaN(q) || q <= 0) {
+        throw new Error(
+          'Cada item em itens_servicos exige servico_id (id na aba Serviços) e quantidade > 0',
+        );
+      }
+      itensNorm.push({
+        servicoLine,
+        quantidade: Math.trunc(q),
+        profissional_id: it.profissional_id,
+        tamanho: it.tamanho != null ? String(it.tamanho) : undefined,
+      });
+    }
+    const merged = mergeItensServicoNorm(itensNorm);
+    itensNorm.length = 0;
+    itensNorm.push(...merged);
+  } else {
+    const linhaServico = parseInt(String(p.servico_id || ''), 10);
+    if (!linhaServico) {
+      throw new Error(
+        'cliente_id, servico_id (id na aba Serviços) e data são obrigatórios, ou envie itens_servicos',
+      );
+    }
+    itensNorm.push({
+      servicoLine: linhaServico,
+      quantidade: 1,
+      profissional_id: rec['profissional_id'],
+      tamanho: 'tamanho' in p ? String(p.tamanho || '') : undefined,
+    });
+  }
+
+  const firstIt = itensNorm[0];
+  const srvFirst = await readServicoRow(db, firstIt.servicoLine);
+  const catFirst = tipoServicoCatalogo(srvFirst);
+  let tamFirst = String(firstIt.tamanho || '').trim();
+  if (!legacy && catFirst === 'Tamanho' && !tamFirst) {
+    tamFirst = 'Curto';
+  }
+  const durSlot = duracaoMinutosServicoCatalogo(
+    srvFirst,
+    catFirst,
+    tamFirst || 'Curto',
+    legacy,
+  );
+  const slot = parseInicioFimOpcional(rec['inicio'], rec['fim'], durSlot);
+
+  const bodyProf = await resolveProfissionalIdToInt(
     db,
     {
       profissional_id: rec['profissional_id'],
       profissional: rec['profissional'],
     },
-    !legacy,
+    false,
   );
-  if (profissionalId == null && !legacy) {
+  if (!legacy && !fromArray && bodyProf == null) {
     throw new Error('Profissional é obrigatório (profissional_id)');
   }
-  let tamanhoParam = String('tamanho' in p ? p.tamanho || '' : '').trim();
-  const nomeCliente = await findClienteNome(db, clienteId);
-  const srv = await readServicoRow(db, linhaServico);
-  const nomeServico = srv.servico != null ? String(srv.servico) : '';
-  const cat = tipoServicoCatalogo(srv);
-  if (!legacy && !cat) {
-    throw new Error(
-      `Tipo da linha Serviços não reconhecido (use Fixo ou Tamanho): ${String(srv.tipo || '')}`,
+
+  await ensurePedidoHeader(db, idAt, clienteId);
+
+  let linhas = 0;
+  let primeira = true;
+
+  for (const it of itensNorm) {
+    const srv = await readServicoRow(db, it.servicoLine);
+    const nomeServico = srv.servico != null ? String(srv.servico) : '';
+    const cat = tipoServicoCatalogo(srv);
+    if (!legacy && !cat) {
+      throw new Error(
+        `Tipo da linha Serviços não reconhecido (use Fixo ou Tamanho): ${String(srv.tipo || '')}`,
+      );
+    }
+    let tamanhoParam = String(it.tamanho || '').trim();
+    if (!legacy && cat === 'Tamanho' && !tamanhoParam) {
+      tamanhoParam = 'Curto';
+    }
+    const vc = valorEComissaoServico(
+      srv,
+      cat,
+      tamanhoParam || 'Curto',
+      legacy,
     );
+
+    const itemProf = await resolveProfissionalIdToInt(
+      db,
+      { profissional_id: it.profissional_id, profissional: undefined },
+      false,
+    );
+    const profissionalId = itemProf ?? bodyProf;
+    if (profissionalId == null && !legacy) {
+      throw new Error(
+        'Profissional é obrigatório (profissional_id no item ou no corpo)',
+      );
+    }
+
+    const qtd = it.quantidade;
+    const vNum = toNumberPt(vc.valor);
+    const cNum = toNumberPt(vc.comissao);
+    let valorLinha = vc.valor;
+    let comissaoLinha = vc.comissao;
+    if (qtd > 1) {
+      if (vNum != null) valorLinha = String(vNum * qtd);
+      if (cNum != null) comissaoLinha = String(cNum * qtd);
+    }
+
+    await appendAtendimentoLinha(db, {
+      idAt,
+      dataStr,
+      clienteId,
+      nomeCliente,
+      tipo: 'Serviço',
+      pacote: '',
+      etapa: '',
+      produto: '',
+      servicos: nomeServico,
+      tamanho: vc.tamanhoParaPlanilha,
+      profissionalId,
+      valor: valorLinha,
+      comissao: comissaoLinha,
+      descricao: obs,
+      inicio: primeira ? slot.inicio : null,
+      fim: primeira ? slot.fim : null,
+    });
+
+    await insertPivotServico(db, {
+      idAtendimento: idAt,
+      servicoId: srv.id,
+      quantidade: qtd,
+      profissionalId,
+      tamanho: vc.tamanhoParaPlanilha || null,
+    });
+
+    linhas += 1;
+    primeira = false;
   }
-  if (!legacy && cat === 'Tamanho' && !tamanhoParam) {
-    tamanhoParam = 'Curto';
-  }
-  const vc = valorEComissaoServico(srv, cat, tamanhoParam || 'Curto', legacy);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
-  await appendAtendimentoLinha(db, {
-    idAt,
-    dataStr,
-    clienteId,
-    nomeCliente,
-    tipo: 'Serviço',
-    pacote: '',
-    etapa: '',
-    produto: '',
-    servicos: nomeServico,
-    tamanho: vc.tamanhoParaPlanilha,
-    profissionalId,
-    valor: vc.valor,
-    comissao: vc.comissao,
-    descricao: String('observacao' in p ? p.observacao || '' : '').trim(),
-  });
+
   return {
     id: idAt,
-    linhas: 1,
+    linhas,
     data: dataStr,
     cliente_id: clienteId,
     nomeCliente,
@@ -533,7 +906,13 @@ async function createAtendimentoMega(
   }
   const nomeCliente = await findClienteNome(db, clienteId);
   const idAt = makeIdAtendimento(dataStr, clienteId);
+  await ensurePedidoHeader(db, idAt, clienteId);
   const obs = String(p.observacao || '').trim();
+  const slot = parseInicioFimOpcional(
+    (p as Record<string, unknown>)['inicio'],
+    (p as Record<string, unknown>)['fim'],
+  );
+  let primeiraEtapa = true;
   for (const st of etapas) {
     const etapaNome = String(st.etapa || '').trim();
     const stRec = st as Record<string, unknown>;
@@ -565,7 +944,10 @@ async function createAtendimentoMega(
       comissao: regra.comissao,
       descricao: obs,
       descricaoManual: obs,
+      inicio: primeiraEtapa ? slot.inicio : null,
+      fim: primeiraEtapa ? slot.fim : null,
     });
+    primeiraEtapa = false;
   }
   return {
     id: idAt,
@@ -610,7 +992,12 @@ async function createAtendimentoPacote(
   }
   const nomeCliente = await findClienteNome(db, clienteId);
   const idAt = makeIdAtendimento(dataStr, clienteId);
+  await ensurePedidoHeader(db, idAt, clienteId);
   const obs = String(p.observacao || '').trim();
+  const slot = parseInicioFimOpcional(
+    (p as Record<string, unknown>)['inicio'],
+    (p as Record<string, unknown>)['fim'],
+  );
   await appendAtendimentoLinha(db, {
     idAt,
     dataStr,
@@ -627,6 +1014,8 @@ async function createAtendimentoPacote(
     comissao: '',
     descricao: obs,
     descricaoManual: obs,
+    inicio: slot.inicio,
+    fim: slot.fim,
   });
   for (const st of etapas) {
     const etapaNome = String(st.etapa || '').trim();
@@ -682,57 +1071,130 @@ async function createAtendimentoProduto(
 }> {
   const clienteId = String(p.cliente_id || '').trim();
   const dataStr = String(p.data || '').trim();
-  const nomeProd = String(p.produto || '').trim();
-  const profissionalId = await resolveProfissionalIdToInt(
+  const rec = p as Record<string, unknown>;
+  const nomeCliente = await findClienteNome(db, clienteId);
+  const idAt = makeIdAtendimento(dataStr, clienteId);
+  const slot = parseInicioFimOpcional(rec['inicio'], rec['fim']);
+  const baseObs = String(p.observacao || '').trim();
+
+  type ProdItem = {
+    produtoId: number;
+    quantidade: number;
+    profissional_id?: unknown;
+  };
+  const rawProd = rec['itens_produtos'];
+  const fromArray = Array.isArray(rawProd) && rawProd.length > 0;
+  const itensNorm: ProdItem[] = [];
+
+  if (fromArray) {
+    for (const it of rawProd as { produto_id?: unknown; quantidade?: unknown; profissional_id?: unknown }[]) {
+      const pid = parseInt(String(it.produto_id ?? ''), 10);
+      const q = Number(it.quantidade);
+      if (!pid || Number.isNaN(q) || q <= 0) {
+        throw new Error(
+          'Cada item em itens_produtos exige produto_id e quantidade > 0',
+        );
+      }
+      itensNorm.push({
+        produtoId: pid,
+        quantidade: Math.trunc(q),
+        profissional_id: it.profissional_id,
+      });
+    }
+    const merged = mergeItensProdutoNorm(itensNorm);
+    itensNorm.length = 0;
+    itensNorm.push(...merged);
+  } else {
+    const nomeProd = String(p.produto || '').trim();
+    if (!clienteId || !dataStr || !nomeProd) {
+      throw new Error('cliente_id, data e produto são obrigatórios para Produto');
+    }
+    const q = Number(p.quantidade);
+    if (Number.isNaN(q) || q <= 0) {
+      throw new Error('quantidade deve ser um número maior que zero');
+    }
+    const produtoId = await findProdutoIdPorNome(db, nomeProd);
+    itensNorm.push({
+      produtoId,
+      quantidade: q,
+      profissional_id: rec['profissional_id'],
+    });
+  }
+
+  if (!clienteId || !dataStr) {
+    throw new Error('cliente_id e data são obrigatórios para Produto');
+  }
+
+  const bodyProf = await resolveProfissionalIdToInt(
     db,
     {
       profissional_id: p.profissional_id,
-      profissional: (p as Record<string, unknown>)['profissional'],
+      profissional: rec['profissional'],
     },
     false,
   );
-  if (!clienteId || !dataStr || !nomeProd) {
-    throw new Error('cliente_id, data e produto são obrigatórios para Produto');
+
+  await ensurePedidoHeader(db, idAt, clienteId);
+
+  let linhas = 0;
+  let primeira = true;
+  for (const it of itensNorm) {
+    const rowP = await readProdutoRowPorId(db, it.produtoId);
+    const nomeProd = String(rowP.produto || '').trim();
+    const precoUnit = rowP.preco != null && rowP.preco !== '' ? String(rowP.preco) : null;
+    if (precoUnit === null) {
+      throw new Error(`Preço inválido para produto: "${nomeProd}"`);
+    }
+    const unitNum = toNumberPt(precoUnit);
+    if (unitNum === null) {
+      throw new Error(`Preço inválido para produto: "${nomeProd}"`);
+    }
+    const qtd = it.quantidade;
+    const valorTotal = unitNum * qtd;
+
+    const itemProf = await resolveProfissionalIdToInt(
+      db,
+      { profissional_id: it.profissional_id, profissional: undefined },
+      false,
+    );
+    const profissionalId = itemProf ?? bodyProf;
+
+    const obsParts: string[] = [];
+    if (baseObs) obsParts.push(baseObs);
+    obsParts.push(`Qtd: ${String(qtd).replace('.', ',')}`);
+    const obs = obsParts.join(' — ');
+
+    await appendAtendimentoLinha(db, {
+      idAt,
+      dataStr,
+      clienteId,
+      nomeCliente,
+      tipo: 'Produto',
+      pacote: '',
+      etapa: '',
+      produto: nomeProd,
+      servicos: '',
+      tamanho: '',
+      profissionalId,
+      valor: String(valorTotal),
+      comissao: '',
+      descricao: obs,
+      inicio: primeira ? slot.inicio : null,
+      fim: primeira ? slot.fim : null,
+    });
+    await insertPivotProduto(db, {
+      idAtendimento: idAt,
+      produtoId: it.produtoId,
+      quantidade: qtd,
+      profissionalId,
+    });
+    linhas += 1;
+    primeira = false;
   }
-  const q = Number(p.quantidade);
-  if (Number.isNaN(q) || q <= 0) {
-    throw new Error('quantidade deve ser um número maior que zero');
-  }
-  const precoUnit = await findProdutoPreco(db, nomeProd);
-  if (precoUnit === null) {
-    throw new Error(`Produto não encontrado na aba Produtos: "${nomeProd}"`);
-  }
-  const unitNum = toNumberPt(precoUnit);
-  if (unitNum === null) {
-    throw new Error(`Preço inválido para produto: "${nomeProd}"`);
-  }
-  const valorTotal = unitNum * q;
-  const nomeCliente = await findClienteNome(db, clienteId);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
-  const baseObs = String(p.observacao || '').trim();
-  const obsParts: string[] = [];
-  if (baseObs) obsParts.push(baseObs);
-  obsParts.push(`Qtd: ${String(q).replace('.', ',')}`);
-  const obs = obsParts.join(' — ');
-  await appendAtendimentoLinha(db, {
-    idAt,
-    dataStr,
-    clienteId,
-    nomeCliente,
-    tipo: 'Produto',
-    pacote: '',
-    etapa: '',
-    produto: nomeProd,
-    servicos: '',
-    tamanho: '',
-    profissionalId,
-    valor: String(valorTotal),
-    comissao: '',
-    descricao: obs,
-  });
+
   return {
     id: idAt,
-    linhas: 1,
+    linhas,
     data: dataStr,
     cliente_id: clienteId,
     nomeCliente,
@@ -769,12 +1231,17 @@ async function createAtendimentoCabelo(
   }
   const nomeCliente = await findClienteNome(db, clienteId);
   const idAt = makeIdAtendimento(dataStr, clienteId);
+  await ensurePedidoHeader(db, idAt, clienteId);
   const det = String(p.detalhes_cabelo || '').trim();
   const baseObs = String(p.observacao || '').trim();
   const obsParts: string[] = [];
   if (det) obsParts.push(det);
   if (baseObs) obsParts.push(baseObs);
   const obs = obsParts.join(' — ');
+  const slot = parseInicioFimOpcional(
+    (p as Record<string, unknown>)['inicio'],
+    (p as Record<string, unknown>)['fim'],
+  );
   await appendAtendimentoLinha(db, {
     idAt,
     dataStr,
@@ -790,6 +1257,8 @@ async function createAtendimentoCabelo(
     valor: String(valorNum),
     comissao: '',
     descricao: obs,
+    inicio: slot.inicio,
+    fim: slot.fim,
   });
   return {
     id: idAt,
@@ -807,6 +1276,22 @@ function ymdFromAtendimentoDate(d: string | Date | null | undefined): string {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   }
   return '';
+}
+
+/** Resposta da lista: sempre `YYYY-MM-DD HH:mm:ss` (ou null), sem `Z`. */
+function tsParaRespostaListagem(v: string | Date | null | undefined): string | null {
+  if (v == null || v === '') return null;
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if (!t) return null;
+    const norm = normalizeSqlLocalString(t);
+    if (norm) return norm;
+    return isoInstantParaSqlLocalBrasil(t);
+  }
+  if (v instanceof Date) {
+    return instantEmDateParaSqlLocalBrasil(v);
+  }
+  return null;
 }
 
 export async function listAtendimentosRaw(
@@ -833,23 +1318,53 @@ export async function listAtendimentosRaw(
     return true;
   });
 
-  const folhaIds = Array.from(
+  const profIds = Array.from(
     new Set(
       filtered
         .map((a) => a.profissionalId)
         .filter((x): x is number => x != null && Number(x) > 0),
     ),
   );
-  const nomePorFolhaId = new Map<number, string>();
-  if (folhaIds.length > 0) {
-    const fh = await db
-      .select({ id: folha.id, nome: folha.profissional })
-      .from(folha)
-      .where(inArray(folha.id, folhaIds));
-    for (const f of fh) {
-      nomePorFolhaId.set(f.id, String(f.nome || '').trim());
+  const nomePorProfId = new Map<number, string>();
+  if (profIds.length > 0) {
+    const pr = await db
+      .select({ id: profissionais.id, nome: profissionais.nome })
+      .from(profissionais)
+      .where(inArray(profissionais.id, profIds));
+    for (const r of pr) {
+      nomePorProfId.set(r.id, String(r.nome || '').trim());
     }
   }
+
+  const idsAt = Array.from(
+    new Set(
+      filtered
+        .map((a) => String(a.idAtendimento || '').trim())
+        .filter((x) => x.length > 0),
+    ),
+  );
+  const itensPorPedido = new Map<string, Record<string, unknown>[]>();
+  if (idsAt.length > 0) {
+    const itensRows = await db
+      .select()
+      .from(atendimentoItens)
+      .where(inArray(atendimentoItens.idAtendimento, idsAt));
+    for (const row of itensRows) {
+      const k = String(row.idAtendimento || '').trim();
+      const arr = itensPorPedido.get(k) ?? [];
+      arr.push({
+        tipo: row.tipo,
+        servico_id: row.servicoId,
+        produto_id: row.produtoId,
+        quantidade: row.quantidade,
+        profissional_id: row.profissionalId,
+        tamanho: row.tamanho,
+      });
+      itensPorPedido.set(k, arr);
+    }
+  }
+
+  const primeiroRegistoPorIdAt = new Set<string>();
 
   return filtered.map((a) => {
     const dataStr = ymdFromAtendimentoDate(a.data as string | Date | null);
@@ -857,10 +1372,19 @@ export async function listAtendimentosRaw(
       a.profissionalId != null && Number(a.profissionalId) > 0
         ? Number(a.profissionalId)
         : null;
-    const profNome = pid != null ? nomePorFolhaId.get(pid) ?? '' : '';
+    const profNome = pid != null ? nomePorProfId.get(pid) ?? '' : '';
+    const idAtKey = String(a.idAtendimento || '').trim();
+    const catalogo =
+      idAtKey && !primeiroRegistoPorIdAt.has(idAtKey)
+        ? (primeiroRegistoPorIdAt.add(idAtKey),
+          itensPorPedido.get(idAtKey) ?? [])
+        : undefined;
     return {
+      linha_id: a.id,
       'ID Atendimento': a.idAtendimento,
       Data: dataStr,
+      inicio: tsParaRespostaListagem(a.inicio as Date | string | null),
+      fim: tsParaRespostaListagem(a.fim as Date | string | null),
       'ID Cliente': a.idCliente,
       'Nome Cliente': a.nomeCliente,
       Tipo: a.tipo,
@@ -885,6 +1409,12 @@ export async function listAtendimentosRaw(
       pagamento_metodo: a.pagamentoMetodo ?? null,
       pagamentoMetodo: a.pagamentoMetodo ?? null,
       id: a.idAtendimento,
+      ...(catalogo !== undefined
+        ? {
+            itens_catalogo: catalogo,
+            itens: catalogo,
+          }
+        : {}),
     };
   });
 }
@@ -956,11 +1486,19 @@ export async function excluirAtendimentoPorIdAtendimento(
 ): Promise<number> {
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
-  const rows = await db
-    .delete(atendimentos)
-    .where(eq(atendimentos.idAtendimento, id))
-    .returning({ id: atendimentos.id });
-  return rows.length;
+  return await db.transaction(async (tx) => {
+    await tx
+      .delete(atendimentoItens)
+      .where(eq(atendimentoItens.idAtendimento, id));
+    const rows = await tx
+      .delete(atendimentos)
+      .where(eq(atendimentos.idAtendimento, id))
+      .returning({ id: atendimentos.id });
+    await tx
+      .delete(atendimentosPedido)
+      .where(eq(atendimentosPedido.idAtendimento, id));
+    return rows.length;
+  });
 }
 
 const METODOS_PAGAMENTO_OK = new Set(['Dinheiro', 'Pix', 'Cartão']);
@@ -1022,7 +1560,8 @@ export async function confirmarPagamentoPorIdAtendimento(
       candidatas[0]!.data as string | Date | null,
     );
     if (!dataMov) {
-      dataMov = new Date().toISOString().slice(0, 10);
+      const n = new Date();
+      dataMov = `${n.getFullYear()}-${pad2(n.getMonth() + 1)}-${pad2(n.getDate())}`;
     }
 
     const total = totalLiquidoConfirmacao(candidatas);

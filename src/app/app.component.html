@@ -2,11 +2,21 @@
   <header class="top">
     <a routerLink="/" class="brand">{{ title }}</a>
     <nav class="nav" aria-label="Principal">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Início</a>
-      <a routerLink="/atendimentos" routerLinkActive="active">Atendimentos</a>
-      <a routerLink="/agenda" routerLinkActive="active">Agenda</a>
+      <a
+        routerLink="/agenda"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: false }"
+        >Agenda</a
+      >
+      <a routerLink="/financeiro" routerLinkActive="active">Financeiro</a>
       <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
       <a routerLink="/servicos" routerLinkActive="active">Serviços</a>
+      <a
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >Início</a
+      >
     </nav>
   </header>
   <main class="main">

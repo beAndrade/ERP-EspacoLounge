@@ -18,6 +18,11 @@ export const naturezaFinanceiraEnum = pgEnum('natureza_financeira', [
   'despesa',
 ]);
 
+export const atendimentoItemTipoEnum = pgEnum('atendimento_item_tipo', [
+  'servico',
+  'produto',
+]);
+
 export const clientes = pgTable('clientes', {
   idCliente: text('id_cliente').primaryKey(),
   nomeExibido: text('nome_exibido').notNull(),
@@ -25,10 +30,23 @@ export const clientes = pgTable('clientes', {
   observacoes: text('observacoes'),
 });
 
+/** Pessoa estável (índice único em `lower(trim(nome))` na migração SQL). */
+export const profissionais = pgTable('profissionais', {
+  id: serial('id').primaryKey(),
+  nome: text('nome').notNull(),
+});
+
 export const servicos = pgTable('servicos', {
-  linha: integer('linha').primaryKey(),
+  id: integer('id').primaryKey(),
   servico: text('servico'),
   tipo: text('tipo'),
+  /** Duração prevista do serviço (minutos), p.ex. para agenda e horário final. */
+  duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
+  /** Para `tipo = Tamanho`: minutos por faixa (null = usar `duracao_minutos`). */
+  duracaoCurto: integer('duracao_curto'),
+  duracaoMedio: integer('duracao_medio'),
+  duracaoMedioLongo: integer('duracao_m_l'),
+  duracaoLongo: integer('duracao_longo'),
   valorBase: text('valor_base'),
   comissaoFixa: text('comissao_fixa'),
   comissaoPct: text('comissao_pct'),
@@ -76,15 +94,20 @@ export const cabelos = pgTable('cabelos', {
   valorBase: text('valor_base'),
 });
 
-export const folha = pgTable('folha', {
-  id: serial('id').primaryKey(),
-  profissional: text('profissional'),
-  mes: text('mes'),
-  totalComissao: text('total_comissao'),
-  totalPago: text('total_pago'),
-  saldo: text('saldo'),
-  status: text('status'),
-});
+export const folha = pgTable(
+  'folha',
+  {
+    id: serial('id').primaryKey(),
+    profissionalId: integer('profissional_id').references(() => profissionais.id),
+    profissional: text('profissional'),
+    mes: text('mes'),
+    totalComissao: text('total_comissao'),
+    totalPago: text('total_pago'),
+    saldo: text('saldo'),
+    status: text('status'),
+  },
+  (t) => [index('folha_profissional_id_idx').on(t.profissionalId)],
+);
 
 export const pagamentos = pgTable('pagamentos', {
   id: serial('id').primaryKey(),
@@ -105,16 +128,41 @@ export const despesas = pgTable('despesas', {
   valor: text('valor'),
 });
 
+/** Um registo por `id_atendimento` textual (carrinho / pedido). */
+export const atendimentosPedido = pgTable('atendimentos_pedido', {
+  idAtendimento: text('id_atendimento').primaryKey(),
+  idCliente: text('id_cliente')
+    .notNull()
+    .references(() => clientes.idCliente),
+});
+
+export const atendimentoItens = pgTable(
+  'atendimento_itens',
+  {
+    id: serial('id').primaryKey(),
+    idAtendimento: text('id_atendimento')
+      .notNull()
+      .references(() => atendimentosPedido.idAtendimento, { onDelete: 'cascade' }),
+    tipo: atendimentoItemTipoEnum('tipo').notNull(),
+    servicoId: integer('servico_id').references(() => servicos.id),
+    produtoId: integer('produto_id').references(() => produtos.id),
+    quantidade: integer('quantidade').default(1).notNull(),
+    profissionalId: integer('profissional_id').references(() => profissionais.id),
+    tamanho: text('tamanho'),
+  },
+  (t) => [index('atendimento_itens_id_atendimento_idx').on(t.idAtendimento)],
+);
+
 export const atendimentos = pgTable(
   'atendimentos',
   {
     id: serial('id').primaryKey(),
     idAtendimento: text('id_atendimento').notNull(),
     data: date('data'),
-    /** Início do slot na agenda visual (`timestamptz`); opcional enquanto só se usa o dia em `data`. */
-    inicio: timestamp('inicio', { withTimezone: true }),
-    /** Fim do slot na agenda visual (`timestamptz`); opcional. */
-    fim: timestamp('fim', { withTimezone: true }),
+    /** Início do slot (timestamp **sem** timezone; string `YYYY-MM-DD HH:mm:ss`). */
+    inicio: timestamp('inicio', { withTimezone: false, mode: 'string' }),
+    /** Fim do slot (timestamp **sem** timezone). */
+    fim: timestamp('fim', { withTimezone: false, mode: 'string' }),
     idCliente: text('id_cliente')
       .notNull()
       .references(() => clientes.idCliente),
@@ -125,8 +173,8 @@ export const atendimentos = pgTable(
     produto: text('produto'),
     servicos: text('servicos'),
     tamanho: text('tamanho'),
-    /** Referência à linha da aba Folha (`folha.id`); nome para exibição vem do join. */
-    profissionalId: integer('profissional_id').references(() => folha.id),
+    /** FK `profissionais.id`; nome para exibição vem do join. */
+    profissionalId: integer('profissional_id').references(() => profissionais.id),
     valor: text('valor'),
     valorManual: text('valor_manual'),
     comissao: text('comissao'),

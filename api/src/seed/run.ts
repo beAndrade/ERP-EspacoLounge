@@ -9,6 +9,7 @@ import {
   pacotes,
   pagamentos,
   produtos,
+  profissionais,
   regrasMega,
   servicos,
 } from '../db/schema';
@@ -38,7 +39,9 @@ async function truncateAll() {
   await db.execute(sql.raw(`
     TRUNCATE TABLE
       movimentacoes,
+      atendimento_itens,
       atendimentos,
+      atendimentos_pedido,
       pagamentos,
       despesas,
       folha,
@@ -47,6 +50,7 @@ async function truncateAll() {
       produtos,
       pacotes,
       servicos,
+      profissionais,
       clientes
     RESTART IDENTITY CASCADE
   `));
@@ -89,10 +93,50 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
     const matrix = sheetToMatrix(shServ);
     const withRows = rowObjectsFirstWinsWithSheetRow(matrix);
     for (const { sheetRow, row } of withRows) {
+      const durRaw = pick(row, [
+        'Duração (min)',
+        'Duracao (min)',
+        'Duração Minutos',
+        'Duracao Minutos',
+        'duracao_minutos',
+      ]);
+      const durN =
+        durRaw != null && String(durRaw).trim() !== ''
+          ? parseInt(String(durRaw).replace(/\D/g, ''), 10)
+          : NaN;
+      const duracaoMinutos =
+        Number.isFinite(durN) && durN >= 5 && durN <= 24 * 60 ? durN : 30;
+      const pickDur = (labels: string[]) => {
+        const raw = pick(row, labels);
+        if (raw == null || String(raw).trim() === '') return undefined;
+        const n = parseInt(String(raw).replace(/\D/g, ''), 10);
+        return Number.isFinite(n) && n >= 5 && n <= 24 * 60 ? n : undefined;
+      };
       await db.insert(servicos).values({
-        linha: sheetRow,
+        id: sheetRow,
         servico: pick(row, ['Serviço', 'Servico']) || null,
         tipo: row['Tipo'] || null,
+        duracaoMinutos,
+        duracaoCurto: pickDur([
+          'Duração Curto (min)',
+          'Duracao Curto (min)',
+          'duracao_curto',
+        ]),
+        duracaoMedio: pickDur([
+          'Duração Médio (min)',
+          'Duracao Medio (min)',
+          'duracao_medio',
+        ]),
+        duracaoMedioLongo: pickDur([
+          'Duração M/L (min)',
+          'Duracao M/L (min)',
+          'duracao_m_l',
+        ]),
+        duracaoLongo: pickDur([
+          'Duração Longo (min)',
+          'Duracao Longo (min)',
+          'duracao_longo',
+        ]),
         valorBase: pick(row, ['Valor Base']) || null,
         comissaoFixa: pick(row, ['Comissão Fixa', 'Comissao Fixa']) || null,
         comissaoPct: pick(row, ['Comissão %', 'Comissao %']) || null,
@@ -179,6 +223,34 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
         status: pick(row, ['Status']) || null,
       });
     }
+    const nomesFolhaRows = await db.select({ n: folha.profissional }).from(folha);
+    const seenProfLower = new Set<string>();
+    for (const { n } of nomesFolhaRows) {
+      const nome = String(n || '').trim();
+      if (!nome || nome.length > 80) continue;
+      const low = nome.toLowerCase();
+      if (low === 'profissional') continue;
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(nome)) continue;
+      if (/^r\$/i.test(nome.replace(/\s/g, ''))) continue;
+      if (seenProfLower.has(low)) continue;
+      seenProfLower.add(low);
+      const [ex] = await db
+        .select({ id: profissionais.id })
+        .from(profissionais)
+        .where(sql`lower(trim(${profissionais.nome})) = ${low}`)
+        .limit(1);
+      if (!ex) {
+        await db.insert(profissionais).values({ nome });
+      }
+    }
+    await db.execute(sql.raw(`
+      UPDATE "folha" AS f
+      SET "profissional_id" = p."id"
+      FROM "profissionais" AS p
+      WHERE f."profissional_id" IS NULL
+        AND trim(coalesce(f."profissional", '')) <> ''
+        AND lower(trim(p."nome")) = lower(trim(f."profissional"))
+    `));
   }
 
   const shPag = resolveSheet(wb, ['Pagamentos']);
@@ -211,14 +283,26 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
   const shAt = resolveSheet(wb, ['Atendimentos']);
   if (shAt) {
     const folhaRows = await db
-      .select({ id: folha.id, nome: folha.profissional })
+      .select({
+        id: folha.id,
+        profissionalId: folha.profissionalId,
+        nome: folha.profissional,
+      })
       .from(folha);
-    const nomeParaId = new Map<string, number>();
+    const folhaIdParaProfId = new Map<number, number | null>();
     const idsFolha = new Set<number>();
     for (const f of folhaRows) {
       idsFolha.add(f.id);
-      const n = String(f.nome || '').trim();
-      if (n && !nomeParaId.has(n)) nomeParaId.set(n, f.id);
+      folhaIdParaProfId.set(f.id, f.profissionalId ?? null);
+    }
+    const profRows = await db
+      .select({ id: profissionais.id, nome: profissionais.nome })
+      .from(profissionais);
+    const idsProf = new Set(profRows.map((r) => r.id));
+    const nomeParaProfId = new Map<string, number>();
+    for (const pr of profRows) {
+      const n = String(pr.nome || '').trim();
+      if (n) nomeParaProfId.set(n.toLowerCase(), pr.id);
     }
     for (const row of rowObjectsFirstWins(sheetToMatrix(shAt))) {
       const idAt = pick(row, ['ID Atendimento']).trim();
@@ -234,10 +318,15 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
       if (profCell) {
         const t = String(profCell).trim();
         const asNum = parseInt(t, 10);
-        if (!Number.isNaN(asNum) && String(asNum) === t && idsFolha.has(asNum)) {
-          profissionalId = asNum;
+        if (!Number.isNaN(asNum) && String(asNum) === t) {
+          if (idsProf.has(asNum)) {
+            profissionalId = asNum;
+          } else if (idsFolha.has(asNum)) {
+            profissionalId = folhaIdParaProfId.get(asNum) ?? null;
+          }
         } else if (t) {
-          profissionalId = nomeParaId.get(t) ?? null;
+          profissionalId =
+            nomeParaProfId.get(t.toLowerCase()) ?? nomeParaProfId.get(t) ?? null;
         }
       }
       await db.insert(atendimentos).values({

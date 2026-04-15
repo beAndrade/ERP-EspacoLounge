@@ -10,9 +10,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.25rem;
-  background: var(--color-surface);
+  padding: 0.85rem 1.25rem;
+  background: linear-gradient(180deg, #faf7f5 0%, #f0ebe6 100%);
   border-bottom: 1px solid #e7e5e4;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .brand {
@@ -49,8 +50,8 @@
 
 .main {
   flex: 1;
-  padding: 1.25rem;
-  max-width: 960px;
+  padding: 1rem 1.25rem 1.5rem;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
 }

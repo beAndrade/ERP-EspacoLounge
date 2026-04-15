@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { db, ensureSchemaPatches } from './db';
 import { clientes } from './db/schema';
 import { fail, ok } from './lib/envelope';
+import { instantEmDateParaSqlLocalBrasil } from './lib/sql-local-datetime';
 import {
   confirmarPagamentoPorIdAtendimento,
   createAtendimento,
@@ -12,6 +13,8 @@ import {
   finalizarCobrancaPorIdAtendimento,
   listAtendimentosRaw,
 } from './services/atendimentos-domain';
+import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
+import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
 import {
   criarMovimentacaoManual,
   getCaixaDiaApi,
@@ -119,7 +122,10 @@ const app = new Elysia({ adapter: node() })
     }),
   )
   .get('/health', () =>
-    ok({ status: 'up', time: new Date().toISOString() }),
+    ok({
+      status: 'up',
+      time: instantEmDateParaSqlLocalBrasil(new Date()) ?? '',
+    }),
   )
   .get('/api/clientes', async () => ok({ items: await listClientesNormalized(db) }))
   .get(
@@ -294,7 +300,9 @@ const app = new Elysia({ adapter: node() })
       return fail('SERVER', msg);
     }
   })
-  .post('/api/atendimentos', async ({ body, query }) => {
+  .post(
+    '/api/atendimentos',
+    async ({ body, query }) => {
     const b = (body ?? {}) as Record<string, unknown>;
     const qAcao = String(query?.acao ?? '').trim().toLowerCase();
     const bAcao = String(b.acao ?? '').trim().toLowerCase();
@@ -325,13 +333,18 @@ const app = new Elysia({ adapter: node() })
       return execExcluirAtendimento({ id_atendimento: idAt });
     }
     try {
-      const result = await createAtendimento(db, body as never);
+      const result = await createAtendimento(
+        db,
+        body as unknown as CreateAtendimentoPayload,
+      );
       return ok(result);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       return fail('SERVER', msg);
     }
-  })
+  },
+    { body: postAtendimentoMutationBody },
+  )
   .listen(
     {
       port: Number(process.env.PORT) || 3000,

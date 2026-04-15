@@ -1,0 +1,172 @@
+<div class="hub-toolbar">
+  <button type="button" class="btn btn-novo" (click)="abrirNovoAtendimentoModal()">
+    Novo atendimento
+  </button>
+</div>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+
+<div class="hub-layout">
+  <aside class="hub-sidebar" aria-label="Calendário e profissionais">
+    <div class="mini-cal">
+      <div class="mini-cal__nav">
+        <button type="button" class="btn-icon" (click)="mesAnterior()">‹</button>
+        <span class="mini-cal__titulo">{{ tituloMes() }}</span>
+        <button type="button" class="btn-icon" (click)="mesSeguinte()">›</button>
+        <button type="button" class="btn-hoje" (click)="irParaHoje()">Hoje</button>
+      </div>
+      <div class="mini-cal__grid" role="grid">
+        @for (d of ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; track d) {
+          <span class="mini-cal__dow">{{ d }}</span>
+        }
+        @for (c of celulas(); track $index) {
+          @if (c.dia === null) {
+            <span class="mini-cal__cell mini-cal__cell--empty"></span>
+          } @else {
+            <button
+              type="button"
+              class="mini-cal__cell"
+              [class.mini-cal__cell--selected]="c.ymd === diaYmd"
+              [class.mini-cal__cell--hoje]="c.ymd === hojeYmd()"
+              (click)="selecionarDia(c.ymd)"
+            >
+              <span class="mini-cal__num">{{ c.dia }}</span>
+              @if (contagem(c.ymd) > 0) {
+                <span class="mini-cal__badge">{{ contagem(c.ymd) }}</span>
+              }
+            </button>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="prof-filtros">
+      <h2 class="prof-filtros__titulo">Profissionais</h2>
+      <p class="hint">Desmarque para ocultar na grelha.</p>
+      @for (p of profissionais; track p.id) {
+        <label class="prof-check">
+          <input
+            type="checkbox"
+            [checked]="!profOcultos.has(p.id)"
+            (change)="toggleProfissionalOculto(p.id)"
+          />
+          <span>{{ p.nome }}</span>
+        </label>
+      }
+      @if (profissionais.length === 0 && !carregandoMes) {
+        <p class="hint">Nenhum profissional na Folha.</p>
+      }
+    </div>
+  </aside>
+
+  <section class="hub-main" aria-label="Grelha do dia">
+    @if (carregandoDia) {
+      <div class="dia-cab dia-cab--status" aria-live="polite">
+        <span class="hint">A carregar…</span>
+      </div>
+    }
+
+    <div class="grid-wrap" role="region" aria-label="Horários por profissional">
+      <div class="grid-head">
+        <div class="grid-head__corner"></div>
+        @for (p of profissionaisVisiveis(); track p.id) {
+          <div class="grid-head__cell">{{ p.nome }}</div>
+        }
+      </div>
+      <div class="grid-body">
+        <div class="grid-body__times" aria-hidden="true">
+          @for (slot of slotsHoras; track slot) {
+            <div
+              class="grid-body__time-slot"
+              [style.top.%]="slotTopPct(slot)"
+              [style.height.%]="slotAlturaPct()"
+            >
+              <span class="grid-body__time">{{ slot }}</span>
+            </div>
+          }
+        </div>
+        <div class="grid-body__cols">
+          @for (p of profissionaisVisiveis(); track p.id) {
+            <div class="day-col">
+              @for (slot of slotsHoras; track slot) {
+                <button
+                  type="button"
+                  class="day-col__slot"
+                  [style.top.%]="slotTopPct(slot)"
+                  [style.height.%]="slotAlturaPct()"
+                  (click)="abrirNovo(p.id, slot)"
+                  [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome"
+                ></button>
+              }
+              @for (bloco of blocosNaColuna(p.id); track bloco.trackKey) {
+                <button
+                  type="button"
+                  class="day-col__card"
+                  [style.top.%]="topPctBloco(bloco)"
+                  [style.height.%]="alturaPctBloco(bloco)"
+                  [style.borderLeftColor]="corGrupo(idAtendimentoBloco(bloco))"
+                  [disabled]="!idAtendimentoBloco(bloco)"
+                  [attr.aria-label]="
+                    'Ver detalhes na receção: ' + rotuloBloco(bloco)
+                  "
+                  (click)="abrirDetalhesNaRececaoBloco(bloco, $event)"
+                >
+                  <span class="day-col__card-body">
+                    <span class="day-col__card-linha1">
+                      <span class="day-col__card-time">{{ horaBloco(bloco) }}</span>
+                      <span class="day-col__card-sep" aria-hidden="true">·</span>
+                      <span class="day-col__card-nome">{{
+                        nomeClienteBloco(bloco)
+                      }}</span>
+                    </span>
+                    @let itensCard = itensResumoBloco(bloco);
+                    @if (itensCard.length) {
+                      <div class="day-col__card-linha2">
+                        <ul class="day-col__card-itens">
+                          @for (item of itensCard; track item) {
+                            <li>{{ item }}</li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="hub-rececao" aria-label="Receção do dia">
+  <app-atendimentos
+    #rececao
+    [dataAgenda]="diaYmd"
+    [modoAgendaHub]="true"
+    [reloadKey]="tickRececao"
+    (agendaDadosAlterados)="onAgendaDadosAlteradosRececao()"
+  />
+</section>
+
+@if (modalAberto && modalContexto) {
+  <div
+    class="modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Novo atendimento"
+    (click)="fecharModal()"
+  >
+    <div class="modal-panel" (click)="$event.stopPropagation()">
+      <app-agenda-novo
+        [modoModal]="true"
+        [contextoSlot]="modalContexto"
+        (salvoComSucesso)="onSalvoModal()"
+        (cancelarModal)="fecharModal()"
+      />
+    </div>
+  </div>
+}

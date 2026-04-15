@@ -5,6 +5,28 @@
     margin: 0 0 0.5rem;
     font-size: 1.5rem;
   }
+
+  &--modal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    h1 {
+      margin: 0;
+    }
+  }
+}
+
+.btn-fechar {
+  min-height: var(--touch-min);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+  font-size: 0.95rem;
+  cursor: pointer;
 }
 
 .link-back {
@@ -28,6 +50,21 @@
   flex-direction: column;
   gap: 1.1rem;
   max-width: 42rem;
+}
+
+.itens-atendimento {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid #e7e5e4;
+  border-radius: var(--radius);
+  background: #fafaf9;
+
+  &__titulo {
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
 }
 
 label {
@@ -168,6 +205,12 @@ textarea {
   color: #b91c1c;
 }
 
+.etapas-block--nested,
+.cabelo-calc--nested {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
 .etapas-block,
 .servicos-block {
   display: flex;
@@ -224,6 +267,10 @@ textarea {
 
   &--tamanho {
     flex: 0 1 9.5rem;
+  }
+
+  &--tipo-linha {
+    flex: 1 1 14rem;
   }
 }
 
