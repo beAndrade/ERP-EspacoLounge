@@ -21,6 +21,12 @@ export const naturezaFinanceiraEnum = pgEnum('natureza_financeira', [
 export const atendimentoItemTipoEnum = pgEnum('atendimento_item_tipo', [
   'servico',
   'produto',
+  /** Linha Mega (pacote comercial + etapa em `regras_mega`). */
+  'mega',
+  /** Linha Pacote comercial (cabeça e/ou etapas). */
+  'pacote',
+  /** Linha Cabelo (valor manual; texto em `detalhes`). */
+  'cabelo',
 ]);
 
 export const clientes = pgTable('clientes', {
@@ -149,6 +155,12 @@ export const atendimentoItens = pgTable(
     quantidade: integer('quantidade').default(1).notNull(),
     profissionalId: integer('profissional_id').references(() => profissionais.id),
     tamanho: text('tamanho'),
+    /** Mega / Pacote: nome do pacote comercial (coluna homónima em `atendimentos`). */
+    pacote: text('pacote'),
+    /** Mega / Pacote: etapa (vazio na cabeça do pacote). */
+    etapa: text('etapa'),
+    /** Cabelo: texto da linha (descrição). */
+    detalhes: text('detalhes'),
   },
   (t) => [index('atendimento_itens_id_atendimento_idx').on(t.idAtendimento)],
 );

@@ -325,9 +325,16 @@ export class SheetsApiService {
           if (!x || typeof x !== 'object') return null;
           const o = x as Record<string, unknown>;
           const tipo = o['tipo'];
-          if (tipo !== 'servico' && tipo !== 'produto') return null;
-          return {
-            tipo,
+          const tiposOk = new Set([
+            'servico',
+            'produto',
+            'mega',
+            'pacote',
+            'cabelo',
+          ]);
+          if (!tiposOk.has(String(tipo))) return null;
+          const base = {
+            tipo: tipo as AtendimentoItemCatalogo['tipo'],
             servico_id:
               o['servico_id'] != null ? Number(o['servico_id']) : null,
             produto_id:
@@ -342,6 +349,24 @@ export class SheetsApiService {
                 ? String(o['tamanho']).trim()
                 : null,
           };
+          const pacote =
+            o['pacote'] != null && String(o['pacote']).trim()
+              ? String(o['pacote']).trim()
+              : null;
+          const etapa =
+            o['etapa'] != null && String(o['etapa']).trim()
+              ? String(o['etapa']).trim()
+              : null;
+          const detalhes =
+            o['detalhes'] != null && String(o['detalhes']).trim()
+              ? String(o['detalhes']).trim()
+              : null;
+          return {
+            ...base,
+            pacote,
+            etapa,
+            detalhes,
+          } as AtendimentoItemCatalogo;
         })
         .filter(Boolean) as AtendimentoItemCatalogo[];
       if (itens_catalogo.length === 0) itens_catalogo = undefined;

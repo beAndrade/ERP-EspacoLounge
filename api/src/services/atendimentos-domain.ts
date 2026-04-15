@@ -403,6 +403,9 @@ async function insertPivotServico(
     quantidade: o.quantidade,
     profissionalId: o.profissionalId,
     tamanho: tam,
+    pacote: null,
+    etapa: null,
+    detalhes: null,
   });
 }
 
@@ -423,6 +426,85 @@ async function insertPivotProduto(
     quantidade: o.quantidade,
     profissionalId: o.profissionalId,
     tamanho: null,
+    pacote: null,
+    etapa: null,
+    detalhes: null,
+  });
+}
+
+async function insertPivotMega(
+  db: Db,
+  o: {
+    idAtendimento: string;
+    pacote: string;
+    etapa: string;
+    profissionalId: number | null;
+  },
+): Promise<void> {
+  const pac = o.pacote.trim();
+  const et = o.etapa.trim();
+  if (!pac || !et) return;
+  await db.insert(atendimentoItens).values({
+    idAtendimento: o.idAtendimento,
+    tipo: 'mega',
+    servicoId: null,
+    produtoId: null,
+    quantidade: 1,
+    profissionalId: o.profissionalId,
+    tamanho: null,
+    pacote: pac,
+    etapa: et,
+    detalhes: null,
+  });
+}
+
+/** Cabeça do pacote (etapa vazia) ou linha de etapa. */
+async function insertPivotPacote(
+  db: Db,
+  o: {
+    idAtendimento: string;
+    pacote: string;
+    etapa: string;
+    profissionalId: number | null;
+  },
+): Promise<void> {
+  const pac = o.pacote.trim();
+  if (!pac) return;
+  const et = o.etapa.trim();
+  await db.insert(atendimentoItens).values({
+    idAtendimento: o.idAtendimento,
+    tipo: 'pacote',
+    servicoId: null,
+    produtoId: null,
+    quantidade: 1,
+    profissionalId: o.profissionalId,
+    tamanho: null,
+    pacote: pac,
+    etapa: et.length > 0 ? et : null,
+    detalhes: null,
+  });
+}
+
+async function insertPivotCabelo(
+  db: Db,
+  o: {
+    idAtendimento: string;
+    detalhes: string | null;
+    profissionalId: number | null;
+  },
+): Promise<void> {
+  const d = (o.detalhes || '').trim();
+  await db.insert(atendimentoItens).values({
+    idAtendimento: o.idAtendimento,
+    tipo: 'cabelo',
+    servicoId: null,
+    produtoId: null,
+    quantidade: 1,
+    profissionalId: o.profissionalId,
+    tamanho: null,
+    pacote: null,
+    etapa: null,
+    detalhes: d.length > 0 ? d : null,
   });
 }
 
@@ -947,6 +1029,12 @@ async function createAtendimentoMega(
       inicio: primeiraEtapa ? slot.inicio : null,
       fim: primeiraEtapa ? slot.fim : null,
     });
+    await insertPivotMega(db, {
+      idAtendimento: idAt,
+      pacote,
+      etapa: etapaNome,
+      profissionalId: profId,
+    });
     primeiraEtapa = false;
   }
   return {
@@ -1017,6 +1105,12 @@ async function createAtendimentoPacote(
     inicio: slot.inicio,
     fim: slot.fim,
   });
+  await insertPivotPacote(db, {
+    idAtendimento: idAt,
+    pacote,
+    etapa: '',
+    profissionalId: profCob,
+  });
   for (const st of etapas) {
     const etapaNome = String(st.etapa || '').trim();
     const stRec = st as Record<string, unknown>;
@@ -1048,6 +1142,12 @@ async function createAtendimentoPacote(
       comissao: regra.comissao,
       descricao: obs,
       descricaoManual: obs,
+    });
+    await insertPivotPacote(db, {
+      idAtendimento: idAt,
+      pacote,
+      etapa: etapaNome,
+      profissionalId: profId,
     });
   }
   return {
@@ -1260,6 +1360,11 @@ async function createAtendimentoCabelo(
     inicio: slot.inicio,
     fim: slot.fim,
   });
+  await insertPivotCabelo(db, {
+    idAtendimento: idAt,
+    detalhes: obs,
+    profissionalId,
+  });
   return {
     id: idAt,
     linhas: 1,
@@ -1359,6 +1464,9 @@ export async function listAtendimentosRaw(
         quantidade: row.quantidade,
         profissional_id: row.profissionalId,
         tamanho: row.tamanho,
+        pacote: row.pacote ?? null,
+        etapa: row.etapa ?? null,
+        detalhes: row.detalhes ?? null,
       });
       itensPorPedido.set(k, arr);
     }
