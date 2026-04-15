@@ -365,8 +365,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return normalizarHoraHHmm(`${hh}:${mm}`) ?? '';
   }
 
-  /** Primeira hora do dia (menor instante) entre linhas de serviço em edição. */
+  /** Primeira hora do dia (menor instante) entre as linhas passadas (chamador filtra serviços se precisar). */
   private menorHoraInicialServicoEdicao(
+    rows: AtendimentoListaItem[],
+    dataYmd: string,
+  ): string {
+    return this.menorHoraInicialPorInicioLinhas(rows, dataYmd);
+  }
+
+  /** Menor horário entre quaisquer linhas com `inicio` no dia (Mega, Pacote, Cabelo, etc.). */
+  private menorHoraInicialTodasLinhasEdicao(
+    rows: AtendimentoListaItem[],
+    dataYmd: string,
+  ): string {
+    return this.menorHoraInicialPorInicioLinhas(rows, dataYmd);
+  }
+
+  private menorHoraInicialPorInicioLinhas(
     rows: AtendimentoListaItem[],
     dataYmd: string,
   ): string {
@@ -927,7 +942,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           cliente_id: l0.idCliente || '',
           data: dataYmd,
           observacao: stripQtdSuffixObservacao(l0.descricao || ''),
-          hora_inicial: '',
+          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
         },
         { emitEvent: false },
       );
@@ -984,7 +999,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           cliente_id: l0.idCliente || '',
           data: dataYmd,
           observacao: obsMegaPacote,
-          hora_inicial: '',
+          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
         },
         { emitEvent: false },
       );
@@ -1016,7 +1031,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           cliente_id: l0.idCliente || '',
           data: dataYmd,
           observacao: obsMegaPacote,
-          hora_inicial: '',
+          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
         },
         { emitEvent: false },
       );
@@ -1037,7 +1052,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           cliente_id: row.idCliente || '',
           data: dataYmd,
           observacao: '',
-          hora_inicial: '',
+          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
         },
         { emitEvent: false },
       );
@@ -1128,7 +1143,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   aplicarValidadoresLinhas(): void {
-    const precisaHora = this.temLinhaServicoCatalogo();
+    const precisaHora = this.linhasItensArray.length > 0;
     const horaIni = this.form.controls.hora_inicial;
     if (precisaHora) {
       horaIni.setValidators([Validators.required]);
@@ -1200,10 +1215,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!String(raw['cliente_id'] ?? '').trim()) return false;
     const dataYmd = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataYmd) return false;
-    if (
-      this.temLinhaServicoCatalogo() &&
-      !normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))
-    ) {
+    if (!normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))) {
       return false;
     }
     if (this.linhasItensArray.length < 1) return false;
@@ -1381,16 +1393,30 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  private mergeSlot(
+  /**
+   * Anexa `inicio`/`fim` ao primeiro payload do pedido quando o utilizador
+   * define horário inicial (30 min de duração, alinhado ao hub).
+   * `slotAgenda` legado (se algum dia for preenchido) tem prioridade.
+   */
+  private mergeSlotOuHoraInicial(
     p: CreateAtendimentoPayload,
-    usar: boolean,
+    usarPrimeiroBloco: boolean,
+    dataYmd: string,
+    horaIni: string,
   ): CreateAtendimentoPayload {
-    if (!usar || !this.slotAgenda) return p;
-    return {
-      ...p,
-      inicio: this.slotAgenda.inicio,
-      fim: this.slotAgenda.fim,
-    };
+    if (!usarPrimeiroBloco) return p;
+    if (this.slotAgenda) {
+      return {
+        ...p,
+        inicio: this.slotAgenda.inicio,
+        fim: this.slotAgenda.fim,
+      };
+    }
+    const hi = normalizarHoraHHmm(horaIni);
+    if (!hi || !/^\d{4}-\d{2}-\d{2}$/.test(dataYmd)) return p;
+    const slot = slotInicioFimBrasilia(dataYmd, hi, 30);
+    if (!slot) return p;
+    return { ...p, inicio: slot.inicio, fim: slot.fim };
   }
 
   private montarPayloadsDasLinhas(
@@ -1490,7 +1516,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const q = Number(g.get('quantidade')?.value);
         if (Number.isNaN(q) || q <= 0) continue;
         out.push(
-          this.mergeSlot(
+          this.mergeSlotOuHoraInicial(
             {
               tipo: 'Produto',
               cliente_id,
@@ -1500,6 +1526,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               observacao,
             },
             primeiroMerge,
+            dataYmd,
+            horaIni,
           ),
         );
         primeiroMerge = false;
@@ -1513,7 +1541,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
         out.push(
-          this.mergeSlot(
+          this.mergeSlotOuHoraInicial(
             {
               tipo: 'Mega',
               cliente_id,
@@ -1526,6 +1554,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               observacao,
             },
             primeiroMerge,
+            dataYmd,
+            horaIni,
           ),
         );
         primeiroMerge = false;
@@ -1539,7 +1569,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
         out.push(
-          this.mergeSlot(
+          this.mergeSlotOuHoraInicial(
             {
               tipo: 'Pacote',
               cliente_id,
@@ -1552,6 +1582,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               observacao,
             },
             primeiroMerge,
+            dataYmd,
+            horaIni,
           ),
         );
         primeiroMerge = false;
@@ -1565,7 +1597,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const pid = Number(g.get('profissional_cabelo')?.value);
         if (!(pid > 0)) continue;
         out.push(
-          this.mergeSlot(
+          this.mergeSlotOuHoraInicial(
             {
               tipo: 'Cabelo',
               cliente_id,
@@ -1576,6 +1608,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               detalhes_cabelo: det || undefined,
             },
             primeiroMerge,
+            dataYmd,
+            horaIni,
           ),
         );
         primeiroMerge = false;

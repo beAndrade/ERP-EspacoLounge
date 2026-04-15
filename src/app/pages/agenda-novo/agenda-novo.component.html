@@ -66,7 +66,8 @@
       <p class="hint tipo-hint">
         Use <strong>+ Linha</strong> para cada registo do pedido. Em cada linha escolha o
         <strong>tipo</strong> (Serviço de catálogo, Mega, Pacote, Cabelo ou Produto) e preencha os campos.
-        Serviços na mesma ordem usam o <strong>horário inicial</strong> em sequência. Mega e Pacote geram várias linhas na base com o mesmo ID.
+        O <strong>horário inicial</strong> (abaixo) aplica-se a todo o pedido: em sequência para várias linhas de
+        <strong>Serviço</strong>, ou como início do primeiro bloco para os demais tipos. Mega e Pacote geram várias linhas na base com o mesmo ID.
       </p>
 
       <div class="servicos-block" formArrayName="linhasItens">
@@ -402,13 +403,15 @@
         A <strong>ordem das linhas</strong> define a ordem dos pedidos à API e, para <strong>Serviço</strong>, os horários em sequência.
       </p>
 
+      <label>
+        <span>Horário inicial</span>
+        <input type="time" formControlName="hora_inicial" />
+        <span class="hint">
+          Relógio do salão (Brasil). Várias linhas de <strong>Serviço</strong> usam este valor em sequência; para
+          <strong>Mega, Pacote, Cabelo e Produto</strong>, define o início do primeiro bloco enviado (duração padrão 30 min na API).
+        </span>
+      </label>
       @if (temLinhaServicoCatalogo()) {
-        <label>
-          <span>Horário inicial</span>
-          <input type="time" formControlName="hora_inicial" />
-          <span class="hint"
-            >Relógio do salão (Brasil); aplica-se às linhas de <strong>Serviço</strong> (catálogo), na ordem acima.</span>
-        </label>
         <p class="hint horario-final-hint">
           Horário final (calculado, só serviços de catálogo):
           <strong>{{ horarioFinalExibicao() }}</strong>
