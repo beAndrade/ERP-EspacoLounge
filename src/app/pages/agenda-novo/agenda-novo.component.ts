@@ -44,6 +44,7 @@ import {
   RegraMegaItem,
   Servico,
   TipoAtendimento,
+  TipoLinhaAtendimento,
 } from '../../core/models/api.models';
 import {
   dataDdMmAaaa,
@@ -158,9 +159,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
 
-  readonly tiposAtendimento: TipoAtendimento[] = [
+  readonly tiposLinhaAtendimento: TipoLinhaAtendimento[] = [
     'Serviço',
-    'Misto',
     'Mega',
     'Pacote',
     'Cabelo',
@@ -190,34 +190,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Início/fim `YYYY-MM-DD HH:mm:ss` para a primeira linha criada (clique na grelha). */
   private slotAgenda: { inicio: string; fim: string } | null = null;
 
-  private tipoSub?: Subscription;
   private slotFormSub?: Subscription;
 
-  /** Seleção da calculadora Cabelos (aba planilha: Cor × Tamanho × Método → Valor base). */
-  calcCabeloCor = '';
-  calcCabeloTamanhoCm = '';
-  calcCabeloMetodo = '';
-  /** Peso medido na hora (g); preço = valor base × (gramas / 100). */
-  calcCabeloGramas = '';
-
   readonly form = this.fb.group({
-    tipo: this.fb.nonNullable.control<TipoAtendimento>('Serviço', [
-      Validators.required,
-    ]),
     cliente_id: ['', Validators.required],
     data: ['', Validators.required],
-    profissional: [null as number | null],
     observacao: [''],
-    pacote: [''],
-    valor_cabelo: [''],
-    detalhes_cabelo: [''],
-    servicosItens: this.fb.array<FormGroup>([]),
-    produtosItens: this.fb.array<FormGroup>([]),
-    /** Só tipo `Misto`: cada linha é Serviço (catálogo) ou Produto. */
-    linhasMisto: this.fb.array<FormGroup>([]),
-    etapas: this.fb.array<FormGroup>([]),
-    /** Horário inicial (tipo Serviço); fim é calculado a partir das durações na BD. */
+    /** Horário inicial para linhas de Serviço (catálogo); sequência na ordem das linhas. */
     hora_inicial: [''],
+    /** Cada linha: tipo + campos específicos (Serviço, Mega, Pacote, Cabelo, Produto). */
+    linhasItens: this.fb.array<FormGroup>([]),
   });
 
   ngOnInit(): void {
@@ -252,8 +234,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.produtos = r.produtos;
         this.cabelos = r.cabelos;
         this.profissionais = r.profissionais ?? [];
-        this.ajustarArraysPorTipo();
-        this.aplicarValidadoresPorTipo();
+        this.garantirMinUmaLinha();
+        this.aplicarValidadoresLinhas();
 
         if (this.modoModal) {
           this.aplicarContextoSlotInput();
@@ -297,15 +279,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               const pid = parseInt(pidStr, 10);
               if (pid > 0) {
                 this.prefillEmCurso = true;
-                this.form.patchValue(
-                  { data: datOk, tipo: 'Serviço' },
-                  { emitEvent: false },
-                );
-                this.ajustarArraysPorTipo();
-                this.aplicarValidadoresPorTipo();
-                const g0 = this.servicosItensArray.at(0);
+                this.form.patchValue({ data: datOk }, { emitEvent: false });
+                this.garantirMinUmaLinha();
+                this.aplicarValidadoresLinhas();
+                const g0 = this.linhasItensArray.at(0);
                 if (g0) {
-                  g0.patchValue({ profissional: pid }, { emitEvent: false });
+                  g0.patchValue(
+                    {
+                      itemTipo: 'Serviço',
+                      profissional: pid,
+                    },
+                    { emitEvent: false },
+                  );
                 }
                 const hn = normalizarHoraHHmm(hora ?? '');
                 this.form.patchValue(
@@ -333,29 +318,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       },
     });
 
-    this.tipoSub = this.form.controls.tipo.valueChanges.subscribe(() => {
-      if (this.prefillEmCurso) return;
-      this.slotAgenda = null;
-      this.erro = '';
-      this.calcCabeloCor = '';
-      this.calcCabeloTamanhoCm = '';
-      this.calcCabeloMetodo = '';
-      this.calcCabeloGramas = '';
-      this.form.patchValue({
-        pacote: '',
-        valor_cabelo: '',
-        detalhes_cabelo: '',
-        profissional: null,
-        hora_inicial: '',
-      });
-      this.ajustarArraysPorTipo();
-      this.aplicarValidadoresPorTipo();
-    });
-
     this.slotFormSub = this.form.valueChanges.subscribe(() => {
       if (this.prefillEmCurso) return;
-      const tv = this.form.controls.tipo.value;
-      if (tv !== 'Serviço' && tv !== 'Misto') return;
       this.slotAgenda = null;
     });
   }
@@ -367,28 +331,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.tipoSub?.unsubscribe();
     this.slotFormSub?.unsubscribe();
   }
 
-  get etapasArray(): FormArray<FormGroup> {
-    return this.form.controls.etapas;
-  }
-
-  get servicosItensArray(): FormArray<FormGroup> {
-    return this.form.controls.servicosItens;
-  }
-
-  get produtosItensArray(): FormArray<FormGroup> {
-    return this.form.controls.produtosItens;
-  }
-
-  get linhasMistoArray(): FormArray<FormGroup> {
-    return this.form.controls.linhasMisto;
-  }
-
-  get tipoAtual(): TipoAtendimento {
-    return this.form.controls.tipo.getRawValue();
+  get linhasItensArray(): FormArray<FormGroup> {
+    return this.form.controls.linhasItens;
   }
 
   /** Título da página/modal: edição vs criação. */
@@ -468,8 +415,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /** Pacote escolhido (Mega ou Pacote comercial) para filtrar etapas em Regras Mega. */
-  get pacoteSelecionado(): string {
-    return String(this.form.controls.pacote.value ?? '').trim();
+  etapasArrayDaLinha(i: number): FormArray<FormGroup> {
+    const g = this.linhasItensArray.at(i);
+    return g?.get('etapas') as FormArray<FormGroup>;
+  }
+
+  /** Pacote escolhido na linha `i` (Mega / Pacote). */
+  pacoteDaLinha(i: number): string {
+    const g = this.linhasItensArray.at(i);
+    return String(g?.get('pacote')?.value ?? '').trim();
   }
 
   servicoPorId(id: string | null | undefined): Servico | undefined {
@@ -489,30 +443,36 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Sem profissionais na lista não dá para cumprir profissional obrigatório só com dropdown. */
   get profissionaisObrigatoriosSemLista(): boolean {
     if (this.profissionais.length > 0) return false;
-    const t = this.tipoAtual;
-    if (t === 'Misto') {
-      return this.linhasMistoArray
-        .getRawValue()
-        .some((row: { itemTipo?: string }) => row.itemTipo === 'Serviço');
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const it = String(g.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
+      if (it === 'Serviço' || it === 'Cabelo') return true;
+      if (it === 'Mega' || it === 'Pacote') {
+        const et = this.etapasArrayDaLinha(i);
+        if (et.length > 0) return true;
+      }
     }
-    return (
-      t === 'Serviço' ||
-      t === 'Mega' ||
-      t === 'Pacote' ||
-      t === 'Cabelo'
+    return false;
+  }
+
+  temLinhaServicoCatalogo(): boolean {
+    return this.linhasItensArray.controls.some(
+      (c) => c.get('itemTipo')?.value === 'Serviço',
     );
   }
 
-  mistoTemLinhaServico(): boolean {
-    return this.linhasMistoArray
-      .getRawValue()
-      .some((r: { itemTipo?: string }) => r.itemTipo === 'Serviço');
-  }
-
-  mistoTemLinhaProduto(): boolean {
-    return this.linhasMistoArray
-      .getRawValue()
-      .some((r: { itemTipo?: string }) => r.itemTipo === 'Produto');
+  /** Bloqueia salvar se alguma linha precisar de catálogo vazio. */
+  salvarBloqueadoPorCatalogo(): boolean {
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const it = String(
+        this.linhasItensArray.at(i)?.get('itemTipo')?.value ?? '',
+      ) as TipoLinhaAtendimento;
+      if (it === 'Serviço' && this.servicosTipoServico.length === 0) return true;
+      if (it === 'Produto' && this.produtos.length === 0) return true;
+      if (it === 'Pacote' && this.pacotes.length === 0) return true;
+      if (it === 'Mega' && this.pacotesMegaUnicos.length === 0) return true;
+    }
+    return false;
   }
 
   get pacotesMegaUnicos(): string[] {
@@ -569,11 +529,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return ordenarEtapasParaSelect([...set]);
   }
 
-  /** Etapas para o select; em Pacote, se o nome não bater com Regras Mega, lista todas as etapas (lookup no servidor ainda exige par Pacote+Etapa). */
-  etapasSelectOptions(): string[] {
-    const direct = this.etapasParaPacoteSelecionado(this.pacoteSelecionado);
+  /** Etapas para o select da linha `i` (Mega / Pacote). */
+  etapasSelectOptionsLinha(i: number): string[] {
+    const g = this.linhasItensArray.at(i);
+    const itemTipo = String(g?.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
+    const pacote = this.pacoteDaLinha(i);
+    const direct = this.etapasParaPacoteSelecionado(pacote);
     if (direct.length > 0) return direct;
-    if (this.tipoAtual === 'Pacote' && this.pacoteSelecionado) {
+    if (itemTipo === 'Pacote' && pacote) {
       const all = new Set(
         this.regrasMega.map((r) => r.etapa.trim()).filter(Boolean),
       );
@@ -591,8 +554,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return [...s].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
-  cabelosTamanhosLista(): string[] {
-    const cor = this.calcCabeloCor.trim();
+  cabelosTamanhosListaLinha(i: number): string[] {
+    const cor = String(
+      this.linhasItensArray.at(i)?.get('calc_cor')?.value ?? '',
+    ).trim();
     const s = new Set<string>();
     for (const c of this.cabelos) {
       if (cor && String(c.cor ?? '').trim() !== cor) continue;
@@ -602,9 +567,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return [...s].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
   }
 
-  cabelosMetodosLista(): string[] {
-    const cor = this.calcCabeloCor.trim();
-    const tam = this.calcCabeloTamanhoCm.trim();
+  cabelosMetodosListaLinha(i: number): string[] {
+    const cor = String(
+      this.linhasItensArray.at(i)?.get('calc_cor')?.value ?? '',
+    ).trim();
+    const tam = String(
+      this.linhasItensArray.at(i)?.get('calc_tam_cm')?.value ?? '',
+    ).trim();
     const s = new Set<string>();
     for (const c of this.cabelos) {
       if (cor && String(c.cor ?? '').trim() !== cor) continue;
@@ -615,28 +584,34 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return [...s].sort((a, b) => a.localeCompare(b, 'pt-BR'));
   }
 
-  onCalcCabeloCorChange(ev: Event): void {
-    this.calcCabeloCor = (ev.target as HTMLSelectElement).value;
-    this.calcCabeloTamanhoCm = '';
-    this.calcCabeloMetodo = '';
+  onCalcCabeloCorChangeLinha(i: number): void {
+    this.linhasItensArray.at(i)?.patchValue(
+      { calc_tam_cm: '', calc_metodo: '', calc_gramas: '' },
+      { emitEvent: false },
+    );
   }
 
-  onCalcCabeloTamanhoChange(ev: Event): void {
-    this.calcCabeloTamanhoCm = (ev.target as HTMLSelectElement).value;
-    this.calcCabeloMetodo = '';
+  onCalcCabeloTamanhoChangeLinha(i: number): void {
+    this.linhasItensArray
+      .at(i)
+      ?.patchValue({ calc_metodo: '', calc_gramas: '' }, { emitEvent: false });
   }
 
-  onCalcCabeloMetodoChange(ev: Event): void {
-    this.calcCabeloMetodo = (ev.target as HTMLSelectElement).value;
+  onCalcCabeloMetodoChangeLinha(i: number): void {
+    this.linhasItensArray.at(i)?.patchValue({ calc_gramas: '' }, {
+      emitEvent: false,
+    });
   }
 
-  onCalcCabeloGramasInput(ev: Event): void {
-    this.calcCabeloGramas = (ev.target as HTMLInputElement).value;
+  onCalcCabeloGramasInputLinha(i: number, ev: Event): void {
+    const v = (ev.target as HTMLInputElement).value;
+    this.linhasItensArray.at(i)?.patchValue({ calc_gramas: v }, { emitEvent: false });
   }
 
-  /** Gramas > 0 a partir do campo (aceita vírgula decimal). */
-  private parseGramasCabelo(): number | null {
-    const t = String(this.calcCabeloGramas ?? '')
+  private parseGramasCabeloLinha(i: number): number | null {
+    const t = String(
+      this.linhasItensArray.at(i)?.get('calc_gramas')?.value ?? '',
+    )
       .trim()
       .replace(/\s/g, '')
       .replace(',', '.');
@@ -646,22 +621,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return n;
   }
 
-  /**
-   * Preço do atendimento: valor da tabela × (gramas / 100), 2 casas decimais.
-   */
-  private valorTotalCabeloCalculado(): number | null {
-    const row = this.linhaCabeloCalculadora();
-    if (!row) return null;
-    const base = valorMonetarioParaNumero(row.valor_base);
-    const g = this.parseGramasCabelo();
-    if (base == null || base <= 0 || g == null) return null;
-    return Math.round(base * (g / 100) * 100) / 100;
-  }
-
-  private linhaCabeloCalculadora(): CabeloCatalogoItem | undefined {
-    const cor = this.calcCabeloCor.trim();
-    const tam = this.calcCabeloTamanhoCm.trim();
-    const met = this.calcCabeloMetodo.trim();
+  private linhaCabeloCalculadoraEm(i: number): CabeloCatalogoItem | undefined {
+    const g = this.linhasItensArray.at(i);
+    if (!g) return undefined;
+    const cor = String(g.get('calc_cor')?.value ?? '').trim();
+    const tam = String(g.get('calc_tam_cm')?.value ?? '').trim();
+    const met = String(g.get('calc_metodo')?.value ?? '').trim();
     if (!cor || !tam || !met) return undefined;
     const exato = (c: CabeloCatalogoItem) =>
       String(c.cor ?? '').trim() === cor &&
@@ -678,9 +643,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
-  /** Pré-visualização do valor base da linha da tabela (quando há match). */
-  valorCalculadoraCabeloPreview(): string | null {
-    const row = this.linhaCabeloCalculadora();
+  private valorTotalCabeloCalculadoLinha(i: number): number | null {
+    const row = this.linhaCabeloCalculadoraEm(i);
+    if (!row) return null;
+    const base = valorMonetarioParaNumero(row.valor_base);
+    const g = this.parseGramasCabeloLinha(i);
+    if (base == null || base <= 0 || g == null) return null;
+    return Math.round(base * (g / 100) * 100) / 100;
+  }
+
+  valorCalculadoraCabeloPreviewLinha(i: number): string | null {
+    const row = this.linhaCabeloCalculadoraEm(i);
     if (!row) return null;
     const num = valorMonetarioParaNumero(row.valor_base);
     if (num == null || num <= 0) return null;
@@ -690,9 +663,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }).format(num);
   }
 
-  /** Total com fórmula base × (g/100), quando base e gramas são válidos. */
-  valorCalculadoraCabeloTotalPreview(): string | null {
-    const total = this.valorTotalCabeloCalculado();
+  valorCalculadoraCabeloTotalPreviewLinha(i: number): string | null {
+    const total = this.valorTotalCabeloCalculadoLinha(i);
     if (total == null) return null;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -702,9 +674,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }).format(total);
   }
 
-  aplicarValorCalculadoraCabelo(): void {
-    const row = this.linhaCabeloCalculadora();
-    if (!row) {
+  aplicarValorCalculadoraCabeloLinha(i: number): void {
+    const row = this.linhaCabeloCalculadoraEm(i);
+    const g = this.linhasItensArray.at(i);
+    if (!row || !g) {
       this.erro =
         'Escolha Cor, Tamanho (cm) e Método que existam juntos na aba Cabelos.';
       return;
@@ -714,121 +687,90 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       this.erro = 'O valor base desta linha na tabela Cabelos não é válido.';
       return;
     }
-    const g = this.parseGramasCabelo();
-    if (g == null) {
+    if (this.parseGramasCabeloLinha(i) == null) {
       this.erro =
         'Informe o peso em gramas medido na balança (número maior que zero).';
       return;
     }
-    const total = this.valorTotalCabeloCalculado();
+    const total = this.valorTotalCabeloCalculadoLinha(i);
     if (total == null) {
       this.erro = 'Não foi possível calcular o valor. Confira peso e tabela.';
       return;
     }
     this.erro = '';
     const texto = total.toFixed(2).replace('.', ',');
-    this.form.patchValue({ valor_cabelo: texto });
-    this.form.controls.valor_cabelo.markAsTouched();
-    this.form.controls.valor_cabelo.updateValueAndValidity();
+    g.patchValue({ valor_cabelo: texto });
+    g.get('valor_cabelo')?.markAsTouched();
+    g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
 
-    const gStr = String(this.calcCabeloGramas ?? '').trim();
-    const linha = `Cor: ${this.calcCabeloCor.trim()}; ${this.calcCabeloTamanhoCm.trim()} cm; método: ${this.calcCabeloMetodo.trim()}; ${gStr} g`;
-    const atual = String(this.form.controls.detalhes_cabelo.value ?? '').trim();
+    const gStr = String(g.get('calc_gramas')?.value ?? '').trim();
+    const cor = String(g.get('calc_cor')?.value ?? '').trim();
+    const tam = String(g.get('calc_tam_cm')?.value ?? '').trim();
+    const met = String(g.get('calc_metodo')?.value ?? '').trim();
+    const linha = `Cor: ${cor}; ${tam} cm; método: ${met}; ${gStr} g`;
+    const atual = String(g.get('detalhes_cabelo')?.value ?? '').trim();
     if (!atual) {
-      this.form.patchValue({ detalhes_cabelo: linha });
+      g.patchValue({ detalhes_cabelo: linha });
     }
   }
 
   resumoLinhas(): string {
-    const t = this.tipoAtual;
-    if (t === 'Mega') {
-      const n = this.etapasArray.length;
-      return `${n} linha(s) em Atendimentos (mesmo ID)`;
+    const n = this.linhasItensArray.length;
+    return `${n} linha(s) no pedido — cada linha tem um tipo (Serviço, Mega, Pacote, Cabelo ou Produto).`;
+  }
+
+  adicionarLinhaItens(): void {
+    this.linhasItensArray.push(this.novoGrupoLinhaItem('Serviço'));
+    this.aplicarValidadoresLinhas();
+  }
+
+  removerLinhaItens(i: number): void {
+    if (this.linhasItensArray.length <= 1) return;
+    this.linhasItensArray.removeAt(i);
+    this.aplicarValidadoresLinhas();
+  }
+
+  /** Ao mudar o tipo da linha, ajusta sub-formulários (ex.: etapas Mega/Pacote). */
+  onItemTipoLinhaChange(i: number): void {
+    const g = this.linhasItensArray.at(i);
+    if (!g) return;
+    const t = String(g.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
+    const etapas = g.get('etapas') as FormArray<FormGroup>;
+    while (etapas.length) etapas.removeAt(0);
+    if (t === 'Mega' || t === 'Pacote') {
+      etapas.push(this.novoGrupoEtapa());
     }
-    if (t === 'Pacote') {
-      const n = 1 + this.etapasArray.length;
-      return `${n} linha(s): 1 cobrança + ${this.etapasArray.length} etapa(s)`;
-    }
-    if (t === 'Serviço') {
-      const n = this.servicosItensArray.length;
-      return `${n} linha(s) em Atendimentos (um registo por serviço)`;
-    }
-    if (t === 'Produto') {
-      const n = this.produtosItensArray.length;
-      return `${n} linha(s) em Atendimentos (um registo por produto)`;
-    }
-    if (t === 'Misto') {
-      const n = this.linhasMistoArray.length;
-      return `${n} linha(s) no mesmo pedido (serviços e/ou produtos, mesmo ID)`;
-    }
-    return '1 linha em Atendimentos';
+    this.slotAgenda = null;
+    this.aplicarValidadoresLinhas();
   }
 
-  adicionarProduto(): void {
-    this.produtosItensArray.push(this.novoGrupoProduto());
-    this.aplicarValidadoresPorTipo();
+  adicionarEtapaNaLinha(i: number): void {
+    this.etapasArrayDaLinha(i).push(this.novoGrupoEtapa());
+    this.aplicarValidadoresLinhas();
   }
 
-  removerProduto(i: number): void {
-    if (this.produtosItensArray.length <= 1) return;
-    this.produtosItensArray.removeAt(i);
-    this.aplicarValidadoresPorTipo();
-  }
-
-  adicionarServico(): void {
-    this.servicosItensArray.push(this.novoGrupoServico());
-    this.aplicarValidadoresPorTipo();
-  }
-
-  removerServico(i: number): void {
-    if (this.servicosItensArray.length <= 1) return;
-    this.servicosItensArray.removeAt(i);
-    this.aplicarValidadoresPorTipo();
-  }
-
-  adicionarLinhaMisto(): void {
-    this.linhasMistoArray.push(this.novoGrupoLinhaMisto());
-    this.aplicarValidadoresPorTipo();
-  }
-
-  removerLinhaMisto(i: number): void {
-    if (this.linhasMistoArray.length <= 1) return;
-    this.linhasMistoArray.removeAt(i);
-    this.aplicarValidadoresPorTipo();
-  }
-
-  /** Ao mudar Serviço ↔ Produto numa linha Misto, recalcula validadores (hora, campos por linha). */
-  onItemTipoMistoChange(): void {
-    this.aplicarValidadoresPorTipo();
-  }
-
-  adicionarEtapa(): void {
-    this.etapasArray.push(this.novoGrupoEtapa());
-    this.aplicarValidadoresPorTipo();
-  }
-
-  removerEtapa(i: number): void {
-    if (this.etapasArray.length <= 1) return;
-    this.etapasArray.removeAt(i);
-    this.aplicarValidadoresPorTipo();
+  removerEtapaNaLinha(i: number, j: number): void {
+    const et = this.etapasArrayDaLinha(i);
+    if (et.length <= 1) return;
+    et.removeAt(j);
+    this.aplicarValidadoresLinhas();
   }
 
   salvar(): void {
     this.erro = '';
     this.form.markAllAsTouched();
-    this.aplicarValidadoresPorTipo();
+    this.aplicarValidadoresLinhas();
 
     if (!this.form.valid) {
       return;
     }
 
     const raw = this.form.getRawValue();
-    const tipo = raw.tipo;
-    if (!this.validarPorTipo(tipo, raw)) {
+    if (!this.validarLinhas(raw)) {
       return;
     }
 
-    const payloads = this.montarPayloads(tipo, raw);
+    const payloads = this.montarPayloadsDasLinhas(raw);
     if (payloads.length === 0) {
       this.erro =
         'Confira os campos obrigatórios (data válida, cliente, serviços, etc.).';
@@ -907,31 +849,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
     this.prefillEmCurso = true;
 
-    while (this.etapasArray.length) {
-      this.etapasArray.removeAt(0);
-    }
-    while (this.servicosItensArray.length) {
-      this.servicosItensArray.removeAt(0);
-    }
-    while (this.produtosItensArray.length) {
-      this.produtosItensArray.removeAt(0);
-    }
-    while (this.linhasMistoArray.length) {
-      this.linhasMistoArray.removeAt(0);
+    while (this.linhasItensArray.length) {
+      this.linhasItensArray.removeAt(0);
     }
 
     const tiposLinha = sorted.map((r) => mapTipoFromApi(r.tipo || ''));
-    const edicaoMisto =
+    const edicaoServicoEProduto =
       tiposLinha.some((x) => x === 'Serviço') &&
       tiposLinha.some((x) => x === 'Produto');
 
-    if (edicaoMisto) {
+    if (edicaoServicoEProduto) {
       for (const row of sorted) {
         const ta = mapTipoFromApi(row.tipo || '');
         if (ta === 'Serviço') {
           const nomeServ = (row.servicosRef || '').trim();
           const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
-          const g = this.novoGrupoLinhaMisto('Serviço');
+          const g = this.novoGrupoLinhaItem('Serviço');
           g.patchValue(
             {
               servico_id: sid,
@@ -940,10 +873,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             },
             { emitEvent: false },
           );
-          this.linhasMistoArray.push(g);
+          this.linhasItensArray.push(g);
         } else if (ta === 'Produto') {
           const q = parseQuantidadeFromDescricao(row.descricao || '');
-          const g = this.novoGrupoLinhaMisto('Produto');
+          const g = this.novoGrupoLinhaItem('Produto');
           g.patchValue(
             {
               produto: row.produtoNome || '',
@@ -951,18 +884,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             },
             { emitEvent: false },
           );
-          this.linhasMistoArray.push(g);
+          this.linhasItensArray.push(g);
         }
       }
-      if (this.linhasMistoArray.length < 1) {
-        this.linhasMistoArray.push(this.novoGrupoLinhaMisto());
-      }
+      this.garantirMinUmaLinha();
       const servRowsOnly = sorted.filter(
         (r) => mapTipoFromApi(r.tipo || '') === 'Serviço',
       );
       this.form.patchValue(
         {
-          tipo: 'Misto',
           cliente_id: l0.idCliente || '',
           data: dataYmd,
           hora_inicial:
@@ -970,44 +900,34 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               ? this.menorHoraInicialServicoEdicao(servRowsOnly, dataYmd)
               : '',
           observacao: '',
-          pacote: '',
-          valor_cabelo: '',
-          detalhes_cabelo: '',
         },
         { emitEvent: false },
       );
       this.prefillEmCurso = false;
-      this.ajustarArraysPorTipo();
-      this.aplicarValidadoresPorTipo();
+      this.aplicarValidadoresLinhas();
       return;
     }
 
     if (tipoApi === 'Produto') {
       for (const row of sorted) {
         const q = parseQuantidadeFromDescricao(row.descricao || '');
-        this.produtosItensArray.push(
-          this.fb.group({
-            produto: [row.produtoNome || '', Validators.required],
-            quantidade: [
-              q > 0 ? q : 1,
-              [Validators.required, Validators.min(0.01)],
-            ],
-          }),
+        const g = this.novoGrupoLinhaItem('Produto');
+        g.patchValue(
+          {
+            produto: row.produtoNome || '',
+            quantidade: q > 0 ? q : 1,
+          },
+          { emitEvent: false },
         );
+        this.linhasItensArray.push(g);
       }
-      if (this.produtosItensArray.length < 1) {
-        this.produtosItensArray.push(this.novoGrupoProduto());
-      }
+      this.garantirMinUmaLinha();
       this.form.patchValue(
         {
-          tipo: 'Produto',
           cliente_id: l0.idCliente || '',
           data: dataYmd,
-          profissional: null,
           observacao: stripQtdSuffixObservacao(l0.descricao || ''),
-          pacote: '',
-          valor_cabelo: '',
-          detalhes_cabelo: '',
+          hora_inicial: '',
         },
         { emitEvent: false },
       );
@@ -1015,36 +935,37 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       for (const row of sorted) {
         const nomeServ = (row.servicosRef || '').trim();
         const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
-        this.servicosItensArray.push(
-          this.fb.group({
-            servico_id: [sid, Validators.required],
-            tamanho: this.fb.nonNullable.control<string>(
-              (row.tamanho || 'Curto').trim() || 'Curto',
-            ),
-            profissional: [
-              this.profissionalValorForm(row),
-              Validators.required,
-            ],
-          }),
+        const g = this.novoGrupoLinhaItem('Serviço');
+        g.patchValue(
+          {
+            servico_id: sid,
+            tamanho: (row.tamanho || 'Curto').trim() || 'Curto',
+            profissional: this.profissionalValorForm(row),
+          },
+          { emitEvent: false },
         );
+        this.linhasItensArray.push(g);
       }
+      this.garantirMinUmaLinha();
       this.form.patchValue(
         {
-          tipo: 'Serviço',
           cliente_id: l0.idCliente || '',
           data: dataYmd,
           hora_inicial: this.menorHoraInicialServicoEdicao(sorted, dataYmd),
           observacao: '',
-          pacote: '',
-          valor_cabelo: '',
-          detalhes_cabelo: '',
         },
         { emitEvent: false },
       );
     } else if (tipoApi === 'Mega') {
+      const g = this.novoGrupoLinhaItem('Mega');
+      g.patchValue({ pacote: l0.pacote || '' }, { emitEvent: false });
+      const et = g.get('etapas') as FormArray<FormGroup>;
+      while (et.length) {
+        et.removeAt(0);
+      }
       const comEtapaMega = sorted.filter((r) => (r.etapa || '').trim());
       for (const row of comEtapaMega) {
-        this.etapasArray.push(
+        et.push(
           this.fb.group({
             etapa: [row.etapa || '', Validators.required],
             profissional: [
@@ -1054,25 +975,29 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           }),
         );
       }
-      if (this.etapasArray.length < 1) {
-        this.etapasArray.push(this.novoGrupoEtapa());
+      if (et.length < 1) {
+        et.push(this.novoGrupoEtapa());
       }
+      this.linhasItensArray.push(g);
       this.form.patchValue(
         {
-          tipo: 'Mega',
           cliente_id: l0.idCliente || '',
           data: dataYmd,
-          pacote: l0.pacote || '',
           observacao: obsMegaPacote,
-          valor_cabelo: '',
-          detalhes_cabelo: '',
+          hora_inicial: '',
         },
         { emitEvent: false },
       );
     } else if (tipoApi === 'Pacote') {
+      const g = this.novoGrupoLinhaItem('Pacote');
+      g.patchValue({ pacote: l0.pacote || '' }, { emitEvent: false });
+      const et = g.get('etapas') as FormArray<FormGroup>;
+      while (et.length) {
+        et.removeAt(0);
+      }
       const comEtapa = sorted.filter((r) => (r.etapa || '').trim());
       for (const row of comEtapa) {
-        this.etapasArray.push(
+        et.push(
           this.fb.group({
             etapa: [row.etapa || '', Validators.required],
             profissional: [
@@ -1082,42 +1007,45 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           }),
         );
       }
-      if (this.etapasArray.length < 1) {
-        this.etapasArray.push(this.novoGrupoEtapa());
+      if (et.length < 1) {
+        et.push(this.novoGrupoEtapa());
       }
+      this.linhasItensArray.push(g);
       this.form.patchValue(
         {
-          tipo: 'Pacote',
           cliente_id: l0.idCliente || '',
           data: dataYmd,
-          pacote: l0.pacote || '',
-          profissional: null,
           observacao: obsMegaPacote,
-          valor_cabelo: '',
-          detalhes_cabelo: '',
+          hora_inicial: '',
         },
         { emitEvent: false },
       );
     } else if (tipoApi === 'Cabelo') {
       const row = sorted[0];
-      this.form.patchValue(
+      const g = this.novoGrupoLinhaItem('Cabelo');
+      g.patchValue(
         {
-          tipo: 'Cabelo',
-          cliente_id: row.idCliente || '',
-          data: dataYmd,
-          profissional: this.profissionalValorForm(row),
+          profissional_cabelo: this.profissionalValorForm(row),
           valor_cabelo: this.valorCampoCabeloDeApi(row.valor),
           detalhes_cabelo: row.descricao || '',
+        },
+        { emitEvent: false },
+      );
+      this.linhasItensArray.push(g);
+      this.form.patchValue(
+        {
+          cliente_id: row.idCliente || '',
+          data: dataYmd,
           observacao: '',
-          pacote: '',
+          hora_inicial: '',
         },
         { emitEvent: false },
       );
     }
 
     this.prefillEmCurso = false;
-    this.ajustarArraysPorTipo();
-    this.aplicarValidadoresPorTipo();
+    this.garantirMinUmaLinha();
+    this.aplicarValidadoresLinhas();
   }
 
   private buscarServicoIdPorNomeColuna(nome: string): string {
@@ -1167,260 +1095,163 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  private novoGrupoServico(): FormGroup {
-    return this.fb.group({
-      servico_id: ['', Validators.required],
-      tamanho: this.fb.nonNullable.control<string>('Curto'),
-      profissional: [null as number | null, Validators.required],
-    });
-  }
-
-  private novoGrupoProduto(): FormGroup {
-    return this.fb.group({
-      produto: ['', Validators.required],
-      quantidade: [1, [Validators.required, Validators.min(0.01)]],
-    });
-  }
-
-  private novoGrupoLinhaMisto(
-    itemTipo: 'Serviço' | 'Produto' = 'Serviço',
+  private novoGrupoLinhaItem(
+    itemTipo: TipoLinhaAtendimento = 'Serviço',
   ): FormGroup {
-    return this.fb.group({
-      itemTipo: this.fb.nonNullable.control<'Serviço' | 'Produto'>(itemTipo),
+    const g = this.fb.group({
+      itemTipo: this.fb.nonNullable.control<TipoLinhaAtendimento>(itemTipo),
       servico_id: [''],
       tamanho: this.fb.nonNullable.control<string>('Curto'),
       profissional: [null as number | null],
       produto: [''],
-      quantidade: [1, [Validators.required, Validators.min(0.01)]],
+      quantidade: [1, [Validators.min(0.01)]],
+      pacote: [''],
+      etapas: this.fb.array<FormGroup>([]),
+      valor_cabelo: [''],
+      detalhes_cabelo: [''],
+      profissional_cabelo: [null as number | null],
+      calc_cor: [''],
+      calc_tam_cm: [''],
+      calc_metodo: [''],
+      calc_gramas: [''],
     });
+    if (itemTipo === 'Mega' || itemTipo === 'Pacote') {
+      (g.get('etapas') as FormArray<FormGroup>).push(this.novoGrupoEtapa());
+    }
+    return g;
   }
 
-  private ajustarArraysPorTipo(): void {
-    const t = this.tipoAtual;
-    if (t === 'Mega' || t === 'Pacote') {
-      while (this.etapasArray.length < 1) {
-        this.etapasArray.push(this.novoGrupoEtapa());
-      }
-    } else {
-      while (this.etapasArray.length > 0) {
-        this.etapasArray.removeAt(0);
-      }
-    }
-    if (t === 'Serviço') {
-      while (this.servicosItensArray.length < 1) {
-        this.servicosItensArray.push(this.novoGrupoServico());
-      }
-    } else {
-      while (this.servicosItensArray.length > 0) {
-        this.servicosItensArray.removeAt(0);
-      }
-    }
-    if (t === 'Produto') {
-      while (this.produtosItensArray.length < 1) {
-        this.produtosItensArray.push(this.novoGrupoProduto());
-      }
-    } else {
-      while (this.produtosItensArray.length > 0) {
-        this.produtosItensArray.removeAt(0);
-      }
-    }
-    if (t === 'Misto') {
-      while (this.linhasMistoArray.length < 1) {
-        this.linhasMistoArray.push(this.novoGrupoLinhaMisto());
-      }
-    } else {
-      while (this.linhasMistoArray.length > 0) {
-        this.linhasMistoArray.removeAt(0);
-      }
+  private garantirMinUmaLinha(): void {
+    while (this.linhasItensArray.length < 1) {
+      this.linhasItensArray.push(this.novoGrupoLinhaItem('Serviço'));
     }
   }
 
-  private aplicarValidadoresPorTipo(): void {
-    const t = this.tipoAtual;
-
-    /** Só **Cabelo** usa o `profissional` raiz; Mega/Pacote usam profissional por **etapa** (comissão). */
-    const profRoot = this.form.controls.profissional;
-    if (t === 'Cabelo') {
-      profRoot.enable({ emitEvent: false });
-      profRoot.setValidators([Validators.required]);
-    } else {
-      profRoot.clearValidators();
-      profRoot.reset(null, { emitEvent: false });
-      profRoot.disable({ emitEvent: false });
-    }
-
-    this.form.controls.pacote.setValidators(
-      t === 'Mega' || t === 'Pacote' ? [Validators.required] : [],
-    );
-
-    this.form.controls.valor_cabelo.setValidators(
-      t === 'Cabelo'
-        ? [Validators.required, valorCabeloPtValidator]
-        : [],
-    );
-
-    for (let i = 0; i < this.servicosItensArray.length; i++) {
-      const g = this.servicosItensArray.at(i);
-      const sid = g.get('servico_id');
-      const profLinha = g.get('profissional');
-      const req = t === 'Serviço' ? [Validators.required] : [];
-      sid?.setValidators(req);
-      profLinha?.setValidators(req);
-      sid?.updateValueAndValidity({ emitEvent: false });
-      profLinha?.updateValueAndValidity({ emitEvent: false });
-    }
-
-    for (let i = 0; i < this.produtosItensArray.length; i++) {
-      const g = this.produtosItensArray.at(i);
-      const pr = g.get('produto');
-      const qtd = g.get('quantidade');
-      const req = t === 'Produto' ? [Validators.required] : [];
-      const reqQ =
-        t === 'Produto' ? [Validators.required, Validators.min(0.01)] : [];
-      pr?.setValidators(req);
-      qtd?.setValidators(reqQ);
-      pr?.updateValueAndValidity({ emitEvent: false });
-      qtd?.updateValueAndValidity({ emitEvent: false });
-    }
-
-    for (let i = 0; i < this.linhasMistoArray.length; i++) {
-      const g = this.linhasMistoArray.at(i);
-      const itemTipo = String(g.get('itemTipo')?.value ?? '').trim();
-      const sid = g.get('servico_id');
-      const tam = g.get('tamanho');
-      const profL = g.get('profissional');
-      const prod = g.get('produto');
-      const qtd = g.get('quantidade');
-      if (t === 'Misto') {
-        if (itemTipo === 'Serviço') {
-          sid?.setValidators([Validators.required]);
-          tam?.setValidators([]);
-          profL?.setValidators([Validators.required]);
-          prod?.setValidators([]);
-          qtd?.setValidators([]);
-        } else {
-          sid?.setValidators([]);
-          tam?.setValidators([]);
-          profL?.setValidators([]);
-          prod?.setValidators([Validators.required]);
-          qtd?.setValidators([Validators.required, Validators.min(0.01)]);
-        }
-      } else {
-        sid?.setValidators([]);
-        tam?.setValidators([]);
-        profL?.setValidators([]);
-        prod?.setValidators([]);
-        qtd?.setValidators([]);
-      }
-      sid?.updateValueAndValidity({ emitEvent: false });
-      tam?.updateValueAndValidity({ emitEvent: false });
-      profL?.updateValueAndValidity({ emitEvent: false });
-      prod?.updateValueAndValidity({ emitEvent: false });
-      qtd?.updateValueAndValidity({ emitEvent: false });
-    }
-
+  aplicarValidadoresLinhas(): void {
+    const precisaHora = this.temLinhaServicoCatalogo();
     const horaIni = this.form.controls.hora_inicial;
-    if (t === 'Serviço' || (t === 'Misto' && this.mistoTemLinhaServico())) {
+    if (precisaHora) {
       horaIni.setValidators([Validators.required]);
     } else {
       horaIni.clearValidators();
     }
     horaIni.updateValueAndValidity({ emitEvent: false });
 
-    for (const k of ['profissional', 'pacote', 'valor_cabelo'] as const) {
-      this.form.controls[k].updateValueAndValidity({ emitEvent: false });
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const tipo = String(
+        g.get('itemTipo')?.value ?? '',
+      ) as TipoLinhaAtendimento;
+      const sid = g.get('servico_id');
+      const profS = g.get('profissional');
+      const prod = g.get('produto');
+      const qtd = g.get('quantidade');
+      const pac = g.get('pacote');
+      const valC = g.get('valor_cabelo');
+      const profC = g.get('profissional_cabelo');
+
+      sid?.clearValidators();
+      profS?.clearValidators();
+      prod?.clearValidators();
+      qtd?.clearValidators();
+      pac?.clearValidators();
+      valC?.clearValidators();
+      profC?.clearValidators();
+
+      if (tipo === 'Serviço') {
+        sid?.setValidators([Validators.required]);
+        profS?.setValidators([Validators.required]);
+      } else if (tipo === 'Produto') {
+        prod?.setValidators([Validators.required]);
+        qtd?.setValidators([Validators.required, Validators.min(0.01)]);
+      } else if (tipo === 'Mega' || tipo === 'Pacote') {
+        pac?.setValidators([Validators.required]);
+      } else if (tipo === 'Cabelo') {
+        profC?.setValidators([Validators.required]);
+        valC?.setValidators([Validators.required, valorCabeloPtValidator]);
+      }
+
+      sid?.updateValueAndValidity({ emitEvent: false });
+      profS?.updateValueAndValidity({ emitEvent: false });
+      prod?.updateValueAndValidity({ emitEvent: false });
+      qtd?.updateValueAndValidity({ emitEvent: false });
+      pac?.updateValueAndValidity({ emitEvent: false });
+      valC?.updateValueAndValidity({ emitEvent: false });
+      profC?.updateValueAndValidity({ emitEvent: false });
+
+      const etapas = g.get('etapas') as FormArray<FormGroup>;
+      for (let j = 0; j < etapas.length; j++) {
+        const eg = etapas.at(j);
+        const e = eg.get('etapa');
+        const ep = eg.get('profissional');
+        const reqE =
+          tipo === 'Mega' || tipo === 'Pacote' ? [Validators.required] : [];
+        const reqP =
+          tipo === 'Mega' || tipo === 'Pacote' ? [Validators.required] : [];
+        e?.setValidators(reqE);
+        ep?.setValidators(reqP);
+        e?.updateValueAndValidity({ emitEvent: false });
+        ep?.updateValueAndValidity({ emitEvent: false });
+      }
     }
   }
 
-  private validarPorTipo(
-    tipo: TipoAtendimento,
-    raw: Record<string, unknown>,
-  ): boolean {
+  private validarLinhas(raw: Record<string, unknown>): boolean {
     if (!String(raw['cliente_id'] ?? '').trim()) return false;
     const dataYmd = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataYmd) return false;
+    if (
+      this.temLinhaServicoCatalogo() &&
+      !normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))
+    ) {
+      return false;
+    }
+    if (this.linhasItensArray.length < 1) return false;
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const tipo = String(
+        g.get('itemTipo')?.value ?? '',
+      ) as TipoLinhaAtendimento;
+      if (!this.linhaValida(g, tipo)) return false;
+    }
+    return true;
+  }
 
+  private linhaValida(g: FormGroup, tipo: TipoLinhaAtendimento): boolean {
     if (tipo === 'Serviço') {
-      if (!normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))) return false;
-      const itens = this.servicosItensArray.getRawValue() as {
-        servico_id: string;
-        tamanho: string;
-        profissional: number | null;
-      }[];
-      if (itens.length < 1) return false;
-      for (const it of itens) {
-        if (!String(it.servico_id ?? '').trim()) return false;
-        if (it.profissional == null || !(Number(it.profissional) > 0)) {
-          return false;
-        }
-      }
-      return true;
-    }
-    if (tipo === 'Misto') {
-      const linhas = this.linhasMistoArray.getRawValue() as {
-        itemTipo: 'Serviço' | 'Produto';
-        servico_id: string;
-        profissional: number | null;
-        produto: string;
-        quantidade: number;
-      }[];
-      if (linhas.length < 1) return false;
-      const precisaHora = linhas.some((r) => r.itemTipo === 'Serviço');
-      if (precisaHora && !normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))) {
-        return false;
-      }
-      for (const r of linhas) {
-        if (r.itemTipo === 'Serviço') {
-          if (!String(r.servico_id ?? '').trim()) return false;
-          if (r.profissional == null || !(Number(r.profissional) > 0)) {
-            return false;
-          }
-        } else {
-          if (!String(r.produto ?? '').trim()) return false;
-          const q = Number(r.quantidade);
-          if (Number.isNaN(q) || q <= 0) return false;
-        }
-      }
-      return true;
-    }
-    if (tipo === 'Mega') {
-      if (!String(raw['pacote'] ?? '').trim()) return false;
-      return this.etapasValidas();
-    }
-    if (tipo === 'Pacote') {
-      if (!String(raw['pacote'] ?? '').trim()) return false;
-      return this.etapasValidas();
+      if (!String(g.get('servico_id')?.value ?? '').trim()) return false;
+      const p = g.get('profissional')?.value;
+      return p != null && Number(p) > 0;
     }
     if (tipo === 'Produto') {
-      const itens = this.produtosItensArray.getRawValue() as {
-        produto: string;
-        quantidade: number;
-      }[];
-      if (itens.length < 1) return false;
-      for (const it of itens) {
-        if (!String(it.produto ?? '').trim()) return false;
-        const q = Number(it.quantidade);
-        if (Number.isNaN(q) || q <= 0) return false;
-      }
-      return true;
+      if (!String(g.get('produto')?.value ?? '').trim()) return false;
+      const q = Number(g.get('quantidade')?.value);
+      return !Number.isNaN(q) && q > 0;
+    }
+    if (tipo === 'Mega' || tipo === 'Pacote') {
+      if (!String(g.get('pacote')?.value ?? '').trim()) return false;
+      return this.etapasValidasParaGrupo(
+        g.get('etapas') as FormArray<FormGroup>,
+      );
     }
     if (tipo === 'Cabelo') {
-      const pid = raw['profissional'];
+      const pid = g.get('profissional_cabelo')?.value;
       if (pid == null || pid === '' || !(Number(pid) > 0)) return false;
-      const v = this.parseValorPt(String(raw['valor_cabelo'] ?? ''));
+      const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
       return v != null && v > 0;
     }
     return false;
   }
 
-  private etapasValidas(): boolean {
-    for (let i = 0; i < this.etapasArray.length; i++) {
-      const g = this.etapasArray.at(i);
+  private etapasValidasParaGrupo(etapas: FormArray<FormGroup>): boolean {
+    if (etapas.length < 1) return false;
+    for (let i = 0; i < etapas.length; i++) {
+      const g = etapas.at(i);
       const e = String(g.get('etapa')?.value ?? '').trim();
       const p = g.get('profissional')?.value;
       if (!e || p == null || !(Number(p) > 0)) return false;
     }
-    return this.etapasArray.length >= 1;
+    return true;
   }
 
   private aplicarContextoSlotInput(): void {
@@ -1430,15 +1261,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
     const dataOk = c.data.trim().slice(0, 10);
     this.prefillEmCurso = true;
-    this.form.patchValue(
-      { data: dataOk, tipo: 'Serviço' },
-      { emitEvent: false },
-    );
-    this.ajustarArraysPorTipo();
-    this.aplicarValidadoresPorTipo();
-    const g0 = this.servicosItensArray.at(0);
+    this.form.patchValue({ data: dataOk }, { emitEvent: false });
+    this.garantirMinUmaLinha();
+    this.aplicarValidadoresLinhas();
+    const g0 = this.linhasItensArray.at(0);
     if (g0 && c.profissional_id > 0) {
-      g0.patchValue({ profissional: c.profissional_id }, { emitEvent: false });
+      g0.patchValue(
+        {
+          itemTipo: 'Serviço',
+          profissional: c.profissional_id,
+        },
+        { emitEvent: false },
+      );
     }
     const horaBruta = String(c.hora ?? '').trim();
     const hn = normalizarHoraHHmm(horaBruta);
@@ -1450,11 +1284,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.slotAgenda = null;
   }
 
-  /** Exibe o fim previsto (HH:mm em Brasília no dia da data) para tipo Serviço ou Misto (linhas de serviço). */
+  /** Exibe o fim previsto (HH:mm) para linhas de Serviço (catálogo) na ordem do formulário. */
   horarioFinalExibicao(): string {
-    const tv = this.form.controls.tipo.value;
-    if (tv !== 'Serviço' && tv !== 'Misto') return '—';
-    if (tv === 'Misto' && !this.mistoTemLinhaServico()) return '—';
+    if (!this.temLinhaServicoCatalogo()) return '—';
     const dataYmd = normalizarDataIso(
       String(this.form.controls.data.value ?? ''),
     );
@@ -1471,30 +1303,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return `${String(end.hh).padStart(2, '0')}:${String(end.mm).padStart(2, '0')}`;
   }
 
-  /** Soma durações (min) dos serviços de catálogo no fluxo atual (Serviço ou Misto). */
+  /** Soma durações (min) dos serviços de catálogo em todas as linhas Serviço (ordem do formulário). */
   private duracaoMinutosAgendaServicos(): number {
-    const tv = this.form.controls.tipo.value;
     let sum = 0;
-    if (tv === 'Serviço') {
-      const itens = this.servicosItensArray.getRawValue() as {
-        servico_id: string;
-      }[];
-      for (const it of itens) {
-        const sid = String(it.servico_id ?? '').trim();
-        if (!sid) continue;
-        sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
-      }
-    } else if (tv === 'Misto') {
-      const linhas = this.linhasMistoArray.getRawValue() as {
-        itemTipo: string;
-        servico_id: string;
-      }[];
-      for (const r of linhas) {
-        if (r.itemTipo !== 'Serviço') continue;
-        const sid = String(r.servico_id ?? '').trim();
-        if (!sid) continue;
-        sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
-      }
+    for (const c of this.linhasItensArray.controls) {
+      if (c.get('itemTipo')?.value !== 'Serviço') continue;
+      const sid = String(c.get('servico_id')?.value ?? '').trim();
+      if (!sid) continue;
+      sum += this.duracaoMinutosDoServico(this.servicoPorId(sid));
     }
     return Math.max(15, sum || 15);
   }
@@ -1546,68 +1362,79 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     };
   }
 
-  private montarPayloads(
-    tipo: TipoAtendimento,
+  private montarPayloadsDasLinhas(
     raw: Record<string, unknown>,
   ): CreateAtendimentoPayload[] {
     const cliente_id = String(raw['cliente_id'] ?? '').trim();
     const dataYmd = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataYmd) return [];
     const observacao = String(raw['observacao'] ?? '').trim() || undefined;
+    const horaIni = String(raw['hora_inicial'] ?? '');
 
-    if (tipo === 'Serviço') {
-      const itens = this.servicosItensArray.getRawValue() as {
-        servico_id: string;
-        tamanho: string;
-        profissional: number | null;
-      }[];
-      const horaIni = String(raw['hora_inicial'] ?? '');
-      const preparados: {
-        servico_id: string;
+    type Prep = {
+      servico_id: string;
+      profissional_id: number;
+      st: string;
+      base: {
+        tipo: 'Serviço';
+        cliente_id: string;
+        data: string;
         profissional_id: number;
-        st: string;
-        base: {
-          tipo: 'Serviço';
-          cliente_id: string;
-          data: string;
-          profissional_id: number;
-          servico_id: string;
-          observacao?: string;
-        };
-        tamanho?: string;
-      }[] = [];
-      for (const it of itens) {
-        const servico_id = String(it.servico_id ?? '').trim();
+        servico_id: string;
+        observacao?: string;
+      };
+      tamanho?: string;
+    };
+    const servicosPrep: Prep[] = [];
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      if (g.get('itemTipo')?.value !== 'Serviço') continue;
+      const servico_id = String(g.get('servico_id')?.value ?? '').trim();
+      if (!servico_id) continue;
+      const profissional_id = Number(g.get('profissional')?.value);
+      if (!(profissional_id > 0)) continue;
+      const svc = this.servicoPorId(servico_id);
+      const base = {
+        tipo: 'Serviço' as const,
+        cliente_id,
+        data: dataYmd,
+        profissional_id,
+        servico_id,
+        observacao,
+      };
+      const st = String(svc?.['Tipo'] ?? '').toLowerCase();
+      servicosPrep.push({
+        servico_id,
+        profissional_id,
+        st,
+        base,
+        tamanho: String(g.get('tamanho')?.value ?? 'Curto').trim(),
+      });
+    }
+    const slotPairs = this.slotsSequenciaisParaPayloadServico(
+      dataYmd,
+      horaIni,
+      servicosPrep,
+    );
+    const out: CreateAtendimentoPayload[] = [];
+    let servicoIdx = 0;
+    let primeiroMerge = true;
+
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const tipo = String(
+        g.get('itemTipo')?.value ?? '',
+      ) as TipoLinhaAtendimento;
+
+      if (tipo === 'Serviço') {
+        const servico_id = String(g.get('servico_id')?.value ?? '').trim();
         if (!servico_id) continue;
-        const profissional_id = Number(it.profissional);
+        const profissional_id = Number(g.get('profissional')?.value);
         if (!(profissional_id > 0)) continue;
-        const svc = this.servicoPorId(servico_id);
-        const base = {
-          tipo: 'Serviço' as const,
-          cliente_id,
-          data: dataYmd,
-          profissional_id,
-          servico_id,
-          observacao,
-        };
-        const st = String(svc?.['Tipo'] ?? '').toLowerCase();
-        preparados.push({
-          servico_id,
-          profissional_id,
-          st,
-          base,
-          tamanho: String(it.tamanho ?? 'Curto').trim(),
-        });
-      }
-      const slotPairs = this.slotsSequenciaisParaPayloadServico(
-        dataYmd,
-        horaIni,
-        preparados,
-      );
-      const out: CreateAtendimentoPayload[] = [];
-      for (let i = 0; i < preparados.length; i++) {
-        const pr = preparados[i];
-        const sp = slotPairs[i];
+        const pr = servicosPrep[servicoIdx];
+        const sp = slotPairs[servicoIdx];
+        servicoIdx += 1;
+        if (!pr) continue;
         const slotPatch =
           sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
         if (pr.st === 'fixo') {
@@ -1619,171 +1446,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             ...slotPatch,
           });
         }
+        primeiroMerge = false;
+        continue;
       }
-      return out;
-    }
-    if (tipo === 'Misto') {
-      const linhas = this.linhasMistoArray.getRawValue() as {
-        itemTipo: 'Serviço' | 'Produto';
-        servico_id: string;
-        tamanho: string;
-        profissional: number | null;
-        produto: string;
-        quantidade: number;
-      }[];
-      const horaIni = String(raw['hora_inicial'] ?? '');
-      type Prep = {
-        servico_id: string;
-        profissional_id: number;
-        st: string;
-        base: {
-          tipo: 'Serviço';
-          cliente_id: string;
-          data: string;
-          profissional_id: number;
-          servico_id: string;
-          observacao?: string;
-        };
-        tamanho?: string;
-      };
-      const servicosPrep: Prep[] = [];
-      for (const r of linhas) {
-        if (r.itemTipo !== 'Serviço') continue;
-        const servico_id = String(r.servico_id ?? '').trim();
-        if (!servico_id) continue;
-        const profissional_id = Number(r.profissional);
-        if (!(profissional_id > 0)) continue;
-        const svc = this.servicoPorId(servico_id);
-        const base = {
-          tipo: 'Serviço' as const,
-          cliente_id,
-          data: dataYmd,
-          profissional_id,
-          servico_id,
-          observacao,
-        };
-        const st = String(svc?.['Tipo'] ?? '').toLowerCase();
-        servicosPrep.push({
-          servico_id,
-          profissional_id,
-          st,
-          base,
-          tamanho: String(r.tamanho ?? 'Curto').trim(),
-        });
-      }
-      const slotPairs = this.slotsSequenciaisParaPayloadServico(
-        dataYmd,
-        horaIni,
-        servicosPrep,
-      );
-      const out: CreateAtendimentoPayload[] = [];
-      let servicoIdx = 0;
-      let primeiroPayload = true;
-      for (const r of linhas) {
-        if (r.itemTipo === 'Serviço') {
-          const servico_id = String(r.servico_id ?? '').trim();
-          if (!servico_id) continue;
-          const profissional_id = Number(r.profissional);
-          if (!(profissional_id > 0)) continue;
-          const pr = servicosPrep[servicoIdx];
-          const sp = slotPairs[servicoIdx];
-          servicoIdx += 1;
-          if (!pr) continue;
-          const slotPatch =
-            sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
-          if (pr.st === 'fixo') {
-            out.push({ ...pr.base, ...slotPatch });
-          } else {
-            out.push({
-              ...pr.base,
-              tamanho: pr.tamanho ?? 'Curto',
-              ...slotPatch,
-            });
-          }
-          primeiroPayload = false;
-        } else {
-          const nome = String(r.produto ?? '').trim();
-          if (!nome) continue;
-          const q = Number(r.quantidade);
-          if (Number.isNaN(q) || q <= 0) continue;
-          out.push(
-            this.mergeSlot(
-              {
-                tipo: 'Produto',
-                cliente_id,
-                data: dataYmd,
-                produto: nome,
-                quantidade: q,
-                observacao,
-              },
-              primeiroPayload,
-            ),
-          );
-          primeiroPayload = false;
-        }
-      }
-      return out;
-    }
-    if (tipo === 'Mega') {
-      const pacote = String(raw['pacote'] ?? '').trim();
-      const etapas = this.etapasArray.getRawValue() as {
-        etapa: string;
-        profissional: number | null;
-      }[];
-      return [
-        this.mergeSlot(
-          {
-            tipo: 'Mega',
-            cliente_id,
-            data: dataYmd,
-            pacote,
-            etapas: etapas.map((x) => ({
-              etapa: x.etapa.trim(),
-              profissional_id: Number(x.profissional),
-            })),
-            observacao,
-          },
-          true,
-        ),
-      ];
-    }
-    if (tipo === 'Pacote') {
-      const pacote = String(raw['pacote'] ?? '').trim();
-      const etapas = this.etapasArray.getRawValue() as {
-        etapa: string;
-        profissional: number | null;
-      }[];
-      const cob = raw['profissional'];
-      const cobId =
-        cob != null && cob !== '' && Number(cob) > 0 ? Number(cob) : undefined;
-      return [
-        this.mergeSlot(
-          {
-            tipo: 'Pacote',
-            cliente_id,
-            data: dataYmd,
-            ...(cobId != null ? { profissional_id: cobId } : {}),
-            pacote,
-            etapas: etapas.map((x) => ({
-              etapa: x.etapa.trim(),
-              profissional_id: Number(x.profissional),
-            })),
-            observacao,
-          },
-          true,
-        ),
-      ];
-    }
-    if (tipo === 'Produto') {
-      const itens = this.produtosItensArray.getRawValue() as {
-        produto: string;
-        quantidade: number;
-      }[];
-      const out: CreateAtendimentoPayload[] = [];
-      for (const it of itens) {
-        const nome = String(it.produto ?? '').trim();
+
+      if (tipo === 'Produto') {
+        const nome = String(g.get('produto')?.value ?? '').trim();
         if (!nome) continue;
-        const q = Number(it.quantidade);
+        const q = Number(g.get('quantidade')?.value);
         if (Number.isNaN(q) || q <= 0) continue;
         out.push(
           this.mergeSlot(
@@ -1795,32 +1465,90 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               quantidade: q,
               observacao,
             },
-            out.length === 0,
+            primeiroMerge,
           ),
         );
+        primeiroMerge = false;
+        continue;
       }
-      return out;
+
+      if (tipo === 'Mega') {
+        const pacote = String(g.get('pacote')?.value ?? '').trim();
+        if (!pacote) continue;
+        const etapas = (
+          g.get('etapas') as FormArray<FormGroup>
+        ).getRawValue() as { etapa: string; profissional: number | null }[];
+        out.push(
+          this.mergeSlot(
+            {
+              tipo: 'Mega',
+              cliente_id,
+              data: dataYmd,
+              pacote,
+              etapas: etapas.map((x) => ({
+                etapa: String(x.etapa ?? '').trim(),
+                profissional_id: Number(x.profissional),
+              })),
+              observacao,
+            },
+            primeiroMerge,
+          ),
+        );
+        primeiroMerge = false;
+        continue;
+      }
+
+      if (tipo === 'Pacote') {
+        const pacote = String(g.get('pacote')?.value ?? '').trim();
+        if (!pacote) continue;
+        const etapas = (
+          g.get('etapas') as FormArray<FormGroup>
+        ).getRawValue() as { etapa: string; profissional: number | null }[];
+        out.push(
+          this.mergeSlot(
+            {
+              tipo: 'Pacote',
+              cliente_id,
+              data: dataYmd,
+              pacote,
+              etapas: etapas.map((x) => ({
+                etapa: String(x.etapa ?? '').trim(),
+                profissional_id: Number(x.profissional),
+              })),
+              observacao,
+            },
+            primeiroMerge,
+          ),
+        );
+        primeiroMerge = false;
+        continue;
+      }
+
+      if (tipo === 'Cabelo') {
+        const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+        if (v == null) continue;
+        const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
+        const pid = Number(g.get('profissional_cabelo')?.value);
+        if (!(pid > 0)) continue;
+        out.push(
+          this.mergeSlot(
+            {
+              tipo: 'Cabelo',
+              cliente_id,
+              data: dataYmd,
+              profissional_id: pid,
+              valor: v,
+              observacao,
+              detalhes_cabelo: det || undefined,
+            },
+            primeiroMerge,
+          ),
+        );
+        primeiroMerge = false;
+      }
     }
-    if (tipo === 'Cabelo') {
-      const v = this.parseValorPt(String(raw['valor_cabelo'] ?? ''));
-      if (v == null) return [];
-      const det = String(raw['detalhes_cabelo'] ?? '').trim();
-      return [
-        this.mergeSlot(
-          {
-            tipo: 'Cabelo',
-            cliente_id,
-            data: dataYmd,
-            profissional_id: Number(raw['profissional']),
-            valor: v,
-            observacao,
-            detalhes_cabelo: det || undefined,
-          },
-          true,
-        ),
-      ];
-    }
-    return [];
+
+    return out;
   }
 
   private parseValorPt(s: string): number | null {

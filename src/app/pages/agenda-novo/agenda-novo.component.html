@@ -63,122 +63,33 @@
         Itens do atendimento
       </h2>
 
-      <label>
-        <span>Tipo</span>
-        <select formControlName="tipo">
-          @for (t of tiposAtendimento; track t) {
-            <option [value]="t">{{ t }}</option>
-          }
-        </select>
-      </label>
       <p class="hint tipo-hint">
-        Cada tipo preenche colunas diferentes em <strong>Atendimentos</strong>.
-        <strong>Misto</strong> permite várias linhas de serviço (catálogo) e produto no mesmo pedido (mesmo ID).
-        Mega e Pacote geram várias linhas com o mesmo ID.
+        Use <strong>+ Linha</strong> para cada registo do pedido. Em cada linha escolha o
+        <strong>tipo</strong> (Serviço de catálogo, Mega, Pacote, Cabelo ou Produto) e preencha os campos.
+        Serviços na mesma ordem usam o <strong>horário inicial</strong> em sequência. Mega e Pacote geram várias linhas na base com o mesmo ID.
       </p>
 
-    @if (tipoAtual === 'Serviço') {
-      <label>
-        <span>Horário inicial</span>
-        <input type="time" formControlName="hora_inicial" />
-        <span class="hint"
-          >Relógio do salão (Brasil); o valor é gravado tal como aparece, sem UTC.</span>
-      </label>
-      <p class="hint horario-final-hint">
-        Horário final (calculado):
-        <strong>{{ horarioFinalExibicao() }}</strong>
-        — soma das durações (minutos) de cada serviço na base de dados.
-      </p>
-      <div class="servicos-block" formArrayName="servicosItens">
+      <div class="servicos-block" formArrayName="linhasItens">
         <div class="servicos-header">
-          <span>Serviços (aba Serviços — Fixo ou Tamanho)</span>
-          <button type="button" class="btn small" (click)="adicionarServico()">+ Serviço</button>
-        </div>
-        @for (ctrl of servicosItensArray.controls; track $index; let i = $index) {
-          <div class="servico-row" [formGroupName]="i">
-            <label class="servico-row__field">
-              <span>Serviço</span>
-              <select formControlName="servico_id" required>
-                <option value="">Selecione…</option>
-                @for (s of servicosTipoServico; track s.id) {
-                  <option [value]="s.id">{{ rotuloServico(s) }}</option>
-                }
-              </select>
-            </label>
-            @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
-              <label class="servico-row__field servico-row__field--tamanho">
-                <span>Tamanho (preço)</span>
-                <select formControlName="tamanho">
-                  @for (t of tamanhos; track t) {
-                    <option [value]="t">{{ t }}</option>
-                  }
-                </select>
-              </label>
-            }
-            <label class="servico-row__field">
-              <span>Profissional</span>
-              <select formControlName="profissional" required>
-                <option [ngValue]="null">Selecione…</option>
-                @for (p of profissionais; track p.id) {
-                  <option [ngValue]="p.id">{{ p.nome }}</option>
-                }
-              </select>
-            </label>
-            <div class="servico-row__actions">
-              @if (servicosItensArray.length > 1) {
-                <button type="button" class="btn small danger" (click)="removerServico(i)">
-                  Remover
-                </button>
-              }
-            </div>
-          </div>
-        }
-      </div>
-      @if (profissionais.length === 0) {
-        <p class="alert" role="alert">
-          Não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha e publique o <code>Code.gs</code> atualizado, se aplicável.
-        </p>
-      }
-      @if (servicosTipoServico.length === 0) {
-        <p class="alert" role="alert">
-          Não há linhas com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
-        </p>
-      }
-    }
-
-    @if (tipoAtual === 'Misto') {
-      @if (mistoTemLinhaServico()) {
-        <label>
-          <span>Horário inicial</span>
-          <input type="time" formControlName="hora_inicial" />
-          <span class="hint"
-            >Relógio do salão (Brasil); aplica-se às linhas de <strong>Serviço</strong> (horários em sequência).</span>
-        </label>
-        <p class="hint horario-final-hint">
-          Horário final (calculado, só serviços):
-          <strong>{{ horarioFinalExibicao() }}</strong>
-          — soma das durações (minutos) de cada serviço na base de dados.
-        </p>
-      }
-      <div class="servicos-block" formArrayName="linhasMisto">
-        <div class="servicos-header">
-          <span>Linhas (serviço de catálogo ou produto)</span>
-          <button type="button" class="btn small" (click)="adicionarLinhaMisto()">
+          <span>Linhas do pedido</span>
+          <button type="button" class="btn small" (click)="adicionarLinhaItens()">
             + Linha
           </button>
         </div>
-        @for (ctrl of linhasMistoArray.controls; track $index; let i = $index) {
+        @for (ctrl of linhasItensArray.controls; track $index; let i = $index) {
           <div class="servico-row servico-row--misto" [formGroupName]="i">
             <label class="servico-row__field servico-row__field--tipo-linha">
               <span>Tipo de linha</span>
               <select
                 formControlName="itemTipo"
-                (change)="onItemTipoMistoChange()"
+                (change)="onItemTipoLinhaChange(i)"
               >
-                <option value="Serviço">Serviço (catálogo)</option>
-                <option value="Produto">Produto</option>
+                @for (tl of tiposLinhaAtendimento; track tl) {
+                  <option [value]="tl">{{ tl }}</option>
+                }
               </select>
             </label>
+
             @if (ctrl.get('itemTipo')?.value === 'Serviço') {
               <label class="servico-row__field">
                 <span>Serviço</span>
@@ -208,7 +119,9 @@
                   }
                 </select>
               </label>
-            } @else {
+            }
+
+            @if (ctrl.get('itemTipo')?.value === 'Produto') {
               <label class="servico-row__field">
                 <span>Produto</span>
                 <select formControlName="produto" required>
@@ -233,281 +146,286 @@
                 />
               </label>
             }
-            <div class="servico-row__actions">
-              @if (linhasMistoArray.length > 1) {
-                <button
-                  type="button"
-                  class="btn small danger"
-                  (click)="removerLinhaMisto(i)"
+
+            @if (ctrl.get('itemTipo')?.value === 'Mega') {
+              <label class="servico-row__field">
+                <span>Pacote (Regras Mega)</span>
+                <select
+                  formControlName="pacote"
+                  required
+                  (change)="aplicarValidadoresLinhas()"
                 >
-                  Remover
-                </button>
+                  <option value="">Selecione…</option>
+                  @for (p of pacotesMegaUnicos; track p) {
+                    <option [value]="p">{{ rotuloPacoteMegaOpcao(p) }}</option>
+                  }
+                </select>
+              </label>
+              @if (pacotesMegaUnicos.length === 0) {
+                <p class="hint">Cadastre linhas em <strong>Regras Mega</strong> (Pacote + Etapa).</p>
               }
-            </div>
-          </div>
-        }
-      </div>
-      <p class="hint">
-        A ordem das linhas define a ordem dos registos e, nos <strong>serviços</strong>, os horários em sequência a partir do horário inicial.
-      </p>
-      @if (profissionais.length === 0 && mistoTemLinhaServico()) {
-        <p class="alert" role="alert">
-          Há linha de serviço, mas não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha.
-        </p>
-      }
-      @if (mistoTemLinhaServico() && servicosTipoServico.length === 0) {
-        <p class="alert" role="alert">
-          Não há linhas com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
-        </p>
-      }
-      @if (mistoTemLinhaProduto() && produtos.length === 0) {
-        <p class="hint">Cadastre produtos na aba <strong>Produtos</strong>.</p>
-      }
-    }
-
-    @if (tipoAtual === 'Mega' || tipoAtual === 'Pacote') {
-      <label>
-        <span>{{ tipoAtual === 'Mega' ? 'Pacote (Regras Mega)' : 'Pacote (aba Pacotes)' }}</span>
-        <select formControlName="pacote" required>
-          <option value="">Selecione…</option>
-          @if (tipoAtual === 'Mega') {
-            @for (p of pacotesMegaUnicos; track p) {
-              <option [value]="p">{{ rotuloPacoteMegaOpcao(p) }}</option>
-            }
-          } @else {
-            @for (item of pacotesOrdenados; track item.pacote) {
-              <option [value]="item.pacote">{{ rotuloPacoteCatalogo(item) }}</option>
-            }
-          }
-        </select>
-      </label>
-      @if (tipoAtual === 'Mega' && pacotesMegaUnicos.length === 0) {
-        <p class="hint">Cadastre linhas em <strong>Regras Mega</strong> (Pacote + Etapa).</p>
-      }
-      @if (tipoAtual === 'Pacote' && pacotes.length === 0) {
-        <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
-      }
-      @if (tipoAtual === 'Pacote') {
-        <p class="hint">
-          O pacote (ex.: 1 mecha, 2 mechas) define o <strong>valor cobrado</strong> na primeira linha.
-          Essa linha <strong>não precisa de profissional</strong>. A comissão é por <strong>etapa</strong>
-          — preencha o profissional em cada etapa abaixo.
-        </p>
-      }
-      @if (tipoAtual === 'Mega') {
-        <p class="hint">
-          No <strong>Mega</strong> cada linha gravada é uma <strong>etapa</strong> com valor próprio;
-          escolha o profissional em cada etapa (comissão por etapa).
-        </p>
-      }
-    }
-
-    @if (tipoAtual === 'Produto') {
-      <div class="servicos-block" formArrayName="produtosItens">
-        <div class="servicos-header">
-          <span>Produtos (aba Produtos)</span>
-          <button type="button" class="btn small" (click)="adicionarProduto()">
-            + Produto
-          </button>
-        </div>
-        @for (ctrl of produtosItensArray.controls; track $index; let i = $index) {
-          <div class="servico-row" [formGroupName]="i">
-            <label class="servico-row__field">
-              <span>Produto</span>
-              <select formControlName="produto" required>
-                <option value="">Selecione…</option>
-                @for (pr of produtos; track pr.produto) {
-                  <option [value]="pr.produto">
-                    {{ pr.produto }}
-                    @if (pr.unidade) {
-                      ({{ pr.unidade }})
+              <p class="hint">
+                No <strong>Mega</strong> cada linha gravada é uma <strong>etapa</strong> com valor próprio;
+                escolha o profissional em cada etapa (comissão por etapa).
+              </p>
+              <div class="etapas-block etapas-block--nested" formArrayName="etapas">
+                <div class="etapas-header">
+                  <span>Etapas</span>
+                  <button type="button" class="btn small" (click)="adicionarEtapaNaLinha(i)">
+                    + Etapa
+                  </button>
+                </div>
+                @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
+                  <div class="etapa-row" [formGroupName]="j">
+                    <label>
+                      <span>Etapa</span>
+                      <select formControlName="etapa" required>
+                        <option value="">Selecione…</option>
+                        @for (e of etapasSelectOptionsLinha(i); track e) {
+                          <option [value]="e">{{ e }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label>
+                      <span>Profissional</span>
+                      <select formControlName="profissional" required>
+                        <option [ngValue]="null">Selecione…</option>
+                        @for (p of profissionais; track p.id) {
+                          <option [ngValue]="p.id">{{ p.nome }}</option>
+                        }
+                      </select>
+                    </label>
+                    @if (etapasArrayDaLinha(i).length > 1) {
+                      <button
+                        type="button"
+                        class="btn small danger"
+                        (click)="removerEtapaNaLinha(i, j)"
+                      >
+                        Remover
+                      </button>
                     }
-                  </option>
+                  </div>
                 }
-              </select>
-            </label>
-            <label class="servico-row__field servico-row__field--tamanho">
-              <span>Quantidade</span>
-              <input
-                type="number"
-                formControlName="quantidade"
-                min="0.01"
-                step="any"
-              />
-            </label>
+              </div>
+            }
+
+            @if (ctrl.get('itemTipo')?.value === 'Pacote') {
+              <label class="servico-row__field">
+                <span>Pacote (aba Pacotes)</span>
+                <select
+                  formControlName="pacote"
+                  required
+                  (change)="aplicarValidadoresLinhas()"
+                >
+                  <option value="">Selecione…</option>
+                  @for (item of pacotesOrdenados; track item.pacote) {
+                    <option [value]="item.pacote">{{ rotuloPacoteCatalogo(item) }}</option>
+                  }
+                </select>
+              </label>
+              @if (pacotes.length === 0) {
+                <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
+              }
+              <p class="hint">
+                O pacote define o <strong>valor cobrado</strong> na primeira linha.
+                A comissão é por <strong>etapa</strong> — preencha o profissional em cada etapa abaixo.
+              </p>
+              <div class="etapas-block etapas-block--nested" formArrayName="etapas">
+                <div class="etapas-header">
+                  <span>Etapas</span>
+                  <button type="button" class="btn small" (click)="adicionarEtapaNaLinha(i)">
+                    + Etapa
+                  </button>
+                </div>
+                @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
+                  <div class="etapa-row" [formGroupName]="j">
+                    <label>
+                      <span>Etapa</span>
+                      <select formControlName="etapa" required>
+                        <option value="">Selecione…</option>
+                        @for (e of etapasSelectOptionsLinha(i); track e) {
+                          <option [value]="e">{{ e }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label>
+                      <span>Profissional</span>
+                      <select formControlName="profissional" required>
+                        <option [ngValue]="null">Selecione…</option>
+                        @for (p of profissionais; track p.id) {
+                          <option [ngValue]="p.id">{{ p.nome }}</option>
+                        }
+                      </select>
+                    </label>
+                    @if (etapasArrayDaLinha(i).length > 1) {
+                      <button
+                        type="button"
+                        class="btn small danger"
+                        (click)="removerEtapaNaLinha(i, j)"
+                      >
+                        Remover
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @if (ctrl.get('itemTipo')?.value === 'Cabelo') {
+              @if (cabelos.length > 0) {
+                <div class="cabelo-calc cabelo-calc--nested">
+                  <span class="cabelo-calc__titulo">Calculadora — aba Cabelos</span>
+                  <p class="hint cabelo-calc__hint">
+                    Cor × Tamanho (cm) × Método; peso em gramas. Fórmula:
+                    <strong>valor da tabela × (gramas ÷ 100)</strong>.
+                  </p>
+                  <div class="cabelo-calc__grid">
+                    <label class="cabelo-calc__field">
+                      <span>Cor</span>
+                      <select
+                        formControlName="calc_cor"
+                        (change)="onCalcCabeloCorChangeLinha(i)"
+                      >
+                        <option value="">Selecione…</option>
+                        @for (x of cabelosCoresLista(); track x) {
+                          <option [value]="x">{{ x }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label class="cabelo-calc__field">
+                      <span>Tamanho (cm)</span>
+                      <select
+                        formControlName="calc_tam_cm"
+                        (change)="onCalcCabeloTamanhoChangeLinha(i)"
+                      >
+                        <option value="">Selecione…</option>
+                        @for (x of cabelosTamanhosListaLinha(i); track x) {
+                          <option [value]="x">{{ x }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label class="cabelo-calc__field">
+                      <span>Método</span>
+                      <select
+                        formControlName="calc_metodo"
+                        (change)="onCalcCabeloMetodoChangeLinha(i)"
+                      >
+                        <option value="">Selecione…</option>
+                        @for (x of cabelosMetodosListaLinha(i); track x) {
+                          <option [value]="x">{{ x }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label class="cabelo-calc__field cabelo-calc__field--gramas">
+                      <span>Peso medido (g)</span>
+                      <input
+                        type="text"
+                        formControlName="calc_gramas"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        placeholder="ex.: 350"
+                        (input)="onCalcCabeloGramasInputLinha(i, $event)"
+                      />
+                    </label>
+                  </div>
+                  @if (valorCalculadoraCabeloPreviewLinha(i); as prev) {
+                    <p class="cabelo-calc__preview">Valor base (tabela): <strong>{{ prev }}</strong></p>
+                  }
+                  @if (valorCalculadoraCabeloTotalPreviewLinha(i); as tot) {
+                    <p class="cabelo-calc__preview cabelo-calc__preview--total">
+                      Total: <strong>{{ tot }}</strong>
+                    </p>
+                  }
+                  <button
+                    type="button"
+                    class="btn small"
+                    (click)="aplicarValorCalculadoraCabeloLinha(i)"
+                  >
+                    Aplicar valor calculado
+                  </button>
+                </div>
+              } @else {
+                <p class="hint">
+                  Não há linhas na aba <strong>Cabelos</strong> — use apenas o valor manual abaixo.
+                </p>
+              }
+              <label class="servico-row__field">
+                <span>Valor (manual ou calculadora)</span>
+                <input
+                  type="text"
+                  formControlName="valor_cabelo"
+                  inputmode="decimal"
+                  placeholder="ex.: 150 ou 150,50"
+                />
+                @if (
+                  ctrl.get('valor_cabelo')?.errors?.['valorCabeloInvalido'] &&
+                  ctrl.get('valor_cabelo')?.touched
+                ) {
+                  <span class="field-error">Informe um valor numérico maior que zero.</span>
+                }
+              </label>
+              <label class="servico-row__field">
+                <span>Detalhes</span>
+                <textarea
+                  formControlName="detalhes_cabelo"
+                  rows="2"
+                  placeholder="Cor, método, gramas…"
+                ></textarea>
+              </label>
+              <label class="servico-row__field">
+                <span>Profissional</span>
+                <select formControlName="profissional_cabelo" required>
+                  <option [ngValue]="null">Selecione…</option>
+                  @for (p of profissionais; track p.id) {
+                    <option [ngValue]="p.id">{{ p.nome }}</option>
+                  }
+                </select>
+              </label>
+            }
+
             <div class="servico-row__actions">
-              @if (produtosItensArray.length > 1) {
+              @if (linhasItensArray.length > 1) {
                 <button
                   type="button"
                   class="btn small danger"
-                  (click)="removerProduto(i)"
+                  (click)="removerLinhaItens(i)"
                 >
-                  Remover
+                  Remover linha
                 </button>
               }
             </div>
           </div>
         }
       </div>
-      @if (produtos.length === 0) {
-        <p class="hint">Cadastre produtos na aba <strong>Produtos</strong>.</p>
-      }
-    }
 
-    @if (tipoAtual === 'Cabelo') {
-      @if (cabelos.length > 0) {
-        <div class="cabelo-calc">
-          <span class="cabelo-calc__titulo">Calculadora — aba Cabelos</span>
-          <p class="hint cabelo-calc__hint">
-            Escolha a combinação da planilha (Cor × Tamanho em cm × Método), indique o
-            <strong>peso em gramas</strong> medido na balança e aplique o total. Fórmula:
-            <strong>valor da tabela × (gramas ÷ 100)</strong>, com 2 casas decimais (R$).
-            Pode corrigir o valor final à mão se precisar.
-          </p>
-          <div class="cabelo-calc__grid">
-            <label class="cabelo-calc__field">
-              <span>Cor</span>
-              <select
-                [value]="calcCabeloCor"
-                (change)="onCalcCabeloCorChange($event)"
-              >
-                <option value="">Selecione…</option>
-                @for (x of cabelosCoresLista(); track x) {
-                  <option [value]="x">{{ x }}</option>
-                }
-              </select>
-            </label>
-            <label class="cabelo-calc__field">
-              <span>Tamanho (cm)</span>
-              <select
-                [value]="calcCabeloTamanhoCm"
-                (change)="onCalcCabeloTamanhoChange($event)"
-              >
-                <option value="">Selecione…</option>
-                @for (x of cabelosTamanhosLista(); track x) {
-                  <option [value]="x">{{ x }}</option>
-                }
-              </select>
-            </label>
-            <label class="cabelo-calc__field">
-              <span>Método</span>
-              <select
-                [value]="calcCabeloMetodo"
-                (change)="onCalcCabeloMetodoChange($event)"
-              >
-                <option value="">Selecione…</option>
-                @for (x of cabelosMetodosLista(); track x) {
-                  <option [value]="x">{{ x }}</option>
-                }
-              </select>
-            </label>
-            <label class="cabelo-calc__field cabelo-calc__field--gramas">
-              <span>Peso medido (g)</span>
-              <input
-                type="text"
-                inputmode="decimal"
-                autocomplete="off"
-                placeholder="ex.: 350"
-                [value]="calcCabeloGramas"
-                (input)="onCalcCabeloGramasInput($event)"
-              />
-            </label>
-          </div>
-          @if (valorCalculadoraCabeloPreview(); as prev) {
-            <p class="cabelo-calc__preview">Valor base (tabela): <strong>{{ prev }}</strong></p>
-          }
-          @if (valorCalculadoraCabeloTotalPreview(); as tot) {
-            <p class="cabelo-calc__preview cabelo-calc__preview--total">
-              Total do atendimento: <strong>{{ tot }}</strong>
-            </p>
-          }
-          <button
-            type="button"
-            class="btn small"
-            (click)="aplicarValorCalculadoraCabelo()"
-          >
-            Aplicar valor calculado
-          </button>
-        </div>
-      } @else {
-        <p class="hint">
-          Não há linhas na aba <strong>Cabelos</strong> — use apenas o valor manual abaixo.
+      <p class="hint">
+        A <strong>ordem das linhas</strong> define a ordem dos pedidos à API e, para <strong>Serviço</strong>, os horários em sequência.
+      </p>
+
+      @if (temLinhaServicoCatalogo()) {
+        <label>
+          <span>Horário inicial</span>
+          <input type="time" formControlName="hora_inicial" />
+          <span class="hint"
+            >Relógio do salão (Brasil); aplica-se às linhas de <strong>Serviço</strong> (catálogo), na ordem acima.</span>
+        </label>
+        <p class="hint horario-final-hint">
+          Horário final (calculado, só serviços de catálogo):
+          <strong>{{ horarioFinalExibicao() }}</strong>
+          — soma das durações (minutos) na base de dados.
         </p>
       }
-      <label>
-        <span>Valor (manual ou pela calculadora)</span>
-        <input type="text" formControlName="valor_cabelo" inputmode="decimal" placeholder="ex.: 150 ou 150,50" />
-        @if (
-          form.controls.valor_cabelo.errors?.['valorCabeloInvalido'] &&
-          form.controls.valor_cabelo.touched
-        ) {
-          <span class="field-error">Informe um valor numérico maior que zero.</span>
-        }
-      </label>
-      <label>
-        <span>Detalhes (cor, método, gramas…)</span>
-        <textarea formControlName="detalhes_cabelo" rows="3" placeholder="Texto livre para o recibo / histórico"></textarea>
-      </label>
-    }
 
-    @if (tipoAtual === 'Cabelo') {
-      <label>
-        <span>Profissional</span>
-        <select formControlName="profissional" required>
-          <option [ngValue]="null">Selecione…</option>
-          @for (p of profissionais; track p.id) {
-            <option [ngValue]="p.id">{{ p.nome }}</option>
-          }
-        </select>
-      </label>
-      @if (profissionais.length === 0) {
+      @if (profissionais.length === 0 && profissionaisObrigatoriosSemLista) {
         <p class="alert" role="alert">
-          Não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha e publique o <code>Code.gs</code> atualizado, se aplicável.
+          Não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha.
         </p>
       }
-    }
-
-    @if (tipoAtual === 'Mega' || tipoAtual === 'Pacote') {
-      <div class="etapas-block" formArrayName="etapas">
-        <div class="etapas-header">
-          <span>Etapas realizadas</span>
-          <button type="button" class="btn small" (click)="adicionarEtapa()">+ Etapa</button>
-        </div>
-        @for (_ of etapasArray.controls; track $index; let i = $index) {
-          <div class="etapa-row" [formGroupName]="i">
-            <label>
-              <span>Etapa</span>
-              <select formControlName="etapa" required>
-                <option value="">Selecione…</option>
-                @for (e of etapasSelectOptions(); track e) {
-                  <option [value]="e">{{ e }}</option>
-                }
-              </select>
-            </label>
-            <label>
-              <span>Profissional</span>
-              <select formControlName="profissional" required>
-                <option [ngValue]="null">Selecione…</option>
-                @for (p of profissionais; track p.id) {
-                  <option [ngValue]="p.id">{{ p.nome }}</option>
-                }
-              </select>
-            </label>
-            @if (etapasArray.length > 1) {
-              <button type="button" class="btn small danger" (click)="removerEtapa(i)">
-                Remover
-              </button>
-            }
-          </div>
-        }
-      </div>
-      @if (profissionais.length === 0) {
+      @if (temLinhaServicoCatalogo() && servicosTipoServico.length === 0) {
         <p class="alert" role="alert">
-          Para escolher profissional em cada etapa, a lista de <strong>Profissionais</strong> precisa estar preenchida (API ou planilha).
+          Há linha de serviço de catálogo, mas não há itens com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
         </p>
       }
-    }
-
     </section>
 
     <label>
@@ -525,13 +443,7 @@
         form.invalid ||
         clientes.length === 0 ||
         profissionaisObrigatoriosSemLista ||
-        (tipoAtual === 'Serviço' && servicosTipoServico.length === 0) ||
-        (tipoAtual === 'Misto' &&
-          mistoTemLinhaServico() &&
-          servicosTipoServico.length === 0) ||
-        (tipoAtual === 'Misto' && mistoTemLinhaProduto() && produtos.length === 0) ||
-        (tipoAtual === 'Pacote' && pacotes.length === 0) ||
-        (tipoAtual === 'Produto' && produtos.length === 0)
+        salvarBloqueadoPorCatalogo()
       "
     >
       {{ salvando ? 'Salvando…' : 'Salvar atendimento' }}

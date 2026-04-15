@@ -158,14 +158,16 @@ export interface CaixaDiaResumo {
   receitas_por_metodo: { metodo: string; total: string }[];
 }
 
+/** Tipo gravado na API / coluna Tipo da listagem. */
 export type TipoAtendimento =
   | 'Serviço'
-  /** Vários itens no mesmo pedido: linhas alternam Serviço (catálogo) e Produto. */
-  | 'Misto'
   | 'Mega'
   | 'Pacote'
   | 'Cabelo'
   | 'Produto';
+
+/** Tipo por linha no formulário “Novo atendimento” (+ Linha). */
+export type TipoLinhaAtendimento = TipoAtendimento;
 
 export interface AtendimentoEtapaPayload {
   etapa: string;
