@@ -75,6 +75,12 @@ export type CreateAtendimentoPayload =
       produto: string;
       quantidade: number;
       observacao?: string;
+      /** Vários produtos no mesmo pedido; cada entrada gera linha em `atendimentos` + item na pivot. */
+      itens_produtos?: {
+        produto_id: number;
+        quantidade: number;
+        profissional_id?: number | null;
+      }[];
     }
   | {
       tipo: 'Cabelo';
@@ -403,6 +409,88 @@ async function findProdutoIdPorNome(db: Db, nome: string): Promise<number> {
   return id;
 }
 
+async function readProdutoRowPorId(
+  db: Db,
+  produtoId: number,
+): Promise<typeof produtos.$inferSelect> {
+  const [r] = await db
+    .select()
+    .from(produtos)
+    .where(eq(produtos.id, produtoId))
+    .limit(1);
+  if (!r) throw new Error(`produto_id inválido: ${produtoId}`);
+  return r;
+}
+
+/** Evita violar índice único (`servico_id` + `tamanho` por pedido) ao fundir linhas iguais. */
+function mergeItensServicoNorm(
+  itens: {
+    servicoLine: number;
+    quantidade: number;
+    profissional_id?: unknown;
+    tamanho?: string;
+  }[],
+): typeof itens {
+  const map = new Map<
+    string,
+    {
+      servicoLine: number;
+      quantidade: number;
+      profissional_id?: unknown;
+      tamanho?: string;
+    }
+  >();
+  for (const it of itens) {
+    const tam = String(it.tamanho || '').trim();
+    const key = `${it.servicoLine}\t${tam}`;
+    const cur = map.get(key);
+    if (!cur) {
+      map.set(key, {
+        servicoLine: it.servicoLine,
+        quantidade: it.quantidade,
+        profissional_id: it.profissional_id,
+        tamanho: tam || undefined,
+      });
+    } else {
+      cur.quantidade += it.quantidade;
+      if (
+        (cur.profissional_id === undefined || cur.profissional_id === null) &&
+        it.profissional_id != null &&
+        it.profissional_id !== ''
+      ) {
+        cur.profissional_id = it.profissional_id;
+      }
+    }
+  }
+  return [...map.values()];
+}
+
+function mergeItensProdutoNorm(
+  itens: {
+    produtoId: number;
+    quantidade: number;
+    profissional_id?: unknown;
+  }[],
+): typeof itens {
+  const map = new Map<number, (typeof itens)[0]>();
+  for (const it of itens) {
+    const cur = map.get(it.produtoId);
+    if (!cur) {
+      map.set(it.produtoId, { ...it });
+    } else {
+      cur.quantidade += it.quantidade;
+      if (
+        (cur.profissional_id === undefined || cur.profissional_id === null) &&
+        it.profissional_id != null &&
+        it.profissional_id !== ''
+      ) {
+        cur.profissional_id = it.profissional_id;
+      }
+    }
+  }
+  return [...map.values()];
+}
+
 /**
  * Resolve `profissionais.id`; aceita legado `folha.id` se `folha.profissional_id` estiver preenchido.
  */
@@ -631,6 +719,9 @@ async function createAtendimentoServico(
         tamanho: it.tamanho != null ? String(it.tamanho) : undefined,
       });
     }
+    const merged = mergeItensServicoNorm(itensNorm);
+    itensNorm.length = 0;
+    itensNorm.push(...merged);
   } else {
     const linhaServico = parseInt(String(p.servico_id || ''), 10);
     if (!linhaServico) {
@@ -932,71 +1023,130 @@ async function createAtendimentoProduto(
 }> {
   const clienteId = String(p.cliente_id || '').trim();
   const dataStr = String(p.data || '').trim();
-  const nomeProd = String(p.produto || '').trim();
-  const profissionalId = await resolveProfissionalIdToInt(
+  const rec = p as Record<string, unknown>;
+  const nomeCliente = await findClienteNome(db, clienteId);
+  const idAt = makeIdAtendimento(dataStr, clienteId);
+  const slot = parseInicioFimOpcional(rec['inicio'], rec['fim']);
+  const baseObs = String(p.observacao || '').trim();
+
+  type ProdItem = {
+    produtoId: number;
+    quantidade: number;
+    profissional_id?: unknown;
+  };
+  const rawProd = rec['itens_produtos'];
+  const fromArray = Array.isArray(rawProd) && rawProd.length > 0;
+  const itensNorm: ProdItem[] = [];
+
+  if (fromArray) {
+    for (const it of rawProd as { produto_id?: unknown; quantidade?: unknown; profissional_id?: unknown }[]) {
+      const pid = parseInt(String(it.produto_id ?? ''), 10);
+      const q = Number(it.quantidade);
+      if (!pid || Number.isNaN(q) || q <= 0) {
+        throw new Error(
+          'Cada item em itens_produtos exige produto_id e quantidade > 0',
+        );
+      }
+      itensNorm.push({
+        produtoId: pid,
+        quantidade: Math.trunc(q),
+        profissional_id: it.profissional_id,
+      });
+    }
+    const merged = mergeItensProdutoNorm(itensNorm);
+    itensNorm.length = 0;
+    itensNorm.push(...merged);
+  } else {
+    const nomeProd = String(p.produto || '').trim();
+    if (!clienteId || !dataStr || !nomeProd) {
+      throw new Error('cliente_id, data e produto são obrigatórios para Produto');
+    }
+    const q = Number(p.quantidade);
+    if (Number.isNaN(q) || q <= 0) {
+      throw new Error('quantidade deve ser um número maior que zero');
+    }
+    const produtoId = await findProdutoIdPorNome(db, nomeProd);
+    itensNorm.push({
+      produtoId,
+      quantidade: q,
+      profissional_id: rec['profissional_id'],
+    });
+  }
+
+  if (!clienteId || !dataStr) {
+    throw new Error('cliente_id e data são obrigatórios para Produto');
+  }
+
+  const bodyProf = await resolveProfissionalIdToInt(
     db,
     {
       profissional_id: p.profissional_id,
-      profissional: (p as Record<string, unknown>)['profissional'],
+      profissional: rec['profissional'],
     },
     false,
   );
-  if (!clienteId || !dataStr || !nomeProd) {
-    throw new Error('cliente_id, data e produto são obrigatórios para Produto');
-  }
-  const q = Number(p.quantidade);
-  if (Number.isNaN(q) || q <= 0) {
-    throw new Error('quantidade deve ser um número maior que zero');
-  }
-  const precoUnit = await findProdutoPreco(db, nomeProd);
-  if (precoUnit === null) {
-    throw new Error(`Produto não encontrado na aba Produtos: "${nomeProd}"`);
-  }
-  const unitNum = toNumberPt(precoUnit);
-  if (unitNum === null) {
-    throw new Error(`Preço inválido para produto: "${nomeProd}"`);
-  }
-  const valorTotal = unitNum * q;
-  const nomeCliente = await findClienteNome(db, clienteId);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
+
   await ensurePedidoHeader(db, idAt, clienteId);
-  const baseObs = String(p.observacao || '').trim();
-  const obsParts: string[] = [];
-  if (baseObs) obsParts.push(baseObs);
-  obsParts.push(`Qtd: ${String(q).replace('.', ',')}`);
-  const obs = obsParts.join(' — ');
-  const slot = parseInicioFimOpcional(
-    (p as Record<string, unknown>)['inicio'],
-    (p as Record<string, unknown>)['fim'],
-  );
-  await appendAtendimentoLinha(db, {
-    idAt,
-    dataStr,
-    clienteId,
-    nomeCliente,
-    tipo: 'Produto',
-    pacote: '',
-    etapa: '',
-    produto: nomeProd,
-    servicos: '',
-    tamanho: '',
-    profissionalId,
-    valor: String(valorTotal),
-    comissao: '',
-    descricao: obs,
-    inicio: slot.inicio,
-    fim: slot.fim,
-  });
-  const produtoId = await findProdutoIdPorNome(db, nomeProd);
-  await insertPivotProduto(db, {
-    idAtendimento: idAt,
-    produtoId,
-    quantidade: q,
-    profissionalId,
-  });
+
+  let linhas = 0;
+  let primeira = true;
+  for (const it of itensNorm) {
+    const rowP = await readProdutoRowPorId(db, it.produtoId);
+    const nomeProd = String(rowP.produto || '').trim();
+    const precoUnit = rowP.preco != null && rowP.preco !== '' ? String(rowP.preco) : null;
+    if (precoUnit === null) {
+      throw new Error(`Preço inválido para produto: "${nomeProd}"`);
+    }
+    const unitNum = toNumberPt(precoUnit);
+    if (unitNum === null) {
+      throw new Error(`Preço inválido para produto: "${nomeProd}"`);
+    }
+    const qtd = it.quantidade;
+    const valorTotal = unitNum * qtd;
+
+    const itemProf = await resolveProfissionalIdToInt(
+      db,
+      { profissional_id: it.profissional_id, profissional: undefined },
+      false,
+    );
+    const profissionalId = itemProf ?? bodyProf;
+
+    const obsParts: string[] = [];
+    if (baseObs) obsParts.push(baseObs);
+    obsParts.push(`Qtd: ${String(qtd).replace('.', ',')}`);
+    const obs = obsParts.join(' — ');
+
+    await appendAtendimentoLinha(db, {
+      idAt,
+      dataStr,
+      clienteId,
+      nomeCliente,
+      tipo: 'Produto',
+      pacote: '',
+      etapa: '',
+      produto: nomeProd,
+      servicos: '',
+      tamanho: '',
+      profissionalId,
+      valor: String(valorTotal),
+      comissao: '',
+      descricao: obs,
+      inicio: primeira ? slot.inicio : null,
+      fim: primeira ? slot.fim : null,
+    });
+    await insertPivotProduto(db, {
+      idAtendimento: idAt,
+      produtoId: it.produtoId,
+      quantidade: qtd,
+      profissionalId,
+    });
+    linhas += 1;
+    primeira = false;
+  }
+
   return {
     id: idAt,
-    linhas: 1,
+    linhas,
     data: dataStr,
     cliente_id: clienteId,
     nomeCliente,
@@ -1166,6 +1316,8 @@ export async function listAtendimentosRaw(
     }
   }
 
+  const primeiroRegistoPorIdAt = new Set<string>();
+
   return filtered.map((a) => {
     const dataStr = ymdFromAtendimentoDate(a.data as string | Date | null);
     const pid =
@@ -1174,6 +1326,11 @@ export async function listAtendimentosRaw(
         : null;
     const profNome = pid != null ? nomePorProfId.get(pid) ?? '' : '';
     const idAtKey = String(a.idAtendimento || '').trim();
+    const catalogo =
+      idAtKey && !primeiroRegistoPorIdAt.has(idAtKey)
+        ? (primeiroRegistoPorIdAt.add(idAtKey),
+          itensPorPedido.get(idAtKey) ?? [])
+        : undefined;
     return {
       linha_id: a.id,
       'ID Atendimento': a.idAtendimento,
@@ -1204,7 +1361,12 @@ export async function listAtendimentosRaw(
       pagamento_metodo: a.pagamentoMetodo ?? null,
       pagamentoMetodo: a.pagamentoMetodo ?? null,
       id: a.idAtendimento,
-      itens_catalogo: itensPorPedido.get(idAtKey) ?? [],
+      ...(catalogo !== undefined
+        ? {
+            itens_catalogo: catalogo,
+            itens: catalogo,
+          }
+        : {}),
     };
   });
 }
@@ -1277,6 +1439,9 @@ export async function excluirAtendimentoPorIdAtendimento(
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
   return await db.transaction(async (tx) => {
+    await tx
+      .delete(atendimentoItens)
+      .where(eq(atendimentoItens.idAtendimento, id));
     const rows = await tx
       .delete(atendimentos)
       .where(eq(atendimentos.idAtendimento, id))

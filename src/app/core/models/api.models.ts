@@ -54,6 +54,8 @@ export interface AtendimentoListaItem {
   profissional_id?: number | null;
   /** Itens de catálogo na pivot `atendimento_itens` para este `id_atendimento`. */
   itens_catalogo?: AtendimentoItemCatalogo[];
+  /** Espelho de `itens_catalogo` na primeira linha do pedido (API pode enviar só uma das chaves). */
+  itens?: AtendimentoItemCatalogo[];
   /** Coluna Pacote. */
   pacote?: string | null;
   /** Coluna Etapa. */
@@ -214,9 +216,16 @@ export type CreateAtendimentoPayload = (
       cliente_id: string;
       data: string;
       profissional_id?: number | null;
-      produto: string;
-      quantidade: number;
+      /** Modo simples: um produto por nome. */
+      produto?: string;
+      quantidade?: number;
       observacao?: string;
+      /** Vários produtos no mesmo pedido (`produto_id` = `produtos.id`). */
+      itens_produtos?: {
+        produto_id: number;
+        quantidade: number;
+        profissional_id?: number | null;
+      }[];
     }
   | {
       tipo: 'Cabelo';

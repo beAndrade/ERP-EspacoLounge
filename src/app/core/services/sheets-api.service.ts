@@ -317,7 +317,7 @@ export class SheetsApiService {
       raw['profissional_id'] ?? raw['Profissional ID'],
     );
 
-    const itensRaw = raw['itens_catalogo'];
+    const itensRaw = raw['itens_catalogo'] ?? raw['itens'];
     let itens_catalogo: AtendimentoItemCatalogo[] | undefined;
     if (Array.isArray(itensRaw)) {
       itens_catalogo = itensRaw
