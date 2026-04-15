@@ -35,6 +35,26 @@ function pick(
   return '';
 }
 
+/** Falha cedo com mensagem clara se `npm run db:migrate` ainda não foi aplicado. */
+async function assertSchemaMigradoParaSeed(): Promise<void> {
+  const rows = await db.execute(sql.raw(`
+    SELECT
+      to_regclass('public.clientes') IS NOT NULL AS ok_clientes,
+      to_regclass('public.movimentacoes') IS NOT NULL AS ok_movimentacoes
+  `));
+  const row = rows[0] as
+    | { ok_clientes?: boolean; ok_movimentacoes?: boolean }
+    | undefined;
+  const okC = row?.ok_clientes === true;
+  const okM = row?.ok_movimentacoes === true;
+  if (!okC || !okM) {
+    throw new Error(
+      'Esquema da base inexistente ou incompleto (faltam tabelas como clientes ou movimentacoes). ' +
+        'Na pasta api, execute primeiro: npm run db:migrate',
+    );
+  }
+}
+
 async function truncateAll() {
   await db.execute(sql.raw(`
     TRUNCATE TABLE
@@ -65,6 +85,8 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
   const xlsxPath = defaultXlsxPath();
   console.log('XLSX:', xlsxPath);
   const wb = loadWorkbook(xlsxPath);
+
+  await assertSchemaMigradoParaSeed();
 
   if (shouldTruncate) await truncateAll();
 
