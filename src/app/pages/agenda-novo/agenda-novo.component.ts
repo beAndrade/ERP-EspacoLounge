@@ -23,7 +23,9 @@ import {
 } from '../../core/utils/sql-local-datetime';
 import {
   ActivatedRoute,
+  convertToParamMap,
   ParamMap,
+  Params,
   Router,
   RouterLink,
 } from '@angular/router';
@@ -38,10 +40,9 @@ import {
 } from '@angular/forms';
 import {
   catchError,
-  distinctUntilChanged,
   forkJoin,
   of,
-  startWith,
+  skip,
   Subject,
   Subscription,
   switchMap,
@@ -258,9 +259,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           this.carregandoListas = false;
         } else {
           /**
+           * Pré-preenchimento **só após** listas carregarem, lendo a URL real
+           * (`parseUrl`) — `snapshot`/`queryParamMap` podiam estar vazios ou fora de sincronia.
+           */
+          this.processarQueryParamsRotaAgendaNovo(this.paramMapDaBarraDeEndereco());
+          /**
            * O Angular reutiliza o componente ao mudar só os query params; `ngOnInit`
-           * não volta a correr. Subscrever `queryParamMap` garante edição ao abrir
-           * `/agenda/novo?atendimento=…` (ou ao navegar para esse URL).
+           * não volta a correr. `skip(1)` evita duplicar o processamento inicial acima.
            */
           this.inscreverRotasAgendaNovo();
         }
@@ -291,112 +296,140 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Assinatura estável dos query params (evita duplicar efeitos com `startWith(snapshot)`).
+   * Query string ao abrir `/agenda/novo?…`.
+   * Prioriza `location.search` (barra do browser); em alguns casos `Router.url` /
+   * `snapshot` ficavam sem query após carregar listas, e o pré-preenchimento falhava.
    */
-  private assinaturaQueryParamMap(qm: ParamMap): string {
-    const keys = [...qm.keys].sort();
-    return keys.map((k) => `${k}=${qm.get(k) ?? ''}`).join('&');
+  private paramMapDaBarraDeEndereco(): ParamMap {
+    const accum: Record<string, string> = {};
+
+    const add = (key: string, val: string | null | undefined) => {
+      const v = String(val ?? '').trim();
+      if (!v) return;
+      if (!(key in accum)) accum[key] = v;
+    };
+
+    if (
+      typeof location !== 'undefined' &&
+      typeof location.search === 'string' &&
+      location.search.length > 1
+    ) {
+      new URLSearchParams(location.search).forEach((value, key) =>
+        add(key, value),
+      );
+    }
+
+    try {
+      const qp = this.router.parseUrl(this.router.url).queryParams as Params;
+      for (const key of Object.keys(qp)) {
+        const v = qp[key];
+        if (Array.isArray(v)) add(key, v[0] != null ? String(v[0]) : '');
+        else add(key, v as string);
+      }
+    } catch {
+      /* noop */
+    }
+
+    const snap = this.route.snapshot.queryParamMap;
+    for (const key of snap.keys) {
+      add(key, snap.get(key));
+    }
+
+    return convertToParamMap(accum as Params);
   }
 
   /**
-   * Carrega edição quando existe `?atendimento=`; caso contrário pré-preenche novo
-   * a partir dos restantes query params (e contexto do pai no modal).
-   *
-   * `forkJoin` demora a terminar; a primeira emissão de `queryParamMap` pode ocorrer
-   * **antes** da subscrição existir. Por isso `startWith(snapshot)` + `distinctUntilChanged`.
+   * `?atendimento=` → carrega edição; caso contrário pré-preenche novo a partir dos params.
+   */
+  private processarQueryParamsRotaAgendaNovo(qm: ParamMap): void {
+    const atEdit = qm.get('atendimento')?.trim();
+    if (atEdit) {
+      this.carregandoListas = true;
+      this.erro = '';
+      this.idAtendimentoEmEdicao = atEdit;
+      this.api
+        .listAgendamentos(undefined, undefined, atEdit)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (items) => {
+            if (items.length > 0) {
+              this.aplicarEdicaoNoForm(items);
+            } else {
+              this.idAtendimentoEmEdicao = null;
+              this.erro =
+                'Atendimento não encontrado ou sem linhas para este ID.';
+            }
+            this.carregandoListas = false;
+          },
+          error: () => {
+            this.erro =
+              'Não foi possível carregar o atendimento para edição.';
+            this.idAtendimentoEmEdicao = null;
+            this.carregandoListas = false;
+          },
+        });
+      return;
+    }
+
+    this.idAtendimentoEmEdicao = null;
+    const cid = qm.get('cliente_id')?.trim();
+    const dat = qm.get('data')?.trim();
+    const pidStr = qm.get('profissional_id')?.trim();
+    const hora = qm.get('hora')?.trim();
+    if (cid) this.form.patchValue({ cliente_id: cid });
+    if (dat && /^\d{4}-\d{2}-\d{2}$/.test(dat)) {
+      this.form.patchValue({ data: dat });
+    }
+    const datOk = dat && /^\d{4}-\d{2}-\d{2}$/.test(dat) ? dat : '';
+    const hn = normalizarHoraHHmm(hora ?? '');
+    if (datOk && pidStr && /^\d+$/.test(pidStr)) {
+      const pid = parseInt(pidStr, 10);
+      if (pid > 0) {
+        this.prefillEmCurso = true;
+        this.form.patchValue({ data: datOk }, { emitEvent: false });
+        this.garantirMinUmaLinha();
+        this.aplicarValidadoresLinhas();
+        const g0 = this.linhasItensArray.at(0);
+        if (g0) {
+          g0.patchValue(
+            {
+              itemTipo: 'Serviço',
+              profissional: pid,
+            },
+            { emitEvent: false },
+          );
+        }
+        if (hn) {
+          this.form.patchValue({ hora_inicial: hn }, { emitEvent: false });
+        }
+        this.prefillEmCurso = false;
+      }
+    } else if (datOk && hn) {
+      this.prefillEmCurso = true;
+      this.form.patchValue(
+        { data: datOk, hora_inicial: hn },
+        { emitEvent: false },
+      );
+      this.prefillEmCurso = false;
+    }
+    if (cid || dat || pidStr || hora) {
+      void this.router.navigate(['/agenda/novo'], {
+        replaceUrl: true,
+        queryParams: {},
+      });
+    }
+    this.aplicarContextoSlotInput();
+    this.carregandoListas = false;
+  }
+
+  /**
+   * Reage a alterações de query params com o componente já vivo (ex.: mesma rota, novos params).
+   * O primeiro valor é ignorado — o carregamento inicial usa `processarQueryParamsRotaAgendaNovo` no `forkJoin`.
    */
   private inscreverRotasAgendaNovo(): void {
     this.route.queryParamMap
-      .pipe(
-        startWith(this.route.snapshot.queryParamMap),
-        distinctUntilChanged((a, b) => this.assinaturaQueryParamMap(a) === this.assinaturaQueryParamMap(b)),
-        takeUntil(this.destroy$),
-      )
-      .subscribe((qm) => {
-        const atEdit = qm.get('atendimento')?.trim();
-        if (atEdit) {
-          this.carregandoListas = true;
-          this.erro = '';
-          this.idAtendimentoEmEdicao = atEdit;
-          this.api
-            .listAgendamentos(undefined, undefined, atEdit)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-              next: (items) => {
-                if (items.length > 0) {
-                  this.aplicarEdicaoNoForm(items);
-                } else {
-                  this.idAtendimentoEmEdicao = null;
-                  this.erro =
-                    'Atendimento não encontrado ou sem linhas para este ID.';
-                }
-                this.carregandoListas = false;
-              },
-              error: () => {
-                this.erro =
-                  'Não foi possível carregar o atendimento para edição.';
-                this.idAtendimentoEmEdicao = null;
-                this.carregandoListas = false;
-              },
-            });
-          return;
-        }
-
-        this.idAtendimentoEmEdicao = null;
-        const cid = qm.get('cliente_id')?.trim();
-        const dat = qm.get('data')?.trim();
-        const pidStr = qm.get('profissional_id')?.trim();
-        const hora = qm.get('hora')?.trim();
-        if (cid) this.form.patchValue({ cliente_id: cid });
-        if (dat && /^\d{4}-\d{2}-\d{2}$/.test(dat)) {
-          this.form.patchValue({ data: dat });
-        }
-        const datOk =
-          dat && /^\d{4}-\d{2}-\d{2}$/.test(dat) ? dat : '';
-        const hn = normalizarHoraHHmm(hora ?? '');
-        if (datOk && pidStr && /^\d+$/.test(pidStr)) {
-          const pid = parseInt(pidStr, 10);
-          if (pid > 0) {
-            this.prefillEmCurso = true;
-            this.form.patchValue({ data: datOk }, { emitEvent: false });
-            this.garantirMinUmaLinha();
-            this.aplicarValidadoresLinhas();
-            const g0 = this.linhasItensArray.at(0);
-            if (g0) {
-              g0.patchValue(
-                {
-                  itemTipo: 'Serviço',
-                  profissional: pid,
-                },
-                { emitEvent: false },
-              );
-            }
-            if (hn) {
-              this.form.patchValue(
-                { hora_inicial: hn },
-                { emitEvent: false },
-              );
-            }
-            this.prefillEmCurso = false;
-          }
-        } else if (datOk && hn) {
-          /** `+ Serviços` na receção: pode vir só `hora` + `data` sem profissional_id. */
-          this.prefillEmCurso = true;
-          this.form.patchValue(
-            { data: datOk, hora_inicial: hn },
-            { emitEvent: false },
-          );
-          this.prefillEmCurso = false;
-        }
-        if (cid || dat || pidStr || hora) {
-          void this.router.navigate(['/agenda/novo'], {
-            replaceUrl: true,
-            queryParams: {},
-          });
-        }
-        this.aplicarContextoSlotInput();
-        this.carregandoListas = false;
-      });
+      .pipe(skip(1), takeUntil(this.destroy$))
+      .subscribe((qm) => this.processarQueryParamsRotaAgendaNovo(qm));
   }
 
   get linhasItensArray(): FormArray<FormGroup> {
