@@ -109,23 +109,44 @@ export const folha = pgTable(
     profissionalId: integer('profissional_id').references(() => profissionais.id),
     profissional: text('profissional'),
     mes: text('mes'),
+    /** Competência canónica `YYYY-MM` para alinhar com agregações de `atendimentos.data`. */
+    periodoReferencia: text('periodo_referencia'),
     totalComissao: text('total_comissao'),
     totalPago: text('total_pago'),
     saldo: text('saldo'),
     status: text('status'),
   },
-  (t) => [index('folha_profissional_id_idx').on(t.profissionalId)],
+  (t) => [
+    index('folha_profissional_id_idx').on(t.profissionalId),
+    index('folha_profissional_periodo_idx').on(
+      t.profissionalId,
+      t.periodoReferencia,
+    ),
+  ],
 );
 
-export const pagamentos = pgTable('pagamentos', {
-  id: serial('id').primaryKey(),
-  data: text('data'),
-  profissional: text('profissional'),
-  tipo: text('tipo'),
-  valor: text('valor'),
-  mesRef: text('mes_ref'),
-  observacao: text('observacao'),
-});
+export const pagamentos = pgTable(
+  'pagamentos',
+  {
+    id: serial('id').primaryKey(),
+    data: text('data'),
+    profissional: text('profissional'),
+    /** Beneficiária do pagamento (substitui gradualmente o nome em texto). */
+    profissionalId: integer('profissional_id').references(() => profissionais.id, {
+      onDelete: 'set null',
+    }),
+    /** Linha de folha (mês) que este pagamento ajuda a quitar, quando aplicável. */
+    folhaId: integer('folha_id').references(() => folha.id, { onDelete: 'set null' }),
+    tipo: text('tipo'),
+    valor: text('valor'),
+    mesRef: text('mes_ref'),
+    observacao: text('observacao'),
+  },
+  (t) => [
+    index('pagamentos_profissional_id_idx').on(t.profissionalId),
+    index('pagamentos_folha_id_idx').on(t.folhaId),
+  ],
+);
 
 export const despesas = pgTable('despesas', {
   id: serial('id').primaryKey(),

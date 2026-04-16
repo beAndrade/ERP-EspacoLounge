@@ -169,4 +169,40 @@ BEGIN
   END IF;
 END $$;
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'folha' AND c.column_name = 'periodo_referencia'
+  ) THEN
+    ALTER TABLE "folha" ADD COLUMN "periodo_referencia" text;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'pagamentos' AND c.column_name = 'profissional_id'
+  ) THEN
+    ALTER TABLE "pagamentos" ADD COLUMN "profissional_id" integer;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'pagamentos' AND c.column_name = 'folha_id'
+  ) THEN
+    ALTER TABLE "pagamentos" ADD COLUMN "folha_id" integer;
+  END IF;
+END $$;
+`));
 }

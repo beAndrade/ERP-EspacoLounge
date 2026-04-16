@@ -14,6 +14,7 @@ import {
   servicos,
 } from '../db/schema';
 import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
+import { mesTextoParaYyyyMm } from '../lib/periodo-mes';
 import {
   defaultXlsxPath,
   loadWorkbook,
@@ -245,9 +246,11 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
   const shFolha = resolveSheet(wb, ['Folha']);
   if (shFolha) {
     for (const row of rowObjectsFirstWins(sheetToMatrix(shFolha))) {
+      const mesTxt = pick(row, ['Mês', 'Mes']) || null;
       await db.insert(folha).values({
         profissional: pick(row, ['Profissional']) || null,
-        mes: pick(row, ['Mês', 'Mes']) || null,
+        mes: mesTxt,
+        periodoReferencia: mesTextoParaYyyyMm(mesTxt),
         totalComissao: pick(row, ['Total Comissão', 'Total Comissao']) || null,
         totalPago: pick(row, ['Total Pago']) || null,
         saldo: pick(row, ['Saldo']) || null,
@@ -296,6 +299,14 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
         observacao: pick(row, ['Observação', 'Observacao']) || null,
       });
     }
+    await db.execute(sql.raw(`
+      UPDATE "pagamentos" AS p
+      SET "profissional_id" = pr."id"
+      FROM "profissionais" AS pr
+      WHERE p."profissional_id" IS NULL
+        AND trim(coalesce(p."profissional", '')) <> ''
+        AND lower(trim(pr."nome")) = lower(trim(p."profissional"))
+    `));
   }
 
   const shDesp = resolveSheet(wb, ['Despesas']);
