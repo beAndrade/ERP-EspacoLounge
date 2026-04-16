@@ -1086,15 +1086,20 @@ async function createAtendimentoMega(
       );
       iniLine = slot.inicio;
       fimLine = slot.fim;
-      if (fimLine) cursorFim = fimLine;
-      else if (iniLine) {
+      /**
+       * O cliente costuma mandar `fim` = fim do slot da grelha (30 min), não a
+       * duração da etapa em `regras_mega`. Etapas seguintes já usam o catálogo;
+       * alinhar a 1.ª etapa ao mesmo critério.
+       */
+      const dm = duracaoCatalogoMin(regra.duracaoMinutos);
+      if (iniLine) {
         const pp = parseSqlLocalDateTime(iniLine);
         if (pp) {
-          fimLine = formatSqlLocalDateTime(
-            addMinutesToParts(pp, regra.duracaoMinutos),
-          );
+          fimLine = formatSqlLocalDateTime(addMinutesToParts(pp, dm));
           cursorFim = fimLine;
         }
+      } else if (fimLine) {
+        cursorFim = fimLine;
       }
     } else if (cursorFim) {
       const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
@@ -1234,12 +1239,11 @@ async function createAtendimentoPacote(
       );
       iniLine = slot.inicio;
       fimLine = slot.fim;
-      if (iniLine && !fimLine) {
+      const dm = duracaoCatalogoMin(regra.duracaoMinutos);
+      if (iniLine) {
         const pp = parseSqlLocalDateTime(iniLine);
         if (pp) {
-          fimLine = formatSqlLocalDateTime(
-            addMinutesToParts(pp, regra.duracaoMinutos),
-          );
+          fimLine = formatSqlLocalDateTime(addMinutesToParts(pp, dm));
         }
       }
       cursorFim = fimLine;
