@@ -27,8 +27,10 @@ import {
   servicos,
 } from '../db/schema';
 import {
+  formatMoedaReciboPt,
   inserirReceitaConfirmacaoPagamento,
   slugCategoriaReceitaPredominante,
+  toNumberPt,
   totalLiquidoConfirmacao,
 } from './finance-domain';
 
@@ -163,34 +165,6 @@ function parsePercentCell(cell: unknown): number {
   if (Number.isNaN(n)) return 0;
   if (n > 1 && n <= 100) return n / 100;
   return n;
-}
-
-/**
- * Número a partir de células BR (1.234,56) ou só com ponto decimal (358.00).
- * Não remover o ponto antes de saber o formato — "358.00" não pode virar "35800".
- */
-function toNumberPt(v: unknown): number | null {
-  if (v === '' || v == null) return null;
-  if (typeof v === 'number') {
-    return Number.isFinite(v) ? v : null;
-  }
-  let t = String(v)
-    .replace(/R\$/gi, '')
-    .replace(/\u00a0/g, ' ')
-    .replace(/\s/g, '')
-    .trim();
-  if (!t) return null;
-  if (t.includes(',')) {
-    t = t.replace(/\./g, '').replace(',', '.');
-  }
-  const n = parseFloat(t.replace(/[^\d.-]/g, ''));
-  return Number.isNaN(n) ? null : n;
-}
-
-/** Texto fixo para coluna Desconto e recibo (pt-BR). */
-function formatMoedaReciboPt(n: number): string {
-  const r = Math.round(n * 100) / 100;
-  return `R$ ${r.toFixed(2).replace('.', ',')}`;
 }
 
 function comissaoFromPercentAndValor(

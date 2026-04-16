@@ -12,7 +12,7 @@ export const ORIGEM_MANUAL = 'manual';
 export type NaturezaFinanceira =
   (typeof naturezaFinanceiraEnum.enumValues)[number];
 
-function toNumberPt(v: unknown): number | null {
+export function toNumberPt(v: unknown): number | null {
   if (v === '' || v == null) return null;
   if (typeof v === 'number') {
     return Number.isFinite(v) ? v : null;
@@ -28,6 +28,12 @@ function toNumberPt(v: unknown): number | null {
   }
   const n = parseFloat(t.replace(/[^\d.-]/g, ''));
   return Number.isNaN(n) ? null : n;
+}
+
+/** Texto pt-BR para colunas tipo planilha (ex.: folha, desconto). */
+export function formatMoedaReciboPt(n: number): string {
+  const r = Math.round(n * 100) / 100;
+  return `R$ ${r.toFixed(2).replace('.', ',')}`;
 }
 
 const SLUG_POR_TIPO: Record<string, string> = {

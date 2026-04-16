@@ -65,8 +65,19 @@ erDiagram
   }
 ```
 
-## Próximos passos sugeridos (fora deste PR)
+## Recálculo via API
 
-- Endpoint ou job `POST /api/folha/recalcular?mes=YYYY-MM` que soma `atendimentos` e atualiza `folha`.
+`POST /api/folha/recalcular-comissoes`
+
+Corpo JSON:
+
+- `periodo` (obrigatório): `YYYY-MM` (ex.: `2026-04`).
+- `profissional_id` (opcional): limita atendimentos e linhas de folha a essa profissional.
+
+Comportamento: soma `comissao` das linhas de `atendimentos` com `cobranca_status = finalizada`, `profissional_id` definido e `data` no mês; atualiza `folha.total_comissao` nas linhas cuja `periodo_referencia` coincide. Se `total_pago` for legível como valor, atualiza também `saldo` (comissão − pago).
+
+## Próximos passos sugeridos
+
+- Botão na UI de folha que chame este endpoint.
 - Tipo `numeric` para totais e valores de pagamento (migração gradual a partir de `text`).
 - Tabela de **auditoria** `folha_historico` se precisarem de rastrear alterações manuais na folha.

@@ -31,6 +31,7 @@ import {
   listRegrasMegaApi,
   listServicosForApi,
 } from './services/queries';
+import { recalcularTotaisComissaoFolhaPorPeriodo } from './services/folha-domain';
 
 function corsOrigins(): string[] | true {
   const raw = process.env.CORS_ORIGINS?.trim();
@@ -344,6 +345,36 @@ const app = new Elysia({ adapter: node() })
     }
   },
     { body: postAtendimentoMutationBody },
+  )
+  .post(
+    '/api/folha/recalcular-comissoes',
+    async ({ body }) => {
+      try {
+        const b = body as { periodo?: string; profissional_id?: number };
+        const periodo = String(b.periodo ?? '').trim();
+        const rawPid = b.profissional_id;
+        const profissionalId =
+          rawPid != null && Number.isFinite(Number(rawPid)) && Number(rawPid) > 0
+            ? Number(rawPid)
+            : undefined;
+        const r = await recalcularTotaisComissaoFolhaPorPeriodo(db, periodo, {
+          profissionalId,
+        });
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        periodo: t.String(),
+        profissional_id: t.Optional(t.Number()),
+      }),
+    },
   )
   .listen(
     {
