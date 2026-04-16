@@ -289,11 +289,26 @@ export class AgendaHubComponent implements OnInit {
     for (const l of b.linhas) {
       const mi = minutosMeiaNoiteEmBrasilia(l.inicio, dia);
       if (mi == null) continue;
+      const iniS = l.inicio ? String(l.inicio).trim() : '';
+      const fS = l.fim ? String(l.fim).trim() : '';
+      /**
+       * Preferir duração = fim − inicio (strings completas). Assim o cartão
+       * ocupa o intervalo real (ex.: 90 min) mesmo quando `fim` não passa no
+       * mesmo critério de “mesmo dia” que `minutosMeiaNoiteEmBrasilia(fim)`.
+       */
+      const diffM =
+        iniS && fS ? diffMinutesEntreHorarios(iniS, fS) : null;
+      let endLine: number;
+      if (diffM != null && Number.isFinite(diffM) && diffM > 0) {
+        endLine = mi + diffM;
+      } else {
+        const mf = minutosMeiaNoiteEmBrasilia(l.fim, dia);
+        const d = this.duracaoMinutosAgendamento(l);
+        endLine = mf != null && mf > mi ? mf : mi + d;
+      }
+      endLine = Math.min(endLine, GRID_END_MIN);
       startMin = Math.min(startMin, mi);
-      const mf = minutosMeiaNoiteEmBrasilia(l.fim, dia);
-      const d = this.duracaoMinutosAgendamento(l);
-      const end = mf != null && mf > mi ? mf : mi + d;
-      endMax = Math.max(endMax, end);
+      endMax = Math.max(endMax, endLine);
     }
     if (
       !Number.isFinite(startMin) ||
