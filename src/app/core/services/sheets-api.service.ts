@@ -402,7 +402,7 @@ export class SheetsApiService {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
       linha_id:
         linha_id != null && Number.isFinite(linha_id) ? linha_id : undefined,
-      data: this.formatDataCell(raw['Data']),
+      data: this.formatDataCell(raw['Data'] ?? raw['data']),
       inicio,
       fim,
       nomeCliente: String(raw['Nome Cliente'] ?? '').trim(),
@@ -470,6 +470,12 @@ export class SheetsApiService {
 
   private formatDataCell(v: unknown): string {
     if (v == null || v === '') return '';
+    if (v instanceof Date && !Number.isNaN(v.getTime())) {
+      const y = v.getFullYear();
+      const m = String(v.getMonth() + 1).padStart(2, '0');
+      const d = String(v.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
     if (typeof v === 'string') {
       const s = v.trim();
       if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);

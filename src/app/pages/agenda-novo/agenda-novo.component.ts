@@ -416,7 +416,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     rows: AtendimentoListaItem[],
     dataYmd: string,
   ): string {
-    const dia = dataYmd.trim().slice(0, 10);
+    let dia = dataYmd.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) {
+      dia = this.resolverDataYmdParaEdicao(rows, dataYmd).trim().slice(0, 10);
+    }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return '';
     let best: ReturnType<typeof parseSqlLocalDateTime> = null;
     let bestMs = Infinity;
@@ -913,15 +916,39 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return '';
   }
 
+  /**
+   * Data civil AAAA-MM-DD para alinhar `inicio` ao form. Se `data` vier vazia ou
+   * inválida no modelo, usa o prefixo ISO da string ou extrai de `inicio`.
+   */
+  private resolverDataYmdParaEdicao(
+    rows: AtendimentoListaItem[],
+    dataYmdPreferida: string,
+  ): string {
+    const t = dataYmdPreferida.trim().slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+    for (const r of rows) {
+      const raw = String(r.data ?? '').trim();
+      const m = /^(\d{4}-\d{2}-\d{2})/.exec(raw);
+      if (m) return m[1]!;
+    }
+    for (const r of rows) {
+      const p = parseSqlLocalDateTime(String(r.inicio ?? '').trim());
+      if (p) return ymdOfParts(p);
+    }
+    return '';
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
     ordenarLinhasAtendimentoInPlace(sorted);
     const l0 = sorted[0];
     const tipoApi = mapTipoFromApi(l0.tipo || '');
-    const dataYmd =
+    const dataYmd = this.resolverDataYmdParaEdicao(
+      sorted,
       this.dataYmdValidaDoPedido(sorted) ||
-      (l0.data || '').trim().slice(0, 10);
+        (l0.data || '').trim().slice(0, 10),
+    );
     const obsMegaPacote = stripQtdSuffixObservacao(l0.descricao || '');
 
     this.prefillEmCurso = true;
