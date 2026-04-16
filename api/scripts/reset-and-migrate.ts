@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import postgres from 'postgres';
 
 const url =
-  process.env.DATABASE_URL ??
+  process.env['DATABASE_URL'] ??
   'postgresql://postgres:postgres@localhost:5432/espaco_lounge';
 
 const apiRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
