@@ -16,8 +16,10 @@ import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { AtendimentoListaItem } from '../../core/models/api.models';
 import {
   dataDdMmBarraAaaa,
+  horaInicialMenorDasLinhasAtendimento,
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
+  profissionalIdPreferidoParaServicoExtra,
   toYmd,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
@@ -152,15 +154,24 @@ export class AtendimentosComponent implements OnInit, OnChanges {
     return id || null;
   }
 
-  /** Novo atendimento no mesmo dia e cliente, sem abrir o atual em edição. */
-  queryParamsNovoServicoMesmoCliente(g: GrupoClienteDia): {
-    cliente_id: string;
-    data: string;
-  } {
-    return {
+  /**
+   * Novo atendimento no mesmo dia e cliente (+ hora e profissional para
+   * `agenda-novo` aplicar `hora_inicial` e slot, como na edição).
+   */
+  queryParamsNovoServicoMesmoCliente(g: GrupoClienteDia): Record<
+    string,
+    string | number
+  > {
+    const data = (g.data || '').slice(0, 10);
+    const hora = horaInicialMenorDasLinhasAtendimento(g.linhas, data);
+    const pid = profissionalIdPreferidoParaServicoExtra(g.linhas);
+    const out: Record<string, string | number> = {
       cliente_id: this.idClienteParaNovoServico(g) ?? '',
-      data: (g.data || '').slice(0, 10),
+      data,
     };
+    if (hora) out['hora'] = hora;
+    if (pid != null) out['profissional_id'] = pid;
+    return out;
   }
 
   toggleGrupo(id: string): void {

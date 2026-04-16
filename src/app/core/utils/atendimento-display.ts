@@ -1,4 +1,13 @@
 import type { AtendimentoListaItem } from '../models/api.models';
+import {
+  minutosMeiaNoiteEmBrasilia,
+  normalizarHoraHHmm,
+} from './brasilia-time';
+import {
+  civilNaiveSalaoParaUtcMs,
+  parseSqlLocalDateTime,
+  ymdOfParts,
+} from './sql-local-datetime';
 
 /** Data API (AAAA-MM-DD) → dd-mm-aaaa para exibição */
 export function dataDdMmAaaa(ymd: string): string {
@@ -163,4 +172,81 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     return `${nomeServ} — ${tamServ}`;
   }
   return (l.descricao || '').trim() || '—';
+}
+
+function horaDeInicioParaDiaAtendimento(
+  inicio: string | null | undefined,
+  dataYmd: string,
+): string {
+  const dia = dataYmd.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return '';
+  const raw = String(inicio ?? '').trim();
+  if (!raw) return '';
+  const p = parseSqlLocalDateTime(raw);
+  if (p && ymdOfParts(p) === dia) {
+    return normalizarHoraHHmm(`${p.hh}:${p.mm}`) ?? '';
+  }
+  const m = minutosMeiaNoiteEmBrasilia(raw, dia);
+  if (m == null) return '';
+  const hh = Math.floor(m / 60) % 24;
+  const mm = Math.floor(m) % 60;
+  return normalizarHoraHHmm(`${hh}:${mm}`) ?? '';
+}
+
+/**
+ * Menor horário (HH:mm) entre linhas com `inicio` no dia — mesmo critério que edição em agenda-novo.
+ */
+export function horaInicialMenorDasLinhasAtendimento(
+  linhas: AtendimentoListaItem[],
+  dataYmd: string,
+): string {
+  const dia = dataYmd.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return '';
+  let best: ReturnType<typeof parseSqlLocalDateTime> = null;
+  let bestMs = Infinity;
+  for (const row of linhas) {
+    const p = parseSqlLocalDateTime(String(row.inicio ?? '').trim());
+    if (!p || ymdOfParts(p) !== dia) continue;
+    const ms = civilNaiveSalaoParaUtcMs(p);
+    if (Number.isFinite(ms) && ms < bestMs) {
+      bestMs = ms;
+      best = p;
+    }
+  }
+  if (best) {
+    return normalizarHoraHHmm(`${best.hh}:${best.mm}`) ?? '';
+  }
+  let bestMin = Infinity;
+  let bestH = '';
+  for (const row of linhas) {
+    const h = horaDeInicioParaDiaAtendimento(row.inicio, dia);
+    const n = normalizarHoraHHmm(h);
+    if (!n) continue;
+    const [hhS, mmS] = n.split(':');
+    const mins = parseInt(hhS, 10) * 60 + parseInt(mmS, 10);
+    if (!Number.isFinite(mins) || mins < 0) continue;
+    if (mins < bestMin) {
+      bestMin = mins;
+      bestH = n;
+    }
+  }
+  return bestH;
+}
+
+/** Prefer linha Serviço com `profissional_id`; senão primeira linha com profissional. */
+export function profissionalIdPreferidoParaServicoExtra(
+  linhas: AtendimentoListaItem[],
+): number | null {
+  for (const l of linhas) {
+    const t = (l.tipo || '').trim().toLowerCase();
+    const pid = l.profissional_id;
+    if (pid != null && pid > 0) {
+      if (t === 'serviço' || t === 'servico') return pid;
+    }
+  }
+  for (const l of linhas) {
+    const pid = l.profissional_id;
+    if (pid != null && pid > 0) return pid;
+  }
+  return null;
 }

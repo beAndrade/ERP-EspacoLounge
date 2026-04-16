@@ -329,6 +329,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       }
       const datOk =
         dat && /^\d{4}-\d{2}-\d{2}$/.test(dat) ? dat : '';
+      const hn = normalizarHoraHHmm(hora ?? '');
       if (datOk && pidStr && /^\d+$/.test(pidStr)) {
         const pid = parseInt(pidStr, 10);
         if (pid > 0) {
@@ -346,13 +347,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               { emitEvent: false },
             );
           }
-          const hn = normalizarHoraHHmm(hora ?? '');
-          this.form.patchValue(
-            { hora_inicial: hn ?? '' },
-            { emitEvent: false },
-          );
+          if (hn) {
+            this.form.patchValue(
+              { hora_inicial: hn },
+              { emitEvent: false },
+            );
+          }
           this.prefillEmCurso = false;
         }
+      } else if (datOk && hn) {
+        /** `+ Serviços` na receção: pode vir só `hora` + `data` sem profissional_id. */
+        this.prefillEmCurso = true;
+        this.form.patchValue(
+          { data: datOk, hora_inicial: hn },
+          { emitEvent: false },
+        );
+        this.prefillEmCurso = false;
       }
       if (cid || dat || pidStr || hora) {
         void this.router.navigate(['/agenda/novo'], {
