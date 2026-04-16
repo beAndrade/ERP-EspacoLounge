@@ -920,6 +920,51 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    * Data civil AAAA-MM-DD para alinhar `inicio` ao form. Se `data` vier vazia ou
    * inválida no modelo, usa o prefixo ISO da string ou extrai de `inicio`.
    */
+  /**
+   * Último recurso: preenche `hora_inicial` a partir do texto de `inicio` na API
+   * (evita campo vazio se algum passo anterior falhar).
+   */
+  private reforcarHoraInicialSeVazia(
+    rows: AtendimentoListaItem[],
+    dataYmd: string,
+  ): void {
+    const atual = normalizarHoraHHmm(
+      String(this.form.controls.hora_inicial.value ?? ''),
+    );
+    if (atual) return;
+    const diaOk =
+      this.resolverDataYmdParaEdicao(rows, dataYmd).trim().slice(0, 10) ||
+      '';
+    for (const r of rows) {
+      const raw = String(r.inicio ?? '').trim();
+      if (!raw) continue;
+      const p = parseSqlLocalDateTime(raw);
+      if (p) {
+        const h = normalizarHoraHHmm(`${p.hh}:${p.mm}`);
+        if (h) {
+          this.form.patchValue({ hora_inicial: h }, { emitEvent: false });
+          return;
+        }
+      }
+      const m = /(?:^|[\sT])(\d{1,2}):(\d{2})(?::\d{2})?/.exec(raw);
+      if (m) {
+        const h = normalizarHoraHHmm(`${m[1]}:${m[2]}`);
+        if (h) {
+          this.form.patchValue({ hora_inicial: h }, { emitEvent: false });
+          return;
+        }
+      }
+      if (diaOk && /^\d{4}-\d{2}-\d{2}$/.test(diaOk)) {
+        const h = this.horaInicialEdicaoDeInicio(raw, diaOk);
+        const hn = normalizarHoraHHmm(h);
+        if (hn) {
+          this.form.patchValue({ hora_inicial: hn }, { emitEvent: false });
+          return;
+        }
+      }
+    }
+  }
+
   private resolverDataYmdParaEdicao(
     rows: AtendimentoListaItem[],
     dataYmdPreferida: string,
@@ -1007,6 +1052,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         },
         { emitEvent: false },
       );
+      this.reforcarHoraInicialSeVazia(sorted, dataYmd);
       this.prefillEmCurso = false;
       this.aplicarValidadoresLinhas();
       return;
@@ -1147,6 +1193,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       );
     }
 
+    this.reforcarHoraInicialSeVazia(sorted, dataYmd);
     this.prefillEmCurso = false;
     this.garantirMinUmaLinha();
     this.aplicarValidadoresLinhas();
@@ -1375,6 +1422,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private aplicarContextoSlotInput(): void {
+    /** Não sobrescrever horário ao editar atendimento (ex.: `hora` vazia no modal). */
+    if (this.idAtendimentoEmEdicao?.trim()) return;
     const c = this.contextoSlot;
     if (!c?.data || !/^\d{4}-\d{2}-\d{2}$/.test(c.data.trim().slice(0, 10))) {
       return;

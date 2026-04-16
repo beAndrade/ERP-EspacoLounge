@@ -29,7 +29,11 @@ export type SqlLocalParts = {
 };
 
 export function parseSqlLocalDateTime(s: string): SqlLocalParts | null {
-  const m = SQL_LOCAL_RE.exec(String(s ?? '').trim());
+  let t = String(s ?? '').trim();
+  if (!t) return null;
+  /** Espaços/T múltiplos entre data e hora quebram o regex (ex.: `2026-04-16  13:00:00`). */
+  t = t.replace(/^(\d{4}-\d{2}-\d{2})[\sT]+/, '$1 ');
+  const m = SQL_LOCAL_RE.exec(t);
   if (!m) return null;
   const y = parseInt(m[1], 10);
   const mo = parseInt(m[2], 10);
