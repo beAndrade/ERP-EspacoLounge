@@ -909,21 +909,6 @@ async function createAtendimentoServico(
     });
   }
 
-  const firstIt = itensNorm[0];
-  const srvFirst = await readServicoRow(db, firstIt.servicoLine);
-  const catFirst = tipoServicoCatalogo(srvFirst);
-  let tamFirst = String(firstIt.tamanho || '').trim();
-  if (!legacy && catFirst === 'Tamanho' && !tamFirst) {
-    tamFirst = 'Curto';
-  }
-  const durSlot = duracaoMinutosServicoCatalogo(
-    srvFirst,
-    catFirst,
-    tamFirst || 'Curto',
-    legacy,
-  );
-  const slot = parseInicioFimOpcional(rec['inicio'], rec['fim'], durSlot);
-
   const bodyProf = await resolveProfissionalIdToInt(
     db,
     {
@@ -983,6 +968,31 @@ async function createAtendimentoServico(
       if (cNum != null) comissaoLinha = String(cNum * qtd);
     }
 
+    const durForLine = duracaoMinutosServicoCatalogo(
+      srv,
+      cat,
+      tamanhoParam || 'Curto',
+      legacy,
+    );
+    let inicioLinha: string | null = null;
+    let fimLinha: string | null = null;
+    if (primeira) {
+      const slot = parseInicioFimOpcional(
+        rec['inicio'],
+        rec['fim'],
+        durForLine,
+      );
+      inicioLinha = slot.inicio;
+      if (inicioLinha) {
+        const pIni = parseSqlLocalDateTime(inicioLinha);
+        fimLinha = pIni
+          ? formatSqlLocalDateTime(addMinutesToParts(pIni, durForLine))
+          : slot.fim;
+      } else {
+        fimLinha = slot.fim;
+      }
+    }
+
     await appendAtendimentoLinha(db, {
       idAt,
       dataStr,
@@ -998,8 +1008,8 @@ async function createAtendimentoServico(
       valor: valorLinha,
       comissao: comissaoLinha,
       descricao: obs,
-      inicio: primeira ? slot.inicio : null,
-      fim: primeira ? slot.fim : null,
+      inicio: inicioLinha,
+      fim: fimLinha,
     });
 
     await insertPivotServico(db, {
