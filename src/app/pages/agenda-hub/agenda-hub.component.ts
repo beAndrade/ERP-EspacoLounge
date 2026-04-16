@@ -348,30 +348,47 @@ export class AgendaHubComponent implements OnInit {
 
   /**
    * Uma entrada por linha de atendimento (sem duplicar texto igual).
-   * Pacote com cabeça + etapas: omite a linha só-cabeça (`Pacote • nome`) se já
-   * existirem linhas com o mesmo pacote e etapa preenchida (evita repetir o nome).
+   * Mega/Pacote com etapas: primeiro o título (`Mega •` / `Pacote •`), depois só os nomes das etapas.
    */
   itensResumoBloco(b: AgendaHubBloco): string[] {
     const linhas = b.linhas;
-    const temPacoteComEtapas = linhas.some((l) => {
+    const soMegaOuPacote = linhas.every((l) => {
+      const t = (l.tipo || '').trim().toLowerCase();
+      return t === 'mega' || t === 'pacote';
+    });
+    const comEtapaMegaPac = linhas.filter((l) => {
       const t = (l.tipo || '').trim().toLowerCase();
       return (
-        t === 'pacote' &&
-        (l.etapa || '').trim().length > 0 &&
-        (l.pacote || '').trim().length > 0
+        (t === 'pacote' || t === 'mega') && (l.etapa || '').trim().length > 0
       );
     });
+    if (soMegaOuPacote && comEtapaMegaPac.length > 0) {
+      const t0 = (comEtapaMegaPac[0].tipo || '').trim().toLowerCase();
+      let pacNome = (comEtapaMegaPac[0].pacote || '').trim();
+      if (!pacNome) {
+        pacNome = (
+          linhas.find((x) => (x.pacote || '').trim())?.pacote || ''
+        ).trim();
+      }
+      const out: string[] = [];
+      const seen = new Set<string>();
+      if (pacNome) {
+        const titulo =
+          t0 === 'mega' ? `Mega • ${pacNome}` : `Pacote • ${pacNome}`;
+        out.push(titulo);
+        seen.add(titulo);
+      }
+      for (const l of comEtapaMegaPac) {
+        const et = (l.etapa || '').trim();
+        if (!et || seen.has(et)) continue;
+        seen.add(et);
+        out.push(et);
+      }
+      if (out.length) return out;
+    }
     const out: string[] = [];
     const seen = new Set<string>();
     for (const l of linhas) {
-      const t = (l.tipo || '').trim().toLowerCase();
-      if (
-        temPacoteComEtapas &&
-        t === 'pacote' &&
-        !(l.etapa || '').trim()
-      ) {
-        continue;
-      }
       const txt = linhaResumoAtendimentoLista(l).trim();
       if (!txt || seen.has(txt)) continue;
       seen.add(txt);

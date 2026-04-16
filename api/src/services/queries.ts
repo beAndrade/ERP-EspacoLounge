@@ -90,6 +90,7 @@ export async function listRegrasMegaApi(db: Db) {
       etapa: String(r.etapa).trim(),
       valor: r.valor,
       comissao: r.comissao,
+      duracao_minutos: r.duracaoMinutos ?? 30,
     }));
 }
 
@@ -100,6 +101,7 @@ export async function listPacotesApi(db: Db) {
     .map((r) => ({
       pacote: String(r.pacote).trim(),
       preco: r.precoPacote,
+      duracao_minutos: r.duracaoMinutos ?? 30,
     }));
 }
 

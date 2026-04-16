@@ -115,4 +115,58 @@ BEGIN
   END IF;
 END $$;
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'regras_mega' AND c.column_name = 'duracao_minutos'
+  ) THEN
+    ALTER TABLE "regras_mega" ADD COLUMN "duracao_minutos" integer DEFAULT 30 NOT NULL;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'pacotes' AND c.column_name = 'duracao_minutos'
+  ) THEN
+    ALTER TABLE "pacotes" ADD COLUMN "duracao_minutos" integer DEFAULT 30 NOT NULL;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimento_itens' AND c.column_name = 'regra_mega_id'
+  ) THEN
+    ALTER TABLE "atendimento_itens" ADD COLUMN "regra_mega_id" integer;
+    ALTER TABLE "atendimento_itens"
+      ADD CONSTRAINT "atendimento_itens_regra_mega_id_fkey"
+      FOREIGN KEY ("regra_mega_id") REFERENCES "regras_mega"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimento_itens' AND c.column_name = 'pacote_id'
+  ) THEN
+    ALTER TABLE "atendimento_itens" ADD COLUMN "pacote_id" integer;
+    ALTER TABLE "atendimento_itens"
+      ADD CONSTRAINT "atendimento_itens_pacote_id_fkey"
+      FOREIGN KEY ("pacote_id") REFERENCES "pacotes"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+  END IF;
+END $$;
+`));
 }

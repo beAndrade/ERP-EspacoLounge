@@ -91,11 +91,15 @@ export interface RegraMegaItem {
   etapa: string;
   valor: unknown;
   comissao: unknown;
+  /** Duração da etapa na agenda (minutos). */
+  duracao_minutos?: number;
 }
 
 export interface PacoteCatalogoItem {
   pacote: string;
   preco: unknown;
+  /** Duração da linha de cobrança na agenda (minutos). */
+  duracao_minutos?: number;
 }
 
 /** Item da pivot `atendimento_itens` na resposta de listagem. */
@@ -112,6 +116,10 @@ export interface AtendimentoItemCatalogo {
   etapa?: string | null;
   /** `cabelo`: texto da linha. */
   detalhes?: string | null;
+  /** FK opcional a `regras_mega` (etapa Mega ou etapa de Pacote). */
+  regra_mega_id?: number | null;
+  /** FK opcional a `pacotes` (cabeça Pacote ou referência ao pacote comercial). */
+  pacote_id?: number | null;
 }
 
 export interface ProdutoCatalogoItem {

@@ -99,6 +99,13 @@
       "when": 1775697925000,
       "tag": "0013_servicos_duracao_minutos",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1775697926000,
+      "tag": "0014_mega_pacote_duracao_e_fk_pivot",
+      "breakpoints": true
     }
   ]
 }

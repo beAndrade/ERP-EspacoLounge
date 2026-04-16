@@ -361,11 +361,21 @@ export class SheetsApiService {
             o['detalhes'] != null && String(o['detalhes']).trim()
               ? String(o['detalhes']).trim()
               : null;
+          const regra_mega_id =
+            o['regra_mega_id'] != null && Number.isFinite(Number(o['regra_mega_id']))
+              ? Number(o['regra_mega_id'])
+              : null;
+          const pacote_id =
+            o['pacote_id'] != null && Number.isFinite(Number(o['pacote_id']))
+              ? Number(o['pacote_id'])
+              : null;
           return {
             ...base,
             pacote,
             etapa,
             detalhes,
+            regra_mega_id,
+            pacote_id,
           } as AtendimentoItemCatalogo;
         })
         .filter(Boolean) as AtendimentoItemCatalogo[];

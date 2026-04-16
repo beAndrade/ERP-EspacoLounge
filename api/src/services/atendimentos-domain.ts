@@ -316,11 +316,45 @@ async function readServicoRow(db: Db, lineNum: number): Promise<ServicoRow> {
   return r;
 }
 
+function duracaoCatalogoMin(d: number | null | undefined): number {
+  const n =
+    d == null || !Number.isFinite(Number(d)) ? 30 : Math.round(Number(d));
+  return Math.max(5, Math.min(24 * 60, n));
+}
+
+/** Etapa seguinte começa quando a anterior termina (`fimAnterior` = início desta etapa). */
+function slotEncadeadoAposFim(
+  fimAnterior: string,
+  durMin: number,
+): { inicio: string; fim: string } {
+  const p = parseSqlLocalDateTime(fimAnterior);
+  if (!p) {
+    throw new Error('Data/hora inválida ao encadear etapas Mega/Pacote');
+  }
+  const inicio = fimAnterior;
+  const dm = duracaoCatalogoMin(durMin);
+  const fim = formatSqlLocalDateTime(addMinutesToParts(p, dm));
+  return { inicio, fim };
+}
+
+async function findPacoteIdPorNome(
+  db: Db,
+  nome: string,
+): Promise<number | null> {
+  const rows = await db
+    .select({ id: pacotes.id })
+    .from(pacotes)
+    .where(eq(pacotes.pacote, nome.trim()))
+    .limit(1);
+  const id = rows[0]?.id;
+  return id != null && Number(id) > 0 ? Number(id) : null;
+}
+
 async function findRegraMega(
   db: Db,
   pacote: string,
   etapa: string,
-): Promise<{ valor: string; comissao: string }> {
+): Promise<{ id: number; valor: string; comissao: string; duracaoMinutos: number }> {
   const sp = pacote.trim();
   const se = etapa.trim();
   const rows = await db
@@ -336,18 +370,33 @@ async function findRegraMega(
     );
   }
   return {
+    id: r.id,
     valor: r.valor != null ? String(r.valor) : '',
     comissao: r.comissao != null ? String(r.comissao) : '',
+    duracaoMinutos: duracaoCatalogoMin(r.duracaoMinutos as number | null),
   };
 }
 
-async function findPrecoPacote(db: Db, nome: string): Promise<string | null> {
+async function findPacoteCatalogo(
+  db: Db,
+  nome: string,
+): Promise<{
+  id: number;
+  preco: string | null;
+  duracaoMinutos: number;
+} | null> {
   const rows = await db
     .select()
     .from(pacotes)
     .where(eq(pacotes.pacote, nome.trim()));
-  const p = rows[0]?.precoPacote;
-  return p != null && p !== '' ? String(p) : null;
+  const r = rows[0];
+  if (!r) return null;
+  const preco = r.precoPacote;
+  return {
+    id: r.id,
+    preco: preco != null && preco !== '' ? String(preco) : null,
+    duracaoMinutos: duracaoCatalogoMin(r.duracaoMinutos as number | null),
+  };
 }
 
 async function findProdutoPreco(db: Db, nome: string): Promise<string | null> {
@@ -439,6 +488,8 @@ async function insertPivotMega(
     pacote: string;
     etapa: string;
     profissionalId: number | null;
+    regraMegaId: number;
+    pacoteCatalogoId?: number | null;
   },
 ): Promise<void> {
   const pac = o.pacote.trim();
@@ -454,6 +505,8 @@ async function insertPivotMega(
     tamanho: null,
     pacote: pac,
     etapa: et,
+    regraMegaId: o.regraMegaId,
+    pacoteId: o.pacoteCatalogoId ?? null,
     detalhes: null,
   });
 }
@@ -466,6 +519,8 @@ async function insertPivotPacote(
     pacote: string;
     etapa: string;
     profissionalId: number | null;
+    pacoteCatalogoId: number;
+    regraMegaId?: number | null;
   },
 ): Promise<void> {
   const pac = o.pacote.trim();
@@ -481,6 +536,8 @@ async function insertPivotPacote(
     tamanho: null,
     pacote: pac,
     etapa: et.length > 0 ? et : null,
+    regraMegaId: o.regraMegaId ?? null,
+    pacoteId: o.pacoteCatalogoId,
     detalhes: null,
   });
 }
@@ -990,12 +1047,11 @@ async function createAtendimentoMega(
   const idAt = makeIdAtendimento(dataStr, clienteId);
   await ensurePedidoHeader(db, idAt, clienteId);
   const obs = String(p.observacao || '').trim();
-  const slot = parseInicioFimOpcional(
-    (p as Record<string, unknown>)['inicio'],
-    (p as Record<string, unknown>)['fim'],
-  );
-  let primeiraEtapa = true;
-  for (const st of etapas) {
+  const pacoteCatalogoId = await findPacoteIdPorNome(db, pacote);
+  const pRec = p as Record<string, unknown>;
+  let cursorFim: string | null = null;
+  for (let idx = 0; idx < etapas.length; idx++) {
+    const st = etapas[idx];
     const etapaNome = String(st.etapa || '').trim();
     const stRec = st as Record<string, unknown>;
     const profId = await resolveProfissionalIdToInt(
@@ -1010,6 +1066,32 @@ async function createAtendimentoMega(
       throw new Error('Cada etapa exige etapa e profissional_id');
     }
     const regra = await findRegraMega(db, pacote, etapaNome);
+    let iniLine: string | null = null;
+    let fimLine: string | null = null;
+    if (idx === 0) {
+      const slot = parseInicioFimOpcional(
+        pRec['inicio'],
+        pRec['fim'],
+        regra.duracaoMinutos,
+      );
+      iniLine = slot.inicio;
+      fimLine = slot.fim;
+      if (fimLine) cursorFim = fimLine;
+      else if (iniLine) {
+        const pp = parseSqlLocalDateTime(iniLine);
+        if (pp) {
+          fimLine = formatSqlLocalDateTime(
+            addMinutesToParts(pp, regra.duracaoMinutos),
+          );
+          cursorFim = fimLine;
+        }
+      }
+    } else if (cursorFim) {
+      const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
+      iniLine = enc.inicio;
+      fimLine = enc.fim;
+      cursorFim = fimLine;
+    }
     await appendAtendimentoLinha(db, {
       idAt,
       dataStr,
@@ -1026,16 +1108,17 @@ async function createAtendimentoMega(
       comissao: regra.comissao,
       descricao: obs,
       descricaoManual: obs,
-      inicio: primeiraEtapa ? slot.inicio : null,
-      fim: primeiraEtapa ? slot.fim : null,
+      inicio: iniLine,
+      fim: fimLine,
     });
     await insertPivotMega(db, {
       idAtendimento: idAt,
       pacote,
       etapa: etapaNome,
       profissionalId: profId,
+      regraMegaId: regra.id,
+      pacoteCatalogoId,
     });
-    primeiraEtapa = false;
   }
   return {
     id: idAt,
@@ -1074,18 +1157,31 @@ async function createAtendimentoPacote(
   if (!etapas.length) {
     throw new Error('Inclua ao menos uma etapa realizada para Pacote');
   }
-  const preco = await findPrecoPacote(db, pacote);
-  if (preco === null) {
+  const cat = await findPacoteCatalogo(db, pacote);
+  if (cat === null || cat.preco === null) {
     throw new Error(`Pacote não encontrado na aba Pacotes: "${pacote}"`);
   }
   const nomeCliente = await findClienteNome(db, clienteId);
   const idAt = makeIdAtendimento(dataStr, clienteId);
   await ensurePedidoHeader(db, idAt, clienteId);
   const obs = String(p.observacao || '').trim();
+  const pRec = p as Record<string, unknown>;
   const slot = parseInicioFimOpcional(
-    (p as Record<string, unknown>)['inicio'],
-    (p as Record<string, unknown>)['fim'],
+    pRec['inicio'],
+    pRec['fim'],
+    cat.duracaoMinutos,
   );
+  let headIni = slot.inicio;
+  let headFim = slot.fim;
+  if (headIni && !headFim) {
+    const pp = parseSqlLocalDateTime(headIni);
+    if (pp) {
+      headFim = formatSqlLocalDateTime(
+        addMinutesToParts(pp, cat.duracaoMinutos),
+      );
+    }
+  }
+  let cursorFim: string | null = headFim;
   await appendAtendimentoLinha(db, {
     idAt,
     dataStr,
@@ -1098,18 +1194,20 @@ async function createAtendimentoPacote(
     servicos: '',
     tamanho: '',
     profissionalId: profCob,
-    valor: preco,
+    valor: cat.preco,
     comissao: '',
     descricao: obs,
     descricaoManual: obs,
-    inicio: slot.inicio,
-    fim: slot.fim,
+    inicio: headIni,
+    fim: headFim,
   });
   await insertPivotPacote(db, {
     idAtendimento: idAt,
     pacote,
     etapa: '',
     profissionalId: profCob,
+    pacoteCatalogoId: cat.id,
+    regraMegaId: null,
   });
   for (const st of etapas) {
     const etapaNome = String(st.etapa || '').trim();
@@ -1126,6 +1224,14 @@ async function createAtendimentoPacote(
       throw new Error('Cada etapa exige etapa e profissional_id');
     }
     const regra = await findRegraMega(db, pacote, etapaNome);
+    let iniLine: string | null = null;
+    let fimLine: string | null = null;
+    if (cursorFim) {
+      const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
+      iniLine = enc.inicio;
+      fimLine = enc.fim;
+      cursorFim = fimLine;
+    }
     await appendAtendimentoLinha(db, {
       idAt,
       dataStr,
@@ -1142,12 +1248,16 @@ async function createAtendimentoPacote(
       comissao: regra.comissao,
       descricao: obs,
       descricaoManual: obs,
+      inicio: iniLine,
+      fim: fimLine,
     });
     await insertPivotPacote(db, {
       idAtendimento: idAt,
       pacote,
       etapa: etapaNome,
       profissionalId: profId,
+      pacoteCatalogoId: cat.id,
+      regraMegaId: regra.id,
     });
   }
   return {
@@ -1467,6 +1577,8 @@ export async function listAtendimentosRaw(
         pacote: row.pacote ?? null,
         etapa: row.etapa ?? null,
         detalhes: row.detalhes ?? null,
+        regra_mega_id: row.regraMegaId ?? null,
+        pacote_id: row.pacoteId ?? null,
       });
       itensPorPedido.set(k, arr);
     }

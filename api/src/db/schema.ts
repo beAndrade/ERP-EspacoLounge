@@ -71,6 +71,8 @@ export const pacotes = pgTable('pacotes', {
   id: serial('id').primaryKey(),
   pacote: text('pacote').notNull(),
   precoPacote: text('preco_pacote'),
+  /** Duração da linha de cobrança (cabeça do pacote) na agenda, em minutos. */
+  duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
 });
 
 export const produtos = pgTable('produtos', {
@@ -90,6 +92,8 @@ export const regrasMega = pgTable('regras_mega', {
   etapa: text('etapa').notNull(),
   valor: text('valor'),
   comissao: text('comissao'),
+  /** Duração da etapa na agenda, em minutos (Mega e etapas de Pacote). */
+  duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
 });
 
 export const cabelos = pgTable('cabelos', {
@@ -159,6 +163,14 @@ export const atendimentoItens = pgTable(
     pacote: text('pacote'),
     /** Mega / Pacote: etapa (vazio na cabeça do pacote). */
     etapa: text('etapa'),
+    /** Etapa Mega ou etapa de Pacote: FK a `regras_mega`. */
+    regraMegaId: integer('regra_mega_id').references(() => regrasMega.id, {
+      onDelete: 'set null',
+    }),
+    /** Cabeça Pacote ou referência ao pacote comercial (Mega). */
+    pacoteId: integer('pacote_id').references(() => pacotes.id, {
+      onDelete: 'set null',
+    }),
     /** Cabelo: texto da linha (descrição). */
     detalhes: text('detalhes'),
   },
