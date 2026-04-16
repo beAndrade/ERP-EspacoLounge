@@ -146,6 +146,15 @@
                   step="any"
                 />
               </label>
+              <label class="servico-row__field">
+                <span>Profissional</span>
+                <select formControlName="profissional" required>
+                  <option [ngValue]="null">Selecione…</option>
+                  @for (p of profissionais; track p.id) {
+                    <option [ngValue]="p.id">{{ p.nome }}</option>
+                  }
+                </select>
+              </label>
             }
 
             @if (ctrl.get('itemTipo')?.value === 'Mega') {

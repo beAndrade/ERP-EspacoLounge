@@ -1179,6 +1179,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       } else if (tipo === 'Produto') {
         prod?.setValidators([Validators.required]);
         qtd?.setValidators([Validators.required, Validators.min(0.01)]);
+        profS?.setValidators([Validators.required]);
       } else if (tipo === 'Mega' || tipo === 'Pacote') {
         pac?.setValidators([Validators.required]);
       } else if (tipo === 'Cabelo') {
@@ -1238,7 +1239,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (tipo === 'Produto') {
       if (!String(g.get('produto')?.value ?? '').trim()) return false;
       const q = Number(g.get('quantidade')?.value);
-      return !Number.isNaN(q) && q > 0;
+      if (Number.isNaN(q) || q <= 0) return false;
+      const p = g.get('profissional')?.value;
+      return p != null && Number(p) > 0;
     }
     if (tipo === 'Mega' || tipo === 'Pacote') {
       if (!String(g.get('pacote')?.value ?? '').trim()) return false;
@@ -1278,13 +1281,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.aplicarValidadoresLinhas();
     const g0 = this.linhasItensArray.at(0);
     if (g0 && c.profissional_id > 0) {
-      g0.patchValue(
-        {
-          itemTipo: 'Serviço',
-          profissional: c.profissional_id,
-        },
-        { emitEvent: false },
-      );
+      g0.patchValue({ profissional: c.profissional_id }, { emitEvent: false });
     }
     const horaBruta = String(c.hora ?? '').trim();
     const hn = normalizarHoraHHmm(horaBruta);
@@ -1515,6 +1512,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!nome) continue;
         const q = Number(g.get('quantidade')?.value);
         if (Number.isNaN(q) || q <= 0) continue;
+        const pidProd = Number(g.get('profissional')?.value);
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -1524,6 +1522,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               produto: nome,
               quantidade: q,
               observacao,
+              ...(Number.isFinite(pidProd) && pidProd > 0
+                ? { profissional_id: pidProd }
+                : {}),
             },
             primeiroMerge,
             dataYmd,

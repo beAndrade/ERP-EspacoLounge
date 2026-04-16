@@ -1166,22 +1166,10 @@ async function createAtendimentoPacote(
   await ensurePedidoHeader(db, idAt, clienteId);
   const obs = String(p.observacao || '').trim();
   const pRec = p as Record<string, unknown>;
-  const slot = parseInicioFimOpcional(
-    pRec['inicio'],
-    pRec['fim'],
-    cat.duracaoMinutos,
-  );
-  let headIni = slot.inicio;
-  let headFim = slot.fim;
-  if (headIni && !headFim) {
-    const pp = parseSqlLocalDateTime(headIni);
-    if (pp) {
-      headFim = formatSqlLocalDateTime(
-        addMinutesToParts(pp, cat.duracaoMinutos),
-      );
-    }
-  }
-  let cursorFim: string | null = headFim;
+  /**
+   * Cabeça de cobrança não ocupa o slot na grelha: horário escolhido aplica-se à
+   * **primeira etapa** (serviço), como no Mega.
+   */
   await appendAtendimentoLinha(db, {
     idAt,
     dataStr,
@@ -1198,8 +1186,8 @@ async function createAtendimentoPacote(
     comissao: '',
     descricao: obs,
     descricaoManual: obs,
-    inicio: headIni,
-    fim: headFim,
+    inicio: null,
+    fim: null,
   });
   await insertPivotPacote(db, {
     idAtendimento: idAt,
@@ -1209,7 +1197,9 @@ async function createAtendimentoPacote(
     pacoteCatalogoId: cat.id,
     regraMegaId: null,
   });
-  for (const st of etapas) {
+  let cursorFim: string | null = null;
+  for (let idx = 0; idx < etapas.length; idx++) {
+    const st = etapas[idx];
     const etapaNome = String(st.etapa || '').trim();
     const stRec = st as Record<string, unknown>;
     const profId = await resolveProfissionalIdToInt(
@@ -1226,7 +1216,24 @@ async function createAtendimentoPacote(
     const regra = await findRegraMega(db, pacote, etapaNome);
     let iniLine: string | null = null;
     let fimLine: string | null = null;
-    if (cursorFim) {
+    if (idx === 0) {
+      const slot = parseInicioFimOpcional(
+        pRec['inicio'],
+        pRec['fim'],
+        regra.duracaoMinutos,
+      );
+      iniLine = slot.inicio;
+      fimLine = slot.fim;
+      if (iniLine && !fimLine) {
+        const pp = parseSqlLocalDateTime(iniLine);
+        if (pp) {
+          fimLine = formatSqlLocalDateTime(
+            addMinutesToParts(pp, regra.duracaoMinutos),
+          );
+        }
+      }
+      cursorFim = fimLine;
+    } else if (cursorFim) {
       const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
       iniLine = enc.inicio;
       fimLine = enc.fim;
