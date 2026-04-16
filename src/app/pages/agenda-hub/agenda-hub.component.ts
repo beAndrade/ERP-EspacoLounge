@@ -319,7 +319,14 @@ export class AgendaHubComponent implements OnInit {
     });
   }
 
-  /** Início / fim em minutos desde 00:00 (dia da grelha) para o bloco inteiro. */
+  /**
+   * Início / fim em minutos desde 00:00 (dia da grelha) para o bloco inteiro.
+   *
+   * Mega/Pacote com vários profissionais: **topo** = horário inicial global do
+   * pedido; **altura** = soma das durações das etapas **deste** profissional
+   * (ex.: 120 min → até 12:00; outra com 60 min → até 11:00), não o último
+   * `fim` absoluto na coluna (que pode ser 12:00 só por encadeamento na API).
+   */
   private extentMinutosBloco(
     b: AgendaHubBloco,
   ): { start: number; end: number } | null {
@@ -329,6 +336,20 @@ export class AgendaHubComponent implements OnInit {
       idAt && this.blocoEMegaOuPacoteComEtapas(b)
         ? this.inicioGlobalMinutosMegaPacote(idAt)
         : null;
+
+    if (globalStart != null && Number.isFinite(globalStart)) {
+      let sumDur = 0;
+      for (const l of b.linhas) {
+        sumDur += this.duracaoMinutosAgendamento(l);
+      }
+      const durEfetiva = Math.max(
+        AGENDA_SLOT_MIN,
+        sumDur > 0 ? sumDur : AGENDA_SLOT_MIN,
+      );
+      const end = Math.min(GRID_END_MIN, globalStart + durEfetiva);
+      if (end <= globalStart) return null;
+      return { start: globalStart, end };
+    }
 
     let startMin = Infinity;
     let endMax = -Infinity;
@@ -361,12 +382,6 @@ export class AgendaHubComponent implements OnInit {
       !Number.isFinite(endMax) ||
       endMax <= startMin
     ) {
-      return null;
-    }
-    if (globalStart != null && Number.isFinite(globalStart)) {
-      startMin = globalStart;
-    }
-    if (endMax <= startMin) {
       return null;
     }
     return { start: startMin, end: endMax };
