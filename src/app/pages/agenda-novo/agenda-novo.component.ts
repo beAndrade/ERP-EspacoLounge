@@ -1546,7 +1546,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /**
    * Anexa `inicio`/`fim` ao primeiro payload do pedido quando o utilizador
-   * define horário inicial (30 min de duração, alinhado ao hub).
+   * define horário inicial (por defeito 30 min = slot do hub).
+   * Mega/Pacote: use `duracaoSlotMinutos` = duração da 1.ª etapa em Regras Mega.
    * `slotAgenda` legado (se algum dia for preenchido) tem prioridade.
    */
   private mergeSlotOuHoraInicial(
@@ -1554,6 +1555,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     usarPrimeiroBloco: boolean,
     dataYmd: string,
     horaIni: string,
+    duracaoSlotMinutos?: number,
   ): CreateAtendimentoPayload {
     if (!usarPrimeiroBloco) return p;
     if (this.slotAgenda) {
@@ -1565,9 +1567,31 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
     const hi = normalizarHoraHHmm(horaIni);
     if (!hi || !/^\d{4}-\d{2}-\d{2}$/.test(dataYmd)) return p;
-    const slot = slotInicioFimBrasilia(dataYmd, hi, 30);
+    const dur =
+      duracaoSlotMinutos != null &&
+      Number.isFinite(duracaoSlotMinutos) &&
+      duracaoSlotMinutos >= 5
+        ? Math.min(24 * 60, Math.round(duracaoSlotMinutos))
+        : 30;
+    const slot = slotInicioFimBrasilia(dataYmd, hi, dur);
     if (!slot) return p;
     return { ...p, inicio: slot.inicio, fim: slot.fim };
+  }
+
+  /** Duração (min) da etapa no catálogo Regras Mega, para alinhar slot ao 1.º serviço do pacote. */
+  private duracaoMinutosRegraMega(
+    pacote: string,
+    etapa: string,
+  ): number | undefined {
+    const pk = pacote.trim();
+    const ek = etapa.trim();
+    if (!pk || !ek) return undefined;
+    const r = this.regrasMega.find(
+      (x) => x.pacote.trim() === pk && x.etapa.trim() === ek,
+    );
+    const n = Number(r?.duracao_minutos);
+    if (Number.isFinite(n) && n >= 5) return Math.min(24 * 60, Math.round(n));
+    return undefined;
   }
 
   private montarPayloadsDasLinhas(
@@ -1704,6 +1728,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const etapas = (
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
+        const dPrimeira = this.duracaoMinutosRegraMega(
+          pacote,
+          String(etapas[0]?.etapa ?? '').trim(),
+        );
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -1720,6 +1748,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             primeiroMerge,
             dataYmd,
             horaIni,
+            dPrimeira,
           ),
         );
         primeiroMerge = false;
@@ -1732,6 +1761,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const etapas = (
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
+        const dPrimeira = this.duracaoMinutosRegraMega(
+          pacote,
+          String(etapas[0]?.etapa ?? '').trim(),
+        );
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -1748,6 +1781,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             primeiroMerge,
             dataYmd,
             horaIni,
+            dPrimeira,
           ),
         );
         primeiroMerge = false;

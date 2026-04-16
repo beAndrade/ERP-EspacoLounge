@@ -25,7 +25,11 @@ export type SqlLocalParts = {
 };
 
 export function parseSqlLocalDateTime(s: string): SqlLocalParts | null {
-  const m = SQL_LOCAL_RE.exec(String(s ?? '').trim());
+  let t = String(s ?? '').trim();
+  if (!t) return null;
+  /** Colapsa separador data/hora (igual ao frontend) para o regex aceitar `…  10:00`. */
+  t = t.replace(/^(\d{4}-\d{2}-\d{2})[\sT]+/, '$1 ');
+  const m = SQL_LOCAL_RE.exec(t);
   if (!m) return null;
   const y = parseInt(m[1], 10);
   const mo = parseInt(m[2], 10);
@@ -37,6 +41,20 @@ export function parseSqlLocalDateTime(s: string): SqlLocalParts | null {
   if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
   if (hh > 23 || mm > 59 || ss > 59) return null;
   return { y, mo, d, hh, mm, ss };
+}
+
+/**
+ * Interpreta texto vindo do cliente/BD: SQL local canónico ou ISO com fuso.
+ */
+export function partesSqlLocalDeTextoSalao(
+  raw: string | null | undefined,
+): SqlLocalParts | null {
+  const t = raw == null ? '' : String(raw).trim();
+  if (!t) return null;
+  const p0 = parseSqlLocalDateTime(t);
+  if (p0) return p0;
+  const isoLoc = isoInstantParaSqlLocalBrasil(t);
+  return isoLoc ? parseSqlLocalDateTime(isoLoc) : null;
 }
 
 export function formatSqlLocalDateTime(p: SqlLocalParts): string {

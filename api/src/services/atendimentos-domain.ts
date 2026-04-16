@@ -12,6 +12,7 @@ import {
   isoInstantParaSqlLocalBrasil,
   normalizeSqlLocalString,
   parseSqlLocalDateTime,
+  partesSqlLocalDeTextoSalao,
 } from '../lib/sql-local-datetime';
 import {
   atendimentoItens,
@@ -1093,7 +1094,7 @@ async function createAtendimentoMega(
        */
       const dm = duracaoCatalogoMin(regra.duracaoMinutos);
       if (iniLine) {
-        const pp = parseSqlLocalDateTime(iniLine);
+        const pp = partesSqlLocalDeTextoSalao(iniLine);
         if (pp) {
           fimLine = formatSqlLocalDateTime(addMinutesToParts(pp, dm));
           cursorFim = fimLine;
@@ -1241,7 +1242,7 @@ async function createAtendimentoPacote(
       fimLine = slot.fim;
       const dm = duracaoCatalogoMin(regra.duracaoMinutos);
       if (iniLine) {
-        const pp = parseSqlLocalDateTime(iniLine);
+        const pp = partesSqlLocalDeTextoSalao(iniLine);
         if (pp) {
           fimLine = formatSqlLocalDateTime(addMinutesToParts(pp, dm));
         }
