@@ -387,13 +387,15 @@ export class SheetsApiService {
       linhaRaw != null && linhaRaw !== ''
         ? Number(linhaRaw)
         : undefined;
+    const inicioRaw = raw['inicio'] ?? raw['Inicio'];
+    const fimRaw = raw['fim'] ?? raw['Fim'];
     const inicio =
-      raw['inicio'] != null && String(raw['inicio']).trim()
-        ? String(raw['inicio']).trim()
+      inicioRaw != null && String(inicioRaw).trim()
+        ? String(inicioRaw).trim()
         : null;
     const fim =
-      raw['fim'] != null && String(raw['fim']).trim()
-        ? String(raw['fim']).trim()
+      fimRaw != null && String(fimRaw).trim()
+        ? String(fimRaw).trim()
         : null;
 
     return {

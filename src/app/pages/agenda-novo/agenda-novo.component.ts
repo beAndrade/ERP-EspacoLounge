@@ -31,7 +31,15 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { catchError, forkJoin, of, Subscription, switchMap } from 'rxjs';
+import {
+  catchError,
+  forkJoin,
+  of,
+  Subject,
+  Subscription,
+  switchMap,
+  takeUntil,
+} from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import {
   AtendimentoListaItem,
@@ -191,6 +199,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private slotAgenda: { inicio: string; fim: string } | null = null;
 
   private slotFormSub?: Subscription;
+  private readonly destroy$ = new Subject<void>();
 
   readonly form = this.fb.group({
     cliente_id: ['', Validators.required],
@@ -241,74 +250,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           this.aplicarContextoSlotInput();
           this.carregandoListas = false;
         } else {
-          const qm = this.route.snapshot.queryParamMap;
-          const atEdit = qm.get('atendimento')?.trim();
-          if (atEdit) {
-            this.idAtendimentoEmEdicao = atEdit;
-            this.erro = '';
-            this.api.listAgendamentos(undefined, undefined, atEdit).subscribe({
-              next: (items) => {
-                if (items.length > 0) {
-                  this.aplicarEdicaoNoForm(items);
-                } else {
-                  this.idAtendimentoEmEdicao = null;
-                  this.erro =
-                    'Atendimento não encontrado ou sem linhas para este ID.';
-                }
-                this.carregandoListas = false;
-              },
-              error: () => {
-                this.erro =
-                  'Não foi possível carregar o atendimento para edição.';
-                this.idAtendimentoEmEdicao = null;
-                this.carregandoListas = false;
-              },
-            });
-          } else {
-            const cid = qm.get('cliente_id')?.trim();
-            const dat = qm.get('data')?.trim();
-            const pidStr = qm.get('profissional_id')?.trim();
-            const hora = qm.get('hora')?.trim();
-            if (cid) this.form.patchValue({ cliente_id: cid });
-            if (dat && /^\d{4}-\d{2}-\d{2}$/.test(dat)) {
-              this.form.patchValue({ data: dat });
-            }
-            const datOk =
-              dat && /^\d{4}-\d{2}-\d{2}$/.test(dat) ? dat : '';
-            if (datOk && pidStr && /^\d+$/.test(pidStr)) {
-              const pid = parseInt(pidStr, 10);
-              if (pid > 0) {
-                this.prefillEmCurso = true;
-                this.form.patchValue({ data: datOk }, { emitEvent: false });
-                this.garantirMinUmaLinha();
-                this.aplicarValidadoresLinhas();
-                const g0 = this.linhasItensArray.at(0);
-                if (g0) {
-                  g0.patchValue(
-                    {
-                      itemTipo: 'Serviço',
-                      profissional: pid,
-                    },
-                    { emitEvent: false },
-                  );
-                }
-                const hn = normalizarHoraHHmm(hora ?? '');
-                this.form.patchValue(
-                  { hora_inicial: hn ?? '' },
-                  { emitEvent: false },
-                );
-                this.prefillEmCurso = false;
-              }
-            }
-            if (cid || dat || pidStr || hora) {
-              void this.router.navigate(['/agenda/novo'], {
-                replaceUrl: true,
-                queryParams: {},
-              });
-            }
-            this.aplicarContextoSlotInput();
-            this.carregandoListas = false;
-          }
+          /**
+           * O Angular reutiliza o componente ao mudar só os query params; `ngOnInit`
+           * não volta a correr. Subscrever `queryParamMap` garante edição ao abrir
+           * `/agenda/novo?atendimento=…` (ou ao navegar para esse URL).
+           */
+          this.inscreverRotasAgendaNovo();
         }
       },
       error: () => {
@@ -331,7 +278,91 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.slotFormSub?.unsubscribe();
+  }
+
+  /**
+   * Carrega edição quando existe `?atendimento=`; caso contrário pré-preenche novo
+   * a partir dos restantes query params (e contexto do pai no modal).
+   */
+  private inscreverRotasAgendaNovo(): void {
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((qm) => {
+      const atEdit = qm.get('atendimento')?.trim();
+      if (atEdit) {
+        this.carregandoListas = true;
+        this.erro = '';
+        this.idAtendimentoEmEdicao = atEdit;
+        this.api
+          .listAgendamentos(undefined, undefined, atEdit)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (items) => {
+              if (items.length > 0) {
+                this.aplicarEdicaoNoForm(items);
+              } else {
+                this.idAtendimentoEmEdicao = null;
+                this.erro =
+                  'Atendimento não encontrado ou sem linhas para este ID.';
+              }
+              this.carregandoListas = false;
+            },
+            error: () => {
+              this.erro =
+                'Não foi possível carregar o atendimento para edição.';
+              this.idAtendimentoEmEdicao = null;
+              this.carregandoListas = false;
+            },
+          });
+        return;
+      }
+
+      this.idAtendimentoEmEdicao = null;
+      const cid = qm.get('cliente_id')?.trim();
+      const dat = qm.get('data')?.trim();
+      const pidStr = qm.get('profissional_id')?.trim();
+      const hora = qm.get('hora')?.trim();
+      if (cid) this.form.patchValue({ cliente_id: cid });
+      if (dat && /^\d{4}-\d{2}-\d{2}$/.test(dat)) {
+        this.form.patchValue({ data: dat });
+      }
+      const datOk =
+        dat && /^\d{4}-\d{2}-\d{2}$/.test(dat) ? dat : '';
+      if (datOk && pidStr && /^\d+$/.test(pidStr)) {
+        const pid = parseInt(pidStr, 10);
+        if (pid > 0) {
+          this.prefillEmCurso = true;
+          this.form.patchValue({ data: datOk }, { emitEvent: false });
+          this.garantirMinUmaLinha();
+          this.aplicarValidadoresLinhas();
+          const g0 = this.linhasItensArray.at(0);
+          if (g0) {
+            g0.patchValue(
+              {
+                itemTipo: 'Serviço',
+                profissional: pid,
+              },
+              { emitEvent: false },
+            );
+          }
+          const hn = normalizarHoraHHmm(hora ?? '');
+          this.form.patchValue(
+            { hora_inicial: hn ?? '' },
+            { emitEvent: false },
+          );
+          this.prefillEmCurso = false;
+        }
+      }
+      if (cid || dat || pidStr || hora) {
+        void this.router.navigate(['/agenda/novo'], {
+          replaceUrl: true,
+          queryParams: {},
+        });
+      }
+      this.aplicarContextoSlotInput();
+      this.carregandoListas = false;
+    });
   }
 
   get linhasItensArray(): FormArray<FormGroup> {
