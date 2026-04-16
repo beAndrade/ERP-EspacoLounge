@@ -16,3 +16,8 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
+
+-- Drizzle pode aplicar várias migrações na mesma transação; o Postgres exige commit
+-- após ADD VALUE antes de usar os rótulos. `COMMIT AND CHAIN` mantém uma transação
+-- aberta e evita aviso 25P01 no fecho da migração pelo runner. Ver drizzle-orm#3249.
+COMMIT AND CHAIN;
