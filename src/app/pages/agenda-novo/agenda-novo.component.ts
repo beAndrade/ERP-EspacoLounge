@@ -385,7 +385,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     rows: AtendimentoListaItem[],
     dataYmd: string,
   ): string {
-    const dia = dataYmd.slice(0, 10);
+    const dia = dataYmd.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return '';
     let best: ReturnType<typeof parseSqlLocalDateTime> = null;
     let bestMs = Infinity;
     for (const row of rows) {
@@ -400,7 +401,26 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (best) {
       return normalizarHoraHHmm(`${best.hh}:${best.mm}`) ?? '';
     }
-    return this.horaInicialEdicaoDeInicio(rows[0]?.inicio, dataYmd);
+    /**
+     * Cabeça Mega/Pacote (1.ª linha após ordenar) pode vir sem `inicio`; o horário
+     * está nas etapas. Não usar só `rows[0]`.
+     */
+    let bestMin = Infinity;
+    let bestH = '';
+    for (const row of rows) {
+      const h = this.horaInicialEdicaoDeInicio(row.inicio, dia);
+      const n = normalizarHoraHHmm(h);
+      if (!n) continue;
+      const [hhS, mmS] = n.split(':');
+      const mins =
+        parseInt(hhS, 10) * 60 + parseInt(mmS, 10);
+      if (!Number.isFinite(mins) || mins < 0) continue;
+      if (mins < bestMin) {
+        bestMin = mins;
+        bestH = n;
+      }
+    }
+    return bestH;
   }
 
   /** Data do formulário em dd-mm-aaaa (valor interno continua AAAA-MM-DD). */
@@ -853,13 +873,24 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return hit ? hit.id : null;
   }
 
+  /** Primeira coluna `data` AAAA-MM-DD válida no pedido (âncora para horário inicial). */
+  private dataYmdValidaDoPedido(rows: AtendimentoListaItem[]): string {
+    for (const r of rows) {
+      const d = String(r.data ?? '').trim().slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    }
+    return '';
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
     ordenarLinhasAtendimentoInPlace(sorted);
     const l0 = sorted[0];
     const tipoApi = mapTipoFromApi(l0.tipo || '');
-    const dataYmd = (l0.data || '').slice(0, 10);
+    const dataYmd =
+      this.dataYmdValidaDoPedido(sorted) ||
+      (l0.data || '').trim().slice(0, 10);
     const obsMegaPacote = stripQtdSuffixObservacao(l0.descricao || '');
 
     this.prefillEmCurso = true;
