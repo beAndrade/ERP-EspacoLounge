@@ -20,12 +20,19 @@ type CelulaCalendario = { dia: number | null; ymd: string | null };
 /**
  * Grelha do dia em minutos desde 00:00.
  * `GRID_END_MIN` = fim **exclusivo** da timeline (último rótulo 23:00, faixa até 23:30).
- * Nº de linhas de 30 min no SCSS: `(GRID_END_MIN - GRID_START_MIN) / 30` (= 31).
+ * Faixas de 30 min: `(GRID_END_MIN - GRID_START_MIN) / 30` (= 31), igual a `$agenda-slot-rows` no SCSS.
+ *
+ * Ex.: 90 min (10:00→11:30) = **3 faixas** de 30 min; na grelha aparecem **4 traços**
+ * horizontais de referência (10:00, 10:30, 11:00, 11:30) delimitando essas 3 faixas.
  */
 const GRID_START_MIN = 8 * 60;
 /** Fim exclusivo da timeline (8:00 → 23:30). */
 const GRID_END_MIN = 23 * 60 + 30;
 const GRID_RANGE = GRID_END_MIN - GRID_START_MIN;
+/** Duração de cada faixa na grelha (deve coincidir com o SCSS). */
+const AGENDA_SLOT_MIN = 30;
+/** Nº de faixas de 30 min na coluna (31). */
+const AGENDA_SLOT_COUNT = GRID_RANGE / AGENDA_SLOT_MIN;
 /** Último slot de 30 min a começar na grelha (23:00). */
 const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
 
@@ -334,17 +341,19 @@ export class AgendaHubComponent implements OnInit {
   alturaPctBloco(b: AgendaHubBloco): number {
     const ex = this.extentMinutosBloco(b);
     if (!ex) {
-      return (30 / GRID_RANGE) * 100;
+      return (AGENDA_SLOT_MIN / GRID_RANGE) * 100;
     }
     const startVis = Math.max(
       GRID_START_MIN,
       Math.min(GRID_LAST_SLOT_START_MIN, ex.start),
     );
     const endVis = Math.min(GRID_END_MIN, Math.max(ex.end, startVis + 30));
-    let dur = Math.max(30, endVis - startVis);
+    let dur = Math.max(AGENDA_SLOT_MIN, endVis - startVis);
     dur = Math.min(dur, GRID_RANGE);
     const top = this.topPctBloco(b);
-    const hPct = (dur / GRID_RANGE) * 100;
+    /* Altura = nº de faixas de 30 min / total de faixas (ex.: 90 min → 3/31 da coluna). */
+    const faixas = dur / AGENDA_SLOT_MIN;
+    const hPct = (faixas / AGENDA_SLOT_COUNT) * 100;
     return Math.min(hPct, Math.max(0, 100 - top));
   }
 
