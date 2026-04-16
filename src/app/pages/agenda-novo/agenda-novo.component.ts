@@ -1120,6 +1120,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       profissional: [null as number | null],
       produto: [''],
       quantidade: [1, [Validators.min(0.01)]],
+      /** Usado quando o catálogo não tem preço (API `preco_unitario`). */
+      preco_unitario: [''],
       pacote: [''],
       etapas: this.fb.array<FormGroup>([]),
       valor_cabelo: [''],
@@ -1230,6 +1232,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return true;
   }
 
+  /** Preço na lista `/api/produtos`; `null` se célula vazia ou não numérica. */
+  private precoCatalogoProduto(nome: string): number | null {
+    const pr = this.produtos.find((x) => x.produto === nome);
+    if (!pr) return null;
+    return valorMonetarioParaNumero(pr.preco);
+  }
+
   private linhaValida(g: FormGroup, tipo: TipoLinhaAtendimento): boolean {
     if (tipo === 'Serviço') {
       if (!String(g.get('servico_id')?.value ?? '').trim()) return false;
@@ -1241,7 +1250,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       const q = Number(g.get('quantidade')?.value);
       if (Number.isNaN(q) || q <= 0) return false;
       const p = g.get('profissional')?.value;
-      return p != null && Number(p) > 0;
+      if (p == null || !(Number(p) > 0)) return false;
+      const nome = String(g.get('produto')?.value ?? '').trim();
+      const catPreco = this.precoCatalogoProduto(nome);
+      const manual = this.parseValorPt(
+        String(g.get('preco_unitario')?.value ?? '').trim(),
+      );
+      if (catPreco == null && (manual == null || manual < 0)) return false;
+      return true;
     }
     if (tipo === 'Mega' || tipo === 'Pacote') {
       if (!String(g.get('pacote')?.value ?? '').trim()) return false;
@@ -1513,6 +1529,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const q = Number(g.get('quantidade')?.value);
         if (Number.isNaN(q) || q <= 0) continue;
         const pidProd = Number(g.get('profissional')?.value);
+        const manualPreco = this.parseValorPt(
+          String(g.get('preco_unitario')?.value ?? '').trim(),
+        );
+        const semPrecoCatalogo = this.precoCatalogoProduto(nome) == null;
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -1524,6 +1544,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               observacao,
               ...(Number.isFinite(pidProd) && pidProd > 0
                 ? { profissional_id: pidProd }
+                : {}),
+              ...(semPrecoCatalogo &&
+              manualPreco != null &&
+              manualPreco >= 0
+                ? { preco_unitario: manualPreco }
                 : {}),
             },
             primeiroMerge,

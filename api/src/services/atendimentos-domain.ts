@@ -75,6 +75,8 @@ export type CreateAtendimentoPayload =
       produto: string;
       quantidade: number;
       observacao?: string;
+      /** Quando `produtos.preco` está vazio no catálogo (obrigatório nesse caso). */
+      preco_unitario?: number;
       /** Vários produtos no mesmo pedido; cada entrada gera linha em `atendimentos` + item na pivot. */
       itens_produtos?: {
         produto_id: number;
@@ -1368,13 +1370,20 @@ async function createAtendimentoProduto(
   for (const it of itensNorm) {
     const rowP = await readProdutoRowPorId(db, it.produtoId);
     const nomeProd = String(rowP.produto || '').trim();
-    const precoUnit = rowP.preco != null && rowP.preco !== '' ? String(rowP.preco) : null;
-    if (precoUnit === null) {
-      throw new Error(`Preço inválido para produto: "${nomeProd}"`);
-    }
-    const unitNum = toNumberPt(precoUnit);
+    let unitNum = toNumberPt(rowP.preco);
     if (unitNum === null) {
-      throw new Error(`Preço inválido para produto: "${nomeProd}"`);
+      const mr = rec['preco_unitario'];
+      if (mr !== undefined && mr !== null && mr !== '') {
+        unitNum =
+          typeof mr === 'number' && Number.isFinite(mr)
+            ? mr
+            : toNumberPt(String(mr));
+      }
+    }
+    if (unitNum === null || unitNum < 0) {
+      throw new Error(
+        `Preço não disponível para o produto "${nomeProd}". Cadastre o preço na aba Produtos ou informe o preço unitário no agendamento.`,
+      );
     }
     const qtd = it.quantidade;
     const valorTotal = unitNum * qtd;

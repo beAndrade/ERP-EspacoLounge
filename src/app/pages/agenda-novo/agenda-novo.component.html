@@ -147,6 +147,16 @@
                 />
               </label>
               <label class="servico-row__field">
+                <span>Preço unitário (R$)</span>
+                <input
+                  type="text"
+                  formControlName="preco_unitario"
+                  inputmode="decimal"
+                  placeholder="Só se o produto não tiver preço no catálogo"
+                  autocomplete="off"
+                />
+              </label>
+              <label class="servico-row__field">
                 <span>Profissional</span>
                 <select formControlName="profissional" required>
                   <option [ngValue]="null">Selecione…</option>

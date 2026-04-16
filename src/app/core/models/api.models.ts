@@ -241,6 +241,8 @@ export type CreateAtendimentoPayload = (
       produto?: string;
       quantidade?: number;
       observacao?: string;
+      /** Se o catálogo não tiver `preco` preenchido. */
+      preco_unitario?: number;
       /** Vários produtos no mesmo pedido (`produto_id` = `produtos.id`). */
       itens_produtos?: {
         produto_id: number;
