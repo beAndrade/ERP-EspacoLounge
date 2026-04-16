@@ -320,6 +320,24 @@ export class AgendaHubComponent implements OnInit {
   }
 
   /**
+   * Soma as durações só das **etapas** (ignora cabeça Pacote/Mega sem etapa).
+   * A cabeça tem `inicio`/`fim` nulos e `duracaoMinutosAgendamento` devolvia 30 min
+   * por defeito — inflacionava mal (ex.: 30+60=90 em vez de 60+60=120).
+   */
+  private duracaoSomaEtapasMegaPacoteNoBloco(b: AgendaHubBloco): number {
+    let sum = 0;
+    for (const l of b.linhas) {
+      const t = (l.tipo || '').trim().toLowerCase();
+      if (t !== 'mega' && t !== 'pacote') continue;
+      if (!(l.etapa || '').trim()) continue;
+      const ini = l.inicio ? String(l.inicio).trim() : '';
+      if (!ini) continue;
+      sum += this.duracaoMinutosAgendamento(l);
+    }
+    return sum;
+  }
+
+  /**
    * Início / fim em minutos desde 00:00 (dia da grelha) para o bloco inteiro.
    *
    * Mega/Pacote com vários profissionais: **topo** = horário inicial global do
@@ -338,10 +356,7 @@ export class AgendaHubComponent implements OnInit {
         : null;
 
     if (globalStart != null && Number.isFinite(globalStart)) {
-      let sumDur = 0;
-      for (const l of b.linhas) {
-        sumDur += this.duracaoMinutosAgendamento(l);
-      }
+      const sumDur = this.duracaoSomaEtapasMegaPacoteNoBloco(b);
       const durEfetiva = Math.max(
         AGENDA_SLOT_MIN,
         sumDur > 0 ? sumDur : AGENDA_SLOT_MIN,
