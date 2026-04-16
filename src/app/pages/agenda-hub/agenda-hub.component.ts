@@ -22,8 +22,9 @@ type CelulaCalendario = { dia: number | null; ymd: string | null };
  * `GRID_END_MIN` = fim **exclusivo** da timeline (último rótulo 23:00, faixa até 23:30).
  * Faixas de 30 min: `(GRID_END_MIN - GRID_START_MIN) / 30` (= 31), igual a `$agenda-slot-rows` no SCSS.
  *
- * Ex.: 90 min (10:00→11:30) = **3 faixas** de 30 min; na grelha aparecem **4 traços**
- * horizontais de referência (10:00, 10:30, 11:00, 11:30) delimitando essas 3 faixas.
+ * Ex.: 90 min (10:00→11:30) = **3 faixas** de 30 min; na grelha há **4 traços** horizontais
+ * nesse intervalo. A altura do cartão usa **(3 + 1) / 31** da coluna — ou seja,
+ * `(duração em slots de 30 min + 1) / AGENDA_SLOT_COUNT`, para coincidir com esse desenho.
  */
 const GRID_START_MIN = 8 * 60;
 /** Fim exclusivo da timeline (8:00 → 23:30). */
@@ -337,11 +338,15 @@ export class AgendaHubComponent implements OnInit {
     return ((t - GRID_START_MIN) / GRID_RANGE) * 100;
   }
 
-  /** Altura em % = (fim − início) do bloco, limitada ao fundo da grelha. */
+  /**
+   * Altura em %: uma unidade a mais que os slots cobertos pelo horário (ex.: 90 min → 4/31),
+   * para alinhar o cartão aos traços da grelha (início, meios e fim do intervalo).
+   */
   alturaPctBloco(b: AgendaHubBloco): number {
     const ex = this.extentMinutosBloco(b);
     if (!ex) {
-      return (AGENDA_SLOT_MIN / GRID_RANGE) * 100;
+      /* Mesma regra `slots + 1` com duração mínima de 1 slot (30 min). */
+      return (2 / AGENDA_SLOT_COUNT) * 100;
     }
     const startVis = Math.max(
       GRID_START_MIN,
@@ -351,9 +356,9 @@ export class AgendaHubComponent implements OnInit {
     let dur = Math.max(AGENDA_SLOT_MIN, endVis - startVis);
     dur = Math.min(dur, GRID_RANGE);
     const top = this.topPctBloco(b);
-    /* Altura = nº de faixas de 30 min / total de faixas (ex.: 90 min → 3/31 da coluna). */
-    const faixas = dur / AGENDA_SLOT_MIN;
-    const hPct = (faixas / AGENDA_SLOT_COUNT) * 100;
+    const slots = dur / AGENDA_SLOT_MIN;
+    const faixasVis = Math.min(AGENDA_SLOT_COUNT, slots + 1);
+    const hPct = (faixasVis / AGENDA_SLOT_COUNT) * 100;
     return Math.min(hPct, Math.max(0, 100 - top));
   }
 
