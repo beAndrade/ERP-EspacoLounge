@@ -287,11 +287,49 @@ export class AgendaHubComponent implements OnInit {
     return 30;
   }
 
+  /**
+   * Primeiro horário (minutos) do pedido Mega/Pacote no dia — igual em todas as
+   * colunas para alinhar cartões quando há profissionais diferentes nas etapas.
+   */
+  private inicioGlobalMinutosMegaPacote(idAt: string): number | null {
+    const id = String(idAt || '').trim();
+    if (!id) return null;
+    const dia = this.diaYmd;
+    let best: number | null = null;
+    for (const r of this.linhasDia) {
+      if (String(r.id || '').trim() !== id) continue;
+      const t = (r.tipo || '').trim().toLowerCase();
+      if (t !== 'mega' && t !== 'pacote') continue;
+      if (!(r.etapa || '').trim()) continue;
+      const ini = r.inicio ? String(r.inicio).trim() : '';
+      if (!ini) continue;
+      const mi = minutosMeiaNoiteEmBrasilia(ini, dia);
+      if (mi == null || !Number.isFinite(mi)) continue;
+      if (best == null || mi < best) best = mi;
+    }
+    return best;
+  }
+
+  private blocoEMegaOuPacoteComEtapas(b: AgendaHubBloco): boolean {
+    return b.linhas.some((l) => {
+      const t = (l.tipo || '').trim().toLowerCase();
+      return (
+        (t === 'mega' || t === 'pacote') && (l.etapa || '').trim().length > 0
+      );
+    });
+  }
+
   /** Início / fim em minutos desde 00:00 (dia da grelha) para o bloco inteiro. */
   private extentMinutosBloco(
     b: AgendaHubBloco,
   ): { start: number; end: number } | null {
     const dia = this.diaYmd;
+    const idAt = String(b.linhas[0]?.id || '').trim();
+    const globalStart =
+      idAt && this.blocoEMegaOuPacoteComEtapas(b)
+        ? this.inicioGlobalMinutosMegaPacote(idAt)
+        : null;
+
     let startMin = Infinity;
     let endMax = -Infinity;
     for (const l of b.linhas) {
@@ -323,6 +361,12 @@ export class AgendaHubComponent implements OnInit {
       !Number.isFinite(endMax) ||
       endMax <= startMin
     ) {
+      return null;
+    }
+    if (globalStart != null && Number.isFinite(globalStart)) {
+      startMin = globalStart;
+    }
+    if (endMax <= startMin) {
       return null;
     }
     return { start: startMin, end: endMax };

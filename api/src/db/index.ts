@@ -130,12 +130,12 @@ END $$;
   await db.execute(sql.raw(`
 DO $$
 BEGIN
-  IF NOT EXISTS (
+  IF EXISTS (
     SELECT 1 FROM information_schema.columns c
     WHERE c.table_schema = current_schema()
       AND c.table_name = 'pacotes' AND c.column_name = 'duracao_minutos'
   ) THEN
-    ALTER TABLE "pacotes" ADD COLUMN "duracao_minutos" integer DEFAULT 30 NOT NULL;
+    ALTER TABLE "pacotes" DROP COLUMN "duracao_minutos";
   END IF;
 END $$;
 `));

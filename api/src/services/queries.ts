@@ -101,7 +101,6 @@ export async function listPacotesApi(db: Db) {
     .map((r) => ({
       pacote: String(r.pacote).trim(),
       preco: r.precoPacote,
-      duracao_minutos: r.duracaoMinutos ?? 30,
     }));
 }
 

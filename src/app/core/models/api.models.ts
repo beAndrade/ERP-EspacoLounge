@@ -98,8 +98,6 @@ export interface RegraMegaItem {
 export interface PacoteCatalogoItem {
   pacote: string;
   preco: unknown;
-  /** Duração da linha de cobrança na agenda (minutos). */
-  duracao_minutos?: number;
 }
 
 /** Item da pivot `atendimento_itens` na resposta de listagem. */

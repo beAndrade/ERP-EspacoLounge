@@ -71,8 +71,6 @@ export const pacotes = pgTable('pacotes', {
   id: serial('id').primaryKey(),
   pacote: text('pacote').notNull(),
   precoPacote: text('preco_pacote'),
-  /** Duração da linha de cobrança (cabeça do pacote) na agenda, em minutos. */
-  duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
 });
 
 export const produtos = pgTable('produtos', {

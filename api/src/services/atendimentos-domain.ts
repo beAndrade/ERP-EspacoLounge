@@ -385,7 +385,6 @@ async function findPacoteCatalogo(
 ): Promise<{
   id: number;
   preco: string | null;
-  duracaoMinutos: number;
 } | null> {
   const rows = await db
     .select()
@@ -397,7 +396,6 @@ async function findPacoteCatalogo(
   return {
     id: r.id,
     preco: preco != null && preco !== '' ? String(preco) : null,
-    duracaoMinutos: duracaoCatalogoMin(r.duracaoMinutos as number | null),
   };
 }
 
