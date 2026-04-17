@@ -351,7 +351,7 @@
   font-weight: 600;
 }
 
-/* Mesmo recuo horizontal que `th`/`td` (0.85rem) para alinhar com o conteúdo da `.table-wrap`. */
+/* Largura total como a `.table-wrap` em baixo (sem padding lateral — o recuo fica nas células). */
 .subtitulo-row {
   display: flex;
   flex-wrap: wrap;
@@ -360,9 +360,7 @@
   gap: 0.75rem;
   margin-top: 1.25rem;
   margin-bottom: 0.65rem;
-  padding-left: 0.85rem;
-  padding-right: 0.85rem;
-  box-sizing: border-box;
+  width: 100%;
 
   .movimentacoes-titulo {
     margin: 0;
