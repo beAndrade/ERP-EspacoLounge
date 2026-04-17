@@ -1795,8 +1795,10 @@ export async function confirmarPagamentoPorIdAtendimento(
     const total = totalLiquidoConfirmacao(candidatas);
     const slug = slugCategoriaReceitaPredominante(candidatas);
     const nomeCliente = String(candidatas[0]?.nomeCliente || '').trim();
-    /** Razão/campo descrição: só nome da cliente (pedido operacional). */
-    const descricao = nomeCliente || null;
+    /** Texto do lançamento: prefixo fixo, separador e nome da cliente quando existir. */
+    const descricao = nomeCliente
+      ? `Confirmação pagamento — ${nomeCliente}`
+      : 'Confirmação pagamento';
 
     let movimentacaoId: number | null = null;
     if (updated.length > 0 && total > 0) {
