@@ -1,0 +1,56 @@
+@if (!desbloqueado) {
+  <div class="toolbar">
+    <h1>Financeiro</h1>
+  </div>
+  <p class="hint">
+    Área protegida. Introduza o PIN de administrador (o mesmo definido em
+    <code>ADMIN_PIN</code> na API) para ver o resumo do dia, movimentações e
+    comissões.
+  </p>
+  <section class="painel-pin" aria-label="Acesso administrador">
+    <label class="field">
+      <span>PIN administrador</span>
+      <input
+        type="password"
+        name="adminPin"
+        [(ngModel)]="pinDraft"
+        autocomplete="off"
+        placeholder="PIN"
+        (keydown.enter)="entrar()"
+      />
+    </label>
+    <button
+      type="button"
+      class="btn primary"
+      (click)="entrar()"
+      [disabled]="verificando"
+    >
+      {{ verificando ? 'A verificar…' : 'Entrar' }}
+    </button>
+  </section>
+  @if (erroPin) {
+    <p class="alert" role="alert">{{ erroPin }}</p>
+  }
+} @else {
+  <div class="toolbar">
+    <h1>Financeiro</h1>
+    <nav class="toolbar-links" aria-label="Secções do financeiro">
+      <a
+        routerLink="/financeiro"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >Dia</a
+      >
+      <a routerLink="/financeiro/comissoes" routerLinkActive="active"
+        >Comissões / Folha</a
+      >
+      <a routerLink="/" class="link-back">← Início</a>
+    </nav>
+  </div>
+  <p class="sessao-pin">
+    <button type="button" class="btn ghost" (click)="terminarSessaoPin()">
+      Esquecer PIN nesta sessão
+    </button>
+  </p>
+  <router-outlet />
+}

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { FolhaListaItem } from '../../core/models/api.models';
@@ -41,7 +41,7 @@ function anosCompetenciaRange(): number[] {
   templateUrl: './financeiro-comissoes.component.html',
   styleUrl: './financeiro-comissoes.component.scss',
 })
-export class FinanceiroComissoesComponent {
+export class FinanceiroComissoesComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
   readonly adminPin = inject(AdminPinService);
 
@@ -49,18 +49,16 @@ export class FinanceiroComissoesComponent {
   readonly anosCompetencia = anosCompetenciaRange();
 
   periodoYm = periodoAtualYm();
-  pinDraft = '';
-
-  /** Só após `carregar()` com sucesso (PIN válido na API). */
-  folhaDesbloqueada = false;
 
   carregando = false;
   erro = '';
   itens: FolhaListaItem[] = [];
   ultimoRecalculo: string | null = null;
 
-  constructor() {
-    this.pinDraft = this.adminPin.getPin();
+  ngOnInit(): void {
+    if (this.adminPin.hasPin()) {
+      this.carregar();
+    }
   }
 
   mesCompetencia(): string {
@@ -84,21 +82,6 @@ export class FinanceiroComissoesComponent {
     this.periodoYm = `${y}-${this.mesCompetencia()}`;
   }
 
-  salvarPinECarregar(): void {
-    this.adminPin.setPin(this.pinDraft);
-    this.erro = '';
-    this.carregar();
-  }
-
-  terminarSessaoPin(): void {
-    this.adminPin.clear();
-    this.pinDraft = '';
-    this.itens = [];
-    this.erro = '';
-    this.ultimoRecalculo = null;
-    this.folhaDesbloqueada = false;
-  }
-
   carregar(): void {
     const p = String(this.periodoYm || '').trim().slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(p)) {
@@ -106,8 +89,7 @@ export class FinanceiroComissoesComponent {
       return;
     }
     if (!this.adminPin.hasPin()) {
-      this.folhaDesbloqueada = false;
-      this.erro = 'Introduza o PIN de administrador e guarde.';
+      this.erro = 'Sessão sem PIN. Volte ao Financeiro e introduza o PIN.';
       return;
     }
     this.periodoYm = p;
@@ -117,12 +99,10 @@ export class FinanceiroComissoesComponent {
       next: (rows) => {
         this.itens = rows;
         this.carregando = false;
-        this.folhaDesbloqueada = true;
       },
       error: (e: Error) => {
         this.carregando = false;
         this.itens = [];
-        this.folhaDesbloqueada = false;
         this.erro =
           e.message ||
           'Não foi possível carregar a folha. Verifique o PIN e a API.';
@@ -154,5 +134,4 @@ export class FinanceiroComissoesComponent {
       },
     });
   }
-
 }

@@ -5,7 +5,6 @@ import {
 } from '@angular/common';
 import { Component, inject, LOCALE_ID, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import localePt from '@angular/common/locales/pt';
 import { forkJoin } from 'rxjs';
 import {
@@ -46,7 +45,7 @@ function hojeYmd(): string {
 @Component({
   selector: 'app-financeiro',
   standalone: true,
-  imports: [RouterLink, FormsModule, CurrencyPipe, DatePipe],
+  imports: [FormsModule, CurrencyPipe, DatePipe],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro.component.html',
   styleUrl: './financeiro.component.scss',
