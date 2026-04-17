@@ -55,6 +55,7 @@
       <label>
         <span>Método de pagamento</span>
         <select
+          class="despesa-metodo"
           name="despesaMetodo"
           [(ngModel)]="despesaMetodo"
           required
@@ -66,7 +67,7 @@
           }
         </select>
       </label>
-      <label class="span-2">
+      <label class="span-2 despesa-descricao">
         <span>Descrição</span>
         <input
           type="text"
