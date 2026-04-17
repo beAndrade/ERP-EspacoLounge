@@ -25,6 +25,16 @@ const METODOS_PAGAMENTO_DESPESA = [
   'Pix',
 ] as const;
 
+/** Edição de movimentações (receita ou despesa). */
+const METODOS_PAGAMENTO_EDICAO = METODOS_PAGAMENTO_DESPESA;
+
+interface MovimentacaoRascunho {
+  categoria_id: number;
+  valorStr: string;
+  metodo: string;
+  descricao: string;
+}
+
 function hojeYmd(): string {
   const d = new Date();
   const y = d.getFullYear();
@@ -56,6 +66,12 @@ export class FinanceiroComponent implements OnInit {
   movimentacoes: MovimentacaoListaItem[] = [];
   /** `null` = todas as categorias (só filtra a tabela de movimentações). */
   filtroCategoriaMovimentos: number | null = null;
+
+  editandoMovimentacoes = false;
+  private rascunhoMovPorId = new Map<number, MovimentacaoRascunho>();
+  salvandoMovId: number | null = null;
+  excluindoMovId: number | null = null;
+  editarMovErro = '';
 
   despesaCategoriaId: number | null = null;
   /** Apenas dígitos; valor em reais = int/100 (entrada ordem caixa/POS). */
@@ -102,6 +118,9 @@ export class FinanceiroComponent implements OnInit {
         }
         this.caixa = caixa;
         this.movimentacoes = movs;
+        if (this.editandoMovimentacoes) {
+          this.repovoarRascunhosMovimentacoes();
+        }
         this.carregando = false;
       },
       error: (e: Error) => {
@@ -133,6 +152,7 @@ export class FinanceiroComponent implements OnInit {
   }
 
   readonly metodosPagamentoDespesa = METODOS_PAGAMENTO_DESPESA;
+  readonly metodosPagamentoEdicao = METODOS_PAGAMENTO_EDICAO;
 
   formatBrlFromDigitos(digits: string): string {
     if (!digits?.trim()) return '';
@@ -230,6 +250,103 @@ export class FinanceiroComponent implements OnInit {
     if (t) partes.push(t);
     if (cl) partes.push(cl);
     return partes.length ? partes.join(' · ') : '—';
+  }
+
+  categoriasPorNatureza(natureza: 'receita' | 'despesa'): CategoriaFinanceiraItem[] {
+    return this.categorias.filter((c) => c.natureza === natureza);
+  }
+
+  private novoRascunhoDeM(m: MovimentacaoListaItem): MovimentacaoRascunho {
+    return {
+      categoria_id: m.categoria_id,
+      valorStr: this.valorNum(m.valor).toFixed(2),
+      metodo: m.metodo_pagamento ?? '',
+      descricao: m.descricao ?? '',
+    };
+  }
+
+  private repovoarRascunhosMovimentacoes(): void {
+    this.rascunhoMovPorId.clear();
+    for (const m of this.movimentacoes) {
+      this.rascunhoMovPorId.set(m.id, this.novoRascunhoDeM(m));
+    }
+  }
+
+  rascunhoDe(m: MovimentacaoListaItem): MovimentacaoRascunho {
+    let r = this.rascunhoMovPorId.get(m.id);
+    if (!r) {
+      r = this.novoRascunhoDeM(m);
+      this.rascunhoMovPorId.set(m.id, r);
+    }
+    return r;
+  }
+
+  toggleEdicaoMovimentacoes(): void {
+    this.editandoMovimentacoes = !this.editandoMovimentacoes;
+    this.editarMovErro = '';
+    if (this.editandoMovimentacoes) {
+      this.repovoarRascunhosMovimentacoes();
+    } else {
+      this.rascunhoMovPorId.clear();
+    }
+  }
+
+  reporRascunhoMovimentacao(m: MovimentacaoListaItem): void {
+    this.rascunhoMovPorId.set(m.id, this.novoRascunhoDeM(m));
+    this.editarMovErro = '';
+  }
+
+  guardarMovimentacao(m: MovimentacaoListaItem): void {
+    const r = this.rascunhoDe(m);
+    const valor = this.valorNum(r.valorStr);
+    if (!Number.isFinite(valor) || valor === 0) {
+      this.editarMovErro = 'Informe um valor válido (diferente de zero).';
+      return;
+    }
+    const metodoTrim = r.metodo.trim();
+    this.editarMovErro = '';
+    this.salvandoMovId = m.id;
+    this.api
+      .patchMovimentacao(m.id, {
+        valor,
+        categoria_id: r.categoria_id,
+        descricao: r.descricao.trim() || null,
+        metodo_pagamento: metodoTrim ? metodoTrim : null,
+      })
+      .subscribe({
+        next: () => {
+          this.salvandoMovId = null;
+          this.carregar();
+        },
+        error: (e: Error) => {
+          this.editarMovErro =
+            e.message || 'Não foi possível guardar a movimentação.';
+          this.salvandoMovId = null;
+        },
+      });
+  }
+
+  excluirMovimentacao(m: MovimentacaoListaItem): void {
+    if (
+      !confirm(
+        'Eliminar esta movimentação? Esta ação não pode ser desfeita pelo app.',
+      )
+    ) {
+      return;
+    }
+    this.editarMovErro = '';
+    this.excluindoMovId = m.id;
+    this.api.deleteMovimentacao(m.id).subscribe({
+      next: () => {
+        this.excluindoMovId = null;
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.editarMovErro =
+          e.message || 'Não foi possível eliminar a movimentação.';
+        this.excluindoMovId = null;
+      },
+    });
   }
 
   cadastrarDespesa(): void {

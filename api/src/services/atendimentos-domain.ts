@@ -1795,7 +1795,8 @@ export async function confirmarPagamentoPorIdAtendimento(
     const total = totalLiquidoConfirmacao(candidatas);
     const slug = slugCategoriaReceitaPredominante(candidatas);
     const nomeCliente = String(candidatas[0]?.nomeCliente || '').trim();
-    const descricao = `Confirmação pagamento ${id}${nomeCliente ? ` — ${nomeCliente}` : ''}`;
+    /** Razão/campo descrição: só nome da cliente (pedido operacional). */
+    const descricao = nomeCliente || null;
 
     let movimentacaoId: number | null = null;
     if (updated.length > 0 && total > 0) {

@@ -315,6 +315,17 @@
     border-color: var(--color-primary);
   }
 
+  &.secondary {
+    background: var(--color-surface);
+    color: var(--color-text, #1c1917);
+  }
+
+  &.small {
+    min-height: 2.25rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
   &:hover {
     filter: brightness(0.97);
   }
@@ -368,6 +379,31 @@
   margin: 1.25rem 0 0.65rem;
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.subtitulo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+
+  .movimentacoes-titulo {
+    margin: 0 0 0.65rem;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .por-metodo {
@@ -432,6 +468,75 @@ td.num {
 td.mono {
   font-size: 0.85rem;
   word-break: break-all;
+}
+
+th.col-id-atendimento,
+td.col-id-atendimento {
+  min-width: 13.5rem;
+  max-width: 16rem;
+  white-space: nowrap;
+  word-break: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-excluir {
+  width: 4.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.btn-excluir-mov {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #991b1b;
+  border-color: #fecaca;
+  background: #fef2f2;
+
+  &:hover:not(:disabled) {
+    background: #fee2e2;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.col-acoes-mov {
+  min-width: 11rem;
+  vertical-align: middle;
+}
+
+.mov-acoes-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.select-inline,
+.input-inline {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+  font-size: 0.88rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.input-valor-mov {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.select-inline {
+  min-width: 0;
 }
 
 .pill {

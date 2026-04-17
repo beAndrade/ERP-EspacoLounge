@@ -267,7 +267,23 @@
     </div>
   </section>
 
-  <h2 class="subtitulo">Movimentações do dia</h2>
+  <div class="subtitulo-row">
+    <h2 class="subtitulo movimentacoes-titulo">Movimentações do dia</h2>
+    @if (movimentacoes.length > 0) {
+      <button
+        type="button"
+        class="btn"
+        [class.secondary]="!editandoMovimentacoes"
+        [class.primary]="editandoMovimentacoes"
+        (click)="toggleEdicaoMovimentacoes()"
+      >
+        {{ editandoMovimentacoes ? 'Sair da edição' : 'Editar movimentações' }}
+      </button>
+    }
+  </div>
+  @if (editarMovErro) {
+    <p class="alert compact" role="alert">{{ editarMovErro }}</p>
+  }
   @if (movimentacoes.length === 0) {
     <p class="hint">Nenhuma movimentação nesta data.</p>
   } @else if (movimentacoesTabela.length === 0) {
@@ -280,6 +296,11 @@
       <table>
         <thead>
           <tr>
+            @if (editandoMovimentacoes) {
+              <th class="col-excluir" scope="col">
+                <span class="sr-only">Eliminar</span>
+              </th>
+            }
             <th>Registo</th>
             <th>Natureza</th>
             <th>Categoria</th>
@@ -287,13 +308,32 @@
             <th>Método</th>
             <th>Origem</th>
             <th>Detalhe despesa</th>
-            <th>ID atendimento</th>
+            <th class="col-id-atendimento">ID atendimento</th>
             <th>Descrição</th>
+            @if (editandoMovimentacoes) {
+              <th class="col-acoes-mov" scope="col">Ações</th>
+            }
           </tr>
         </thead>
         <tbody>
           @for (m of movimentacoesTabela; track m.id) {
+            @let r = rascunhoDe(m);
             <tr>
+              @if (editandoMovimentacoes) {
+                <td class="col-excluir">
+                  <button
+                    type="button"
+                    class="btn btn-excluir-mov"
+                    [disabled]="
+                      salvandoMovId === m.id || excluindoMovId === m.id
+                    "
+                    (click)="excluirMovimentacao(m)"
+                    title="Eliminar movimentação"
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              }
               <td class="num">
                 {{ m.data_mov | date: 'dd/MM/yy' }}
                 {{ m.created_at | date: 'HH:mm' }}
@@ -306,17 +346,96 @@
                   >{{ m.natureza }}</span
                 >
               </td>
-              <td>{{ categoriaNome(m.categoria_id) }}</td>
-              <td class="num">
-                {{
-                  valorNum(m.valor) | currency: 'BRL' : 'symbol' : '1.2-2'
-                }}
-              </td>
-              <td>{{ m.metodo_pagamento ?? '—' }}</td>
+              @if (editandoMovimentacoes) {
+                <td>
+                  <select
+                    class="select-inline"
+                    [(ngModel)]="r.categoria_id"
+                    [name]="'movCat' + m.id"
+                    [disabled]="salvandoMovId === m.id || excluindoMovId === m.id"
+                  >
+                    @for (
+                      c of categoriasPorNatureza(m.natureza);
+                      track c.id
+                    ) {
+                      <option [ngValue]="c.id">{{ c.nome }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="num">
+                  <input
+                    type="text"
+                    class="input-inline input-valor-mov"
+                    inputmode="decimal"
+                    [(ngModel)]="r.valorStr"
+                    [name]="'movValor' + m.id"
+                    [disabled]="salvandoMovId === m.id || excluindoMovId === m.id"
+                  />
+                </td>
+                <td>
+                  <select
+                    class="select-inline"
+                    [(ngModel)]="r.metodo"
+                    [name]="'movMetodo' + m.id"
+                    [disabled]="salvandoMovId === m.id || excluindoMovId === m.id"
+                  >
+                    <option value="">—</option>
+                    @for (mp of metodosPagamentoEdicao; track mp) {
+                      <option [value]="mp">{{ mp }}</option>
+                    }
+                  </select>
+                </td>
+              } @else {
+                <td>{{ categoriaNome(m.categoria_id) }}</td>
+                <td class="num">
+                  {{
+                    valorNum(m.valor) | currency: 'BRL' : 'symbol' : '1.2-2'
+                  }}
+                </td>
+                <td>{{ m.metodo_pagamento ?? '—' }}</td>
+              }
               <td>{{ rotuloOrigem(m.origem) }}</td>
               <td>{{ detalheDespesa(m) }}</td>
-              <td class="mono">{{ m.id_atendimento ?? '—' }}</td>
-              <td>{{ m.descricao ?? '—' }}</td>
+              <td class="mono col-id-atendimento">
+                {{ m.id_atendimento ?? '—' }}
+              </td>
+              @if (editandoMovimentacoes) {
+                <td>
+                  <input
+                    type="text"
+                    class="input-inline"
+                    [(ngModel)]="r.descricao"
+                    [name]="'movDesc' + m.id"
+                    [disabled]="salvandoMovId === m.id || excluindoMovId === m.id"
+                  />
+                </td>
+                <td class="col-acoes-mov">
+                  <div class="mov-acoes-btns">
+                    <button
+                      type="button"
+                      class="btn small primary"
+                      [disabled]="
+                        salvandoMovId === m.id || excluindoMovId === m.id
+                      "
+                      (click)="guardarMovimentacao(m)"
+                    >
+                      {{ salvandoMovId === m.id ? 'A guardar…' : 'Guardar' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn small secondary"
+                      [disabled]="
+                        salvandoMovId === m.id || excluindoMovId === m.id
+                      "
+                      (click)="reporRascunhoMovimentacao(m)"
+                    >
+                      Repor
+                    </button>
+                  </div>
+                </td>
+              } @else {
+                <td>{{ m.descricao ?? '—' }}</td>
+              }
             </tr>
           }
         </tbody>

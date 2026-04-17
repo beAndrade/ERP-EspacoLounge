@@ -177,6 +177,31 @@ export class SheetsApiService {
       );
   }
 
+  patchMovimentacao(
+    id: number,
+    body: {
+      valor?: number;
+      descricao?: string | null;
+      categoria_id?: number;
+      metodo_pagamento?: string | null;
+    },
+  ): Observable<{ ok: boolean }> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/movimentacoes/${encodeURIComponent(String(id))}`),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  deleteMovimentacao(id: number): Observable<{ ok: boolean }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/movimentacoes/${encodeURIComponent(String(id))}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
   getCaixaDia(data: string): Observable<CaixaDiaResumo> {
     const params = new HttpParams().set('data', data.trim().slice(0, 10));
     return this.http

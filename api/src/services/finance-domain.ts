@@ -140,7 +140,7 @@ export async function inserirReceitaConfirmacaoPagamento(
     valorTotal: number;
     categoriaSlug: string;
     metodoPagamento: string;
-    descricao: string;
+    descricao: string | null;
   },
 ): Promise<number | null> {
   if (o.valorTotal <= 0) return null;
@@ -357,6 +357,82 @@ export async function criarMovimentacaoManual(
     .returning({ id: movimentacoes.id });
   if (!ins) throw new Error('Falha ao gravar movimentação');
   return ins.id;
+}
+
+export async function atualizarMovimentacaoPorId(
+  db: Db,
+  id: number,
+  patch: {
+    valor?: number;
+    descricao?: string | null;
+    categoria_id?: number;
+    metodo_pagamento?: string | null;
+  },
+): Promise<void> {
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new Error('id inválido');
+  }
+
+  const [row] = await db
+    .select()
+    .from(movimentacoes)
+    .where(eq(movimentacoes.id, id))
+    .limit(1);
+  if (!row) throw new Error('Movimentação não encontrada');
+
+  const updates: {
+    valor?: string;
+    descricao?: string | null;
+    categoriaId?: number;
+    metodoPagamento?: string | null;
+  } = {};
+
+  if (patch.valor !== undefined) {
+    if (!Number.isFinite(patch.valor) || patch.valor === 0) {
+      throw new Error('valor deve ser um número diferente de zero');
+    }
+    updates.valor = Math.abs(patch.valor).toFixed(2);
+  }
+
+  if (patch.descricao !== undefined) {
+    const t = String(patch.descricao ?? '').trim();
+    updates.descricao = t ? t : null;
+  }
+
+  if (patch.metodo_pagamento !== undefined) {
+    const t = String(patch.metodo_pagamento ?? '').trim();
+    updates.metodoPagamento = t ? t : null;
+  }
+
+  if (patch.categoria_id !== undefined) {
+    const [cat] = await db
+      .select()
+      .from(categoriasFinanceiras)
+      .where(eq(categoriasFinanceiras.id, patch.categoria_id))
+      .limit(1);
+    if (!cat) throw new Error('categoria_id inválida');
+    if (cat.natureza !== row.natureza) {
+      throw new Error('A categoria deve ter a mesma natureza da movimentação');
+    }
+    updates.categoriaId = patch.categoria_id;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return;
+  }
+
+  await db.update(movimentacoes).set(updates).where(eq(movimentacoes.id, id));
+}
+
+export async function excluirMovimentacaoPorId(db: Db, id: number): Promise<boolean> {
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new Error('id inválido');
+  }
+  const del = await db
+    .delete(movimentacoes)
+    .where(eq(movimentacoes.id, id))
+    .returning({ id: movimentacoes.id });
+  return del.length > 0;
 }
 
 /**
