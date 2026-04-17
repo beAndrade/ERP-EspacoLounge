@@ -443,6 +443,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                     { emitEvent: false },
                   );
                   this.prefillEmCurso = false;
+                  this.aplicarValidadoresLinhas();
+                  this.form.controls.hora_inicial.updateValueAndValidity({
+                    emitEvent: false,
+                  });
                 }
                 terminarPrefillQueryParams();
               },

@@ -4,6 +4,7 @@ import {
   normalizarHoraHHmm,
 } from './brasilia-time';
 import {
+  addMinutesToParts,
   civilNaiveSalaoParaUtcMs,
   parseSqlLocalDateTime,
   ymdOfParts,
@@ -194,7 +195,38 @@ function horaDeInicioParaDiaAtendimento(
 }
 
 /**
- * Menor horário (HH:mm) entre linhas com `inicio` no dia — mesmo critério que edição em agenda-novo.
+ * Quando `inicio` vem vazio (ex.: cabeça Mega/Pacote) mas `fim` existe, estima o início
+ * como `fim − duracaoMin` no mesmo dia (padrão 30 min — alinhado ao slot da agenda).
+ */
+function horaInferidaInicioPorFimMenos(
+  fimRaw: string | null | undefined,
+  dataYmd: string,
+  duracaoMin: number,
+): string {
+  const dia = dataYmd.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return '';
+  const raw = String(fimRaw ?? '').trim();
+  if (!raw) return '';
+  const p = parseSqlLocalDateTime(raw);
+  if (p && ymdOfParts(p) === dia) {
+    const q = addMinutesToParts(p, -duracaoMin);
+    if (ymdOfParts(q) !== dia) return '';
+    return normalizarHoraHHmm(`${q.hh}:${q.mm}`) ?? '';
+  }
+  const mf = minutosMeiaNoiteEmBrasilia(raw, dia);
+  if (mf == null) return '';
+  const start = mf - duracaoMin;
+  if (start < 0) return '';
+  const hh = Math.floor(start / 60) % 24;
+  const mm = Math.floor(start) % 60;
+  return normalizarHoraHHmm(`${hh}:${mm}`) ?? '';
+}
+
+const DUR_PADRAO_INFERIR_INICIO_POR_FIM_MIN = 30;
+
+/**
+ * Menor horário (HH:mm) entre linhas — mesmo critério que edição em agenda-novo.
+ * Usa `inicio` quando existir; se uma linha não tiver inicio utilizável, tenta `fim − 30 min`.
  */
 export function horaInicialMenorDasLinhasAtendimento(
   linhas: AtendimentoListaItem[],
@@ -218,16 +250,41 @@ export function horaInicialMenorDasLinhasAtendimento(
   }
   let bestMin = Infinity;
   let bestH = '';
-  for (const row of linhas) {
-    const h = horaDeInicioParaDiaAtendimento(row.inicio, dia);
-    const n = normalizarHoraHHmm(h);
-    if (!n) continue;
+  const consider = (candidato: string) => {
+    const n = normalizarHoraHHmm(candidato);
+    if (!n) return;
     const [hhS, mmS] = n.split(':');
     const mins = parseInt(hhS, 10) * 60 + parseInt(mmS, 10);
-    if (!Number.isFinite(mins) || mins < 0) continue;
+    if (!Number.isFinite(mins) || mins < 0) return;
     if (mins < bestMin) {
       bestMin = mins;
       bestH = n;
+    }
+  };
+  for (const row of linhas) {
+    const ini = String(row.inicio ?? '').trim();
+    let obteveDeInicio = false;
+    if (ini) {
+      const p = parseSqlLocalDateTime(ini);
+      if (p && ymdOfParts(p) === dia) {
+        consider(`${p.hh}:${p.mm}`);
+        obteveDeInicio = true;
+      } else {
+        const h = horaDeInicioParaDiaAtendimento(ini, dia);
+        if (normalizarHoraHHmm(h)) {
+          consider(h);
+          obteveDeInicio = true;
+        }
+      }
+    }
+    if (!obteveDeInicio) {
+      consider(
+        horaInferidaInicioPorFimMenos(
+          row.fim,
+          dia,
+          DUR_PADRAO_INFERIR_INICIO_POR_FIM_MIN,
+        ),
+      );
     }
   }
   return bestH;
