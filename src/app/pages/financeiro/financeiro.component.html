@@ -25,78 +25,81 @@
       <p class="alert compact" role="alert">{{ despesaFormErro }}</p>
     }
     <div class="grid-despesa">
-      <label>
-        <span>Categoria</span>
-        <select
-          [(ngModel)]="despesaCategoriaId"
-          name="despesaCat"
-          [disabled]="salvandoDespesa || despesaCategorias.length === 0"
-        >
-          @for (c of despesaCategorias; track c.id) {
-            <option [ngValue]="c.id">{{ c.nome }}</option>
-          }
-        </select>
-      </label>
-      <label>
-        <span>Valor</span>
-        <input
-          type="text"
-          name="despesaValor"
-          class="input-moeda"
-          inputmode="numeric"
-          autocomplete="off"
-          spellcheck="false"
-          [value]="formatBrlFromDigitos(despesaValorDigitos)"
-          (input)="onDespesaValorInput($event)"
-          placeholder="R$ 0,00"
-          [disabled]="salvandoDespesa"
-        />
-      </label>
-      <label>
-        <span>Método de pagamento</span>
-        <select
-          class="despesa-metodo"
-          name="despesaMetodo"
-          [(ngModel)]="despesaMetodo"
-          required
-          [disabled]="salvandoDespesa"
-        >
-          <option value="" disabled>Selecione o método</option>
-          @for (m of metodosPagamentoDespesa; track m) {
-            <option [value]="m">{{ m }}</option>
-          }
-        </select>
-      </label>
-      <label class="span-2 despesa-descricao">
-        <span>Descrição</span>
-        <input
-          type="text"
-          name="despesaDesc"
-          [(ngModel)]="despesaDescricao"
-          placeholder="Opcional (texto do lançamento)"
-          [disabled]="salvandoDespesa"
-        />
-      </label>
-      <label>
-        <span>Tipo (etiqueta)</span>
-        <input
-          type="text"
-          name="despesaTipo"
-          [(ngModel)]="despesaTipo"
-          placeholder="Opcional"
-          [disabled]="salvandoDespesa"
-        />
-      </label>
-      <label>
-        <span>Categoria livre</span>
-        <input
-          type="text"
-          name="despesaCatLivre"
-          [(ngModel)]="despesaCategoriaLivre"
-          placeholder="Opcional"
-          [disabled]="salvandoDespesa"
-        />
-      </label>
+      <div class="grid-despesa-linha-principal">
+        <label class="field">
+          <span>Categoria</span>
+          <select
+            [(ngModel)]="despesaCategoriaId"
+            name="despesaCat"
+            [disabled]="salvandoDespesa || despesaCategorias.length === 0"
+          >
+            @for (c of despesaCategorias; track c.id) {
+              <option [ngValue]="c.id">{{ c.nome }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Valor</span>
+          <input
+            type="text"
+            name="despesaValor"
+            class="input-moeda"
+            inputmode="numeric"
+            autocomplete="off"
+            spellcheck="false"
+            [value]="formatBrlFromDigitos(despesaValorDigitos)"
+            (input)="onDespesaValorInput($event)"
+            placeholder="R$ 0,00"
+            [disabled]="salvandoDespesa"
+          />
+        </label>
+        <label class="field">
+          <span>Método de pagamento</span>
+          <select
+            name="despesaMetodo"
+            [(ngModel)]="despesaMetodo"
+            required
+            [disabled]="salvandoDespesa"
+          >
+            <option value="" disabled>Selecione o método</option>
+            @for (m of metodosPagamentoDespesa; track m) {
+              <option [value]="m">{{ m }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Descrição</span>
+          <input
+            type="text"
+            name="despesaDesc"
+            [(ngModel)]="despesaDescricao"
+            placeholder="Opcional (texto do lançamento)"
+            [disabled]="salvandoDespesa"
+          />
+        </label>
+      </div>
+      <div class="grid-despesa-linha-opcionais">
+        <label class="field">
+          <span>Tipo (etiqueta)</span>
+          <input
+            type="text"
+            name="despesaTipo"
+            [(ngModel)]="despesaTipo"
+            placeholder="Opcional"
+            [disabled]="salvandoDespesa"
+          />
+        </label>
+        <label class="field">
+          <span>Categoria livre</span>
+          <input
+            type="text"
+            name="despesaCatLivre"
+            [(ngModel)]="despesaCategoriaLivre"
+            placeholder="Opcional"
+            [disabled]="salvandoDespesa"
+          />
+        </label>
+      </div>
     </div>
     <button
       type="button"
