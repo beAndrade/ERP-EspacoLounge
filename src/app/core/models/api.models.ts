@@ -162,6 +162,9 @@ export interface MovimentacaoListaItem {
   metodo_pagamento: string | null;
   origem: string;
   created_at: string;
+  /** Preenchido quando existe linha em `despesas` ligada (cadastro estruturado). */
+  despesa_tipo?: string | null;
+  despesa_categoria_livre?: string | null;
 }
 
 /** Resumo diário (`GET /api/caixa/dia?data=`). */

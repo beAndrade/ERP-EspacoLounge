@@ -16,6 +16,7 @@ import {
 import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
 import {
+  criarDespesaCadastro,
   criarMovimentacaoManual,
   getCaixaDiaApi,
   listCategoriasFinanceirasApi,
@@ -270,6 +271,45 @@ const app = new Elysia({ adapter: node() })
         descricao: t.Optional(t.String()),
         metodo_pagamento: t.Optional(t.String()),
         id_atendimento: t.Optional(t.String()),
+      }),
+    },
+  )
+  .post(
+    '/api/despesas',
+    async ({ body }) => {
+      try {
+        const b = body as Record<string, unknown>;
+        const res = await criarDespesaCadastro(db, {
+          data_mov: String(b.data_mov ?? ''),
+          valor: Number(b.valor),
+          categoria_id: Number(b.categoria_id),
+          descricao:
+            b.descricao != null ? String(b.descricao) : undefined,
+          metodo_pagamento:
+            b.metodo_pagamento != null
+              ? String(b.metodo_pagamento)
+              : undefined,
+          tipo: b.tipo != null ? String(b.tipo) : undefined,
+          categoria_livre:
+            b.categoria_livre != null
+              ? String(b.categoria_livre)
+              : undefined,
+        });
+        return ok(res);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        data_mov: t.String(),
+        valor: t.Number(),
+        categoria_id: t.Number(),
+        descricao: t.Optional(t.String()),
+        metodo_pagamento: t.Optional(t.String()),
+        tipo: t.Optional(t.String()),
+        categoria_livre: t.Optional(t.String()),
       }),
     },
   )

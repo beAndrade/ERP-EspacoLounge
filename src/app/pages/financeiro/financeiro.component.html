@@ -4,7 +4,7 @@
 </div>
 
 <p class="hint">
-  Resumo do dia e movimentações na mesma data (API Postgres). Lançamentos manuais ficam para uma próxima versão.
+  Resumo do dia e movimentações na mesma data (API Postgres). Despesas estruturadas geram o lançamento no razão e o detalhe em <code>despesas</code>.
 </p>
 
 <div class="filtros">
@@ -14,6 +14,92 @@
   </label>
   <button type="button" class="btn primary" (click)="carregar()">Atualizar</button>
 </div>
+
+@if (!carregando && !erro && caixa) {
+  <section class="cadastro-despesa" aria-label="Nova despesa">
+    <h2 class="subtitulo">Nova despesa</h2>
+    <p class="hint small">
+      Usa a <strong>data</strong> selecionada acima. O valor entra apenas em movimentações (caixa); tipo e categoria livre ficam para relatórios.
+    </p>
+    @if (despesaFormErro) {
+      <p class="alert compact" role="alert">{{ despesaFormErro }}</p>
+    }
+    <div class="grid-despesa">
+      <label>
+        <span>Categoria</span>
+        <select
+          [(ngModel)]="despesaCategoriaId"
+          name="despesaCat"
+          [disabled]="salvandoDespesa || despesaCategorias.length === 0"
+        >
+          @for (c of despesaCategorias; track c.id) {
+            <option [ngValue]="c.id">{{ c.nome }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Valor (R$)</span>
+        <input
+          type="number"
+          name="despesaValor"
+          [(ngModel)]="despesaValor"
+          min="0.01"
+          step="0.01"
+          placeholder="0,00"
+          [disabled]="salvandoDespesa"
+        />
+      </label>
+      <label>
+        <span>Método de pagamento</span>
+        <input
+          type="text"
+          name="despesaMetodo"
+          [(ngModel)]="despesaMetodo"
+          placeholder="Opcional"
+          [disabled]="salvandoDespesa"
+        />
+      </label>
+      <label class="span-2">
+        <span>Descrição</span>
+        <input
+          type="text"
+          name="despesaDesc"
+          [(ngModel)]="despesaDescricao"
+          placeholder="Opcional (texto do lançamento)"
+          [disabled]="salvandoDespesa"
+        />
+      </label>
+      <label>
+        <span>Tipo (etiqueta)</span>
+        <input
+          type="text"
+          name="despesaTipo"
+          [(ngModel)]="despesaTipo"
+          placeholder="Opcional"
+          [disabled]="salvandoDespesa"
+        />
+      </label>
+      <label>
+        <span>Categoria livre</span>
+        <input
+          type="text"
+          name="despesaCatLivre"
+          [(ngModel)]="despesaCategoriaLivre"
+          placeholder="Opcional"
+          [disabled]="salvandoDespesa"
+        />
+      </label>
+    </div>
+    <button
+      type="button"
+      class="btn primary"
+      (click)="cadastrarDespesa()"
+      [disabled]="salvandoDespesa || despesaCategorias.length === 0"
+    >
+      {{ salvandoDespesa ? 'A gravar…' : 'Cadastrar despesa' }}
+    </button>
+  </section>
+}
 
 @if (erro) {
   <p class="alert" role="alert">{{ erro }}</p>
@@ -74,6 +160,7 @@
             <th>Valor</th>
             <th>Método</th>
             <th>Origem</th>
+            <th>Detalhe despesa</th>
             <th>ID atendimento</th>
             <th>Descrição</th>
           </tr>
@@ -101,6 +188,7 @@
               </td>
               <td>{{ m.metodo_pagamento ?? '—' }}</td>
               <td>{{ rotuloOrigem(m.origem) }}</td>
+              <td>{{ detalheDespesa(m) }}</td>
               <td class="mono">{{ m.id_atendimento ?? '—' }}</td>
               <td>{{ m.descricao ?? '—' }}</td>
             </tr>

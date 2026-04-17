@@ -184,6 +184,23 @@ export class SheetsApiService {
       .pipe(map((r) => this.unwrap(r)));
   }
 
+  /** Regista despesa: grava `movimentacoes` + detalhe em `despesas` (valor único na movimentação). */
+  createDespesa(payload: {
+    data_mov: string;
+    valor: number;
+    categoria_id: number;
+    descricao?: string;
+    metodo_pagamento?: string;
+    tipo?: string;
+    categoria_livre?: string;
+  }): Observable<{ movimentacao_id: number; despesa_id: number }> {
+    return this.http
+      .post<
+        ApiResponse<{ movimentacao_id: number; despesa_id: number }>
+      >(this.url('/api/despesas'), payload)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
   createCliente(payload: {
     nome: string;
     telefone?: string;

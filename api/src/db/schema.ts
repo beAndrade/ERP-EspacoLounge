@@ -148,15 +148,6 @@ export const pagamentos = pgTable(
   ],
 );
 
-export const despesas = pgTable('despesas', {
-  id: serial('id').primaryKey(),
-  data: text('data'),
-  tipo: text('tipo'),
-  categoria: text('categoria'),
-  descricao: text('descricao'),
-  valor: text('valor'),
-});
-
 /** Um registo por `id_atendimento` textual (carrinho / pedido). */
 export const atendimentosPedido = pgTable('atendimentos_pedido', {
   idAtendimento: text('id_atendimento').primaryKey(),
@@ -278,5 +269,34 @@ export const movimentacoes = pgTable(
       .where(
         sql`${t.origem} = 'atendimento_confirmacao' AND ${t.natureza} = 'receita'`,
       ),
+  ],
+);
+
+/**
+ * Detalhe opcional de uma despesa (metadados). O valor e o impacto no caixa vêm só de `movimentacoes`.
+ * Linhas legadas (seed/planilha) podem existir sem `movimentacao_id`.
+ */
+export const despesas = pgTable(
+  'despesas',
+  {
+    id: serial('id').primaryKey(),
+    movimentacaoId: integer('movimentacao_id').references(() => movimentacoes.id, {
+      onDelete: 'cascade',
+    }),
+    /** Alinhado a `movimentacoes.data_mov` quando há vínculo; índice para relatórios. */
+    dataRegisto: date('data_registo'),
+    /** Legado (planilha): texto livre. */
+    data: text('data'),
+    tipo: text('tipo'),
+    categoria: text('categoria'),
+    descricao: text('descricao'),
+    /** Legado; não duplicar valor nas linhas novas ligadas a `movimentacoes`. */
+    valor: text('valor'),
+  },
+  (t) => [
+    uniqueIndex('despesas_movimentacao_id_uq')
+      .on(t.movimentacaoId)
+      .where(sql`${t.movimentacaoId} is not null`),
+    index('despesas_data_registo_idx').on(t.dataRegisto),
   ],
 );

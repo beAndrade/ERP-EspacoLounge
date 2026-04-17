@@ -2,12 +2,15 @@ import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import {
   categoriasFinanceiras,
+  despesas,
   movimentacoes,
   naturezaFinanceiraEnum,
 } from '../db/schema';
 
 export const ORIGEM_ATENDIMENTO_CONFIRMACAO = 'atendimento_confirmacao';
 export const ORIGEM_MANUAL = 'manual';
+/** Despesa registada pelo cadastro (detalhe em `despesas`; valor só em `movimentacoes`). */
+export const ORIGEM_DESPESA_CADASTRO = 'despesa_cadastro';
 
 export type NaturezaFinanceira =
   (typeof naturezaFinanceiraEnum.enumValues)[number];
@@ -232,8 +235,11 @@ export async function listMovimentacoesApi(
       metodo_pagamento: movimentacoes.metodoPagamento,
       origem: movimentacoes.origem,
       created_at: movimentacoes.createdAt,
+      despesa_tipo: despesas.tipo,
+      despesa_categoria_livre: despesas.categoria,
     })
-    .from(movimentacoes);
+    .from(movimentacoes)
+    .leftJoin(despesas, eq(despesas.movimentacaoId, movimentacoes.id));
 
   const rows = conds.length
     ? await base
@@ -254,6 +260,8 @@ export async function listMovimentacoesApi(
     metodo_pagamento: r.metodo_pagamento,
     origem: r.origem,
     created_at: r.created_at,
+    despesa_tipo: r.despesa_tipo ?? null,
+    despesa_categoria_livre: r.despesa_categoria_livre ?? null,
   }));
 }
 
@@ -349,4 +357,82 @@ export async function criarMovimentacaoManual(
     .returning({ id: movimentacoes.id });
   if (!ins) throw new Error('Falha ao gravar movimentação');
   return ins.id;
+}
+
+/**
+ * Insere `movimentacoes` (despesa) e `despesas` na mesma transação. Saldo/caixa continuam a usar só `movimentacoes`.
+ */
+export async function criarDespesaCadastro(
+  db: Db,
+  body: {
+    data_mov: string;
+    valor: number;
+    categoria_id: number;
+    descricao?: string;
+    metodo_pagamento?: string;
+    tipo?: string;
+    categoria_livre?: string;
+  },
+): Promise<{ movimentacao_id: number; despesa_id: number }> {
+  const d = String(body.data_mov || '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    throw new Error('data_mov inválida; use YYYY-MM-DD');
+  }
+  if (!Number.isFinite(body.valor) || body.valor === 0) {
+    throw new Error('valor deve ser um número diferente de zero');
+  }
+  const vStr = Math.abs(body.valor).toFixed(2);
+
+  const [cat] = await db
+    .select()
+    .from(categoriasFinanceiras)
+    .where(eq(categoriasFinanceiras.id, body.categoria_id))
+    .limit(1);
+  if (!cat) throw new Error('categoria_id inválida');
+  if (cat.natureza !== 'despesa') {
+    throw new Error('A categoria deve ser de natureza despesa');
+  }
+
+  return await db.transaction(async (tx) => {
+    const [mov] = await tx
+      .insert(movimentacoes)
+      .values({
+        dataMov: d,
+        natureza: 'despesa',
+        valor: vStr,
+        categoriaId: body.categoria_id,
+        descricao:
+          body.descricao != null && String(body.descricao).trim()
+            ? String(body.descricao).trim()
+            : null,
+        idAtendimento: null,
+        metodoPagamento:
+          body.metodo_pagamento != null &&
+          String(body.metodo_pagamento).trim()
+            ? String(body.metodo_pagamento).trim()
+            : null,
+        origem: ORIGEM_DESPESA_CADASTRO,
+      })
+      .returning({ id: movimentacoes.id });
+    if (!mov) throw new Error('Falha ao gravar movimentação');
+
+    const [desp] = await tx
+      .insert(despesas)
+      .values({
+        movimentacaoId: mov.id,
+        dataRegisto: d,
+        tipo:
+          body.tipo != null && String(body.tipo).trim()
+            ? String(body.tipo).trim()
+            : null,
+        categoria:
+          body.categoria_livre != null && String(body.categoria_livre).trim()
+            ? String(body.categoria_livre).trim()
+            : null,
+      })
+      .returning({ id: despesas.id });
+    if (!desp) throw new Error('Falha ao gravar detalhe da despesa');
+
+    return { movimentacao_id: mov.id, despesa_id: desp.id };
+  });
 }

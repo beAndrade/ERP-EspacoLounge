@@ -120,6 +120,13 @@
       "when": 1775697928000,
       "tag": "0016_comissoes_folha_pagamentos_ligacao",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1775697929000,
+      "tag": "0017_despesas_movimentacao_detalhe",
+      "breakpoints": true
     }
   ]
 }
