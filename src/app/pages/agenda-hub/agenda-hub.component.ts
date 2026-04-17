@@ -256,6 +256,67 @@ export class AgendaHubComponent implements OnInit {
     return out;
   }
 
+  /**
+   * Cartões na mesma coluna (profissional) que se sobrepõem no tempo passam a
+   * dividir a largura (ex.: 2 → 50% cada), em vez de empilhar e tapar o de baixo.
+   */
+  blocosLayout(profId: number): Array<{
+    bloco: AgendaHubBloco;
+    leftPct: number;
+    widthPct: number;
+  }> {
+    const blocos = this.blocosNaColuna(profId);
+    type Ext = { bloco: AgendaHubBloco; start: number; end: number };
+    const extents: Ext[] = [];
+    for (const b of blocos) {
+      const ex = this.extentMinutosBloco(b);
+      if (!ex || !(ex.end > ex.start)) continue;
+      extents.push({ bloco: b, start: ex.start, end: ex.end });
+    }
+    if (extents.length === 0) return [];
+
+    extents.sort((a, b) => a.start - b.start || a.end - b.end);
+
+    const laneEnds: number[] = [];
+    const laneByBloco = new Map<AgendaHubBloco, number>();
+
+    for (const ev of extents) {
+      let lane = -1;
+      for (let c = 0; c < laneEnds.length; c++) {
+        if (laneEnds[c] <= ev.start) {
+          lane = c;
+          laneEnds[c] = ev.end;
+          break;
+        }
+      }
+      if (lane < 0) {
+        lane = laneEnds.length;
+        laneEnds.push(ev.end);
+      }
+      laneByBloco.set(ev.bloco, lane);
+    }
+
+    const critPts = new Set<number>();
+    for (const e of extents) {
+      critPts.add(e.start);
+      critPts.add(e.end);
+    }
+    const critSorted = [...critPts].sort((a, b) => a - b);
+
+    return extents.map((ev) => {
+      let maxC = 1;
+      for (const t of critSorted) {
+        if (t < ev.start || t >= ev.end) continue;
+        const cnt = extents.filter((x) => x.start <= t && x.end > t).length;
+        if (cnt > maxC) maxC = cnt;
+      }
+      const lane = laneByBloco.get(ev.bloco) ?? 0;
+      const widthPct = 100 / maxC;
+      const leftPct = (lane / maxC) * 100;
+      return { bloco: ev.bloco, leftPct, widthPct };
+    });
+  }
+
   corGrupo(idAt: string): string {
     let h = 0;
     for (let i = 0; i < idAt.length; i++) {

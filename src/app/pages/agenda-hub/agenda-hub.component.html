@@ -100,39 +100,53 @@
                   [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome"
                 ></button>
               }
-              @for (bloco of blocosNaColuna(p.id); track bloco.trackKey) {
-                <button
-                  type="button"
-                  class="day-col__card"
-                  [style.top.%]="topPctBloco(bloco)"
-                  [style.height.%]="alturaPctBloco(bloco)"
-                  [style.borderLeftColor]="corGrupo(idAtendimentoBloco(bloco))"
-                  [disabled]="!idAtendimentoBloco(bloco)"
-                  [attr.aria-label]="
-                    'Ver detalhes na receção: ' + rotuloBloco(bloco)
-                  "
-                  (click)="abrirDetalhesNaRececaoBloco(bloco, $event)"
+              @for (lay of blocosLayout(p.id); track lay.bloco.trackKey) {
+                <div
+                  class="day-col__card-slot"
+                  [style.top.%]="topPctBloco(lay.bloco)"
+                  [style.height.%]="alturaPctBloco(lay.bloco)"
+                  [style.left.%]="lay.leftPct"
+                  [style.width.%]="lay.widthPct"
                 >
-                  <span class="day-col__card-body">
-                    <span class="day-col__card-linha1">
-                      <span class="day-col__card-time">{{ horaBloco(bloco) }}</span>
-                      <span class="day-col__card-sep" aria-hidden="true">·</span>
-                      <span class="day-col__card-nome">{{
-                        nomeClienteBloco(bloco)
-                      }}</span>
+                  <button
+                    type="button"
+                    class="day-col__card"
+                    [style.borderLeftColor]="
+                      corGrupo(idAtendimentoBloco(lay.bloco))
+                    "
+                    [disabled]="!idAtendimentoBloco(lay.bloco)"
+                    [attr.aria-label]="
+                      'Ver detalhes na receção: ' + rotuloBloco(lay.bloco)
+                    "
+                    (click)="
+                      abrirDetalhesNaRececaoBloco(lay.bloco, $event)
+                    "
+                  >
+                    <span class="day-col__card-body">
+                      <span class="day-col__card-linha1">
+                        <span class="day-col__card-time">{{
+                          horaBloco(lay.bloco)
+                        }}</span>
+                        <span class="day-col__card-sep" aria-hidden="true"
+                          >·</span
+                        >
+                        <span class="day-col__card-nome">{{
+                          nomeClienteBloco(lay.bloco)
+                        }}</span>
+                      </span>
+                      @let itensCard = itensResumoBloco(lay.bloco);
+                      @if (itensCard.length) {
+                        <div class="day-col__card-linha2">
+                          <ul class="day-col__card-itens">
+                            @for (item of itensCard; track item) {
+                              <li>{{ item }}</li>
+                            }
+                          </ul>
+                        </div>
+                      }
                     </span>
-                    @let itensCard = itensResumoBloco(bloco);
-                    @if (itensCard.length) {
-                      <div class="day-col__card-linha2">
-                        <ul class="day-col__card-itens">
-                          @for (item of itensCard; track item) {
-                            <li>{{ item }}</li>
-                          }
-                        </ul>
-                      </div>
-                    }
-                  </span>
-                </button>
+                  </button>
+                </div>
               }
             </div>
           }
