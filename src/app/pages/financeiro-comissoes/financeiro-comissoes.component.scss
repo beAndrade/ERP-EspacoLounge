@@ -69,6 +69,24 @@
   align-items: flex-end;
   margin-bottom: 1.25rem;
 
+  &__competencia {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  &__titulo {
+    font-size: 0.9rem;
+    color: var(--color-muted);
+  }
+
+  &__selects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
   label {
     display: flex;
     flex-direction: column;
@@ -77,12 +95,13 @@
     color: var(--color-muted);
   }
 
-  input[type='month'] {
+  select {
     min-height: var(--touch-min);
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius);
     border: 1px solid #d6d3d1;
     background: var(--color-surface);
+    min-width: 9.5rem;
   }
 }
 

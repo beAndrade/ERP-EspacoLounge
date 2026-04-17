@@ -30,68 +30,96 @@
   }
 </section>
 
-<div class="filtros-periodo">
-  <label>
-    <span>Competência (mês)</span>
-    <input type="month" [(ngModel)]="periodoYm" name="periodoYm" />
-  </label>
-  <button
-    type="button"
-    class="btn primary"
-    (click)="carregar()"
-    [disabled]="carregando || !adminPin.hasPin()"
-  >
-    Atualizar lista
-  </button>
-  <button
-    type="button"
-    class="btn"
-    (click)="recalcular()"
-    [disabled]="carregando || !adminPin.hasPin()"
-  >
-    Recalcular comissões
-  </button>
-</div>
-
 @if (erro) {
   <p class="alert" role="alert">{{ erro }}</p>
-}
-@if (ultimoRecalculo) {
-  <p class="hint ok" role="status">{{ ultimoRecalculo }}</p>
 }
 @if (carregando) {
   <p class="hint">A carregar…</p>
 }
 
-@if (!carregando && !erro && adminPin.hasPin() && itens.length === 0) {
-  <p class="hint">Nenhuma linha de folha para este período.</p>
-}
-
-@if (itens.length > 0) {
-  <div class="table-wrap" role="region" aria-label="Folha por profissional">
-    <table>
-      <thead>
-        <tr>
-          <th>Profissional</th>
-          <th>Mês (legado)</th>
-          <th>Total comissão</th>
-          <th>Total pago</th>
-          <th>Saldo</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of itens; track row.id) {
-          <tr>
-            <td>{{ row.profissional ?? '—' }}</td>
-            <td class="mono">{{ row.mes ?? '—' }}</td>
-            <td class="num">{{ row.total_comissao ?? '—' }}</td>
-            <td class="num">{{ row.total_pago ?? '—' }}</td>
-            <td class="num">{{ row.saldo ?? '—' }}</td>
-            <td>{{ row.status ?? '—' }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
+@if (folhaDesbloqueada) {
+  <div class="filtros-periodo" lang="pt-BR">
+    <div class="filtros-periodo__competencia">
+      <span class="filtros-periodo__titulo">Competência (mês)</span>
+      <div class="filtros-periodo__selects">
+        <label>
+          <span>Mês</span>
+          <select
+            name="mesComp"
+            [ngModel]="mesCompetencia()"
+            (ngModelChange)="onMesCompetenciaChange($event)"
+          >
+            @for (m of mesesPt; track m.v) {
+              <option [value]="m.v">{{ m.nome }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          <span>Ano</span>
+          <select
+            name="anoComp"
+            [ngModel]="anoCompetencia()"
+            (ngModelChange)="onAnoCompetenciaChange($event)"
+          >
+            @for (y of anosCompetencia; track y) {
+              <option [value]="y">{{ y }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+    <button
+      type="button"
+      class="btn primary"
+      (click)="carregar()"
+      [disabled]="carregando || !adminPin.hasPin()"
+    >
+      Atualizar lista
+    </button>
+    <button
+      type="button"
+      class="btn"
+      (click)="recalcular()"
+      [disabled]="carregando || !adminPin.hasPin()"
+    >
+      Recalcular comissões
+    </button>
   </div>
+
+  @if (ultimoRecalculo) {
+    <p class="hint ok" role="status">{{ ultimoRecalculo }}</p>
+  }
+
+  @if (!carregando && !erro && adminPin.hasPin() && itens.length === 0) {
+    <p class="hint">Nenhuma linha de folha para este período.</p>
+  }
+
+  @if (itens.length > 0) {
+    <div class="table-wrap" role="region" aria-label="Folha por profissional">
+      <table>
+        <thead>
+          <tr>
+            <th>Profissional</th>
+            <th>Mês (legado)</th>
+            <th>Total comissão</th>
+            <th>Total pago</th>
+            <th>Saldo</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of itens; track row.id) {
+            <tr>
+              <td>{{ row.profissional ?? '—' }}</td>
+              <td class="mono">{{ row.mes ?? '—' }}</td>
+              <td class="num">{{ row.total_comissao ?? '—' }}</td>
+              <td class="num">{{ row.total_pago ?? '—' }}</td>
+              <td class="num">{{ row.saldo ?? '—' }}</td>
+              <td>{{ row.status ?? '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 }
