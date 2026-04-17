@@ -47,6 +47,20 @@
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #991b1b;
+
+  &--success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+  }
+
+  &__link {
+    display: inline-block;
+    margin-left: 0.5rem;
+    font-weight: 600;
+    color: var(--color-primary, #9d174d);
+    text-decoration: underline;
+  }
 }
 
 .dia-toggle {

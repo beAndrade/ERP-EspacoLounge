@@ -74,6 +74,8 @@ export class AtendimentosComponent implements OnInit, OnChanges {
   dia: DiaCards = 'hoje';
   carregando = false;
   erro = '';
+  /** Após confirmar pagamento com sucesso (movimentação no financeiro). */
+  mensagemFinanceiroOk = '';
   grupos: GrupoClienteDia[] = [];
   /** `id` do grupo com detalhes abertos, ou null */
   grupoExpandidoId: string | null = null;
@@ -560,8 +562,9 @@ export class AtendimentosComponent implements OnInit, OnChanges {
     }
     this.confirmandoPagamentoIdAt = idAt;
     this.erro = '';
+    this.mensagemFinanceiroOk = '';
     this.api.confirmarPagamento(idAt, metodo).subscribe({
-      next: () => {
+      next: (res) => {
         this.confirmandoPagamentoIdAt = null;
         for (const l of g.linhas) {
           l.pagamentoStatus = 'confirmado';
@@ -569,6 +572,14 @@ export class AtendimentosComponent implements OnInit, OnChanges {
         }
         const { [g.id]: _, ...rest } = this.metodoPagamentoPorGrupo;
         this.metodoPagamentoPorGrupo = rest;
+        const mid = res?.movimentacao_id;
+        this.mensagemFinanceiroOk =
+          mid != null && mid > 0
+            ? `Pagamento confirmado. Lançamento n.º ${mid} registado no financeiro.`
+            : 'Pagamento confirmado.';
+        window.setTimeout(() => {
+          this.mensagemFinanceiroOk = '';
+        }, 12000);
       },
       error: (e: Error) => {
         this.confirmandoPagamentoIdAt = null;

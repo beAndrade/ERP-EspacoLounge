@@ -54,6 +54,8 @@ export class FinanceiroComponent implements OnInit {
 
   caixa: CaixaDiaResumo | null = null;
   movimentacoes: MovimentacaoListaItem[] = [];
+  /** `null` = todas as categorias (só filtra a tabela de movimentações). */
+  filtroCategoriaMovimentos: number | null = null;
 
   despesaCategoriaId: number | null = null;
   /** Apenas dígitos; valor em reais = int/100 (entrada ordem caixa/POS). */
@@ -149,6 +151,76 @@ export class FinanceiroComponent implements OnInit {
 
   private despesaValorReais(): number {
     return (parseInt(this.despesaValorDigitos || '0', 10) || 0) / 100;
+  }
+
+  /** Linhas da tabela respeitam o filtro de categoria. */
+  get movimentacoesTabela(): MovimentacaoListaItem[] {
+    const f = this.filtroCategoriaMovimentos;
+    if (f == null) return this.movimentacoes;
+    return this.movimentacoes.filter((m) => m.categoria_id === f);
+  }
+
+  agregadosPorNatureza(
+    natureza: 'receita' | 'despesa',
+  ): { nome: string; valor: number }[] {
+    const map = new Map<number, number>();
+    for (const m of this.movimentacoes) {
+      if (m.natureza !== natureza) continue;
+      const id = m.categoria_id;
+      map.set(id, (map.get(id) ?? 0) + this.valorNum(m.valor));
+    }
+    return Array.from(map.entries())
+      .map(([id, valor]) => ({ nome: this.categoriaNome(id), valor }))
+      .filter((x) => x.valor > 0)
+      .sort((a, b) => b.valor - a.valor);
+  }
+
+  maxValorLista(rows: { valor: number }[]): number {
+    const m = Math.max(0, ...rows.map((r) => r.valor));
+    return m > 0 ? m : 1;
+  }
+
+  pctBarra(valor: number, max: number): number {
+    if (max <= 0) return 0;
+    return Math.min(100, (valor / max) * 100);
+  }
+
+  get comparativoReceitaDespesa(): {
+    receitas: number;
+    despesas: number;
+    pctReceita: number;
+    pctDespesa: number;
+  } {
+    const r = this.caixa ? this.valorNum(this.caixa.total_receitas) : 0;
+    const d = this.caixa ? this.valorNum(this.caixa.total_despesas) : 0;
+    const max = Math.max(r, d, 1);
+    return {
+      receitas: r,
+      despesas: d,
+      pctReceita: (r / max) * 100,
+      pctDespesa: (d / max) * 100,
+    };
+  }
+
+  get receitasPorMetodoBarras(): { metodo: string; valor: number; pct: number }[] {
+    const rows = this.caixa?.receitas_por_metodo ?? [];
+    const parsed = rows.map((x) => ({
+      metodo: x.metodo,
+      valor: this.valorNum(x.total),
+    }));
+    const max = this.maxValorLista(parsed);
+    return parsed.map((row) => ({
+      ...row,
+      pct: this.pctBarra(row.valor, max),
+    }));
+  }
+
+  get agregadosReceitaCategoriaRows(): { nome: string; valor: number }[] {
+    return this.agregadosPorNatureza('receita');
+  }
+
+  get agregadosDespesaCategoriaRows(): { nome: string; valor: number }[] {
+    return this.agregadosPorNatureza('despesa');
   }
 
   detalheDespesa(m: MovimentacaoListaItem): string {

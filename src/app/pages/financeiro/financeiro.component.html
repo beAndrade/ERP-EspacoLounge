@@ -12,6 +12,19 @@
     <span>Data</span>
     <input type="date" [(ngModel)]="dataYmd" name="dataYmd" />
   </label>
+  <label>
+    <span>Categoria (tabela)</span>
+    <select
+      [(ngModel)]="filtroCategoriaMovimentos"
+      name="filtroCatMov"
+      class="filtro-categoria"
+    >
+      <option [ngValue]="null">Todas</option>
+      @for (c of categorias; track c.id) {
+        <option [ngValue]="c.id">{{ c.nome }} ({{ c.natureza }})</option>
+      }
+    </select>
+  </label>
   <button type="button" class="btn primary" (click)="carregar()">Atualizar</button>
 </div>
 
@@ -143,25 +156,122 @@
     </div>
   </section>
 
-  @if (caixa.receitas_por_metodo.length > 0) {
-    <div class="por-metodo">
-      <h2 class="subtitulo">Receitas por método</h2>
-      <ul>
-        @for (x of caixa.receitas_por_metodo; track $index) {
-          <li>
-            <span>{{ x.metodo }}</span>
-            <span>{{
-              valorNum(x.total) | currency: 'BRL' : 'symbol' : '1.2-2'
+  <section class="dashboard-financeiro" aria-label="Painel do dia">
+    <h2 class="subtitulo">Painel do dia</h2>
+    <p class="hint small">
+      Gráficos com base em <strong>todos</strong> os lançamentos desta data. O filtro
+      de categoria acima aplica-se apenas à tabela de movimentações.
+    </p>
+    <div class="dashboard-grid">
+      <div class="chart-card">
+        <h3 class="chart-card__titulo">Receitas × despesas</h3>
+        @let cmp = comparativoReceitaDespesa;
+        <div class="bar-compare">
+          <div class="bar-compare__row">
+            <span class="bar-compare__label">Receitas</span>
+            <div class="bar-compare__track">
+              <div
+                class="bar-compare__fill receita"
+                [style.width.%]="cmp.pctReceita"
+              ></div>
+            </div>
+            <span class="bar-compare__valor">{{
+              cmp.receitas | currency: 'BRL' : 'symbol' : '1.2-2'
             }}</span>
-          </li>
-        }
-      </ul>
+          </div>
+          <div class="bar-compare__row">
+            <span class="bar-compare__label">Despesas</span>
+            <div class="bar-compare__track">
+              <div
+                class="bar-compare__fill despesa"
+                [style.width.%]="cmp.pctDespesa"
+              ></div>
+            </div>
+            <span class="bar-compare__valor">{{
+              cmp.despesas | currency: 'BRL' : 'symbol' : '1.2-2'
+            }}</span>
+          </div>
+        </div>
+      </div>
+
+      @if (receitasPorMetodoBarras.length > 0) {
+        <div class="chart-card">
+          <h3 class="chart-card__titulo">Receitas por método</h3>
+          <div class="bar-list">
+            @for (row of receitasPorMetodoBarras; track row.metodo) {
+              <div class="bar-list__row">
+                <span class="bar-list__label">{{ row.metodo }}</span>
+                <div class="bar-list__track">
+                  <div
+                    class="bar-list__fill receita"
+                    [style.width.%]="row.pct"
+                  ></div>
+                </div>
+                <span class="bar-list__valor">{{
+                  row.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (agregadosReceitaCategoriaRows.length > 0) {
+        <div class="chart-card">
+          <h3 class="chart-card__titulo">Receitas por categoria</h3>
+          @let recMax = maxValorLista(agregadosReceitaCategoriaRows);
+          <div class="bar-list">
+            @for (row of agregadosReceitaCategoriaRows; track row.nome) {
+              <div class="bar-list__row">
+                <span class="bar-list__label">{{ row.nome }}</span>
+                <div class="bar-list__track">
+                  <div
+                    class="bar-list__fill receita"
+                    [style.width.%]="pctBarra(row.valor, recMax)"
+                  ></div>
+                </div>
+                <span class="bar-list__valor">{{
+                  row.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (agregadosDespesaCategoriaRows.length > 0) {
+        <div class="chart-card">
+          <h3 class="chart-card__titulo">Despesas por categoria</h3>
+          @let despMax = maxValorLista(agregadosDespesaCategoriaRows);
+          <div class="bar-list">
+            @for (row of agregadosDespesaCategoriaRows; track row.nome) {
+              <div class="bar-list__row">
+                <span class="bar-list__label">{{ row.nome }}</span>
+                <div class="bar-list__track">
+                  <div
+                    class="bar-list__fill despesa"
+                    [style.width.%]="pctBarra(row.valor, despMax)"
+                  ></div>
+                </div>
+                <span class="bar-list__valor">{{
+                  row.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
-  }
+  </section>
 
   <h2 class="subtitulo">Movimentações do dia</h2>
   @if (movimentacoes.length === 0) {
     <p class="hint">Nenhuma movimentação nesta data.</p>
+  } @else if (movimentacoesTabela.length === 0) {
+    <p class="hint">
+      Nenhuma movimentação com a categoria selecionada. Escolha «Todas» ou outra
+      categoria.
+    </p>
   } @else {
     <div class="table-wrap" role="region" aria-label="Movimentações">
       <table>
@@ -179,7 +289,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (m of movimentacoes; track m.id) {
+          @for (m of movimentacoesTabela; track m.id) {
             <tr>
               <td class="num">
                 {{ m.data_mov | date: 'dd/MM/yy' }}
