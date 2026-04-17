@@ -30,6 +30,13 @@ Servidor em `http://localhost:3000` (ou `PORT` no `.env`).
 | `PORT` | Porta HTTP (default 3000) |
 | `XLSX_PATH` | Caminho absoluto do export XLSX para seed (opcional) |
 | `CORS_ORIGINS` | JSON array de origens ou `*` |
+| `ADMIN_PIN` | PIN de administrador: obrigatório para `GET /api/folha` e `POST /api/folha/recalcular-comissoes` (header `X-Admin-Pin`) |
+
+### Folha e comissões (operacional)
+
+1. Defina `ADMIN_PIN` no `.env` da API e reinicie o servidor.
+2. No Angular, abra **Comissões** no menu ou **Financeiro → Comissões / Folha**, introduza o mesmo PIN e use **Guardar e carregar**.
+3. Os totais em `folha` são atualizados automaticamente ao **finalizar cobrança** ou **confirmar pagamento** de um atendimento (recálculo do mês da data do serviço). Pode usar **Recalcular comissões** para forçar o agregado a partir de `atendimentos.comissao`.
 
 ## Scripts npm
 
@@ -70,6 +77,8 @@ Todas as respostas: `{ ok: boolean, data: T | null, error: { code, message } | n
 | GET | `/api/cabelos` | `{ items }` |
 | GET | `/api/profissionais` | `{ items: string[] }` |
 | GET | `/api/atendimentos?dataInicio&dataFim` | `{ items }` (chaves PT + `id`) |
+| GET | `/api/folha?periodo=YYYY-MM` | `{ items }` folha por mês — requer `X-Admin-Pin` |
+| POST | `/api/folha/recalcular-comissoes` | `{ periodo, profissional_id? }` — requer `X-Admin-Pin` |
 | POST | `/api/atendimentos` | corpo = payload `CreateAtendimento` (tipos Serviço, Mega, Pacote, Produto, Cabelo ou legado só `servico_id`) |
 
 ## Deploy

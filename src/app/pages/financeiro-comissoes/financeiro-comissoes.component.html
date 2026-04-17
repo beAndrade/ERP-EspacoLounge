@@ -1,0 +1,97 @@
+<div class="toolbar">
+  <h1>Comissões / Folha</h1>
+  <a routerLink="/financeiro" class="link-back">← Financeiro (dia)</a>
+</div>
+
+<p class="hint">
+  Totais mensais por profissional (tabela <code>folha</code>). Introduza o PIN de
+  administrador (o mesmo definido em <code>ADMIN_PIN</code> na API) para ver e
+  recalcular.
+</p>
+
+<section class="painel-pin" aria-label="Acesso administrador">
+  <label class="field">
+    <span>PIN administrador</span>
+    <input
+      type="password"
+      name="adminPin"
+      [(ngModel)]="pinDraft"
+      autocomplete="off"
+      placeholder="PIN"
+    />
+  </label>
+  <button type="button" class="btn primary" (click)="salvarPinECarregar()">
+    Guardar e carregar
+  </button>
+  @if (adminPin.hasPin()) {
+    <button type="button" class="btn ghost" (click)="terminarSessaoPin()">
+      Esquecer PIN nesta sessão
+    </button>
+  }
+</section>
+
+<div class="filtros-periodo">
+  <label>
+    <span>Competência (mês)</span>
+    <input type="month" [(ngModel)]="periodoYm" name="periodoYm" />
+  </label>
+  <button
+    type="button"
+    class="btn primary"
+    (click)="carregar()"
+    [disabled]="carregando || !adminPin.hasPin()"
+  >
+    Atualizar lista
+  </button>
+  <button
+    type="button"
+    class="btn"
+    (click)="recalcular()"
+    [disabled]="carregando || !adminPin.hasPin()"
+  >
+    Recalcular comissões
+  </button>
+</div>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (ultimoRecalculo) {
+  <p class="hint ok" role="status">{{ ultimoRecalculo }}</p>
+}
+@if (carregando) {
+  <p class="hint">A carregar…</p>
+}
+
+@if (!carregando && !erro && adminPin.hasPin() && itens.length === 0) {
+  <p class="hint">Nenhuma linha de folha para este período.</p>
+}
+
+@if (itens.length > 0) {
+  <div class="table-wrap" role="region" aria-label="Folha por profissional">
+    <table>
+      <thead>
+        <tr>
+          <th>Profissional</th>
+          <th>Mês (legado)</th>
+          <th>Total comissão</th>
+          <th>Total pago</th>
+          <th>Saldo</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of itens; track row.id) {
+          <tr>
+            <td>{{ row.profissional ?? '—' }}</td>
+            <td class="mono">{{ row.mes ?? '—' }}</td>
+            <td class="num">{{ row.total_comissao ?? '—' }}</td>
+            <td class="num">{{ row.total_pago ?? '—' }}</td>
+            <td class="num">{{ row.saldo ?? '—' }}</td>
+            <td>{{ row.status ?? '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

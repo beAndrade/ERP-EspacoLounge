@@ -12,6 +12,18 @@
   }
 }
 
+.toolbar-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.link-sub {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
 .link-back {
   font-size: 0.95rem;
 }

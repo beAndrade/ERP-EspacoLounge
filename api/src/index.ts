@@ -32,7 +32,11 @@ import {
   listRegrasMegaApi,
   listServicosForApi,
 } from './services/queries';
-import { recalcularTotaisComissaoFolhaPorPeriodo } from './services/folha-domain';
+import { requireAdminPin } from './lib/admin-pin';
+import {
+  listFolhaPorPeriodoApi,
+  recalcularTotaisComissaoFolhaPorPeriodo,
+} from './services/folha-domain';
 
 function corsOrigins(): string[] | true {
   const raw = process.env.CORS_ORIGINS?.trim();
@@ -120,7 +124,7 @@ const app = new Elysia({ adapter: node() })
     cors({
       origin: corsOrigins(),
       methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type'],
+      allowedHeaders: ['Content-Type', 'X-Admin-Pin'],
     }),
   )
   .get('/health', () =>
@@ -386,9 +390,30 @@ const app = new Elysia({ adapter: node() })
   },
     { body: postAtendimentoMutationBody },
   )
+  .get('/api/folha', async ({ query, request }) => {
+    const denied = requireAdminPin(request);
+    if (denied) return denied;
+    try {
+      const q = query as Record<string, string | undefined>;
+      const periodo = String(q.periodo ?? '').trim();
+      if (!periodo) {
+        return fail('VALIDATION', 'Query periodo é obrigatória (YYYY-MM)');
+      }
+      const items = await listFolhaPorPeriodoApi(db, periodo);
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/inválido/i.test(msg)) {
+        return fail('VALIDATION', msg);
+      }
+      return fail('SERVER', msg);
+    }
+  })
   .post(
     '/api/folha/recalcular-comissoes',
-    async ({ body }) => {
+    async ({ body, request }) => {
+      const denied = requireAdminPin(request);
+      if (denied) return denied;
       try {
         const b = body as { periodo?: string; profissional_id?: number };
         const periodo = String(b.periodo ?? '').trim();

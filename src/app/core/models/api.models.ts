@@ -176,6 +176,31 @@ export interface CaixaDiaResumo {
   receitas_por_metodo: { metodo: string; total: string }[];
 }
 
+/** Linha de `folha` por competência (`GET /api/folha?periodo=` + PIN). */
+export interface FolhaListaItem {
+  id: number;
+  profissional_id: number | null;
+  profissional: string | null;
+  periodo_referencia: string | null;
+  mes: string | null;
+  total_comissao: string | null;
+  total_pago: string | null;
+  saldo: string | null;
+  status: string | null;
+}
+
+/** Resposta de `POST /api/folha/recalcular-comissoes`. */
+export interface RecalcularFolhaComissoesResposta {
+  periodo: string;
+  linhas_folha_atualizadas: number;
+  itens: {
+    folha_id: number;
+    profissional_id: number | null;
+    total_comissao_reais: number;
+    linhas_atendimento: number;
+  }[];
+}
+
 /** Tipo gravado na API / coluna Tipo da listagem. */
 export type TipoAtendimento =
   | 'Serviço'

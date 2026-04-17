@@ -10,6 +10,8 @@ import {
   CabeloCatalogoItem,
   CaixaDiaResumo,
   CategoriaFinanceiraItem,
+  FolhaListaItem,
+  RecalcularFolhaComissoesResposta,
   Cliente,
   CreateAtendimentoPayload,
   MovimentacaoListaItem,
@@ -181,6 +183,44 @@ export class SheetsApiService {
       .get<ApiResponse<CaixaDiaResumo>>(this.url('/api/caixa/dia'), {
         params,
       })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  /** Folha por competência; requer `ADMIN_PIN` no servidor e PIN em `AdminPinService`. */
+  listFolha(periodoYm: string): Observable<FolhaListaItem[]> {
+    const params = new HttpParams().set(
+      'periodo',
+      periodoYm.trim().slice(0, 7),
+    );
+    return this.http
+      .get<ApiResponse<{ items: FolhaListaItem[] }>>(this.url('/api/folha'), {
+        params,
+      })
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  recalcularFolhaComissoes(
+    periodoYm: string,
+    profissionalId?: number,
+  ): Observable<RecalcularFolhaComissoesResposta> {
+    const body: { periodo: string; profissional_id?: number } = {
+      periodo: periodoYm.trim().slice(0, 7),
+    };
+    if (
+      profissionalId != null &&
+      Number.isFinite(profissionalId) &&
+      profissionalId > 0
+    ) {
+      body.profissional_id = profissionalId;
+    }
+    return this.http
+      .post<ApiResponse<RecalcularFolhaComissoesResposta>>(
+        this.url('/api/folha/recalcular-comissoes'),
+        body,
+      )
       .pipe(map((r) => this.unwrap(r)));
   }
 

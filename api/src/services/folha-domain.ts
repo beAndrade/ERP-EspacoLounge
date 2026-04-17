@@ -1,6 +1,6 @@
 import { and, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db';
-import { atendimentos, folha } from '../db/schema';
+import { atendimentos, folha, profissionais } from '../db/schema';
 import {
   formatMoedaReciboPt,
   toNumberPt,
@@ -14,6 +14,54 @@ function primeiroDiaMesSeguinte(periodoYm: string): string {
   const m = parseInt(ms, 10);
   if (m === 12) return `${y + 1}-01-01`;
   return `${y}-${String(m + 1).padStart(2, '0')}-01`;
+}
+
+/** Ex.: `2026-04` → `04/2026` (legado planilha). */
+function periodoYmParaMesLegivel(ym: string): string {
+  const [y, mo] = ym.split('-');
+  return `${mo}/${y}`;
+}
+
+/** `atendimentos.data` → `YYYY-MM` ou null. */
+function dataAtendimentoParaPeriodoYm(
+  data: string | Date | null | undefined,
+): string | null {
+  if (data == null) return null;
+  const s =
+    typeof data === 'string'
+      ? data.slice(0, 10)
+      : `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  return s.slice(0, 7);
+}
+
+/**
+ * Recalcula a folha para cada mês (`YYYY-MM`) presente nas linhas do atendimento.
+ * Chamado após finalizar cobrança ou confirmar pagamento.
+ */
+export async function recalcularFolhaAposMudancaAtendimento(
+  db: Db,
+  idAtendimento: string,
+): Promise<void> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) return;
+
+  const rows = await db
+    .select({ data: atendimentos.data })
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, id));
+
+  const periodos = new Set<string>();
+  for (const r of rows) {
+    const ym = dataAtendimentoParaPeriodoYm(
+      r.data as string | Date | null | undefined,
+    );
+    if (ym && PERIODO_YM_RE.test(ym)) periodos.add(ym);
+  }
+
+  for (const p of periodos) {
+    await recalcularTotaisComissaoFolhaPorPeriodo(db, p);
+  }
 }
 
 export type RecalcularComissoesFolhaResultado = {
@@ -89,7 +137,36 @@ export async function recalcularTotaisComissaoFolhaPorPeriodo(
     ? and(eq(folha.periodoReferencia, periodo), eq(folha.profissionalId, profFilter))
     : eq(folha.periodoReferencia, periodo);
 
-  const folhaRows = await db.select().from(folha).where(condFolha);
+  let folhaRows = await db.select().from(folha).where(condFolha);
+  const folhaPorProfId = new Map(
+    folhaRows
+      .filter((f) => f.profissionalId != null && f.profissionalId > 0)
+      .map((f) => [f.profissionalId as number, f]),
+  );
+
+  for (const pid of somaPorProf.keys()) {
+    if (profFilter != null && pid !== profFilter) continue;
+    if (folhaPorProfId.has(pid)) continue;
+
+    const [pr] = await db
+      .select({ nome: profissionais.nome })
+      .from(profissionais)
+      .where(eq(profissionais.id, pid))
+      .limit(1);
+
+    await db.insert(folha).values({
+      profissionalId: pid,
+      profissional: pr?.nome ?? null,
+      mes: periodoYmParaMesLegivel(periodo),
+      periodoReferencia: periodo,
+      totalComissao: formatMoedaReciboPt(0),
+      totalPago: null,
+      saldo: null,
+      status: null,
+    });
+  }
+
+  folhaRows = await db.select().from(folha).where(condFolha);
 
   let atualizadas = 0;
   const itens: RecalcularComissoesFolhaResultado['itens'] = [];
@@ -130,4 +207,58 @@ export async function recalcularTotaisComissaoFolhaPorPeriodo(
     linhas_folha_atualizadas: atualizadas,
     itens,
   };
+}
+
+export type FolhaListaItemApi = {
+  id: number;
+  profissional_id: number | null;
+  profissional: string | null;
+  periodo_referencia: string | null;
+  mes: string | null;
+  total_comissao: string | null;
+  total_pago: string | null;
+  saldo: string | null;
+  status: string | null;
+};
+
+/** Lista linhas de `folha` para um mês de competência (`YYYY-MM`). */
+export async function listFolhaPorPeriodoApi(
+  db: Db,
+  periodoYm: string,
+): Promise<FolhaListaItemApi[]> {
+  const periodo = String(periodoYm || '').trim();
+  if (!PERIODO_YM_RE.test(periodo)) {
+    throw new Error('periodo inválido: use YYYY-MM (ex.: 2026-04)');
+  }
+
+  const rows = await db
+    .select({
+      id: folha.id,
+      profissionalId: folha.profissionalId,
+      profissional: folha.profissional,
+      periodoReferencia: folha.periodoReferencia,
+      mes: folha.mes,
+      totalComissao: folha.totalComissao,
+      totalPago: folha.totalPago,
+      saldo: folha.saldo,
+      status: folha.status,
+    })
+    .from(folha)
+    .where(eq(folha.periodoReferencia, periodo));
+
+  rows.sort((a, b) =>
+    String(a.profissional ?? '').localeCompare(String(b.profissional ?? ''), 'pt'),
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    profissional_id: r.profissionalId,
+    profissional: r.profissional,
+    periodo_referencia: r.periodoReferencia,
+    mes: r.mes,
+    total_comissao: r.totalComissao,
+    total_pago: r.totalPago,
+    saldo: r.saldo,
+    status: r.status,
+  }));
 }

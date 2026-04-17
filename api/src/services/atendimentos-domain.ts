@@ -33,6 +33,7 @@ import {
   toNumberPt,
   totalLiquidoConfirmacao,
 } from './finance-domain';
+import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 
 export type CreateAtendimentoPayload =
   | {
@@ -1699,6 +1700,10 @@ export async function finalizarCobrancaPorIdAtendimento(
     atualizadas += 1;
   }
 
+  if (atualizadas > 0) {
+    await recalcularFolhaAposMudancaAtendimento(db, id);
+  }
+
   return atualizadas;
 }
 
@@ -1749,7 +1754,7 @@ export async function confirmarPagamentoPorIdAtendimento(
     throw new Error('Método de pagamento inválido. Use Dinheiro, Pix ou Cartão.');
   }
 
-  return await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const candidatas = await tx
       .select()
       .from(atendimentos)
@@ -1812,4 +1817,10 @@ export async function confirmarPagamentoPorIdAtendimento(
       movimentacaoId,
     };
   });
+
+  if (result.linhasAtualizadas > 0) {
+    await recalcularFolhaAposMudancaAtendimento(db, id);
+  }
+
+  return result;
 }

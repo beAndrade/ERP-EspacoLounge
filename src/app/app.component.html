@@ -8,7 +8,15 @@
         [routerLinkActiveOptions]="{ exact: false }"
         >Agenda</a
       >
-      <a routerLink="/financeiro" routerLinkActive="active">Financeiro</a>
+      <a
+        routerLink="/financeiro"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >Financeiro</a
+      >
+      <a routerLink="/financeiro/comissoes" routerLinkActive="active"
+        >Comissões</a
+      >
       <a routerLink="/clientes" routerLinkActive="active">Clientes</a>
       <a routerLink="/servicos" routerLinkActive="active">Serviços</a>
       <a

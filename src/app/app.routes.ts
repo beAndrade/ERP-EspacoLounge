@@ -8,6 +8,7 @@ import { ClientesComponent } from './pages/clientes/clientes.component';
 import { ClientesNovoComponent } from './pages/clientes-novo/clientes-novo.component';
 import { ClientesEditarComponent } from './pages/clientes-editar/clientes-editar.component';
 import { ServicosComponent } from './pages/servicos/servicos.component';
+import { FinanceiroComissoesComponent } from './pages/financeiro-comissoes/financeiro-comissoes.component';
 import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
 
 export const routes: Routes = [
@@ -21,6 +22,7 @@ export const routes: Routes = [
   { path: 'clientes/novo', component: ClientesNovoComponent },
   { path: 'clientes/:id/editar', component: ClientesEditarComponent },
   { path: 'servicos', component: ServicosComponent },
+  { path: 'financeiro/comissoes', component: FinanceiroComissoesComponent },
   { path: 'financeiro', component: FinanceiroComponent },
   { path: '**', redirectTo: '' },
 ];
