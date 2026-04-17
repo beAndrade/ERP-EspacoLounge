@@ -46,6 +46,7 @@ import {
   Subject,
   Subscription,
   switchMap,
+  take,
   takeUntil,
 } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
@@ -64,6 +65,7 @@ import {
 } from '../../core/models/api.models';
 import {
   dataDdMmAaaa,
+  horaInicialMenorDasLinhasAtendimento,
   ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
@@ -376,35 +378,86 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const dat = qm.get('data')?.trim();
     const pidStr = qm.get('profissional_id')?.trim();
     const hora = qm.get('hora')?.trim();
+    const atendimentoRef = qm.get('atendimento_ref')?.trim();
     if (cid) this.form.patchValue({ cliente_id: cid });
     if (dat && /^\d{4}-\d{2}-\d{2}$/.test(dat)) {
       this.form.patchValue({ data: dat });
     }
     const datOk = dat && /^\d{4}-\d{2}-\d{2}$/.test(dat) ? dat : '';
     const hn = normalizarHoraHHmm(hora ?? '');
+    const limparUrl = !!(
+      cid ||
+      dat ||
+      pidStr ||
+      hora ||
+      atendimentoRef
+    );
+
+    const terminarPrefillQueryParams = (): void => {
+      if (limparUrl) {
+        void this.router.navigate(['/agenda/novo'], {
+          replaceUrl: true,
+          queryParams: {},
+        });
+      }
+      this.aplicarContextoSlotInput();
+      this.carregandoListas = false;
+    };
+
+    const aplicarServicoExtraComProf = (pid: number): void => {
+      this.prefillEmCurso = true;
+      this.form.patchValue({ data: datOk }, { emitEvent: false });
+      this.garantirMinUmaLinha();
+      this.aplicarValidadoresLinhas();
+      const g0 = this.linhasItensArray.at(0);
+      if (g0) {
+        g0.patchValue(
+          {
+            itemTipo: 'Serviço',
+            profissional: pid,
+          },
+          { emitEvent: false },
+        );
+      }
+      if (hn) {
+        this.form.patchValue({ hora_inicial: hn }, { emitEvent: false });
+      }
+      this.prefillEmCurso = false;
+    };
+
     if (datOk && pidStr && /^\d+$/.test(pidStr)) {
       const pid = parseInt(pidStr, 10);
       if (pid > 0) {
-        this.prefillEmCurso = true;
-        this.form.patchValue({ data: datOk }, { emitEvent: false });
-        this.garantirMinUmaLinha();
-        this.aplicarValidadoresLinhas();
-        const g0 = this.linhasItensArray.at(0);
-        if (g0) {
-          g0.patchValue(
-            {
-              itemTipo: 'Serviço',
-              profissional: pid,
-            },
-            { emitEvent: false },
-          );
+        aplicarServicoExtraComProf(pid);
+        if (!hn && atendimentoRef) {
+          this.api
+            .listAgendamentos(undefined, undefined, atendimentoRef)
+            .pipe(takeUntil(this.destroy$), take(1))
+            .subscribe({
+              next: (items) => {
+                const h = horaInicialMenorDasLinhasAtendimento(items, datOk);
+                if (h) {
+                  this.prefillEmCurso = true;
+                  this.form.patchValue(
+                    { hora_inicial: h },
+                    { emitEvent: false },
+                  );
+                  this.prefillEmCurso = false;
+                }
+                terminarPrefillQueryParams();
+              },
+              error: () => {
+                terminarPrefillQueryParams();
+              },
+            });
+          return;
         }
-        if (hn) {
-          this.form.patchValue({ hora_inicial: hn }, { emitEvent: false });
-        }
-        this.prefillEmCurso = false;
+        terminarPrefillQueryParams();
+        return;
       }
-    } else if (datOk && hn) {
+    }
+
+    if (datOk && hn) {
       this.prefillEmCurso = true;
       this.form.patchValue(
         { data: datOk, hora_inicial: hn },
@@ -412,14 +465,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       );
       this.prefillEmCurso = false;
     }
-    if (cid || dat || pidStr || hora) {
-      void this.router.navigate(['/agenda/novo'], {
-        replaceUrl: true,
-        queryParams: {},
-      });
-    }
-    this.aplicarContextoSlotInput();
-    this.carregandoListas = false;
+    terminarPrefillQueryParams();
   }
 
   /**

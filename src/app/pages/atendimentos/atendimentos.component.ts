@@ -155,23 +155,26 @@ export class AtendimentosComponent implements OnInit, OnChanges {
   }
 
   /**
-   * Novo atendimento no mesmo dia e cliente (+ hora e profissional para
-   * `agenda-novo` aplicar `hora_inicial` e slot, como na edição).
+   * Mesmo padrão de `editar`: `Router.navigate` explícito.
+   * Inclui `atendimento_ref` para `agenda-novo` pedir o horário à API quando
+   * `hora` não puder ser inferida só das linhas do cartão.
    */
-  queryParamsNovoServicoMesmoCliente(g: GrupoClienteDia): Record<
-    string,
-    string | number
-  > {
+  irParaNovoServicoMesmoCliente(g: GrupoClienteDia, ev: Event): void {
+    ev.preventDefault();
+    const cid = this.idClienteParaNovoServico(g);
+    if (!cid) return;
     const data = (g.data || '').slice(0, 10);
     const hora = horaInicialMenorDasLinhasAtendimento(g.linhas, data);
     const pid = profissionalIdPreferidoParaServicoExtra(g.linhas);
-    const out: Record<string, string | number> = {
-      cliente_id: this.idClienteParaNovoServico(g) ?? '',
+    const idAt = String(g.linhas[0]?.id || '').trim();
+    const q: Record<string, string | number> = {
+      cliente_id: cid,
       data,
     };
-    if (hora) out['hora'] = hora;
-    if (pid != null) out['profissional_id'] = pid;
-    return out;
+    if (hora) q['hora'] = hora;
+    if (pid != null) q['profissional_id'] = pid;
+    if (idAt) q['atendimento_ref'] = idAt;
+    void this.router.navigate(['/agenda/novo'], { queryParams: q });
   }
 
   toggleGrupo(id: string): void {

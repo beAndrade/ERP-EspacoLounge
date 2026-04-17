@@ -83,8 +83,8 @@
                     @if (!cobrancaFinalizada(g) && idClienteParaNovoServico(g)) {
                       <a
                         class="btn primary btn-servicos-extra"
-                        [routerLink]="['/agenda/novo']"
-                        [queryParams]="queryParamsNovoServicoMesmoCliente(g)"
+                        href="#"
+                        (click)="irParaNovoServicoMesmoCliente(g, $event)"
                         [attr.aria-label]="
                           'Novo atendimento de serviço para ' + g.nomeCliente
                         "
