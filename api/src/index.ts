@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { cors } from '@elysiajs/cors';
 import { node } from '@elysiajs/node';
 import { Elysia, t } from 'elysia';
@@ -16,8 +17,10 @@ import {
 import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
 import {
+  atualizarMovimentacaoPorId,
   criarDespesaCadastro,
   criarMovimentacaoManual,
+  excluirMovimentacaoPorId,
   getCaixaDiaApi,
   listCategoriasFinanceirasApi,
   listMovimentacoesApi,
@@ -123,7 +126,7 @@ const app = new Elysia({ adapter: node() })
   .use(
     cors({
       origin: corsOrigins(),
-      methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'X-Admin-Pin'],
     }),
   )
@@ -278,6 +281,69 @@ const app = new Elysia({ adapter: node() })
       }),
     },
   )
+  .patch(
+    '/api/movimentacoes/:id',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as Record<string, unknown>;
+        const patch: {
+          valor?: number;
+          descricao?: string | null;
+          categoria_id?: number;
+          metodo_pagamento?: string | null;
+        } = {};
+        if (b.valor !== undefined) patch.valor = Number(b.valor);
+        if (b.descricao !== undefined) {
+          patch.descricao =
+            b.descricao === null ? null : String(b.descricao);
+        }
+        if (b.categoria_id !== undefined) {
+          patch.categoria_id = Number(b.categoria_id);
+        }
+        if (b.metodo_pagamento !== undefined) {
+          patch.metodo_pagamento =
+            b.metodo_pagamento === null
+              ? null
+              : String(b.metodo_pagamento);
+        }
+        await atualizarMovimentacaoPorId(db, id, patch);
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('não encontrada')) {
+          return fail('NOT_FOUND', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        valor: t.Optional(t.Number()),
+        descricao: t.Optional(t.Union([t.String(), t.Null()])),
+        categoria_id: t.Optional(t.Number()),
+        metodo_pagamento: t.Optional(t.Union([t.String(), t.Null()])),
+      }),
+    },
+  )
+  .delete('/api/movimentacoes/:id', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const removed = await excluirMovimentacaoPorId(db, id);
+      if (!removed) return fail('NOT_FOUND', 'Movimentação não encontrada');
+      return ok({ ok: true });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
   .post(
     '/api/despesas',
     async ({ body }) => {
