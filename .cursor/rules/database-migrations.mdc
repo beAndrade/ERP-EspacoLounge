@@ -1,0 +1,28 @@
+---
+description: Esquema PostgreSQL/Drizzle — alterações só via migrations versionadas em api/drizzle (nada de “só na BD local”).
+alwaysApply: true
+---
+
+# Base de dados (Postgres + Drizzle)
+
+## O que **não** existe
+
+- O Cursor **não** grava migrations automaticamente quando o código ou a BD mudam.
+- Agentes **não** devem assumir que alterações feitas “na conversa” ficaram registadas em ficheiros até estarem **commitadas** no repositório.
+
+## Fluxo obrigatório para qualquer mudança de esquema
+
+1. **`api/src/db/schema.ts`** — refletir tabelas, colunas, FKs, índices e enums aqui (fonte de verdade do Drizzle).
+2. **Migration SQL** — gerar ou escrever ficheiro em **`api/drizzle/`** e manter o **`api/drizzle/meta/_journal.json`** coerente.
+   - Preferir: na pasta `api`, `npm run db:generate` (Drizzle Kit) após editar o schema, **ou** SQL manual quando o generate não bastar.
+3. **Aplicar** — `npm run db:migrate` na pasta `api` (com a mesma `DATABASE_URL` do ambiente).
+4. **Versionar** — commit com `schema.ts` + `drizzle/*.sql` + `meta/_journal.json` (e código da API que usa as colunas).
+
+## O que evitar
+
+- Criar colunas/tabelas **só** com SQL à mão na base **sem** ficheiro em `api/drizzle/` (outros ambientes e `db:seed` / novas instalações não ficam iguais).
+- Depender só de **`ensureSchemaPatches()`** em `api/src/db/index.ts` para **novas** funcionalidades: esse ficheiro é ponte para bases já existentes; novas alterações devem ter **migration formal**; patches só quando fizer sentido explícito (ex.: compatibilidade temporária).
+
+## Após mudar o esquema
+
+- Ajustar queries/Drizzle nos serviços e, se necessário, o seed (`api/src/seed/run.ts`) para não quebrar inserts.
