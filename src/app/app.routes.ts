@@ -11,6 +11,7 @@ import { ServicosComponent } from './pages/servicos/servicos.component';
 import { FinanceiroComissoesComponent } from './pages/financeiro-comissoes/financeiro-comissoes.component';
 import { FinanceiroShellComponent } from './pages/financeiro-shell/financeiro-shell.component';
 import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
+import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -23,6 +24,36 @@ export const routes: Routes = [
   { path: 'clientes/novo', component: ClientesNovoComponent },
   { path: 'clientes/:id/editar', component: ClientesEditarComponent },
   { path: 'servicos', component: ServicosComponent },
+  {
+    path: 'estoque',
+    component: EmBreveComponent,
+    data: { titulo: 'Estoque' },
+  },
+  {
+    path: 'promocoes',
+    component: EmBreveComponent,
+    data: { titulo: 'Promoções' },
+  },
+  {
+    path: 'relatorios',
+    component: EmBreveComponent,
+    data: { titulo: 'Relatórios' },
+  },
+  {
+    path: 'consultoria',
+    component: EmBreveComponent,
+    data: { titulo: 'Consultoria' },
+  },
+  {
+    path: 'profissionais',
+    component: EmBreveComponent,
+    data: { titulo: 'Profissionais' },
+  },
+  {
+    path: 'configuracoes',
+    component: EmBreveComponent,
+    data: { titulo: 'Configurações' },
+  },
   {
     path: 'financeiro',
     component: FinanceiroShellComponent,
