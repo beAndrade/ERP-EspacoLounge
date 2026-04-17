@@ -81,6 +81,17 @@
     background: var(--color-surface);
     font-variant-numeric: tabular-nums;
   }
+
+  .input-moeda {
+    /* Entrada como texto: sem setas de incremento (estilo number). */
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  }
 }
 
 .filtros {

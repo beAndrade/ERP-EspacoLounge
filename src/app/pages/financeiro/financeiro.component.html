@@ -38,26 +38,33 @@
         </select>
       </label>
       <label>
-        <span>Valor (R$)</span>
+        <span>Valor</span>
         <input
-          type="number"
+          type="text"
           name="despesaValor"
-          [(ngModel)]="despesaValor"
-          min="0.01"
-          step="0.01"
-          placeholder="0,00"
+          class="input-moeda"
+          inputmode="numeric"
+          autocomplete="off"
+          spellcheck="false"
+          [value]="formatBrlFromDigitos(despesaValorDigitos)"
+          (input)="onDespesaValorInput($event)"
+          placeholder="R$ 0,00"
           [disabled]="salvandoDespesa"
         />
       </label>
       <label>
         <span>Método de pagamento</span>
-        <input
-          type="text"
+        <select
           name="despesaMetodo"
           [(ngModel)]="despesaMetodo"
-          placeholder="Opcional"
+          required
           [disabled]="salvandoDespesa"
-        />
+        >
+          <option value="" disabled>Selecione o método</option>
+          @for (m of metodosPagamentoDespesa; track m) {
+            <option [value]="m">{{ m }}</option>
+          }
+        </select>
       </label>
       <label class="span-2">
         <span>Descrição</span>
@@ -94,7 +101,9 @@
       type="button"
       class="btn primary"
       (click)="cadastrarDespesa()"
-      [disabled]="salvandoDespesa || despesaCategorias.length === 0"
+      [disabled]="
+        salvandoDespesa || despesaCategorias.length === 0 || !despesaMetodo
+      "
     >
       {{ salvandoDespesa ? 'A gravar…' : 'Cadastrar despesa' }}
     </button>

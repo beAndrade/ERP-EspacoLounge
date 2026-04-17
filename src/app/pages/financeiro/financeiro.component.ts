@@ -17,6 +17,14 @@ import { SheetsApiService } from '../../core/services/sheets-api.service';
 
 registerLocaleData(localePt);
 
+/** Métodos gravados em `movimentacoes.metodo_pagamento` (consistente com o resto do app). */
+const METODOS_PAGAMENTO_DESPESA = [
+  'Débito',
+  'Crédito',
+  'Dinheiro',
+  'Pix',
+] as const;
+
 function hojeYmd(): string {
   const d = new Date();
   const y = d.getFullYear();
@@ -48,7 +56,8 @@ export class FinanceiroComponent implements OnInit {
   movimentacoes: MovimentacaoListaItem[] = [];
 
   despesaCategoriaId: number | null = null;
-  despesaValor = '';
+  /** Apenas dígitos; valor em reais = int/100 (entrada ordem caixa/POS). */
+  despesaValorDigitos = '';
   despesaMetodo = '';
   despesaDescricao = '';
   despesaTipo = '';
@@ -121,6 +130,27 @@ export class FinanceiroComponent implements OnInit {
     return o || '—';
   }
 
+  readonly metodosPagamentoDespesa = METODOS_PAGAMENTO_DESPESA;
+
+  formatBrlFromDigitos(digits: string): string {
+    if (!digits?.trim()) return '';
+    const v = (parseInt(digits, 10) || 0) / 100;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(v);
+  }
+
+  onDespesaValorInput(ev: Event): void {
+    const el = ev.target as HTMLInputElement;
+    const digits = el.value.replace(/\D/g, '').slice(0, 15);
+    this.despesaValorDigitos = digits;
+  }
+
+  private despesaValorReais(): number {
+    return (parseInt(this.despesaValorDigitos || '0', 10) || 0) / 100;
+  }
+
   detalheDespesa(m: MovimentacaoListaItem): string {
     const partes: string[] = [];
     const t = String(m.despesa_tipo ?? '').trim();
@@ -140,8 +170,13 @@ export class FinanceiroComponent implements OnInit {
       this.despesaFormErro = 'Escolha uma categoria de despesa.';
       return;
     }
-    const v = parseFloat(String(this.despesaValor).replace(',', '.'));
-    if (!Number.isFinite(v) || v <= 0) {
+    const metodo = String(this.despesaMetodo ?? '').trim();
+    if (!metodo) {
+      this.despesaFormErro = 'Selecione o método de pagamento.';
+      return;
+    }
+    const v = this.despesaValorReais();
+    if (v <= 0) {
       this.despesaFormErro = 'Informe um valor maior que zero.';
       return;
     }
@@ -153,13 +188,13 @@ export class FinanceiroComponent implements OnInit {
         valor: v,
         categoria_id: this.despesaCategoriaId,
         descricao: this.despesaDescricao.trim() || undefined,
-        metodo_pagamento: this.despesaMetodo.trim() || undefined,
+        metodo_pagamento: metodo,
         tipo: this.despesaTipo.trim() || undefined,
         categoria_livre: this.despesaCategoriaLivre.trim() || undefined,
       })
       .subscribe({
         next: () => {
-          this.despesaValor = '';
+          this.despesaValorDigitos = '';
           this.despesaDescricao = '';
           this.despesaMetodo = '';
           this.despesaTipo = '';
