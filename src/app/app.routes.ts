@@ -13,6 +13,7 @@ import { FinanceiroShellComponent } from './pages/financeiro-shell/financeiro-sh
 import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 import { EstoqueComponent } from './pages/estoque/estoque.component';
+import { ProfissionaisComponent } from './pages/profissionais/profissionais.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -47,7 +48,7 @@ export const routes: Routes = [
   },
   {
     path: 'profissionais',
-    component: EmBreveComponent,
+    component: ProfissionaisComponent,
     data: { titulo: 'Profissionais' },
   },
   {

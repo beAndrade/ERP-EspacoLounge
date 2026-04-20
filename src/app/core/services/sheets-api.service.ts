@@ -111,14 +111,57 @@ export class SheetsApiService {
       );
   }
 
-  listProfissionais(): Observable<ProfissionalListaItem[]> {
+  /**
+   * Lista profissionais. Por defeito só **ativos** (agenda e novos atendimentos).
+   * `incluirInativos` usa `GET /api/profissionais?incluir_inativos=1` (gestão).
+   */
+  listProfissionais(incluirInativos = false): Observable<ProfissionalListaItem[]> {
+    let params = new HttpParams();
+    if (incluirInativos) {
+      params = params.set('incluir_inativos', '1');
+    }
     return this.http
       .get<ApiResponse<{ items: ProfissionalListaItem[] }>>(
         this.url('/api/profissionais'),
+        incluirInativos ? { params } : {},
       )
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.items),
+      );
+  }
+
+  createProfissional(payload: {
+    nome: string;
+    ativo?: boolean;
+  }): Observable<ProfissionalListaItem> {
+    return this.http
+      .post<ApiResponse<{ item: ProfissionalListaItem }>>(
+        this.url('/api/profissionais'),
+        payload,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  updateProfissional(payload: {
+    id: number;
+    nome?: string;
+    ativo?: boolean;
+  }): Observable<ProfissionalListaItem> {
+    const body: { nome?: string; ativo?: boolean } = {};
+    if (payload.nome !== undefined) body.nome = payload.nome;
+    if (payload.ativo !== undefined) body.ativo = payload.ativo;
+    return this.http
+      .patch<ApiResponse<{ item: ProfissionalListaItem }>>(
+        this.url(`/api/profissionais/${encodeURIComponent(String(payload.id))}`),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
       );
   }
 

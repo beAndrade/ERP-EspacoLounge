@@ -143,6 +143,8 @@ export interface CabeloCatalogoItem {
 export interface ProfissionalListaItem {
   id: number;
   nome: string;
+  /** Omitido em respostas antigas; na API atual vem sempre preenchido. */
+  ativo?: boolean;
 }
 
 /** Categoria do razão financeiro (`GET /api/categorias-financeiras`). */

@@ -1,0 +1,102 @@
+<div class="toolbar">
+  <h1>Profissionais</h1>
+  @if (!mostrarFormulario) {
+    <button type="button" class="btn primary" (click)="abrirNovo()">
+      Adicionar profissional
+    </button>
+  }
+</div>
+
+<p class="intro">
+  Profissionais inativos permanecem no histórico; não entram na agenda nem em
+  novos atendimentos.
+</p>
+
+<label class="busca">
+  <span class="sr-only">Buscar</span>
+  <input
+    type="search"
+    [(ngModel)]="busca"
+    name="busca"
+    placeholder="Buscar por nome"
+    autocomplete="off"
+  />
+</label>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint">Carregando…</p>
+}
+
+@if (mostrarFormulario) {
+  <form class="painel" (ngSubmit)="salvar()" novalidate>
+    <h2 class="painel__titulo">
+      {{ editandoId == null ? 'Novo profissional' : 'Editar profissional' }}
+    </h2>
+    @if (erroForm) {
+      <p class="alert" role="alert">{{ erroForm }}</p>
+    }
+    <label class="campo">
+      <span>Nome <span class="req">*</span></span>
+      <input
+        type="text"
+        name="nomeProf"
+        [(ngModel)]="formNome"
+        required
+        autocomplete="name"
+      />
+    </label>
+    <label class="campo campo--check">
+      <input type="checkbox" name="ativoProf" [(ngModel)]="formAtivo" />
+      <span>Ativo</span>
+    </label>
+    <div class="form-acoes">
+      <button type="submit" class="btn primary" [disabled]="salvando || !formNome.trim()">
+        {{ salvando ? 'Salvando…' : 'Salvar' }}
+      </button>
+      <button type="button" class="btn outline" (click)="cancelarForm()" [disabled]="salvando">
+        Cancelar
+      </button>
+    </div>
+  </form>
+}
+
+@if (!carregando && !erro && filtrados.length === 0) {
+  <p class="hint">Nenhum profissional encontrado.</p>
+}
+
+@if (!carregando && filtrados.length > 0) {
+  <div class="table-wrap" role="region" aria-label="Lista de profissionais">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Estado</th>
+          <th class="col-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of filtrados; track p.id) {
+          <tr>
+            <td>{{ p.nome }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.badge--ativo]="p.ativo !== false"
+                [class.badge--inativo]="p.ativo === false"
+                >{{ rotuloStatus(p) }}</span
+              >
+            </td>
+            <td class="col-acoes">
+              <button type="button" class="link-editar" (click)="abrirEditar(p)">
+                Editar
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
