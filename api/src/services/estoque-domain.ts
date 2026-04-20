@@ -80,3 +80,42 @@ function formatEstoqueArmazenamento(n: number): string {
   if (Number.isInteger(n)) return String(n);
   return String(Math.round(n * 1000) / 1000);
 }
+
+/**
+ * Entrada manual de mercadoria (tela Estoque). Soma unidades ao `produtos.estoque` existente.
+ */
+export async function incrementarEstoqueProduto(
+  db: Db,
+  produtoId: number,
+  adicionar: number,
+): Promise<{ id: number; produto: string; estoque: string }> {
+  if (!Number.isFinite(adicionar) || adicionar <= 0) {
+    throw new Error('Quantidade a adicionar deve ser maior que zero.');
+  }
+  const delta = Math.trunc(adicionar);
+  if (delta !== adicionar) {
+    throw new Error('Use um número inteiro de unidades.');
+  }
+
+  return await db.transaction(async (tx) => {
+    const locked = await tx
+      .select()
+      .from(produtos)
+      .where(eq(produtos.id, produtoId))
+      .for('update')
+      .limit(1);
+    const row = locked[0];
+    if (!row) {
+      throw new Error('Produto não encontrado');
+    }
+    const atual = parseQuantidadeEstoque(row.estoque);
+    const novo = atual + delta;
+    const estoqueStr = formatEstoqueArmazenamento(novo);
+    await tx
+      .update(produtos)
+      .set({ estoque: estoqueStr })
+      .where(eq(produtos.id, produtoId));
+    const nome = String(row.produto || '').trim();
+    return { id: produtoId, produto: nome, estoque: estoqueStr };
+  });
+}

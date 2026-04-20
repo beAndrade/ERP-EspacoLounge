@@ -100,6 +100,28 @@ export class SheetsApiService {
       );
   }
 
+  /** Entrada manual de unidades no `produtos.estoque` (PATCH na API). */
+  incrementarEstoqueProduto(
+    id: number,
+    adicionar: number,
+  ): Observable<{ id: number; produto: string; estoque: string }> {
+    return this.http
+      .patch<
+        ApiResponse<{
+          item: { id: number; produto: string; estoque: string };
+        }>
+      >(
+        this.url(
+          `/api/produtos/${encodeURIComponent(String(id))}/estoque`,
+        ),
+        { adicionar },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
   listCabelos(): Observable<CabeloCatalogoItem[]> {
     return this.http
       .get<ApiResponse<{ items: CabeloCatalogoItem[] }>>(
