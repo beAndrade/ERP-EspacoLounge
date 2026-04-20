@@ -18,6 +18,8 @@ export class EstoqueComponent implements OnInit {
   carregando = false;
   erro = '';
   itens: ProdutoCatalogoItem[] = [];
+  /** Filtro por nome (texto livre, sem acentos na comparação). */
+  busca = '';
 
   editandoEstoque = false;
   /** Rascunho por `id`: quantidade inteira a somar ao estoque. */
@@ -44,6 +46,23 @@ export class EstoqueComponent implements OnInit {
         this.carregando = false;
       },
     });
+  }
+
+  /** Linhas da tabela após filtro de nome. */
+  get itensFiltrados(): ProdutoCatalogoItem[] {
+    const q = this.normalizarBusca(this.busca);
+    if (!q) return this.itens;
+    return this.itens.filter((p) =>
+      this.normalizarBusca(p.produto ?? '').includes(q),
+    );
+  }
+
+  private normalizarBusca(s: string): string {
+    return String(s ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '');
   }
 
   toggleEdicaoEstoque(): void {

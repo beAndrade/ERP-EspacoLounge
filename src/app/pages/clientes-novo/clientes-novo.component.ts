@@ -1,12 +1,29 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
+  AbstractControl,
   FormBuilder,
   ReactiveFormsModule,
-  Validators,
+  ValidationErrors,
 } from '@angular/forms';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { TelefoneBrMaskDirective } from '../../core/directives/telefone-br-mask.directive';
+import { isCelularBr11Digitos } from '../../core/utils/telefone-br';
+
+/** Nome com pelo menos 2 caracteres úteis (após trim). */
+function nomeClienteValidator(control: AbstractControl): ValidationErrors | null {
+  const t = String(control.value ?? '').trim();
+  if (!t) return { required: true };
+  if (t.length < 2) return { minlength: { requiredLength: 2, actualLength: t.length } };
+  return null;
+}
+
+/** Obrigatório; deve ter exatamente 11 dígitos (DDD + celular). */
+function celularBrObrigatorioValidator(control: AbstractControl): ValidationErrors | null {
+  const raw = String(control.value ?? '').trim();
+  if (!raw) return { required: true };
+  return isCelularBr11Digitos(raw) ? null : { celular11: true };
+}
 
 @Component({
   selector: 'app-clientes-novo',
@@ -24,8 +41,8 @@ export class ClientesNovoComponent {
   erro = '';
 
   readonly form = this.fb.nonNullable.group({
-    nome: ['', Validators.required],
-    telefone: [''],
+    nome: ['', nomeClienteValidator],
+    telefone: ['', celularBrObrigatorioValidator],
     notas: [''],
   });
 
@@ -35,12 +52,14 @@ export class ClientesNovoComponent {
       return;
     }
     const v = this.form.getRawValue();
+    const nome = v.nome.trim();
+    const tel = v.telefone.trim();
     this.salvando = true;
     this.erro = '';
     this.api
       .createCliente({
-        nome: v.nome,
-        telefone: v.telefone || undefined,
+        nome,
+        telefone: tel || undefined,
         notas: v.notas || undefined,
       })
       .subscribe({

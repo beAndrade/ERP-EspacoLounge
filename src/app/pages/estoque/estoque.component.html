@@ -1,6 +1,17 @@
 <div class="estoque-page">
   @if (itens.length > 0) {
-    <div class="subtitulo-row subtitulo-row--end">
+    <div class="subtitulo-row">
+      <label class="estoque-busca">
+        <span class="sr-only">Filtrar por nome do produto</span>
+        <input
+          type="search"
+          name="buscaEstoque"
+          [(ngModel)]="busca"
+          autocomplete="off"
+          placeholder="Filtrar por nome do produto…"
+          class="estoque-busca__input"
+        />
+      </label>
       <button
         type="button"
         class="btn"
@@ -27,7 +38,11 @@
     <p class="hint">Nenhum produto no catálogo.</p>
   }
 
-  @if (!carregando && itens.length > 0) {
+  @if (!carregando && itens.length > 0 && itensFiltrados.length === 0) {
+    <p class="hint" role="status">Nenhum produto corresponde à pesquisa.</p>
+  }
+
+  @if (!carregando && itensFiltrados.length > 0) {
     <div class="table-wrap" role="region" aria-label="Produtos em estoque">
       <table class="estoque-table">
         <colgroup>
@@ -53,7 +68,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (p of itens; track p.id) {
+          @for (p of itensFiltrados; track p.id) {
             <tr>
               <td class="td-produto">
                 <span class="cell-produto" [title]="p.produto">{{

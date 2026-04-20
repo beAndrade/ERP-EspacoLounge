@@ -1,6 +1,27 @@
 <div class="toolbar">
-  <h1>Novo cliente</h1>
-  <a routerLink="/clientes" class="link-back">← Voltar à lista</a>
+  <div class="toolbar__head">
+    <a
+      routerLink="/clientes"
+      class="btn-back-hero"
+      aria-label="Voltar à lista"
+      title="Voltar à lista"
+    >
+      <svg
+        class="btn-back-hero__svg"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </svg>
+    </a>
+    <h1>Novo cliente</h1>
+  </div>
 </div>
 
 @if (erro) {
@@ -10,11 +31,16 @@
 <form [formGroup]="form" (ngSubmit)="salvar()" class="form">
   <label>
     <span>Nome exibido</span>
-    <input type="text" formControlName="nome" required autocomplete="name" />
+    <input
+      type="text"
+      formControlName="nome"
+      autocomplete="name"
+      placeholder="Digite o nome do cliente"
+    />
   </label>
 
   <label>
-    <span>Telefone</span>
+    <span>Celular</span>
     <input
       type="tel"
       formControlName="telefone"
@@ -22,7 +48,19 @@
       appTelefoneBrMask
       placeholder="(00) 00000-0000"
       maxlength="16"
+      [attr.aria-invalid]="
+        form.controls.telefone.touched && form.controls.telefone.invalid
+      "
     />
+    @if (form.controls.telefone.touched && form.controls.telefone.invalid) {
+      @if (form.controls.telefone.errors?.['required']) {
+        <span class="field-error" role="alert">O celular é obrigatório.</span>
+      } @else if (form.controls.telefone.errors?.['celular11']) {
+        <span class="field-error" role="alert"
+          >Informe o celular com DDD: 11 números no total (ex.: (11) 98765-4321).</span
+        >
+      }
+    }
   </label>
 
   <label>
@@ -30,7 +68,11 @@
     <textarea formControlName="notas" rows="3"></textarea>
   </label>
 
-  <button type="submit" class="btn primary" [disabled]="salvando">
+  <button
+    type="submit"
+    class="btn primary"
+    [disabled]="salvando || form.invalid"
+  >
     {{ salvando ? 'Salvando…' : 'Salvar cliente' }}
   </button>
 </form>

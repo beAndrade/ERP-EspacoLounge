@@ -753,12 +753,46 @@ function requireProfissional_(p) {
   return prof;
 }
 
+/** Próximo ID no padrão legado `CL0001`… (ignora UUIDs na coluna). */
+function nextClienteIdCl_() {
+  var sh = sheet_(SHEETS.CLIENTES);
+  var last = sh.getLastRow();
+  if (last < 2) {
+    return 'CL0001';
+  }
+  var map = headerMap_(sh);
+  var colId = map['ID Cliente'];
+  if (colId === undefined) {
+    return 'CL0001';
+  }
+  var colNum = colId + 1;
+  var values = sh.getRange(2, colNum, last, colNum).getValues();
+  var max = 0;
+  var re = /^CL(\d+)$/i;
+  for (var i = 0; i < values.length; i++) {
+    var cell = String(values[i][0] || '').trim();
+    var m = cell.match(re);
+    if (m) {
+      var n = parseInt(m[1], 10);
+      if (!isNaN(n) && n > max) {
+        max = n;
+      }
+    }
+  }
+  var next = max + 1;
+  var s = String(next);
+  while (s.length < 4) {
+    s = '0' + s;
+  }
+  return 'CL' + s;
+}
+
 function createCliente_(p) {
   var nome = (p.nome || '').toString().trim();
   if (!nome) {
     throw new Error('Nome do cliente é obrigatório');
   }
-  var id = Utilities.getUuid();
+  var id = nextClienteIdCl_();
   var row = {};
   row['ID Cliente'] = id;
   row['Nome Exibido'] = nome;

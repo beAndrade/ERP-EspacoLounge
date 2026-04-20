@@ -359,6 +359,14 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  deleteCliente(clienteId: string): Observable<void> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/clientes/${encodeURIComponent(clienteId)}`),
+      )
+      .pipe(map((raw) => this.unwrap(raw)), map(() => undefined));
+  }
+
   createAgendamento(
     payload: CreateAtendimentoPayload,
   ): Observable<AtendimentoCriadoResumo> {

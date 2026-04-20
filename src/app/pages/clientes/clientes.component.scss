@@ -95,17 +95,55 @@ th {
 .col-acoes {
   width: 1%;
   white-space: nowrap;
+  text-align: right;
 }
 
-.link-editar {
+.acoes-linha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/** Separador literal: "Editar | Excluir" */
+.acoes-sep {
+  color: var(--color-muted);
+  user-select: none;
+}
+
+/** Mesmo “peso” visual do link Editar (altura tocável, sem caixa). */
+.link-editar,
+.link-excluir {
   min-height: var(--touch-min);
   display: inline-flex;
   align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
   font-weight: 600;
-  color: var(--color-primary);
   text-decoration: none;
+}
+
+.link-editar {
+  color: var(--color-primary);
 
   &:hover {
     text-decoration: underline;
+  }
+}
+
+.link-excluir {
+  color: var(--color-primary);
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
 }

@@ -23,3 +23,19 @@ export function formatarTelefoneBr(digitos: string): string {
 export function formatarTelefoneBrDeValor(valor: string | null | undefined): string {
   return formatarTelefoneBr(String(valor ?? ''));
 }
+
+/** Só dígitos (para validar comprimento). */
+export function telefoneBrDigitos(valor: string | null | undefined): string {
+  return String(valor ?? '').replace(/\D/g, '');
+}
+
+/** Telefone BR completo: DDD + 8 (fixo) ou 9 (celular) dígitos locais. */
+export function isTelefoneBrCompleto(valor: string | null | undefined): boolean {
+  const n = telefoneBrDigitos(valor).length;
+  return n === 10 || n === 11;
+}
+
+/** Celular BR: exatamente 11 dígitos (DDD + 9), formato usual em cadastros. */
+export function isCelularBr11Digitos(valor: string | null | undefined): boolean {
+  return telefoneBrDigitos(valor).length === 11;
+}

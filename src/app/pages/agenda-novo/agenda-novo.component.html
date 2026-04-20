@@ -1,7 +1,28 @@
 @if (!modoModal) {
   <div class="toolbar">
-    <h1>{{ tituloFormulario() }}</h1>
-    <a routerLink="/agenda" class="link-back">← Voltar à agenda</a>
+    <div class="toolbar__head">
+      <a
+        routerLink="/agenda"
+        class="btn-back-hero"
+        aria-label="Voltar à agenda"
+        title="Voltar à agenda"
+      >
+        <svg
+          class="btn-back-hero__svg"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+      </a>
+      <h1>{{ tituloFormulario() }}</h1>
+    </div>
   </div>
 } @else {
   <div class="toolbar toolbar--modal">

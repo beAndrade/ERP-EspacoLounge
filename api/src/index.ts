@@ -31,6 +31,8 @@ import {
   listProfissionaisForApi,
 } from './services/profissionais-domain';
 import {
+  allocNextClienteClId,
+  deleteClienteById,
   getClienteById,
   listCabelosApi,
   listClientesNormalized,
@@ -156,19 +158,36 @@ const app = new Elysia({ adapter: node() })
     async ({ body }) => {
       const nome = String(body.nome || '').trim();
       if (!nome) return fail('VALIDATION', 'Nome do cliente é obrigatório');
-      const id = crypto.randomUUID();
-      await db.insert(clientes).values({
-        idCliente: id,
-        nomeExibido: nome,
-        telefone: body.telefone != null ? String(body.telefone) : null,
-        observacoes: body.notas != null ? String(body.notas) : null,
-      });
-      return ok({
-        id,
-        nome,
-        telefone: body.telefone != null ? String(body.telefone) : '',
-        observacoes: body.notas != null ? String(body.notas) : '',
-      });
+      const telefone =
+        body.telefone != null ? String(body.telefone) : null;
+      const observacoes = body.notas != null ? String(body.notas) : null;
+
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const id = await allocNextClienteClId(db);
+        try {
+          await db.insert(clientes).values({
+            idCliente: id,
+            nomeExibido: nome,
+            telefone,
+            observacoes,
+          });
+          return ok({
+            id,
+            nome,
+            telefone: telefone ?? '',
+            observacoes: observacoes ?? '',
+          });
+        } catch (e) {
+          const code =
+            e && typeof e === 'object' && 'code' in e
+              ? String((e as { code?: string }).code)
+              : '';
+          if (code === '23505') continue;
+          const msg = e instanceof Error ? e.message : String(e);
+          return fail('SERVER', msg);
+        }
+      }
+      return fail('SERVER', 'Não foi possível gerar ID de cliente único.');
     },
     {
       body: t.Object({
@@ -210,47 +229,63 @@ const app = new Elysia({ adapter: node() })
       }),
     },
   )
+  .delete(
+    '/api/clientes/:id',
+    async ({ params }) => {
+      const id = String(params.id || '').trim();
+      if (!id) return fail('VALIDATION', 'id é obrigatório');
+      try {
+        const removed = await deleteClienteById(db, id);
+        if (!removed) return fail('NOT_FOUND', 'Cliente não encontrado');
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
   .get('/api/servicos', async () => ok({ items: await listServicosForApi(db) }))
   .get('/api/regras-mega', async () => ok({ items: await listRegrasMegaApi(db) }))
   .get('/api/pacotes', async () => ok({ items: await listPacotesApi(db) }))
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))
+  .patch(
+    '/api/produtos/:id/estoque',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id ?? '').trim(), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const ad = Number((body as { adicionar?: unknown }).adicionar);
+        if (!Number.isFinite(ad) || ad <= 0) {
+          return fail(
+            'VALIDATION',
+            'adicionar deve ser um número maior que zero',
+          );
+        }
+        const item = await incrementarEstoqueProduto(db, id, ad);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/maior que zero|inteiro/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object(
+        { adicionar: t.Number() },
+        { additionalProperties: true },
+      ),
+    },
+  )
   .get('/api/cabelos', async () => ok({ items: await listCabelosApi(db) }))
   .group('/api', (api) =>
     api
-      .patch(
-        '/produtos/:id/estoque',
-        async ({ params, body }) => {
-          try {
-            const id = Number.parseInt(String(params.id ?? '').trim(), 10);
-            if (!Number.isFinite(id) || id <= 0) {
-              return fail('VALIDATION', 'id inválido');
-            }
-            const ad = Number((body as { adicionar?: unknown }).adicionar);
-            if (!Number.isFinite(ad) || ad <= 0) {
-              return fail(
-                'VALIDATION',
-                'adicionar deve ser um número maior que zero',
-              );
-            }
-            const item = await incrementarEstoqueProduto(db, id, ad);
-            return ok({ item });
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
-            if (/maior que zero|inteiro/i.test(msg)) {
-              return fail('VALIDATION', msg);
-            }
-            return fail('SERVER', msg);
-          }
-        },
-        {
-          params: t.Object({ id: t.String() }),
-          body: t.Object(
-            { adicionar: t.Number() },
-            { additionalProperties: true },
-          ),
-        },
-      )
       /** POST antes do GET: evita edge cases em alguns ambientes com o mesmo prefixo. */
       .post(
         '/profissionais',

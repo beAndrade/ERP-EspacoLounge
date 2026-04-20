@@ -43,7 +43,21 @@
             <td>{{ c.telefone || '—' }}</td>
             <td>{{ c.observacoes || '—' }}</td>
             <td class="col-acoes">
-              <a [routerLink]="['/clientes', c.id, 'editar']" class="link-editar">Editar</a>
+              <div class="acoes-linha">
+                <a [routerLink]="['/clientes', c.id, 'editar']" class="link-editar"
+                  >Editar</a
+                >
+                <span class="acoes-sep" aria-hidden="true"> | </span>
+                <button
+                  type="button"
+                  class="link-excluir"
+                  [disabled]="excluindoId === c.id"
+                  (click)="confirmarExcluir(c)"
+                  [attr.aria-label]="'Excluir cliente ' + (c.nome || c.id)"
+                >
+                  {{ excluindoId === c.id ? 'A excluir…' : 'Excluir' }}
+                </button>
+              </div>
             </td>
           </tr>
         }

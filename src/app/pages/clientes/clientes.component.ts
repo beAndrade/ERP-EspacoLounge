@@ -17,6 +17,8 @@ export class ClientesComponent implements OnInit {
   busca = '';
   carregando = false;
   erro = '';
+  /** Durante DELETE na API (por `id` do cliente). */
+  excluindoId: string | null = null;
   itens: Cliente[] = [];
 
   ngOnInit(): void {
@@ -55,5 +57,29 @@ export class ClientesComponent implements OnInit {
         (c.telefone && String(c.telefone).includes(q)) ||
         (c.observacoes && String(c.observacoes).toLowerCase().includes(q)),
     );
+  }
+
+  confirmarExcluir(c: Cliente): void {
+    const nome = String(c.nome ?? '').trim() || c.id;
+    if (
+      !confirm(
+        `Excluir o cliente "${nome}"? O cadastro será removido do banco de dados, juntamente com os atendimentos associados a este cliente.`,
+      )
+    ) {
+      return;
+    }
+    this.excluindoId = c.id;
+    this.erro = '';
+    this.api.deleteCliente(c.id).subscribe({
+      next: () => {
+        this.excluindoId = null;
+        this.itens = this.itens.filter((x) => x.id !== c.id);
+      },
+      error: (e: Error) => {
+        this.excluindoId = null;
+        this.erro =
+          e.message || 'Não foi possível excluir o cliente. Tente novamente.';
+      },
+    });
   }
 }
