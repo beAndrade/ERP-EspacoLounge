@@ -300,7 +300,7 @@
             <th>Método</th>
             <th>Origem</th>
             <th>Detalhe despesa</th>
-            <th class="col-id-atendimento">ID atendimento</th>
+            <th class="col-id-atendimento">ID atend.</th>
             <th>Descrição</th>
             @if (editandoMovimentacoes) {
               <th class="col-acoes-mov" scope="col">Ações</th>
@@ -388,8 +388,11 @@
               }
               <td>{{ rotuloOrigem(m.origem) }}</td>
               <td>{{ detalheDespesa(m) }}</td>
-              <td class="mono col-id-atendimento">
-                {{ m.id_atendimento ?? '—' }}
+              <td
+                class="mono col-id-atendimento"
+                [attr.title]="m.id_atendimento || null"
+              >
+                {{ rotuloIdAtendimento(m.id_atendimento) }}
               </td>
               @if (editandoMovimentacoes) {
                 <td>

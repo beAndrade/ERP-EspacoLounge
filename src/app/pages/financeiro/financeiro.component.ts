@@ -150,6 +150,14 @@ export class FinanceiroComponent implements OnInit {
     return o || '—';
   }
 
+  /** Ex.: `20260420-…712e6` — ID completo no `title` ao passar o rato. */
+  rotuloIdAtendimento(id: string | null | undefined): string {
+    const t = String(id ?? '').trim();
+    if (!t) return '—';
+    if (t.length <= 22) return t;
+    return `${t.slice(0, 9)}…${t.slice(-8)}`;
+  }
+
   readonly metodosPagamentoDespesa = METODOS_PAGAMENTO_DESPESA;
   readonly metodosPagamentoEdicao = METODOS_PAGAMENTO_EDICAO;
 

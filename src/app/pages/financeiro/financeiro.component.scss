@@ -452,8 +452,9 @@ td.mono {
 
 th.col-id-atendimento,
 td.col-id-atendimento {
-  min-width: 13.5rem;
-  max-width: 16rem;
+  width: 1%;
+  max-width: 10.5rem;
+  min-width: 0;
   white-space: nowrap;
   word-break: normal;
   overflow: hidden;
