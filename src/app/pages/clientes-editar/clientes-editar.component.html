@@ -22,7 +22,14 @@
 
     <label>
       <span>Telefone</span>
-      <input type="tel" formControlName="telefone" autocomplete="tel" />
+      <input
+        type="tel"
+        formControlName="telefone"
+        autocomplete="tel"
+        appTelefoneBrMask
+        placeholder="(00) 00000-0000"
+        maxlength="16"
+      />
     </label>
 
     <label>

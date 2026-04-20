@@ -6,11 +6,12 @@ import {
   Validators,
 } from '@angular/forms';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { TelefoneBrMaskDirective } from '../../core/directives/telefone-br-mask.directive';
 
 @Component({
   selector: 'app-clientes-novo',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, TelefoneBrMaskDirective],
   templateUrl: './clientes-novo.component.html',
   styleUrl: './clientes-novo.component.scss',
 })
