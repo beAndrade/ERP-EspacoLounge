@@ -1,7 +1,6 @@
 <div class="estoque-page">
-  <div class="subtitulo-row">
-    <h2 class="subtitulo estoque-titulo">Estoque</h2>
-    @if (itens.length > 0) {
+  @if (itens.length > 0) {
+    <div class="subtitulo-row subtitulo-row--end">
       <button
         type="button"
         class="btn"
@@ -11,8 +10,8 @@
       >
         {{ editandoEstoque ? 'Concluir edição' : 'Editar estoque' }}
       </button>
-    }
-  </div>
+    </div>
+  }
 
   @if (erro) {
     <p class="alert" role="alert">{{ erro }}</p>

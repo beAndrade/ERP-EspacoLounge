@@ -214,43 +214,43 @@ const app = new Elysia({ adapter: node() })
   .get('/api/regras-mega', async () => ok({ items: await listRegrasMegaApi(db) }))
   .get('/api/pacotes', async () => ok({ items: await listPacotesApi(db) }))
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))
-  .patch(
-    '/api/produtos/:id/estoque',
-    async ({ params, body }) => {
-      try {
-        const id = Number.parseInt(String(params.id ?? '').trim(), 10);
-        if (!Number.isFinite(id) || id <= 0) {
-          return fail('VALIDATION', 'id inválido');
-        }
-        const ad = Number((body as { adicionar?: unknown }).adicionar);
-        if (!Number.isFinite(ad) || ad <= 0) {
-          return fail(
-            'VALIDATION',
-            'adicionar deve ser um número maior que zero',
-          );
-        }
-        const item = await incrementarEstoqueProduto(db, id, ad);
-        return ok({ item });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
-        if (/maior que zero|inteiro/i.test(msg)) {
-          return fail('VALIDATION', msg);
-        }
-        return fail('SERVER', msg);
-      }
-    },
-    {
-      params: t.Object({ id: t.String() }),
-      body: t.Object(
-        { adicionar: t.Number() },
-        { additionalProperties: true },
-      ),
-    },
-  )
   .get('/api/cabelos', async () => ok({ items: await listCabelosApi(db) }))
   .group('/api', (api) =>
     api
+      .patch(
+        '/produtos/:id/estoque',
+        async ({ params, body }) => {
+          try {
+            const id = Number.parseInt(String(params.id ?? '').trim(), 10);
+            if (!Number.isFinite(id) || id <= 0) {
+              return fail('VALIDATION', 'id inválido');
+            }
+            const ad = Number((body as { adicionar?: unknown }).adicionar);
+            if (!Number.isFinite(ad) || ad <= 0) {
+              return fail(
+                'VALIDATION',
+                'adicionar deve ser um número maior que zero',
+              );
+            }
+            const item = await incrementarEstoqueProduto(db, id, ad);
+            return ok({ item });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+            if (/maior que zero|inteiro/i.test(msg)) {
+              return fail('VALIDATION', msg);
+            }
+            return fail('SERVER', msg);
+          }
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object(
+            { adicionar: t.Number() },
+            { additionalProperties: true },
+          ),
+        },
+      )
       /** POST antes do GET: evita edge cases em alguns ambientes com o mesmo prefixo. */
       .post(
         '/profissionais',
