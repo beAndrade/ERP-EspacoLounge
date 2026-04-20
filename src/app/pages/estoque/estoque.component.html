@@ -1,0 +1,65 @@
+<div class="toolbar">
+  <h1>Estoque</h1>
+  <a routerLink="/" class="link-back">← Início</a>
+</div>
+
+<section class="estoque-intro" aria-labelledby="estoque-fluxo-titulo">
+  <h2 id="estoque-fluxo-titulo" class="estoque-intro__titulo">Fluxo de produtos</h2>
+  <p class="hint">
+    Ao <strong>confirmar o pagamento</strong> de um atendimento que inclua produtos, o
+    sistema regista a receita nas <strong>movimentações</strong> (como já faz para o
+    total do pedido), dá <strong>baixa no estoque</strong> com o preço já calculado na
+    venda (catálogo no momento do agendamento) e mantém a ligação em
+    <code>atendimento_itens</code> (tipo <code>produto</code>). Não é permitido estoque
+    negativo: a confirmação falha se não houver quantidade suficiente.
+  </p>
+  <ul class="estoque-intro__lista">
+    <li>Relação atendimento ↔ produtos: tabela <code>atendimento_itens</code></li>
+    <li>Valor da linha: preço de <code>produtos</code> na criação do atendimento (função única no servidor)</li>
+    <li>Baixa de estoque e movimentação financeira na mesma transação na confirmação</li>
+  </ul>
+</section>
+
+@if (erro) {
+  <p class="alert" role="alert">{{ erro }}</p>
+}
+@if (carregando) {
+  <p class="hint">A carregar…</p>
+}
+
+@if (!carregando && !erro && itens.length === 0) {
+  <p class="hint">Nenhum produto no catálogo.</p>
+}
+
+@if (!carregando && itens.length > 0) {
+  <div class="table-wrap" role="region" aria-label="Produtos e quantidades em estoque">
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Categoria</th>
+          <th>Preço (catálogo)</th>
+          <th>Estoque</th>
+          <th>Unidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of itens; track p.id) {
+          <tr>
+            <td>{{ p.produto || '—' }}</td>
+            <td>{{ p.categoria || '—' }}</td>
+            <td class="num">
+              @if (precoNum(p) !== null) {
+                {{ precoNum(p)! | number: '1.2-2' }}
+              } @else {
+                —
+              }
+            </td>
+            <td class="num">{{ estoqueRotulo(p) }}</td>
+            <td>{{ p.unidade || '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

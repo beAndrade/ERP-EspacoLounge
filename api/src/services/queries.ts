@@ -111,7 +111,9 @@ export async function listProdutosApi(db: Db) {
     .map((r) => ({
       id: r.id,
       produto: String(r.produto).trim(),
+      categoria: r.categoria != null ? String(r.categoria).trim() : '',
       preco: r.preco,
+      estoque: r.estoque,
       unidade: r.unidade != null ? String(r.unidade) : '',
     }));
 }

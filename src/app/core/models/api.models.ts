@@ -123,7 +123,11 @@ export interface AtendimentoItemCatalogo {
 export interface ProdutoCatalogoItem {
   id: number;
   produto: string;
+  /** Categoria livre do cadastro (quando existir). */
+  categoria?: string;
   preco: unknown;
+  /** Texto da coluna `estoque` (mesma convenção da planilha). */
+  estoque?: unknown;
   unidade: string;
 }
 

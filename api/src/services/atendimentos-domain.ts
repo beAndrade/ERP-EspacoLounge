@@ -26,6 +26,7 @@ import {
   regrasMega,
   servicos,
 } from '../db/schema';
+import { darBaixaEstoqueProdutosDoPedido } from './estoque-domain';
 import {
   formatMoedaReciboPt,
   inserirReceitaConfirmacaoPagamento,
@@ -33,6 +34,7 @@ import {
   toNumberPt,
   totalLiquidoConfirmacao,
 } from './finance-domain';
+import { resolverPrecoUnitarioProduto } from './produtos-preco';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 
 export type CreateAtendimentoPayload =
@@ -1348,16 +1350,10 @@ async function createAtendimentoProduto(
   for (const it of itensNorm) {
     const rowP = await readProdutoRowPorId(db, it.produtoId);
     const nomeProd = String(rowP.produto || '').trim();
-    let unitNum = toNumberPt(rowP.preco);
-    if (unitNum === null) {
-      const mr = rec['preco_unitario'];
-      if (mr !== undefined && mr !== null && mr !== '') {
-        unitNum =
-          typeof mr === 'number' && Number.isFinite(mr)
-            ? mr
-            : toNumberPt(String(mr));
-      }
-    }
+    const unitNum = resolverPrecoUnitarioProduto(
+      rowP.preco,
+      rec['preco_unitario'],
+    );
     if (unitNum === null || unitNum < 0) {
       throw new Error(
         `Preço não disponível para o produto "${nomeProd}". Cadastre o preço na aba Produtos ou informe o preço unitário no agendamento.`,
@@ -1769,6 +1765,8 @@ export async function confirmarPagamentoPorIdAtendimento(
     if (candidatas.length === 0) {
       return { linhasAtualizadas: 0, movimentacaoId: null };
     }
+
+    await darBaixaEstoqueProdutosDoPedido(tx as unknown as Db, id);
 
     const updated = await tx
       .update(atendimentos)

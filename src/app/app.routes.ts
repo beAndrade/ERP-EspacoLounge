@@ -12,6 +12,7 @@ import { FinanceiroComissoesComponent } from './pages/financeiro-comissoes/finan
 import { FinanceiroShellComponent } from './pages/financeiro-shell/financeiro-shell.component';
 import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
+import { EstoqueComponent } from './pages/estoque/estoque.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -26,7 +27,7 @@ export const routes: Routes = [
   { path: 'servicos', component: ServicosComponent },
   {
     path: 'estoque',
-    component: EmBreveComponent,
+    component: EstoqueComponent,
     data: { titulo: 'Estoque' },
   },
   {
