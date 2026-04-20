@@ -205,4 +205,16 @@ BEGIN
   END IF;
 END $$;
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'profissionais' AND c.column_name = 'ativo'
+  ) THEN
+    ALTER TABLE "profissionais" ADD COLUMN "ativo" boolean DEFAULT true NOT NULL;
+  END IF;
+END $$;
+`));
 }

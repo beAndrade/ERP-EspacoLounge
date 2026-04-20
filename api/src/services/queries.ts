@@ -5,7 +5,6 @@ import {
   clientes,
   pacotes,
   produtos,
-  profissionais,
   regrasMega,
   servicos,
 } from '../db/schema';
@@ -128,20 +127,3 @@ export async function listCabelosApi(db: Db) {
   }));
 }
 
-export type ProfissionalFolhaItem = { id: number; nome: string };
-
-/** Lista cadastro `profissionais` (`atendimentos.profissional_id` → `profissionais.id`). */
-export async function listProfissionaisApi(
-  db: Db,
-): Promise<ProfissionalFolhaItem[]> {
-  const rows = await db
-    .select({ id: profissionais.id, nome: profissionais.nome })
-    .from(profissionais)
-    .orderBy(asc(profissionais.nome));
-  return rows
-    .map((r) => ({
-      id: r.id,
-      nome: String(r.nome || '').trim(),
-    }))
-    .filter((x) => x.nome);
-}

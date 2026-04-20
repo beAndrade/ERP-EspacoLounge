@@ -386,14 +386,23 @@ async function findProdutoPreco(db: Db, nome: string): Promise<string | null> {
   return p != null && p !== '' ? String(p) : null;
 }
 
-async function assertProfissionalIdExists(db: Db, id: number): Promise<void> {
+async function assertProfissionalIdExists(
+  db: Db,
+  id: number,
+  exigirAtivo = true,
+): Promise<void> {
   const [r] = await db
-    .select({ id: profissionais.id })
+    .select({ id: profissionais.id, ativo: profissionais.ativo })
     .from(profissionais)
     .where(eq(profissionais.id, id))
     .limit(1);
   if (!r) {
     throw new Error(`profissional_id inválido: ${id} não existe em profissionais`);
+  }
+  if (exigirAtivo && !r.ativo) {
+    throw new Error(
+      'Profissional está inativo; não pode ser usado em novos atendimentos',
+    );
   }
 }
 
@@ -643,6 +652,7 @@ async function resolveProfissionalIdToInt(
   db: Db,
   opts: { profissional_id?: unknown; profissional?: unknown },
   required: boolean,
+  exigirAtivo = true,
 ): Promise<number | null> {
   const rawId = opts.profissional_id;
   if (rawId != null && rawId !== '') {
@@ -652,18 +662,25 @@ async function resolveProfissionalIdToInt(
         : parseInt(String(rawId).trim(), 10);
     if (!Number.isNaN(n) && n > 0) {
       const [pr] = await db
-        .select({ id: profissionais.id })
+        .select({ id: profissionais.id, ativo: profissionais.ativo })
         .from(profissionais)
         .where(eq(profissionais.id, n))
         .limit(1);
-      if (pr) return n;
+      if (pr) {
+        if (exigirAtivo && !pr.ativo) {
+          throw new Error(
+            'Profissional está inativo; não pode ser usado em novos atendimentos',
+          );
+        }
+        return pr.id;
+      }
       const [fh] = await db
         .select({ pid: folha.profissionalId })
         .from(folha)
         .where(eq(folha.id, n))
         .limit(1);
       if (fh?.pid != null) {
-        await assertProfissionalIdExists(db, fh.pid);
+        await assertProfissionalIdExists(db, fh.pid, exigirAtivo);
         return fh.pid;
       }
       if (required) throw new Error('profissional_id inválido');
@@ -679,11 +696,16 @@ async function resolveProfissionalIdToInt(
     return null;
   }
   const rows = await db
-    .select({ id: profissionais.id, nome: profissionais.nome })
+    .select({ id: profissionais.id, nome: profissionais.nome, ativo: profissionais.ativo })
     .from(profissionais);
   for (const row of rows) {
     const t = String(row.nome || '').trim();
     if (t === nome) {
+      if (exigirAtivo && !row.ativo) {
+        throw new Error(
+          `Profissional "${nome}" está inativo; não pode ser usado em novos atendimentos`,
+        );
+      }
       return row.id;
     }
   }

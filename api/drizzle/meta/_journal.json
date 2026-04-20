@@ -127,6 +127,13 @@
       "when": 1775697929000,
       "tag": "0017_despesas_movimentacao_detalhe",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1775697930000,
+      "tag": "0018_profissionais_ativo",
+      "breakpoints": true
     }
   ]
 }

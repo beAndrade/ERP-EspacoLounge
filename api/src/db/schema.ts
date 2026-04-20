@@ -40,6 +40,8 @@ export const clientes = pgTable('clientes', {
 export const profissionais = pgTable('profissionais', {
   id: serial('id').primaryKey(),
   nome: text('nome').notNull(),
+  /** Inativos permanecem no histórico; não entram em novos atendimentos nem na lista da agenda. */
+  ativo: boolean('ativo').notNull().default(true),
 });
 
 export const servicos = pgTable('servicos', {

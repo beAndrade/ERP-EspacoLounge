@@ -26,12 +26,16 @@ import {
   listMovimentacoesApi,
 } from './services/finance-domain';
 import {
+  atualizarProfissional,
+  criarProfissional,
+  listProfissionaisForApi,
+} from './services/profissionais-domain';
+import {
   getClienteById,
   listCabelosApi,
   listClientesNormalized,
   listPacotesApi,
   listProdutosApi,
-  listProfissionaisApi,
   listRegrasMegaApi,
   listServicosForApi,
 } from './services/queries';
@@ -210,8 +214,113 @@ const app = new Elysia({ adapter: node() })
   .get('/api/pacotes', async () => ok({ items: await listPacotesApi(db) }))
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))
   .get('/api/cabelos', async () => ok({ items: await listCabelosApi(db) }))
-  .get('/api/profissionais', async () =>
-    ok({ items: await listProfissionaisApi(db) }),
+  .group('/api', (api) =>
+    api
+      /** POST antes do GET: evita edge cases em alguns ambientes com o mesmo prefixo. */
+      .post(
+        '/profissionais',
+        async ({ body }) => {
+          try {
+            const nome = String((body as { nome?: string }).nome ?? '').trim();
+            if (!nome) return fail('VALIDATION', 'Nome é obrigatório');
+            const ativoRaw = (body as { ativo?: unknown }).ativo;
+            let ativo = true;
+            if (ativoRaw !== undefined) {
+              if (
+                ativoRaw === false ||
+                ativoRaw === 0 ||
+                ativoRaw === '0' ||
+                ativoRaw === 'false'
+              ) {
+                ativo = false;
+              } else {
+                ativo = Boolean(ativoRaw);
+              }
+            }
+            const item = await criarProfissional(db, { nome, ativo });
+            return ok({ item });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (/obrigatório|Já existe|inválido/i.test(msg)) {
+              return fail('VALIDATION', msg);
+            }
+            return fail('SERVER', msg);
+          }
+        },
+        {
+          body: t.Object(
+            {
+              nome: t.String(),
+              ativo: t.Optional(t.Boolean()),
+            },
+            { additionalProperties: true },
+          ),
+        },
+      )
+      .get('/profissionais', async ({ query }) => {
+        try {
+          const q = query as Record<string, string | undefined>;
+          const raw = String(q.incluir_inativos ?? q.incluirInativos ?? '').trim();
+          const incluirInativos =
+            raw === '1' ||
+            raw.toLowerCase() === 'true' ||
+            raw.toLowerCase() === 'yes';
+          const items = await listProfissionaisForApi(db, { incluirInativos });
+          return ok({ items });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          return fail('SERVER', msg);
+        }
+      })
+      .patch(
+        '/profissionais/:id',
+        async ({ params, body }) => {
+          try {
+            const id = Number.parseInt(String(params.id).trim(), 10);
+            if (!Number.isFinite(id) || id <= 0) {
+              return fail('VALIDATION', 'id inválido');
+            }
+            const b = body as { nome?: string; ativo?: unknown };
+            const patch: { nome?: string; ativo?: boolean } = {};
+            if (b.nome !== undefined) patch.nome = String(b.nome);
+            if (b.ativo !== undefined) {
+              const v = b.ativo;
+              if (v === false || v === 0 || v === '0' || v === 'false') {
+                patch.ativo = false;
+              } else {
+                patch.ativo = Boolean(v);
+              }
+            }
+            if (patch.nome !== undefined && !String(patch.nome).trim()) {
+              return fail('VALIDATION', 'Nome é obrigatório');
+            }
+            if (patch.nome === undefined && b.ativo === undefined) {
+              return fail('VALIDATION', 'Envie nome e/ou ativo');
+            }
+            const item = await atualizarProfissional(db, id, patch);
+            return ok({ item });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (/não encontrado/i.test(msg)) {
+              return fail('NOT_FOUND', msg);
+            }
+            if (/obrigatório|Já existe|inválido/i.test(msg)) {
+              return fail('VALIDATION', msg);
+            }
+            return fail('SERVER', msg);
+          }
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object(
+            {
+              nome: t.Optional(t.String()),
+              ativo: t.Optional(t.Boolean()),
+            },
+            { additionalProperties: true },
+          ),
+        },
+      ),
   )
   .get('/api/categorias-financeiras', async () =>
     ok({ items: await listCategoriasFinanceirasApi(db) }),
