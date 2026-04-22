@@ -103,40 +103,14 @@
   }
 }
 
-.filtros {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
-  margin-bottom: 1.25rem;
-
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    font-size: 0.9rem;
-    color: var(--color-muted);
-  }
-
-  input[type='date'],
-  select.filtro-categoria {
-    min-height: var(--touch-min);
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--radius);
-    border: 1px solid #d6d3d1;
-    background: var(--color-surface);
-    min-width: 11rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  select.filtro-categoria {
-    min-width: 14rem;
-    max-width: min(22rem, 100%);
-  }
-}
-
 .dashboard-financeiro {
   margin-bottom: 1.5rem;
+
+  /** Resumo numérico abaixo dos gráficos. */
+  > .dashboard-grid + .resumo {
+    margin-top: 1.25rem;
+    margin-bottom: 0;
+  }
 }
 
 .dashboard-grid {

@@ -1,10 +1,5 @@
 <div class="toolbar">
   <h1>Profissionais</h1>
-  @if (!mostrarFormulario) {
-    <button type="button" class="btn primary" (click)="abrirNovo()">
-      Adicionar profissional
-    </button>
-  }
 </div>
 
 <p class="intro">
@@ -12,16 +7,23 @@
   novos atendimentos.
 </p>
 
-<label class="busca">
-  <span class="sr-only">Buscar</span>
-  <input
-    type="search"
-    [(ngModel)]="busca"
-    name="busca"
-    placeholder="Buscar por nome"
-    autocomplete="off"
-  />
-</label>
+<div class="busca-row">
+  <label class="busca">
+    <span class="sr-only">Buscar</span>
+    <input
+      type="search"
+      [(ngModel)]="busca"
+      name="busca"
+      placeholder="Buscar por nome"
+      autocomplete="off"
+    />
+  </label>
+  @if (!mostrarFormulario) {
+    <button type="button" class="btn primary busca-row__acao" (click)="abrirNovo()">
+      Adicionar profissional
+    </button>
+  }
+</div>
 
 @if (erro) {
   <p class="alert" role="alert">{{ erro }}</p>

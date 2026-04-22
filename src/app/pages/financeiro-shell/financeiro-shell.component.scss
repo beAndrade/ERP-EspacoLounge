@@ -12,26 +12,185 @@
   }
 }
 
-.toolbar-links {
+.toolbar--financeiro {
+  align-items: stretch;
+  margin-bottom: 0.75rem;
+}
+
+/** Bloco único: título + ações e, no resumo do dia, filtros logo abaixo (sem “vazio” entre toolbar e Data). */
+.toolbar__top {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.toolbar__top-main {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 1rem;
+}
 
-  a {
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-decoration: none;
+/** Coluna à direita: mesma largura nos dois botões (PIN + Folha). */
+.toolbar__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/** Filtros Data / categoria / Atualizar — mesmo estilo que tinham em `financeiro`. */
+.toolbar__filtros.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  width: 100%;
+  padding-top: 0.1rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.9rem;
     color: var(--color-muted);
-    padding: 0.35rem 0.5rem;
-    border-radius: var(--radius);
-
-    &.active,
-    &:hover {
-      color: var(--color-primary);
-      background: var(--color-bg);
-    }
   }
+
+  input[type='date'],
+  select.filtro-categoria {
+    min-height: var(--touch-min);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid #d6d3d1;
+    background: var(--color-surface);
+    min-width: 11rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  select.filtro-categoria {
+    min-width: 14rem;
+    max-width: min(22rem, 100%);
+  }
+}
+
+.toolbar-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.4rem;
+  min-width: 0;
+}
+
+.toolbar-brand__sub {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  letter-spacing: 0.02em;
+}
+
+/** Heroicons outline: arrow-left (traço do projeto). */
+.btn-back-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius);
+  border: 1px solid #e7e5e4;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  text-decoration: none;
+  transition:
+    filter 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    filter: brightness(0.97);
+    border-color: #d6d3d1;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.btn-back-hero__svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.btn-esquecer-pin {
+  box-sizing: border-box;
+  width: 100%;
+  background: transparent;
+  border: 1px solid #d6d3d1;
+  color: var(--color-primary);
+  font-weight: 600;
+  min-height: var(--touch-min);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font: inherit;
+
+  &:hover {
+    filter: brightness(0.97);
+  }
+}
+
+/**
+ * Mesma caixa que `.btn-esquecer-pin` (padding, raio, altura mínima, largura na coluna);
+ * mantém verde + texto branco.
+ */
+.btn-folha-pagamento {
+  box-sizing: border-box;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: var(--touch-min);
+  padding: 0.5rem 1.25rem;
+  border: 1px solid #15803d;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: #fff;
+  background: #16a34a;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08), 0 2px 6px rgba(22, 163, 74, 0.3);
+  cursor: pointer;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    filter: brightness(1.05);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #15803d;
+    outline-offset: 2px;
+  }
+}
+
+.btn-folha-pagamento__icon {
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .hint {
@@ -74,10 +233,6 @@
     border: 1px solid #d6d3d1;
     min-width: 12rem;
   }
-}
-
-.sessao-pin {
-  margin: 0 0 1rem;
 }
 
 .btn {

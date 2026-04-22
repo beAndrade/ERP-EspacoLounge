@@ -14,10 +14,22 @@ import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 import { EstoqueComponent } from './pages/estoque/estoque.component';
 import { ProfissionaisComponent } from './pages/profissionais/profissionais.component';
+import { ComandasComponent } from './pages/comandas/comandas.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
-  { path: 'atendimentos', redirectTo: 'agenda', pathMatch: 'full' },
+  {
+    path: 'painel',
+    component: EmBreveComponent,
+    data: { titulo: 'Painel' },
+  },
+  {
+    path: 'pacotes',
+    component: EmBreveComponent,
+    data: { titulo: 'Pacotes' },
+  },
+  { path: 'comandas', component: ComandasComponent },
+  { path: 'atendimentos', redirectTo: 'comandas', pathMatch: 'full' },
   { path: 'agenda/novo', component: AgendaNovoComponent },
   { path: 'agenda/lista', component: AgendaListaComponent },
   { path: 'agenda/calendario', component: AgendaComponent },

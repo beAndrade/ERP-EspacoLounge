@@ -1,17 +1,13 @@
-/* Largura da coluna esquerda (mini-cal + filtros); alinha o botão da toolbar ao bloco do calendário. */
+/* Largura da coluna esquerda (mini-cal + filtros + ações). */
 $hub-sidebar-w: 16rem;
 
-.hub-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+.hub-sidebar__actions {
+  margin-top: 0.75rem;
 }
 
-.hub-toolbar .btn-novo {
+.hub-sidebar__actions .btn-novo {
   box-sizing: border-box;
-  width: min(#{$hub-sidebar-w}, 100%);
+  width: 100%;
   min-height: var(--touch-min);
   padding: 0.55rem 1.25rem;
   border-radius: var(--radius);
@@ -23,7 +19,7 @@ $hub-sidebar-w: 16rem;
   cursor: pointer;
 }
 
-.hub-toolbar .btn-novo:hover {
+.hub-sidebar__actions .btn-novo:hover {
   filter: brightness(1.05);
 }
 

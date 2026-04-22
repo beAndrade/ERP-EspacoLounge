@@ -103,13 +103,14 @@ th {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: nowrap;
+  gap: 0.65rem;
   white-space: nowrap;
 }
 
-/** Separador literal: "Editar | Excluir" */
 .acoes-sep {
   color: var(--color-muted);
   user-select: none;
+  font-weight: 400;
 }
 
 /** Mesmo “peso” visual do link Editar (altura tocável, sem caixa). */

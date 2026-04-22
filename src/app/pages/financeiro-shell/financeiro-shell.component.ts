@@ -1,8 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AdminPinService } from '../../core/services/admin-pin.service';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { FinanceiroResumoUiService } from './financeiro-resumo-ui.service';
 
 function periodoAtualYm(): string {
   const d = new Date();
@@ -12,13 +13,27 @@ function periodoAtualYm(): string {
 @Component({
   selector: 'app-financeiro-shell',
   standalone: true,
-  imports: [FormsModule, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [FormsModule, RouterLink, RouterOutlet],
   templateUrl: './financeiro-shell.component.html',
   styleUrl: './financeiro-shell.component.scss',
+  providers: [FinanceiroResumoUiService],
 })
 export class FinanceiroShellComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
   readonly adminPin = inject(AdminPinService);
+  readonly router = inject(Router);
+  readonly resumoUi = inject(FinanceiroResumoUiService);
+
+  /** Mostra seta “voltar” para o resumo do dia quando estamos em Folha de pagamento. */
+  get emSubrotaFolha(): boolean {
+    const path = this.router.url.split('?')[0] ?? '';
+    return path.includes('/financeiro/comissoes');
+  }
+
+  /** Subtítulo ao lado do título: resumo do dia vs folha de comissões. */
+  get toolbarSubtitulo(): string {
+    return this.emSubrotaFolha ? '// Comissões' : '// Visão Geral';
+  }
 
   pinDraft = '';
   desbloqueado = false;
@@ -66,5 +81,10 @@ export class FinanceiroShellComponent implements OnInit {
     this.pinDraft = '';
     this.desbloqueado = false;
     this.erroPin = '';
+  }
+
+  /** Recarrega o resumo do dia (consumido por `FinanceiroComponent`). */
+  atualizarFinanceiro(): void {
+    this.resumoUi.solicitarRecarregar();
   }
 }

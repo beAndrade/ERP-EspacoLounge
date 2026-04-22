@@ -32,24 +32,88 @@
     <p class="alert" role="alert">{{ erroPin }}</p>
   }
 } @else {
-  <div class="toolbar">
-    <h1>Financeiro</h1>
-    <nav class="toolbar-links" aria-label="Secções do financeiro">
-      <a
-        routerLink="/financeiro"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        >Dia</a
-      >
-      <a routerLink="/financeiro/comissoes" routerLinkActive="active"
-        >Comissões / Folha</a
-      >
-    </nav>
+  <div class="toolbar toolbar--financeiro">
+    <div class="toolbar__top">
+      <div class="toolbar__top-main">
+        <div class="toolbar__left">
+          @if (emSubrotaFolha) {
+            <a
+              routerLink="/financeiro"
+              class="btn-back-hero"
+              aria-label="Voltar ao resumo do dia"
+              title="Voltar ao resumo do dia"
+            >
+              <svg
+                class="btn-back-hero__svg"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                />
+              </svg>
+            </a>
+          }
+          <div class="toolbar-brand">
+            <h1>Financeiro</h1>
+            <h2 class="toolbar-brand__sub">{{ toolbarSubtitulo }}</h2>
+          </div>
+        </div>
+        <div class="toolbar__actions">
+          <button
+            type="button"
+            class="btn btn-esquecer-pin"
+            (click)="terminarSessaoPin()"
+          >
+            Esquecer PIN nesta sessão
+          </button>
+          @if (!emSubrotaFolha) {
+            <a routerLink="/financeiro/comissoes" class="btn-folha-pagamento">
+              <span class="btn-folha-pagamento__icon" aria-hidden="true">$</span>
+              Folha de Pagamento
+            </a>
+          }
+        </div>
+      </div>
+      @if (!emSubrotaFolha) {
+        <div class="toolbar__filtros filtros">
+          <label>
+            <span>Data</span>
+            <input
+              type="date"
+              [(ngModel)]="resumoUi.dataYmd"
+              name="dataYmdShell"
+            />
+          </label>
+          <label>
+            <span>Categoria (tabela)</span>
+            <select
+              [(ngModel)]="resumoUi.filtroCategoriaMovimentos"
+              name="filtroCatMovShell"
+              class="filtro-categoria"
+            >
+              <option [ngValue]="null">Todas</option>
+              @for (c of resumoUi.categorias; track c.id) {
+                <option [ngValue]="c.id">{{ c.nome }} ({{ c.natureza }})</option>
+              }
+            </select>
+          </label>
+          <button
+            type="button"
+            class="btn primary"
+            (click)="atualizarFinanceiro()"
+          >
+            Atualizar
+          </button>
+        </div>
+      }
+    </div>
   </div>
-  <p class="sessao-pin">
-    <button type="button" class="btn ghost" (click)="terminarSessaoPin()">
-      Esquecer PIN nesta sessão
-    </button>
-  </p>
   <router-outlet />
 }
