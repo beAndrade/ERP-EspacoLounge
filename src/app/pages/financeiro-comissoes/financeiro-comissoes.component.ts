@@ -1,6 +1,4 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { FolhaListaItem } from '../../core/models/api.models';
 import { AdminPinService } from '../../core/services/admin-pin.service';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
@@ -10,34 +8,56 @@ function periodoAtualYm(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-const MESES_PT: ReadonlyArray<{ v: string; nome: string }> = [
-  { v: '01', nome: 'Janeiro' },
-  { v: '02', nome: 'Fevereiro' },
-  { v: '03', nome: 'Março' },
-  { v: '04', nome: 'Abril' },
-  { v: '05', nome: 'Maio' },
-  { v: '06', nome: 'Junho' },
-  { v: '07', nome: 'Julho' },
-  { v: '08', nome: 'Agosto' },
-  { v: '09', nome: 'Setembro' },
-  { v: '10', nome: 'Outubro' },
-  { v: '11', nome: 'Novembro' },
-  { v: '12', nome: 'Dezembro' },
-];
+const fmtBrl = (n: number): string =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+    n,
+  );
 
-function anosCompetenciaRange(): number[] {
-  const y = new Date().getFullYear();
-  const out: number[] = [];
-  for (let i = y - 3; i <= y + 5; i++) {
-    out.push(i);
-  }
-  return out;
+/** API devolve snake_case; alguns proxies/clientes podem expor camelCase — normalizamos. */
+function normalizarFolhaItem(raw: unknown): FolhaListaItem {
+  const o = raw as Record<string, unknown>;
+  const pickStr = (...keys: string[]): string | null => {
+    for (const k of keys) {
+      const v = o[k];
+      if (v == null || v === '') continue;
+      const s = String(v).trim();
+      if (s !== '') return s;
+    }
+    return null;
+  };
+  /** Texto da planilha ou número vindo do JSON. */
+  const pickMoeda = (...keys: string[]): string | null => {
+    for (const k of keys) {
+      const v = o[k];
+      if (v == null || v === '') continue;
+      if (typeof v === 'number' && Number.isFinite(v)) return fmtBrl(v);
+      const s = String(v).trim();
+      if (s !== '') return s;
+    }
+    return null;
+  };
+  const pidRaw = o['profissional_id'] ?? o['profissionalId'];
+  const profissionalId =
+    pidRaw != null && pidRaw !== '' && !Number.isNaN(Number(pidRaw))
+      ? Number(pidRaw)
+      : null;
+  return {
+    id: Number(o['id']),
+    profissional_id: profissionalId,
+    profissional: pickStr('profissional'),
+    periodo_referencia: pickStr('periodo_referencia', 'periodoReferencia'),
+    mes: pickStr('mes'),
+    total_comissao: pickMoeda('total_comissao', 'totalComissao'),
+    total_pago: pickMoeda('total_pago', 'totalPago'),
+    saldo: pickMoeda('saldo'),
+    status: pickStr('status'),
+  };
 }
 
 @Component({
   selector: 'app-financeiro-comissoes',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [],
   templateUrl: './financeiro-comissoes.component.html',
   styleUrl: './financeiro-comissoes.component.scss',
 })
@@ -45,15 +65,11 @@ export class FinanceiroComissoesComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
   readonly adminPin = inject(AdminPinService);
 
-  readonly mesesPt = MESES_PT;
-  readonly anosCompetencia = anosCompetenciaRange();
-
   periodoYm = periodoAtualYm();
 
   carregando = false;
   erro = '';
   itens: FolhaListaItem[] = [];
-  ultimoRecalculo: string | null = null;
 
   ngOnInit(): void {
     if (this.adminPin.hasPin()) {
@@ -61,25 +77,12 @@ export class FinanceiroComissoesComponent implements OnInit {
     }
   }
 
-  mesCompetencia(): string {
-    const p = String(this.periodoYm || '').trim().slice(0, 7);
-    const m = p.split('-')[1];
-    return m && /^\d{2}$/.test(m) ? m : '01';
-  }
-
-  anoCompetencia(): string {
-    const p = String(this.periodoYm || '').trim().slice(0, 7);
-    const y = p.split('-')[0];
-    const n = y && /^\d{4}$/.test(y) ? parseInt(y, 10) : new Date().getFullYear();
-    return String(n);
-  }
-
-  onMesCompetenciaChange(v: string): void {
-    this.periodoYm = `${this.anoCompetencia()}-${v}`;
-  }
-
-  onAnoCompetenciaChange(y: string): void {
-    this.periodoYm = `${y}-${this.mesCompetencia()}`;
+  /** Exibe células monetárias de forma consistente (evita colunas “vazias” por tipo inesperado). */
+  formatMoeda(v: string | null | undefined): string {
+    if (v == null || String(v).trim() === '') return '—';
+    const s = String(v).trim();
+    if (/^R\$\s/i.test(s) || /^[\d.,R$\s-]+$/.test(s)) return s;
+    return s;
   }
 
   carregar(): void {
@@ -97,7 +100,7 @@ export class FinanceiroComissoesComponent implements OnInit {
     this.erro = '';
     this.api.listFolha(p).subscribe({
       next: (rows) => {
-        this.itens = rows;
+        this.itens = rows.map((r) => normalizarFolhaItem(r));
         this.carregando = false;
       },
       error: (e: Error) => {
@@ -106,31 +109,6 @@ export class FinanceiroComissoesComponent implements OnInit {
         this.erro =
           e.message ||
           'Não foi possível carregar a folha. Verifique o PIN e a API.';
-      },
-    });
-  }
-
-  recalcular(): void {
-    const p = String(this.periodoYm || '').trim().slice(0, 7);
-    if (!/^\d{4}-\d{2}$/.test(p)) {
-      this.erro = 'Período inválido.';
-      return;
-    }
-    if (!this.adminPin.hasPin()) {
-      this.erro = 'PIN em falta.';
-      return;
-    }
-    this.carregando = true;
-    this.erro = '';
-    this.api.recalcularFolhaComissoes(p).subscribe({
-      next: (r) => {
-        this.ultimoRecalculo = `${r.linhas_folha_atualizadas} linha(s) de folha atualizada(s).`;
-        this.carregando = false;
-        this.carregar();
-      },
-      error: (e: Error) => {
-        this.carregando = false;
-        this.erro = e.message || 'Falha ao recalcular.';
       },
     });
   }

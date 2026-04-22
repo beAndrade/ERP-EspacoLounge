@@ -3,7 +3,14 @@ import {
   DatePipe,
   registerLocaleData,
 } from '@angular/common';
-import { Component, inject, LOCALE_ID, OnInit } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  LOCALE_ID,
+  OnInit,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import localePt from '@angular/common/locales/pt';
 import { forkJoin } from 'rxjs';
@@ -13,6 +20,7 @@ import {
   MovimentacaoListaItem,
 } from '../../core/models/api.models';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { FinanceiroResumoUiService } from '../financeiro-shell/financeiro-resumo-ui.service';
 
 registerLocaleData(localePt);
 
@@ -34,14 +42,6 @@ interface MovimentacaoRascunho {
   descricao: string;
 }
 
-function hojeYmd(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 @Component({
   selector: 'app-financeiro',
   standalone: true,
@@ -52,19 +52,17 @@ function hojeYmd(): string {
 })
 export class FinanceiroComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
+  private readonly resumoUi = inject(FinanceiroResumoUiService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  dataYmd = hojeYmd();
   carregando = false;
   erro = '';
 
   private nomeCategoria = new Map<number, string>();
-  categorias: CategoriaFinanceiraItem[] = [];
   despesaCategorias: CategoriaFinanceiraItem[] = [];
 
   caixa: CaixaDiaResumo | null = null;
   movimentacoes: MovimentacaoListaItem[] = [];
-  /** `null` = todas as categorias (só filtra a tabela de movimentações). */
-  filtroCategoriaMovimentos: number | null = null;
 
   editandoMovimentacoes = false;
   private rascunhoMovPorId = new Map<number, MovimentacaoRascunho>();
@@ -83,16 +81,19 @@ export class FinanceiroComponent implements OnInit {
   despesaFormErro = '';
 
   ngOnInit(): void {
+    this.resumoUi.solicitacaoAtualizacao$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.carregar());
     this.carregar();
   }
 
   carregar(): void {
-    const d = String(this.dataYmd || '').trim().slice(0, 10);
+    const d = String(this.resumoUi.dataYmd || '').trim().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
       this.erro = 'Use uma data válida (aaaa-mm-dd).';
       return;
     }
-    this.dataYmd = d;
+    this.resumoUi.dataYmd = d;
     this.carregando = true;
     this.erro = '';
     forkJoin({
@@ -101,7 +102,7 @@ export class FinanceiroComponent implements OnInit {
       movs: this.api.listMovimentacoes({ dataInicio: d, dataFim: d }),
     }).subscribe({
       next: ({ categorias, caixa, movs }) => {
-        this.categorias = categorias;
+        this.resumoUi.categorias = categorias;
         this.despesaCategorias = categorias.filter(
           (c) => c.natureza === 'despesa',
         );
@@ -182,7 +183,7 @@ export class FinanceiroComponent implements OnInit {
 
   /** Linhas da tabela respeitam o filtro de categoria. */
   get movimentacoesTabela(): MovimentacaoListaItem[] {
-    const f = this.filtroCategoriaMovimentos;
+    const f = this.resumoUi.filtroCategoriaMovimentos;
     if (f == null) return this.movimentacoes;
     return this.movimentacoes.filter((m) => m.categoria_id === f);
   }
@@ -260,7 +261,7 @@ export class FinanceiroComponent implements OnInit {
   }
 
   categoriasPorNatureza(natureza: 'receita' | 'despesa'): CategoriaFinanceiraItem[] {
-    return this.categorias.filter((c) => c.natureza === natureza);
+    return this.resumoUi.categorias.filter((c) => c.natureza === natureza);
   }
 
   private novoRascunhoDeM(m: MovimentacaoListaItem): MovimentacaoRascunho {
@@ -357,7 +358,7 @@ export class FinanceiroComponent implements OnInit {
   }
 
   cadastrarDespesa(): void {
-    const d = String(this.dataYmd || '').trim().slice(0, 10);
+    const d = String(this.resumoUi.dataYmd || '').trim().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
       this.despesaFormErro = 'Defina uma data válida acima.';
       return;

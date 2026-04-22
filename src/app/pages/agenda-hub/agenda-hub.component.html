@@ -1,9 +1,3 @@
-<div class="hub-toolbar">
-  <button type="button" class="btn btn-novo" (click)="abrirNovoAtendimentoModal()">
-    Novo atendimento
-  </button>
-</div>
-
 @if (erro) {
   <p class="alert" role="alert">{{ erro }}</p>
 }
@@ -58,6 +52,12 @@
       @if (profissionais.length === 0 && !carregandoMes) {
         <p class="hint">Nenhum profissional na Folha.</p>
       }
+    </div>
+
+    <div class="hub-sidebar__actions">
+      <button type="button" class="btn btn-novo" (click)="abrirNovoAtendimentoModal()">
+        Novo atendimento
+      </button>
     </div>
   </aside>
 

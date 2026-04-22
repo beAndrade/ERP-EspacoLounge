@@ -1,28 +1,3 @@
-<p class="hint">
-  Resumo do dia e movimentações na mesma data (API Postgres). Despesas estruturadas geram o lançamento no razão e o detalhe em <code>despesas</code>.
-</p>
-
-<div class="filtros">
-  <label>
-    <span>Data</span>
-    <input type="date" [(ngModel)]="dataYmd" name="dataYmd" />
-  </label>
-  <label>
-    <span>Categoria (tabela)</span>
-    <select
-      [(ngModel)]="filtroCategoriaMovimentos"
-      name="filtroCatMov"
-      class="filtro-categoria"
-    >
-      <option [ngValue]="null">Todas</option>
-      @for (c of categorias; track c.id) {
-        <option [ngValue]="c.id">{{ c.nome }} ({{ c.natureza }})</option>
-      }
-    </select>
-  </label>
-  <button type="button" class="btn primary" (click)="carregar()">Atualizar</button>
-</div>
-
 @if (!carregando && !erro && caixa) {
   <section class="cadastro-despesa" aria-label="Nova despesa">
     <h2 class="subtitulo">Nova despesa</h2>
@@ -130,27 +105,6 @@
 }
 
 @if (!carregando && !erro && caixa) {
-  <section class="resumo" aria-label="Resumo do dia">
-    <div class="resumo-card">
-      <span class="resumo-label">Receitas</span>
-      <strong class="resumo-valor receita">{{
-        valorNum(caixa.total_receitas) | currency: 'BRL' : 'symbol' : '1.2-2'
-      }}</strong>
-    </div>
-    <div class="resumo-card">
-      <span class="resumo-label">Despesas</span>
-      <strong class="resumo-valor despesa">{{
-        valorNum(caixa.total_despesas) | currency: 'BRL' : 'symbol' : '1.2-2'
-      }}</strong>
-    </div>
-    <div class="resumo-card destaque">
-      <span class="resumo-label">Saldo do dia</span>
-      <strong class="resumo-valor">{{
-        valorNum(caixa.saldo_dia) | currency: 'BRL' : 'symbol' : '1.2-2'
-      }}</strong>
-    </div>
-  </section>
-
   <section class="dashboard-financeiro" aria-label="Painel do dia">
     <h2 class="subtitulo">Painel do dia</h2>
     <p class="hint small">
@@ -257,6 +211,26 @@
         </div>
       }
     </div>
+    <section class="resumo" aria-label="Resumo do dia">
+      <div class="resumo-card">
+        <span class="resumo-label">Receitas</span>
+        <strong class="resumo-valor receita">{{
+          valorNum(caixa.total_receitas) | currency: 'BRL' : 'symbol' : '1.2-2'
+        }}</strong>
+      </div>
+      <div class="resumo-card">
+        <span class="resumo-label">Despesas</span>
+        <strong class="resumo-valor despesa">{{
+          valorNum(caixa.total_despesas) | currency: 'BRL' : 'symbol' : '1.2-2'
+        }}</strong>
+      </div>
+      <div class="resumo-card destaque">
+        <span class="resumo-label">Saldo do dia</span>
+        <strong class="resumo-valor">{{
+          valorNum(caixa.saldo_dia) | currency: 'BRL' : 'symbol' : '1.2-2'
+        }}</strong>
+      </div>
+    </section>
   </section>
 
   <div class="subtitulo-row">
