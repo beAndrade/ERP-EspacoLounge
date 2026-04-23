@@ -1,7 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&display=swap');
 
+
 .shell {
-  --sidebar-w: 17.5rem;
+  --sidebar-w: 320px;
   --sidebar-w-collapsed: 4.5rem;
   min-height: 100vh;
   display: flex;
@@ -24,6 +25,8 @@
   flex-direction: column;
   background: color-mix(in srgb, var(--color-primary) 78%, #1c1917 22%);
   color: var(--sidebar-fg);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  border-right: none;
   transition: width 0.2s ease, padding 0.2s ease;
   overflow-x: hidden;
   overflow-y: auto;

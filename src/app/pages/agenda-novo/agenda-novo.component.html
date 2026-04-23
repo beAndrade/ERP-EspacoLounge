@@ -24,13 +24,6 @@
       <h1>{{ tituloFormulario() }}</h1>
     </div>
   </div>
-} @else {
-  <div class="toolbar toolbar--modal">
-    <h1>{{ tituloFormulario() }}</h1>
-    <button type="button" class="btn-fechar" (click)="cancelarModal.emit()">
-      Fechar
-    </button>
-  </div>
 }
 
 @if (erro && !carregandoListas) {
@@ -48,50 +41,142 @@
     </p>
   }
 
-  <form [formGroup]="form" (ngSubmit)="salvar()" class="form">
-    <label>
-      <span>Cliente</span>
-      <select formControlName="cliente_id" required>
-        <option value="">Selecione…</option>
-        @for (c of clientes; track c.id) {
-          <option [value]="c.id">{{ c.nome }} — {{ c.telefone || 'sem telefone' }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="data-field">
-      <span>Data</span>
-      <div
-        class="data-field__wrap"
-        (click)="abrirPickerData(dataInput, $event)"
-      >
-        <span class="data-field__display" aria-hidden="true">{{
-          dataExibicao()
-        }}</span>
-        <input
-          #dataInput
-          type="date"
-          formControlName="data"
-          class="data-field__native"
-          [attr.aria-label]="'Data do atendimento, ' + dataExibicao()"
+  <form
+    [formGroup]="form"
+    (ngSubmit)="salvar()"
+    class="form"
+    [class.form--modal]="modoModal"
+  >
+    <div class="form-shell" [class.form-shell--modal]="modoModal">
+      @if (modoModal) {
+        <app-agenda-novo-client-sidebar
+          class="form-shell__client"
+          [clienteIdControl]="clienteIdControl"
+          [opcoesClientes]="opcoesClientesNomes()"
+          [cliente]="clienteSelecionado()"
         />
-      </div>
-      <span class="hint data-field__hint">Toque no campo para abrir o calendário (formato dd-mm-aaaa).</span>
-    </label>
+      }
+      <div
+        class="form-shell__main"
+        [class.form-shell__main--modal]="modoModal"
+      >
+        @if (modoModal) {
+          <div class="agenda-modal__header">
+            <h1 class="agenda-modal__title">{{ tituloModal() }}</h1>
+            <button
+              type="button"
+              class="agenda-modal__close"
+              (click)="cancelarModal.emit()"
+              aria-label="Fechar"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  d="M6 6l12 12M18 6L6 18"
+                />
+              </svg>
+            </button>
+          </div>
+        }
+        <div
+          class="form-shell__flow"
+          [class.form-shell__flow--modal]="modoModal"
+        >
+          <div
+            class="block-context"
+            [class.block-context--modal]="modoModal"
+          >
+            @if (modoModal) {
+              <label class="block-context__field block-context__field--cliente-modal">
+                <span>Cliente</span>
+                <app-saas-select
+                  formControlName="cliente_id"
+                  [options]="opcoesClientesNomes()"
+                  placeholder="Selecione…"
+                />
+              </label>
+            } @else {
+              <label class="block-context__field">
+                <span>Cliente</span>
+                <app-saas-select
+                  formControlName="cliente_id"
+                  [options]="opcoesClientesSelect()"
+                  placeholder="Selecione…"
+                />
+              </label>
+            }
 
-    <section class="itens-atendimento" aria-labelledby="itens-atendimento-titulo">
+            <label
+              class="data-field block-context__field"
+              [class.data-field--modal-stretch]="modoModal"
+            >
+            <span>Data</span>
+            <div
+              class="data-field__wrap"
+              (click)="abrirPickerData(dataInput, $event)"
+            >
+              <span class="data-field__display" aria-hidden="true">{{
+                dataExibicao()
+              }}</span>
+              <input
+                #dataInput
+                type="date"
+                formControlName="data"
+                class="data-field__native"
+                [attr.aria-label]="'Data do atendimento, ' + dataExibicao()"
+              />
+            </div>
+            @if (!modoModal) {
+              <span class="hint data-field__hint"
+                >Toque no campo para abrir o calendário (formato dd-mm-aaaa).</span
+              >
+            }
+          </label>
+
+          @if (modoModal) {
+            <div class="block-context__field block-context__field--readonly">
+              <span class="block-context__label">Status</span>
+              <div class="saas-field-readonly" aria-disabled="true">Em breve</div>
+            </div>
+            <div class="block-context__field block-context__field--readonly">
+              <span class="block-context__label">Cor</span>
+              <div class="saas-field-readonly" aria-disabled="true">Padrão</div>
+            </div>
+          }
+        </div>
+
+    <section
+      class="itens-atendimento block-itens"
+      [class.itens-atendimento--modal]="modoModal"
+      aria-labelledby="itens-atendimento-titulo"
+    >
       <h2 id="itens-atendimento-titulo" class="itens-atendimento__titulo">
-        Itens do atendimento
+        {{ modoModal ? 'Itens do agendamento' : 'Itens do atendimento' }}
       </h2>
 
-      <p class="hint tipo-hint">
-        Use <strong>+ Linha</strong> para cada registo do pedido. Em cada linha escolha o
-        <strong>tipo</strong> (Serviço de catálogo, Mega, Pacote, Cabelo ou Produto) e preencha os campos.
-        O <strong>horário inicial</strong> (abaixo) aplica-se a todo o pedido: em sequência para várias linhas de
-        <strong>Serviço</strong>, ou como início do primeiro bloco para os demais tipos. Mega e Pacote geram várias linhas na base com o mesmo ID.
-      </p>
+      @if (!modoModal) {
+        <p class="hint tipo-hint">
+          Use <strong>+ Linha</strong> para cada registo do pedido. Em cada linha escolha o
+          <strong>tipo</strong> (Serviço de catálogo, Mega, Pacote, Cabelo ou Produto) e preencha os campos.
+          O <strong>horário inicial</strong> (abaixo) aplica-se a todo o pedido: em sequência para várias linhas de
+          <strong>Serviço</strong>, ou como início do primeiro bloco para os demais tipos. Mega e Pacote geram várias linhas na base com o mesmo ID.
+        </p>
+      }
 
-      <div class="servicos-block" formArrayName="linhasItens">
+      <div
+        class="servicos-block"
+        [class.servicos-block--modal]="modoModal"
+        formArrayName="linhasItens"
+      >
         <div class="servicos-header">
           <span>Linhas do pedido</span>
           <button type="button" class="btn small" (click)="adicionarLinhaItens()">
@@ -99,64 +184,97 @@
           </button>
         </div>
         @for (ctrl of linhasItensArray.controls; track $index; let i = $index) {
-          <div class="servico-row servico-row--misto" [formGroupName]="i">
+          <div
+            class="servico-row servico-row--misto"
+            [class.servico-row--drawer]="modoModal"
+            [formGroupName]="i"
+          >
             <label class="servico-row__field servico-row__field--tipo-linha">
               <span>Tipo de linha</span>
-              <select
+              <app-saas-select
                 formControlName="itemTipo"
-                (change)="onItemTipoLinhaChange(i)"
-              >
-                @for (tl of tiposLinhaAtendimento; track tl) {
-                  <option [value]="tl">{{ tl }}</option>
-                }
-              </select>
+                [options]="opcoesTiposLinha()"
+                placeholder="Tipo…"
+                (picked)="onItemTipoLinhaChange(i)"
+              />
             </label>
 
             @if (ctrl.get('itemTipo')?.value === 'Serviço') {
-              <label class="servico-row__field">
-                <span>Serviço</span>
-                <select formControlName="servico_id" required>
-                  <option value="">Selecione…</option>
-                  @for (s of servicosTipoServico; track s.id) {
-                    <option [value]="s.id">{{ rotuloServico(s) }}</option>
-                  }
-                </select>
+              <label
+                class="servico-row__field"
+                [class.servico-row__field--descricao]="modoModal"
+              >
+                <span>{{ modoModal ? 'Descrição' : 'Serviço' }}</span>
+                <app-saas-select
+                  formControlName="servico_id"
+                  [options]="opcoesServicosCatalogo()"
+                  [placeholder]="modoModal ? 'Selecionar serviço' : 'Selecione…'"
+                />
               </label>
               @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
                 <label class="servico-row__field servico-row__field--tamanho">
                   <span>Tamanho (preço)</span>
-                  <select formControlName="tamanho">
-                    @for (t of tamanhos; track t) {
-                      <option [value]="t">{{ t }}</option>
-                    }
-                  </select>
+                  <app-saas-select
+                    formControlName="tamanho"
+                    [options]="opcoesTamanhosSelect()"
+                    placeholder="Tamanho…"
+                  />
                 </label>
               }
-              <label class="servico-row__field">
+              <label
+                class="servico-row__field"
+                [class.servico-row__field--pro]="modoModal"
+              >
                 <span>Profissional</span>
-                <select formControlName="profissional" required>
-                  <option [ngValue]="null">Selecione…</option>
-                  @for (p of profissionais; track p.id) {
-                    <option [ngValue]="p.id">{{ p.nome }}</option>
-                  }
-                </select>
+                <app-saas-select
+                  formControlName="profissional"
+                  [options]="opcoesProfissionaisSelect()"
+                  [useNumericOutput]="true"
+                  placeholder="Selecione…"
+                />
               </label>
+              @if (modoModal) {
+                <div class="servico-row__horario-bloco">
+                  @if (i === primeiroIndiceLinhaServico()) {
+                    <label class="servico-row__field servico-row__field--horario">
+                      <span>Horário</span>
+                      <input
+                        type="time"
+                        [formControl]="form.controls.hora_inicial"
+                      />
+                    </label>
+                  } @else {
+                    <div class="servico-row__field servico-row__field--horario">
+                      <span>Horário</span>
+                      <div
+                        class="saas-field-readonly servico-row__horario-readonly"
+                        aria-label="Horário de início (sequência)"
+                      >
+                        {{ horarioInicioLinhaServicoExibicao(i) }}
+                      </div>
+                    </div>
+                  }
+                </div>
+                <div class="servico-row__field servico-row__field--duracao">
+                  <span>Duração</span>
+                  <div
+                    class="servico-row__duracao"
+                    [attr.aria-label]="'Duração: ' + duracaoServicoLinhaExibicao(i)"
+                  >
+                    {{ duracaoServicoLinhaExibicao(i) }}
+                  </div>
+                </div>
+              }
             }
 
             @if (ctrl.get('itemTipo')?.value === 'Produto') {
               <label class="servico-row__field">
                 <span>Produto</span>
-                <select formControlName="produto" required>
-                  <option value="">Selecione…</option>
-                  @for (pr of produtos; track pr.produto) {
-                    <option [value]="pr.produto">
-                      {{ pr.produto }}
-                      @if (pr.unidade) {
-                        ({{ pr.unidade }})
-                      }
-                    </option>
-                  }
-                </select>
+                <app-saas-select
+                  formControlName="produto"
+                  [options]="opcoesProdutosSelect()"
+                  placeholder="Selecione…"
+                />
               </label>
               <label class="servico-row__field servico-row__field--tamanho">
                 <span>Quantidade</span>
@@ -179,28 +297,24 @@
               </label>
               <label class="servico-row__field">
                 <span>Profissional</span>
-                <select formControlName="profissional" required>
-                  <option [ngValue]="null">Selecione…</option>
-                  @for (p of profissionais; track p.id) {
-                    <option [ngValue]="p.id">{{ p.nome }}</option>
-                  }
-                </select>
+                <app-saas-select
+                  formControlName="profissional"
+                  [options]="opcoesProfissionaisSelect()"
+                  [useNumericOutput]="true"
+                  placeholder="Selecione…"
+                />
               </label>
             }
 
             @if (ctrl.get('itemTipo')?.value === 'Mega') {
               <label class="servico-row__field">
                 <span>Pacote (Regras Mega)</span>
-                <select
+                <app-saas-select
                   formControlName="pacote"
-                  required
-                  (change)="aplicarValidadoresLinhas()"
-                >
-                  <option value="">Selecione…</option>
-                  @for (p of pacotesMegaUnicos; track p) {
-                    <option [value]="p">{{ rotuloPacoteMegaOpcao(p) }}</option>
-                  }
-                </select>
+                  [options]="opcoesPacotesMegaSelect()"
+                  placeholder="Selecione…"
+                  (picked)="aplicarValidadoresLinhas()"
+                />
               </label>
               @if (pacotesMegaUnicos.length === 0) {
                 <p class="hint">Cadastre linhas em <strong>Regras Mega</strong> (Pacote + Etapa).</p>
@@ -220,21 +334,20 @@
                   <div class="etapa-row" [formGroupName]="j">
                     <label>
                       <span>Etapa</span>
-                      <select formControlName="etapa" required>
-                        <option value="">Selecione…</option>
-                        @for (e of etapasSelectOptionsLinha(i); track e) {
-                          <option [value]="e">{{ e }}</option>
-                        }
-                      </select>
+                      <app-saas-select
+                        formControlName="etapa"
+                        [options]="opcoesEtapasLinhaSelect(i)"
+                        placeholder="Selecione…"
+                      />
                     </label>
                     <label>
                       <span>Profissional</span>
-                      <select formControlName="profissional" required>
-                        <option [ngValue]="null">Selecione…</option>
-                        @for (p of profissionais; track p.id) {
-                          <option [ngValue]="p.id">{{ p.nome }}</option>
-                        }
-                      </select>
+                      <app-saas-select
+                        formControlName="profissional"
+                        [options]="opcoesProfissionaisSelect()"
+                        [useNumericOutput]="true"
+                        placeholder="Selecione…"
+                      />
                     </label>
                     @if (etapasArrayDaLinha(i).length > 1) {
                       <button
@@ -253,16 +366,12 @@
             @if (ctrl.get('itemTipo')?.value === 'Pacote') {
               <label class="servico-row__field">
                 <span>Pacote (aba Pacotes)</span>
-                <select
+                <app-saas-select
                   formControlName="pacote"
-                  required
-                  (change)="aplicarValidadoresLinhas()"
-                >
-                  <option value="">Selecione…</option>
-                  @for (item of pacotesOrdenados; track item.pacote) {
-                    <option [value]="item.pacote">{{ rotuloPacoteCatalogo(item) }}</option>
-                  }
-                </select>
+                  [options]="opcoesPacotesCatalogoSelect()"
+                  placeholder="Selecione…"
+                  (picked)="aplicarValidadoresLinhas()"
+                />
               </label>
               @if (pacotes.length === 0) {
                 <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
@@ -282,21 +391,20 @@
                   <div class="etapa-row" [formGroupName]="j">
                     <label>
                       <span>Etapa</span>
-                      <select formControlName="etapa" required>
-                        <option value="">Selecione…</option>
-                        @for (e of etapasSelectOptionsLinha(i); track e) {
-                          <option [value]="e">{{ e }}</option>
-                        }
-                      </select>
+                      <app-saas-select
+                        formControlName="etapa"
+                        [options]="opcoesEtapasLinhaSelect(i)"
+                        placeholder="Selecione…"
+                      />
                     </label>
                     <label>
                       <span>Profissional</span>
-                      <select formControlName="profissional" required>
-                        <option [ngValue]="null">Selecione…</option>
-                        @for (p of profissionais; track p.id) {
-                          <option [ngValue]="p.id">{{ p.nome }}</option>
-                        }
-                      </select>
+                      <app-saas-select
+                        formControlName="profissional"
+                        [options]="opcoesProfissionaisSelect()"
+                        [useNumericOutput]="true"
+                        placeholder="Selecione…"
+                      />
                     </label>
                     @if (etapasArrayDaLinha(i).length > 1) {
                       <button
@@ -323,39 +431,30 @@
                   <div class="cabelo-calc__grid">
                     <label class="cabelo-calc__field">
                       <span>Cor</span>
-                      <select
+                      <app-saas-select
                         formControlName="calc_cor"
-                        (change)="onCalcCabeloCorChangeLinha(i)"
-                      >
-                        <option value="">Selecione…</option>
-                        @for (x of cabelosCoresLista(); track x) {
-                          <option [value]="x">{{ x }}</option>
-                        }
-                      </select>
+                        [options]="opcoesCabelosCorSelect()"
+                        placeholder="Selecione…"
+                        (picked)="onCalcCabeloCorChangeLinha(i)"
+                      />
                     </label>
                     <label class="cabelo-calc__field">
                       <span>Tamanho (cm)</span>
-                      <select
+                      <app-saas-select
                         formControlName="calc_tam_cm"
-                        (change)="onCalcCabeloTamanhoChangeLinha(i)"
-                      >
-                        <option value="">Selecione…</option>
-                        @for (x of cabelosTamanhosListaLinha(i); track x) {
-                          <option [value]="x">{{ x }}</option>
-                        }
-                      </select>
+                        [options]="opcoesCabelosTamCmSelect(i)"
+                        placeholder="Selecione…"
+                        (picked)="onCalcCabeloTamanhoChangeLinha(i)"
+                      />
                     </label>
                     <label class="cabelo-calc__field">
                       <span>Método</span>
-                      <select
+                      <app-saas-select
                         formControlName="calc_metodo"
-                        (change)="onCalcCabeloMetodoChangeLinha(i)"
-                      >
-                        <option value="">Selecione…</option>
-                        @for (x of cabelosMetodosListaLinha(i); track x) {
-                          <option [value]="x">{{ x }}</option>
-                        }
-                      </select>
+                        [options]="opcoesCabelosMetodoSelect(i)"
+                        placeholder="Selecione…"
+                        (picked)="onCalcCabeloMetodoChangeLinha(i)"
+                      />
                     </label>
                     <label class="cabelo-calc__field cabelo-calc__field--gramas">
                       <span>Peso medido (g)</span>
@@ -415,12 +514,12 @@
               </label>
               <label class="servico-row__field">
                 <span>Profissional</span>
-                <select formControlName="profissional_cabelo" required>
-                  <option [ngValue]="null">Selecione…</option>
-                  @for (p of profissionais; track p.id) {
-                    <option [ngValue]="p.id">{{ p.nome }}</option>
-                  }
-                </select>
+                <app-saas-select
+                  formControlName="profissional_cabelo"
+                  [options]="opcoesProfissionaisSelect()"
+                  [useNumericOutput]="true"
+                  placeholder="Selecione…"
+                />
               </label>
             }
 
@@ -428,68 +527,186 @@
               @if (linhasItensArray.length > 1) {
                 <button
                   type="button"
-                  class="btn small danger"
+                  class="btn btn--icon-danger"
                   (click)="removerLinhaItens(i)"
+                  [attr.aria-label]="'Remover linha ' + (i + 1)"
+                  title="Remover linha"
                 >
-                  Remover linha
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    aria-hidden="true"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h10"
+                    />
+                  </svg>
                 </button>
               }
             </div>
           </div>
         }
+        @if (modoModal) {
+          <div
+            class="block-toggles block-toggles--inline"
+            role="group"
+            aria-label="Opções adicionais"
+          >
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                class="toggle-switch__input"
+                [checked]="enviarLembreteUi"
+                (change)="enviarLembreteUi = $any($event.target).checked"
+              />
+              <span class="toggle-switch__rail" aria-hidden="true">
+                <span class="toggle-switch__knob"></span>
+              </span>
+              <span class="toggle-switch__label">Enviar lembrete</span>
+            </label>
+          </div>
+        }
       </div>
 
-      <p class="hint">
-        A <strong>ordem das linhas</strong> define a ordem dos pedidos à API e, para <strong>Serviço</strong>, os horários em sequência.
-      </p>
-
-      <label>
-        <span>Horário inicial</span>
-        <input type="time" formControlName="hora_inicial" />
-        <span class="hint">
-          Relógio do salão (Brasil). Várias linhas de <strong>Serviço</strong> usam este valor em sequência; para
-          <strong>Mega, Pacote, Cabelo e Produto</strong>, define o início do primeiro bloco enviado (duração padrão 30 min na API).
-        </span>
-      </label>
-      @if (temLinhaServicoCatalogo()) {
-        <p class="hint horario-final-hint">
-          Horário final (calculado, só serviços de catálogo):
-          <strong>{{ horarioFinalExibicao() }}</strong>
-          — soma das durações (minutos) na base de dados.
-        </p>
-      }
-
-      @if (profissionais.length === 0 && profissionaisObrigatoriosSemLista) {
-        <p class="alert" role="alert">
-          Não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na planilha.
-        </p>
-      }
-      @if (temLinhaServicoCatalogo() && servicosTipoServico.length === 0) {
-        <p class="alert" role="alert">
-          Há linha de serviço de catálogo, mas não há itens com <strong>Tipo Fixo</strong> ou <strong>Tamanho</strong> na aba Serviços.
+      @if (!modoModal) {
+        <p class="hint">
+          A <strong>ordem das linhas</strong> define a ordem dos pedidos à API e, para
+          <strong>Serviço</strong>, os horários em sequência.
         </p>
       }
     </section>
 
-    <label>
-      <span>Observação (opcional)</span>
-      <textarea formControlName="observacao" rows="2" placeholder="Vai para Descrição nas linhas criadas"></textarea>
-    </label>
+    <div class="block-hora" [class.block-hora--no-time-field]="modoModal">
+      @if (modoModal && primeiroIndiceLinhaServico() < 0) {
+        <label>
+          <span>Horário inicial</span>
+          <input
+            type="time"
+            [formControl]="form.controls.hora_inicial"
+          />
+        </label>
+      }
+      @if (!modoModal) {
+        <label>
+          <span>Horário inicial</span>
+          <input type="time" formControlName="hora_inicial" />
+          <span class="hint">
+            Relógio do salão (Brasil). Várias linhas de <strong>Serviço</strong> usam este valor em
+            sequência; para <strong>Mega, Pacote, Cabelo e Produto</strong>, define o início do primeiro
+            bloco enviado (duração padrão 30 min na API).
+          </span>
+        </label>
+        @if (temLinhaServicoCatalogo()) {
+          <p class="hint horario-final-hint">
+            Horário final (calculado, só serviços de catálogo):
+            <strong>{{ horarioFinalExibicao() }}</strong>
+            — soma das durações (minutos) na base de dados.
+          </p>
+        }
+      }
 
-    <p class="hint resumo">{{ resumoLinhas() }}</p>
+      @if (profissionais.length === 0 && profissionaisObrigatoriosSemLista) {
+        <p class="alert" role="alert">
+          Não há profissionais na lista. Confira a lista de <strong>Profissionais</strong> na API ou na
+          planilha.
+        </p>
+      }
+      @if (temLinhaServicoCatalogo() && servicosTipoServico.length === 0) {
+        <p class="alert" role="alert">
+          Há linha de serviço de catálogo, mas não há itens com <strong>Tipo Fixo</strong> ou
+          <strong>Tamanho</strong> na aba Serviços.
+        </p>
+      }
+    </div>
 
-    <button
-      type="submit"
-      class="btn primary"
-      [disabled]="
-        salvando ||
-        form.invalid ||
-        clientes.length === 0 ||
-        profissionaisObrigatoriosSemLista ||
-        salvarBloqueadoPorCatalogo()
-      "
-    >
-      {{ salvando ? 'Salvando…' : 'Salvar atendimento' }}
-    </button>
+    <div class="block-obs">
+      <label>
+        <span>Observações</span>
+        <textarea
+          formControlName="observacao"
+          rows="2"
+          placeholder="Escreva aqui"
+        ></textarea>
+      </label>
+
+      @if (!modoModal) {
+        <p class="hint resumo">{{ resumoLinhas() }}</p>
+      }
+    </div>
+        </div>
+        @if (modoModal) {
+          <footer class="agenda-modal__footer" aria-label="Ações do agendamento">
+            <button
+              type="button"
+              class="btn btn-footer btn-footer--ghost"
+              (click)="cancelarModal.emit()"
+              [disabled]="salvando || excluindo"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="btn btn-footer primary"
+              [disabled]="
+                salvando ||
+                excluindo ||
+                form.invalid ||
+                clientes.length === 0 ||
+                profissionaisObrigatoriosSemLista ||
+                salvarBloqueadoPorCatalogo()
+              "
+            >
+              {{ salvando ? 'Salvando…' : 'Salvar' }}
+            </button>
+            @if (idAtendimentoEmEdicao?.trim()) {
+              <button
+                type="button"
+                class="btn btn-footer btn-footer--danger"
+                (click)="excluirSomente()"
+                [disabled]="salvando || excluindo"
+              >
+                {{ excluindo ? 'Excluindo…' : 'Excluir' }}
+              </button>
+            }
+          </footer>
+        }
+      </div>
+    </div>
+
+    @if (!modoModal) {
+      <div class="form-page__actions">
+        @if (idAtendimentoEmEdicao?.trim()) {
+          <button
+            type="button"
+            class="btn danger"
+            (click)="excluirSomente()"
+            [disabled]="salvando || excluindo"
+          >
+            {{ excluindo ? 'Excluindo…' : 'Excluir atendimento' }}
+          </button>
+        }
+        <button
+          type="submit"
+          class="btn primary"
+          [disabled]="
+            salvando ||
+            excluindo ||
+            form.invalid ||
+            clientes.length === 0 ||
+            profissionaisObrigatoriosSemLista ||
+            salvarBloqueadoPorCatalogo()
+          "
+        >
+          {{ salvando ? 'Salvando…' : 'Salvar atendimento' }}
+        </button>
+      </div>
+    }
   </form>
 }

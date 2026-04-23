@@ -1,6 +1,7 @@
 import {
   Component,
   EventEmitter,
+  HostBinding,
   inject,
   Input,
   OnChanges,
@@ -18,6 +19,7 @@ import {
   addMinutesToParts,
   civilNaiveSalaoParaUtcMs,
   formatSqlLocalDateTime,
+  pad2,
   parseSqlLocalDateTime,
   ymdOfParts,
 } from '../../core/utils/sql-local-datetime';
@@ -33,6 +35,7 @@ import {
   AbstractControl,
   FormArray,
   FormBuilder,
+  FormControl,
   FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
@@ -50,6 +53,11 @@ import {
   takeUntil,
 } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.component';
+import {
+  SaasSelectComponent,
+  type SaasSelectOption,
+} from './saas-select.component';
 import {
   AtendimentoListaItem,
   CabeloCatalogoItem,
@@ -154,7 +162,12 @@ function ordenarEtapasParaSelect(nomes: string[]): string[] {
 @Component({
   selector: 'app-agenda-novo',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [
+    RouterLink,
+    ReactiveFormsModule,
+    AgendaNovoClientSidebarComponent,
+    SaasSelectComponent,
+  ],
   templateUrl: './agenda-novo.component.html',
   styleUrl: './agenda-novo.component.scss',
 })
@@ -163,6 +176,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  @HostBinding('class.agenda-novo--drawer')
+  get isDrawerMode(): boolean {
+    return this.modoModal;
+  }
 
   /** Quando true, esconde navegação global do formulário (uso dentro de modal). */
   @Input() modoModal = false;
@@ -199,7 +217,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   carregandoListas = true;
   salvando = false;
+  excluindo = false;
   erro = '';
+
+  /** Apenas UI — não entram no `FormGroup` nem no payload. */
+  enviarLembreteUi = false;
 
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
@@ -491,6 +513,171 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return this.idAtendimentoEmEdicao?.trim()
       ? 'Editar atendimento'
       : 'Novo atendimento';
+  }
+
+  /** Título no modal do hub (tom mais próximo de SaaS). */
+  tituloModal(): string {
+    return this.idAtendimentoEmEdicao?.trim()
+      ? 'Editando agendamento'
+      : 'Novo agendamento';
+  }
+
+  clienteSelecionado(): Cliente | null {
+    const id = String(this.form.controls.cliente_id.value ?? '').trim();
+    if (!id) return null;
+    return this.clientes.find((c) => c.id === id) ?? null;
+  }
+
+  /** Exibição read-only na grelha do modal (linhas Serviço). */
+  duracaoServicoLinhaExibicao(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    if (!sid) return '—';
+    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+    const n = this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
+    return `${n} min`;
+  }
+
+  /** Texto curto: horário segue o controlo único do pedido. */
+  horarioHintLinhaServico(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    if (!sid) return '—';
+    return 'Início + sequência';
+  }
+
+  /** Primeira linha de tipo Serviço no pedido (para um único `input` de hora inicial). */
+  primeiroIndiceLinhaServico(): number {
+    for (let j = 0; j < this.linhasItensArray.length; j++) {
+      if (this.linhasItensArray.at(j)?.get('itemTipo')?.value === 'Serviço') {
+        return j;
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Hora (HH:mm) a que *começa* a linha `Serviço` na sequência (soma durações das
+   * linhas Serviço anteriores ao mesmo índice).
+   */
+  horarioInicioLinhaServicoExibicao(linhaIndex: number): string {
+    const dataYmd = normalizarDataIso(
+      String(this.form.controls.data.value ?? ''),
+    );
+    const hi = normalizarHoraHHmm(
+      String(this.form.controls.hora_inicial.value ?? ''),
+    );
+    if (!dataYmd || !hi) return '—';
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
+    if (!String(g.get('servico_id')?.value ?? '').trim()) return '—';
+
+    const [hhS, mmS] = hi.split(':');
+    const h = parseInt(String(hhS ?? '0'), 10);
+    const mi = parseInt(String(mmS ?? '0'), 10);
+    const base = parseSqlLocalDateTime(
+      `${dataYmd} ${pad2(h)}:${pad2(mi)}:00`,
+    );
+    if (!base) return '—';
+    let cur = base;
+    for (let j = 0; j < linhaIndex; j++) {
+      const r = this.linhasItensArray.at(j);
+      if (r?.get('itemTipo')?.value !== 'Serviço') continue;
+      const sid = String(r.get('servico_id')?.value ?? '').trim();
+      if (!sid) continue;
+      const tam = String(r.get('tamanho')?.value ?? 'Curto').trim();
+      const dur = this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
+      cur = addMinutesToParts(cur, dur);
+    }
+    return `${pad2(cur.hh)}:${pad2(cur.mm)}`;
+  }
+
+  opcoesClientesSelect(): SaasSelectOption[] {
+    return this.clientes.map((c) => ({
+      value: c.id,
+      label: `${c.nome} — ${c.telefone || 'sem telefone'}`,
+    }));
+  }
+
+  /**
+   * Modal: lista só com nomes (IDs iguais aos de `opcoesClientesSelect` — dados da base via `listClientes`).
+   */
+  opcoesClientesNomes(): SaasSelectOption[] {
+    return this.clientes.map((c) => ({ value: c.id, label: c.nome.trim() || '—' }));
+  }
+
+  /** `cliente_id` + saas-select na coluna da esquerda do modal. */
+  get clienteIdControl(): FormControl {
+    return this.form.controls.cliente_id as FormControl;
+  }
+
+  opcoesTiposLinha(): SaasSelectOption[] {
+    return this.tiposLinhaAtendimento.map((t) => ({ value: t, label: t }));
+  }
+
+  opcoesServicosCatalogo(): SaasSelectOption[] {
+    return this.servicosTipoServico.map((s) => ({
+      value: s.id,
+      label: this.rotuloServico(s),
+    }));
+  }
+
+  opcoesTamanhosSelect(): SaasSelectOption[] {
+    return this.tamanhos.map((t) => ({ value: t, label: t }));
+  }
+
+  opcoesProfissionaisSelect(): SaasSelectOption[] {
+    return this.profissionais.map((p) => ({
+      value: String(p.id),
+      label: p.nome,
+    }));
+  }
+
+  opcoesProdutosSelect(): SaasSelectOption[] {
+    return this.produtos.map((pr) => ({
+      value: String(pr.produto),
+      label: pr.unidade
+        ? `${pr.produto} (${pr.unidade})`
+        : String(pr.produto),
+    }));
+  }
+
+  opcoesPacotesMegaSelect(): SaasSelectOption[] {
+    return this.pacotesMegaUnicos.map((p) => ({
+      value: p,
+      label: this.rotuloPacoteMegaOpcao(p),
+    }));
+  }
+
+  opcoesPacotesCatalogoSelect(): SaasSelectOption[] {
+    return this.pacotesOrdenados.map((item) => ({
+      value: String(item.pacote),
+      label: this.rotuloPacoteCatalogo(item),
+    }));
+  }
+
+  opcoesEtapasLinhaSelect(i: number): SaasSelectOption[] {
+    return this.etapasSelectOptionsLinha(i).map((e) => ({ value: e, label: e }));
+  }
+
+  opcoesCabelosCorSelect(): SaasSelectOption[] {
+    return this.cabelosCoresLista().map((x) => ({ value: x, label: x }));
+  }
+
+  opcoesCabelosTamCmSelect(i: number): SaasSelectOption[] {
+    return this.cabelosTamanhosListaLinha(i).map((x) => ({
+      value: x,
+      label: x,
+    }));
+  }
+
+  opcoesCabelosMetodoSelect(i: number): SaasSelectOption[] {
+    return this.cabelosMetodosListaLinha(i).map((x) => ({
+      value: x,
+      label: x,
+    }));
   }
 
   /** `HH:mm` para `<input type="time">` a partir de `inicio` (SQL local ou ISO legado). */
@@ -988,6 +1175,39 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           e.message ||
           'Não foi possível salvar. Verifique a internet e tente de novo.';
         this.salvando = false;
+      },
+    });
+  }
+
+  /** Remove o atendimento na API sem recriar linhas (só em modo edição). */
+  excluirSomente(): void {
+    const id = this.idAtendimentoEmEdicao?.trim();
+    if (!id || this.salvando || this.excluindo) return;
+    if (
+      !confirm(
+        'Excluir este atendimento? Esta ação não pode ser anulada.',
+      )
+    ) {
+      return;
+    }
+    this.erro = '';
+    this.excluindo = true;
+    this.api.excluirAtendimento(id).subscribe({
+      next: () => {
+        this.excluindo = false;
+        this.idAtendimentoEmEdicao = null;
+        this.slotAgenda = null;
+        if (this.modoModal) {
+          this.salvoComSucesso.emit();
+        } else {
+          void this.router.navigate(['/agenda']);
+        }
+      },
+      error: (e: Error) => {
+        this.excluindo = false;
+        this.erro =
+          e.message ||
+          'Não foi possível excluir. Verifique a internet e tente de novo.';
       },
     });
   }

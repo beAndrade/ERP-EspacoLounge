@@ -168,19 +168,24 @@
 
 @if (modalAberto && modalContexto) {
   <div
-    class="modal-backdrop"
+    class="overlay"
+    [class.overlay--open]="drawerPanelOpen"
+    aria-hidden="true"
+    (click)="fecharModal()"
+  ></div>
+  <div
+    class="app-drawer"
+    [class.app-drawer--open]="drawerPanelOpen"
     role="dialog"
     aria-modal="true"
-    aria-label="Novo atendimento"
-    (click)="fecharModal()"
+    aria-label="Agendamento"
+    (click)="$event.stopPropagation()"
   >
-    <div class="modal-panel" (click)="$event.stopPropagation()">
-      <app-agenda-novo
-        [modoModal]="true"
-        [contextoSlot]="modalContexto"
-        (salvoComSucesso)="onSalvoModal()"
-        (cancelarModal)="fecharModal()"
-      />
-    </div>
+    <app-agenda-novo
+      [modoModal]="true"
+      [contextoSlot]="modalContexto"
+      (salvoComSucesso)="onSalvoModal()"
+      (cancelarModal)="fecharModal()"
+    />
   </div>
 }

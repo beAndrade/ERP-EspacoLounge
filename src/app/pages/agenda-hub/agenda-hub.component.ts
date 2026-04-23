@@ -1,4 +1,11 @@
-import { Component, inject, LOCALE_ID, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  inject,
+  LOCALE_ID,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   AtendimentoListaItem,
@@ -37,6 +44,9 @@ const AGENDA_SLOT_COUNT = GRID_RANGE / AGENDA_SLOT_MIN;
 /** Último slot de 30 min a começar na grelha (23:00). */
 const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
 
+/** Duração da animação do drawer (ms), alinhada ao CSS `transition`. */
+const DRAWER_ANIM_MS = 350;
+
 /** Um cartão na grelha = mesmo `id` + mesmo profissional (várias linhas = um bloco). */
 type AgendaHubBloco = {
   trackKey: string;
@@ -51,7 +61,7 @@ type AgendaHubBloco = {
   templateUrl: './agenda-hub.component.html',
   styleUrl: './agenda-hub.component.scss',
 })
-export class AgendaHubComponent implements OnInit {
+export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
 
   @ViewChild('rececao') private rececao?: AtendimentosComponent;
@@ -79,6 +89,21 @@ export class AgendaHubComponent implements OnInit {
   /** Incrementado após salvar no modal para forçar reload do painel receção. */
   tickRececao = 0;
 
+  /**
+   * Quando true, o drawer e o overlay aplicam o estado “aberto” (animação
+   * `translateX(0)` / opacidade). Ao fechar passa a false primeiro e só depois
+   * desmonta o conteúdo após `DRAWER_ANIM_MS`.
+   */
+  drawerPanelOpen = false;
+
+  private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
+    if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+    ev.preventDefault();
+    this.fecharModal();
+  };
+
   ngOnInit(): void {
     this.slotsHoras = this.gerarSlots();
     this.api.listProfissionais().subscribe({
@@ -91,6 +116,14 @@ export class AgendaHubComponent implements OnInit {
     });
     this.carregarMes();
     this.carregarDia();
+  }
+
+  ngOnDestroy(): void {
+    if (this.drawerCloseTimer != null) {
+      clearTimeout(this.drawerCloseTimer);
+      this.drawerCloseTimer = null;
+    }
+    this.limparEfeitosDrawer();
   }
 
   profissionaisVisiveis(): ProfissionalListaItem[] {
@@ -185,6 +218,7 @@ export class AgendaHubComponent implements OnInit {
       hora,
     };
     this.modalAberto = true;
+    this.iniciarAberturaDrawer();
   }
 
   /** Abre o mesmo modal de novo atendimento, sem slot na grelha (hora no formulário). */
@@ -197,11 +231,53 @@ export class AgendaHubComponent implements OnInit {
       hora: '',
     };
     this.modalAberto = true;
+    this.iniciarAberturaDrawer();
+  }
+
+  /**
+   * Bloqueia scroll da página, regista ESC e dispara a animação de entrada
+   * no próximo ciclo para o browser aplicar o estado inicial primeiro.
+   */
+  private iniciarAberturaDrawer(): void {
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', this.onDrawerKeydown);
+    this.drawerPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.drawerPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  private limparEfeitosDrawer(): void {
+    document.body.style.overflow = '';
+    window.removeEventListener('keydown', this.onDrawerKeydown);
   }
 
   fecharModal(): void {
-    this.modalAberto = false;
-    this.modalContexto = null;
+    if (!this.modalAberto || !this.modalContexto) {
+      this.limparEfeitosDrawer();
+      return;
+    }
+    if (!this.drawerPanelOpen) {
+      this.modalAberto = false;
+      this.modalContexto = null;
+      this.limparEfeitosDrawer();
+      return;
+    }
+    this.drawerPanelOpen = false;
+    window.removeEventListener('keydown', this.onDrawerKeydown);
+    if (this.drawerCloseTimer != null) {
+      clearTimeout(this.drawerCloseTimer);
+    }
+    this.drawerCloseTimer = setTimeout(() => {
+      this.drawerCloseTimer = null;
+      this.modalAberto = false;
+      this.modalContexto = null;
+      document.body.style.overflow = '';
+    }, DRAWER_ANIM_MS);
   }
 
   onSalvoModal(): void {

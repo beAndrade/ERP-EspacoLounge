@@ -1,5 +1,5 @@
 /* Largura da coluna esquerda (mini-cal + filtros + ações). */
-$hub-sidebar-w: 16rem;
+$hub-sidebar-w: 20rem;
 
 .hub-sidebar__actions {
   margin-top: 0.75rem;
@@ -433,36 +433,76 @@ $agenda-slot-rows: 31;
   margin-top: 0.5rem;
 }
 
-.modal-backdrop {
+/**
+ * Overlay por detrás do drawer (clique fecha).
+ * Opacidade animada em sincronia com o painel.
+ */
+.overlay {
   position: fixed;
-  inset: 0;
-  z-index: 80;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
   box-sizing: border-box;
-  background: rgba(28, 25, 23, 0.45);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  /* Margem visível em relação à viewport (evita painel colado às bordas). */
-  padding: clamp(1rem, 4vmin, 2rem) clamp(1rem, 4vw, 2.25rem)
-    clamp(1.5rem, 5vmin, 2.5rem);
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+
+  &--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
-.modal-panel {
-  width: 100%;
-  max-width: min(720px, calc(100vw - 2 * clamp(1rem, 4vw, 2.25rem)));
-  margin: clamp(0.5rem, 2vh, 1.25rem) auto clamp(1rem, 3vh, 2rem);
-  flex-shrink: 0;
+/**
+ * Painel lateral: encostado à direita (`right: 0`).
+ * Abaixo de 1648px: tela toda. A partir de 1648px: `left` dinâmico — a largura segue
+ * (escorrega à esquerda ao reduzir a viewport) até o mínimo ~320px a partir
+ * do sidebar, largura ~1400px em telas muito largas.
+ * Fechado: translateX(100%); aberto: translateX(0).
+ */
+.app-drawer {
+  /** Herdado por `app-agenda-novo` — linhas de divisão em largura total. */
+  --drawer-pad-x: clamp(1rem, 2.5vw, 1.5rem);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  background: var(--color-bg);
-  border-radius: var(--radius);
-  border: 1px solid #e7e5e4;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  max-height: min(
-    calc(100vh - clamp(2.5rem, 8vmin, 4rem)),
-    calc(100dvh - clamp(2.5rem, 8vmin, 4rem))
-  );
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  background: #ffffff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  overflow-x: hidden;
   overflow-y: auto;
-  /* Respiro interno em relação ao formulário (app-agenda-novo). */
-  padding: clamp(0.85rem, 2.2vw, 1.15rem) clamp(1rem, 2.8vw, 1.35rem)
-    clamp(1rem, 2.5vw, 1.25rem);
+  -webkit-overflow-scrolling: touch;
+  padding: 16px var(--drawer-pad-x) 24px;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &--open {
+    transform: translateX(0);
+  }
+
+  & > app-agenda-novo {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1648px) {
+  .app-drawer {
+    right: 0;
+    width: auto;
+    left: max(320px, calc(100vw - 1400px));
+  }
 }

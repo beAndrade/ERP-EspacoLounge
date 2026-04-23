@@ -1,0 +1,141 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  align-self: stretch;
+  height: 100%;
+  min-height: 100%;
+  min-width: 0;
+  padding: 0 1.15rem 0 0;
+  border-right: 1px solid #e7e5e4;
+  background: #fff;
+}
+
+.client-sidebar-drawer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+  padding-bottom: 0.5rem;
+}
+
+.client-sidebar-drawer__avatar {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f2f0;
+  color: #7c6d8c;
+  flex-shrink: 0;
+}
+
+.client-sidebar-drawer__avatar--empty {
+  color: #a8a0b0;
+  background: #f4f2f0;
+}
+
+.client-sidebar-drawer__iniciais {
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  color: var(--color-text, #1c1917);
+}
+
+.client-sidebar-drawer__avatar-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.client-sidebar-drawer {
+  app-saas-select {
+    display: block;
+    width: 100%;
+  }
+}
+
+.client-sidebar-drawer__dados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.client-sidebar-drawer__nome-destaque {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+.client-sidebar-drawer__sub {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.sidebar-block {
+  margin: 0;
+}
+
+.sidebar-block + .sidebar-block {
+  margin-top: 0.2rem;
+}
+
+.sidebar-block__titulo {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.sidebar-block__lista {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  line-height: 1.45;
+
+  li {
+    margin: 0.2rem 0;
+  }
+}
+
+.sidebar-block__notas {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.sidebar-block__placeholder {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 720px) {
+  :host {
+    min-height: 0;
+    padding: 0 0 1rem;
+    border-right: none;
+    border-bottom: 1px solid #e7e5e4;
+  }
+}

@@ -1,0 +1,74 @@
+<div class="client-sidebar-drawer">
+  <div
+    class="client-sidebar-drawer__avatar"
+    [class.client-sidebar-drawer__avatar--empty]="!temClienteSelecionado"
+  >
+    @if (temClienteSelecionado) {
+      <span class="client-sidebar-drawer__iniciais">{{ iniciaisAvatar() }}</span>
+    } @else {
+      <span class="client-sidebar-drawer__avatar-ico" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="40"
+          height="40"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7Z"
+          />
+        </svg>
+      </span>
+    }
+  </div>
+
+  <app-saas-select
+    [formControl]="clienteIdControl"
+    [options]="opcoesClientes"
+    placeholder="Busque pelo cliente"
+  />
+</div>
+
+@if (temClienteSelecionado) {
+  <div class="client-sidebar-drawer__dados" aria-live="polite">
+    <div class="client-sidebar-drawer__nome-destaque">
+      {{ cliente?.nome?.trim() || '—' }}
+    </div>
+    <p class="client-sidebar-drawer__sub">{{ telefoneExibicao() }}</p>
+
+    <section
+      class="sidebar-block"
+      aria-labelledby="sidebar-info-titulo"
+    >
+      <h3 class="sidebar-block__titulo" id="sidebar-info-titulo">
+        Informações
+      </h3>
+      <ul class="sidebar-block__lista">
+        <li>
+          Aniversário:
+          <span class="muted">não informado</span>
+        </li>
+        <li>Créditos / saldo: <span class="muted">em breve</span></li>
+        <li>Status: <span class="muted">—</span></li>
+      </ul>
+    </section>
+
+    <section
+      class="sidebar-block"
+      aria-labelledby="sidebar-notas-titulo"
+    >
+      <h3 class="sidebar-block__titulo" id="sidebar-notas-titulo">Anotações</h3>
+      @if (cliente?.observacoes?.trim()) {
+        <p class="sidebar-block__notas">
+          {{ cliente?.observacoes?.trim() }}
+        </p>
+      } @else {
+        <p class="sidebar-block__placeholder">Nenhuma anotação no cadastro.</p>
+      }
+    </section>
+  </div>
+}
