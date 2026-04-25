@@ -5,6 +5,7 @@ import {
   HostListener,
   inject,
   Input,
+  output,
   ViewChild,
   OnChanges,
   OnDestroy,
@@ -248,7 +249,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
   /** Hub: saltar para outro dia/pedido (próximas ocorrências). */
-  @Output() navegarParaAgendamento = new EventEmitter<{
+  readonly navegacaoNoHub = output<{
     data: string;
     id_atendimento: string;
   }>();
@@ -2337,7 +2338,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           }
           this.erro = '';
           this.fecharExcluirMenu();
-          this.navegarParaAgendamento.emit({ data: d, id_atendimento: id });
+          this.navegacaoNoHub.emit({ data: d, id_atendimento: id });
         },
         error: () => {
           this.erro = 'Não foi possível localizar o agendamento.';
