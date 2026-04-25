@@ -201,7 +201,14 @@
     min-width: 0;
     min-height: 0;
     flex: 1 1 auto;
+    /** `hidden` recorta a sombra dos painéis (absolutos) no limite com a coluna do sidebar. */
     overflow: hidden;
+    /**
+     * Expande a região de clip para a esquerda (e um pouco nos outros eixos) para a `box-shadow`
+     * do `app-saas-select` não ficar com “corte” vertical junto ao divisor.
+     * @see https://developer.mozilla.org/docs/Web/CSS/overflow-clip-margin
+     */
+    overflow-clip-margin: 16px 12px 20px 28px;
   }
 }
 
@@ -218,6 +225,12 @@
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     gap: 1.25rem;
+    /** Scroller da coluna principal: alarga o clip (sombra do `app-saas-select`). */
+    overflow-clip-margin: 20px 16px 24px 32px;
+    @supports (overflow: clip) {
+      /** `hidden` + scroll vertical recorta `box-shadow`; `clip` (quando suportado) atenua o artefacto no eixo X. */
+      overflow-x: clip;
+    }
 
     .block-context {
       order: 1;
@@ -244,7 +257,7 @@
 }
 
 /**
- * Modal drawer: Cliente + Data + Status + Cor numa linha (proporções fr, sem uma coluna dominar).
+ * Modal drawer: Cliente + Data + Horário + Status numa linha.
  */
 .block-context--modal {
   gap: 0.4rem 0.45rem;
@@ -252,12 +265,33 @@
   margin-bottom: 0.5rem;
   align-items: end;
   display: grid;
-  grid-template-columns: 1.35fr 0.72fr 0.68fr 0.68fr;
+  grid-template-columns: 1.12fr 0.8fr 0.58fr 1.05fr;
   min-width: 0;
 
   .block-context__field--cliente-modal,
   .data-field--modal-stretch,
-  .block-context__field--readonly {
+  .block-context__field--hora-modal,
+  .block-context__field--status-modal {
+    min-width: 0;
+  }
+
+  .block-context__field--hora-modal,
+  .block-context__field--hora-slots,
+  .block-context__field--status-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .block-context__field--status-modal app-agenda-status-select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .block-context__field--hora-slots app-agenda-horario-slots {
+    display: block;
+    width: 100%;
     min-width: 0;
   }
 
@@ -281,13 +315,16 @@
   }
 
   .saas-field-readonly {
-    min-height: 2.5rem;
-    padding: 0.4rem 0.55rem;
-    font-size: 0.85rem;
+    box-sizing: border-box;
+    min-height: 2.75rem;
+    height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 15px;
+    line-height: 1.25;
   }
 
   @media (min-width: 721px) and (max-width: 1100px) {
-    grid-template-columns: 1.2fr 0.68fr 0.66fr 0.66fr;
+    grid-template-columns: 1.05fr 0.74fr 0.52fr 1fr;
   }
 
   @media (max-width: 960px) {
@@ -301,11 +338,11 @@
       grid-column: 1;
     }
 
-    > .block-context__field--readonly:nth-child(3) {
+    > .block-context__field--hora-modal {
       grid-column: 2;
     }
 
-    > .block-context__field--readonly:nth-child(4) {
+    > .block-context__field--status-modal {
       grid-column: 1 / -1;
     }
   }
@@ -315,7 +352,8 @@
 
     .block-context__field--cliente-modal,
     .data-field--modal-stretch,
-    .block-context__field--readonly {
+    .block-context__field--hora-modal,
+    .block-context__field--status-modal {
       grid-column: 1 / -1;
     }
   }
@@ -362,7 +400,7 @@
   min-width: 0;
 }
 
-/** Modal: bloco de hora sem o campo global (o tempo fica na linha de Serviço, salvo fallback). */
+/** Modal: bloco de hora só com textos/alertas (o `input` de hora fica no block-context, junto de Data). */
 .block-hora--no-time-field {
   margin: 0.15rem 0 0.35rem;
   padding: 0;
@@ -394,81 +432,23 @@
   user-select: none;
 }
 
+/** Checkbox real fica acessível, mas fora do layout visual. */
 .toggle-switch__input {
   position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  margin: 0;
-  pointer-events: none;
-}
-
-.toggle-switch__rail {
-  position: relative;
-  flex-shrink: 0;
-  width: 2.75rem;
-  height: 1.55rem;
-  border-radius: 999px;
-  background: #d6d3d1;
-  transition: background 0.25s ease;
-}
-
-.toggle-switch__knob {
-  position: absolute;
-  top: 0.2rem;
-  left: 0.2rem;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.2s ease;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .toggle-switch__label {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-text);
-}
-
-.toggle-switch__input:checked + .toggle-switch__rail {
-  background: #2563eb;
-}
-
-.toggle-switch__input:checked + .toggle-switch__rail .toggle-switch__knob {
-  transform: translateX(1.2rem);
-}
-
-.toggle-switch__input:focus-visible + .toggle-switch__rail {
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
-}
-
-.toggle-switch__rail::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 999px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.toggle-switch__input:active + .toggle-switch__rail::after,
-.toggle-switch__input:focus-visible + .toggle-switch__rail::after {
-  animation: toggleRipple 0.55s ease-out;
-}
-
-@keyframes toggleRipple {
-  0% {
-    opacity: 0.45;
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45);
-  }
-
-  100% {
-    opacity: 0;
-    box-shadow: 0 0 0 14px rgba(37, 99, 235, 0);
-  }
 }
 
 .agenda-modal__footer {
@@ -565,31 +545,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.btn--icon-danger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  min-height: 0;
-  padding: 0;
-  margin-top: 0;
-  border-radius: var(--radius);
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #991b1b;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    background: #fee2e2;
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-}
-
 .itens-atendimento {
   margin: 0;
   padding: 1rem 1.1rem;
@@ -679,6 +634,38 @@ select::-ms-expand {
   background: var(--color-surface);
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
+
+  &--with-cal {
+    padding-right: 0.4rem;
+  }
+}
+
+.data-field__cal {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  line-height: 0;
+  color: #d1d5db;
+
+  &--end {
+    margin-left: auto;
+    order: 2;
+    color: #d1d5db;
+  }
+}
+
+.data-field__value-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.data-field__display--with-cal .data-field__value-text {
+  order: 1;
+}
+
+.data-field__display--placeholder .data-field__value-text {
+  color: var(--color-muted, #78716c);
+  font-weight: 500;
 }
 
 /* Abaixo do texto: mantém foco por Tab e o valor do formulário. */
@@ -699,6 +686,86 @@ select::-ms-expand {
 
 .data-field__native:focus {
   outline: none;
+}
+
+/* Modal: calendário custom; o nativo fica fora do fluxo de toque. */
+.data-field__native--visually-hidden {
+  position: fixed;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.data-field--modal-picker-root {
+  .data-field__wrap {
+    position: relative;
+  }
+}
+
+.data-field__calendar-pop {
+  position: absolute;
+  z-index: 50;
+  left: 0;
+  top: calc(100% + 6px);
+  max-width: calc(100vw - 1.5rem);
+}
+
+/** No hub modal: Data com o mesmo “card” que `app-saas-select` (borda cinza, canto suave). */
+.data-field--modal-match-saas {
+  .data-field__wrap {
+    position: relative;
+  }
+
+  .data-field__display {
+    box-sizing: border-box;
+    min-height: var(--touch-min, 2.75rem);
+    padding: 0.5rem 0.75rem;
+    padding-right: 2.5rem;
+    border: 1px solid #e7e5e4;
+    border-radius: var(--radius, 8px);
+    background: #fff;
+    color: var(--color-muted, #78716c);
+  }
+
+  .data-field__value-text {
+    color: var(--color-text, #1c1917);
+    font-weight: 500;
+  }
+
+  .data-field__display--placeholder .data-field__value-text {
+    color: var(--color-muted, #78716c);
+  }
+
+  .data-field__cal--end {
+    position: absolute;
+    right: 0.65rem;
+    top: 50%;
+    left: auto;
+    transform: translateY(-50%);
+    margin-left: 0;
+    order: 0;
+    color: #d1d5db;
+  }
+
+  .data-field__cal--end svg {
+    display: block;
+    width: 17px;
+    height: 17px;
+    stroke: #d1d5db;
+  }
+
+  .data-field__wrap:focus-within .data-field__display {
+    outline: none;
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
 }
 
 .data-field__wrap:focus-within .data-field__display {
@@ -763,6 +830,72 @@ textarea {
   }
 }
 
+/** Icôni: a regra base `.btn` acima não pode sobrepor (background branco). */
+.btn.btn--icon-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 0;
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0.65rem;
+  background: #ff7875;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+
+  svg,
+  path {
+    stroke: currentColor;
+  }
+
+  &:hover:not(:disabled) {
+    background: #ff5f5c;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background: #f3f4f6;
+    color: #9ca3af;
+  }
+}
+
+.btn.btn--icon-line-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 0;
+  margin-top: 0;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  background: #f3f4f6;
+  color: #57534e;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #e7e5e4;
+    color: #44403c;
+    border-color: #d6d3d1;
+  }
+}
+
 .tipo-hint {
   margin: -0.5rem 0 0.5rem;
   font-size: 0.85rem;
@@ -778,6 +911,48 @@ textarea {
 .cabelo-calc--nested {
   margin-top: 0.5rem;
   width: 100%;
+}
+
+.etapas-block--etapas-modal {
+  flex: 1 1 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/**
+ * Largura do bloco de etapas = Tipo + Pacote do cabeçalho; rail com o mesmo
+ * espaço que a coluna de ações (gap + 2× ícones) para alinhar a borda direita.
+ */
+.servico-row__etapas-wrap {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 100%;
+  box-sizing: border-box;
+  align-items: stretch;
+
+  &--modal-cabecalho {
+    --servico-cabecalho-col-gap: 0.5rem;
+  }
+
+  &__rail {
+    flex: 0 0
+      calc(
+        var(--servico-cabecalho-col-gap) + 2.5rem + 0.4rem + 2.5rem
+      );
+    width: calc(
+      var(--servico-cabecalho-col-gap) + 2.5rem + 0.4rem + 2.5rem
+    );
+    min-height: 0.25rem;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  .etapas-block--etapas-modal {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 .etapas-block,
@@ -818,6 +993,188 @@ textarea {
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
+
+  &:has(app-saas-select.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
+
+  &--etapas-modal {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &--etapas-modal:has(.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
+}
+
+.servico-row__mega-topo {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 100%;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0.45rem 0.5rem;
+  box-sizing: border-box;
+
+  @media (max-width: 720px) {
+    flex-wrap: wrap;
+  }
+}
+
+.servico-row--drawer .servico-row__linha-cabecalho-modal
+  .servico-row__field--mega-cabecalho,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--linha-cab--col,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--pacote-mega {
+  margin: 0;
+}
+
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--mega-cabecalho,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--linha-cab--col,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--pacote-mega {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.servico-row__field--pacote-mega {
+  min-width: 0;
+}
+
+.servico-row__actions--linha-cab {
+  flex: 0 0 auto;
+  align-self: flex-end;
+}
+
+/** Cabelo (modal): Valor (estreito) | Detalhes (largo) | Prof | +/lixeira. */
+.servico-row__cabelo-rodape--drawer {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-items: end;
+  gap: 0.45rem 0.5rem;
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.92fr) minmax(0, 1fr) auto;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    .servico-row__actions--cabelo-rodape {
+      justify-content: flex-end;
+    }
+  }
+}
+
+.servico-row__field--valor-cabelo-modal,
+.servico-row__field--pro-cabelo-modal {
+  margin: 0;
+  min-width: 0;
+}
+
+.servico-row__field--valor-cabelo-modal {
+  max-width: clamp(7rem, 16vw, 9.75rem);
+}
+
+.servico-row__field--detalhes-cabelo-modal {
+  margin: 0;
+  min-width: 0;
+
+  textarea {
+    box-sizing: border-box;
+    min-height: 2.75rem;
+    height: 2.75rem;
+    padding: 0.5rem 0.65rem;
+    line-height: 1.35;
+    resize: none;
+    overflow-y: auto;
+  }
+}
+
+.servico-row__cabelo-rodape--drawer:has(.saas-select-host--open) {
+  position: relative;
+  z-index: 25;
+}
+
+.servico-row__actions--cabelo-rodape {
+  flex: 0 0 auto;
+  min-width: calc(2.5rem * 2 + 0.4rem);
+  align-self: flex-end;
+}
+
+.servico-row--drawer .servico-row__field--produto-qtd-drawer {
+  flex: 0 0 5.25rem;
+  max-width: 5.5rem;
+  min-width: 0;
+}
+
+.servico-row--drawer.servico-row--layout-produto-drawer {
+  flex-wrap: nowrap;
+  gap: 0.45rem 0.55rem;
+
+  > label.servico-row__field--tipo-linha {
+    flex: 0 0 clamp(5.5rem, 14vw, 7.15rem);
+    max-width: 7.35rem;
+    min-width: 5rem;
+  }
+
+  > label.servico-row__field:nth-of-type(2) {
+    flex: 3.1 1 0%;
+    min-width: 12.5rem;
+    max-width: none;
+  }
+}
+
+.etapa-row__etapa-cel {
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+
+  &--fill {
+    min-width: 0;
+  }
+}
+
+.etapa-row__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  min-width: calc(2.5rem * 2 + 0.4rem);
+  box-sizing: border-box;
+
+  &--etapas {
+    position: relative;
+    align-self: center;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: var(--touch-min, 2.75rem);
+  }
+
+  &__spacer {
+    display: block;
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+    min-height: 1px;
+    pointer-events: none;
+  }
 }
 
 .servico-row {
@@ -840,6 +1197,17 @@ textarea {
     padding-bottom: 0.9rem;
     border-bottom: 1px solid #e7e5e4;
   }
+
+  /** Painel do `app-saas-select` é `position:absolute`; sem isto a linha seguinte pinta por cima. */
+  &:has(app-saas-select.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
+}
+
+.block-context:has(app-saas-select.saas-select-host--open) {
+  position: relative;
+  z-index: 25;
 }
 
 .servico-row__field {
@@ -907,6 +1275,12 @@ textarea {
   align-items: center;
   min-height: var(--touch-min);
   padding-bottom: 0.05rem;
+
+  &--drawer {
+    flex: 0 0 auto;
+    min-width: 0;
+    gap: 0.4rem;
+  }
 }
 
 .resumo {
@@ -973,6 +1347,7 @@ textarea {
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
+  --el-drawer-field-border-hover: #a51851;
 }
 
 /** Hub drawer: títulos, rótulos 15px, “Enviar lembrete” 16px; Observação colada ao fundo do scroll com respiro do footer. */
@@ -985,6 +1360,7 @@ textarea {
   .itens-atendimento--modal .itens-atendimento__titulo {
     font-size: 20px;
     line-height: 1.3;
+    margin-bottom: 0.85rem;
   }
 
   label {
@@ -999,12 +1375,156 @@ textarea {
     font-size: 15px;
   }
 
+
   .servicos-header {
     font-size: 15px;
   }
 
   .toggle-switch__label {
     font-size: 16px;
+  }
+
+  /** Lembrete: respiro horizontal para o ripple/sombra não ser cortado pelo scroll (overflow-x). */
+  .block-toggles--inline {
+    padding-left: 0.65rem;
+    padding-right: 0.85rem;
+    margin-left: -0.15rem;
+    overflow: visible;
+  }
+
+  .block-toggles--inline .toggle-switch.toggle-switch--inline {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.65rem;
+    overflow: visible;
+  }
+
+  .block-toggles--inline .toggle {
+    --toggle-w: 48px;
+    --toggle-pad: 3px;
+    --knob-size: 20px;
+    /**
+     * Translação máxima: alinhar o knob ao padding interior (espelha o OFF).
+     * Não subtrair px extra: isso deixava o ON ~2px longe do canto direito.
+     */
+    --knob-x-end: calc(
+      var(--toggle-w) - (var(--toggle-pad) * 2) - var(--knob-size)
+    );
+    width: var(--toggle-w);
+    height: 26px;
+    background: #d1d5db;
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition:
+      background 0.25s ease,
+      filter 0.25s ease;
+    display: inline-block;
+    flex: 0 0 auto;
+    margin-left: 0;
+    overflow: hidden;
+    isolation: isolate;
+    /* `paint` no toggle cortaria o glow (box-shadow) com overflow hidden; o knob já tem `contain: paint` */
+    contain: layout;
+  }
+
+  /* estado ativo */
+  .block-toggles--inline .toggle.active {
+    background: #4f46e5;
+    filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
+  }
+
+  /* knob (efeito “gota / líquido” — @keyframes) */
+  .block-toggles--inline .toggle.toggle--liquid::after {
+    content: '';
+    position: absolute;
+    top: var(--toggle-pad);
+    left: var(--toggle-pad);
+    width: var(--knob-size);
+    height: var(--knob-size);
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    will-change: transform, box-shadow;
+    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    /* OFF: a borda “interna” é a direita → origem no lado interno p/ esticar p/ dentro */
+    transform-origin: right center;
+    transform-box: fill-box;
+    contain: paint;
+    transition: none;
+    animation: none;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.active::after {
+    /* ON: a borda “interna” é a esquerda → origem no lado interno p/ esticar p/ dentro */
+    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    transform-origin: left center;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed.active::after {
+    /* OFF → ON: inicia ancorado no lado interno (direita) e estica/anda para a direita */
+    transform-origin: right center;
+    animation: toggleLiquidOn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed:not(.active)::after {
+    /* ON → OFF: inicia ancorado no lado interno (esquerda) e estica/anda para a esquerda */
+    transform-origin: left center;
+    animation: toggleLiquidOff 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes toggleLiquidOn {
+    0% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    }
+
+    30% {
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transform: translate3d(0, 0, 0) scaleX(1.3) scaleY(0.95);
+    }
+
+    60% {
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      transform: translate3d(calc(var(--knob-x-end) - 0.5px), 0, 0) scaleX(1.12) scaleY(0.97);
+    }
+
+    100% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    }
+  }
+
+  @keyframes toggleLiquidOff {
+    0% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    }
+
+    30% {
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1.3) scaleY(0.95);
+    }
+
+    60% {
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      transform: translate3d(1px, 0, 0) scaleX(1.12) scaleY(0.97);
+    }
+
+    100% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    }
+  }
+
+  /* Glow no próprio trilho (não em pseudo interno) para não ser cortado pelo overflow. */
+
+  /** Margem interna do scroll: o ripple do toggle não encosta no clip horizontal. */
+  .form-shell__flow--modal {
+    padding-inline: 0.45rem;
+    box-sizing: border-box;
   }
 
   .form-shell__flow--modal > .block-obs {
@@ -1017,11 +1537,293 @@ textarea {
     position: relative;
     z-index: 1;
   }
+
+  .servico-row--drawer {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /**
+   * Linha “Serviço” no modal: uma linha, campos a crescer até preencher o drawer
+   * (somatório flex + mínimos; sem max-width que corte a descrição).
+   */
+  .servico-row--drawer:has(.servico-row__duracao) {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+    gap: 0.4rem 0.55rem;
+
+    .servico-row__field--tipo-linha {
+      flex: 0 0 clamp(6.25rem, 8.8vw, 9rem);
+    }
+
+    .servico-row__field--descricao {
+      flex: 2.6 1 0%;
+      min-width: 6rem;
+      max-width: none;
+    }
+
+    .servico-row__field--tamanho {
+      flex: 0 0 clamp(7.25rem, 10%, 8.5rem);
+    }
+
+    .servico-row__field--pro {
+      flex: 1.25 1 0%;
+      min-width: 5.25rem;
+      max-width: none;
+    }
+
+    .servico-row__field--duracao {
+      flex: 0 0 5.9rem;
+      min-width: 5.2rem;
+    }
+
+    .servico-row__actions--drawer {
+      flex: 0 0 calc(2.5rem * 2 + 0.4rem);
+    }
+
+    .servico-row__duracao {
+      font-size: 15px;
+    }
+  }
+
+  /** Drawer: hover só borda vinho em campos de texto. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+      [type='file']
+    ),
+  textarea,
+  select {
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover:not(:disabled) {
+      cursor: text;
+      border-color: var(--el-drawer-field-border-hover);
+    }
+  }
+
+  .data-field__wrap {
+    cursor: text;
+  }
+
+  .data-field--modal-match-saas .data-field__display {
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .data-field__wrap:hover .data-field__display {
+    border-color: var(--el-drawer-field-border-hover);
+  }
+
+  .servico-row--drawer .servico-row__duracao {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .servico-row--drawer .servico-row__duracao:hover {
+    color: transparent;
+    border-color: #e7e5e4;
+    cursor: not-allowed;
+    background-color: #f4f2f0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 1.1rem 1.1rem;
+  }
+
+  .btn.btn--icon-danger {
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+  }
+
+  .btn.btn--icon-line-add {
+    flex-shrink: 0;
+  }
 }
 
 :host.agenda-novo--drawer .form.form--modal ::ng-deep {
+  .servico-row__linha-cabecalho-modal
+    .servico-row__field--mega-cabecalho
+    app-saas-select,
+  .servico-row__linha-cabecalho-modal
+    .servico-row__field--linha-cab--col
+    app-saas-select,
+  .servico-row__linha-cabecalho-modal
+    .servico-row__field--pacote-mega
+    app-saas-select {
+    min-width: 0;
+  }
+
+  .etapa-row--etapas-modal .etapa-row__etapa-cel--fill app-saas-select {
+    min-width: 0;
+  }
+
+  .servico-row__cabelo-rodape--drawer
+    .servico-row__field--valor-cabelo-modal
+    app-saas-select,
+  .servico-row__cabelo-rodape--drawer
+    .servico-row__field--pro-cabelo-modal
+    app-saas-select {
+    min-width: 0;
+  }
+
+  .servico-row__cabelo-rodape--drawer
+    .servico-row__field--valor-cabelo-modal
+    input {
+    font-size: 0.88rem;
+  }
+
   .saas-select__trigger,
   .saas-select__value {
     font-size: 15px;
+  }
+
+  .saas-select__trigger {
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .saas-select__trigger:hover:not(:disabled) {
+    cursor: text;
+    border-color: var(--el-drawer-field-border-hover);
+  }
+
+  .itens-atendimento--modal input,
+  .itens-atendimento--modal textarea {
+    font-size: 15px;
+  }
+
+  app-agenda-horario-slots {
+    .ahs__trigger {
+      transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ahs__trigger:hover:not(:disabled) {
+      cursor: text;
+      border-color: var(--el-drawer-field-border-hover);
+    }
+
+    .ahs-host--open .ahs__trigger {
+      border-color: var(--el-drawer-field-border-hover);
+    }
+  }
+
+  app-agenda-repetir-cascade {
+    .arpc__field {
+      max-width: 50%;
+      min-width: min(100%, 20rem);
+    }
+
+    .arpc__trigger {
+      width: 100%;
+      border-color: #d6d3d1;
+      background: #fff;
+      box-shadow: none;
+      transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .arpc__trigger:hover:not(:disabled) {
+      border-color: var(--el-drawer-field-border-hover);
+      cursor: text;
+    }
+  }
+
+  app-agenda-repetir-cascade.agenda-repetir-cascade--open .arpc__trigger {
+    border-color: var(--el-drawer-field-border-hover);
+    box-shadow: none;
+  }
+}
+
+/** Diálogo “Conflito de horários” (encaixe) no modal. */
+.agenda-conflito {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.agenda-conflito__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.agenda-conflito__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 20rem);
+  padding: 1.5rem 1.35rem 1.25rem;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  text-align: center;
+}
+
+.agenda-conflito__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 0.65rem;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.agenda-conflito__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.agenda-conflito__text {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.agenda-conflito__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.agenda-conflito__btn {
+  min-height: 2.5rem;
+  padding: 0.4rem 1.15rem;
+  border-radius: 0.9rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+
+  &--ghost {
+    background: #fff;
+  }
+
+  &--primary {
+    border: none;
+    background: #6366f1;
+    color: #fff;
+
+    &:hover {
+      background: #4f46e5;
+    }
   }
 }

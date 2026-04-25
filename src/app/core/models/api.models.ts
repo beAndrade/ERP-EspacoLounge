@@ -74,6 +74,10 @@ export interface AtendimentoListaItem {
   pagamentoStatus?: string | null;
   /** Preenchido ao confirmar pagamento (Dinheiro, Pix, Cartão). */
   pagamentoMetodo?: string | null;
+  /** Estado visual na grelha da agenda (ex.: confirmado, nao_confirmado). */
+  agenda_status?: string | null;
+  /** Cor de fundo do cartão no hub (hex). */
+  agenda_cor?: string | null;
 }
 
 export interface AtendimentoCriadoResumo {
@@ -229,6 +233,12 @@ export type AgendaSlotCriacaoOpcional = {
   fim?: string;
 };
 
+/** Cor e estado do cartão na agenda (hub). */
+export type AgendaCartaoCriacaoOpcional = {
+  agenda_status?: string;
+  agenda_cor?: string;
+};
+
 /** União de payloads para createAgendamento / createAtendimento. */
 export type CreateAtendimentoPayload = (
   | {
@@ -292,4 +302,5 @@ export type CreateAtendimentoPayload = (
       detalhes_cabelo?: string;
     }
 ) &
-  AgendaSlotCriacaoOpcional;
+  AgendaSlotCriacaoOpcional &
+  AgendaCartaoCriacaoOpcional;

@@ -337,96 +337,81 @@ $agenda-slot-rows: 31;
   box-sizing: border-box;
   min-height: 0;
   margin: 0;
-  padding: 0.3rem 0.35rem;
+  padding: 0.45rem 0.5rem;
   text-align: left;
   font: inherit;
   font-size: 0.72rem;
-  line-height: 1.25;
-  color: inherit;
+  line-height: 1.3;
+  color: #fff;
   cursor: pointer;
-  background: #fff;
-  border: 1px solid #e7e5e4;
-  border-left-width: 4px;
-  border-radius: 6px;
+  border: none;
+  border-radius: 9px;
   overflow-x: hidden;
   overflow-y: auto;
   z-index: 2;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 0.15rem;
+  gap: 0.2rem;
   min-width: 0;
 }
 
 .day-col__card:hover:not(:disabled) {
-  filter: brightness(0.98);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  filter: brightness(1.04);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
 }
 
 .day-col__card:disabled {
   cursor: default;
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
 .day-col__card-body {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.18rem;
   min-width: 0;
   width: 100%;
 }
 
-/* 1ª linha: horário + nome do cliente */
-.day-col__card-linha1 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 0.35rem;
-  line-height: 1.2;
-  min-width: 0;
-}
-
-.day-col__card-time {
+.day-col__card-time-range {
+  display: block;
   font-weight: 700;
+  font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
-  color: var(--color-text, #1c1917);
-  flex-shrink: 0;
-}
-
-.day-col__card-sep {
-  color: var(--color-muted, #78716c);
-  font-weight: 500;
-  user-select: none;
+  color: #fff;
+  letter-spacing: 0.01em;
 }
 
 .day-col__card-nome {
-  font-weight: 600;
+  display: block;
+  font-weight: 500;
+  font-size: 0.72rem;
+  color: #fff;
+  opacity: 0.98;
   min-width: 0;
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
-/* 2ª linha: itens do atendimento */
-.day-col__card-linha2 {
+.day-col__card-itens-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
   min-width: 0;
 }
 
-.day-col__card-itens {
-  margin: 0;
-  padding-left: 1rem;
-  list-style: disc;
+.day-col__card-item-line {
+  display: block;
   font-size: 0.68rem;
   font-weight: 500;
-  line-height: 1.3;
-  color: var(--color-muted, #78716c);
-
-  li {
-    margin: 0.08rem 0;
-    overflow-wrap: break-word;
-    word-break: break-word;
-  }
+  line-height: 1.25;
+  color: #fff;
+  opacity: 0.95;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .hub-rececao {
@@ -482,6 +467,12 @@ $agenda-slot-rows: 31;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  /**
+   * O `app-saas-select` desenha o painel com `box-shadow`; a sombra “sai” para a esquerda
+   * e seria recortada na borda interna do drawer (misto scroll Y + `overflow-x: hidden`).
+   * `overflow-clip-margin` alarga a região de pintura em relação ao clip.
+   */
+  overflow-clip-margin: 20px 16px 24px 32px;
   padding: 16px var(--drawer-pad-x) 24px;
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);

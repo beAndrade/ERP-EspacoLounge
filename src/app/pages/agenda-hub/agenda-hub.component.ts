@@ -19,6 +19,10 @@ import {
   ordenarLinhasAtendimentoInPlace,
   toYmd,
 } from '../../core/utils/atendimento-display';
+import {
+  corHexAgendaPorStatus,
+  normalizarAgendaStatusId,
+} from '../../core/utils/agenda-status-card';
 import { AtendimentosComponent } from '../atendimentos/atendimentos.component';
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 
@@ -97,6 +101,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   drawerPanelOpen = false;
 
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private bodyScrollPreDrawer = 0;
+  private pageScrollLockAtivo = false;
 
   private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
@@ -239,7 +245,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    * no próximo ciclo para o browser aplicar o estado inicial primeiro.
    */
   private iniciarAberturaDrawer(): void {
-    document.body.style.overflow = 'hidden';
+    this.bloquearScrollPagina();
     window.addEventListener('keydown', this.onDrawerKeydown);
     this.drawerPanelOpen = false;
     queueMicrotask(() => {
@@ -252,8 +258,51 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   private limparEfeitosDrawer(): void {
-    document.body.style.overflow = '';
+    this.desbloquearScrollPagina();
     window.removeEventListener('keydown', this.onDrawerKeydown);
+  }
+
+  /**
+   * Evita o “salto” do layout ao abrir o drawer: `overflow: hidden` remove a
+   * scrollbar e a viewport ganha largura, deslocando o conteúdo de trás.
+   * Aqui o scroll é congelado com `position: fixed` + `scrollY` salvo, e
+   * compensa-se a largura do scrollbar (quando existir).
+   */
+  private obterLarguraScrollbar(): number {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return 0;
+    }
+    return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  }
+
+  private bloquearScrollPagina(): void {
+    if (this.pageScrollLockAtivo) return;
+    this.bodyScrollPreDrawer = window.scrollY || 0;
+    const gutter = this.obterLarguraScrollbar();
+
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top = `-${this.bodyScrollPreDrawer}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    if (gutter > 0) {
+      body.style.paddingRight = `${gutter}px`;
+    }
+    this.pageScrollLockAtivo = true;
+  }
+
+  private desbloquearScrollPagina(): void {
+    if (!this.pageScrollLockAtivo) return;
+    const body = document.body;
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    body.style.width = '';
+    body.style.paddingRight = '';
+    this.pageScrollLockAtivo = false;
+    window.scrollTo(0, this.bodyScrollPreDrawer);
   }
 
   fecharModal(): void {
@@ -276,7 +325,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.drawerCloseTimer = null;
       this.modalAberto = false;
       this.modalContexto = null;
-      document.body.style.overflow = '';
+      this.desbloquearScrollPagina();
     }, DRAWER_ANIM_MS);
   }
 
@@ -400,6 +449,34 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
     const hue = h % 360;
     return `hsl(${hue} 55% 42%)`;
+  }
+
+  /** Fundo do cartão: `agenda_cor`, depois cor por `agenda_status`, senão hash do id. */
+  corFundoCartaoBloco(b: AgendaHubBloco): string {
+    for (const l of b.linhas) {
+      const c = String(l.agenda_cor ?? '').trim();
+      if (c) return c;
+    }
+    const st = String(b.linhas[0]?.agenda_status ?? '').trim();
+    if (st) {
+      const hex = corHexAgendaPorStatus(normalizarAgendaStatusId(st));
+      if (hex) return hex;
+    }
+    return this.corGrupo(this.idAtendimentoBloco(b));
+  }
+
+  private hhmmDesdeMinutosDia(m: number): string {
+    const mf = Math.floor(m);
+    const hh = Math.floor(mf / 60) % 24;
+    const mm = mf % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  }
+
+  /** Intervalo exibido no cartão, ex.: `08:30 - 09:10`. */
+  intervaloHHmmBloco(b: AgendaHubBloco): string {
+    const ex = this.extentMinutosBloco(b);
+    if (!ex) return '';
+    return `${this.hhmmDesdeMinutosDia(ex.start)} - ${this.hhmmDesdeMinutosDia(ex.end)}`;
   }
 
   /**
@@ -639,7 +716,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   /** Texto plano para aria-label / leitores. */
   rotuloBloco(b: AgendaHubBloco): string {
-    const hora = this.horaBloco(b);
+    const hora = this.intervaloHHmmBloco(b) || this.horaBloco(b);
     const nome = this.nomeClienteBloco(b);
     const itens = this.itensResumoBloco(b);
     const partes: string[] = [];

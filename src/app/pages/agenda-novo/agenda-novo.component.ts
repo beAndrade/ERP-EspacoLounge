@@ -2,8 +2,10 @@ import {
   Component,
   EventEmitter,
   HostBinding,
+  HostListener,
   inject,
   Input,
+  ViewChild,
   OnChanges,
   OnDestroy,
   OnInit,
@@ -43,7 +45,9 @@ import {
 } from '@angular/forms';
 import {
   catchError,
+  concatMap,
   forkJoin,
+  from,
   of,
   skip,
   Subject,
@@ -52,7 +56,16 @@ import {
   take,
   takeUntil,
 } from 'rxjs';
+import { AgendaModalCalendarComponent } from './agenda-modal-calendar.component';
+import {
+  AgendaHorarioSlotsComponent,
+  type IntervaloMinutosDia,
+} from './agenda-horario-slots.component';
+import { AgendaStatusSelectComponent } from './agenda-status-select.component';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { expandirDatasRepeticao } from './agenda-repetir-datas';
+import { AgendaRepetirCascadeComponent } from './agenda-repetir-cascade.component';
+import type { ValorRepetirAgendamento } from './agenda-repetir-cascade.models';
 import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.component';
 import {
   SaasSelectComponent,
@@ -73,10 +86,16 @@ import {
 } from '../../core/models/api.models';
 import {
   dataDdMmAaaa,
+  dataDdMmBarraAaaa,
   horaInicialMenorDasLinhasAtendimento,
   ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
+import {
+  corHexAgendaPorStatus,
+  inferirAgendaStatusPorCorHex,
+  normalizarAgendaStatusId,
+} from '../../core/utils/agenda-status-card';
 
 /** Valor de `<input type="date">`: AAAA-MM-DD válido. */
 function normalizarDataIso(s: string): string | null {
@@ -94,13 +113,42 @@ function normalizarDataIso(s: string): string | null {
   return t;
 }
 
+/** Número a partir de string pt-BR/BR (R$, 1.234,56, 12,5). */
+function parseNumeroMonetarioPtString(s: string): number | null {
+  let t = String(s ?? '')
+    .trim()
+    .replace(/R\$\s*/i, '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s/g, '');
+  if (!t) return null;
+  if (t.includes(',')) {
+    t = t.replace(/\./g, '');
+    t = t.replace(',', '.');
+  } else {
+    t = t.replace(',', '.');
+  }
+  const n = parseFloat(t);
+  return Number.isNaN(n) ? null : n;
+}
+
+function formataMoedaBrl(n: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
 function valorCabeloPtValidator(
   control: AbstractControl,
 ): ValidationErrors | null {
   const v = String(control.value ?? '').trim();
   if (!v) return null;
-  const n = parseFloat(v.replace(/\s/g, '').replace(',', '.'));
-  return Number.isNaN(n) || n <= 0 ? { valorCabeloInvalido: true } : null;
+  const n = parseNumeroMonetarioPtString(v);
+  return n == null || Number.isNaN(n) || n <= 0
+    ? { valorCabeloInvalido: true }
+    : null;
 }
 
 function mapTipoFromApi(t: string): TipoAtendimento {
@@ -166,7 +214,11 @@ function ordenarEtapasParaSelect(nomes: string[]): string[] {
     RouterLink,
     ReactiveFormsModule,
     AgendaNovoClientSidebarComponent,
+    AgendaRepetirCascadeComponent,
     SaasSelectComponent,
+    AgendaModalCalendarComponent,
+    AgendaHorarioSlotsComponent,
+    AgendaStatusSelectComponent,
   ],
   templateUrl: './agenda-novo.component.html',
   styleUrl: './agenda-novo.component.scss',
@@ -222,6 +274,21 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Apenas UI — não entram no `FormGroup` nem no payload. */
   enviarLembreteUi = false;
+  /**
+   * Evita “pular” a animação líquida no primeiro paint (só liga após a 1ª interação).
+   */
+  lembreteToggleLiqArmed = false;
+
+  onLembreteToggleLiqArm(): void {
+    if (this.lembreteToggleLiqArmed) return;
+    this.lembreteToggleLiqArmed = true;
+  }
+
+  /**
+   * Repetição após a data base: na gravação gera 1 + N atendimentos
+   * (N vezes) em datas alinhadas à frequência, cada qual enviada à API.
+   */
+  repetirAgendamento: ValorRepetirAgendamento = { modo: 'nenhum' };
 
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
@@ -233,17 +300,33 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private slotFormSub?: Subscription;
   private readonly destroy$ = new Subject<void>();
 
+  /** Modal hub: calendário custom e ocupação do dia. */
+  modalDataPickerOpen = false;
+  /** Intervalos [a,b) em minutos do dia para marcar horários (Indisponível). */
+  intervalosOcupacaoDia: IntervaloMinutosDia[] = [];
+  /** Confirmação de encaixe em horário já ocupado. */
+  modalConflitoHorario = false;
+  private horaPendenteConflito: string | null = null;
+
+  @ViewChild('horarioSlots') horarioSlots?: AgendaHorarioSlotsComponent;
+  @ViewChild('clienteSelectModal') clienteSelectModal?: SaasSelectComponent;
+
   readonly form = this.fb.group({
     cliente_id: ['', Validators.required],
     data: ['', Validators.required],
     observacao: [''],
     /** Horário inicial para linhas de Serviço (catálogo); sequência na ordem das linhas. */
     hora_inicial: [''],
+    /** Estado visual dos cartões na agenda (hub). */
+    agenda_status: ['confirmado'],
     /** Cada linha: tipo + campos específicos (Serviço, Mega, Pacote, Cabelo, Produto). */
     linhasItens: this.fb.array<FormGroup>([]),
   });
 
   ngOnInit(): void {
+    if (this.modoModal) {
+      this.lembreteToggleLiqArmed = true;
+    }
     const hoje = new Date();
     this.form.patchValue({
       data: this.toYmd(hoje),
@@ -281,6 +364,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (this.modoModal) {
           this.aplicarContextoSlotInput();
           this.carregandoListas = false;
+          const ymd = normalizarDataIso(
+            String(this.form.get('data')?.value ?? ''),
+          );
+          if (ymd) {
+            this.atualizarOcupacaoDia(ymd);
+          }
         } else {
           /**
            * Pré-preenchimento **só após** listas carregarem, lendo a URL real
@@ -305,12 +394,156 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (this.prefillEmCurso) return;
       this.slotAgenda = null;
     });
+
+    this.form.controls.data.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((d) => {
+        if (!this.modoModal || this.carregandoListas) return;
+        const ymd = normalizarDataIso(String(d ?? ''));
+        if (ymd) this.atualizarOcupacaoDia(ymd);
+      });
+  }
+
+  onDataModalPicked(ymd: string): void {
+    this.form.patchValue({ data: ymd }, { emitEvent: true });
+    this.modalDataPickerOpen = false;
+    this.atualizarOcupacaoDia(ymd);
+  }
+
+  onHorarioPainelAbriu(): void {
+    this.modalDataPickerOpen = false;
+    this.clienteSelectModal?.fecharPainel();
+  }
+
+  onClienteSelectPainelAbriu(): void {
+    this.modalDataPickerOpen = false;
+    this.horarioSlots?.fecharPainel();
+  }
+
+  /**
+   * Clico em qualquer ponto do bloco Data (incl. rótulo): abre o calendário no modal;
+   * fora do modal, abre o picker nativo.
+   */
+  onDataFieldClick(ev: MouseEvent, dataInput: HTMLInputElement): void {
+    const t = ev.target as HTMLElement;
+    if (t.closest('app-agenda-modal-calendar') || t.closest('.data-field__calendar-pop')) {
+      return;
+    }
+    if (!this.modoModal) {
+      if (t.closest('.data-field__hint')) return;
+      this.abrirPickerData(dataInput, ev);
+      return;
+    }
+    ev.preventDefault();
+    this.horarioSlots?.fecharPainel();
+    this.clienteSelectModal?.fecharPainel();
+    this.modalDataPickerOpen = !this.modalDataPickerOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocClickModalData(ev: MouseEvent): void {
+    if (!this.modoModal || !this.modalDataPickerOpen) return;
+    const t = ev.target;
+    if (!(t instanceof Node)) return;
+    const w = (ev.target as HTMLElement | null)?.closest(
+      '.data-field--modal-picker-root',
+    );
+    if (w) return;
+    this.modalDataPickerOpen = false;
+  }
+
+  onConflitoHorarioEscolhido(hhmm: string): void {
+    this.horaPendenteConflito = hhmm;
+    this.modalConflitoHorario = true;
+  }
+
+  cancelarConflitoEncaixe(): void {
+    this.modalConflitoHorario = false;
+    this.horaPendenteConflito = null;
+  }
+
+  confirmarConflitoEncaixe(): void {
+    const h = this.horaPendenteConflito;
+    this.modalConflitoHorario = false;
+    this.horaPendenteConflito = null;
+    if (!h) return;
+    this.form.patchValue(
+      { hora_inicial: h },
+      { emitEvent: true, onlySelf: true },
+    );
+  }
+
+  private atualizarOcupacaoDia(ymd: string): void {
+    if (!this.modoModal) return;
+    this.api
+      .listAgendamentos(ymd, ymd)
+      .pipe(
+        take(1),
+        catchError(() => of([] as AtendimentoListaItem[])),
+      )
+      .subscribe((items) => {
+        this.intervalosOcupacaoDia = this.montarIntervalosOcupados(
+          items,
+          ymd,
+          this.idAtendimentoEmEdicao,
+        );
+      });
+  }
+
+  private montarIntervalosOcupados(
+    items: AtendimentoListaItem[],
+    ymd: string,
+    excluirId: string | null | undefined,
+  ): IntervaloMinutosDia[] {
+    const eid = String(excluirId ?? '').trim();
+    const ranges: IntervaloMinutosDia[] = [];
+    for (const it of items) {
+      if (it.data !== ymd) continue;
+      if (eid && it.id === eid) continue;
+      const intv = this.intervaloMinutosAtendimento(it, ymd);
+      if (intv && intv.b > intv.a) {
+        ranges.push(intv);
+      }
+    }
+    return ranges;
+  }
+
+  private intervaloMinutosAtendimento(
+    r: AtendimentoListaItem,
+    ymd: string,
+  ): { a: number; b: number } | null {
+    const ini = r.inicio ? String(r.inicio).trim() : '';
+    if (!ini) return null;
+    const pI = parseSqlLocalDateTime(ini);
+    if (!pI || ymdOfParts(pI) !== ymd) return null;
+    const a = pI.hh * 60 + pI.mm;
+    const finS = r.fim ? String(r.fim).trim() : '';
+    if (finS) {
+      const pF = parseSqlLocalDateTime(finS);
+      if (pF) {
+        let b = pF.hh * 60 + pF.mm;
+        if (ymdOfParts(pF) !== ymd) {
+          b = 24 * 60;
+        }
+        if (b <= a) b = a + 5;
+        return { a, b };
+      }
+    }
+    return { a, b: a + 30 };
   }
 
   ngOnChanges(ch: SimpleChanges): void {
     if (!ch['contextoSlot'] && !ch['modoModal']) return;
     if (this.carregandoListas) return;
     this.aplicarContextoSlotInput();
+    if (ch['modoModal']?.currentValue) {
+      const ymd = normalizarDataIso(
+        String(this.form.get('data')?.value ?? ''),
+      );
+      if (ymd) {
+        this.atualizarOcupacaoDia(ymd);
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -539,61 +772,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return `${n} min`;
   }
 
-  /** Texto curto: horário segue o controlo único do pedido. */
-  horarioHintLinhaServico(linhaIndex: number): string {
-    const g = this.linhasItensArray.at(linhaIndex);
-    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
-    const sid = String(g.get('servico_id')?.value ?? '').trim();
-    if (!sid) return '—';
-    return 'Início + sequência';
-  }
-
-  /** Primeira linha de tipo Serviço no pedido (para um único `input` de hora inicial). */
-  primeiroIndiceLinhaServico(): number {
-    for (let j = 0; j < this.linhasItensArray.length; j++) {
-      if (this.linhasItensArray.at(j)?.get('itemTipo')?.value === 'Serviço') {
-        return j;
-      }
-    }
-    return -1;
-  }
-
-  /**
-   * Hora (HH:mm) a que *começa* a linha `Serviço` na sequência (soma durações das
-   * linhas Serviço anteriores ao mesmo índice).
-   */
-  horarioInicioLinhaServicoExibicao(linhaIndex: number): string {
-    const dataYmd = normalizarDataIso(
-      String(this.form.controls.data.value ?? ''),
-    );
-    const hi = normalizarHoraHHmm(
-      String(this.form.controls.hora_inicial.value ?? ''),
-    );
-    if (!dataYmd || !hi) return '—';
-    const g = this.linhasItensArray.at(linhaIndex);
-    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
-    if (!String(g.get('servico_id')?.value ?? '').trim()) return '—';
-
-    const [hhS, mmS] = hi.split(':');
-    const h = parseInt(String(hhS ?? '0'), 10);
-    const mi = parseInt(String(mmS ?? '0'), 10);
-    const base = parseSqlLocalDateTime(
-      `${dataYmd} ${pad2(h)}:${pad2(mi)}:00`,
-    );
-    if (!base) return '—';
-    let cur = base;
-    for (let j = 0; j < linhaIndex; j++) {
-      const r = this.linhasItensArray.at(j);
-      if (r?.get('itemTipo')?.value !== 'Serviço') continue;
-      const sid = String(r.get('servico_id')?.value ?? '').trim();
-      if (!sid) continue;
-      const tam = String(r.get('tamanho')?.value ?? 'Curto').trim();
-      const dur = this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
-      cur = addMinutesToParts(cur, dur);
-    }
-    return `${pad2(cur.hh)}:${pad2(cur.mm)}`;
-  }
-
   opcoesClientesSelect(): SaasSelectOption[] {
     return this.clientes.map((c) => ({
       value: c.id,
@@ -765,6 +943,25 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   dataExibicao(): string {
     const ymd = String(this.form.controls.data.value ?? '').trim();
     return dataDdMmAaaa(ymd);
+  }
+
+  /**
+   * Exibição no modal (drawer): vazio mostra `dd/mm/aaaa`; com valor,
+   * `dd/mm/aaaa` (com barras, alinhado ao placeholder).
+   */
+  dataExibicaoModal(): string {
+    const ymd = String(this.form.controls.data.value ?? '').trim();
+    if (!ymd) return 'dd/mm/aaaa';
+    return dataDdMmBarraAaaa(ymd);
+  }
+
+  /** Valor do `data` para o calendário do modal. */
+  dataYmdString(): string {
+    return String(this.form.controls.data.value ?? '').trim();
+  }
+
+  irCriarCliente(): void {
+    this.router.navigate(['/clientes/novo']);
   }
 
   /**
@@ -1071,8 +1268,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.erro = '';
-    const texto = total.toFixed(2).replace('.', ',');
-    g.patchValue({ valor_cabelo: texto });
+    g.patchValue({ valor_cabelo: formataMoedaBrl(total) });
     g.get('valor_cabelo')?.markAsTouched();
     g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
 
@@ -1138,21 +1334,59 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
-    const raw = this.form.getRawValue();
+    const raw = this.form.getRawValue() as Record<string, unknown>;
     if (!this.validarLinhas(raw)) {
       return;
     }
 
-    const payloads = this.montarPayloadsDasLinhas(raw);
-    if (payloads.length === 0) {
+    const dataBase = normalizarDataIso(String(raw['data'] ?? ''));
+    if (!dataBase) {
+      this.erro = 'Informe uma data válida.';
+      return;
+    }
+
+    const datas: string[] =
+      this.repetirAgendamento.modo === 'nenhum'
+        ? [dataBase]
+        : this.repetirAgendamento.modo === 'repetir'
+          ? expandirDatasRepeticao(
+              dataBase,
+              this.repetirAgendamento.vezes,
+              this.repetirAgendamento.frequencia,
+            )
+          : [dataBase];
+
+    if (this.idAtendimentoEmEdicao?.trim() && datas.length > 1) {
+      this.erro =
+        'Não é possível repetir ao editar. Remova a repetição, salve ou crie um agendamento novo no hub.';
+      return;
+    }
+
+    const slotBak = this.slotAgenda;
+    this.slotAgenda = slotBak;
+    const amostra = this.montarPayloadsDasLinhas({
+      ...raw,
+      data: datas[0]!,
+    } as Record<string, unknown>);
+    this.slotAgenda = slotBak;
+    if (amostra.length === 0) {
       this.erro =
         'Confira os campos obrigatórios (data válida, cliente, serviços, etc.).';
       return;
     }
 
     const editId = this.idAtendimentoEmEdicao?.trim();
-    const criar$ = forkJoin(
-      payloads.map((p) => this.api.createAgendamento(p)),
+    const criar$ = from(datas).pipe(
+      concatMap((d, i) => {
+        this.slotAgenda = i === 0 ? slotBak : null;
+        const r = { ...raw, data: d } as Record<string, unknown>;
+        const pl = this.montarPayloadsDasLinhas(r);
+        this.slotAgenda = slotBak;
+        if (pl.length === 0) {
+          return of(true);
+        }
+        return forkJoin(pl.map((p) => this.api.createAgendamento(p)));
+      }),
     );
 
     this.salvando = true;
@@ -1164,6 +1398,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.salvando = false;
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
+        this.repetirAgendamento = { modo: 'nenhum' };
         if (this.modoModal) {
           this.salvoComSucesso.emit();
         } else {
@@ -1320,6 +1555,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return '';
   }
 
+  private agendaStatusParaEdicao(rows: AtendimentoListaItem[]): string {
+    const src = rows.find((r) => (r.inicio || '').trim()) ?? rows[0];
+    const st = String(src?.agenda_status ?? '').trim();
+    if (st) return normalizarAgendaStatusId(st);
+    const porCor = inferirAgendaStatusPorCorHex(src?.agenda_cor);
+    if (porCor) return porCor;
+    return 'confirmado';
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
@@ -1332,6 +1576,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         (l0.data || '').trim().slice(0, 10),
     );
     const obsMegaPacote = stripQtdSuffixObservacao(l0.descricao || '');
+    const agendaStEd = this.agendaStatusParaEdicao(sorted);
 
     this.prefillEmCurso = true;
 
@@ -1386,6 +1631,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               ? this.menorHoraInicialServicoEdicao(servRowsOnly, dataYmd)
               : '',
           observacao: '',
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1415,6 +1661,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: stripQtdSuffixObservacao(l0.descricao || ''),
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1440,6 +1687,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           hora_inicial: this.menorHoraInicialServicoEdicao(sorted, dataYmd),
           observacao: '',
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1472,6 +1720,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: obsMegaPacote,
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1504,6 +1753,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: obsMegaPacote,
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1525,6 +1775,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: '',
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1553,8 +1804,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private valorCampoCabeloDeApi(v: unknown): string {
     const n = valorMonetarioParaNumero(v);
     if (n === null) return '';
-    const s = String(n);
-    return s.includes('.') ? s.replace('.', ',') : s;
+    return formataMoedaBrl(n);
   }
 
   private toYmd(d: Date): string {
@@ -1587,7 +1837,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     itemTipo: TipoLinhaAtendimento = 'Serviço',
   ): FormGroup {
     const g = this.fb.group({
-      itemTipo: this.fb.nonNullable.control<TipoLinhaAtendimento>(itemTipo),
+      itemTipo: this.fb.control<TipoLinhaAtendimento>(itemTipo),
       servico_id: [''],
       tamanho: this.fb.nonNullable.control<string>('Curto'),
       profissional: [null as number | null],
@@ -1712,7 +1962,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return valorMonetarioParaNumero(pr.preco);
   }
 
-  private linhaValida(g: FormGroup, tipo: TipoLinhaAtendimento): boolean {
+  private linhaValida(
+    g: FormGroup,
+    tipo: TipoLinhaAtendimento | (string & {}),
+  ): boolean {
+    if (!String(tipo ?? '').trim()) return false;
     if (tipo === 'Serviço') {
       if (!String(g.get('servico_id')?.value ?? '').trim()) return false;
       const p = g.get('profissional')?.value;
@@ -1939,6 +2193,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!dataYmd) return [];
     const observacao = String(raw['observacao'] ?? '').trim() || undefined;
     const horaIni = String(raw['hora_inicial'] ?? '');
+    const agenda_status = normalizarAgendaStatusId(
+      String(raw['agenda_status'] ?? ''),
+    );
+    const agenda_cor =
+      corHexAgendaPorStatus(agenda_status) ?? '#32C787';
+    const agendaCartao = { agenda_status, agenda_cor };
 
     type Prep = {
       servico_id: string;
@@ -2010,12 +2270,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const slotPatch =
           sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
         if (pr.st === 'fixo') {
-          out.push({ ...pr.base, ...slotPatch });
+          out.push({ ...pr.base, ...slotPatch, ...agendaCartao });
         } else {
           out.push({
             ...pr.base,
             tamanho: pr.tamanho ?? 'Curto',
             ...slotPatch,
+            ...agendaCartao,
           });
         }
         primeiroMerge = false;
@@ -2041,6 +2302,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               produto: nome,
               quantidade: q,
               observacao,
+              ...agendaCartao,
               ...(Number.isFinite(pidProd) && pidProd > 0
                 ? { profissional_id: pidProd }
                 : {}),
@@ -2081,6 +2343,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                 profissional_id: Number(x.profissional),
               })),
               observacao,
+              ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
@@ -2114,6 +2377,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                 profissional_id: Number(x.profissional),
               })),
               observacao,
+              ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
@@ -2141,6 +2405,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               valor: v,
               observacao,
               detalhes_cabelo: det || undefined,
+              ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
@@ -2155,9 +2420,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private parseValorPt(s: string): number | null {
-    const t = s.trim().replace(/\s/g, '').replace(',', '.');
-    if (!t) return null;
-    const n = parseFloat(t);
-    return Number.isNaN(n) ? null : n;
+    return parseNumeroMonetarioPtString(s);
+  }
+
+  onValorCabeloMoedaBlur(i: number): void {
+    const g = this.linhasItensArray.at(i);
+    if (!g) return;
+    const c = g.get('valor_cabelo');
+    if (!c) return;
+    const s = String(c.value ?? '').trim();
+    if (!s) return;
+    const n = parseNumeroMonetarioPtString(s);
+    if (n === null || n <= 0) return;
+    c.setValue(formataMoedaBrl(n), { emitEvent: true });
+    c.updateValueAndValidity({ emitEvent: true });
   }
 }
