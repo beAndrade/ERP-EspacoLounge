@@ -114,11 +114,9 @@
                     [style.background]="corFundoCartaoBloco(lay.bloco)"
                     [disabled]="!idAtendimentoBloco(lay.bloco)"
                     [attr.aria-label]="
-                      'Ver detalhes na receção: ' + rotuloBloco(lay.bloco)
+                      'Editar agendamento: ' + rotuloBloco(lay.bloco)
                     "
-                    (click)="
-                      abrirDetalhesNaRececaoBloco(lay.bloco, $event)
-                    "
+                    (click)="abrirDrawerEdicaoBloco(lay.bloco, $event)"
                   >
                     <span class="day-col__card-body">
                       <span class="day-col__card-time-range">{{
@@ -179,6 +177,7 @@
       [contextoSlot]="modalContexto"
       (salvoComSucesso)="onSalvoModal()"
       (cancelarModal)="fecharModal()"
+      (navegarParaAgendamento)="onNavegarAgendamentoDrawer($event)"
     />
   </div>
 }

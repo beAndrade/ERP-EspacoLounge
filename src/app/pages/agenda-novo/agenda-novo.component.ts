@@ -48,6 +48,7 @@ import {
   concatMap,
   forkJoin,
   from,
+  map,
   of,
   skip,
   Subject,
@@ -66,7 +67,6 @@ import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { expandirDatasRepeticao } from './agenda-repetir-datas';
 import { AgendaRepetirCascadeComponent } from './agenda-repetir-cascade.component';
 import type { ValorRepetirAgendamento } from './agenda-repetir-cascade.models';
-import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.component';
 import {
   SaasSelectComponent,
   type SaasSelectOption,
@@ -213,7 +213,6 @@ function ordenarEtapasParaSelect(nomes: string[]): string[] {
   imports: [
     RouterLink,
     ReactiveFormsModule,
-    AgendaNovoClientSidebarComponent,
     AgendaRepetirCascadeComponent,
     SaasSelectComponent,
     AgendaModalCalendarComponent,
@@ -242,10 +241,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     profissional_id: number;
     /** Vazio = abrir só com data (e opcionalmente profissional). */
     hora?: string;
+    /** Hub: carregar este pedido em edição. */
+    id_atendimento?: string;
   } | null = null;
 
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
+  /** Hub: saltar para outro dia/pedido (próximas ocorrências). */
+  @Output() navegarParaAgendamento = new EventEmitter<{
+    data: string;
+    id_atendimento: string;
+  }>();
 
   readonly tiposLinhaAtendimento: TipoLinhaAtendimento[] = [
     'Serviço',
@@ -304,9 +310,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   modalDataPickerOpen = false;
   /** Intervalos [a,b) em minutos do dia para marcar horários (Indisponível). */
   intervalosOcupacaoDia: IntervaloMinutosDia[] = [];
-  /** Confirmação de encaixe em horário já ocupado. */
+  /** Aviso de horário já ocupado (sem encaixe automático). */
   modalConflitoHorario = false;
   private horaPendenteConflito: string | null = null;
+
+  /** Drawer: propagar alterações às ocorrências seguintes da repetição. */
+  aplicarAlteracoesProximos = false;
+
+  /** Menu Excluir (dropdown). */
+  excluirMenuAberto = false;
 
   @ViewChild('horarioSlots') horarioSlots?: AgendaHorarioSlotsComponent;
   @ViewChild('clienteSelectModal') clienteSelectModal?: SaasSelectComponent;
@@ -362,13 +374,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.aplicarValidadoresLinhas();
 
         if (this.modoModal) {
-          this.aplicarContextoSlotInput();
-          this.carregandoListas = false;
-          const ymd = normalizarDataIso(
-            String(this.form.get('data')?.value ?? ''),
-          );
-          if (ymd) {
-            this.atualizarOcupacaoDia(ymd);
+          const ctxId = this.contextoSlot?.id_atendimento?.trim();
+          if (ctxId) {
+            this.carregarEdicaoPorIdParaModal(ctxId);
+          } else {
+            this.aplicarContextoSlotInput();
+            this.carregandoListas = false;
+            const ymd = normalizarDataIso(
+              String(this.form.get('data')?.value ?? ''),
+            );
+            if (ymd) {
+              this.atualizarOcupacaoDia(ymd);
+            }
           }
         } else {
           /**
@@ -442,6 +459,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   onDocClickModalData(ev: MouseEvent): void {
+    const el = ev.target as HTMLElement | null;
+    if (this.excluirMenuAberto && el && !el.closest('.agenda-modal__excluir-wrap')) {
+      this.excluirMenuAberto = false;
+    }
     if (!this.modoModal || !this.modalDataPickerOpen) return;
     const t = ev.target;
     if (!(t instanceof Node)) return;
@@ -457,20 +478,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.modalConflitoHorario = true;
   }
 
-  cancelarConflitoEncaixe(): void {
+  fecharAvisoConflitoHorario(): void {
     this.modalConflitoHorario = false;
     this.horaPendenteConflito = null;
-  }
-
-  confirmarConflitoEncaixe(): void {
-    const h = this.horaPendenteConflito;
-    this.modalConflitoHorario = false;
-    this.horaPendenteConflito = null;
-    if (!h) return;
-    this.form.patchValue(
-      { hora_inicial: h },
-      { emitEvent: true, onlySelf: true },
-    );
   }
 
   private atualizarOcupacaoDia(ymd: string): void {
@@ -533,8 +543,30 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(ch: SimpleChanges): void {
+    const ctxCh = ch['contextoSlot'];
+    if (ctxCh && this.modoModal && !this.carregandoListas) {
+      type Ctx = {
+        id_atendimento?: string;
+      } | null;
+      const prev = ctxCh.previousValue as Ctx;
+      const cur = ctxCh.currentValue as Ctx;
+      const prevId = prev?.id_atendimento?.trim() ?? '';
+      const curId = cur?.id_atendimento?.trim() ?? '';
+      if (curId && curId !== prevId) {
+        this.carregarEdicaoPorIdParaModal(curId);
+      } else if (!curId && prevId) {
+        this.idAtendimentoEmEdicao = null;
+        this.aplicarContextoSlotInput();
+        const ymd = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+        if (ymd) this.atualizarOcupacaoDia(ymd);
+      }
+    }
+
     if (!ch['contextoSlot'] && !ch['modoModal']) return;
     if (this.carregandoListas) return;
+    if (this.modoModal && this.contextoSlot?.id_atendimento?.trim()) {
+      return;
+    }
     this.aplicarContextoSlotInput();
     if (ch['modoModal']?.currentValue) {
       const ymd = normalizarDataIso(
@@ -750,9 +782,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Título no modal do hub (tom mais próximo de SaaS). */
   tituloModal(): string {
-    return this.idAtendimentoEmEdicao?.trim()
-      ? 'Editando agendamento'
-      : 'Novo agendamento';
+    if (!this.idAtendimentoEmEdicao?.trim()) {
+      return 'Novo agendamento';
+    }
+    const c = this.clienteSelecionado();
+    const nome = c?.nome?.trim();
+    return nome
+      ? `Editando agendamento — ${nome}`
+      : 'Editando agendamento';
   }
 
   clienteSelecionado(): Cliente | null {
@@ -1356,9 +1393,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             )
           : [dataBase];
 
-    if (this.idAtendimentoEmEdicao?.trim() && datas.length > 1) {
+    const aplicarProx =
+      this.aplicarAlteracoesProximos &&
+      !!this.idAtendimentoEmEdicao?.trim() &&
+      this.repetirAgendamento.modo === 'repetir' &&
+      this.repetirAgendamento.vezes > 0;
+
+    if (this.idAtendimentoEmEdicao?.trim() && datas.length > 1 && !aplicarProx) {
       this.erro =
-        'Não é possível repetir ao editar. Remova a repetição, salve ou crie um agendamento novo no hub.';
+        'Ao editar, use «Aplicar alterações para os próximos» para gravar em várias datas, ou deixe a repetição em «não se repete».';
       return;
     }
 
@@ -1376,6 +1419,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     const editId = this.idAtendimentoEmEdicao?.trim();
+    const clienteId = String(raw['cliente_id'] ?? '').trim();
+    const horaIni = String(raw['hora_inicial'] ?? '');
+
     const criar$ = from(datas).pipe(
       concatMap((d, i) => {
         this.slotAgenda = i === 0 ? slotBak : null;
@@ -1389,16 +1435,56 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       }),
     );
 
+    const salvar$ =
+      editId && aplicarProx
+        ? from(datas).pipe(
+            concatMap((d, i) => {
+              const r = { ...raw, data: d } as Record<string, unknown>;
+              this.slotAgenda = i === 0 ? slotBak : null;
+              const pl = this.montarPayloadsDasLinhas(r);
+              this.slotAgenda = slotBak;
+              if (!pl.length) return of(true);
+              const idVelho$ =
+                i === 0
+                  ? of(editId)
+                  : this.api.listAgendamentos(d, d).pipe(
+                      map((rows) =>
+                        this.encontrarIdAtendimentoClienteHora(
+                          rows,
+                          clienteId,
+                          horaIni,
+                          d,
+                        ),
+                      ),
+                    );
+              return idVelho$.pipe(
+                switchMap((idVelho) => {
+                  const idEx = String(idVelho ?? '').trim();
+                  const excluirAntes =
+                    idEx.length > 0
+                      ? this.api.excluirAtendimento(idEx)
+                      : of({ removidas: 0 });
+                  return excluirAntes.pipe(
+                    switchMap(() =>
+                      forkJoin(pl.map((p) => this.api.createAgendamento(p))),
+                    ),
+                  );
+                }),
+              );
+            }),
+          )
+        : editId
+          ? this.api.excluirAtendimento(editId).pipe(switchMap(() => criar$))
+          : criar$;
+
     this.salvando = true;
-    (editId
-      ? this.api.excluirAtendimento(editId).pipe(switchMap(() => criar$))
-      : criar$
-    ).subscribe({
+    salvar$.subscribe({
       next: () => {
         this.salvando = false;
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
         this.repetirAgendamento = { modo: 'nenhum' };
+        this.aplicarAlteracoesProximos = false;
         if (this.modoModal) {
           this.salvoComSucesso.emit();
         } else {
@@ -1418,6 +1504,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   excluirSomente(): void {
     const id = this.idAtendimentoEmEdicao?.trim();
     if (!id || this.salvando || this.excluindo) return;
+    this.fecharExcluirMenu();
     if (
       !confirm(
         'Excluir este atendimento? Esta ação não pode ser anulada.',
@@ -1445,6 +1532,88 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           'Não foi possível excluir. Verifique a internet e tente de novo.';
       },
     });
+  }
+
+  /** Exclui o pedido atual e tenta apagar ocorrências nas datas da repetição (mesmo cliente e horário). */
+  excluirEsteEProximosSerie(): void {
+    const id = this.idAtendimentoEmEdicao?.trim();
+    if (!id || this.salvando || this.excluindo) return;
+    this.fecharExcluirMenu();
+    if (
+      !confirm(
+        'Excluir este agendamento e as ocorrências nas datas seguintes da repetição (mesmo cliente e horário)?',
+      )
+    ) {
+      return;
+    }
+    const dataBase = normalizarDataIso(
+      String(this.form.get('data')?.value ?? ''),
+    );
+    if (!dataBase) {
+      this.erro = 'Data inválida.';
+      return;
+    }
+    const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const hi = normalizarHoraHHmm(
+      String(this.form.get('hora_inicial')?.value ?? ''),
+    );
+    if (!clienteId || !hi) {
+      this.erro = 'Cliente e horário são necessários para a exclusão em série.';
+      return;
+    }
+    let datas: string[] = [dataBase];
+    if (
+      this.repetirAgendamento.modo === 'repetir' &&
+      this.repetirAgendamento.vezes > 0
+    ) {
+      datas = expandirDatasRepeticao(
+        dataBase,
+        this.repetirAgendamento.vezes,
+        this.repetirAgendamento.frequencia,
+      );
+    }
+    this.erro = '';
+    this.excluindo = true;
+    forkJoin(
+      datas.map((d) =>
+        this.api.listAgendamentos(d, d).pipe(
+          take(1),
+          switchMap((rows) => {
+            const idDel =
+              d === dataBase
+                ? id
+                : this.encontrarIdAtendimentoClienteHora(
+                    rows,
+                    clienteId,
+                    hi,
+                    d,
+                  );
+            const ex = String(idDel ?? '').trim();
+            if (!ex) return of({ removidas: 0 });
+            return this.api.excluirAtendimento(ex);
+          }),
+        ),
+      ),
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.excluindo = false;
+          this.idAtendimentoEmEdicao = null;
+          this.slotAgenda = null;
+          if (this.modoModal) {
+            this.salvoComSucesso.emit();
+          } else {
+            void this.router.navigate(['/agenda']);
+          }
+        },
+        error: (e: Error) => {
+          this.excluindo = false;
+          this.erro =
+            e.message ||
+            'Não foi possível excluir em série. Verifique a internet e tente de novo.';
+        },
+      });
   }
 
   rotuloServico(s: Servico): string {
@@ -2036,6 +2205,144 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
     this.prefillEmCurso = false;
     this.slotAgenda = null;
+  }
+
+  /** Hub / navegação: carrega pedido no formulário e libera listas. */
+  private carregarEdicaoPorIdParaModal(id: string): void {
+    const trimmed = id.trim();
+    if (!trimmed) {
+      this.carregandoListas = false;
+      return;
+    }
+    this.erro = '';
+    this.idAtendimentoEmEdicao = trimmed;
+    this.api
+      .listAgendamentos(undefined, undefined, trimmed)
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe({
+        next: (items) => {
+          if (items.length > 0) {
+            this.aplicarEdicaoNoForm(items);
+            const ymd = normalizarDataIso(
+              String(this.form.get('data')?.value ?? ''),
+            );
+            if (ymd && this.modoModal) {
+              this.atualizarOcupacaoDia(ymd);
+            }
+          } else {
+            this.idAtendimentoEmEdicao = null;
+            this.erro = 'Atendimento não encontrado.';
+            this.aplicarContextoSlotInput();
+          }
+          this.carregandoListas = false;
+        },
+        error: () => {
+          this.erro = 'Não foi possível carregar o atendimento.';
+          this.idAtendimentoEmEdicao = null;
+          this.carregandoListas = false;
+        },
+      });
+  }
+
+  toggleExcluirMenu(): void {
+    this.excluirMenuAberto = !this.excluirMenuAberto;
+  }
+
+  fecharExcluirMenu(): void {
+    this.excluirMenuAberto = false;
+  }
+
+  /** Datas das repetições após a data base (para atalhos no drawer). */
+  proximasOcorrenciasDatas(): string[] {
+    if (!this.modoModal || !this.idAtendimentoEmEdicao?.trim()) return [];
+    if (
+      this.repetirAgendamento.modo !== 'repetir' ||
+      this.repetirAgendamento.vezes < 1
+    ) {
+      return [];
+    }
+    const base = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    if (!base) return [];
+    const all = expandirDatasRepeticao(
+      base,
+      this.repetirAgendamento.vezes,
+      this.repetirAgendamento.frequencia,
+    );
+    return all.slice(1);
+  }
+
+  formatarDataCurtaPt(ymd: string): string {
+    const p = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd.trim());
+    if (!p) return ymd;
+    const d = new Date(
+      parseInt(p[1], 10),
+      parseInt(p[2], 10) - 1,
+      parseInt(p[3], 10),
+    );
+    return d.toLocaleDateString('pt-BR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+    });
+  }
+
+  /** Resolve o id do pedido noutro dia (mesmo cliente e horário inicial). */
+  private encontrarIdAtendimentoClienteHora(
+    rows: AtendimentoListaItem[],
+    clienteId: string,
+    horaAlvo: string,
+    ymd: string,
+  ): string | null {
+    const hi = normalizarHoraHHmm(horaAlvo);
+    const cid = clienteId.trim();
+    if (!hi || !cid) return null;
+    const ids = new Set<string>();
+    for (const r of rows) {
+      const id = String(r.id || '').trim();
+      if (!id) continue;
+      if (String(r.idCliente || '').trim() !== cid) continue;
+      ids.add(id);
+    }
+    for (const id of ids) {
+      const grupo = rows.filter((x) => String(x.id || '').trim() === id);
+      const hLinha = horaInicialMenorDasLinhasAtendimento(grupo, ymd);
+      if (hLinha && normalizarHoraHHmm(hLinha) === hi) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  pularParaDataRepeticao(ymd: string): void {
+    const d = ymd.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const hi = normalizarHoraHHmm(
+      String(this.form.get('hora_inicial')?.value ?? ''),
+    );
+    if (!cid || !hi) {
+      this.erro = 'Preencha cliente e horário para localizar o agendamento.';
+      return;
+    }
+    this.api
+      .listAgendamentos(d, d)
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          const id = this.encontrarIdAtendimentoClienteHora(rows, cid, hi, d);
+          if (!id) {
+            this.erro =
+              'Não foi encontrado agendamento nesta data com o mesmo cliente e horário.';
+            return;
+          }
+          this.erro = '';
+          this.fecharExcluirMenu();
+          this.navegarParaAgendamento.emit({ data: d, id_atendimento: id });
+        },
+        error: () => {
+          this.erro = 'Não foi possível localizar o agendamento.';
+        },
+      });
   }
 
   /** Exibe o fim previsto (HH:mm) para linhas de Serviço (catálogo) na ordem do formulário. */

@@ -49,12 +49,15 @@
   >
     <div class="form-shell" [class.form-shell--modal]="modoModal">
       @if (modoModal) {
-        <app-agenda-novo-client-sidebar
-          class="form-shell__client"
-          [clienteIdControl]="clienteIdControl"
-          [opcoesClientes]="opcoesClientesNomes()"
-          [cliente]="clienteSelecionado()"
-        />
+        <aside
+          class="form-shell__client form-shell__client--placeholder"
+          aria-label="Resumo do cliente"
+        >
+          <p class="form-shell__client-placeholder-text">
+            Resumo do cliente, contactos e histórico na agenda —
+            <strong>em breve</strong> (placeholder para implementação futura).
+          </p>
+        </aside>
       }
       <div
         class="form-shell__main"
@@ -1068,10 +1071,37 @@
             </label>
           </div>
           <app-agenda-repetir-cascade
-            [disabled]="!!idAtendimentoEmEdicao?.trim()"
             [dataReferencia]="form.get('data')?.value ?? null"
             [(value)]="repetirAgendamento"
           />
+          @if (idAtendimentoEmEdicao?.trim()) {
+            <div class="arpc-proximos">
+              <label class="arpc-proximos__toggle">
+                <input
+                  type="checkbox"
+                  [checked]="aplicarAlteracoesProximos"
+                  (change)="aplicarAlteracoesProximos = $any($event.target).checked"
+                />
+                <span>Aplicar alterações para os próximos</span>
+              </label>
+              @if (proximasOcorrenciasDatas().length) {
+                <div class="arpc-proximos__list" role="group" aria-label="Próximos agendamentos">
+                  <span class="arpc-proximos__label">Próximos agendamentos</span>
+                  <div class="arpc-proximos__btns">
+                    @for (d of proximasOcorrenciasDatas(); track d) {
+                      <button
+                        type="button"
+                        class="arpc-proximos__btn"
+                        (click)="pularParaDataRepeticao(d)"
+                      >
+                        {{ formatarDataCurtaPt(d) }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
         }
       </div>
 
@@ -1122,6 +1152,8 @@
         <span>Observações</span>
         <textarea
           formControlName="observacao"
+          class="block-obs__textarea"
+          [class.block-obs__textarea--modal]="modoModal"
           rows="2"
           placeholder="Escreva aqui"
         ></textarea>
@@ -1134,17 +1166,61 @@
         </div>
         @if (modoModal) {
           <footer class="agenda-modal__footer" aria-label="Ações do agendamento">
-            <button
-              type="button"
-              class="btn btn-footer btn-footer--ghost"
-              (click)="cancelarModal.emit()"
-              [disabled]="salvando || excluindo"
-            >
-              Cancelar
-            </button>
+            <div class="agenda-modal__footer-left">
+              <button
+                type="button"
+                class="btn btn-footer btn-footer--ghost"
+                (click)="cancelarModal.emit()"
+                [disabled]="salvando || excluindo"
+              >
+                Cancelar
+              </button>
+              @if (idAtendimentoEmEdicao?.trim()) {
+                <div
+                  class="agenda-modal__excluir-wrap"
+                  [class.agenda-modal__excluir-wrap--open]="excluirMenuAberto"
+                >
+                  <button
+                    type="button"
+                    class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
+                    (click)="toggleExcluirMenu(); $event.stopPropagation()"
+                    [disabled]="salvando || excluindo"
+                    [attr.aria-expanded]="excluirMenuAberto"
+                    aria-haspopup="menu"
+                  >
+                    {{ excluindo ? 'Excluindo…' : 'Excluir' }}
+                    <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
+                  </button>
+                  @if (excluirMenuAberto) {
+                    <div class="agenda-modal__excluir-panel" role="menu">
+                      <button
+                        type="button"
+                        class="agenda-modal__excluir-opt"
+                        role="menuitem"
+                        (click)="excluirSomente()"
+                        [disabled]="salvando || excluindo"
+                      >
+                        <span class="agenda-modal__excluir-ico agenda-modal__excluir-ico--trash" aria-hidden="true"></span>
+                        Excluir agendamento
+                      </button>
+                      <button
+                        type="button"
+                        class="agenda-modal__excluir-opt"
+                        role="menuitem"
+                        (click)="excluirEsteEProximosSerie()"
+                        [disabled]="salvando || excluindo"
+                      >
+                        <span class="agenda-modal__excluir-ico agenda-modal__excluir-ico--list" aria-hidden="true"></span>
+                        Excluir este e os próximos
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
             <button
               type="submit"
-              class="btn btn-footer primary"
+              class="btn btn-footer primary agenda-modal__footer-salvar"
               [disabled]="
                 salvando ||
                 excluindo ||
@@ -1156,16 +1232,6 @@
             >
               {{ salvando ? 'Salvando…' : 'Salvar' }}
             </button>
-            @if (idAtendimentoEmEdicao?.trim()) {
-              <button
-                type="button"
-                class="btn btn-footer btn-footer--danger"
-                (click)="excluirSomente()"
-                [disabled]="salvando || excluindo"
-              >
-                {{ excluindo ? 'Excluindo…' : 'Excluir' }}
-              </button>
-            }
           </footer>
         }
       </div>
@@ -1180,7 +1246,7 @@
       >
         <div
           class="agenda-conflito__backdrop"
-          (click)="cancelarConflitoEncaixe()"
+          (click)="fecharAvisoConflitoHorario()"
         ></div>
         <div class="agenda-conflito__panel">
           <div class="agenda-conflito__icon" aria-hidden="true">!</div>
@@ -1188,22 +1254,15 @@
             Conflito de horários
           </h2>
           <p class="agenda-conflito__text">
-            Deseja encaixar os agendamentos?
+            Este horário já está ocupado. Escolha outro intervalo na grelha.
           </p>
           <div class="agenda-conflito__actions">
             <button
               type="button"
-              class="agenda-conflito__btn agenda-conflito__btn--ghost"
-              (click)="cancelarConflitoEncaixe()"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
               class="agenda-conflito__btn agenda-conflito__btn--primary"
-              (click)="confirmarConflitoEncaixe()"
+              (click)="fecharAvisoConflitoHorario()"
             >
-              Sim
+              OK
             </button>
           </div>
         </div>

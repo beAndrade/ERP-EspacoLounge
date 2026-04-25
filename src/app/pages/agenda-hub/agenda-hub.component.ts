@@ -87,7 +87,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   modalContexto: {
     data: string;
     profissional_id: number;
-    hora: string;
+    /** Vazio = abrir só com data (e opcionalmente profissional). */
+    hora?: string;
+    /** Edição: abre o drawer já com este pedido carregado. */
+    id_atendimento?: string;
   } | null = null;
 
   /** Incrementado após salvar no modal para forçar reload do painel receção. */
@@ -222,6 +225,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       data: this.diaYmd,
       profissional_id: profissionalId,
       hora,
+      id_atendimento: undefined,
     };
     this.modalAberto = true;
     this.iniciarAberturaDrawer();
@@ -235,9 +239,57 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       data: this.diaYmd,
       profissional_id: pid,
       hora: '',
+      id_atendimento: undefined,
     };
     this.modalAberto = true;
     this.iniciarAberturaDrawer();
+  }
+
+  /** Abre o drawer em modo edição (sem saltar para a receção). */
+  abrirDrawerEdicaoBloco(b: AgendaHubBloco, e: Event): void {
+    e.stopPropagation();
+    const id = this.idAtendimentoBloco(b);
+    if (!id) return;
+    const l0 = b.linhas[0];
+    const profCol = Number(l0?.profissional_id ?? 0);
+    const profId =
+      profCol > 0
+        ? profCol
+        : this.profissionaisVisiveis()[0]?.id ??
+          this.profissionais[0]?.id ??
+          0;
+    const hora = this.horaBloco(b);
+    this.modalContexto = {
+      data: this.diaYmd,
+      profissional_id: profId,
+      hora: hora || undefined,
+      id_atendimento: id,
+    };
+    this.modalAberto = true;
+    this.iniciarAberturaDrawer();
+  }
+
+  /** Salta para outro dia/pedido mantendo o drawer (próximos agendamentos). */
+  onNavegarAgendamentoDrawer(ev: { data: string; id_atendimento: string }): void {
+    const ymd = String(ev.data || '').trim().slice(0, 10);
+    const idAt = String(ev.id_atendimento || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !idAt) return;
+    this.diaYmd = ymd;
+    const ref = new Date(
+      parseInt(ymd.slice(0, 4), 10),
+      parseInt(ymd.slice(5, 7), 10) - 1,
+      parseInt(ymd.slice(8, 10), 10),
+    );
+    this.mesRef = this.inicioDoMes(ref);
+    this.carregarMes();
+    this.carregarDia();
+    const prev = this.modalContexto;
+    this.modalContexto = {
+      data: ymd,
+      profissional_id: prev?.profissional_id ?? 0,
+      hora: prev?.hora,
+      id_atendimento: idAt,
+    };
   }
 
   /**
@@ -728,13 +780,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   idAtendimentoBloco(b: AgendaHubBloco): string {
     return String(b.linhas[0]?.id || '').trim();
-  }
-
-  abrirDetalhesNaRececaoBloco(b: AgendaHubBloco, e: Event): void {
-    e.stopPropagation();
-    const id = this.idAtendimentoBloco(b);
-    if (!id) return;
-    this.rececao?.expandirGrupoPorIdAtendimento(id);
   }
 
   private gerarSlots(): string[] {
