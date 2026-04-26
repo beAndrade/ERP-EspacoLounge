@@ -263,7 +263,8 @@
   gap: 0.4rem 0.45rem;
   padding-bottom: 0;
   margin-bottom: 0.5rem;
-  align-items: end;
+  /** Rótulo + campo empilhados: alinhar ao topo (evita “fim” de grelha a quebrar o respiro). */
+  align-items: start;
   display: grid;
   grid-template-columns:
     minmax(17.25rem, 1.92fr)
@@ -281,13 +282,16 @@
     min-width: 0;
   }
 
+  .block-context__field--cliente-modal,
+  .data-field.block-context__field,
   .block-context__field--hora-modal,
   .block-context__field--hora-slots,
   .block-context__field--status-modal,
   .block-context__field--cor-modal {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    align-items: stretch;
+    gap: 0;
   }
 
   .block-context__field--status-modal app-agenda-status-select {
@@ -439,9 +443,14 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.4rem;
+  gap: 0;
   width: 100%;
   min-width: 0;
+}
+
+/** Respiro rótulo → textarea (8px: `agenda-novo--drawer` reutiliza o token, abaixo). */
+.block-obs > div:first-child > span:first-of-type {
+  margin-bottom: 8px;
 }
 
 .block-obs__textarea {
@@ -1546,7 +1555,7 @@ textarea {
   --el-drawer-field-border-hover: #a51851;
   --drawer-field-border: #ddd;
   /** Cor do texto: vazio/placeholder = idle; com valor = filled. Em selects, “edição” = painel aberto (não :focus — o gatilho retém foco após escolher). */
-  --drawer-input-text-idle: #808080;
+  --drawer-input-text-idle: #000000bf;
   --drawer-input-text-filled: #000000;
   --drawer-input-font-weight: 400;
 }
@@ -1669,6 +1678,11 @@ textarea {
   --drawer-label-weight: 500;
   --drawer-label-base-weight: 500;
   --drawer-field-font-size: 15px;
+  /**
+   * Uma referência: respiro rótulo → campo. Não alterar de forma ad-hoc noutros sítios
+   * sem alinhar com este token (8px em todo o hub do drawer).
+   */
+  --drawer-label-below: 8px;
 
   .agenda-modal__title {
     font-size: 24px;
@@ -1690,7 +1704,7 @@ textarea {
   label {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0;
     font-size: var(--drawer-label-size);
     line-height: var(--drawer-label-line-height);
     font-weight: var(--drawer-label-base-weight);
@@ -1704,6 +1718,10 @@ textarea {
     color: var(--drawer-label-strong);
   }
 
+  label > span:first-of-type {
+    margin-bottom: var(--drawer-label-below);
+  }
+
   .block-context__label,
   .servicos-header,
   .toggle-switch__label {
@@ -1713,8 +1731,13 @@ textarea {
     color: var(--drawer-label-strong);
   }
 
+  .toggle-switch__label {
+    margin-bottom: 0;
+  }
+
   /**
    * Rótulos em `<span>` sem `<label>` (ex.: cabeçalho do `block-context`, “Observações” em modal).
+   * `margin-bottom` = `--drawer-label-below` (8px) em todo o hub.
    */
   .block-context--modal .block-context__field > span:first-of-type,
   .data-field.block-context__field > span:first-of-type,
@@ -1724,6 +1747,30 @@ textarea {
     line-height: var(--drawer-label-line-height);
     font-weight: var(--drawer-label-weight);
     color: var(--drawer-label-strong);
+    margin-bottom: var(--drawer-label-below);
+  }
+
+  /**
+   * Linhas de serviço / células de etapa: `div.servico-row__field` com `<span>` + control.
+   */
+  .servico-row--drawer .servico-row__field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .servico-row--drawer {
+    align-items: flex-start;
+  }
+
+  .servico-row--drawer .servico-row__mega-topo {
+    align-items: flex-start;
+  }
+
+  .servico-row--drawer .servico-row__field > span:first-of-type,
+  .etapa-row--etapas-modal .etapa-row__etapa-cel > span:first-of-type {
+    margin-bottom: var(--drawer-label-below);
   }
 
   /** Lembrete: respiro horizontal para o ripple/sombra não ser cortado pelo scroll (overflow-x). */
@@ -2150,11 +2197,6 @@ textarea {
       display: block;
       width: 100%;
       max-width: 100%;
-    }
-
-    app-agenda-repetir-cascade .arpc__label {
-      line-height: 1.25;
-      align-self: flex-start;
     }
 
     app-agenda-repetir-cascade .arpc__field {

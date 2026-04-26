@@ -16,7 +16,7 @@
 
   flex-direction: column;
 
-  gap: 0.4rem;
+  gap: 0;
 
   width: 100%;
 
@@ -30,6 +30,8 @@
 
 .arpc__label {
 
+  display: block;
+  margin-bottom: var(--drawer-label-below, 8px);
   font-size: var(--drawer-label-size, 15px);
   line-height: var(--drawer-label-line-height, 1.25);
   font-weight: var(--drawer-label-weight, 500);
