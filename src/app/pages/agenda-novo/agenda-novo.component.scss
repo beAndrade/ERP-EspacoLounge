@@ -432,12 +432,29 @@
   min-width: 0;
 }
 
+/**
+ * Rótulo acima do campo (span inline + textarea podiam ficar na mesma linha em alguns viewports).
+ */
+.block-obs > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
+}
+
 .block-obs__textarea {
   min-height: 4.5rem;
   resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
 
   &--modal {
-    min-height: 3.25rem;
+    min-height: 66.28px;
+    height: 66.28px;
+    max-height: 66.28px;
+    resize: none;
   }
 }
 
