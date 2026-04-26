@@ -1527,10 +1527,11 @@ textarea {
   width: 100%;
   box-sizing: border-box;
   --el-drawer-field-border-hover: #a51851;
-  /** Cor do texto dos campos: mais claro “em edição” (:focus), um pouco mais escuro com valor (sem foco). */
+  --drawer-field-border: #ddd;
+  /** Cor do texto: vazio/placeholder = idle; com valor = filled. Em selects, “edição” = painel aberto (não :focus — o gatilho retém foco após escolher). */
   --drawer-input-text-idle: #808080;
   --drawer-input-text-filled: #000000;
-  --drawer-input-font-weight: 300;
+  --drawer-input-font-weight: 400;
 }
 
 /**
@@ -1544,6 +1545,7 @@ textarea {
   select {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
   }
 
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(:focus):not(
@@ -1557,6 +1559,7 @@ textarea {
   .data-field--modal-match-saas .data-field__display {
     color: var(--drawer-input-text-idle);
     font-weight: var(--drawer-input-font-weight);
+    border-color: var(--drawer-field-border);
   }
 
   .data-field--modal-match-saas .data-field__value-text {
@@ -1566,6 +1569,7 @@ textarea {
 
   .data-field--modal-match-saas .data-field__display--placeholder .data-field__value-text {
     color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
   }
 
   .data-field--modal-match-saas .data-field__wrap:focus-within .data-field__value-text {
@@ -1575,51 +1579,60 @@ textarea {
   ::ng-deep .saas-select__trigger {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
   }
 
-  ::ng-deep .saas-select__trigger:not(:focus):not(:focus-visible) .saas-select__value:not(.saas-select__value--placeholder) {
+  ::ng-deep .saas-select__trigger .saas-select__value:not(.saas-select__value--placeholder) {
     color: var(--drawer-input-text-filled);
   }
 
-  ::ng-deep .saas-select__trigger:focus .saas-select__value:not(.saas-select__value--placeholder),
-  ::ng-deep .saas-select__trigger:focus-visible .saas-select__value:not(.saas-select__value--placeholder) {
+  ::ng-deep
+    app-saas-select.saas-select-host--open
+    .saas-select__trigger
+    .saas-select__value:not(.saas-select__value--placeholder) {
     color: var(--drawer-input-text-idle);
   }
 
   ::ng-deep .saas-select__trigger .saas-select__value--placeholder {
     color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
   }
 
   ::ng-deep .agenda-status-select__trigger {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
   }
 
-  ::ng-deep .agenda-status-select__trigger:not(:focus):not(:focus-visible) .agenda-status-select__label {
+  ::ng-deep .agenda-status-select__trigger .agenda-status-select__label {
     color: var(--drawer-input-text-filled);
     font-weight: var(--drawer-input-font-weight);
   }
 
-  ::ng-deep .agenda-status-select__trigger:focus .agenda-status-select__label,
-  ::ng-deep .agenda-status-select__trigger:focus-visible .agenda-status-select__label {
+  ::ng-deep
+    app-agenda-status-select.agenda-status-select--open
+    .agenda-status-select__trigger
+    .agenda-status-select__label {
     color: var(--drawer-input-text-idle);
   }
 
   ::ng-deep .ahs__trigger {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
   }
 
-  ::ng-deep .ahs__trigger:not(:focus):not(:focus-visible) .ahs__value:not(.ahs__value--ph) {
+  ::ng-deep .ahs__trigger .ahs__value:not(.ahs__value--ph) {
     color: var(--drawer-input-text-filled);
+    font-weight: var(--drawer-input-font-weight);
   }
 
   ::ng-deep .ahs__trigger .ahs__value--ph {
     color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
   }
 
-  ::ng-deep .ahs__trigger:focus .ahs__value,
-  ::ng-deep .ahs__trigger:focus-visible .ahs__value {
+  ::ng-deep app-agenda-horario-slots.ahs-host--open .ahs__trigger .ahs__value {
     color: var(--drawer-input-text-idle);
   }
 }
@@ -1636,7 +1649,7 @@ textarea {
   --drawer-label-line-height: 1.25;
   --drawer-label-muted: #000000bf;
   --drawer-label-strong: #000000bf;
-  --drawer-label-weight: 600;
+  --drawer-label-weight: 500;
   --drawer-label-base-weight: 500;
   --drawer-field-font-size: 15px;
 

@@ -23,7 +23,7 @@
   padding: 0.5rem 0.75rem;
   padding-right: 2.5rem;
   border-radius: var(--radius, 8px);
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
   background: #fff;
   font: inherit;
   text-align: left;
@@ -57,7 +57,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--drawer-field-font-size, 0.95rem);
-  font-weight: 500;
+  font-weight: var(--drawer-input-font-weight, 500);
   font-variant-numeric: tabular-nums;
   color: var(--color-text, #1c1917);
 

@@ -20,7 +20,7 @@
   padding: 0.5rem 0.75rem;
   padding-right: 2.5rem;
   border-radius: var(--radius, 8px);
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
   background: #fff;
   font: inherit;
   text-align: left;
@@ -57,7 +57,7 @@
 
   &--placeholder {
     color: var(--color-muted, #78716c);
-    font-weight: 500;
+    font-weight: var(--drawer-input-font-weight, 500);
   }
 }
 
@@ -120,7 +120,7 @@
   width: 100%;
   min-height: 2.25rem;
   padding: 0.35rem 0.5rem;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
   border-radius: 6px;
   font: inherit;
   font-size: 0.9rem;
@@ -210,6 +210,6 @@
 
 /** Busca na coluna esquerda do modal. */
 :host.saas-select-host--layout-sidebar .saas-select__trigger {
-  border-color: #e7e5e4;
+  border-color: var(--drawer-field-border, #e7e5e4);
   background: #fff;
 }

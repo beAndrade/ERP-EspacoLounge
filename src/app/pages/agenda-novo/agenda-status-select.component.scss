@@ -17,7 +17,7 @@
   min-height: var(--touch-min, 2.75rem);
   padding: 0.5rem 0.75rem;
   box-sizing: border-box;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
   border-radius: var(--radius, 8px);
   background: #fff;
   font: inherit;
@@ -58,7 +58,7 @@
   flex: 1;
   min-width: 0;
   color: var(--color-text, #1c1917);
-  font-weight: 500;
+  font-weight: var(--drawer-input-font-weight, 500);
 }
 
 .agenda-status-select__chev {
