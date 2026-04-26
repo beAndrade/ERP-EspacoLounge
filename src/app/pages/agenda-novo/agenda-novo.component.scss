@@ -267,8 +267,8 @@
   align-items: start;
   display: grid;
   grid-template-columns:
-    minmax(17.25rem, 1.92fr)
-    minmax(8.75rem, 0.7fr)
+    minmax(16.25rem, 1.78fr)
+    minmax(9.5rem, 0.86fr)
     minmax(6.5rem, 0.44fr)
     minmax(9.25rem, 0.82fr)
     minmax(9.25rem, 0.82fr);
@@ -351,8 +351,8 @@
 
   @media (min-width: 721px) and (max-width: 1100px) {
     grid-template-columns:
-      minmax(15.5rem, 1.82fr)
-      minmax(8.25rem, 0.65fr)
+      minmax(15rem, 1.72fr)
+      minmax(8.9rem, 0.8fr)
       minmax(6.25rem, 0.42fr)
       minmax(8.75rem, 0.8fr)
       minmax(8.75rem, 0.8fr);
@@ -554,7 +554,7 @@
       left: calc(-1 * var(--drawer-bleed-l, 0px));
       right: calc(-1 * var(--drawer-bleed-r, 0px));
       height: 1px;
-      background: #e7e5e4;
+      background: var(--drawer-stroke, #ececec);
       pointer-events: none;
     }
   }
@@ -1483,7 +1483,8 @@ textarea {
 
   &--drawer {
     flex: 0 0 auto;
-    min-width: 0;
+    flex-shrink: 0;
+    min-width: calc(2.5rem * 2 + 0.4rem);
     gap: 0.4rem;
   }
 }
@@ -1552,12 +1553,22 @@ textarea {
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
+  /** Bordas de input e traços (divisórias) do hub: mesma família de cor. */
+  --drawer-stroke: #ececec;
   --el-drawer-field-border-hover: #a51851;
-  --drawer-field-border: #ddd;
-  /** Cor do texto: vazio/placeholder = idle; com valor = filled. Em selects, “edição” = painel aberto (não :focus — o gatilho retém foco após escolher). */
-  --drawer-input-text-idle: #000000bf;
+  --drawer-field-border: var(--drawer-stroke);
+  /** Cor do texto: vazio/placeholder = idle; com valor = filled. */
+  --drawer-input-text-idle: rgba(0, 0, 0, 0.38);
   --drawer-input-text-filled: #000000;
   --drawer-input-font-weight: 400;
+
+  .servico-row--drawer {
+    border-bottom-color: var(--drawer-stroke);
+  }
+
+  .servico-row__meta {
+    border-top: 1px dashed var(--drawer-stroke);
+  }
 }
 
 /**
@@ -1760,12 +1771,15 @@ textarea {
     gap: 0;
   }
 
+  /**
+   * Ações (+/lixeira) alinham com a **base** dos campos, não com o rótulo.
+   */
   .servico-row--drawer {
-    align-items: flex-start;
+    align-items: flex-end;
   }
 
   .servico-row--drawer .servico-row__mega-topo {
-    align-items: flex-start;
+    align-items: flex-end;
   }
 
   .servico-row--drawer .servico-row__field > span:first-of-type,
@@ -2075,7 +2089,7 @@ textarea {
 
   .servico-row--drawer .servico-row__duracao:hover {
     color: transparent;
-    border-color: #e7e5e4;
+    border-color: var(--drawer-stroke);
     cursor: not-allowed;
     background-color: #f4f2f0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E");
@@ -2093,6 +2107,7 @@ textarea {
 
   .btn.btn--icon-line-add {
     flex-shrink: 0;
+    border-color: var(--drawer-stroke);
   }
 }
 

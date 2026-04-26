@@ -7,7 +7,7 @@
   min-height: 100%;
   min-width: 0;
   padding: 0 1.15rem 0 0;
-  border-right: 1px solid #e7e5e4;
+  border-right: 1px solid var(--drawer-stroke, #e7e5e4);
   background: #fff;
 }
 
@@ -241,6 +241,6 @@
     min-height: 0;
     padding: 0 0 1rem;
     border-right: none;
-    border-bottom: 1px solid #e7e5e4;
+    border-bottom: 1px solid var(--drawer-stroke, #e7e5e4);
   }
 }
