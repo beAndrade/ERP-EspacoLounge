@@ -22,7 +22,13 @@
   .client-sidebar-drawer__nome-destaque {
     font-size: var(--drawer-label-size, 1rem);
     font-weight: 500;
-    line-height: var(--drawer-label-line-height, 1.3);
+    line-height: 1.2;
+  }
+
+  .client-sidebar-drawer__nome-btn {
+    padding: 0;
+    padding-bottom: 0;
+    line-height: 1.2;
   }
 
   .client-sidebar-drawer__sub {
@@ -179,7 +185,7 @@
   border-radius: inherit;
   pointer-events: none;
   box-shadow: 0 0 0 0 rgba(125, 86, 196, 0.5);
-  animation: client-sidebar-novo-pulse-out 1.8s ease-out infinite;
+  animation: client-sidebar-novo-pulse-out 1.05s ease-out infinite;
 }
 
 /** Cor fixa no keyframe (evita `var`/`color-mix` em animação). Só a sombra muda. */
@@ -189,7 +195,7 @@
   }
 
   100% {
-    box-shadow: 0 0 0 16px rgba(125, 86, 196, 0);
+    box-shadow: 0 0 0 8px rgba(125, 86, 196, 0);
   }
 }
 
@@ -197,10 +203,14 @@
   border: none;
   background: transparent;
   padding: 0;
+  padding-bottom: 0;
   margin: 0;
+  line-height: 1.2;
   text-align: center;
   width: 100%;
   cursor: default;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .client-sidebar-drawer__sub {
