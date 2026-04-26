@@ -30,11 +30,10 @@
 
 .arpc__label {
 
-  font-size: 0.9rem;
-
-  font-weight: 600;
-
-  color: var(--color-text, #1c1917);
+  font-size: var(--drawer-label-size, 0.9rem);
+  line-height: var(--drawer-label-line-height, 1.25);
+  font-weight: var(--drawer-label-weight, 600);
+  color: var(--drawer-label-strong, var(--color-text, #1c1917));
 
 }
 

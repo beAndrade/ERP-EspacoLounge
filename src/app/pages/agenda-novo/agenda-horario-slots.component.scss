@@ -56,7 +56,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.95rem;
+  font-size: var(--drawer-field-font-size, 0.95rem);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--color-text, #1c1917);

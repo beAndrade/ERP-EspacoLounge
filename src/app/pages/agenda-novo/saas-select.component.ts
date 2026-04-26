@@ -10,6 +10,7 @@ import {
   OnDestroy,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import {
   ControlValueAccessor,
@@ -42,6 +43,8 @@ export class SaasSelectComponent
   implements ControlValueAccessor, OnChanges, OnDestroy
 {
   private readonly host = inject(ElementRef<HTMLElement>);
+  @ViewChild('triggerBtn', { static: true })
+  private readonly triggerBtn?: ElementRef<HTMLButtonElement>;
 
   /**
    * Espelha um `FormControl` sem `formControlName` / `[formControl]` neste elemento,
@@ -60,6 +63,8 @@ export class SaasSelectComponent
   @Input() showCriarCliente = false;
   /** Coluna esquerda do hub modal (busca). O “Cliente” da grelha usa o estilo padrão. */
   @Input() layout: 'default' | 'sidebar' = 'default';
+  /** Acessibilidade: nome do campo (evita depender de `<label>` a envolver o gatilho). */
+  @Input('aria-label') ariaFieldLabel: string | null = null;
   @Output() picked = new EventEmitter<void>();
   @Output() criarCliente = new EventEmitter<void>();
   /** Painel de opções abriu (fechar calendário / outros no hub). */
@@ -136,6 +141,7 @@ export class SaasSelectComponent
   /** Fecha a lista (uso pelo pai no hub). */
   fecharPainel(): void {
     this.panelOpen = false;
+    this.focusTriggerSoon();
   }
 
   togglePanel(ev?: Event): void {
@@ -144,6 +150,7 @@ export class SaasSelectComponent
     if (this.panelOpen) {
       this.panelOpen = false;
       this.notifyTouched();
+      this.focusTriggerSoon();
       return;
     }
     this.panelOpen = true;
@@ -158,6 +165,7 @@ export class SaasSelectComponent
     this.panelOpen = false;
     this.notifyTouched();
     this.picked.emit();
+    this.focusTriggerSoon();
   }
 
   onCriarClienteClick(ev: Event): void {
@@ -165,6 +173,7 @@ export class SaasSelectComponent
     ev.preventDefault();
     this.panelOpen = false;
     this.criarCliente.emit();
+    this.focusTriggerSoon();
   }
 
   onFilterInput(ev: Event): void {
@@ -178,7 +187,13 @@ export class SaasSelectComponent
     if (!this.host.nativeElement.contains(t)) {
       this.panelOpen = false;
       this.notifyTouched();
+      this.focusTriggerSoon();
     }
+  }
+
+  private focusTriggerSoon(): void {
+    // Evita aria warnings: não deixar foco preso em opção quando o painel fecha.
+    queueMicrotask(() => this.triggerBtn?.nativeElement?.focus());
   }
 
   private notifyTouched(): void {

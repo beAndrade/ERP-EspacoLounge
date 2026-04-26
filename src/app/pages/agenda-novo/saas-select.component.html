@@ -6,7 +6,9 @@
   <button
     type="button"
     class="saas-select__trigger"
+    #triggerBtn
     [disabled]="isDisabled"
+    [attr.aria-label]="ariaFieldLabel || placeholder"
     [attr.aria-expanded]="panelOpen"
     [attr.aria-haspopup]="'listbox'"
     (click)="togglePanel($event)"
@@ -52,7 +54,7 @@
   <div
     class="saas-select__panel-elev"
     [class.saas-select__panel-elev--open]="panelOpen"
-    [attr.aria-hidden]="!panelOpen"
+    [attr.inert]="panelOpen ? null : ''"
   >
     <div class="saas-select__panel" role="listbox">
       @if (showFilter) {

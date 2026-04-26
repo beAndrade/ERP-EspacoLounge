@@ -96,39 +96,43 @@
             [class.block-context--modal]="modoModal"
           >
             @if (modoModal) {
-              <label class="block-context__field block-context__field--cliente-modal">
+              <div class="block-context__field block-context__field--cliente-modal">
                 <span>Cliente</span>
                 <app-saas-select
                   #clienteSelectModal
                   formControlName="cliente_id"
                   [options]="opcoesClientesNomes()"
                   placeholder="Selecione…"
+                  aria-label="Cliente"
                   [showFilter]="false"
                   [showCriarCliente]="true"
                   (criarCliente)="irCriarCliente()"
                   (painelAberto)="onClienteSelectPainelAbriu()"
                 />
-              </label>
+              </div>
             } @else {
-              <label class="block-context__field">
+              <div class="block-context__field">
                 <span>Cliente</span>
                 <app-saas-select
                   formControlName="cliente_id"
                   [options]="opcoesClientesSelect()"
                   placeholder="Selecione…"
+                  aria-label="Cliente"
                 />
-              </label>
+              </div>
             }
 
-            <label
+            <div
               class="data-field block-context__field"
               [class.data-field--modal-stretch]="modoModal"
               [class.data-field--modal-picker-root]="modoModal"
               [class.data-field--modal-match-saas]="modoModal"
-              (click)="onDataFieldClick($event, dataInput)"
             >
             <span>Data</span>
-            <div class="data-field__wrap">
+            <div
+              class="data-field__wrap"
+              (click)="onDataFieldClick($event, dataInput)"
+            >
               <span
                 class="data-field__display"
                 [class.data-field__display--with-cal]="modoModal"
@@ -195,23 +199,37 @@
                 >Toque no campo para abrir o calendário (formato dd-mm-aaaa).</span
               >
             }
-          </label>
+          </div>
 
           @if (modoModal) {
-            <label class="block-context__field block-context__field--hora-modal block-context__field--hora-slots">
+            <div class="block-context__field block-context__field--hora-modal block-context__field--hora-slots">
               <span>Horário</span>
               <app-agenda-horario-slots
                 #horarioSlots
                 [formControl]="form.controls.hora_inicial"
                 [intervalosOcupados]="intervalosOcupacaoDia"
+                aria-label="Horário inicial"
                 (conflitoHorario)="onConflitoHorarioEscolhido($event)"
                 (painelAberto)="onHorarioPainelAbriu()"
               />
-            </label>
-            <label class="block-context__field block-context__field--status-modal">
+            </div>
+            <div class="block-context__field block-context__field--status-modal">
               <span class="block-context__label">Status</span>
-              <app-agenda-status-select formControlName="agenda_status" />
-            </label>
+              <app-agenda-status-select
+                formControlName="agenda_status"
+                aria-label="Status"
+              />
+            </div>
+            <div class="block-context__field block-context__field--cor-modal">
+              <span>Cor</span>
+              <select
+                class="block-context__cor-select"
+                disabled
+                aria-label="Cor"
+              >
+                <option selected>Padrão</option>
+              </select>
+            </div>
           }
         </div>
 
@@ -263,7 +281,7 @@
               <div
                 class="servico-row__mega-topo servico-row__linha-cabecalho-modal"
               >
-                <label
+                <div
                   class="servico-row__field servico-row__field--tipo-linha servico-row__field--mega-cabecalho"
                 >
                   <span>Tipo de linha</span>
@@ -272,15 +290,16 @@
                     formControlName="itemTipo"
                     [options]="opcoesTiposLinha()"
                     placeholder="Tipo…"
+                    aria-label="Tipo de linha"
                     (picked)="onItemTipoLinhaChange(i)"
                   />
-                </label>
+                </div>
                 @if (
                   ctrl.get('itemTipo')?.value === 'Mega' ||
                   ctrl.get('itemTipo')?.value === 'Pacote'
                 ) {
                   @if (ctrl.get('itemTipo')?.value === 'Mega') {
-                    <label
+                    <div
                       class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
                     >
                       <span>Pacote (Individual)</span>
@@ -289,11 +308,12 @@
                         formControlName="pacote"
                         [options]="opcoesPacotesMegaSelect()"
                         placeholder="Selecione…"
+                        aria-label="Pacote (Individual)"
                         (picked)="aplicarValidadoresLinhas()"
                       />
-                    </label>
+                    </div>
                   } @else {
-                    <label
+                    <div
                       class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
                     >
                       <span>Pacote (Manutenção)</span>
@@ -302,9 +322,10 @@
                         formControlName="pacote"
                         [options]="opcoesPacotesCatalogoSelect()"
                         placeholder="Selecione…"
+                        aria-label="Pacote (Manutenção)"
                         (picked)="aplicarValidadoresLinhas()"
                       />
-                    </label>
+                    </div>
                   }
                 }
                 <div
@@ -351,20 +372,21 @@
                 </div>
               </div>
             } @else {
-              <label class="servico-row__field servico-row__field--tipo-linha">
+              <div class="servico-row__field servico-row__field--tipo-linha">
                 <span>Tipo de linha</span>
                 <app-saas-select
                   [showFilter]="!modoModal"
                   formControlName="itemTipo"
                   [options]="opcoesTiposLinha()"
                   placeholder="Tipo…"
+                  aria-label="Tipo de linha"
                   (picked)="onItemTipoLinhaChange(i)"
                 />
-              </label>
+              </div>
             }
 
             @if (ctrl.get('itemTipo')?.value === 'Serviço') {
-              <label
+              <div
                 class="servico-row__field"
                 [class.servico-row__field--descricao]="modoModal"
               >
@@ -374,20 +396,22 @@
                   formControlName="servico_id"
                   [options]="opcoesServicosCatalogo()"
                   [placeholder]="modoModal ? 'Selecionar serviço' : 'Selecione…'"
+                  aria-label="Serviço"
                 />
-              </label>
+              </div>
               @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
-                <label class="servico-row__field servico-row__field--tamanho">
+                <div class="servico-row__field servico-row__field--tamanho">
                   <span>Tamanho (preço)</span>
                   <app-saas-select
                     [showFilter]="!modoModal"
                     formControlName="tamanho"
                     [options]="opcoesTamanhosSelect()"
                     placeholder="Tamanho…"
+                    aria-label="Tamanho (preço)"
                   />
-                </label>
+                </div>
               }
-              <label
+              <div
                 class="servico-row__field"
                 [class.servico-row__field--pro]="modoModal"
               >
@@ -398,8 +422,9 @@
                   [options]="opcoesProfissionaisSelect()"
                   [useNumericOutput]="true"
                   placeholder="Selecione…"
+                  aria-label="Profissional"
                 />
-              </label>
+              </div>
               @if (modoModal) {
                 <div class="servico-row__field servico-row__field--duracao">
                   <span>Duração</span>
@@ -414,7 +439,7 @@
             }
 
             @if (ctrl.get('itemTipo')?.value === 'Produto') {
-              <label
+              <div
                 class="servico-row__field"
                 [class.servico-row__field--produto-catalogo]="modoModal"
               >
@@ -424,9 +449,10 @@
                   formControlName="produto"
                   [options]="opcoesProdutosSelect()"
                   placeholder="Selecione…"
+                  aria-label="Produto"
                 />
-              </label>
-              <label
+              </div>
+              <div
                 class="servico-row__field servico-row__field--tamanho"
                 [class.servico-row__field--produto-qtd-drawer]="modoModal"
               >
@@ -436,10 +462,11 @@
                   formControlName="quantidade"
                   min="0.01"
                   step="any"
+                  aria-label="Quantidade"
                 />
-              </label>
+              </div>
               @if (!modoModal) {
-                <label class="servico-row__field">
+                <div class="servico-row__field">
                   <span>Preço unitário (R$)</span>
                   <input
                     type="text"
@@ -447,11 +474,12 @@
                     inputmode="decimal"
                     placeholder="Só se o produto não tiver preço no catálogo"
                     autocomplete="off"
+                    aria-label="Preço unitário (R$)"
                   />
-                </label>
+                </div>
               }
               @if (!modoModal) {
-                <label class="servico-row__field">
+                <div class="servico-row__field">
                   <span>Profissional</span>
                   <app-saas-select
                     [showFilter]="!modoModal"
@@ -459,8 +487,9 @@
                     [options]="opcoesProfissionaisSelect()"
                     [useNumericOutput]="true"
                     placeholder="Selecione…"
+                    aria-label="Profissional"
                   />
-                </label>
+                </div>
               }
             }
 
@@ -481,16 +510,17 @@
                         class="etapa-row etapa-row--etapas-modal"
                         [formGroupName]="j"
                       >
-                        <label class="etapa-row__etapa-cel etapa-row__etapa-cel--fill">
+                        <div class="etapa-row__etapa-cel etapa-row__etapa-cel--fill">
                           <span>Etapa</span>
                           <app-saas-select
                             [showFilter]="!modoModal"
                             formControlName="etapa"
                             [options]="opcoesEtapasLinhaSelect(i)"
                             placeholder="Selecione…"
+                            aria-label="Etapa"
                           />
-                        </label>
-                        <label
+                        </div>
+                        <div
                           class="etapa-row__etapa-cel etapa-row__etapa-cel--fill"
                         >
                           <span>Profissional</span>
@@ -500,8 +530,9 @@
                             [options]="opcoesProfissionaisSelect()"
                             [useNumericOutput]="true"
                             placeholder="Selecione…"
+                            aria-label="Profissional"
                           />
-                        </label>
+                        </div>
                         <div class="etapa-row__actions etapa-row__actions--etapas">
                           @if (j === 0) {
                             <button
@@ -558,16 +589,17 @@
                   ></div>
                 </div>
               } @else {
-                <label class="servico-row__field">
+                <div class="servico-row__field">
                   <span>Pacote</span>
                   <app-saas-select
                     [showFilter]="!modoModal"
                     formControlName="pacote"
                     [options]="opcoesPacotesMegaSelect()"
                     placeholder="Selecione…"
+                    aria-label="Pacote"
                     (picked)="aplicarValidadoresLinhas()"
                   />
-                </label>
+                </div>
                 @if (pacotesMegaUnicos.length === 0) {
                   <p class="hint">
                     Cadastre linhas em <strong>Regras Mega</strong> (Pacote + Etapa).
@@ -590,16 +622,17 @@
                   </div>
                   @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
                     <div class="etapa-row" [formGroupName]="j">
-                      <label>
+                      <div>
                         <span>Etapa</span>
                         <app-saas-select
                           [showFilter]="!modoModal"
                           formControlName="etapa"
                           [options]="opcoesEtapasLinhaSelect(i)"
                           placeholder="Selecione…"
+                          aria-label="Etapa"
                         />
-                      </label>
-                      <label>
+                      </div>
+                      <div>
                         <span>Profissional</span>
                         <app-saas-select
                           [showFilter]="!modoModal"
@@ -607,8 +640,9 @@
                           [options]="opcoesProfissionaisSelect()"
                           [useNumericOutput]="true"
                           placeholder="Selecione…"
+                          aria-label="Profissional"
                         />
-                      </label>
+                      </div>
                       @if (etapasArrayDaLinha(i).length > 1) {
                         <button
                           type="button"
@@ -643,7 +677,7 @@
                         class="etapa-row etapa-row--etapas-modal"
                         [formGroupName]="j"
                       >
-                        <label
+                        <div
                           class="etapa-row__etapa-cel etapa-row__etapa-cel--fill"
                         >
                           <span>Etapa</span>
@@ -652,9 +686,10 @@
                             formControlName="etapa"
                             [options]="opcoesEtapasLinhaSelect(i)"
                             placeholder="Selecione…"
+                            aria-label="Etapa"
                           />
-                        </label>
-                        <label
+                        </div>
+                        <div
                           class="etapa-row__etapa-cel etapa-row__etapa-cel--fill"
                         >
                           <span>Profissional</span>
@@ -664,8 +699,9 @@
                             [options]="opcoesProfissionaisSelect()"
                             [useNumericOutput]="true"
                             placeholder="Selecione…"
+                            aria-label="Profissional"
                           />
-                        </label>
+                        </div>
                         <div
                           class="etapa-row__actions etapa-row__actions--etapas"
                         >
@@ -724,16 +760,17 @@
                   ></div>
                 </div>
               } @else {
-                <label class="servico-row__field">
+                <div class="servico-row__field">
                   <span>Pacote (aba Pacotes)</span>
                   <app-saas-select
                     [showFilter]="!modoModal"
                     formControlName="pacote"
                     [options]="opcoesPacotesCatalogoSelect()"
                     placeholder="Selecione…"
+                    aria-label="Pacote"
                     (picked)="aplicarValidadoresLinhas()"
                   />
-                </label>
+                </div>
                 @if (pacotes.length === 0) {
                   <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
                 }
@@ -755,16 +792,17 @@
                   </div>
                   @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
                     <div class="etapa-row" [formGroupName]="j">
-                      <label>
+                      <div>
                         <span>Etapa</span>
                         <app-saas-select
                           [showFilter]="!modoModal"
                           formControlName="etapa"
                           [options]="opcoesEtapasLinhaSelect(i)"
                           placeholder="Selecione…"
+                          aria-label="Etapa"
                         />
-                      </label>
-                      <label>
+                      </div>
+                      <div>
                         <span>Profissional</span>
                         <app-saas-select
                           [showFilter]="!modoModal"
@@ -772,8 +810,9 @@
                           [options]="opcoesProfissionaisSelect()"
                           [useNumericOutput]="true"
                           placeholder="Selecione…"
+                          aria-label="Profissional"
                         />
-                      </label>
+                      </div>
                       @if (etapasArrayDaLinha(i).length > 1) {
                         <button
                           type="button"
@@ -797,37 +836,40 @@
                     Insira os dados para calcular o valor do cabelo.
                   </p>
                   <div class="cabelo-calc__grid">
-                    <label class="cabelo-calc__field">
+                    <div class="cabelo-calc__field">
                       <span>Cor</span>
                       <app-saas-select
                         [showFilter]="!modoModal"
                         formControlName="calc_cor"
                         [options]="opcoesCabelosCorSelect()"
                         placeholder="Selecione…"
+                        aria-label="Cor (calculadora cabelo)"
                         (picked)="onCalcCabeloCorChangeLinha(i)"
                       />
-                    </label>
-                    <label class="cabelo-calc__field">
+                    </div>
+                    <div class="cabelo-calc__field">
                       <span>Tamanho (cm)</span>
                       <app-saas-select
                         [showFilter]="!modoModal"
                         formControlName="calc_tam_cm"
                         [options]="opcoesCabelosTamCmSelect(i)"
                         placeholder="Selecione…"
+                        aria-label="Tamanho em cm (calculadora cabelo)"
                         (picked)="onCalcCabeloTamanhoChangeLinha(i)"
                       />
-                    </label>
-                    <label class="cabelo-calc__field">
+                    </div>
+                    <div class="cabelo-calc__field">
                       <span>Método</span>
                       <app-saas-select
                         [showFilter]="!modoModal"
                         formControlName="calc_metodo"
                         [options]="opcoesCabelosMetodoSelect(i)"
                         placeholder="Selecione…"
+                        aria-label="Método (calculadora cabelo)"
                         (picked)="onCalcCabeloMetodoChangeLinha(i)"
                       />
-                    </label>
-                    <label class="cabelo-calc__field cabelo-calc__field--gramas">
+                    </div>
+                    <div class="cabelo-calc__field cabelo-calc__field--gramas">
                       <span>Peso medido (g)</span>
                       <input
                         type="text"
@@ -835,9 +877,10 @@
                         inputmode="decimal"
                         autocomplete="off"
                         placeholder="ex.: 15"
+                        aria-label="Peso medido (g)"
                         (input)="onCalcCabeloGramasInputLinha(i, $event)"
                       />
-                    </label>
+                    </div>
                   </div>
                   @if (valorCalculadoraCabeloPreviewLinha(i); as prev) {
                     <p class="cabelo-calc__preview">Valor base (tabela): <strong>{{ prev }}</strong></p>
@@ -864,16 +907,17 @@
                 <div
                   class="servico-row__cabelo-rodape servico-row__cabelo-rodape--drawer"
                 >
-                  <label
+                  <div
                     class="servico-row__field servico-row__field--valor-cabelo-modal"
                   >
-                    <span>Valor (manual ou calculadora)</span>
+                    <span>Valor</span>
                     <input
                       type="text"
                       formControlName="valor_cabelo"
                       inputmode="decimal"
                       placeholder="R$ 0,00"
                       autocomplete="off"
+                      aria-label="Valor (cabelo)"
                       (blur)="onValorCabeloMoedaBlur(i)"
                     />
                     @if (
@@ -884,8 +928,8 @@
                         >Informe um valor numérico maior que zero.</span
                       >
                     }
-                  </label>
-                  <label
+                  </div>
+                  <div
                     class="servico-row__field servico-row__field--detalhes-cabelo-modal"
                   >
                     <span>Detalhes</span>
@@ -893,9 +937,10 @@
                       formControlName="detalhes_cabelo"
                       rows="2"
                       placeholder="Cor, método, gramas…"
+                      aria-label="Detalhes (cabelo)"
                     ></textarea>
-                  </label>
-                  <label
+                  </div>
+                  <div
                     class="servico-row__field servico-row__field--pro-cabelo-modal"
                   >
                     <span>Profissional</span>
@@ -905,8 +950,9 @@
                       [options]="opcoesProfissionaisSelect()"
                       [useNumericOutput]="true"
                       placeholder="Selecione…"
+                      aria-label="Profissional (cabelo)"
                     />
-                  </label>
+                  </div>
                   <div
                     class="servico-row__actions servico-row__actions--drawer servico-row__actions--cabelo-rodape"
                   >
@@ -951,7 +997,7 @@
                   </div>
                 </div>
               } @else {
-                <label
+                <div
                   class="servico-row__field"
                 >
                   <span>Valor (manual ou calculadora)</span>
@@ -961,6 +1007,7 @@
                     inputmode="decimal"
                     placeholder="ex.: 150 ou 150,50"
                     autocomplete="off"
+                    aria-label="Valor (manual ou calculadora)"
                     (blur)="onValorCabeloMoedaBlur(i)"
                   />
                   @if (
@@ -971,16 +1018,17 @@
                       >Informe um valor numérico maior que zero.</span
                     >
                   }
-                </label>
-                <label class="servico-row__field">
+                </div>
+                <div class="servico-row__field">
                   <span>Detalhes</span>
                   <textarea
                     formControlName="detalhes_cabelo"
                     rows="2"
                     placeholder="Cor, método, gramas…"
+                    aria-label="Detalhes (cabelo)"
                   ></textarea>
-                </label>
-                <label class="servico-row__field">
+                </div>
+                <div class="servico-row__field">
                   <span>Profissional</span>
                   <app-saas-select
                     [showFilter]="!modoModal"
@@ -988,8 +1036,9 @@
                     [options]="opcoesProfissionaisSelect()"
                     [useNumericOutput]="true"
                     placeholder="Selecione…"
+                    aria-label="Profissional (cabelo)"
                   />
-                </label>
+                </div>
               }
             }
 
@@ -1053,24 +1102,20 @@
             role="group"
             aria-label="Opções adicionais"
           >
-            <label class="toggle-switch toggle-switch--inline">
-              <input
-                type="checkbox"
-                class="toggle-switch__input"
-                [checked]="enviarLembreteUi"
-                (change)="
-                  enviarLembreteUi = $any($event.target).checked;
-                  onLembreteToggleLiqArm()
-                "
-              />
+            <div class="toggle-switch toggle-switch--inline">
               <span
                 class="toggle toggle--liquid"
+                role="switch"
+                tabindex="0"
                 [class.active]="enviarLembreteUi"
                 [class.toggle--liq-armed]="lembreteToggleLiqArmed"
-                aria-hidden="true"
+                [attr.aria-checked]="enviarLembreteUi"
+                aria-label="Enviar lembrete"
+                (click)="onEnviarLembreteToggleClick($event)"
+                (keydown)="onEnviarLembreteToggleKeydown($event)"
               ></span>
               <span class="toggle-switch__label">Enviar lembrete</span>
-            </label>
+            </div>
           </div>
           <div class="arpc-modal-row">
             <div class="arpc-modal-row__cascade">
@@ -1085,23 +1130,21 @@
                 role="group"
                 aria-label="Propagar alterações"
               >
-                <label class="toggle-switch toggle-switch--inline">
-                  <input
-                    type="checkbox"
-                    class="toggle-switch__input"
-                    [checked]="aplicarAlteracoesProximos"
-                    (change)="
-                      aplicarAlteracoesProximos = $any($event.target).checked
-                    "
-                  />
+                <div class="toggle-switch toggle-switch--inline">
                   <span
                     class="toggle toggle--liquid"
+                    role="switch"
+                    tabindex="0"
                     [class.active]="aplicarAlteracoesProximos"
-                    aria-hidden="true"
+                    [class.toggle--liq-armed]="lembreteToggleLiqArmed"
+                    [attr.aria-checked]="aplicarAlteracoesProximos"
+                    aria-label="Aplicar alterações para os próximos"
+                    (click)="onAplicarProximosToggleClick($event)"
+                    (keydown)="onAplicarProximosToggleKeydown($event)"
                   ></span>
                   <span class="toggle-switch__label"
                     >Aplicar alterações para os próximos</span>
-                </label>
+                </div>
               </div>
             }
           </div>
@@ -1146,15 +1189,19 @@
 
     <div class="block-hora" [class.block-hora--no-time-field]="modoModal">
       @if (!modoModal) {
-        <label>
+        <div>
           <span>Horário inicial</span>
-          <input type="time" formControlName="hora_inicial" />
+          <input
+            type="time"
+            formControlName="hora_inicial"
+            aria-label="Horário inicial"
+          />
           <span class="hint">
             Relógio do salão (Brasil). Várias linhas de <strong>Serviço</strong> usam este valor em
             sequência; para <strong>Mega, Pacote, Cabelo e Produto</strong>, define o início do primeiro
             bloco enviado (duração padrão 30 min na API).
           </span>
-        </label>
+        </div>
         @if (temLinhaServicoCatalogo()) {
           <p class="hint horario-final-hint">
             Horário final (calculado, só serviços de catálogo):
@@ -1179,7 +1226,7 @@
     </div>
 
     <div class="block-obs">
-      <label>
+      <div>
         <span>Observações</span>
         <textarea
           formControlName="observacao"
@@ -1187,8 +1234,9 @@
           [class.block-obs__textarea--modal]="modoModal"
           rows="2"
           placeholder="Escreva aqui"
+          aria-label="Observações"
         ></textarea>
-      </label>
+      </div>
 
       @if (!modoModal) {
         <p class="hint resumo">{{ resumoLinhas() }}</p>

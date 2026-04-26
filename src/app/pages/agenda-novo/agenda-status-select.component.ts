@@ -4,6 +4,7 @@ import {
   forwardRef,
   HostListener,
   inject,
+  Input,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { AGENDA_STATUS_META, type AgendaStatusId } from '../../core/utils/agenda-status-card';
@@ -26,6 +27,8 @@ import { AGENDA_STATUS_META, type AgendaStatusId } from '../../core/utils/agenda
 })
 export class AgendaStatusSelectComponent implements ControlValueAccessor {
   private readonly host = inject(ElementRef<HTMLElement>);
+
+  @Input('aria-label') ariaFieldLabel: string | null = null;
 
   readonly opcoes = AGENDA_STATUS_META;
 

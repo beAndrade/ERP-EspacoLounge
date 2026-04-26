@@ -294,6 +294,45 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
+   * Pulse de sombra ao clicar: só com interação, não no primeiro render do drawer.
+   */
+  private pulseToggleLiqVisual(ev: Event): void {
+    ev.stopPropagation();
+    const el = ev.currentTarget;
+    if (!(el instanceof HTMLElement)) return;
+    el.classList.remove('toggle--pulse');
+    void el.offsetWidth;
+    el.classList.add('toggle--pulse');
+    window.setTimeout(() => {
+      el.classList.remove('toggle--pulse');
+    }, 1500);
+  }
+
+  onEnviarLembreteToggleClick(ev: Event): void {
+    this.pulseToggleLiqVisual(ev);
+    this.enviarLembreteUi = !this.enviarLembreteUi;
+    this.onLembreteToggleLiqArm();
+  }
+
+  onEnviarLembreteToggleKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    ev.preventDefault();
+    this.onEnviarLembreteToggleClick(ev);
+  }
+
+  onAplicarProximosToggleClick(ev: Event): void {
+    this.pulseToggleLiqVisual(ev);
+    this.aplicarAlteracoesProximos = !this.aplicarAlteracoesProximos;
+    this.onLembreteToggleLiqArm();
+  }
+
+  onAplicarProximosToggleKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    ev.preventDefault();
+    this.onAplicarProximosToggleClick(ev);
+  }
+
+  /**
    * Repetição após a data base: na gravação gera 1 + N atendimentos
    * (N vezes) em datas alinhadas à frequência, cada qual enviada à API.
    */
@@ -798,11 +837,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.idAtendimentoEmEdicao?.trim()) {
       return 'Novo agendamento';
     }
-    const c = this.clienteSelecionado();
-    const nome = c?.nome?.trim();
-    return nome
-      ? `Editando agendamento — ${nome}`
-      : 'Editando agendamento';
+    return 'Editando agendamento';
   }
 
   clienteSelecionado(): Cliente | null {

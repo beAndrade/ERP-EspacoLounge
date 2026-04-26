@@ -53,7 +53,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.95rem;
+  font-size: var(--drawer-field-font-size, 0.95rem);
 
   &--placeholder {
     color: var(--color-muted, #78716c);
@@ -211,5 +211,5 @@
 /** Busca na coluna esquerda do modal. */
 :host.saas-select-host--layout-sidebar .saas-select__trigger {
   border-color: #e7e5e4;
-  background: #fafaf9;
+  background: #fff;
 }

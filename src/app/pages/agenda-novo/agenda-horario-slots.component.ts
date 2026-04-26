@@ -47,6 +47,8 @@ export function minutosParaHHmm(m: number): string {
   },
 })
 export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
+  @Input('aria-label') ariaFieldLabel: string | null = null;
+
   @Input() set intervalosOcupados(v: IntervaloMinutosDia[]) {
     this._intervalos = Array.isArray(v) ? v : [];
   }

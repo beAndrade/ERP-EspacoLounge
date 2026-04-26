@@ -3,6 +3,7 @@
     type="button"
     class="agenda-status-select__trigger"
     [disabled]="disabled"
+    [attr.aria-label]="ariaFieldLabel || 'Status do agendamento'"
     [attr.aria-expanded]="panelOpen"
     aria-haspopup="listbox"
     (click)="togglePanel()"

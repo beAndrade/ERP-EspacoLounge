@@ -265,19 +265,26 @@
   margin-bottom: 0.5rem;
   align-items: end;
   display: grid;
-  grid-template-columns: 1.12fr 0.8fr 0.58fr 1.05fr;
+  grid-template-columns:
+    minmax(17.25rem, 1.92fr)
+    minmax(8.75rem, 0.7fr)
+    minmax(6.5rem, 0.44fr)
+    minmax(9.25rem, 0.82fr)
+    minmax(9.25rem, 0.82fr);
   min-width: 0;
 
   .block-context__field--cliente-modal,
   .data-field--modal-stretch,
   .block-context__field--hora-modal,
-  .block-context__field--status-modal {
+  .block-context__field--status-modal,
+  .block-context__field--cor-modal {
     min-width: 0;
   }
 
   .block-context__field--hora-modal,
   .block-context__field--hora-slots,
-  .block-context__field--status-modal {
+  .block-context__field--status-modal,
+  .block-context__field--cor-modal {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
@@ -287,6 +294,21 @@
     display: block;
     width: 100%;
     min-width: 0;
+  }
+
+  .block-context__field--cor-modal {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .block-context__field--cor-modal:has(.block-context__cor-select:disabled) {
+    cursor: not-allowed;
+  }
+
+  .block-context__cor-select {
+    width: 100%;
+    cursor: not-allowed;
   }
 
   .block-context__field--hora-slots app-agenda-horario-slots {
@@ -306,7 +328,7 @@
     max-width: 100%;
   }
 
-  > label {
+  > .block-context__field {
     min-width: 0;
   }
 
@@ -324,7 +346,12 @@
   }
 
   @media (min-width: 721px) and (max-width: 1100px) {
-    grid-template-columns: 1.05fr 0.74fr 0.52fr 1fr;
+    grid-template-columns:
+      minmax(15.5rem, 1.82fr)
+      minmax(8.25rem, 0.65fr)
+      minmax(6.25rem, 0.42fr)
+      minmax(8.75rem, 0.8fr)
+      minmax(8.75rem, 0.8fr);
   }
 
   @media (max-width: 960px) {
@@ -343,7 +370,11 @@
     }
 
     > .block-context__field--status-modal {
-      grid-column: 1 / -1;
+      grid-column: 1;
+    }
+
+    > .block-context__field--cor-modal {
+      grid-column: 2;
     }
   }
 
@@ -353,7 +384,8 @@
     .block-context__field--cliente-modal,
     .data-field--modal-stretch,
     .block-context__field--hora-modal,
-    .block-context__field--status-modal {
+    .block-context__field--status-modal,
+    .block-context__field--cor-modal {
       grid-column: 1 / -1;
     }
   }
@@ -436,7 +468,7 @@
   flex-direction: row;
   align-items: center;
   gap: 0.65rem;
-  cursor: pointer;
+  cursor: default;
   margin: 0;
   user-select: none;
 }
@@ -965,12 +997,13 @@ textarea {
 }
 
 .agenda-modal__footer .btn.btn-footer--danger {
-  background: #ff7875;
-  border-color: #ff7875;
+  background: #ff4d4f;
+  border-color: #ff4d4f;
   color: #fff;
 
   &:hover:not(:disabled) {
-    filter: brightness(0.96);
+    background: #ff7875;
+    border-color: #ff7875;
   }
 }
 
@@ -996,7 +1029,7 @@ textarea {
   padding: 0;
   border: none;
   border-radius: 0.65rem;
-  background: #ff7875;
+  background: #ff4d4f;
   color: #fff;
   cursor: pointer;
   transition:
@@ -1009,7 +1042,7 @@ textarea {
   }
 
   &:hover:not(:disabled) {
-    background: #ff5f5c;
+    background: #ff7875;
   }
 
   &:disabled {
@@ -1222,8 +1255,9 @@ textarea {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  align-items: end;
-  gap: 0.4rem 0.55rem;
+  align-items: stretch;
+  row-gap: 0.4rem;
+  column-gap: 0.55rem;
   grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.92fr) minmax(0, 1fr) auto;
 
   @media (max-width: 900px) {
@@ -1250,9 +1284,9 @@ textarea {
 
   textarea {
     box-sizing: border-box;
-    min-height: 2.75rem;
-    height: 2.75rem;
-    padding: 0.5rem 0.65rem;
+    min-height: var(--touch-min, 2.75rem);
+    height: var(--touch-min, 2.75rem);
+    padding: 0.5rem 0.75rem;
     line-height: 1.35;
     resize: none;
     overflow-y: auto;
@@ -1493,43 +1527,160 @@ textarea {
   width: 100%;
   box-sizing: border-box;
   --el-drawer-field-border-hover: #a51851;
+  /** Cor do texto dos campos: mais claro “em edição” (:focus), um pouco mais escuro com valor (sem foco). */
+  --drawer-input-text-idle: #808080;
+  --drawer-input-text-filled: #000000;
+  --drawer-input-font-weight: 300;
 }
 
-/** Hub drawer: títulos, rótulos 15px, “Enviar lembrete” 16px; Observação colada ao fundo do scroll com respiro do footer. */
+/**
+ * Texto (cor + peso) dos campos no drawer: formulário principal + coluna do sidebar.
+ * Sidebar fica fora de `.form.form--modal`, por isso o seletor duplo.
+ */
+:host.agenda-novo--drawer .form.form--modal,
+:host.agenda-novo--drawer .form-shell--modal .form-shell__client {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(:focus):not(
+      :placeholder-shown
+    ),
+  textarea:not(:focus):not(:placeholder-shown),
+  select:not(:focus) {
+    color: var(--drawer-input-text-filled);
+  }
+
+  .data-field--modal-match-saas .data-field__display {
+    color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  .data-field--modal-match-saas .data-field__value-text {
+    color: var(--drawer-input-text-filled);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  .data-field--modal-match-saas .data-field__display--placeholder .data-field__value-text {
+    color: var(--drawer-input-text-idle);
+  }
+
+  .data-field--modal-match-saas .data-field__wrap:focus-within .data-field__value-text {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .saas-select__trigger {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .saas-select__trigger:not(:focus):not(:focus-visible) .saas-select__value:not(.saas-select__value--placeholder) {
+    color: var(--drawer-input-text-filled);
+  }
+
+  ::ng-deep .saas-select__trigger:focus .saas-select__value:not(.saas-select__value--placeholder),
+  ::ng-deep .saas-select__trigger:focus-visible .saas-select__value:not(.saas-select__value--placeholder) {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .saas-select__trigger .saas-select__value--placeholder {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .agenda-status-select__trigger {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .agenda-status-select__trigger:not(:focus):not(:focus-visible) .agenda-status-select__label {
+    color: var(--drawer-input-text-filled);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  ::ng-deep .agenda-status-select__trigger:focus .agenda-status-select__label,
+  ::ng-deep .agenda-status-select__trigger:focus-visible .agenda-status-select__label {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .ahs__trigger {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .ahs__trigger:not(:focus):not(:focus-visible) .ahs__value:not(.ahs__value--ph) {
+    color: var(--drawer-input-text-filled);
+  }
+
+  ::ng-deep .ahs__trigger .ahs__value--ph {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .ahs__trigger:focus .ahs__value,
+  ::ng-deep .ahs__trigger:focus-visible .ahs__value {
+    color: var(--drawer-input-text-idle);
+  }
+}
+
+/** Hub drawer: tipografia do drawer (labels padronizados). */
 :host.agenda-novo--drawer .form.form--modal {
   /** Coluna «Tipo de linha»: igual em Serviço e Produto (drawer). */
   --drawer-tipo-linha-col: clamp(6.25rem, 8.8vw, 9rem);
+  /** Padrão do drawer: inputs 40px e radius 14px. */
+  --touch-min: 40px;
+  --radius: 14px;
+  /** Tokens de label do drawer (um único ponto de ajuste). */
+  --drawer-label-size: 15px;
+  --drawer-label-line-height: 1.25;
+  --drawer-label-muted: #000000bf;
+  --drawer-label-strong: #000000bf;
+  --drawer-label-weight: 600;
+  --drawer-label-base-weight: 500;
+  --drawer-field-font-size: 15px;
 
   .agenda-modal__title {
     font-size: 24px;
     line-height: 1.25;
+    color: #404040;
   }
 
   .itens-atendimento--modal .itens-atendimento__titulo {
     font-size: 20px;
     line-height: 1.3;
     margin-bottom: 0.85rem;
+    color: #404040;
   }
 
+  /**
+   * Labels: tudo padronizado e englobado no escopo do drawer.
+   * Qualquer ajuste futuro deve ser feito pelos tokens acima.
+   */
   label {
-    font-size: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-base-weight);
+    color: var(--drawer-label-muted);
   }
 
   label > span {
-    font-size: 15px;
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-weight);
+    color: var(--drawer-label-strong);
   }
 
-  .block-context__label {
-    font-size: 15px;
-  }
-
-
-  .servicos-header {
-    font-size: 15px;
-  }
-
+  .block-context__label,
+  .servicos-header,
   .toggle-switch__label {
-    font-size: 16px;
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-weight);
+    color: var(--drawer-label-strong);
   }
 
   /** Lembrete: respiro horizontal para o ripple/sombra não ser cortado pelo scroll (overflow-x). */
@@ -1549,9 +1700,11 @@ textarea {
   }
 
   .block-toggles--inline .toggle {
-    --toggle-w: 48px;
-    --toggle-pad: 3px;
-    --knob-size: 20px;
+    --toggle-w: 44px;
+    --toggle-h: 22px;
+    --toggle-pad: 2px;
+    --knob-size: 18px;
+    --toggle-pulse-color: rgba(0, 0, 0, 0.22);
     /**
      * Translação máxima: alinhar o knob ao padding interior (espelha o OFF).
      * Não subtrair px extra: isso deixava o ON ~2px longe do canto direito.
@@ -1560,8 +1713,8 @@ textarea {
       var(--toggle-w) - (var(--toggle-pad) * 2) - var(--knob-size)
     );
     width: var(--toggle-w);
-    height: 26px;
-    background: #d1d5db;
+    height: var(--toggle-h);
+    background: #bfbfbf;
     border-radius: 999px;
     position: relative;
     cursor: pointer;
@@ -1571,7 +1724,7 @@ textarea {
     display: inline-block;
     flex: 0 0 auto;
     margin-left: 0;
-    overflow: hidden;
+    overflow: visible;
     isolation: isolate;
     /* `paint` no toggle cortaria o glow (box-shadow) com overflow hidden; o knob já tem `contain: paint` */
     contain: layout;
@@ -1580,14 +1733,31 @@ textarea {
   /* estado ativo */
   .block-toggles--inline .toggle.active {
     background: #4f46e5;
+    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
     filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
+  }
+
+  .block-toggles--inline .toggle.toggle--pulse {
+    animation: togglePulse 1.5s ease-out;
+  }
+
+  @keyframes togglePulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--toggle-pulse-color);
+    }
+    45% {
+      box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
   }
 
   /* knob (efeito “gota / líquido” — @keyframes) */
   .block-toggles--inline .toggle.toggle--liquid::after {
     content: '';
     position: absolute;
-    top: var(--toggle-pad);
+    top: calc((var(--toggle-h) - var(--knob-size)) / 2);
     left: var(--toggle-pad);
     width: var(--knob-size);
     height: var(--knob-size);
@@ -1614,13 +1784,13 @@ textarea {
   .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed.active::after {
     /* OFF → ON: inicia ancorado no lado interno (direita) e estica/anda para a direita */
     transform-origin: right center;
-    animation: toggleLiquidOn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: toggleLiquidOn 0.52s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
   }
 
   .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed:not(.active)::after {
     /* ON → OFF: inicia ancorado no lado interno (esquerda) e estica/anda para a esquerda */
     transform-origin: left center;
-    animation: toggleLiquidOff 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: toggleLiquidOff 0.52s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
   }
 
   @keyframes toggleLiquidOn {
@@ -1631,12 +1801,12 @@ textarea {
 
     30% {
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      transform: translate3d(0, 0, 0) scaleX(1.3) scaleY(0.95);
+      transform: translate3d(0, 0, 0) scaleX(1.1) scaleY(0.985);
     }
 
     60% {
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-      transform: translate3d(calc(var(--knob-x-end) - 0.5px), 0, 0) scaleX(1.12) scaleY(0.97);
+      transform: translate3d(calc(var(--knob-x-end) - 0.5px), 0, 0) scaleX(1.03) scaleY(0.995);
     }
 
     100% {
@@ -1653,12 +1823,12 @@ textarea {
 
     30% {
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1.3) scaleY(0.95);
+      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1.1) scaleY(0.985);
     }
 
     60% {
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-      transform: translate3d(1px, 0, 0) scaleX(1.12) scaleY(0.97);
+      transform: translate3d(1px, 0, 0) scaleX(1.03) scaleY(0.995);
     }
 
     100% {
@@ -1737,6 +1907,16 @@ textarea {
     .servico-row__field--duracao {
       flex: 0 0 5.9rem;
       min-width: 5.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      > span {
+        font-size: var(--drawer-label-size);
+        line-height: var(--drawer-label-line-height);
+        font-weight: var(--drawer-label-weight);
+        color: var(--drawer-label-strong);
+      }
     }
 
     .servico-row__actions--drawer {
@@ -1873,7 +2053,7 @@ textarea {
   }
 
   .servico-row--drawer.servico-row--layout-produto-drawer
-    > label.servico-row__field--produto-catalogo
+    > .servico-row__field--produto-catalogo
     app-saas-select {
     display: block;
     width: 100%;
@@ -1909,7 +2089,7 @@ textarea {
     grid-template-columns: minmax(0, 30rem) max-content;
     grid-template-rows: auto auto;
     column-gap: 2.5rem;
-    row-gap: 0.35rem;
+    row-gap: 0.4rem;
     margin-top: 0.45rem;
     width: 100%;
   }
@@ -1919,6 +2099,9 @@ textarea {
     grid-row: 1 / span 2;
     min-width: 0;
     max-width: 30rem;
+    display: grid;
+    grid-template-rows: auto auto;
+    row-gap: 0.4rem;
 
     app-agenda-repetir-cascade {
       display: block;
@@ -1926,25 +2109,15 @@ textarea {
       max-width: 100%;
     }
 
-    app-agenda-repetir-cascade .arpc {
-      /* “Quebra” o layout interno para posicionar label/field no grid externo. */
-      display: contents;
-    }
-
     app-agenda-repetir-cascade .arpc__label {
-      margin: 0;
       line-height: 1.25;
       align-self: flex-start;
-      grid-column: 1;
-      grid-row: 1;
     }
 
     app-agenda-repetir-cascade .arpc__field {
       min-width: 0;
       max-width: 100%;
       width: 100%;
-      grid-column: 1;
-      grid-row: 2;
     }
   }
 
@@ -2031,18 +2204,22 @@ textarea {
   }
 
   .itens-atendimento--modal .arpc-proximos-saved {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
     margin-top: 0.85rem;
-    padding-top: 0.65rem;
-    border-top: 1px solid #e7e5e4;
+    padding-top: 0;
+    border-top: none;
   }
 
   .itens-atendimento--modal .arpc-proximos-saved__title {
-    margin: 0 0 0.45rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--color-muted);
+    margin: 0;
+    font-size: var(--drawer-label-size);
+    font-weight: var(--drawer-label-weight);
+    line-height: var(--drawer-label-line-height);
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--drawer-label-strong);
   }
 
   .itens-atendimento--modal .arpc-proximos-saved__chips {

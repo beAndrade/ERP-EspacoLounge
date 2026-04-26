@@ -17,24 +17,28 @@
   align-items: center;
   gap: 1.1rem;
   width: 100%;
+  padding-top: 2.5rem;
   padding-bottom: 0.5rem;
 }
 
 .client-sidebar-drawer__avatar {
-  width: 5.5rem;
-  height: 5.5rem;
+  width: 118px;
+  height: 118px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f4f2f0;
+  background: #fafafa;
   color: #7c6d8c;
   flex-shrink: 0;
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .client-sidebar-drawer__avatar--empty {
   color: #a8a0b0;
-  background: #f4f2f0;
+  background: #fafafa;
 }
 
 .client-sidebar-drawer__iniciais {
@@ -49,6 +53,12 @@
   align-items: center;
   justify-content: center;
   line-height: 0;
+}
+
+.client-sidebar-drawer__user-svg {
+  width: 4rem;
+  height: 4rem;
+  display: block;
 }
 
 .client-sidebar-drawer {
@@ -80,10 +90,61 @@
   overflow-wrap: break-word;
 }
 
+.client-sidebar-drawer__cliente-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.client-sidebar-drawer__badge-novo {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 45.72px;
+  height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: #7d56c4;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  user-select: none;
+  animation: client-sidebar-novo-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes client-sidebar-novo-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(125, 86, 196, 0.55);
+    transform: translateZ(0) scale(1);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(125, 86, 196, 0);
+    transform: translateZ(0) scale(1.02);
+  }
+}
+
+.client-sidebar-drawer__nome-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  width: 100%;
+  cursor: default;
+}
+
 .client-sidebar-drawer__sub {
   margin: 0 0 0.25rem;
   font-size: 0.85rem;
   color: var(--color-muted);
+  text-align: center;
 }
 
 .sidebar-block {

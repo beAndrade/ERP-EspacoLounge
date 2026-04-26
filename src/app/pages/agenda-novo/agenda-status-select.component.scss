@@ -14,15 +14,15 @@
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  min-height: 2.5rem;
-  padding: 0.4rem 0.55rem 0.4rem 0.5rem;
+  min-height: var(--touch-min, 2.75rem);
+  padding: 0.5rem 0.75rem;
   box-sizing: border-box;
-  border: 1px solid #2563eb;
-  border-radius: 8px;
+  border: 1px solid #e7e5e4;
+  border-radius: var(--radius, 8px);
   background: #fff;
   font: inherit;
-  font-size: 0.9rem;
-  color: #a8a29e;
+  font-size: var(--drawer-field-font-size, 15px);
+  color: var(--color-text, #1c1917);
   cursor: pointer;
   text-align: left;
   transition:
@@ -30,12 +30,14 @@
     box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+    border-color: var(--el-drawer-field-border-hover, #d6d3d1);
+    box-shadow: none;
   }
 
   &:disabled {
     opacity: 0.65;
     cursor: not-allowed;
+    background: #fafaf9;
   }
 }
 
@@ -55,7 +57,7 @@
 .agenda-status-select__label {
   flex: 1;
   min-width: 0;
-  color: #a8a29e;
+  color: var(--color-text, #1c1917);
   font-weight: 500;
 }
 
@@ -63,8 +65,8 @@
   flex: 0 0 auto;
   width: 0.45rem;
   height: 0.45rem;
-  border-right: 2px solid #a8a29e;
-  border-bottom: 2px solid #a8a29e;
+  border-right: 2px solid #78716c;
+  border-bottom: 2px solid #78716c;
   transform: rotate(45deg) translateY(-2px);
   margin-left: 0.15rem;
   opacity: 0.85;
