@@ -281,8 +281,8 @@
     minmax(16.25rem, 1.78fr)
     minmax(9.5rem, 0.86fr)
     minmax(6.5rem, 0.44fr)
-    minmax(9.25rem, 0.82fr)
-    minmax(9.25rem, 0.82fr);
+    minmax(10rem, 0.92fr)
+    minmax(8.35rem, 0.72fr);
   min-width: 0;
 
   .block-context__field--cliente-modal,
@@ -365,8 +365,8 @@
       minmax(15rem, 1.72fr)
       minmax(8.9rem, 0.8fr)
       minmax(6.25rem, 0.42fr)
-      minmax(8.75rem, 0.8fr)
-      minmax(8.75rem, 0.8fr);
+      minmax(9.35rem, 0.88fr)
+      minmax(8rem, 0.72fr);
   }
 
   @media (max-width: 960px) {
@@ -1968,7 +1968,8 @@ textarea {
     align-self: stretch;
     margin-top: auto;
     padding-top: 0.25rem;
-    padding-bottom: 0;
+    /** Mesmo respiro inferior em novo e em editar (spacer vs margin-top: auto). */
+    padding-bottom: 0.3rem;
     margin-bottom: 0;
     background: #fff;
     position: relative;
