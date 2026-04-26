@@ -45,8 +45,7 @@
     text-transform: uppercase;
   }
 
-  .sidebar-block__titulo--info,
-  h3#sidebar-info-titulo {
+  .sidebar-block__titulo--info {
     font-size: 20px;
     font-weight: 600;
     color: #000000bf;
@@ -306,8 +305,12 @@
   color: var(--color-muted);
 }
 
-/** Sobrescreve o bloco base (vem depois) para o título de informações no drawer. */
-#sidebar-info-titulo.sidebar-block__titulo--info {
+/**
+ * Títulos de bloco (Informações, Pacotes, Assinaturas) — alinhado ao hub do drawer, sem uppercase.
+ */
+#sidebar-info-titulo.sidebar-block__titulo--info,
+#sidebar-pacotes-titulo.sidebar-block__titulo--info,
+#sidebar-assinaturas-titulo.sidebar-block__titulo--info {
   font-size: 20px;
   font-weight: 600;
   color: #000000bf;
@@ -315,7 +318,7 @@
   text-transform: none;
 }
 
-.sidebar-block--informacoes .sidebar-block__titulo--info {
+.sidebar-block .sidebar-block__titulo--info {
   margin-bottom: 0.5rem;
 }
 
@@ -333,30 +336,56 @@
 }
 
 .sidebar-block__linklike {
-  display: block;
+  display: flex;
   width: 100%;
   margin: 0;
-  padding: 0;
+  padding: 0.1rem 0;
   border: none;
   background: none;
   text-align: left;
   font: inherit;
   font-size: var(--drawer-field-font-size, 0.88rem);
   line-height: 1.4;
-  color: #3b4ce6;
+  align-items: center;
+  gap: 0.4rem;
+  color: #4f46e5;
   text-decoration: none;
   cursor: pointer;
   border-radius: 3px;
 }
 
+.sidebar-block__link-ico {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f46e5;
+  line-height: 0;
+}
+
+.sidebar-block__link-svg {
+  display: block;
+}
+
+.sidebar-block__link-txt {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
 .sidebar-block__linklike:hover,
 .sidebar-block__linklike:focus-visible {
   text-decoration: underline;
-  color: #2533b8;
+  color: #3730a3;
+}
+
+.sidebar-block__linklike:hover .sidebar-block__link-ico,
+.sidebar-block__linklike:focus-visible .sidebar-block__link-ico {
+  color: #3730a3;
 }
 
 .sidebar-block__linklike:focus-visible {
-  outline: 2px solid color-mix(in srgb, #3b4ce6 45%, transparent);
+  outline: 2px solid color-mix(in srgb, #4f46e5 40%, transparent);
   outline-offset: 1px;
 }
 

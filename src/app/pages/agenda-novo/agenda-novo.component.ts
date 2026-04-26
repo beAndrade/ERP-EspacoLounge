@@ -236,6 +236,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return this.modoModal;
   }
 
+  /** Conteúdo extra na edição: espaçador leva Observações junto do footer, como no novo. */
+  @HostBinding('class.agenda-novo--edicao')
+  get isEdicaoNoDrawer(): boolean {
+    return this.modoModal && !!this.idAtendimentoEmEdicao?.trim();
+  }
+
   /** Quando true, esconde navegação global do formulário (uso dentro de modal). */
   @Input() modoModal = false;
   /** Pré-preenche data, primeira linha de serviço e slot (hora local). */
