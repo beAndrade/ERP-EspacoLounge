@@ -30,11 +30,20 @@
     font-weight: 400;
   }
 
-  .sidebar-block__titulo {
+  .sidebar-block__titulo:not(.sidebar-block__titulo--info) {
     font-size: 0.7rem;
     font-weight: 500;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+  }
+
+  .sidebar-block__titulo--info,
+  h3#sidebar-info-titulo {
+    font-size: 20px;
+    font-weight: 600;
+    color: #000000bf;
+    letter-spacing: normal;
+    text-transform: none;
   }
 
   .sidebar-block__lista,
@@ -138,34 +147,49 @@
 }
 
 .client-sidebar-drawer__badge-novo {
+  --badge-novo: #7d56c4;
   box-sizing: border-box;
+  position: relative;
+  z-index: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 45.72px;
+  min-width: 45.72px;
   height: 22px;
   padding: 0 0.45rem;
   border-radius: 999px;
-  background: #7d56c4;
+  background: var(--badge-novo);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.01em;
   user-select: none;
-  animation: client-sidebar-novo-pulse 1.8s ease-in-out infinite;
+  isolation: isolate;
 }
 
-@keyframes client-sidebar-novo-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(125, 86, 196, 0.55);
-    transform: translateZ(0) scale(1);
+/**
+ * Anel que expande para fora e recomeça (sem yoyo). O texto fica no span — sem `transform` aqui.
+ */
+.client-sidebar-drawer__badge-novo::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(125, 86, 196, 0.5);
+  animation: client-sidebar-novo-pulse-out 1.8s ease-out infinite;
+}
+
+/** Cor fixa no keyframe (evita `var`/`color-mix` em animação). Só a sombra muda. */
+@keyframes client-sidebar-novo-pulse-out {
+  0% {
+    box-shadow: 0 0 0 0 rgba(125, 86, 196, 0.5);
   }
 
-  50% {
-    box-shadow: 0 0 0 10px rgba(125, 86, 196, 0);
-    transform: translateZ(0) scale(1.02);
+  100% {
+    box-shadow: 0 0 0 16px rgba(125, 86, 196, 0);
   }
 }
 
@@ -180,7 +204,7 @@
 }
 
 .client-sidebar-drawer__sub {
-  margin: 0 0 0.25rem;
+  margin: 0;
   font-size: 0.85rem;
   color: var(--color-muted);
   text-align: center;
@@ -201,6 +225,60 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-muted);
+}
+
+/** Sobrescreve o bloco base (vem depois) para o título de informações no drawer. */
+#sidebar-info-titulo.sidebar-block__titulo--info {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000bf;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.sidebar-block--informacoes .sidebar-block__titulo--info {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-block__link-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.sidebar-block__link-list li {
+  margin: 0;
+}
+
+.sidebar-block__linklike {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-size: var(--drawer-field-font-size, 0.88rem);
+  line-height: 1.4;
+  color: #3b4ce6;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.sidebar-block__linklike:hover,
+.sidebar-block__linklike:focus-visible {
+  text-decoration: underline;
+  color: #2533b8;
+}
+
+.sidebar-block__linklike:focus-visible {
+  outline: 2px solid color-mix(in srgb, #3b4ce6 45%, transparent);
+  outline-offset: 1px;
 }
 
 .sidebar-block__lista {

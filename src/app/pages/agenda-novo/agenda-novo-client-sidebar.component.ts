@@ -98,7 +98,7 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
 
   telefoneExibicao(): string {
     const t = (this.cliente?.telefone ?? '').trim();
-    return t || '—';
+    return t || 'Sem telefone';
   }
 
   get temClienteSelecionado(): boolean {

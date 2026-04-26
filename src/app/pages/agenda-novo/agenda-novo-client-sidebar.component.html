@@ -43,6 +43,7 @@
       >
         {{ cliente?.nome?.trim() || '—' }}
       </button>
+      <p class="client-sidebar-drawer__sub">{{ telefoneExibicao() }}</p>
       @if (mostrarBadgeClienteNovo) {
         <span
           class="client-sidebar-drawer__badge-novo"
@@ -50,41 +51,47 @@
           >Novo</span>
       }
     </div>
-    <p class="client-sidebar-drawer__sub">{{ telefoneExibicao() }}</p>
   }
 </div>
 
 @if (temClienteSelecionado) {
   <div class="client-sidebar-drawer__dados" aria-live="polite">
     <section
-      class="sidebar-block"
+      class="sidebar-block sidebar-block--informacoes"
       aria-labelledby="sidebar-info-titulo"
     >
-      <h3 class="sidebar-block__titulo" id="sidebar-info-titulo">
-        Informações
+      <h3 class="sidebar-block__titulo sidebar-block__titulo--info" id="sidebar-info-titulo">
+        INFORMAÇÕES
       </h3>
-      <ul class="sidebar-block__lista">
+      <ul class="sidebar-block__link-list" aria-label="Resumo do cliente (links em breve)">
         <li>
-          Aniversário:
-          <span class="muted">não informado</span>
+          <button type="button" class="sidebar-block__linklike">
+            Aniversário não definido
+          </button>
         </li>
-        <li>Créditos / saldo: <span class="muted">em breve</span></li>
-        <li>Status: <span class="muted">—</span></li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">R$ 0,00 em cashback</button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">R$ 0,00 em crédito</button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">0 comandas em aberto</button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">0 pagamentos em aberto</button>
+        </li>
       </ul>
     </section>
 
-    <section
-      class="sidebar-block"
-      aria-labelledby="sidebar-notas-titulo"
-    >
-      <h3 class="sidebar-block__titulo" id="sidebar-notas-titulo">Anotações</h3>
-      @if (cliente?.observacoes?.trim()) {
-        <p class="sidebar-block__notas">
-          {{ cliente?.observacoes?.trim() }}
-        </p>
-      } @else {
-        <p class="sidebar-block__placeholder">Nenhuma anotação no cadastro.</p>
-      }
+    <section class="sidebar-block" aria-labelledby="sidebar-pacotes-titulo">
+      <h3 class="sidebar-block__titulo" id="sidebar-pacotes-titulo">Pacotes</h3>
+      <p class="sidebar-block__placeholder">Não há pacotes disponíveis</p>
+    </section>
+
+    <section class="sidebar-block" aria-labelledby="sidebar-assinaturas-titulo">
+      <h3 class="sidebar-block__titulo" id="sidebar-assinaturas-titulo">Assinaturas</h3>
+      <p class="sidebar-block__placeholder">Não há assinaturas disponíveis</p>
     </section>
   </div>
 }
