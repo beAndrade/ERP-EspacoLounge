@@ -46,9 +46,16 @@
       <p class="client-sidebar-drawer__sub">{{ telefoneExibicao() }}</p>
       @if (mostrarBadgeClienteNovo) {
         <span
-          class="client-sidebar-drawer__badge-novo"
-          aria-label="Cliente sem comandas nem agendamentos gravados"
-          >Novo</span>
+          class="client-sidebar-drawer__badge-novo-wrap"
+          tabindex="0"
+          aria-label="É um cliente sem agendamentos ou comandas, trate-o muito bem."
+        >
+          <span class="client-sidebar-drawer__badge-novo" aria-hidden="true">Novo</span>
+          <span class="client-sidebar-drawer__badge-novo-tooltip" aria-hidden="true">
+            É um cliente sem agendamentos ou comandas, trate-o muito bem
+            <span class="client-sidebar-drawer__badge-novo-tooltip-emoji" aria-hidden="true">😁</span>
+          </span>
+        </span>
       }
     </div>
   }
