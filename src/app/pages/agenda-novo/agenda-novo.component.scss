@@ -1696,6 +1696,19 @@ textarea {
     color: var(--drawer-label-strong);
   }
 
+  /**
+   * Rótulos em `<span>` sem `<label>` (ex.: cabeçalho do `block-context`, “Observações” em modal).
+   */
+  .block-context--modal .block-context__field > span:first-of-type,
+  .data-field.block-context__field > span:first-of-type,
+  .block-obs > div > span:first-of-type,
+  .block-hora--no-time-field > div > span:first-of-type {
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-weight);
+    color: var(--drawer-label-strong);
+  }
+
   /** Lembrete: respiro horizontal para o ripple/sombra não ser cortado pelo scroll (overflow-x). */
   .block-toggles--inline {
     padding-left: 0.65rem;
@@ -2183,11 +2196,10 @@ textarea {
     padding: 0.5rem 0.75rem;
     padding-right: 2.5rem;
     border-radius: var(--radius, 8px);
-    border: 1px solid #e7e5e4;
+    border: 1px solid var(--drawer-field-border, #e7e5e4);
     background: #fff;
     color: var(--color-text, #1c1917);
-    font-size: 15px;
-    font-weight: 500;
+    font: inherit;
     box-shadow: none;
     transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
   }
