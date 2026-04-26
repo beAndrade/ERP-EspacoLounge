@@ -1949,12 +1949,15 @@ textarea {
     box-sizing: border-box;
   }
 
+  /**
+   * Observações logo acima do footer (ordem no fluxo); sem `margin-top: auto`
+   * para não “flutuar” a meio do scroll.
+   */
   .form-shell__flow--modal > .block-obs {
-    margin-top: auto;
     flex-shrink: 0;
-    padding-top: 0.75rem;
-    padding-bottom: 0.35rem;
-    margin-bottom: 0.75rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0;
     background: #fff;
     position: relative;
     z-index: 1;
@@ -1971,8 +1974,17 @@ textarea {
     gap: 0.4rem 0.55rem;
   }
 
+  /**
+   * Mega / Pacote: células Etapa + Profissional; coluna de ações alinhada à base
+   * dos selects (igual a `.servico-row--drawer`).
+   */
   .etapa-row--etapas-modal {
+    align-items: end;
     gap: 0.4rem 0.55rem;
+  }
+
+  .etapa-row--etapas-modal .etapa-row__actions--etapas {
+    align-self: end;
   }
 
   /**
