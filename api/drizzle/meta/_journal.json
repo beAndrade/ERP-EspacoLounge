@@ -134,6 +134,13 @@
       "when": 1775697930000,
       "tag": "0018_profissionais_ativo",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1775697931000,
+      "tag": "0019_atendimentos_agenda_status_cor",
+      "breakpoints": true
     }
   ]
 }

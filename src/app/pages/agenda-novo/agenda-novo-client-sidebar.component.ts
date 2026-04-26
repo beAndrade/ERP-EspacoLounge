@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl } from '@angular/forms';
 import { Cliente } from '../../core/models/api.models';
 import {
   SaasSelectComponent,
@@ -9,7 +9,7 @@ import {
 @Component({
   selector: 'app-agenda-novo-client-sidebar',
   standalone: true,
-  imports: [ReactiveFormsModule, SaasSelectComponent],
+  imports: [SaasSelectComponent],
   templateUrl: './agenda-novo-client-sidebar.component.html',
   styleUrl: './agenda-novo-client-sidebar.component.scss',
 })

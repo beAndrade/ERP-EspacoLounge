@@ -49,15 +49,12 @@
   >
     <div class="form-shell" [class.form-shell--modal]="modoModal">
       @if (modoModal) {
-        <aside
-          class="form-shell__client form-shell__client--placeholder"
-          aria-label="Resumo do cliente"
-        >
-          <p class="form-shell__client-placeholder-text">
-            Resumo do cliente, contactos e histórico na agenda —
-            <strong>em breve</strong> (placeholder para implementação futura).
-          </p>
-        </aside>
+        <app-agenda-novo-client-sidebar
+          class="form-shell__client"
+          [clienteIdControl]="clienteIdControl"
+          [opcoesClientes]="opcoesClientesNomes()"
+          [cliente]="clienteSelecionado()"
+        />
       }
       <div
         class="form-shell__main"
@@ -417,7 +414,10 @@
             }
 
             @if (ctrl.get('itemTipo')?.value === 'Produto') {
-              <label class="servico-row__field">
+              <label
+                class="servico-row__field"
+                [class.servico-row__field--produto-catalogo]="modoModal"
+              >
                 <span>Produto</span>
                 <app-saas-select
                   [showFilter]="!modoModal"
@@ -450,16 +450,18 @@
                   />
                 </label>
               }
-              <label class="servico-row__field">
-                <span>Profissional</span>
-                <app-saas-select
-                  [showFilter]="!modoModal"
-                  formControlName="profissional"
-                  [options]="opcoesProfissionaisSelect()"
-                  [useNumericOutput]="true"
-                  placeholder="Selecione…"
-                />
-              </label>
+              @if (!modoModal) {
+                <label class="servico-row__field">
+                  <span>Profissional</span>
+                  <app-saas-select
+                    [showFilter]="!modoModal"
+                    formControlName="profissional"
+                    [options]="opcoesProfissionaisSelect()"
+                    [useNumericOutput]="true"
+                    placeholder="Selecione…"
+                  />
+                </label>
+              }
             }
 
             @if (ctrl.get('itemTipo')?.value === 'Mega') {
@@ -1070,37 +1072,66 @@
               <span class="toggle-switch__label">Enviar lembrete</span>
             </label>
           </div>
-          <app-agenda-repetir-cascade
-            [dataReferencia]="form.get('data')?.value ?? null"
-            [(value)]="repetirAgendamento"
-          />
-          @if (idAtendimentoEmEdicao?.trim()) {
-            <div class="arpc-proximos">
-              <label class="arpc-proximos__toggle">
-                <input
-                  type="checkbox"
-                  [checked]="aplicarAlteracoesProximos"
-                  (change)="aplicarAlteracoesProximos = $any($event.target).checked"
-                />
-                <span>Aplicar alterações para os próximos</span>
-              </label>
-              @if (proximasOcorrenciasDatas().length) {
-                <div class="arpc-proximos__list" role="group" aria-label="Próximos agendamentos">
-                  <span class="arpc-proximos__label">Próximos agendamentos</span>
-                  <div class="arpc-proximos__btns">
-                    @for (d of proximasOcorrenciasDatas(); track d) {
-                      <button
-                        type="button"
-                        class="arpc-proximos__btn"
-                        (click)="pularParaDataRepeticao(d)"
-                      >
-                        {{ formatarDataCurtaPt(d) }}
-                      </button>
-                    }
-                  </div>
-                </div>
-              }
+          <div class="arpc-modal-row">
+            <div class="arpc-modal-row__cascade">
+              <app-agenda-repetir-cascade
+                [dataReferencia]="form.get('data')?.value ?? null"
+                [(value)]="repetirAgendamento"
+              />
             </div>
+            @if (idAtendimentoEmEdicao?.trim()) {
+              <div
+                class="arpc-modal-row__toggle-wrap block-toggles block-toggles--inline"
+                role="group"
+                aria-label="Propagar alterações"
+              >
+                <label class="toggle-switch toggle-switch--inline">
+                  <input
+                    type="checkbox"
+                    class="toggle-switch__input"
+                    [checked]="aplicarAlteracoesProximos"
+                    (change)="
+                      aplicarAlteracoesProximos = $any($event.target).checked
+                    "
+                  />
+                  <span
+                    class="toggle toggle--liquid"
+                    [class.active]="aplicarAlteracoesProximos"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="toggle-switch__label"
+                    >Aplicar alterações para os próximos</span>
+                </label>
+              </div>
+            }
+          </div>
+          @if (mostrarSecaoProximosAgendamentosSalvos()) {
+            <section
+              class="arpc-proximos-saved"
+              aria-label="Próximos agendamentos da série gravada"
+            >
+              <h3 class="arpc-proximos-saved__title">Próximos agendamentos</h3>
+              <div class="arpc-proximos-saved__chips">
+                @for (chip of chipsProximosAgendamentosSalvos(); track chip.ymd) {
+                  <button
+                    type="button"
+                    class="arpc-proximos-saved__chip"
+                    [class.arpc-proximos-saved__chip--ancla]="chip.ancla"
+                    [class.arpc-proximos-saved__chip--ativo]="
+                      chipAtivoProximoSerieSalva(chip)
+                    "
+                    [attr.aria-label]="
+                      chip.ancla
+                        ? 'Data deste agendamento'
+                        : 'Ir para ' + formatarDataBadgePt(chip.ymd)
+                    "
+                    (click)="onChipProximoSalvoClick(chip)"
+                  >
+                    {{ formatarDataBadgePt(chip.ymd) }}
+                  </button>
+                }
+              </div>
+            </section>
           }
         }
       </div>
@@ -1166,7 +1197,7 @@
         </div>
         @if (modoModal) {
           <footer class="agenda-modal__footer" aria-label="Ações do agendamento">
-            <div class="agenda-modal__footer-left">
+            <div class="agenda-modal__footer-actions">
               <button
                 type="button"
                 class="btn btn-footer btn-footer--ghost"
@@ -1217,21 +1248,21 @@
                   }
                 </div>
               }
+              <button
+                type="submit"
+                class="btn btn-footer primary agenda-modal__footer-salvar"
+                [disabled]="
+                  salvando ||
+                  excluindo ||
+                  form.invalid ||
+                  clientes.length === 0 ||
+                  profissionaisObrigatoriosSemLista ||
+                  salvarBloqueadoPorCatalogo()
+                "
+              >
+                {{ salvando ? 'Salvando…' : 'Salvar' }}
+              </button>
             </div>
-            <button
-              type="submit"
-              class="btn btn-footer primary agenda-modal__footer-salvar"
-              [disabled]="
-                salvando ||
-                excluindo ||
-                form.invalid ||
-                clientes.length === 0 ||
-                profissionaisObrigatoriosSemLista ||
-                salvarBloqueadoPorCatalogo()
-              "
-            >
-              {{ salvando ? 'Salvando…' : 'Salvar' }}
-            </button>
           </footer>
         }
       </div>

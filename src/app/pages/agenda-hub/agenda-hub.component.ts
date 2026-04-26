@@ -4,7 +4,6 @@ import {
   LOCALE_ID,
   OnDestroy,
   OnInit,
-  ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -23,7 +22,6 @@ import {
   corHexAgendaPorStatus,
   normalizarAgendaStatusId,
 } from '../../core/utils/agenda-status-card';
-import { AtendimentosComponent } from '../atendimentos/atendimentos.component';
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 
 type CelulaCalendario = { dia: number | null; ymd: string | null };
@@ -60,15 +58,13 @@ type AgendaHubBloco = {
 @Component({
   selector: 'app-agenda-hub',
   standalone: true,
-  imports: [FormsModule, AtendimentosComponent, AgendaNovoComponent],
+  imports: [FormsModule, AgendaNovoComponent],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda-hub.component.html',
   styleUrl: './agenda-hub.component.scss',
 })
 export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
-
-  @ViewChild('rececao') private rececao?: AtendimentosComponent;
 
   mesRef = this.inicioDoMes(new Date());
   diaYmd = toYmd(new Date());
@@ -92,9 +88,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     /** Edição: abre o drawer já com este pedido carregado. */
     id_atendimento?: string;
   } | null = null;
-
-  /** Incrementado após salvar no modal para forçar reload do painel receção. */
-  tickRececao = 0;
 
   /**
    * Quando true, o drawer e o overlay aplicam o estado “aberto” (animação
@@ -383,13 +376,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   onSalvoModal(): void {
     this.fecharModal();
-    this.tickRececao += 1;
-    this.carregarMes();
-    this.carregarDia();
-  }
-
-  /** Receção alterou dados (ex.: exclusão) — atualiza grelha e mini-calendário. */
-  onAgendaDadosAlteradosRececao(): void {
     this.carregarMes();
     this.carregarDia();
   }

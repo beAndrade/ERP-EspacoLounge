@@ -56,6 +56,11 @@
     display: block;
     width: 100%;
   }
+
+  &:has(app-saas-select.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
 }
 
 .client-sidebar-drawer__dados {

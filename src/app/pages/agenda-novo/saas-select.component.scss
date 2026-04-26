@@ -75,30 +75,39 @@
   display: block;
 }
 
-.saas-select__panel {
+/** Sombra no wrapper: o interior mantém `overflow: hidden` sem recortar a sombra. */
+.saas-select__panel-elev {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
   z-index: 40;
-  background: #fff;
   border-radius: var(--radius, 8px);
-  border: 1px solid #e7e5e4;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  animation: saasPanelIn 0.2s ease forwards;
+  box-shadow: 4px 10px 24px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.99);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s;
+  will-change: transform, opacity;
 }
 
-@keyframes saasPanelIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
+.saas-select__panel-elev--open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.saas-select__panel {
+  position: relative;
+  background: #fff;
+  border-radius: inherit;
+  border: 1px solid #e7e5e4;
+  overflow: hidden;
 }
 
 .saas-select__filter {
@@ -121,6 +130,10 @@
   max-height: 14rem;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+
+  &--com-criar {
+    max-height: 12.5rem;
+  }
 }
 
 .saas-select__option {
@@ -151,6 +164,52 @@
   color: var(--color-muted, #78716c);
 }
 
+.saas-select__criar-wrap {
+  border-top: 1px solid #e7e5e4;
+  background: #fff;
+}
+
+.saas-select__criar {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.65rem 0.75rem 0.75rem;
+  border: none;
+  border-radius: 0 0 var(--radius, 8px) var(--radius, 8px);
+  background: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+  }
+}
+
+.saas-select__criar-ico {
+  display: block;
+  flex-shrink: 0;
+}
+
 .saas-select--disabled .saas-select__trigger {
   pointer-events: none;
+}
+
+/** Busca na coluna esquerda do modal. */
+:host.saas-select-host--layout-sidebar .saas-select__trigger {
+  border-color: #e7e5e4;
+  background: #fafaf9;
 }

@@ -147,16 +147,6 @@
   </section>
 </div>
 
-<section class="hub-rececao" aria-label="Receção do dia">
-  <app-atendimentos
-    #rececao
-    [dataAgenda]="diaYmd"
-    [modoAgendaHub]="true"
-    [reloadKey]="tickRececao"
-    (agendaDadosAlterados)="onAgendaDadosAlteradosRececao()"
-  />
-</section>
-
 @if (modalAberto && modalContexto) {
   <div
     class="overlay"

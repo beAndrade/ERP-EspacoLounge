@@ -217,4 +217,28 @@ BEGIN
   END IF;
 END $$;
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos' AND c.column_name = 'agenda_status'
+  ) THEN
+    ALTER TABLE "atendimentos" ADD COLUMN "agenda_status" text;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos' AND c.column_name = 'agenda_cor'
+  ) THEN
+    ALTER TABLE "atendimentos" ADD COLUMN "agenda_cor" text;
+  END IF;
+END $$;
+`));
 }

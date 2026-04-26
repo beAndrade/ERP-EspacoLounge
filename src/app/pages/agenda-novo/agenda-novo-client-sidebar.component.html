@@ -27,9 +27,12 @@
   </div>
 
   <app-saas-select
-    [formControl]="clienteIdControl"
+    layout="sidebar"
+    [bindToControl]="clienteIdControl"
     [options]="opcoesClientes"
     placeholder="Busque pelo cliente"
+    [showFilter]="true"
+    [showCriarCliente]="false"
   />
 </div>
 

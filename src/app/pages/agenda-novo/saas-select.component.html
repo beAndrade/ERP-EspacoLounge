@@ -49,26 +49,38 @@
     </span>
   </button>
 
-  @if (panelOpen) {
+  <div
+    class="saas-select__panel-elev"
+    [class.saas-select__panel-elev--open]="panelOpen"
+    [attr.aria-hidden]="!panelOpen"
+  >
     <div class="saas-select__panel" role="listbox">
-      <div class="saas-select__filter">
-        <input
-          type="search"
-          class="saas-select__filter-input"
-          [value]="filterText"
-          (input)="onFilterInput($event)"
-          (click)="$event.stopPropagation()"
-          placeholder="Pesquisar…"
-          autocomplete="off"
-        />
-      </div>
-      <div class="saas-select__list" role="presentation">
+      @if (showFilter) {
+        <div class="saas-select__filter">
+          <input
+            type="search"
+            class="saas-select__filter-input"
+            [value]="filterText"
+            (input)="onFilterInput($event)"
+            (click)="$event.stopPropagation()"
+            [tabindex]="panelOpen ? 0 : -1"
+            placeholder="Pesquisar…"
+            autocomplete="off"
+          />
+        </div>
+      }
+      <div
+        class="saas-select__list"
+        [class.saas-select__list--com-criar]="showCriarCliente"
+        role="presentation"
+      >
         @for (opt of filteredOptions; track opt.value) {
           <button
             type="button"
             class="saas-select__option"
             role="option"
             [class.saas-select__option--active]="opt.value === selectedValue"
+            [tabindex]="panelOpen ? 0 : -1"
             (click)="choose(opt, $event)"
           >
             {{ opt.label }}
@@ -78,6 +90,33 @@
           <div class="saas-select__empty">Sem resultados</div>
         }
       </div>
+      @if (showCriarCliente) {
+        <div class="saas-select__criar-wrap">
+          <button
+            type="button"
+            class="saas-select__criar"
+            [tabindex]="panelOpen ? 0 : -1"
+            (click)="onCriarClienteClick($event)"
+          >
+            <svg
+              class="saas-select__criar-ico"
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Criar cliente
+          </button>
+        </div>
+      }
     </div>
-  }
+  </div>
 </div>
