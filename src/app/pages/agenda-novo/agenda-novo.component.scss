@@ -1981,10 +1981,10 @@ textarea {
   }
 
   /**
-   * Observações o mais junto possível do footer fixo (menos vazio entre scroll e ações).
+   * Respiro entre Observações e barra de ações (footer é irmão do flow no `form-shell__main`).
    */
   .agenda-modal__footer {
-    margin-top: 0.2rem;
+    margin-top: 1rem;
     padding-top: 0.4rem;
     padding-bottom: 0.2rem;
   }
