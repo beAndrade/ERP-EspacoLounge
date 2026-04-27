@@ -391,6 +391,33 @@
   width: 100%;
 }
 
+/**
+ * Faixa de hover full-bleed (bordas do painel / divisor) sem mover o hit-area do botão.
+ * `--drawer-pad-x` herda do `.app-drawer` no hub.
+ */
+.sidebar-block--informacoes .sidebar-block__link-list li {
+  position: relative;
+  isolation: isolate;
+}
+
+.sidebar-block--informacoes .sidebar-block__link-list li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--drawer-pad-x, 0px));
+  right: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color 0.12s ease;
+}
+
+.sidebar-block--informacoes .sidebar-block__link-list li:has(.sidebar-block__linklike:hover)::before,
+.sidebar-block--informacoes .sidebar-block__link-list li:has(.sidebar-block__linklike:focus-visible)::before {
+  background: #f3f4f6;
+}
+
 .sidebar-block__linklike {
   display: flex;
   width: 100%;
@@ -413,7 +440,11 @@
   cursor: pointer;
   border-radius: 0;
   box-sizing: border-box;
-  transition: background-color 0.12s ease;
+}
+
+.sidebar-block--informacoes .sidebar-block__linklike {
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar-block__link-ico {
@@ -438,7 +469,6 @@
 
 .sidebar-block__linklike:hover,
 .sidebar-block__linklike:focus-visible {
-  background: #f3f4f6;
   text-decoration: none;
   color: #4f46e5;
 }

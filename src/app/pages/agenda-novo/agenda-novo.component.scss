@@ -1845,6 +1845,10 @@ textarea {
     contain: layout;
   }
 
+  .block-toggles--inline .toggle.toggle--liquid:hover:not(.active) {
+    background: #8c8c8c;
+  }
+
   /* estado ativo */
   .block-toggles--inline .toggle.active {
     background: #4f46e5;
