@@ -1,4 +1,10 @@
-import { Component, inject, LOCALE_ID, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  inject,
+  LOCALE_ID,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   AtendimentoListaItem,
@@ -12,7 +18,10 @@ import {
   ordenarLinhasAtendimentoInPlace,
   toYmd,
 } from '../../core/utils/atendimento-display';
-import { AtendimentosComponent } from '../atendimentos/atendimentos.component';
+import {
+  corHexAgendaPorStatus,
+  normalizarAgendaStatusId,
+} from '../../core/utils/agenda-status-card';
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 
 type CelulaCalendario = { dia: number | null; ymd: string | null };
@@ -37,6 +46,9 @@ const AGENDA_SLOT_COUNT = GRID_RANGE / AGENDA_SLOT_MIN;
 /** Último slot de 30 min a começar na grelha (23:00). */
 const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
 
+/** Duração da animação do drawer (ms), alinhada ao CSS `transition`. */
+const DRAWER_ANIM_MS = 350;
+
 /** Um cartão na grelha = mesmo `id` + mesmo profissional (várias linhas = um bloco). */
 type AgendaHubBloco = {
   trackKey: string;
@@ -46,15 +58,13 @@ type AgendaHubBloco = {
 @Component({
   selector: 'app-agenda-hub',
   standalone: true,
-  imports: [FormsModule, AtendimentosComponent, AgendaNovoComponent],
+  imports: [FormsModule, AgendaNovoComponent],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda-hub.component.html',
   styleUrl: './agenda-hub.component.scss',
 })
-export class AgendaHubComponent implements OnInit {
+export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
-
-  @ViewChild('rececao') private rececao?: AtendimentosComponent;
 
   mesRef = this.inicioDoMes(new Date());
   diaYmd = toYmd(new Date());
@@ -73,11 +83,28 @@ export class AgendaHubComponent implements OnInit {
   modalContexto: {
     data: string;
     profissional_id: number;
-    hora: string;
+    /** Vazio = abrir só com data (e opcionalmente profissional). */
+    hora?: string;
+    /** Edição: abre o drawer já com este pedido carregado. */
+    id_atendimento?: string;
   } | null = null;
 
-  /** Incrementado após salvar no modal para forçar reload do painel receção. */
-  tickRececao = 0;
+  /**
+   * Quando true, o drawer e o overlay aplicam o estado “aberto” (animação
+   * `translateX(0)` / opacidade). Ao fechar passa a false primeiro e só depois
+   * desmonta o conteúdo após `DRAWER_ANIM_MS`.
+   */
+  drawerPanelOpen = false;
+
+  private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private bodyScrollPreDrawer = 0;
+  private pageScrollLockAtivo = false;
+
+  private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
+    if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+    ev.preventDefault();
+    this.fecharModal();
+  };
 
   ngOnInit(): void {
     this.slotsHoras = this.gerarSlots();
@@ -91,6 +118,14 @@ export class AgendaHubComponent implements OnInit {
     });
     this.carregarMes();
     this.carregarDia();
+  }
+
+  ngOnDestroy(): void {
+    if (this.drawerCloseTimer != null) {
+      clearTimeout(this.drawerCloseTimer);
+      this.drawerCloseTimer = null;
+    }
+    this.limparEfeitosDrawer();
   }
 
   profissionaisVisiveis(): ProfissionalListaItem[] {
@@ -183,8 +218,10 @@ export class AgendaHubComponent implements OnInit {
       data: this.diaYmd,
       profissional_id: profissionalId,
       hora,
+      id_atendimento: undefined,
     };
     this.modalAberto = true;
+    this.iniciarAberturaDrawer();
   }
 
   /** Abre o mesmo modal de novo atendimento, sem slot na grelha (hora no formulário). */
@@ -195,24 +232,150 @@ export class AgendaHubComponent implements OnInit {
       data: this.diaYmd,
       profissional_id: pid,
       hora: '',
+      id_atendimento: undefined,
     };
     this.modalAberto = true;
+    this.iniciarAberturaDrawer();
+  }
+
+  /** Abre o drawer em modo edição (sem saltar para a receção). */
+  abrirDrawerEdicaoBloco(b: AgendaHubBloco, e: Event): void {
+    e.stopPropagation();
+    const id = this.idAtendimentoBloco(b);
+    if (!id) return;
+    const l0 = b.linhas[0];
+    const profCol = Number(l0?.profissional_id ?? 0);
+    const profId =
+      profCol > 0
+        ? profCol
+        : this.profissionaisVisiveis()[0]?.id ??
+          this.profissionais[0]?.id ??
+          0;
+    const hora = this.horaBloco(b);
+    this.modalContexto = {
+      data: this.diaYmd,
+      profissional_id: profId,
+      hora: hora || undefined,
+      id_atendimento: id,
+    };
+    this.modalAberto = true;
+    this.iniciarAberturaDrawer();
+  }
+
+  /** Salta para outro dia/pedido mantendo o drawer (próximos agendamentos). */
+  onNavegarAgendamentoDrawer(ev: { data: string; id_atendimento: string }): void {
+    const ymd = String(ev.data || '').trim().slice(0, 10);
+    const idAt = String(ev.id_atendimento || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !idAt) return;
+    this.diaYmd = ymd;
+    const ref = new Date(
+      parseInt(ymd.slice(0, 4), 10),
+      parseInt(ymd.slice(5, 7), 10) - 1,
+      parseInt(ymd.slice(8, 10), 10),
+    );
+    this.mesRef = this.inicioDoMes(ref);
+    this.carregarMes();
+    this.carregarDia();
+    const prev = this.modalContexto;
+    this.modalContexto = {
+      data: ymd,
+      profissional_id: prev?.profissional_id ?? 0,
+      hora: prev?.hora,
+      id_atendimento: idAt,
+    };
+  }
+
+  /**
+   * Bloqueia scroll da página, regista ESC e dispara a animação de entrada
+   * no próximo ciclo para o browser aplicar o estado inicial primeiro.
+   */
+  private iniciarAberturaDrawer(): void {
+    this.bloquearScrollPagina();
+    window.addEventListener('keydown', this.onDrawerKeydown);
+    this.drawerPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.drawerPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  private limparEfeitosDrawer(): void {
+    this.desbloquearScrollPagina();
+    window.removeEventListener('keydown', this.onDrawerKeydown);
+  }
+
+  /**
+   * Evita o “salto” do layout ao abrir o drawer: `overflow: hidden` remove a
+   * scrollbar e a viewport ganha largura, deslocando o conteúdo de trás.
+   * Aqui o scroll é congelado com `position: fixed` + `scrollY` salvo, e
+   * compensa-se a largura do scrollbar (quando existir).
+   */
+  private obterLarguraScrollbar(): number {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return 0;
+    }
+    return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  }
+
+  private bloquearScrollPagina(): void {
+    if (this.pageScrollLockAtivo) return;
+    this.bodyScrollPreDrawer = window.scrollY || 0;
+    const gutter = this.obterLarguraScrollbar();
+
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top = `-${this.bodyScrollPreDrawer}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    if (gutter > 0) {
+      body.style.paddingRight = `${gutter}px`;
+    }
+    this.pageScrollLockAtivo = true;
+  }
+
+  private desbloquearScrollPagina(): void {
+    if (!this.pageScrollLockAtivo) return;
+    const body = document.body;
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    body.style.width = '';
+    body.style.paddingRight = '';
+    this.pageScrollLockAtivo = false;
+    window.scrollTo(0, this.bodyScrollPreDrawer);
   }
 
   fecharModal(): void {
-    this.modalAberto = false;
-    this.modalContexto = null;
+    if (!this.modalAberto || !this.modalContexto) {
+      this.limparEfeitosDrawer();
+      return;
+    }
+    if (!this.drawerPanelOpen) {
+      this.modalAberto = false;
+      this.modalContexto = null;
+      this.limparEfeitosDrawer();
+      return;
+    }
+    this.drawerPanelOpen = false;
+    window.removeEventListener('keydown', this.onDrawerKeydown);
+    if (this.drawerCloseTimer != null) {
+      clearTimeout(this.drawerCloseTimer);
+    }
+    this.drawerCloseTimer = setTimeout(() => {
+      this.drawerCloseTimer = null;
+      this.modalAberto = false;
+      this.modalContexto = null;
+      this.desbloquearScrollPagina();
+    }, DRAWER_ANIM_MS);
   }
 
   onSalvoModal(): void {
     this.fecharModal();
-    this.tickRececao += 1;
-    this.carregarMes();
-    this.carregarDia();
-  }
-
-  /** Receção alterou dados (ex.: exclusão) — atualiza grelha e mini-calendário. */
-  onAgendaDadosAlteradosRececao(): void {
     this.carregarMes();
     this.carregarDia();
   }
@@ -324,6 +487,34 @@ export class AgendaHubComponent implements OnInit {
     }
     const hue = h % 360;
     return `hsl(${hue} 55% 42%)`;
+  }
+
+  /** Fundo do cartão: `agenda_cor`, depois cor por `agenda_status`, senão hash do id. */
+  corFundoCartaoBloco(b: AgendaHubBloco): string {
+    for (const l of b.linhas) {
+      const c = String(l.agenda_cor ?? '').trim();
+      if (c) return c;
+    }
+    const st = String(b.linhas[0]?.agenda_status ?? '').trim();
+    if (st) {
+      const hex = corHexAgendaPorStatus(normalizarAgendaStatusId(st));
+      if (hex) return hex;
+    }
+    return this.corGrupo(this.idAtendimentoBloco(b));
+  }
+
+  private hhmmDesdeMinutosDia(m: number): string {
+    const mf = Math.floor(m);
+    const hh = Math.floor(mf / 60) % 24;
+    const mm = mf % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  }
+
+  /** Intervalo exibido no cartão, ex.: `08:30 - 09:10`. */
+  intervaloHHmmBloco(b: AgendaHubBloco): string {
+    const ex = this.extentMinutosBloco(b);
+    if (!ex) return '';
+    return `${this.hhmmDesdeMinutosDia(ex.start)} - ${this.hhmmDesdeMinutosDia(ex.end)}`;
   }
 
   /**
@@ -563,7 +754,7 @@ export class AgendaHubComponent implements OnInit {
 
   /** Texto plano para aria-label / leitores. */
   rotuloBloco(b: AgendaHubBloco): string {
-    const hora = this.horaBloco(b);
+    const hora = this.intervaloHHmmBloco(b) || this.horaBloco(b);
     const nome = this.nomeClienteBloco(b);
     const itens = this.itensResumoBloco(b);
     const partes: string[] = [];
@@ -575,13 +766,6 @@ export class AgendaHubComponent implements OnInit {
 
   idAtendimentoBloco(b: AgendaHubBloco): string {
     return String(b.linhas[0]?.id || '').trim();
-  }
-
-  abrirDetalhesNaRececaoBloco(b: AgendaHubBloco, e: Event): void {
-    e.stopPropagation();
-    const id = this.idAtendimentoBloco(b);
-    if (!id) return;
-    this.rececao?.expandirGrupoPorIdAtendimento(id);
   }
 
   private gerarSlots(): string[] {

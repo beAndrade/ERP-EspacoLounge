@@ -86,6 +86,646 @@
   flex-direction: column;
   gap: 1.1rem;
   max-width: 42rem;
+
+  &--modal {
+    max-width: none;
+    width: 100%;
+    gap: 0;
+    min-width: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+:host:not(.agenda-novo--drawer) .form.form--modal {
+  --drawer-pad-x: 0px;
+}
+
+.agenda-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.agenda-modal__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text);
+}
+
+.agenda-modal__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -0.25rem -0.35rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: #f5f5f4;
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.form-shell {
+  min-width: 0;
+
+  &--modal {
+    --modal-sidebar-w: 320px;
+    --modal-col-gap: 1.25rem;
+    /** Só o rodapé: linha superior à largura total do drawer (pseudo). */
+    --drawer-bleed-l: 0px;
+    --drawer-bleed-r: 0px;
+    display: grid;
+    grid-template-columns: var(--modal-sidebar-w) minmax(0, 1fr);
+    gap: 0 var(--modal-col-gap);
+    align-items: stretch;
+    padding-bottom: 0.5rem;
+    flex: 1 1 auto;
+    min-height: min(100%, calc(100dvh - 5.5rem));
+
+    @media (max-width: 720px) {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+
+      .form-shell__client {
+        order: 0;
+      }
+
+      .form-shell__main--modal {
+        order: 1;
+      }
+    }
+  }
+}
+
+:host.agenda-novo--drawer .form-shell.form-shell--modal {
+  --drawer-bleed-l: calc(
+    var(--modal-sidebar-w) + var(--modal-col-gap) + var(--drawer-pad-x, 1rem)
+  );
+  --drawer-bleed-r: var(--drawer-pad-x, 1rem);
+
+  @media (max-width: 720px) {
+    --drawer-bleed-l: var(--drawer-pad-x, 1rem);
+  }
+}
+
+.form-shell__main {
+  min-width: 0;
+  display: block;
+
+  &--modal {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    /** `hidden` recorta a sombra dos painéis (absolutos) no limite com a coluna do sidebar. */
+    overflow: hidden;
+    /**
+     * Expande a região de clip para a esquerda (e um pouco nos outros eixos) para a `box-shadow`
+     * do `app-saas-select` não ficar com “corte” vertical junto ao divisor.
+     * @see https://developer.mozilla.org/docs/Web/CSS/overflow-clip-margin
+     */
+    overflow-clip-margin: 16px 12px 20px 28px;
+  }
+}
+
+.form-shell__flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  min-width: 0;
+
+  &--modal {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    gap: 1.25rem;
+    /** Scroller da coluna principal: alarga o clip (sombra do `app-saas-select`). */
+    overflow-clip-margin: 20px 16px 24px 32px;
+    @supports (overflow: clip) {
+      /** `hidden` + scroll vertical recorta `box-shadow`; `clip` (quando suportado) atenua o artefacto no eixo X. */
+      overflow-x: clip;
+    }
+
+    .block-context {
+      order: 1;
+    }
+
+    .block-hora {
+      order: 2;
+    }
+
+    .block-itens {
+      order: 3;
+    }
+
+    .block-obs {
+      order: 4;
+    }
+
+    .form-shell__flow-spacer {
+      order: 3;
+      flex: 1 0 auto;
+      min-height: 0;
+      width: 100%;
+    }
+  }
+}
+
+:host(.agenda-novo--drawer.agenda-novo--edicao) .form.form--modal .form-shell__flow--modal > .block-obs {
+  margin-top: 0;
+}
+
+.block-context {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/**
+ * Modal drawer: Cliente + Data + Horário + Status numa linha.
+ */
+.block-context--modal {
+  gap: 0.4rem 0.45rem;
+  padding-bottom: 0;
+  margin-bottom: 0.5rem;
+  /** Rótulo + campo empilhados: alinhar ao topo (evita “fim” de grelha a quebrar o respiro). */
+  align-items: start;
+  display: grid;
+  grid-template-columns:
+    minmax(16.25rem, 1.78fr)
+    minmax(9.5rem, 0.86fr)
+    minmax(6.5rem, 0.44fr)
+    minmax(10rem, 0.92fr)
+    minmax(8.35rem, 0.72fr);
+  min-width: 0;
+
+  .block-context__field--cliente-modal,
+  .data-field--modal-stretch,
+  .block-context__field--hora-modal,
+  .block-context__field--status-modal,
+  .block-context__field--cor-modal {
+    min-width: 0;
+  }
+
+  .block-context__field--cliente-modal,
+  .data-field.block-context__field,
+  .block-context__field--hora-modal,
+  .block-context__field--hora-slots,
+  .block-context__field--status-modal,
+  .block-context__field--cor-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .block-context__field--status-modal app-agenda-status-select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .block-context__field--cor-modal {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .block-context__field--cor-modal:has(.block-context__cor-select:disabled) {
+    cursor: not-allowed;
+  }
+
+  .block-context__cor-select {
+    width: 100%;
+    cursor: not-allowed;
+  }
+
+  .block-context__field--hora-slots app-agenda-horario-slots {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .block-context__field--cliente-modal {
+    grid-column: auto;
+  }
+
+  .block-context__field--cliente-modal app-saas-select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  > .block-context__field {
+    min-width: 0;
+  }
+
+  .data-field--modal-stretch {
+    max-width: none;
+  }
+
+  .saas-field-readonly {
+    box-sizing: border-box;
+    min-height: 2.75rem;
+    height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  @media (min-width: 721px) and (max-width: 1100px) {
+    grid-template-columns:
+      minmax(15rem, 1.72fr)
+      minmax(8.9rem, 0.8fr)
+      minmax(6.25rem, 0.42fr)
+      minmax(9.35rem, 0.88fr)
+      minmax(8rem, 0.72fr);
+  }
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr 1fr;
+
+    > .block-context__field--cliente-modal {
+      grid-column: 1 / -1;
+    }
+
+    > .data-field--modal-stretch {
+      grid-column: 1;
+    }
+
+    > .block-context__field--hora-modal {
+      grid-column: 2;
+    }
+
+    > .block-context__field--status-modal {
+      grid-column: 1;
+    }
+
+    > .block-context__field--cor-modal {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+
+    .block-context__field--cliente-modal,
+    .data-field--modal-stretch,
+    .block-context__field--hora-modal,
+    .block-context__field--status-modal,
+    .block-context__field--cor-modal {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+/** Encapsulamento do `app-saas-select`: força o trigger a respeitar a célula da grelha. */
+:host ::ng-deep .block-context--modal .saas-select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.block-context__field {
+  margin: 0;
+  min-width: 0;
+
+  &--readonly {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
+
+.block-context__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.saas-field-readonly {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid #e7e5e4;
+  background: #fafaf9;
+  font-size: 0.95rem;
+  color: var(--color-muted);
+}
+
+.block-hora,
+.block-obs {
+  min-width: 0;
+}
+
+/**
+ * Rótulo acima do campo (span inline + textarea podiam ficar na mesma linha em alguns viewports).
+ */
+.block-obs > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+/** Respiro rótulo → textarea (8px: `agenda-novo--drawer` reutiliza o token, abaixo). */
+.block-obs > div:first-child > span:first-of-type {
+  margin-bottom: 8px;
+}
+
+.block-obs__textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+
+  &--modal {
+    min-height: 66.28px;
+    height: 66.28px;
+    max-height: 66.28px;
+    resize: none;
+  }
+}
+
+/** Modal: bloco de hora só com textos/alertas (o `input` de hora fica no block-context, junto de Data). */
+.block-hora--no-time-field {
+  margin: 0.15rem 0 0.35rem;
+  padding: 0;
+  gap: 0.35rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.block-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 1.75rem;
+  padding: 0.35rem 0;
+
+  &--inline {
+    margin: 0.4rem 0 0.15rem;
+    padding: 0.2rem 0 0.35rem;
+  }
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: default;
+  margin: 0;
+  user-select: none;
+}
+
+/** Checkbox real fica acessível, mas fora do layout visual. */
+.toggle-switch__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toggle-switch__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.agenda-modal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+  margin-top: 0.75rem;
+  padding: 0.9rem 0 0.25rem;
+  border-top: none;
+  background: #fff;
+  position: relative;
+  z-index: 2;
+
+  .agenda-modal__footer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .agenda-modal__footer-salvar {
+    margin-left: 0;
+  }
+
+  :host.agenda-novo--drawer & {
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: calc(-1 * var(--drawer-bleed-l, 0px));
+      right: calc(-1 * var(--drawer-bleed-r, 0px));
+      height: 1px;
+      background: var(--drawer-stroke, #ececec);
+      pointer-events: none;
+    }
+  }
+
+  :host:not(.agenda-novo--drawer) & {
+    border-top: 1px solid #e7e5e4;
+  }
+}
+
+.btn-footer {
+  margin-top: 0;
+  min-height: var(--touch-min);
+  padding: 0.55rem 1.15rem;
+  font-size: 0.95rem;
+
+  &--ghost {
+    background: var(--color-surface);
+    border: 1px solid #d6d3d1;
+    color: var(--color-text);
+  }
+
+  &--danger {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #fff;
+  }
+
+  &.primary {
+    margin-top: 0;
+  }
+}
+
+.agenda-modal__excluir-wrap {
+  position: relative;
+  display: inline-block;
+
+  &--open {
+    z-index: 30;
+  }
+}
+
+.agenda-modal__excluir-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 0.75rem;
+}
+
+.agenda-modal__excluir-chev {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 6px solid rgba(255, 255, 255, 0.95);
+  margin-top: -2px;
+  opacity: 0.9;
+}
+
+.agenda-modal__excluir-panel {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 15.5rem;
+  padding: 0.35rem 0;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.agenda-modal__excluir-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #b91c1c;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: #fef2f2;
+  }
+}
+
+.agenda-modal__excluir-ico {
+  flex: 0 0 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  opacity: 0.9;
+
+  &--trash {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b91c1c' stroke-width='2'%3E%3Cpath stroke-linecap='round' d='M3 6h18M8 6V4h8v2m-1 0v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6h10z'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  &--list {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b91c1c' stroke-width='2'%3E%3Cpath stroke-linecap='round' d='M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+}
+
+.form-shell__client--placeholder {
+  padding: 1rem 0.85rem;
+  border: 1px dashed #d6d3d1;
+  border-radius: var(--radius);
+  background: #fafaf9;
+  align-self: start;
+}
+
+.form-shell__client-placeholder-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.form-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.servico-row__meta {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  padding: 0.35rem 0 0;
+  margin-top: 0.15rem;
+  border-top: 1px dashed #e7e5e4;
+}
+
+.servico-row__meta-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 5rem;
+}
+
+.servico-row__meta-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+
+.servico-row__meta-val {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .itens-atendimento {
@@ -94,6 +734,17 @@
   border: 1px solid #e7e5e4;
   border-radius: var(--radius);
   background: #fafaf9;
+
+  &--modal {
+    padding: 0.5rem 0 0;
+    border: none;
+    background: #fff;
+    border-radius: 0;
+
+    .itens-atendimento__titulo {
+      margin-bottom: 0.65rem;
+    }
+  }
 
   &__titulo {
     margin: 0 0 1rem;
@@ -166,6 +817,38 @@ select::-ms-expand {
   background: var(--color-surface);
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
+
+  &--with-cal {
+    padding-right: 0.4rem;
+  }
+}
+
+.data-field__cal {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  line-height: 0;
+  color: #d1d5db;
+
+  &--end {
+    margin-left: auto;
+    order: 2;
+    color: #d1d5db;
+  }
+}
+
+.data-field__value-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.data-field__display--with-cal .data-field__value-text {
+  order: 1;
+}
+
+.data-field__display--placeholder .data-field__value-text {
+  color: var(--color-muted, #78716c);
+  font-weight: 500;
 }
 
 /* Abaixo do texto: mantém foco por Tab e o valor do formulário. */
@@ -186,6 +869,86 @@ select::-ms-expand {
 
 .data-field__native:focus {
   outline: none;
+}
+
+/* Modal: calendário custom; o nativo fica fora do fluxo de toque. */
+.data-field__native--visually-hidden {
+  position: fixed;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.data-field--modal-picker-root {
+  .data-field__wrap {
+    position: relative;
+  }
+}
+
+.data-field__calendar-pop {
+  position: absolute;
+  z-index: 50;
+  left: 0;
+  top: calc(100% + 6px);
+  max-width: calc(100vw - 1.5rem);
+}
+
+/** No hub modal: Data com o mesmo “card” que `app-saas-select` (borda cinza, canto suave). */
+.data-field--modal-match-saas {
+  .data-field__wrap {
+    position: relative;
+  }
+
+  .data-field__display {
+    box-sizing: border-box;
+    min-height: var(--touch-min, 2.75rem);
+    padding: 0.5rem 0.75rem;
+    padding-right: 2.5rem;
+    border: 1px solid #e7e5e4;
+    border-radius: var(--radius, 8px);
+    background: #fff;
+    color: var(--color-muted, #78716c);
+  }
+
+  .data-field__value-text {
+    color: var(--color-text, #1c1917);
+    font-weight: 500;
+  }
+
+  .data-field__display--placeholder .data-field__value-text {
+    color: var(--color-muted, #78716c);
+  }
+
+  .data-field__cal--end {
+    position: absolute;
+    right: 0.65rem;
+    top: 50%;
+    left: auto;
+    transform: translateY(-50%);
+    margin-left: 0;
+    order: 0;
+    color: #d1d5db;
+  }
+
+  .data-field__cal--end svg {
+    display: block;
+    width: 17px;
+    height: 17px;
+    stroke: #d1d5db;
+  }
+
+  .data-field__wrap:focus-within .data-field__display {
+    outline: none;
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
 }
 
 .data-field__wrap:focus-within .data-field__display {
@@ -250,6 +1013,113 @@ textarea {
   }
 }
 
+/** Footer do modal/drawer: alinhamento à direita já em `.agenda-modal__footer`; aqui cores e radius (especificidade > `.btn`). */
+.agenda-modal__footer .btn.btn-footer {
+  border-radius: 0.75rem;
+  font-weight: 500;
+  margin-top: 0;
+}
+
+.agenda-modal__footer .btn.btn-footer--ghost {
+  font-weight: 400;
+  color: #c4c2bf;
+  background: transparent;
+  border-color: #e7e5e4;
+
+  &:hover:not(:disabled) {
+    color: #a8a6a3;
+    background: #fafaf9;
+    border-color: #d6d3d1;
+  }
+}
+
+.agenda-modal__footer .btn.btn-footer--danger {
+  background: #ff4d4f;
+  border-color: #ff4d4f;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #ff7875;
+    border-color: #ff7875;
+  }
+}
+
+.agenda-modal__footer .btn.btn-footer.primary {
+  background: #7a88ff;
+  border-color: #7a88ff;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.95);
+  }
+}
+
+/** Icôni: a regra base `.btn` acima não pode sobrepor (background branco). */
+.btn.btn--icon-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 0;
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0.65rem;
+  background: #ff4d4f;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+
+  svg,
+  path {
+    stroke: currentColor;
+  }
+
+  &:hover:not(:disabled) {
+    background: #ff7875;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background: #f3f4f6;
+    color: #9ca3af;
+  }
+}
+
+.btn.btn--icon-line-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 0;
+  margin-top: 0;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  background: #f3f4f6;
+  color: #57534e;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #e7e5e4;
+    color: #44403c;
+    border-color: #d6d3d1;
+  }
+}
+
 .tipo-hint {
   margin: -0.5rem 0 0.5rem;
   font-size: 0.85rem;
@@ -267,6 +1137,48 @@ textarea {
   width: 100%;
 }
 
+.etapas-block--etapas-modal {
+  flex: 1 1 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/**
+ * Largura do bloco de etapas = Tipo + Pacote do cabeçalho; rail com o mesmo
+ * espaço que a coluna de ações (gap + 2× ícones) para alinhar a borda direita.
+ */
+.servico-row__etapas-wrap {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 100%;
+  box-sizing: border-box;
+  align-items: stretch;
+
+  &--modal-cabecalho {
+    --servico-cabecalho-col-gap: 0.55rem;
+  }
+
+  &__rail {
+    flex: 0 0
+      calc(
+        var(--servico-cabecalho-col-gap) + 2.5rem + 0.4rem + 2.5rem
+      );
+    width: calc(
+      var(--servico-cabecalho-col-gap) + 2.5rem + 0.4rem + 2.5rem
+    );
+    min-height: 0.25rem;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  .etapas-block--etapas-modal {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
 .etapas-block,
 .servicos-block {
   display: flex;
@@ -276,6 +1188,13 @@ textarea {
   border-radius: var(--radius);
   border: 1px solid #e7e5e4;
   background: #fafaf9;
+
+  &--modal {
+    padding: 0.35rem 0 0;
+    border: none;
+    background: #fff;
+    border-radius: 0;
+  }
 }
 
 .etapas-header,
@@ -298,6 +1217,180 @@ textarea {
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
   }
+
+  &:has(app-saas-select.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
+
+  &--etapas-modal {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &--etapas-modal:has(.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
+}
+
+.servico-row__mega-topo {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 100%;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0.4rem 0.55rem;
+  box-sizing: border-box;
+
+  @media (max-width: 720px) {
+    flex-wrap: wrap;
+  }
+}
+
+.servico-row--drawer .servico-row__linha-cabecalho-modal
+  .servico-row__field--mega-cabecalho,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--linha-cab--col,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--pacote-mega {
+  margin: 0;
+}
+
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--mega-cabecalho,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--linha-cab--col,
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--pacote-mega {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.servico-row__field--pacote-mega {
+  min-width: 0;
+}
+
+.servico-row__actions--linha-cab {
+  flex: 0 0 auto;
+  align-self: flex-end;
+}
+
+/** Cabelo (modal): Valor (estreito) | Detalhes (largo) | Prof | +/lixeira. */
+.servico-row__cabelo-rodape--drawer {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-items: stretch;
+  row-gap: 0.4rem;
+  column-gap: 0.55rem;
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.92fr) minmax(0, 1fr) auto;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    .servico-row__actions--cabelo-rodape {
+      justify-content: flex-end;
+    }
+  }
+}
+
+.servico-row__field--valor-cabelo-modal,
+.servico-row__field--pro-cabelo-modal {
+  margin: 0;
+  min-width: 0;
+}
+
+.servico-row__field--valor-cabelo-modal {
+  max-width: clamp(7rem, 16vw, 9.75rem);
+}
+
+.servico-row__field--detalhes-cabelo-modal {
+  margin: 0;
+  min-width: 0;
+
+  textarea {
+    box-sizing: border-box;
+    min-height: var(--touch-min, 2.75rem);
+    height: var(--touch-min, 2.75rem);
+    padding: 0.5rem 0.75rem;
+    line-height: 1.35;
+    resize: none;
+    overflow-y: auto;
+  }
+}
+
+.servico-row__cabelo-rodape--drawer:has(.saas-select-host--open) {
+  position: relative;
+  z-index: 25;
+}
+
+.servico-row__actions--cabelo-rodape {
+  flex: 0 0 auto;
+  min-width: calc(2.5rem * 2 + 0.4rem);
+  align-self: flex-end;
+}
+
+.servico-row--drawer .servico-row__field--produto-qtd-drawer {
+  /** Mesma coluna que «Duração» na linha Serviço (`5.9rem` / `5.2rem`). */
+  flex: 0 0 5.9rem;
+  min-width: 5.2rem;
+  max-width: 5.9rem;
+
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--touch-min, 2.75rem);
+    text-align: center;
+  }
+}
+
+.etapa-row__etapa-cel {
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+
+  &--fill {
+    min-width: 0;
+  }
+}
+
+.etapa-row__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  min-width: calc(2.5rem * 2 + 0.4rem);
+  box-sizing: border-box;
+
+  &--etapas {
+    position: relative;
+    align-self: center;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: var(--touch-min, 2.75rem);
+  }
+
+  &__spacer {
+    display: block;
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+    min-height: 1px;
+    pointer-events: none;
+  }
 }
 
 .servico-row {
@@ -314,6 +1407,23 @@ textarea {
     margin-bottom: 0;
     padding-bottom: 0;
   }
+
+  &--drawer {
+    align-items: flex-end;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid #e7e5e4;
+  }
+
+  /** Painel do `app-saas-select` é `position:absolute`; sem isto a linha seguinte pinta por cima. */
+  &:has(app-saas-select.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
+}
+
+.block-context:has(app-saas-select.saas-select-host--open) {
+  position: relative;
+  z-index: 25;
 }
 
 .servico-row__field {
@@ -328,6 +1438,51 @@ textarea {
   &--tipo-linha {
     flex: 1 1 14rem;
   }
+
+  &--descricao {
+    flex: 2.2 1 12rem;
+    min-width: 8rem;
+  }
+
+  &--pro {
+    flex: 1.1 1 8rem;
+    min-width: 6.5rem;
+  }
+
+  &--horario {
+    flex: 0 0 5.5rem;
+    min-width: 4.5rem;
+  }
+
+  &--duracao {
+    flex: 0 0 4.25rem;
+    min-width: 3.5rem;
+  }
+}
+
+.servico-row__horario-bloco {
+  display: flex;
+  align-items: flex-end;
+}
+
+.servico-row__horario-readonly {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.servico-row__duracao {
+  box-sizing: border-box;
+  min-height: var(--touch-min);
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius);
+  border: 1px solid #e7e5e4;
+  background: #f4f2f0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-muted, #57534e);
+  font-variant-numeric: tabular-nums;
 }
 
 .servico-row__actions {
@@ -336,6 +1491,13 @@ textarea {
   align-items: center;
   min-height: var(--touch-min);
   padding-bottom: 0.05rem;
+
+  &--drawer {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    min-width: calc(2.5rem * 2 + 0.4rem);
+    gap: 0.4rem;
+  }
 }
 
 .resumo {
@@ -392,5 +1554,939 @@ textarea {
   &--total {
     color: var(--color-text);
     font-weight: 600;
+  }
+}
+
+:host.agenda-novo--drawer {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  /** Bordas de input e traços (divisórias) do hub: mesma família de cor. */
+  --drawer-stroke: #ececec;
+  --el-drawer-field-border-hover: #a51851;
+  --drawer-field-border: var(--drawer-stroke);
+  /** Cor do texto: vazio/placeholder = idle; com valor = filled. */
+  --drawer-input-text-idle: rgba(0, 0, 0, 0.38);
+  --drawer-input-text-filled: #000000;
+  --drawer-input-font-weight: 400;
+
+  .servico-row--drawer {
+    border-bottom-color: var(--drawer-stroke);
+  }
+
+  .servico-row__meta {
+    border-top: 1px dashed var(--drawer-stroke);
+  }
+}
+
+/**
+ * Texto (cor + peso) dos campos no drawer: formulário principal + coluna do sidebar.
+ * Sidebar fica fora de `.form.form--modal`, por isso o seletor duplo.
+ */
+:host.agenda-novo--drawer .form.form--modal,
+:host.agenda-novo--drawer .form-shell--modal .form-shell__client {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(:focus):not(
+      :placeholder-shown
+    ),
+  textarea:not(:focus):not(:placeholder-shown),
+  select:not(:focus) {
+    color: var(--drawer-input-text-filled);
+  }
+
+  .data-field--modal-match-saas .data-field__display {
+    color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
+    border-color: var(--drawer-field-border);
+  }
+
+  .data-field--modal-match-saas .data-field__value-text {
+    color: var(--drawer-input-text-filled);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  .data-field--modal-match-saas .data-field__display--placeholder .data-field__value-text {
+    color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  .data-field--modal-match-saas .data-field__wrap:focus-within .data-field__value-text {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .saas-select__trigger {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
+  }
+
+  ::ng-deep .saas-select__trigger .saas-select__value:not(.saas-select__value--placeholder) {
+    color: var(--drawer-input-text-filled);
+  }
+
+  ::ng-deep
+    app-saas-select.saas-select-host--open
+    .saas-select__trigger
+    .saas-select__value:not(.saas-select__value--placeholder) {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .saas-select__trigger .saas-select__value--placeholder {
+    color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  ::ng-deep .agenda-status-select__trigger {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
+  }
+
+  ::ng-deep .agenda-status-select__trigger .agenda-status-select__label {
+    color: var(--drawer-input-text-filled);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  ::ng-deep
+    app-agenda-status-select.agenda-status-select--open
+    .agenda-status-select__trigger
+    .agenda-status-select__label {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .ahs__trigger {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
+  }
+
+  ::ng-deep .ahs__trigger .ahs__value:not(.ahs__value--ph) {
+    color: var(--drawer-input-text-filled);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  ::ng-deep .ahs__trigger .ahs__value--ph {
+    color: var(--drawer-input-text-idle);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  ::ng-deep app-agenda-horario-slots.ahs-host--open .ahs__trigger .ahs__value {
+    color: var(--drawer-input-text-idle);
+  }
+}
+
+/** Hub drawer: tipografia do drawer (labels padronizados). */
+:host.agenda-novo--drawer .form.form--modal {
+  /** Coluna «Tipo de linha»: igual em Serviço e Produto (drawer). */
+  --drawer-tipo-linha-col: clamp(6.25rem, 8.8vw, 9rem);
+  /** Padrão do drawer: inputs 40px e radius 14px. */
+  --touch-min: 40px;
+  --radius: 14px;
+  /** Tokens de label do drawer (um único ponto de ajuste). */
+  --drawer-label-size: 15px;
+  --drawer-label-line-height: 1.25;
+  --drawer-label-muted: #000000bf;
+  --drawer-label-strong: #000000bf;
+  --drawer-label-weight: 500;
+  --drawer-label-base-weight: 500;
+  --drawer-field-font-size: 15px;
+  /**
+   * Uma referência: respiro rótulo → campo. Não alterar de forma ad-hoc noutros sítios
+   * sem alinhar com este token (8px em todo o hub do drawer).
+   */
+  --drawer-label-below: 8px;
+
+  .agenda-modal__title {
+    font-size: 24px;
+    line-height: 1.25;
+    color: #404040;
+  }
+
+  .itens-atendimento--modal .itens-atendimento__titulo {
+    font-size: 20px;
+    line-height: 1.3;
+    margin-bottom: 0.85rem;
+    color: #404040;
+  }
+
+  /**
+   * Labels: tudo padronizado e englobado no escopo do drawer.
+   * Qualquer ajuste futuro deve ser feito pelos tokens acima.
+   */
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-base-weight);
+    color: var(--drawer-label-muted);
+  }
+
+  label > span {
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-weight);
+    color: var(--drawer-label-strong);
+  }
+
+  label > span:first-of-type {
+    margin-bottom: var(--drawer-label-below);
+  }
+
+  .block-context__label,
+  .servicos-header,
+  .toggle-switch__label {
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-weight);
+    color: var(--drawer-label-strong);
+  }
+
+  .toggle-switch__label {
+    margin-bottom: 0;
+  }
+
+  /**
+   * Rótulos em `<span>` sem `<label>` (ex.: cabeçalho do `block-context`, “Observações” em modal).
+   * `margin-bottom` = `--drawer-label-below` (8px) em todo o hub.
+   */
+  .block-context--modal .block-context__field > span:first-of-type,
+  .data-field.block-context__field > span:first-of-type,
+  .block-obs > div > span:first-of-type,
+  .block-hora--no-time-field > div > span:first-of-type {
+    font-size: var(--drawer-label-size);
+    line-height: var(--drawer-label-line-height);
+    font-weight: var(--drawer-label-weight);
+    color: var(--drawer-label-strong);
+    margin-bottom: var(--drawer-label-below);
+  }
+
+  /**
+   * Linhas de serviço / células de etapa: `div.servico-row__field` com `<span>` + control.
+   */
+  .servico-row--drawer .servico-row__field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  /**
+   * Ações (+/lixeira) alinham com a **base** dos campos, não com o rótulo.
+   */
+  .servico-row--drawer {
+    align-items: flex-end;
+  }
+
+  .servico-row--drawer .servico-row__mega-topo {
+    align-items: flex-end;
+  }
+
+  .servico-row--drawer .servico-row__field > span:first-of-type,
+  .etapa-row--etapas-modal .etapa-row__etapa-cel > span:first-of-type {
+    margin-bottom: var(--drawer-label-below);
+  }
+
+  /** Lembrete: respiro horizontal para o ripple/sombra não ser cortado pelo scroll (overflow-x). */
+  .block-toggles--inline {
+    padding-left: 0.65rem;
+    padding-right: 0.85rem;
+    margin-left: -0.15rem;
+    overflow: visible;
+  }
+
+  .block-toggles--inline .toggle-switch.toggle-switch--inline {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.65rem;
+    overflow: visible;
+  }
+
+  .block-toggles--inline .toggle {
+    --toggle-w: 44px;
+    --toggle-h: 22px;
+    --toggle-pad: 2px;
+    --knob-size: 18px;
+    --toggle-pulse-color: rgba(0, 0, 0, 0.22);
+    /**
+     * Translação máxima: alinhar o knob ao padding interior (espelha o OFF).
+     * Não subtrair px extra: isso deixava o ON ~2px longe do canto direito.
+     */
+    --knob-x-end: calc(
+      var(--toggle-w) - (var(--toggle-pad) * 2) - var(--knob-size)
+    );
+    width: var(--toggle-w);
+    height: var(--toggle-h);
+    background: #bfbfbf;
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition:
+      background 0.25s ease,
+      filter 0.25s ease;
+    display: inline-block;
+    flex: 0 0 auto;
+    margin-left: 0;
+    overflow: visible;
+    isolation: isolate;
+    /* `paint` no toggle cortaria o glow (box-shadow) com overflow hidden; o knob já tem `contain: paint` */
+    contain: layout;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid:hover:not(.active) {
+    background: #8c8c8c;
+  }
+
+  /* estado ativo */
+  .block-toggles--inline .toggle.active {
+    background: #4f46e5;
+    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
+    filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
+  }
+
+  .block-toggles--inline .toggle.toggle--pulse {
+    animation: togglePulse 1.5s ease-out;
+  }
+
+  @keyframes togglePulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--toggle-pulse-color);
+    }
+    45% {
+      box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+  }
+
+  /* knob (efeito “gota / líquido” — @keyframes) */
+  .block-toggles--inline .toggle.toggle--liquid::after {
+    content: '';
+    position: absolute;
+    top: calc((var(--toggle-h) - var(--knob-size)) / 2);
+    left: var(--toggle-pad);
+    width: var(--knob-size);
+    height: var(--knob-size);
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    will-change: transform, box-shadow;
+    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    /* OFF: a borda “interna” é a direita → origem no lado interno p/ esticar p/ dentro */
+    transform-origin: right center;
+    transform-box: fill-box;
+    contain: paint;
+    transition: none;
+    animation: none;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.active::after {
+    /* ON: a borda “interna” é a esquerda → origem no lado interno p/ esticar p/ dentro */
+    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    transform-origin: left center;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed.active::after {
+    /* OFF → ON: inicia ancorado no lado interno (direita) e estica/anda para a direita */
+    transform-origin: right center;
+    animation: toggleLiquidOn 0.52s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed:not(.active)::after {
+    /* ON → OFF: inicia ancorado no lado interno (esquerda) e estica/anda para a esquerda */
+    transform-origin: left center;
+    animation: toggleLiquidOff 0.52s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
+  }
+
+  @keyframes toggleLiquidOn {
+    0% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    }
+
+    30% {
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transform: translate3d(0, 0, 0) scaleX(1.1) scaleY(0.985);
+    }
+
+    60% {
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      transform: translate3d(calc(var(--knob-x-end) - 0.5px), 0, 0) scaleX(1.03) scaleY(0.995);
+    }
+
+    100% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    }
+  }
+
+  @keyframes toggleLiquidOff {
+    0% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    }
+
+    30% {
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1.1) scaleY(0.985);
+    }
+
+    60% {
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      transform: translate3d(1px, 0, 0) scaleX(1.03) scaleY(0.995);
+    }
+
+    100% {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    }
+  }
+
+  /* Glow no próprio trilho (não em pseudo interno) para não ser cortado pelo overflow. */
+
+  /** Margem interna do scroll: o ripple do toggle não encosta no clip horizontal. */
+  .form-shell__flow--modal {
+    padding-inline: 0.45rem;
+    box-sizing: border-box;
+  }
+
+  /**
+   * Observações colada ao footer: `margin-top: auto` (novo) ou `form-shell__flow-spacer` (edição).
+   */
+  .form-shell__flow--modal > .block-obs {
+    flex-shrink: 0;
+    align-self: stretch;
+    margin-top: auto;
+    padding-top: 0.25rem;
+    /** Mesmo respiro inferior em novo e em editar (spacer vs margin-top: auto). */
+    padding-bottom: 0.3rem;
+    margin-bottom: 0;
+    background: #fff;
+    position: relative;
+    z-index: 1;
+  }
+
+  /**
+   * Respiro entre Observações e barra de ações (footer é irmão do flow no `form-shell__main`).
+   */
+  .agenda-modal__footer {
+    margin-top: 1rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.2rem;
+  }
+
+  /**
+   * Mesmo respiro entre campos em todas as linhas do drawer (Serviço, Produto,
+   * Mega/Pacote com cabeçalho + blocos abaixo, etc.).
+   */
+  .servico-row--drawer {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    gap: 0.4rem 0.55rem;
+  }
+
+  /**
+   * Mega / Pacote: células Etapa + Profissional; coluna de ações alinhada à base
+   * dos selects (igual a `.servico-row--drawer`).
+   */
+  .etapa-row--etapas-modal {
+    align-items: end;
+    gap: 0.4rem 0.55rem;
+  }
+
+  .etapa-row--etapas-modal .etapa-row__actions--etapas {
+    align-self: end;
+  }
+
+  /**
+   * Linha “Serviço” no modal: uma linha, campos a crescer até preencher o drawer
+   * (somatório flex + mínimos; sem max-width que corte a descrição).
+   */
+  .servico-row--drawer:has(.servico-row__duracao) {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+
+    .servico-row__field--tipo-linha {
+      flex: 0 0 var(--drawer-tipo-linha-col);
+      width: var(--drawer-tipo-linha-col);
+      min-width: var(--drawer-tipo-linha-col);
+      max-width: var(--drawer-tipo-linha-col);
+      box-sizing: border-box;
+    }
+
+    .servico-row__field--descricao {
+      flex: 2.6 1 0%;
+      min-width: 6rem;
+      max-width: none;
+    }
+
+    .servico-row__field--tamanho {
+      flex: 0 0 clamp(7.25rem, 10%, 8.5rem);
+    }
+
+    .servico-row__field--pro {
+      flex: 1.25 1 0%;
+      min-width: 5.25rem;
+      max-width: none;
+    }
+
+    .servico-row__field--duracao {
+      flex: 0 0 5.9rem;
+      min-width: 5.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      > span {
+        font-size: var(--drawer-label-size);
+        line-height: var(--drawer-label-line-height);
+        font-weight: var(--drawer-label-weight);
+        color: var(--drawer-label-strong);
+      }
+    }
+
+    .servico-row__actions--drawer {
+      flex: 0 0 calc(2.5rem * 2 + 0.4rem);
+    }
+
+    .servico-row__duracao {
+      font-size: 15px;
+    }
+  }
+
+  /** Linha «Produto» no drawer: mesma coluna «Tipo de linha» que a linha Serviço. */
+  .servico-row--drawer.servico-row--layout-produto-drawer {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap;
+
+    .servico-row__field--tipo-linha {
+      flex: 0 0 var(--drawer-tipo-linha-col);
+      width: var(--drawer-tipo-linha-col);
+      min-width: var(--drawer-tipo-linha-col);
+      max-width: var(--drawer-tipo-linha-col);
+      box-sizing: border-box;
+    }
+
+    .servico-row__field--produto-catalogo {
+      flex: 2.82 1 0%;
+      min-width: 6rem;
+      max-width: none;
+    }
+  }
+
+  /** Drawer: hover só borda vinho em campos de texto. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+      [type='file']
+    ),
+  textarea,
+  select {
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover:not(:disabled) {
+      cursor: text;
+      border-color: var(--el-drawer-field-border-hover);
+    }
+  }
+
+  .data-field__wrap {
+    cursor: text;
+  }
+
+  .data-field--modal-match-saas .data-field__display {
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .data-field__wrap:hover .data-field__display {
+    border-color: var(--el-drawer-field-border-hover);
+  }
+
+  .servico-row--drawer .servico-row__duracao {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .servico-row--drawer .servico-row__duracao:hover {
+    color: transparent;
+    border-color: var(--drawer-stroke);
+    cursor: not-allowed;
+    background-color: #f4f2f0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 1.1rem 1.1rem;
+  }
+
+  .btn.btn--icon-danger {
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+  }
+
+  .btn.btn--icon-line-add {
+    flex-shrink: 0;
+    border-color: var(--drawer-stroke);
+  }
+}
+
+:host.agenda-novo--drawer .form.form--modal ::ng-deep {
+  .servico-row__linha-cabecalho-modal
+    .servico-row__field--mega-cabecalho
+    app-saas-select,
+  .servico-row__linha-cabecalho-modal
+    .servico-row__field--linha-cab--col
+    app-saas-select,
+  .servico-row__linha-cabecalho-modal
+    .servico-row__field--pacote-mega
+    app-saas-select {
+    min-width: 0;
+  }
+
+  .etapa-row--etapas-modal .etapa-row__etapa-cel--fill app-saas-select {
+    min-width: 0;
+  }
+
+  .servico-row__cabelo-rodape--drawer
+    .servico-row__field--valor-cabelo-modal
+    app-saas-select,
+  .servico-row__cabelo-rodape--drawer
+    .servico-row__field--pro-cabelo-modal
+    app-saas-select {
+    min-width: 0;
+  }
+
+  .servico-row__cabelo-rodape--drawer
+    .servico-row__field--valor-cabelo-modal
+    input {
+    font-size: 0.88rem;
+  }
+
+  .saas-select__trigger,
+  .saas-select__value {
+    font-size: 15px;
+  }
+
+  .saas-select__trigger {
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .saas-select__trigger:hover:not(:disabled) {
+    cursor: text;
+    border-color: var(--el-drawer-field-border-hover);
+  }
+
+  .servico-row--drawer.servico-row--layout-produto-drawer
+    > .servico-row__field--produto-catalogo
+    app-saas-select {
+    display: block;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .itens-atendimento--modal input,
+  .itens-atendimento--modal textarea {
+    font-size: 15px;
+  }
+
+  app-agenda-horario-slots {
+    .ahs__trigger {
+      transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ahs__trigger:hover:not(:disabled) {
+      cursor: text;
+      border-color: var(--el-drawer-field-border-hover);
+    }
+
+    .ahs-host--open .ahs__trigger {
+      border-color: var(--el-drawer-field-border-hover);
+    }
+  }
+
+  /**
+   * Repetição (modal): rótulo acima; gatilho + toggle na mesma linha, respiro compacto.
+   */
+  .itens-atendimento--modal .arpc-modal-row {
+    display: grid;
+    grid-template-columns: minmax(0, 30rem) max-content;
+    grid-template-rows: auto auto;
+    column-gap: 2.5rem;
+    row-gap: 0.4rem;
+    margin-top: 0.45rem;
+    width: 100%;
+  }
+
+  .itens-atendimento--modal .arpc-modal-row__cascade {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    min-width: 0;
+    max-width: 30rem;
+    display: grid;
+    grid-template-rows: auto auto;
+    row-gap: 0.4rem;
+
+    app-agenda-repetir-cascade {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    app-agenda-repetir-cascade .arpc__field {
+      min-width: 0;
+      max-width: 100%;
+      width: 100%;
+    }
+  }
+
+  .itens-atendimento--modal .arpc-modal-row__toggle-wrap {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0;
+    align-self: center;
+    /* Centraliza visualmente no meio do input (44px). */
+    min-height: var(--touch-min, 2.75rem);
+  }
+
+  @media (max-width: 720px) {
+    .itens-atendimento--modal .arpc-modal-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .itens-atendimento--modal .arpc-modal-row__cascade {
+      width: 100%;
+      max-width: 100%;
+      grid-column: auto;
+      grid-row: auto;
+    }
+
+    .itens-atendimento--modal .arpc-modal-row__toggle-wrap {
+      grid-column: auto;
+      grid-row: auto;
+      max-width: 100%;
+      display: flex;
+      justify-content: flex-start;
+    }
+  }
+
+  /** Alinhar ao `app-saas-select` do drawer (altura, borda, cantos). */
+  .itens-atendimento--modal
+    .arpc-modal-row__cascade
+    app-agenda-repetir-cascade
+    .arpc__trigger {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 11rem;
+    max-width: none;
+    min-height: var(--touch-min, 2.75rem);
+    height: auto;
+    padding: 0.5rem 0.75rem;
+    padding-right: 2.5rem;
+    border-radius: var(--radius, 8px);
+    border: 1px solid var(--drawer-field-border, #e7e5e4);
+    background: #fff;
+    color: var(--color-text, #1c1917);
+    font: inherit;
+    box-shadow: none;
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .itens-atendimento--modal
+    .arpc-modal-row__cascade
+    app-agenda-repetir-cascade
+    .arpc__trigger:hover:not(:disabled) {
+    cursor: pointer;
+    border-color: var(--el-drawer-field-border-hover);
+  }
+
+  .itens-atendimento--modal
+    .arpc-modal-row__cascade
+    app-agenda-repetir-cascade.agenda-repetir-cascade--open
+    .arpc__trigger {
+    border-color: var(--el-drawer-field-border-hover);
+    box-shadow: none;
+  }
+
+  .itens-atendimento--modal
+    .arpc-modal-row__cascade
+    app-agenda-repetir-cascade
+    .arpc__chev {
+    color: var(--color-muted, #78716c);
+    opacity: 1;
+  }
+
+  .itens-atendimento--modal .arpc-proximos-saved {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.85rem;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .itens-atendimento--modal .arpc-proximos-saved__title {
+    margin: 0;
+    font-size: var(--drawer-label-size);
+    font-weight: var(--drawer-label-weight);
+    line-height: var(--drawer-label-line-height);
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--drawer-label-strong);
+  }
+
+  .itens-atendimento--modal .arpc-proximos-saved__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .itens-atendimento--modal .arpc-proximos-saved__chip {
+    border: 1px solid rgba(122, 136, 255, 0.45);
+    border-radius: 10px;
+    padding: 0.52rem 1.05rem;
+    font-size: 0.84rem;
+    font-weight: 400;
+    cursor: pointer;
+    line-height: 1.25;
+    background: #fff;
+    color: #7a88ff;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .itens-atendimento--modal .arpc-proximos-saved__chip--ancla {
+    background: rgba(122, 136, 255, 0.06);
+    color: rgba(122, 136, 255, 0.75);
+    border-color: rgba(122, 136, 255, 0.35);
+  }
+
+  .itens-atendimento--modal .arpc-proximos-saved__chip--ativo {
+    background: rgba(122, 136, 255, 0.14);
+    border-color: #7a88ff;
+    color: #7a88ff;
+  }
+
+  .itens-atendimento--modal .arpc-proximos-saved__chip:hover {
+    background: rgba(122, 136, 255, 0.1);
+    border-color: #7a88ff;
+  }
+}
+
+/** Diálogo “Conflito de horários” (encaixe) no modal. */
+.agenda-conflito {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.agenda-conflito__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.agenda-conflito__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 20rem);
+  padding: 1.5rem 1.35rem 1.25rem;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  text-align: center;
+}
+
+.agenda-conflito__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 0.65rem;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.agenda-conflito__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.agenda-conflito__text {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.agenda-conflito__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.agenda-conflito__btn {
+  min-height: 2.5rem;
+  padding: 0.4rem 1.15rem;
+  border-radius: 0.9rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+
+  &--ghost {
+    background: #fff;
+  }
+
+  &--primary {
+    border: none;
+    background: #6366f1;
+    color: #fff;
+
+    &:hover {
+      background: #4f46e5;
+    }
   }
 }

@@ -1,4 +1,4 @@
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 :root {
   --color-bg: #f6f4f1;
@@ -9,7 +9,7 @@
   --color-primary-contrast: #fff;
   --radius: 12px;
   --touch-min: 44px;
-  font-family: system-ui, -apple-system, 'Inter', sans-serif;
+  font-family: Inter, sans-serif;
 }
 
 *,

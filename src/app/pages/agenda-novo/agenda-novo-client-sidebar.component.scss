@@ -1,0 +1,526 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  align-self: stretch;
+  height: 100%;
+  min-height: 100%;
+  min-width: 0;
+  /** Respiro antes do divisor; a lista “Informações” compensa com margem negativa para hover full-bleed. */
+  --client-sidebar-pad-end: 1.15rem;
+  padding: 0 var(--client-sidebar-pad-end) 0 0;
+  border-right: 1px solid var(--drawer-stroke, #e7e5e4);
+  background: #fff;
+  /** Tooltip do badge “Novo” pode subir acima do cabeçalho. */
+  overflow: visible;
+}
+
+/** No hub em modo drawer: mesma escala de tipo que o formulário (tokens no pai `agenda-novo--drawer`). */
+:host-context(.agenda-novo--drawer) {
+  .client-sidebar-drawer__iniciais {
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: 0.02em;
+  }
+
+  .client-sidebar-drawer__nome-destaque {
+    font-size: var(--drawer-label-size, 1rem);
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .client-sidebar-drawer__nome-btn {
+    padding: 0;
+    padding-bottom: 0;
+    line-height: 1.2;
+  }
+
+  .client-sidebar-drawer__sub {
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  .sidebar-block__titulo:not(.sidebar-block__titulo--info) {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sidebar-block__titulo--info {
+    font-size: 20px;
+    font-weight: 600;
+    color: #000000bf;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  .sidebar-block__lista,
+  .sidebar-block__notas,
+  .sidebar-block__placeholder {
+    font-size: var(--drawer-field-font-size, 0.88rem);
+    font-weight: 400;
+    line-height: 1.45;
+  }
+
+  .muted {
+    font-weight: 400;
+  }
+}
+
+.client-sidebar-drawer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+  padding-top: 2.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.client-sidebar-drawer__avatar {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  color: #7c6d8c;
+  flex-shrink: 0;
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.client-sidebar-drawer__avatar--empty {
+  color: #a8a0b0;
+  background: #fafafa;
+}
+
+.client-sidebar-drawer__iniciais {
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  color: var(--color-text, #1c1917);
+}
+
+.client-sidebar-drawer__avatar-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.client-sidebar-drawer__user-svg {
+  width: 4rem;
+  height: 4rem;
+  display: block;
+}
+
+.client-sidebar-drawer {
+  app-saas-select {
+    display: block;
+    width: 100%;
+  }
+
+  &:has(app-saas-select.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
+}
+
+.client-sidebar-drawer__dados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.client-sidebar-drawer__nome-destaque {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+.client-sidebar-drawer__cliente-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  overflow: visible;
+}
+
+/** Espaço só antes do badge “Novo”, sem vão entre nome e telefone. */
+.client-sidebar-drawer__cliente-head > .client-sidebar-drawer__badge-novo-wrap {
+  margin-top: 0.4rem;
+}
+
+.client-sidebar-drawer__badge-novo-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+  outline: none;
+  cursor: default;
+}
+
+.client-sidebar-drawer__badge-novo-wrap:focus-visible {
+  outline: 2px solid rgba(125, 86, 196, 0.45);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.client-sidebar-drawer__badge-novo-tooltip {
+  --badge-novo-tip-bg: rgba(33, 33, 33, 0.88);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  /** Largura colada ao texto; `--drawer-pad-x` vem do hub (herança do `.app-drawer`). */
+  width: max-content;
+  min-width: 0;
+  max-width: min(22rem, calc(100vw - 1.5rem));
+  box-sizing: border-box;
+  padding: 0.7rem 0.95rem 0.7rem;
+  font-family: Inter, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: left;
+  color: #fafafa;
+  background: var(--badge-novo-tip-bg);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(4px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    visibility 0.16s;
+  transition-delay: 0s, 0s, 0s;
+}
+
+.client-sidebar-drawer__badge-novo-tooltip__line {
+  display: block;
+  align-self: stretch;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+  text-align: left;
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  .client-sidebar-drawer__badge-novo-tooltip {
+    min-width: 0;
+    width: calc(100vw - 1.25rem);
+  }
+
+  .client-sidebar-drawer__badge-novo-tooltip__line {
+    white-space: normal;
+  }
+}
+
+.client-sidebar-drawer__badge-novo-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -7px;
+  border: 7px solid transparent;
+  border-top-color: var(--badge-novo-tip-bg);
+}
+
+.client-sidebar-drawer__badge-novo-tooltip-emoji {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 400;
+  align-self: center;
+  text-align: center;
+}
+
+.client-sidebar-drawer__badge-novo-wrap:hover .client-sidebar-drawer__badge-novo-tooltip,
+.client-sidebar-drawer__badge-novo-wrap:focus-visible .client-sidebar-drawer__badge-novo-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: 0.2s, 0.2s, 0s;
+}
+
+.client-sidebar-drawer__badge-novo {
+  --badge-novo: #7d56c4;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 45.72px;
+  height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--badge-novo);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  user-select: none;
+  isolation: isolate;
+}
+
+/**
+ * Anel que expande para fora e recomeça (sem yoyo). O texto fica no span — sem `transform` aqui.
+ */
+.client-sidebar-drawer__badge-novo::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(125, 86, 196, 0.5);
+  animation: client-sidebar-novo-pulse-out 1.32s ease-out infinite;
+}
+
+/** Cor fixa no keyframe (evita `var`/`color-mix` em animação). Só a sombra muda. */
+@keyframes client-sidebar-novo-pulse-out {
+  0% {
+    box-shadow: 0 0 0 0 rgba(125, 86, 196, 0.5);
+  }
+
+  100% {
+    box-shadow: 0 0 0 8px rgba(125, 86, 196, 0);
+  }
+}
+
+.client-sidebar-drawer__nome-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  padding-bottom: 0;
+  margin: 0;
+  line-height: 1.2;
+  text-align: center;
+  width: 100%;
+  cursor: default;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.client-sidebar-drawer__sub {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.sidebar-block {
+  margin: 0;
+}
+
+.sidebar-block + .sidebar-block {
+  margin-top: 0.2rem;
+}
+
+.sidebar-block__titulo {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/**
+ * Títulos de bloco (Informações, Pacotes, Assinaturas) — alinhado ao hub do drawer, sem uppercase.
+ */
+#sidebar-info-titulo.sidebar-block__titulo--info,
+#sidebar-pacotes-titulo.sidebar-block__titulo--info,
+#sidebar-assinaturas-titulo.sidebar-block__titulo--info {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000bf;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.sidebar-block .sidebar-block__titulo--info {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-block__link-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/**
+ * Hover: faixa até ao divisor (compensa `--client-sidebar-pad-end` do host).
+ * À esquerda mantém o mesmo alinhamento do título “Informações” (sem bleed no drawer).
+ */
+.sidebar-block--informacoes .sidebar-block__link-list {
+  width: calc(100% + var(--client-sidebar-pad-end));
+  margin-right: calc(-1 * var(--client-sidebar-pad-end));
+  box-sizing: border-box;
+}
+
+.sidebar-block__link-list li {
+  margin: 0;
+  display: block;
+  width: 100%;
+}
+
+/**
+ * Faixa de hover full-bleed (bordas do painel / divisor) sem mover o hit-area do botão.
+ * `--drawer-pad-x` herda do `.app-drawer` no hub.
+ */
+.sidebar-block--informacoes .sidebar-block__link-list li {
+  position: relative;
+  isolation: isolate;
+}
+
+.sidebar-block--informacoes .sidebar-block__link-list li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--drawer-pad-x, 0px));
+  right: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color 0.12s ease;
+}
+
+.sidebar-block--informacoes .sidebar-block__link-list li:has(.sidebar-block__linklike:hover)::before,
+.sidebar-block--informacoes .sidebar-block__link-list li:has(.sidebar-block__linklike:focus-visible)::before {
+  background: #f3f4f6;
+}
+
+.sidebar-block__linklike {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  /** Alinhado ao bloco do título; faixa de hover ainda full-bleed à direita via a `ul`. */
+  padding: 0.5rem 0.5rem 0.5rem 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-family: Inter, sans-serif;
+  font-size: var(--drawer-field-font-size, 0.88rem);
+  font-weight: 400;
+  line-height: 1.4;
+  align-items: center;
+  gap: 0.72rem;
+  color: #4f46e5;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.sidebar-block--informacoes .sidebar-block__linklike {
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-block__link-ico {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4f46e5;
+  line-height: 0;
+  align-self: center;
+}
+
+.sidebar-block__link-svg {
+  display: block;
+}
+
+.sidebar-block__link-txt {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.sidebar-block__linklike:hover,
+.sidebar-block__linklike:focus-visible {
+  text-decoration: none;
+  color: #4f46e5;
+}
+
+.sidebar-block__linklike:hover .sidebar-block__link-ico,
+.sidebar-block__linklike:focus-visible .sidebar-block__link-ico {
+  color: #4f46e5;
+}
+
+.sidebar-block__linklike:focus-visible {
+  outline: 2px solid color-mix(in srgb, #4f46e5 40%, transparent);
+  outline-offset: 1px;
+}
+
+.sidebar-block__lista {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.88rem;
+  color: var(--color-text);
+  line-height: 1.45;
+
+  li {
+    margin: 0.2rem 0;
+  }
+}
+
+.sidebar-block__notas {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.sidebar-block__placeholder {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 720px) {
+  :host {
+    min-height: 0;
+    padding: 0 0 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--drawer-stroke, #e7e5e4);
+  }
+}

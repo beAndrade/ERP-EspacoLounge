@@ -111,37 +111,28 @@
                   <button
                     type="button"
                     class="day-col__card"
-                    [style.borderLeftColor]="
-                      corGrupo(idAtendimentoBloco(lay.bloco))
-                    "
+                    [style.background]="corFundoCartaoBloco(lay.bloco)"
                     [disabled]="!idAtendimentoBloco(lay.bloco)"
                     [attr.aria-label]="
-                      'Ver detalhes na receção: ' + rotuloBloco(lay.bloco)
+                      'Editar agendamento: ' + rotuloBloco(lay.bloco)
                     "
-                    (click)="
-                      abrirDetalhesNaRececaoBloco(lay.bloco, $event)
-                    "
+                    (click)="abrirDrawerEdicaoBloco(lay.bloco, $event)"
                   >
                     <span class="day-col__card-body">
-                      <span class="day-col__card-linha1">
-                        <span class="day-col__card-time">{{
-                          horaBloco(lay.bloco)
-                        }}</span>
-                        <span class="day-col__card-sep" aria-hidden="true"
-                          >·</span
-                        >
-                        <span class="day-col__card-nome">{{
-                          nomeClienteBloco(lay.bloco)
-                        }}</span>
-                      </span>
+                      <span class="day-col__card-time-range">{{
+                        intervaloHHmmBloco(lay.bloco)
+                      }}</span>
+                      <span class="day-col__card-nome">{{
+                        nomeClienteBloco(lay.bloco)
+                      }}</span>
                       @let itensCard = itensResumoBloco(lay.bloco);
                       @if (itensCard.length) {
-                        <div class="day-col__card-linha2">
-                          <ul class="day-col__card-itens">
-                            @for (item of itensCard; track item) {
-                              <li>{{ item }}</li>
-                            }
-                          </ul>
+                        <div class="day-col__card-itens-wrap">
+                          @for (item of itensCard; track item) {
+                            <span class="day-col__card-item-line">{{
+                              item
+                            }}</span>
+                          }
                         </div>
                       }
                     </span>
@@ -156,31 +147,27 @@
   </section>
 </div>
 
-<section class="hub-rececao" aria-label="Receção do dia">
-  <app-atendimentos
-    #rececao
-    [dataAgenda]="diaYmd"
-    [modoAgendaHub]="true"
-    [reloadKey]="tickRececao"
-    (agendaDadosAlterados)="onAgendaDadosAlteradosRececao()"
-  />
-</section>
-
 @if (modalAberto && modalContexto) {
   <div
-    class="modal-backdrop"
+    class="overlay"
+    [class.overlay--open]="drawerPanelOpen"
+    aria-hidden="true"
+    (click)="fecharModal()"
+  ></div>
+  <div
+    class="app-drawer"
+    [class.app-drawer--open]="drawerPanelOpen"
     role="dialog"
     aria-modal="true"
-    aria-label="Novo atendimento"
-    (click)="fecharModal()"
+    aria-label="Agendamento"
+    (click)="$event.stopPropagation()"
   >
-    <div class="modal-panel" (click)="$event.stopPropagation()">
-      <app-agenda-novo
-        [modoModal]="true"
-        [contextoSlot]="modalContexto"
-        (salvoComSucesso)="onSalvoModal()"
-        (cancelarModal)="fecharModal()"
-      />
-    </div>
+    <app-agenda-novo
+      [modoModal]="true"
+      [contextoSlot]="modalContexto"
+      (salvoComSucesso)="onSalvoModal()"
+      (cancelarModal)="fecharModal()"
+      (navegacaoNoHub)="onNavegarAgendamentoDrawer($event)"
+    />
   </div>
 }

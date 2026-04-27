@@ -1,8 +1,12 @@
 import {
   Component,
   EventEmitter,
+  HostBinding,
+  HostListener,
   inject,
   Input,
+  output,
+  ViewChild,
   OnChanges,
   OnDestroy,
   OnInit,
@@ -18,6 +22,7 @@ import {
   addMinutesToParts,
   civilNaiveSalaoParaUtcMs,
   formatSqlLocalDateTime,
+  pad2,
   parseSqlLocalDateTime,
   ymdOfParts,
 } from '../../core/utils/sql-local-datetime';
@@ -33,6 +38,7 @@ import {
   AbstractControl,
   FormArray,
   FormBuilder,
+  FormControl,
   FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
@@ -40,7 +46,10 @@ import {
 } from '@angular/forms';
 import {
   catchError,
+  concatMap,
   forkJoin,
+  from,
+  map,
   of,
   skip,
   Subject,
@@ -49,7 +58,21 @@ import {
   take,
   takeUntil,
 } from 'rxjs';
+import { AgendaModalCalendarComponent } from './agenda-modal-calendar.component';
+import {
+  AgendaHorarioSlotsComponent,
+  type IntervaloMinutosDia,
+} from './agenda-horario-slots.component';
+import { AgendaStatusSelectComponent } from './agenda-status-select.component';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { expandirDatasRepeticao } from './agenda-repetir-datas';
+import { AgendaRepetirCascadeComponent } from './agenda-repetir-cascade.component';
+import type { ValorRepetirAgendamento } from './agenda-repetir-cascade.models';
+import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.component';
+import {
+  SaasSelectComponent,
+  type SaasSelectOption,
+} from './saas-select.component';
 import {
   AtendimentoListaItem,
   CabeloCatalogoItem,
@@ -65,10 +88,16 @@ import {
 } from '../../core/models/api.models';
 import {
   dataDdMmAaaa,
+  dataDdMmBarraAaaa,
   horaInicialMenorDasLinhasAtendimento,
   ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
+import {
+  corHexAgendaPorStatus,
+  inferirAgendaStatusPorCorHex,
+  normalizarAgendaStatusId,
+} from '../../core/utils/agenda-status-card';
 
 /** Valor de `<input type="date">`: AAAA-MM-DD válido. */
 function normalizarDataIso(s: string): string | null {
@@ -86,13 +115,42 @@ function normalizarDataIso(s: string): string | null {
   return t;
 }
 
+/** Número a partir de string pt-BR/BR (R$, 1.234,56, 12,5). */
+function parseNumeroMonetarioPtString(s: string): number | null {
+  let t = String(s ?? '')
+    .trim()
+    .replace(/R\$\s*/i, '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s/g, '');
+  if (!t) return null;
+  if (t.includes(',')) {
+    t = t.replace(/\./g, '');
+    t = t.replace(',', '.');
+  } else {
+    t = t.replace(',', '.');
+  }
+  const n = parseFloat(t);
+  return Number.isNaN(n) ? null : n;
+}
+
+function formataMoedaBrl(n: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
 function valorCabeloPtValidator(
   control: AbstractControl,
 ): ValidationErrors | null {
   const v = String(control.value ?? '').trim();
   if (!v) return null;
-  const n = parseFloat(v.replace(/\s/g, '').replace(',', '.'));
-  return Number.isNaN(n) || n <= 0 ? { valorCabeloInvalido: true } : null;
+  const n = parseNumeroMonetarioPtString(v);
+  return n == null || Number.isNaN(n) || n <= 0
+    ? { valorCabeloInvalido: true }
+    : null;
 }
 
 function mapTipoFromApi(t: string): TipoAtendimento {
@@ -154,7 +212,16 @@ function ordenarEtapasParaSelect(nomes: string[]): string[] {
 @Component({
   selector: 'app-agenda-novo',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [
+    RouterLink,
+    ReactiveFormsModule,
+    AgendaNovoClientSidebarComponent,
+    AgendaRepetirCascadeComponent,
+    SaasSelectComponent,
+    AgendaModalCalendarComponent,
+    AgendaHorarioSlotsComponent,
+    AgendaStatusSelectComponent,
+  ],
   templateUrl: './agenda-novo.component.html',
   styleUrl: './agenda-novo.component.scss',
 })
@@ -164,6 +231,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
+  @HostBinding('class.agenda-novo--drawer')
+  get isDrawerMode(): boolean {
+    return this.modoModal;
+  }
+
+  /** Conteúdo extra na edição: espaçador leva Observações junto do footer, como no novo. */
+  @HostBinding('class.agenda-novo--edicao')
+  get isEdicaoNoDrawer(): boolean {
+    return this.modoModal && !!this.idAtendimentoEmEdicao?.trim();
+  }
+
   /** Quando true, esconde navegação global do formulário (uso dentro de modal). */
   @Input() modoModal = false;
   /** Pré-preenche data, primeira linha de serviço e slot (hora local). */
@@ -172,10 +250,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     profissional_id: number;
     /** Vazio = abrir só com data (e opcionalmente profissional). */
     hora?: string;
+    /** Hub: carregar este pedido em edição. */
+    id_atendimento?: string;
   } | null = null;
 
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
+  /** Hub: saltar para outro dia/pedido (próximas ocorrências). */
+  readonly navegacaoNoHub = output<{
+    data: string;
+    id_atendimento: string;
+  }>();
 
   readonly tiposLinhaAtendimento: TipoLinhaAtendimento[] = [
     'Serviço',
@@ -199,10 +284,78 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   carregandoListas = true;
   salvando = false;
+  excluindo = false;
   erro = '';
+
+  /** Apenas UI — não entram no `FormGroup` nem no payload. */
+  enviarLembreteUi = false;
+  /**
+   * Evita “pular” a animação líquida no primeiro paint (só liga após a 1ª interação).
+   */
+  lembreteToggleLiqArmed = false;
+
+  onLembreteToggleLiqArm(): void {
+    if (this.lembreteToggleLiqArmed) return;
+    this.lembreteToggleLiqArmed = true;
+  }
+
+  /**
+   * Pulse de sombra ao clicar: só com interação, não no primeiro render do drawer.
+   */
+  private pulseToggleLiqVisual(ev: Event): void {
+    ev.stopPropagation();
+    const el = ev.currentTarget;
+    if (!(el instanceof HTMLElement)) return;
+    el.classList.remove('toggle--pulse');
+    void el.offsetWidth;
+    el.classList.add('toggle--pulse');
+    window.setTimeout(() => {
+      el.classList.remove('toggle--pulse');
+    }, 1500);
+  }
+
+  onEnviarLembreteToggleClick(ev: Event): void {
+    this.pulseToggleLiqVisual(ev);
+    this.enviarLembreteUi = !this.enviarLembreteUi;
+    this.onLembreteToggleLiqArm();
+  }
+
+  onEnviarLembreteToggleKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    ev.preventDefault();
+    this.onEnviarLembreteToggleClick(ev);
+  }
+
+  onAplicarProximosToggleClick(ev: Event): void {
+    this.pulseToggleLiqVisual(ev);
+    this.aplicarAlteracoesProximos = !this.aplicarAlteracoesProximos;
+    this.onLembreteToggleLiqArm();
+  }
+
+  onAplicarProximosToggleKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    ev.preventDefault();
+    this.onAplicarProximosToggleClick(ev);
+  }
+
+  /**
+   * Repetição após a data base: na gravação gera 1 + N atendimentos
+   * (N vezes) em datas alinhadas à frequência, cada qual enviada à API.
+   */
+  repetirAgendamento: ValorRepetirAgendamento = { modo: 'nenhum' };
 
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
+  /**
+   * Datas `AAAA-MM-DD` com agendamento gravado (mesmo cliente e horário inicial),
+   * descobertas ao editar — para «Próximos agendamentos» da série salva.
+   */
+  datasSerieOcorrenciasSalvas: string[] = [];
+  /**
+   * Menor data `AAAA-MM-DD` já vista na série (cliente + hora), para o intervalo da API
+   * não “perder” ocorrências anteriores quando o formulário navega para uma data futura.
+   */
+  yminSerieOcorrenciasSalvas: string | null = null;
   private prefillEmCurso = false;
 
   /** Início/fim `YYYY-MM-DD HH:mm:ss` para a primeira linha criada (clique na grelha). */
@@ -211,17 +364,39 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private slotFormSub?: Subscription;
   private readonly destroy$ = new Subject<void>();
 
+  /** Modal hub: calendário custom e ocupação do dia. */
+  modalDataPickerOpen = false;
+  /** Intervalos [a,b) em minutos do dia para marcar horários (Indisponível). */
+  intervalosOcupacaoDia: IntervaloMinutosDia[] = [];
+  /** Aviso de horário já ocupado (sem encaixe automático). */
+  modalConflitoHorario = false;
+  private horaPendenteConflito: string | null = null;
+
+  /** Drawer: propagar alterações às ocorrências seguintes da repetição. */
+  aplicarAlteracoesProximos = false;
+
+  /** Menu Excluir (dropdown). */
+  excluirMenuAberto = false;
+
+  @ViewChild('horarioSlots') horarioSlots?: AgendaHorarioSlotsComponent;
+  @ViewChild('clienteSelectModal') clienteSelectModal?: SaasSelectComponent;
+
   readonly form = this.fb.group({
     cliente_id: ['', Validators.required],
     data: ['', Validators.required],
     observacao: [''],
     /** Horário inicial para linhas de Serviço (catálogo); sequência na ordem das linhas. */
     hora_inicial: [''],
+    /** Estado visual dos cartões na agenda (hub). */
+    agenda_status: ['confirmado'],
     /** Cada linha: tipo + campos específicos (Serviço, Mega, Pacote, Cabelo, Produto). */
     linhasItens: this.fb.array<FormGroup>([]),
   });
 
   ngOnInit(): void {
+    if (this.modoModal) {
+      this.lembreteToggleLiqArmed = true;
+    }
     const hoje = new Date();
     this.form.patchValue({
       data: this.toYmd(hoje),
@@ -257,8 +432,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.aplicarValidadoresLinhas();
 
         if (this.modoModal) {
-          this.aplicarContextoSlotInput();
-          this.carregandoListas = false;
+          const ctxId = this.contextoSlot?.id_atendimento?.trim();
+          if (ctxId) {
+            this.carregarEdicaoPorIdParaModal(ctxId);
+          } else {
+            this.aplicarContextoSlotInput();
+            this.carregandoListas = false;
+            const ymd = normalizarDataIso(
+              String(this.form.get('data')?.value ?? ''),
+            );
+            if (ymd) {
+              this.atualizarOcupacaoDia(ymd);
+            }
+          }
         } else {
           /**
            * Pré-preenchimento **só após** listas carregarem, lendo a URL real
@@ -283,12 +469,171 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (this.prefillEmCurso) return;
       this.slotAgenda = null;
     });
+
+    this.form.controls.data.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((d) => {
+        if (!this.modoModal || this.carregandoListas) return;
+        const ymd = normalizarDataIso(String(d ?? ''));
+        if (ymd) this.atualizarOcupacaoDia(ymd);
+      });
+  }
+
+  onDataModalPicked(ymd: string): void {
+    this.form.patchValue({ data: ymd }, { emitEvent: true });
+    this.modalDataPickerOpen = false;
+    this.atualizarOcupacaoDia(ymd);
+  }
+
+  onHorarioPainelAbriu(): void {
+    this.modalDataPickerOpen = false;
+    this.clienteSelectModal?.fecharPainel();
+  }
+
+  onClienteSelectPainelAbriu(): void {
+    this.modalDataPickerOpen = false;
+    this.horarioSlots?.fecharPainel();
+  }
+
+  /**
+   * Clico em qualquer ponto do bloco Data (incl. rótulo): abre o calendário no modal;
+   * fora do modal, abre o picker nativo.
+   */
+  onDataFieldClick(ev: MouseEvent, dataInput: HTMLInputElement): void {
+    const t = ev.target as HTMLElement;
+    if (t.closest('app-agenda-modal-calendar') || t.closest('.data-field__calendar-pop')) {
+      return;
+    }
+    if (!this.modoModal) {
+      if (t.closest('.data-field__hint')) return;
+      this.abrirPickerData(dataInput, ev);
+      return;
+    }
+    ev.preventDefault();
+    this.horarioSlots?.fecharPainel();
+    this.clienteSelectModal?.fecharPainel();
+    this.modalDataPickerOpen = !this.modalDataPickerOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocClickModalData(ev: MouseEvent): void {
+    const el = ev.target as HTMLElement | null;
+    if (this.excluirMenuAberto && el && !el.closest('.agenda-modal__excluir-wrap')) {
+      this.excluirMenuAberto = false;
+    }
+    if (!this.modoModal || !this.modalDataPickerOpen) return;
+    const t = ev.target;
+    if (!(t instanceof Node)) return;
+    const w = (ev.target as HTMLElement | null)?.closest(
+      '.data-field--modal-picker-root',
+    );
+    if (w) return;
+    this.modalDataPickerOpen = false;
+  }
+
+  onConflitoHorarioEscolhido(hhmm: string): void {
+    this.horaPendenteConflito = hhmm;
+    this.modalConflitoHorario = true;
+  }
+
+  fecharAvisoConflitoHorario(): void {
+    this.modalConflitoHorario = false;
+    this.horaPendenteConflito = null;
+  }
+
+  private atualizarOcupacaoDia(ymd: string): void {
+    if (!this.modoModal) return;
+    this.api
+      .listAgendamentos(ymd, ymd)
+      .pipe(
+        take(1),
+        catchError(() => of([] as AtendimentoListaItem[])),
+      )
+      .subscribe((items) => {
+        this.intervalosOcupacaoDia = this.montarIntervalosOcupados(
+          items,
+          ymd,
+          this.idAtendimentoEmEdicao,
+        );
+      });
+  }
+
+  private montarIntervalosOcupados(
+    items: AtendimentoListaItem[],
+    ymd: string,
+    excluirId: string | null | undefined,
+  ): IntervaloMinutosDia[] {
+    const eid = String(excluirId ?? '').trim();
+    const ranges: IntervaloMinutosDia[] = [];
+    for (const it of items) {
+      if (it.data !== ymd) continue;
+      if (eid && it.id === eid) continue;
+      const intv = this.intervaloMinutosAtendimento(it, ymd);
+      if (intv && intv.b > intv.a) {
+        ranges.push(intv);
+      }
+    }
+    return ranges;
+  }
+
+  private intervaloMinutosAtendimento(
+    r: AtendimentoListaItem,
+    ymd: string,
+  ): { a: number; b: number } | null {
+    const ini = r.inicio ? String(r.inicio).trim() : '';
+    if (!ini) return null;
+    const pI = parseSqlLocalDateTime(ini);
+    if (!pI || ymdOfParts(pI) !== ymd) return null;
+    const a = pI.hh * 60 + pI.mm;
+    const finS = r.fim ? String(r.fim).trim() : '';
+    if (finS) {
+      const pF = parseSqlLocalDateTime(finS);
+      if (pF) {
+        let b = pF.hh * 60 + pF.mm;
+        if (ymdOfParts(pF) !== ymd) {
+          b = 24 * 60;
+        }
+        if (b <= a) b = a + 5;
+        return { a, b };
+      }
+    }
+    return { a, b: a + 30 };
   }
 
   ngOnChanges(ch: SimpleChanges): void {
+    const ctxCh = ch['contextoSlot'];
+    if (ctxCh && this.modoModal && !this.carregandoListas) {
+      type Ctx = {
+        id_atendimento?: string;
+      } | null;
+      const prev = ctxCh.previousValue as Ctx;
+      const cur = ctxCh.currentValue as Ctx;
+      const prevId = prev?.id_atendimento?.trim() ?? '';
+      const curId = cur?.id_atendimento?.trim() ?? '';
+      if (curId && curId !== prevId) {
+        this.carregarEdicaoPorIdParaModal(curId);
+      } else if (!curId && prevId) {
+        this.idAtendimentoEmEdicao = null;
+        this.aplicarContextoSlotInput();
+        const ymd = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+        if (ymd) this.atualizarOcupacaoDia(ymd);
+      }
+    }
+
     if (!ch['contextoSlot'] && !ch['modoModal']) return;
     if (this.carregandoListas) return;
+    if (this.modoModal && this.contextoSlot?.id_atendimento?.trim()) {
+      return;
+    }
     this.aplicarContextoSlotInput();
+    if (ch['modoModal']?.currentValue) {
+      const ymd = normalizarDataIso(
+        String(this.form.get('data')?.value ?? ''),
+      );
+      if (ymd) {
+        this.atualizarOcupacaoDia(ymd);
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -493,6 +838,117 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       : 'Novo atendimento';
   }
 
+  /** Título no modal do hub (tom mais próximo de SaaS). */
+  tituloModal(): string {
+    if (!this.idAtendimentoEmEdicao?.trim()) {
+      return 'Novo agendamento';
+    }
+    return 'Editando agendamento';
+  }
+
+  clienteSelecionado(): Cliente | null {
+    const id = String(this.form.controls.cliente_id.value ?? '').trim();
+    if (!id) return null;
+    return this.clientes.find((c) => c.id === id) ?? null;
+  }
+
+  /** Exibição read-only na grelha do modal (linhas Serviço). */
+  duracaoServicoLinhaExibicao(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    if (!sid) return '—';
+    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+    const n = this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
+    return `${n} min`;
+  }
+
+  opcoesClientesSelect(): SaasSelectOption[] {
+    return this.clientes.map((c) => ({
+      value: c.id,
+      label: `${c.nome} — ${c.telefone || 'sem telefone'}`,
+    }));
+  }
+
+  /**
+   * Modal: lista só com nomes (IDs iguais aos de `opcoesClientesSelect` — dados da base via `listClientes`).
+   */
+  opcoesClientesNomes(): SaasSelectOption[] {
+    return this.clientes.map((c) => ({ value: c.id, label: c.nome.trim() || '—' }));
+  }
+
+  /** `cliente_id` + saas-select na coluna da esquerda do modal. */
+  get clienteIdControl(): FormControl {
+    return this.form.controls.cliente_id as FormControl;
+  }
+
+  opcoesTiposLinha(): SaasSelectOption[] {
+    return this.tiposLinhaAtendimento.map((t) => ({ value: t, label: t }));
+  }
+
+  opcoesServicosCatalogo(): SaasSelectOption[] {
+    return this.servicosTipoServico.map((s) => ({
+      value: s.id,
+      label: this.rotuloServico(s),
+    }));
+  }
+
+  opcoesTamanhosSelect(): SaasSelectOption[] {
+    return this.tamanhos.map((t) => ({ value: t, label: t }));
+  }
+
+  opcoesProfissionaisSelect(): SaasSelectOption[] {
+    return this.profissionais.map((p) => ({
+      value: String(p.id),
+      label: p.nome,
+    }));
+  }
+
+  opcoesProdutosSelect(): SaasSelectOption[] {
+    return this.produtos.map((pr) => ({
+      value: String(pr.produto),
+      label: pr.unidade
+        ? `${pr.produto} (${pr.unidade})`
+        : String(pr.produto),
+    }));
+  }
+
+  opcoesPacotesMegaSelect(): SaasSelectOption[] {
+    return this.pacotesMegaUnicos.map((p) => ({
+      value: p,
+      label: this.rotuloPacoteMegaOpcao(p),
+    }));
+  }
+
+  opcoesPacotesCatalogoSelect(): SaasSelectOption[] {
+    return this.pacotesOrdenados.map((item) => ({
+      value: String(item.pacote),
+      label: this.rotuloPacoteCatalogo(item),
+    }));
+  }
+
+  opcoesEtapasLinhaSelect(i: number): SaasSelectOption[] {
+    return this.etapasSelectOptionsLinha(i).map((e) => ({ value: e, label: e }));
+  }
+
+  opcoesCabelosCorSelect(): SaasSelectOption[] {
+    return this.cabelosCoresLista().map((x) => ({ value: x, label: x }));
+  }
+
+  opcoesCabelosTamCmSelect(i: number): SaasSelectOption[] {
+    return this.cabelosTamanhosListaLinha(i).map((x) => ({
+      value: x,
+      label: x,
+    }));
+  }
+
+  opcoesCabelosMetodoSelect(i: number): SaasSelectOption[] {
+    return this.cabelosMetodosListaLinha(i).map((x) => ({
+      value: x,
+      label: x,
+    }));
+  }
+
   /** `HH:mm` para `<input type="time">` a partir de `inicio` (SQL local ou ISO legado). */
   private horaInicialEdicaoDeInicio(
     inicio: string | null | undefined,
@@ -578,6 +1034,25 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   dataExibicao(): string {
     const ymd = String(this.form.controls.data.value ?? '').trim();
     return dataDdMmAaaa(ymd);
+  }
+
+  /**
+   * Exibição no modal (drawer): vazio mostra `dd/mm/aaaa`; com valor,
+   * `dd/mm/aaaa` (com barras, alinhado ao placeholder).
+   */
+  dataExibicaoModal(): string {
+    const ymd = String(this.form.controls.data.value ?? '').trim();
+    if (!ymd) return 'dd/mm/aaaa';
+    return dataDdMmBarraAaaa(ymd);
+  }
+
+  /** Valor do `data` para o calendário do modal. */
+  dataYmdString(): string {
+    return String(this.form.controls.data.value ?? '').trim();
+  }
+
+  irCriarCliente(): void {
+    this.router.navigate(['/clientes/novo']);
   }
 
   /**
@@ -884,8 +1359,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.erro = '';
-    const texto = total.toFixed(2).replace('.', ',');
-    g.patchValue({ valor_cabelo: texto });
+    g.patchValue({ valor_cabelo: formataMoedaBrl(total) });
     g.get('valor_cabelo')?.markAsTouched();
     g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
 
@@ -928,6 +1402,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.slotAgenda = null;
     this.aplicarValidadoresLinhas();
+    if (this.modoModal && t === 'Produto') {
+      const fb = this.profissionalFallbackParaProdutoNoModal(i);
+      if (fb != null) {
+        g.patchValue({ profissional: fb }, { emitEvent: false });
+      }
+    }
   }
 
   adicionarEtapaNaLinha(i: number): void {
@@ -951,32 +1431,122 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
-    const raw = this.form.getRawValue();
+    const raw = this.form.getRawValue() as Record<string, unknown>;
     if (!this.validarLinhas(raw)) {
       return;
     }
 
-    const payloads = this.montarPayloadsDasLinhas(raw);
-    if (payloads.length === 0) {
+    const dataBase = normalizarDataIso(String(raw['data'] ?? ''));
+    if (!dataBase) {
+      this.erro = 'Informe uma data válida.';
+      return;
+    }
+
+    const datas: string[] =
+      this.repetirAgendamento.modo === 'nenhum'
+        ? [dataBase]
+        : this.repetirAgendamento.modo === 'repetir'
+          ? expandirDatasRepeticao(
+              dataBase,
+              this.repetirAgendamento.vezes,
+              this.repetirAgendamento.frequencia,
+            )
+          : [dataBase];
+
+    const aplicarProx =
+      this.aplicarAlteracoesProximos &&
+      !!this.idAtendimentoEmEdicao?.trim() &&
+      this.repetirAgendamento.modo === 'repetir' &&
+      this.repetirAgendamento.vezes > 0;
+
+    if (this.idAtendimentoEmEdicao?.trim() && datas.length > 1 && !aplicarProx) {
+      this.erro =
+        'Ao editar, use «Aplicar alterações para os próximos» para gravar em várias datas, ou deixe a repetição em «não se repete».';
+      return;
+    }
+
+    const slotBak = this.slotAgenda;
+    this.slotAgenda = slotBak;
+    const amostra = this.montarPayloadsDasLinhas({
+      ...raw,
+      data: datas[0]!,
+    } as Record<string, unknown>);
+    this.slotAgenda = slotBak;
+    if (amostra.length === 0) {
       this.erro =
         'Confira os campos obrigatórios (data válida, cliente, serviços, etc.).';
       return;
     }
 
     const editId = this.idAtendimentoEmEdicao?.trim();
-    const criar$ = forkJoin(
-      payloads.map((p) => this.api.createAgendamento(p)),
+    const clienteId = String(raw['cliente_id'] ?? '').trim();
+    const horaIni = String(raw['hora_inicial'] ?? '');
+
+    const criar$ = from(datas).pipe(
+      concatMap((d, i) => {
+        this.slotAgenda = i === 0 ? slotBak : null;
+        const r = { ...raw, data: d } as Record<string, unknown>;
+        const pl = this.montarPayloadsDasLinhas(r);
+        this.slotAgenda = slotBak;
+        if (pl.length === 0) {
+          return of(true);
+        }
+        return forkJoin(pl.map((p) => this.api.createAgendamento(p)));
+      }),
     );
 
+    const salvar$ =
+      editId && aplicarProx
+        ? from(datas).pipe(
+            concatMap((d, i) => {
+              const r = { ...raw, data: d } as Record<string, unknown>;
+              this.slotAgenda = i === 0 ? slotBak : null;
+              const pl = this.montarPayloadsDasLinhas(r);
+              this.slotAgenda = slotBak;
+              if (!pl.length) return of(true);
+              const idVelho$ =
+                i === 0
+                  ? of(editId)
+                  : this.api.listAgendamentos(d, d).pipe(
+                      map((rows) =>
+                        this.encontrarIdAtendimentoClienteHora(
+                          rows,
+                          clienteId,
+                          horaIni,
+                          d,
+                        ),
+                      ),
+                    );
+              return idVelho$.pipe(
+                switchMap((idVelho) => {
+                  const idEx = String(idVelho ?? '').trim();
+                  const excluirAntes =
+                    idEx.length > 0
+                      ? this.api.excluirAtendimento(idEx)
+                      : of({ removidas: 0 });
+                  return excluirAntes.pipe(
+                    switchMap(() =>
+                      forkJoin(pl.map((p) => this.api.createAgendamento(p))),
+                    ),
+                  );
+                }),
+              );
+            }),
+          )
+        : editId
+          ? this.api.excluirAtendimento(editId).pipe(switchMap(() => criar$))
+          : criar$;
+
     this.salvando = true;
-    (editId
-      ? this.api.excluirAtendimento(editId).pipe(switchMap(() => criar$))
-      : criar$
-    ).subscribe({
+    salvar$.subscribe({
       next: () => {
         this.salvando = false;
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
+        this.repetirAgendamento = { modo: 'nenhum' };
+        this.aplicarAlteracoesProximos = false;
+        this.datasSerieOcorrenciasSalvas = [];
+        this.yminSerieOcorrenciasSalvas = null;
         if (this.modoModal) {
           this.salvoComSucesso.emit();
         } else {
@@ -990,6 +1560,122 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.salvando = false;
       },
     });
+  }
+
+  /** Remove o atendimento na API sem recriar linhas (só em modo edição). */
+  excluirSomente(): void {
+    const id = this.idAtendimentoEmEdicao?.trim();
+    if (!id || this.salvando || this.excluindo) return;
+    this.fecharExcluirMenu();
+    if (
+      !confirm(
+        'Excluir este atendimento? Esta ação não pode ser anulada.',
+      )
+    ) {
+      return;
+    }
+    this.erro = '';
+    this.excluindo = true;
+    this.api.excluirAtendimento(id).subscribe({
+      next: () => {
+        this.excluindo = false;
+        this.idAtendimentoEmEdicao = null;
+        this.slotAgenda = null;
+        if (this.modoModal) {
+          this.salvoComSucesso.emit();
+        } else {
+          void this.router.navigate(['/agenda']);
+        }
+      },
+      error: (e: Error) => {
+        this.excluindo = false;
+        this.erro =
+          e.message ||
+          'Não foi possível excluir. Verifique a internet e tente de novo.';
+      },
+    });
+  }
+
+  /** Exclui o pedido atual e tenta apagar ocorrências nas datas da repetição (mesmo cliente e horário). */
+  excluirEsteEProximosSerie(): void {
+    const id = this.idAtendimentoEmEdicao?.trim();
+    if (!id || this.salvando || this.excluindo) return;
+    this.fecharExcluirMenu();
+    if (
+      !confirm(
+        'Excluir este agendamento e as ocorrências nas datas seguintes da repetição (mesmo cliente e horário)?',
+      )
+    ) {
+      return;
+    }
+    const dataBase = normalizarDataIso(
+      String(this.form.get('data')?.value ?? ''),
+    );
+    if (!dataBase) {
+      this.erro = 'Data inválida.';
+      return;
+    }
+    const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const hi = normalizarHoraHHmm(
+      String(this.form.get('hora_inicial')?.value ?? ''),
+    );
+    if (!clienteId || !hi) {
+      this.erro = 'Cliente e horário são necessários para a exclusão em série.';
+      return;
+    }
+    let datas: string[] = [dataBase];
+    if (
+      this.repetirAgendamento.modo === 'repetir' &&
+      this.repetirAgendamento.vezes > 0
+    ) {
+      datas = expandirDatasRepeticao(
+        dataBase,
+        this.repetirAgendamento.vezes,
+        this.repetirAgendamento.frequencia,
+      );
+    }
+    this.erro = '';
+    this.excluindo = true;
+    forkJoin(
+      datas.map((d) =>
+        this.api.listAgendamentos(d, d).pipe(
+          take(1),
+          switchMap((rows) => {
+            const idDel =
+              d === dataBase
+                ? id
+                : this.encontrarIdAtendimentoClienteHora(
+                    rows,
+                    clienteId,
+                    hi,
+                    d,
+                  );
+            const ex = String(idDel ?? '').trim();
+            if (!ex) return of({ removidas: 0 });
+            return this.api.excluirAtendimento(ex);
+          }),
+        ),
+      ),
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.excluindo = false;
+          this.idAtendimentoEmEdicao = null;
+          this.slotAgenda = null;
+          if (this.modoModal) {
+            this.salvoComSucesso.emit();
+          } else {
+            void this.router.navigate(['/agenda']);
+          }
+        },
+        error: (e: Error) => {
+          this.excluindo = false;
+          this.erro =
+            e.message ||
+            'Não foi possível excluir em série. Verifique a internet e tente de novo.';
+        },
+      });
   }
 
   rotuloServico(s: Servico): string {
@@ -1100,6 +1786,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return '';
   }
 
+  private agendaStatusParaEdicao(rows: AtendimentoListaItem[]): string {
+    const src = rows.find((r) => (r.inicio || '').trim()) ?? rows[0];
+    const st = String(src?.agenda_status ?? '').trim();
+    if (st) return normalizarAgendaStatusId(st);
+    const porCor = inferirAgendaStatusPorCorHex(src?.agenda_cor);
+    if (porCor) return porCor;
+    return 'confirmado';
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
@@ -1112,6 +1807,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         (l0.data || '').trim().slice(0, 10),
     );
     const obsMegaPacote = stripQtdSuffixObservacao(l0.descricao || '');
+    const agendaStEd = this.agendaStatusParaEdicao(sorted);
 
     this.prefillEmCurso = true;
 
@@ -1166,6 +1862,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               ? this.menorHoraInicialServicoEdicao(servRowsOnly, dataYmd)
               : '',
           observacao: '',
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1195,6 +1892,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: stripQtdSuffixObservacao(l0.descricao || ''),
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1220,6 +1918,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           hora_inicial: this.menorHoraInicialServicoEdicao(sorted, dataYmd),
           observacao: '',
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1252,6 +1951,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: obsMegaPacote,
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1284,6 +1984,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: obsMegaPacote,
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1305,6 +2006,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           data: dataYmd,
           observacao: '',
           hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
+          agenda_status: agendaStEd,
         },
         { emitEvent: false },
       );
@@ -1333,8 +2035,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private valorCampoCabeloDeApi(v: unknown): string {
     const n = valorMonetarioParaNumero(v);
     if (n === null) return '';
-    const s = String(n);
-    return s.includes('.') ? s.replace('.', ',') : s;
+    return formataMoedaBrl(n);
   }
 
   private toYmd(d: Date): string {
@@ -1367,7 +2068,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     itemTipo: TipoLinhaAtendimento = 'Serviço',
   ): FormGroup {
     const g = this.fb.group({
-      itemTipo: this.fb.nonNullable.control<TipoLinhaAtendimento>(itemTipo),
+      itemTipo: this.fb.control<TipoLinhaAtendimento>(itemTipo),
       servico_id: [''],
       tamanho: this.fb.nonNullable.control<string>('Curto'),
       profissional: [null as number | null],
@@ -1434,7 +2135,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       } else if (tipo === 'Produto') {
         prod?.setValidators([Validators.required]);
         qtd?.setValidators([Validators.required, Validators.min(0.01)]);
-        profS?.setValidators([Validators.required]);
+        if (this.modoModal) {
+          profS?.clearValidators();
+        } else {
+          profS?.setValidators([Validators.required]);
+        }
       } else if (tipo === 'Mega' || tipo === 'Pacote') {
         pac?.setValidators([Validators.required]);
       } else if (tipo === 'Cabelo') {
@@ -1480,7 +2185,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       const tipo = String(
         g.get('itemTipo')?.value ?? '',
       ) as TipoLinhaAtendimento;
-      if (!this.linhaValida(g, tipo)) return false;
+      if (!this.linhaValida(g, tipo, i)) return false;
     }
     return true;
   }
@@ -1492,7 +2197,37 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return valorMonetarioParaNumero(pr.preco);
   }
 
-  private linhaValida(g: FormGroup, tipo: TipoLinhaAtendimento): boolean {
+  /**
+   * No drawer, linha «Produto» não mostra profissional: usa o da 1.ª linha Serviço
+   * (ou `contextoSlot`) para gravar na API.
+   */
+  private profissionalFallbackParaProdutoNoModal(linhaIndex: number): number | null {
+    if (!this.modoModal) return null;
+    for (let j = 0; j < linhaIndex; j++) {
+      const gg = this.linhasItensArray.at(j);
+      if (gg?.get('itemTipo')?.value === 'Serviço') {
+        const p = Number(gg.get('profissional')?.value);
+        if (p > 0) return p;
+      }
+    }
+    for (let j = 0; j < this.linhasItensArray.length; j++) {
+      const gg = this.linhasItensArray.at(j);
+      if (gg?.get('itemTipo')?.value === 'Serviço') {
+        const p = Number(gg.get('profissional')?.value);
+        if (p > 0) return p;
+      }
+    }
+    const c = this.contextoSlot;
+    if (c && c.profissional_id > 0) return c.profissional_id;
+    return null;
+  }
+
+  private linhaValida(
+    g: FormGroup,
+    tipo: TipoLinhaAtendimento | (string & {}),
+    linhaIndex = 0,
+  ): boolean {
+    if (!String(tipo ?? '').trim()) return false;
     if (tipo === 'Serviço') {
       if (!String(g.get('servico_id')?.value ?? '').trim()) return false;
       const p = g.get('profissional')?.value;
@@ -1503,7 +2238,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       const q = Number(g.get('quantidade')?.value);
       if (Number.isNaN(q) || q <= 0) return false;
       const p = g.get('profissional')?.value;
-      if (p == null || !(Number(p) > 0)) return false;
+      const direct = p != null && Number(p) > 0;
+      const fb =
+        this.modoModal &&
+        (this.profissionalFallbackParaProdutoNoModal(linhaIndex) ?? 0) > 0;
+      if (!direct && !fb) return false;
       const nome = String(g.get('produto')?.value ?? '').trim();
       const catPreco = this.precoCatalogoProduto(nome);
       const manual = this.parseValorPt(
@@ -1562,6 +2301,228 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
     this.prefillEmCurso = false;
     this.slotAgenda = null;
+  }
+
+  /** Hub / navegação: carrega pedido no formulário e libera listas. */
+  private carregarEdicaoPorIdParaModal(id: string): void {
+    const trimmed = id.trim();
+    if (!trimmed) {
+      this.carregandoListas = false;
+      return;
+    }
+    this.erro = '';
+    this.idAtendimentoEmEdicao = trimmed;
+    this.api
+      .listAgendamentos(undefined, undefined, trimmed)
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe({
+        next: (items) => {
+          if (items.length > 0) {
+            this.aplicarEdicaoNoForm(items);
+            const ymd = normalizarDataIso(
+              String(this.form.get('data')?.value ?? ''),
+            );
+            if (ymd && this.modoModal) {
+              this.atualizarOcupacaoDia(ymd);
+            }
+            this.carregarDatasSerieSalvasPosEdicao();
+          } else {
+            this.idAtendimentoEmEdicao = null;
+            this.datasSerieOcorrenciasSalvas = [];
+            this.yminSerieOcorrenciasSalvas = null;
+            this.erro = 'Atendimento não encontrado.';
+            this.aplicarContextoSlotInput();
+          }
+          this.carregandoListas = false;
+        },
+        error: () => {
+          this.erro = 'Não foi possível carregar o atendimento.';
+          this.idAtendimentoEmEdicao = null;
+          this.datasSerieOcorrenciasSalvas = [];
+          this.yminSerieOcorrenciasSalvas = null;
+          this.carregandoListas = false;
+        },
+      });
+  }
+
+  toggleExcluirMenu(): void {
+    this.excluirMenuAberto = !this.excluirMenuAberto;
+  }
+
+  fecharExcluirMenu(): void {
+    this.excluirMenuAberto = false;
+  }
+
+  mostrarSecaoProximosAgendamentosSalvos(): boolean {
+    return (
+      this.modoModal &&
+      !!this.idAtendimentoEmEdicao?.trim() &&
+      this.datasSerieOcorrenciasSalvas.length >= 2
+    );
+  }
+
+  chipsProximosAgendamentosSalvos(): { ymd: string; ancla: boolean }[] {
+    const base = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    const sorted = [...this.datasSerieOcorrenciasSalvas].sort();
+    return sorted.map((ymd) => ({
+      ymd,
+      ancla: !!base && ymd === base,
+    }));
+  }
+
+  chipAtivoProximoSerieSalva(chip: { ymd: string }): boolean {
+    const ymd = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    return !!ymd && ymd === chip.ymd;
+  }
+
+  onChipProximoSalvoClick(chip: { ymd: string; ancla: boolean }): void {
+    if (chip.ancla) {
+      const id = this.idAtendimentoEmEdicao?.trim();
+      if (id && this.modoModal) {
+        this.navegacaoNoHub.emit({ data: chip.ymd, id_atendimento: id });
+      }
+      return;
+    }
+    this.pularParaDataRepeticao(chip.ymd);
+  }
+
+  formatarDataBadgePt(ymd: string): string {
+    const p = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd.trim());
+    if (!p) return ymd;
+    return `${p[3]}/${p[2]}/${p[1]}`;
+  }
+
+  /** Lista agendamentos no intervalo e detecta outras datas com o mesmo cliente e hora. */
+  private carregarDatasSerieSalvasPosEdicao(): void {
+    if (!this.modoModal || !this.idAtendimentoEmEdicao?.trim()) return;
+    const base = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const hi = normalizarHoraHHmm(
+      String(this.form.get('hora_inicial')?.value ?? ''),
+    );
+    if (!base || !cid || !hi) return;
+    const ymin = this.yminSerieOcorrenciasSalvas;
+    const desde =
+      ymin && /^\d{4}-\d{2}-\d{2}$/.test(ymin) && ymin < base ? ymin : base;
+    const fim = this.ymdAddMeses(desde, 24);
+    this.api
+      .listAgendamentos(desde, fim)
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          const vistoId = new Set<string>();
+          const datas = new Set<string>();
+          for (const r of rows) {
+            const id = String(r.id || '').trim();
+            if (!id || vistoId.has(id)) continue;
+            if (String(r.idCliente ?? '').trim() !== cid) continue;
+            vistoId.add(id);
+            const grupo = rows.filter((x) => String(x.id || '').trim() === id);
+            const d =
+              this.dataYmdValidaDoPedido(grupo) ||
+              String(r.data ?? '').trim().slice(0, 10);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d < desde) continue;
+            const hLinha = horaInicialMenorDasLinhasAtendimento(grupo, d);
+            if (normalizarHoraHHmm(hLinha || '') !== hi) continue;
+            datas.add(d);
+          }
+          const sorted = [...datas].sort();
+          this.datasSerieOcorrenciasSalvas = sorted;
+          this.yminSerieOcorrenciasSalvas = sorted.length > 0 ? sorted[0]! : null;
+        },
+        error: () => {
+          this.datasSerieOcorrenciasSalvas = [];
+          this.yminSerieOcorrenciasSalvas = null;
+        },
+      });
+  }
+
+  private ymdAddMeses(ymd: string, meses: number): string {
+    const p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
+    if (!p) return ymd;
+    const d = new Date(
+      parseInt(p[1], 10),
+      parseInt(p[2], 10) - 1 + meses,
+      parseInt(p[3], 10),
+    );
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  formatarDataCurtaPt(ymd: string): string {
+    const p = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd.trim());
+    if (!p) return ymd;
+    const d = new Date(
+      parseInt(p[1], 10),
+      parseInt(p[2], 10) - 1,
+      parseInt(p[3], 10),
+    );
+    return d.toLocaleDateString('pt-BR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+    });
+  }
+
+  /** Resolve o id do pedido noutro dia (mesmo cliente e horário inicial). */
+  private encontrarIdAtendimentoClienteHora(
+    rows: AtendimentoListaItem[],
+    clienteId: string,
+    horaAlvo: string,
+    ymd: string,
+  ): string | null {
+    const hi = normalizarHoraHHmm(horaAlvo);
+    const cid = clienteId.trim();
+    if (!hi || !cid) return null;
+    const ids = new Set<string>();
+    for (const r of rows) {
+      const id = String(r.id || '').trim();
+      if (!id) continue;
+      if (String(r.idCliente || '').trim() !== cid) continue;
+      ids.add(id);
+    }
+    for (const id of ids) {
+      const grupo = rows.filter((x) => String(x.id || '').trim() === id);
+      const hLinha = horaInicialMenorDasLinhasAtendimento(grupo, ymd);
+      if (hLinha && normalizarHoraHHmm(hLinha) === hi) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  pularParaDataRepeticao(ymd: string): void {
+    const d = ymd.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const hi = normalizarHoraHHmm(
+      String(this.form.get('hora_inicial')?.value ?? ''),
+    );
+    if (!cid || !hi) {
+      this.erro = 'Preencha cliente e horário para localizar o agendamento.';
+      return;
+    }
+    this.api
+      .listAgendamentos(d, d)
+      .pipe(take(1), takeUntil(this.destroy$))
+      .subscribe({
+        next: (rows) => {
+          const id = this.encontrarIdAtendimentoClienteHora(rows, cid, hi, d);
+          if (!id) {
+            this.erro =
+              'Não foi encontrado agendamento nesta data com o mesmo cliente e horário.';
+            return;
+          }
+          this.erro = '';
+          this.fecharExcluirMenu();
+          this.navegacaoNoHub.emit({ data: d, id_atendimento: id });
+        },
+        error: () => {
+          this.erro = 'Não foi possível localizar o agendamento.';
+        },
+      });
   }
 
   /** Exibe o fim previsto (HH:mm) para linhas de Serviço (catálogo) na ordem do formulário. */
@@ -1719,6 +2680,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!dataYmd) return [];
     const observacao = String(raw['observacao'] ?? '').trim() || undefined;
     const horaIni = String(raw['hora_inicial'] ?? '');
+    const agenda_status = normalizarAgendaStatusId(
+      String(raw['agenda_status'] ?? ''),
+    );
+    const agenda_cor =
+      corHexAgendaPorStatus(agenda_status) ?? '#32C787';
+    const agendaCartao = { agenda_status, agenda_cor };
 
     type Prep = {
       servico_id: string;
@@ -1790,12 +2757,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const slotPatch =
           sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
         if (pr.st === 'fixo') {
-          out.push({ ...pr.base, ...slotPatch });
+          out.push({ ...pr.base, ...slotPatch, ...agendaCartao });
         } else {
           out.push({
             ...pr.base,
             tamanho: pr.tamanho ?? 'Curto',
             ...slotPatch,
+            ...agendaCartao,
           });
         }
         primeiroMerge = false;
@@ -1807,7 +2775,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!nome) continue;
         const q = Number(g.get('quantidade')?.value);
         if (Number.isNaN(q) || q <= 0) continue;
-        const pidProd = Number(g.get('profissional')?.value);
+        let pidProd = Number(g.get('profissional')?.value);
+        if (!(Number.isFinite(pidProd) && pidProd > 0)) {
+          const fb = this.profissionalFallbackParaProdutoNoModal(i);
+          if (fb != null && fb > 0) pidProd = fb;
+        }
         const manualPreco = this.parseValorPt(
           String(g.get('preco_unitario')?.value ?? '').trim(),
         );
@@ -1821,6 +2793,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               produto: nome,
               quantidade: q,
               observacao,
+              ...agendaCartao,
               ...(Number.isFinite(pidProd) && pidProd > 0
                 ? { profissional_id: pidProd }
                 : {}),
@@ -1861,6 +2834,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                 profissional_id: Number(x.profissional),
               })),
               observacao,
+              ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
@@ -1894,6 +2868,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                 profissional_id: Number(x.profissional),
               })),
               observacao,
+              ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
@@ -1921,6 +2896,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               valor: v,
               observacao,
               detalhes_cabelo: det || undefined,
+              ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
@@ -1935,9 +2911,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private parseValorPt(s: string): number | null {
-    const t = s.trim().replace(/\s/g, '').replace(',', '.');
-    if (!t) return null;
-    const n = parseFloat(t);
-    return Number.isNaN(n) ? null : n;
+    return parseNumeroMonetarioPtString(s);
+  }
+
+  onValorCabeloMoedaBlur(i: number): void {
+    const g = this.linhasItensArray.at(i);
+    if (!g) return;
+    const c = g.get('valor_cabelo');
+    if (!c) return;
+    const s = String(c.value ?? '').trim();
+    if (!s) return;
+    const n = parseNumeroMonetarioPtString(s);
+    if (n === null || n <= 0) return;
+    c.setValue(formataMoedaBrl(n), { emitEvent: true });
+    c.updateValueAndValidity({ emitEvent: true });
   }
 }

@@ -1,0 +1,154 @@
+<div class="client-sidebar-drawer">
+  <div
+    class="client-sidebar-drawer__avatar"
+    [class.client-sidebar-drawer__avatar--empty]="!temClienteSelecionado"
+  >
+    @if (temClienteSelecionado) {
+      <span class="client-sidebar-drawer__iniciais">{{ iniciaisAvatar() }}</span>
+    } @else {
+      <span class="client-sidebar-drawer__avatar-ico" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="client-sidebar-drawer__user-svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+          />
+        </svg>
+      </span>
+    }
+  </div>
+
+  @if (!temClienteSelecionado) {
+    <app-saas-select
+      layout="sidebar"
+      [bindToControl]="clienteIdControl"
+      [options]="opcoesClientes"
+      placeholder="Busque pelo cliente"
+      [showFilter]="true"
+      [showCriarCliente]="false"
+    />
+  } @else {
+    <div class="client-sidebar-drawer__cliente-head">
+      <button
+        type="button"
+        class="client-sidebar-drawer__nome-destaque client-sidebar-drawer__nome-btn"
+        aria-label="Abrir perfil do cliente (em breve)"
+      >
+        {{ cliente?.nome?.trim() || '—' }}
+      </button>
+      <p class="client-sidebar-drawer__sub">{{ telefoneExibicao() }}</p>
+      @if (mostrarBadgeClienteNovo) {
+        <span
+          class="client-sidebar-drawer__badge-novo-wrap"
+          tabindex="0"
+          aria-label="É um cliente sem agendamentos ou comandas, trate-o muito bem."
+        >
+          <span class="client-sidebar-drawer__badge-novo" aria-hidden="true">Novo</span>
+          <span class="client-sidebar-drawer__badge-novo-tooltip" aria-hidden="true">
+            <span class="client-sidebar-drawer__badge-novo-tooltip__line"
+              >É um cliente sem agendamentos</span>
+            <span class="client-sidebar-drawer__badge-novo-tooltip__line"
+              >ou comandas, trate-o muito bem</span>
+            <span class="client-sidebar-drawer__badge-novo-tooltip-emoji" aria-hidden="true">😁</span>
+          </span>
+        </span>
+      }
+    </div>
+  }
+</div>
+
+@if (temClienteSelecionado) {
+  <div class="client-sidebar-drawer__dados" aria-live="polite">
+    <section
+      class="sidebar-block sidebar-block--informacoes"
+      aria-labelledby="sidebar-info-titulo"
+    >
+      <h3 class="sidebar-block__titulo sidebar-block__titulo--info" id="sidebar-info-titulo">
+        Informações
+      </h3>
+      <ul class="sidebar-block__link-list" aria-label="Resumo do cliente (links em breve)">
+        <li>
+          <button type="button" class="sidebar-block__linklike">
+            <span class="sidebar-block__link-ico" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
+                <path d="M12 7v14"/>
+                <path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/>
+                <path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"/>
+                <rect x="3" y="7" width="18" height="4" rx="1"/>
+              </svg>
+            </span>
+            <span class="sidebar-block__link-txt">Aniversário não definido</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">
+            <span class="sidebar-block__link-ico" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
+                <path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5"/>
+                <path d="M18 12h.01"/>
+                <path d="M19 22v-6"/>
+                <path d="m22 19-3-3-3 3"/>
+                <path d="M6 12h.01"/>
+                <circle cx="12" cy="12" r="2"/>
+              </svg>
+            </span>
+            <span class="sidebar-block__link-txt">R$ 0,00 em cashback</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">
+            <span class="sidebar-block__link-ico" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+                <path d="M12 18V6"/>
+              </svg>
+            </span>
+            <span class="sidebar-block__link-txt">R$ 0,00 em crédito</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">
+            <span class="sidebar-block__link-ico" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
+                <path d="M12 3v6"/>
+                <path d="M16.76 3a2 2 0 0 1 1.8 1.1l2.23 4.479a2 2 0 0 1 .21.891V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.472a2 2 0 0 1 .211-.894L5.45 4.1A2 2 0 0 1 7.24 3z"/>
+                <path d="M3.054 9.013h17.893"/>
+              </svg>
+            </span>
+            <span class="sidebar-block__link-txt">0 comandas em aberto</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="sidebar-block__linklike">
+            <span class="sidebar-block__link-ico" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+                <path d="M12 9v4"/>
+                <path d="M12 17h.01"/>
+              </svg>
+            </span>
+            <span class="sidebar-block__link-txt">0 pagamentos em aberto</span>
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <section class="sidebar-block" aria-labelledby="sidebar-pacotes-titulo">
+      <h3 class="sidebar-block__titulo sidebar-block__titulo--info" id="sidebar-pacotes-titulo">Pacotes</h3>
+      <p class="sidebar-block__placeholder">Não há pacotes disponíveis</p>
+    </section>
+
+    <section class="sidebar-block" aria-labelledby="sidebar-assinaturas-titulo">
+      <h3 class="sidebar-block__titulo sidebar-block__titulo--info" id="sidebar-assinaturas-titulo">Assinaturas</h3>
+      <p class="sidebar-block__placeholder">Não há assinaturas disponíveis</p>
+    </section>
+  </div>
+}

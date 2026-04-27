@@ -1,0 +1,63 @@
+<div
+  class="am-cal"
+  role="dialog"
+  aria-label="Calendário"
+  (click)="$event.stopPropagation()"
+>
+  <div class="am-cal__head">
+    <button
+      type="button"
+      class="am-cal__arrow"
+      (click)="stepAno(-1)"
+      aria-label="Ano anterior"
+    >
+      <span aria-hidden="true">«</span>
+    </button>
+    <button
+      type="button"
+      class="am-cal__arrow"
+      (click)="stepMes(-1)"
+      aria-label="Mês anterior"
+    >
+      <span aria-hidden="true">‹</span>
+    </button>
+    <div class="am-cal__title">{{ tituloMesAno }}</div>
+    <button
+      type="button"
+      class="am-cal__arrow"
+      (click)="stepMes(1)"
+      aria-label="Mês seguinte"
+    >
+      <span aria-hidden="true">›</span>
+    </button>
+    <button
+      type="button"
+      class="am-cal__arrow"
+      (click)="stepAno(1)"
+      aria-label="Ano seguinte"
+    >
+      <span aria-hidden="true">»</span>
+    </button>
+  </div>
+  <div class="am-cal__week">
+    @for (w of weekDays; track w) {
+      <div class="am-cal__wcell">{{ w }}</div>
+    }
+  </div>
+  <div class="am-cal__grid">
+    @for (c of cells; track c.ymd + $index) {
+      <button
+        type="button"
+        class="am-cal__day"
+        [class.am-cal__day--out]="!c.inMonth"
+        [class.am-cal__day--sel]="selecionadoYmd(c.ymd)"
+        (click)="escolher(c.ymd)"
+      >
+        {{ c.d }}
+      </button>
+    }
+  </div>
+  <div class="am-cal__footer">
+    <button type="button" class="am-cal__hoje" (click)="irHoje()">Hoje</button>
+  </div>
+</div>

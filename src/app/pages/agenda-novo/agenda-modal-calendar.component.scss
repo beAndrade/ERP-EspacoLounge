@@ -1,0 +1,130 @@
+:host {
+  display: block;
+}
+
+.am-cal {
+  width: min(100%, 20rem);
+  padding: 0.65rem 0.75rem 0.5rem;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow:
+    0 4px 14px rgba(15, 23, 42, 0.1),
+    0 1px 2px rgba(15, 23, 42, 0.06);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.am-cal__head {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: 0.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.am-cal__title {
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+  padding: 0 0.25rem;
+}
+
+.am-cal__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  cursor: pointer;
+  line-height: 1;
+
+  &:hover {
+    color: #6b7280;
+    background: #f3f4f6;
+  }
+}
+
+.am-cal__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.15rem;
+  margin-bottom: 0.25rem;
+}
+
+.am-cal__wcell {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #9ca3af;
+  padding: 0.2rem 0;
+}
+
+.am-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.2rem;
+}
+
+.am-cal__day {
+  aspect-ratio: 1;
+  min-height: 1.85rem;
+  max-height: 2.2rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #1f2937;
+  cursor: pointer;
+  line-height: 1.1;
+
+  &--out {
+    color: #c4c4c4;
+    font-weight: 400;
+  }
+
+  &:not(.am-cal__day--sel):hover {
+    background: #f3f4f6;
+  }
+
+  &--sel {
+    background: #1677ff;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  &--sel:hover {
+    background: #0958d9;
+  }
+}
+
+.am-cal__footer {
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.am-cal__hoje {
+  border: none;
+  background: none;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1677ff;
+  cursor: pointer;
+  border-radius: 6px;
+
+  &:hover {
+    background: #e6f4ff;
+  }
+}

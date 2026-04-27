@@ -1,5 +1,5 @@
 /* Largura da coluna esquerda (mini-cal + filtros + ações). */
-$hub-sidebar-w: 16rem;
+$hub-sidebar-w: 20rem;
 
 .hub-sidebar__actions {
   margin-top: 0.75rem;
@@ -337,132 +337,159 @@ $agenda-slot-rows: 31;
   box-sizing: border-box;
   min-height: 0;
   margin: 0;
-  padding: 0.3rem 0.35rem;
+  padding: 0.45rem 0.5rem;
   text-align: left;
   font: inherit;
   font-size: 0.72rem;
-  line-height: 1.25;
-  color: inherit;
+  line-height: 1.3;
+  color: #fff;
   cursor: pointer;
-  background: #fff;
-  border: 1px solid #e7e5e4;
-  border-left-width: 4px;
-  border-radius: 6px;
+  border: none;
+  border-radius: 9px;
   overflow-x: hidden;
   overflow-y: auto;
   z-index: 2;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 0.15rem;
+  gap: 0.2rem;
   min-width: 0;
 }
 
 .day-col__card:hover:not(:disabled) {
-  filter: brightness(0.98);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  filter: brightness(1.04);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
 }
 
 .day-col__card:disabled {
   cursor: default;
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
 .day-col__card-body {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.18rem;
   min-width: 0;
   width: 100%;
 }
 
-/* 1ª linha: horário + nome do cliente */
-.day-col__card-linha1 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 0.35rem;
-  line-height: 1.2;
-  min-width: 0;
-}
-
-.day-col__card-time {
+.day-col__card-time-range {
+  display: block;
   font-weight: 700;
+  font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
-  color: var(--color-text, #1c1917);
-  flex-shrink: 0;
-}
-
-.day-col__card-sep {
-  color: var(--color-muted, #78716c);
-  font-weight: 500;
-  user-select: none;
+  color: #fff;
+  letter-spacing: 0.01em;
 }
 
 .day-col__card-nome {
-  font-weight: 600;
+  display: block;
+  font-weight: 500;
+  font-size: 0.72rem;
+  color: #fff;
+  opacity: 0.98;
   min-width: 0;
   overflow-wrap: break-word;
   word-break: break-word;
 }
 
-/* 2ª linha: itens do atendimento */
-.day-col__card-linha2 {
+.day-col__card-itens-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
   min-width: 0;
 }
 
-.day-col__card-itens {
-  margin: 0;
-  padding-left: 1rem;
-  list-style: disc;
+.day-col__card-item-line {
+  display: block;
   font-size: 0.68rem;
   font-weight: 500;
-  line-height: 1.3;
-  color: var(--color-muted, #78716c);
+  line-height: 1.25;
+  color: #fff;
+  opacity: 0.95;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 
-  li {
-    margin: 0.08rem 0;
-    overflow-wrap: break-word;
-    word-break: break-word;
+/**
+ * Overlay por detrás do drawer (clique fecha).
+ * Opacidade animada em sincronia com o painel.
+ */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+
+  &--open {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
-.hub-rececao {
-  margin-top: 0.5rem;
-}
-
-.modal-backdrop {
+/**
+ * Painel lateral: encostado à direita (`right: 0`).
+ * Abaixo de 1648px: tela toda. A partir de 1648px: `left` dinâmico — a largura segue
+ * (escorrega à esquerda ao reduzir a viewport) até o mínimo ~320px a partir
+ * do sidebar, largura ~1400px em telas muito largas.
+ * Fechado: translateX(100%); aberto: translateX(0).
+ */
+.app-drawer {
+  /** Herdado por `app-agenda-novo` — linhas de divisão em largura total. */
+  --drawer-pad-x: clamp(1rem, 2.5vw, 1.5rem);
   position: fixed;
-  inset: 0;
-  z-index: 80;
-  box-sizing: border-box;
-  background: rgba(28, 25, 23, 0.45);
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  /* Margem visível em relação à viewport (evita painel colado às bordas). */
-  padding: clamp(1rem, 4vmin, 2rem) clamp(1rem, 4vw, 2.25rem)
-    clamp(1.5rem, 5vmin, 2.5rem);
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  background: #ffffff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /**
+   * O `app-saas-select` desenha o painel com `box-shadow`; a sombra “sai” para a esquerda
+   * e seria recortada na borda interna do drawer (misto scroll Y + `overflow-x: hidden`).
+   * `overflow-clip-margin` alarga a região de pintura em relação ao clip.
+   */
+  overflow-clip-margin: 20px 16px 24px 32px;
+  padding: 16px var(--drawer-pad-x) 24px;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &--open {
+    transform: translateX(0);
+  }
+
+  & > app-agenda-novo {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
 }
 
-.modal-panel {
-  width: 100%;
-  max-width: min(720px, calc(100vw - 2 * clamp(1rem, 4vw, 2.25rem)));
-  margin: clamp(0.5rem, 2vh, 1.25rem) auto clamp(1rem, 3vh, 2rem);
-  flex-shrink: 0;
-  box-sizing: border-box;
-  background: var(--color-bg);
-  border-radius: var(--radius);
-  border: 1px solid #e7e5e4;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  max-height: min(
-    calc(100vh - clamp(2.5rem, 8vmin, 4rem)),
-    calc(100dvh - clamp(2.5rem, 8vmin, 4rem))
-  );
-  overflow-y: auto;
-  /* Respiro interno em relação ao formulário (app-agenda-novo). */
-  padding: clamp(0.85rem, 2.2vw, 1.15rem) clamp(1rem, 2.8vw, 1.35rem)
-    clamp(1rem, 2.5vw, 1.25rem);
+@media (min-width: 1648px) {
+  .app-drawer {
+    right: 0;
+    width: auto;
+    left: max(320px, calc(100vw - 1400px));
+  }
 }

@@ -752,6 +752,20 @@ function parseInicioFimOpcional(
   return { inicio, fim };
 }
 
+function readAgendaCartaoMeta(p: unknown): {
+  agendaStatus: string | null;
+  agendaCor: string | null;
+} {
+  const rec = p as Record<string, unknown>;
+  const st = rec['agenda_status'];
+  const cr = rec['agenda_cor'];
+  const agendaStatus =
+    st != null && String(st).trim() ? String(st).trim() : null;
+  const agendaCor =
+    cr != null && String(cr).trim() ? String(cr).trim() : null;
+  return { agendaStatus, agendaCor };
+}
+
 async function appendAtendimentoLinha(
   db: Db,
   o: {
@@ -774,6 +788,8 @@ async function appendAtendimentoLinha(
     descricaoManual?: string;
     inicio?: string | null;
     fim?: string | null;
+    agendaStatus?: string | null;
+    agendaCor?: string | null;
   },
 ): Promise<void> {
   const dataSql = parseDataSql(o.dataStr);
@@ -799,6 +815,8 @@ async function appendAtendimentoLinha(
     descricaoManual: o.descricaoManual ?? '',
     custo: '',
     lucro: '',
+    agendaStatus: o.agendaStatus ?? null,
+    agendaCor: o.agendaCor ?? null,
   });
 }
 
@@ -923,6 +941,8 @@ async function createAtendimentoServico(
 
   await ensurePedidoHeader(db, idAt, clienteId);
 
+  const agCartao = readAgendaCartaoMeta(p);
+
   let linhas = 0;
   let primeira = true;
 
@@ -1010,6 +1030,7 @@ async function createAtendimentoServico(
       descricao: obs,
       inicio: inicioLinha,
       fim: fimLinha,
+      ...agCartao,
     });
 
     await insertPivotServico(db, {
@@ -1057,6 +1078,7 @@ async function createAtendimentoMega(
   const idAt = makeIdAtendimento(dataStr, clienteId);
   await ensurePedidoHeader(db, idAt, clienteId);
   const obs = String(p.observacao || '').trim();
+  const agCartao = readAgendaCartaoMeta(p);
   const pacoteCatalogoId = await findPacoteIdPorNome(db, pacote);
   const pRec = p as Record<string, unknown>;
   let cursorFim: string | null = null;
@@ -1125,6 +1147,7 @@ async function createAtendimentoMega(
       descricaoManual: obs,
       inicio: iniLine,
       fim: fimLine,
+      ...agCartao,
     });
     await insertPivotMega(db, {
       idAtendimento: idAt,
@@ -1180,6 +1203,7 @@ async function createAtendimentoPacote(
   const idAt = makeIdAtendimento(dataStr, clienteId);
   await ensurePedidoHeader(db, idAt, clienteId);
   const obs = String(p.observacao || '').trim();
+  const agCartao = readAgendaCartaoMeta(p);
   const pRec = p as Record<string, unknown>;
   /**
    * Cabeça de cobrança não ocupa o slot na grelha: horário escolhido aplica-se à
@@ -1203,6 +1227,7 @@ async function createAtendimentoPacote(
     descricaoManual: obs,
     inicio: null,
     fim: null,
+    ...agCartao,
   });
   await insertPivotPacote(db, {
     idAtendimento: idAt,
@@ -1271,6 +1296,7 @@ async function createAtendimentoPacote(
       descricaoManual: obs,
       inicio: iniLine,
       fim: fimLine,
+      ...agCartao,
     });
     await insertPivotPacote(db, {
       idAtendimento: idAt,
@@ -1367,6 +1393,8 @@ async function createAtendimentoProduto(
 
   await ensurePedidoHeader(db, idAt, clienteId);
 
+  const agCartao = readAgendaCartaoMeta(p);
+
   let linhas = 0;
   let primeira = true;
   for (const it of itensNorm) {
@@ -1413,6 +1441,7 @@ async function createAtendimentoProduto(
       descricao: obs,
       inicio: primeira ? slot.inicio : null,
       fim: primeira ? slot.fim : null,
+      ...agCartao,
     });
     await insertPivotProduto(db, {
       idAtendimento: idAt,
@@ -1474,6 +1503,7 @@ async function createAtendimentoCabelo(
     (p as Record<string, unknown>)['inicio'],
     (p as Record<string, unknown>)['fim'],
   );
+  const agCartao = readAgendaCartaoMeta(p);
   await appendAtendimentoLinha(db, {
     idAt,
     dataStr,
@@ -1491,6 +1521,7 @@ async function createAtendimentoCabelo(
     descricao: obs,
     inicio: slot.inicio,
     fim: slot.fim,
+    ...agCartao,
   });
   await insertPivotCabelo(db, {
     idAtendimento: idAt,
@@ -1650,6 +1681,8 @@ export async function listAtendimentosRaw(
       /** Duplicado em camelCase para clientes que serializam JSON sem chaves com underscore. */
       pagamento_metodo: a.pagamentoMetodo ?? null,
       pagamentoMetodo: a.pagamentoMetodo ?? null,
+      agenda_status: a.agendaStatus ?? null,
+      agenda_cor: a.agendaCor ?? null,
       id: a.idAtendimento,
       ...(catalogo !== undefined
         ? {

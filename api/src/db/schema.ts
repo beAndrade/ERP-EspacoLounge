@@ -225,6 +225,10 @@ export const atendimentos = pgTable(
     pagamentoStatus: text('pagamento_status'),
     /** Preenchido ao confirmar pagamento (ex.: Dinheiro, Pix, Cartão). */
     pagamentoMetodo: text('pagamento_metodo'),
+    /** Estado visual na grelha da agenda (ex.: confirmado, aguardando). */
+    agendaStatus: text('agenda_status'),
+    /** Cor do cartão na agenda (hex, ex.: #32C787). */
+    agendaCor: text('agenda_cor'),
   },
   (t) => [
     index('atendimentos_data_idx').on(t.data),

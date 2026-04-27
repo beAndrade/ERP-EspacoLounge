@@ -1,0 +1,215 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.saas-select {
+  position: relative;
+  width: 100%;
+}
+
+.saas-select__trigger {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: var(--touch-min, 2.75rem);
+  padding: 0.5rem 0.75rem;
+  padding-right: 2.5rem;
+  border-radius: var(--radius, 8px);
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-text, #1c1917);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #d6d3d1;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #fafaf9;
+  }
+}
+
+.saas-select__value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--drawer-field-font-size, 0.95rem);
+
+  &--placeholder {
+    color: var(--color-muted, #78716c);
+    font-weight: var(--drawer-input-font-weight, 500);
+  }
+}
+
+.saas-select__icons {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--color-muted, #78716c);
+  pointer-events: none;
+}
+
+.saas-select__icon {
+  display: block;
+}
+
+/** Sombra no wrapper: o interior mantém `overflow: hidden` sem recortar a sombra. */
+.saas-select__panel-elev {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  border-radius: var(--radius, 8px);
+  box-shadow: 4px 10px 24px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.99);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s;
+  will-change: transform, opacity;
+}
+
+.saas-select__panel-elev--open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.saas-select__panel {
+  position: relative;
+  background: #fff;
+  border-radius: inherit;
+  border: 1px solid #e7e5e4;
+  overflow: hidden;
+}
+
+.saas-select__filter {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.saas-select__filter-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.saas-select__list {
+  max-height: 14rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  &--com-criar {
+    max-height: 12.5rem;
+  }
+}
+
+.saas-select__option {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--color-text, #1c1917);
+
+  &:hover {
+    background: #f5f5f4;
+  }
+
+  &--active {
+    font-weight: 600;
+    background: #eef2ff;
+  }
+}
+
+.saas-select__empty {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-muted, #78716c);
+}
+
+.saas-select__criar-wrap {
+  border-top: 1px solid #e7e5e4;
+  background: #fff;
+}
+
+.saas-select__criar {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.65rem 0.75rem 0.75rem;
+  border: none;
+  border-radius: 0 0 var(--radius, 8px) var(--radius, 8px);
+  background: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+  }
+}
+
+.saas-select__criar-ico {
+  display: block;
+  flex-shrink: 0;
+}
+
+.saas-select--disabled .saas-select__trigger {
+  pointer-events: none;
+}
+
+/** Busca na coluna esquerda do modal. */
+:host.saas-select-host--layout-sidebar .saas-select__trigger {
+  border-color: var(--drawer-field-border, #e7e5e4);
+  background: #fff;
+}

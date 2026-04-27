@@ -468,6 +468,17 @@ export class SheetsApiService {
 
     const pagamentoMetodo = this.pickPagamentoMetodoFromRow(raw);
 
+    const agSt = raw['agenda_status'];
+    const agenda_status =
+      agSt === undefined || agSt === null
+        ? null
+        : String(agSt).trim() || null;
+    const agCr = raw['agenda_cor'];
+    const agenda_cor =
+      agCr === undefined || agCr === null
+        ? null
+        : String(agCr).trim() || null;
+
     const profissional_id = this.parseProfissionalIdCell(
       raw['profissional_id'] ?? raw['Profissional ID'],
     );
@@ -577,6 +588,8 @@ export class SheetsApiService {
       cobrancaStatus,
       pagamentoStatus,
       pagamentoMetodo,
+      agenda_status,
+      agenda_cor,
     };
   }
 

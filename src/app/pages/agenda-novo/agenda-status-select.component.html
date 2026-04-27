@@ -1,0 +1,43 @@
+<div class="agenda-status-select">
+  <button
+    type="button"
+    class="agenda-status-select__trigger"
+    [disabled]="disabled"
+    [attr.aria-label]="ariaFieldLabel || 'Status do agendamento'"
+    [attr.aria-expanded]="panelOpen"
+    aria-haspopup="listbox"
+    (click)="togglePanel()"
+  >
+    <span
+      class="agenda-status-select__swatch"
+      [style.background]="opcaoAtual.cor"
+      aria-hidden="true"
+    ></span>
+    <span class="agenda-status-select__label">{{ opcaoAtual.label }}</span>
+    <span class="agenda-status-select__chev" aria-hidden="true"></span>
+  </button>
+
+  <div
+    class="agenda-status-select__panel"
+    role="listbox"
+    [attr.aria-hidden]="!panelOpen"
+  >
+    @for (o of opcoes; track trackById($index, o)) {
+      <button
+        type="button"
+        role="option"
+        class="agenda-status-select__opt"
+        [class.agenda-status-select__opt--active]="o.id === inner"
+        [attr.aria-selected]="o.id === inner"
+        (click)="escolher(o.id)"
+      >
+        <span
+          class="agenda-status-select__swatch agenda-status-select__swatch--opt"
+          [style.background]="o.cor"
+          aria-hidden="true"
+        ></span>
+        <span class="agenda-status-select__opt-label">{{ o.label }}</span>
+      </button>
+    }
+  </div>
+</div>
