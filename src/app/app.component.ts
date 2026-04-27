@@ -34,8 +34,11 @@ export class AppComponent implements OnInit {
 
   sidebarCollapsed = false;
 
-  /** Acordeão secundário da sidebar (secções Financeiro, Controle, etc.). */
-  navDropdownOpen: NavSidebarDropdownId | null = null;
+  /**
+   * Secções Financeiro, Controle, etc. abertas em simultâneo
+   * (cada uma abre/fecha independentemente).
+   */
+  navExpandOpenIds: NavSidebarDropdownId[] = [];
 
   private readonly collapsedNavFirstRoute: Record<
     NavSidebarDropdownId,
@@ -46,6 +49,25 @@ export class AppComponent implements OnInit {
     cadastros: '/clientes',
     marketing: '/promocoes',
     relatorios: '/relatorios/painel',
+  };
+
+  /** Prefixos de rota por secção do menu (manter aberto ao navegar dentro da mesma secção). */
+  private readonly navDropdownPrefixes: Record<
+    NavSidebarDropdownId,
+    readonly string[]
+  > = {
+    financeiro: ['/financeiro'],
+    controle: [
+      '/estoque',
+      '/servicos',
+      '/pacotes',
+      '/categorias',
+      '/marcas',
+      '/compras',
+    ],
+    cadastros: ['/clientes', '/profissionais', '/fornecedores'],
+    marketing: ['/promocoes', '/cashback', '/avaliacoes'],
+    relatorios: ['/relatorios'],
   };
 
   ngOnInit(): void {
@@ -60,10 +82,10 @@ export class AppComponent implements OnInit {
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe(() => {
-        this.navDropdownOpen = null;
-        if (this.isPrincipalRoute(this.router.url)) {
-          this.principalExpanded = true;
-        }
+        const url = this.router.url;
+        this.navExpandOpenIds = this.navExpandOpenIds.filter((id) =>
+          this.urlMatchesNavDropdownSection(url, id),
+        );
       });
   }
 
@@ -71,7 +93,7 @@ export class AppComponent implements OnInit {
   onDocumentClick(ev: MouseEvent): void {
     const el = ev.target as HTMLElement | null;
     if (!el?.closest?.('.app-sidebar')) {
-      this.navDropdownOpen = null;
+      this.navExpandOpenIds = [];
     }
   }
 
@@ -81,11 +103,16 @@ export class AppComponent implements OnInit {
       void this.router.navigateByUrl(this.collapsedNavFirstRoute[id]);
       return;
     }
-    this.navDropdownOpen = this.navDropdownOpen === id ? null : id;
+    const idx = this.navExpandOpenIds.indexOf(id);
+    if (idx >= 0) {
+      this.navExpandOpenIds = this.navExpandOpenIds.filter((x) => x !== id);
+    } else {
+      this.navExpandOpenIds = [...this.navExpandOpenIds, id];
+    }
   }
 
   navExpandIsOpen(id: NavSidebarDropdownId): boolean {
-    return this.navDropdownOpen === id;
+    return this.navExpandOpenIds.includes(id);
   }
 
   /** Rota ativa sob um prefixo (ex.: `/financeiro`, `/relatorios`). */
@@ -94,6 +121,14 @@ export class AppComponent implements OnInit {
     const p = raw.replace(/\/+$/, '') || '/';
     const base = prefix.replace(/\/+$/, '') || '/';
     return p === base || p.startsWith(base + '/');
+  }
+
+  /** Secção do menu (accordions) com rota ativa — alinhado a `navDropdownPrefixes`. */
+  sectionActive(id: NavSidebarDropdownId): boolean {
+    const path = this.router.url.split('?')[0] ?? '';
+    return this.navDropdownPrefixes[id].some((prefix) =>
+      this.pathMatchesPrefix(path, prefix),
+    );
   }
 
   toggleSidebar(): void {
@@ -112,8 +147,19 @@ export class AppComponent implements OnInit {
     this.principalExpanded = !this.principalExpanded;
   }
 
-  private isPrincipalRoute(url: string): boolean {
+  private urlMatchesNavDropdownSection(
+    url: string,
+    id: NavSidebarDropdownId,
+  ): boolean {
     const path = url.split('?')[0] ?? '';
-    return /^\/(painel|agenda|comandas|pacotes)(\/|$)/.test(path);
+    return this.navDropdownPrefixes[id].some((prefix) =>
+      this.pathMatchesPrefix(path, prefix),
+    );
+  }
+
+  private pathMatchesPrefix(path: string, prefix: string): boolean {
+    const base = prefix.replace(/\/+$/, '') || '/';
+    const p = path.replace(/\/+$/, '') || '/';
+    return p === base || p.startsWith(base + '/');
   }
 }

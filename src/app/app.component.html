@@ -99,22 +99,35 @@
           </svg>
           <span class="nav-group__head-label">Principal</span>
           <svg
-            class="nav-group__chevron"
+            class="nav-chevron"
+            [class.nav-chevron--open]="principalExpanded"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
             aria-hidden="true"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m19.5 8.25-7.5 7.5-7.5-7.5"
-            />
+            <g transform="translate(12, 9)">
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
+                <path
+                  d="M0 0 L-7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
+                <path
+                  d="M0 0 L7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+            </g>
           </svg>
         </button>
 
+        <div class="nav-sidebar__panel">
         <ul class="nav-group__sub" role="list">
           <li>
             <a
@@ -238,24 +251,24 @@
             </a>
           </li>
         </ul>
+        </div>
       </div>
 
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('financeiro')"
-        [class.nav-expand--active]="urlActivePrefix('/financeiro')"
+        [class.nav-expand--active]="sectionActive('financeiro')"
       >
         <button
           type="button"
-          class="nav-expand__trigger nav-item"
-          [class.active]="urlActivePrefix('/financeiro')"
+          class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'financeiro')"
           [attr.aria-expanded]="navExpandIsOpen('financeiro')"
           aria-controls="nav-expand-financeiro"
           aria-label="Financeiro — abrir subitens"
         >
           <svg
-            class="nav-item__icon"
+            class="nav-expand__trigger-icon"
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
@@ -271,23 +284,36 @@
             <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
             <path d="M12 18V6" />
           </svg>
-          <span class="nav-item__label">Financeiro</span>
+          <span class="nav-expand__trigger-label">Financeiro</span>
           <svg
-            class="nav-expand__chevron"
+            class="nav-chevron"
+            [class.nav-chevron--open]="navExpandIsOpen('financeiro')"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
             aria-hidden="true"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m19.5 8.25-7.5 7.5-7.5-7.5"
-            />
+            <g transform="translate(12, 9)">
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
+                <path
+                  d="M0 0 L-7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
+                <path
+                  d="M0 0 L7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+            </g>
           </svg>
         </button>
+        <div class="nav-sidebar__panel">
         <ul
           id="nav-expand-financeiro"
           class="nav-expand__sub"
@@ -302,6 +328,24 @@
               aria-label="Painel financeiro"
               title="Painel"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m16 3 4 4-4 4" />
+                <path d="M20 7H4" />
+                <path d="m8 21-4-4 4-4" />
+                <path d="M4 17h16" />
+              </svg>
               <span class="nav-item__label">Painel</span>
             </a>
           </li>
@@ -313,6 +357,24 @@
               aria-label="Transações"
               title="Transações"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m16 3 4 4-4 4" />
+                <path d="M20 7H4" />
+                <path d="m8 21-4-4 4-4" />
+                <path d="M4 17h16" />
+              </svg>
               <span class="nav-item__label">Transações</span>
             </a>
           </li>
@@ -324,28 +386,46 @@
               aria-label="Comissões"
               title="Comissões"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"
+                />
+                <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+              </svg>
               <span class="nav-item__label">Comissões</span>
             </a>
           </li>
         </ul>
+        </div>
       </div>
 
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('controle')"
-        [class.nav-expand--active]="urlActivePrefix('/estoque')"
+        [class.nav-expand--active]="sectionActive('controle')"
       >
         <button
           type="button"
-          class="nav-expand__trigger nav-item"
-          [class.active]="urlActivePrefix('/estoque')"
+          class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'controle')"
           [attr.aria-expanded]="navExpandIsOpen('controle')"
           aria-controls="nav-expand-controle"
           aria-label="Controle — abrir subitens"
         >
           <svg
-            class="nav-item__icon"
+            class="nav-expand__trigger-icon"
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
@@ -363,62 +443,233 @@
             <circle cx="8" cy="9" r="2" />
             <rect x="2" y="3" width="20" height="14" rx="2" />
           </svg>
-          <span class="nav-item__label">Controle</span>
+          <span class="nav-expand__trigger-label">Controle</span>
           <svg
-            class="nav-expand__chevron"
+            class="nav-chevron"
+            [class.nav-chevron--open]="navExpandIsOpen('controle')"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
             aria-hidden="true"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m19.5 8.25-7.5 7.5-7.5-7.5"
-            />
+            <g transform="translate(12, 9)">
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
+                <path
+                  d="M0 0 L-7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
+                <path
+                  d="M0 0 L7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+            </g>
           </svg>
         </button>
+        <div class="nav-sidebar__panel">
         <ul id="nav-expand-controle" class="nav-expand__sub" role="list">
           <li>
             <a
               routerLink="/estoque"
               routerLinkActive="active"
               class="nav-item nav-item--sub"
-              aria-label="Estoque"
-              title="Estoque"
+              aria-label="Produtos"
+              title="Produtos"
             >
-              <span class="nav-item__label">Estoque</span>
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M11 21.73a2 2 0 0 0 2 0l7-4V5a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 5v12.73a2 2 0 0 0 1 1.73z"
+                />
+                <path d="M12 22V12" />
+                <path d="m3.29 7 8.71 5 8.71-5" />
+              </svg>
+              <span class="nav-item__label">Produtos</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/servicos"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Serviços"
+              title="Serviços"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="6" cy="6" r="3" />
+                <path d="M8.12 8.12 12 12" />
+                <path d="M20 4 8.12 15.88" />
+                <circle cx="6" cy="18" r="3" />
+                <path d="M14.8 14.8 20 20" />
+              </svg>
+              <span class="nav-item__label">Serviços</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/pacotes"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Pacotes Predefinidos"
+              title="Pacotes Predefinidos"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="8" width="18" height="4" rx="1" />
+                <path d="M12 8v13" />
+                <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+                <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
+              </svg>
+              <span class="nav-item__label">Pacotes Predefinidos</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/categorias"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Categorias"
+              title="Categorias"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect width="7" height="7" x="3" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="14" rx="1" />
+                <rect width="7" height="7" x="3" y="14" rx="1" />
+              </svg>
+              <span class="nav-item__label">Categorias</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/marcas"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Marcas"
+              title="Marcas"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.922-6.922a2.426 2.426 0 0 0 0-3.42l-8.704-8.704Z"
+                />
+                <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+              </svg>
+              <span class="nav-item__label">Marcas</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/compras"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Compras"
+              title="Compras"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="8" cy="21" r="1" />
+                <circle cx="19" cy="21" r="1" />
+                <path
+                  d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"
+                />
+              </svg>
+              <span class="nav-item__label">Compras</span>
             </a>
           </li>
         </ul>
+        </div>
       </div>
 
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('cadastros')"
-        [class.nav-expand--active]="
-          urlActivePrefix('/clientes') ||
-          urlActivePrefix('/profissionais') ||
-          urlActivePrefix('/fornecedores')
-        "
+        [class.nav-expand--active]="sectionActive('cadastros')"
       >
         <button
           type="button"
-          class="nav-expand__trigger nav-item"
-          [class.active]="
-            urlActivePrefix('/clientes') ||
-            urlActivePrefix('/profissionais') ||
-            urlActivePrefix('/fornecedores')
-          "
+          class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'cadastros')"
           [attr.aria-expanded]="navExpandIsOpen('cadastros')"
           aria-controls="nav-expand-cadastros"
           aria-label="Cadastros — abrir subitens"
         >
           <svg
-            class="nav-item__icon"
+            class="nav-expand__trigger-icon"
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
@@ -435,23 +686,36 @@
             <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
             <circle cx="9" cy="7" r="4" />
           </svg>
-          <span class="nav-item__label">Cadastros</span>
+          <span class="nav-expand__trigger-label">Cadastros</span>
           <svg
-            class="nav-expand__chevron"
+            class="nav-chevron"
+            [class.nav-chevron--open]="navExpandIsOpen('cadastros')"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
             aria-hidden="true"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m19.5 8.25-7.5 7.5-7.5-7.5"
-            />
+            <g transform="translate(12, 9)">
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
+                <path
+                  d="M0 0 L-7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
+                <path
+                  d="M0 0 L7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+            </g>
           </svg>
         </button>
+        <div class="nav-sidebar__panel">
         <ul id="nav-expand-cadastros" class="nav-expand__sub" role="list">
           <li>
             <a
@@ -462,6 +726,23 @@
               aria-label="Clientes"
               title="Clientes"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 21a8 8 0 0 0-16 0" />
+                <circle cx="10" cy="8" r="5" />
+                <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+              </svg>
               <span class="nav-item__label">Clientes</span>
             </a>
           </li>
@@ -473,6 +754,23 @@
               aria-label="Profissionais"
               title="Profissionais"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 21a6 6 0 0 0-12 0" />
+                <circle cx="12" cy="11" r="4" />
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+              </svg>
               <span class="nav-item__label">Profissionais</span>
             </a>
           </li>
@@ -484,28 +782,45 @@
               aria-label="Fornecedores"
               title="Fornecedores"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 21a8 8 0 0 0-16 0" />
+                <circle cx="10" cy="8" r="5" />
+                <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+              </svg>
               <span class="nav-item__label">Fornecedores</span>
             </a>
           </li>
         </ul>
+        </div>
       </div>
 
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('marketing')"
-        [class.nav-expand--active]="urlActivePrefix('/promocoes')"
+        [class.nav-expand--active]="sectionActive('marketing')"
       >
         <button
           type="button"
-          class="nav-expand__trigger nav-item"
-          [class.active]="urlActivePrefix('/promocoes')"
+          class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'marketing')"
           [attr.aria-expanded]="navExpandIsOpen('marketing')"
           aria-controls="nav-expand-marketing"
           aria-label="Marketing — abrir subitens"
         >
           <svg
-            class="nav-item__icon"
+            class="nav-expand__trigger-icon"
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
@@ -518,30 +833,41 @@
             aria-hidden="true"
           >
             <path
-              d="M13.172 2a2 2 0 0 1 1.414.586l6.71 6.71a2.4 2.4 0 0 1 0 3.408l-4.592 4.592a2.4 2.4 0 0 1-3.408 0l-6.71-6.71A2 2 0 0 1 6 9.172V3a1 1 0 0 1 1-1z"
+              d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
             />
-            <path
-              d="M2 7v6.172a2 2 0 0 0 .586 1.414l6.71 6.71a2.4 2.4 0 0 0 3.191.193"
-            />
-            <circle cx="10.5" cy="6.5" r=".5" fill="currentColor" />
+            <path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" />
+            <path d="M8 6v8" />
           </svg>
-          <span class="nav-item__label">Marketing</span>
+          <span class="nav-expand__trigger-label">Marketing</span>
           <svg
-            class="nav-expand__chevron"
+            class="nav-chevron"
+            [class.nav-chevron--open]="navExpandIsOpen('marketing')"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
             aria-hidden="true"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m19.5 8.25-7.5 7.5-7.5-7.5"
-            />
+            <g transform="translate(12, 9)">
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
+                <path
+                  d="M0 0 L-7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
+                <path
+                  d="M0 0 L7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+            </g>
           </svg>
         </button>
+        <div class="nav-sidebar__panel">
         <ul id="nav-expand-marketing" class="nav-expand__sub" role="list">
           <li>
             <a
@@ -551,28 +877,103 @@
               aria-label="Promoções"
               title="Promoções"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M13.172 2a2 2 0 0 1 1.414.586l6.71 6.71a2.4 2.4 0 0 1 0 3.408l-4.592 4.592a2.4 2.4 0 0 1-3.408 0l-6.71-6.71A2 2 0 0 1 6 9.172V3a1 1 0 0 1 1-1z"
+                />
+                <path
+                  d="M2 7v6.172a2 2 0 0 0 .586 1.414l6.71 6.71a2.4 2.4 0 0 0 3.191.193"
+                />
+                <circle cx="10.5" cy="6.5" r=".5" fill="currentColor" />
+              </svg>
               <span class="nav-item__label">Promoções</span>
             </a>
           </li>
+          <li>
+            <a
+              routerLink="/cashback"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Cashback"
+              title="Cashback"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                <path d="M18 12h.01" />
+              </svg>
+              <span class="nav-item__label">Cashback</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/avaliacoes"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Avaliações"
+              title="Avaliações"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span class="nav-item__label">Avaliações</span>
+            </a>
+          </li>
         </ul>
+        </div>
       </div>
 
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('relatorios')"
-        [class.nav-expand--active]="urlActivePrefix('/relatorios')"
+        [class.nav-expand--active]="sectionActive('relatorios')"
       >
         <button
           type="button"
-          class="nav-expand__trigger nav-item"
-          [class.active]="urlActivePrefix('/relatorios')"
+          class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'relatorios')"
           [attr.aria-expanded]="navExpandIsOpen('relatorios')"
           aria-controls="nav-expand-relatorios"
           aria-label="Relatórios — abrir subitens"
         >
           <svg
-            class="nav-item__icon"
+            class="nav-expand__trigger-icon"
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
@@ -589,23 +990,36 @@
             />
             <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
           </svg>
-          <span class="nav-item__label">Relatórios</span>
+          <span class="nav-expand__trigger-label">Relatórios</span>
           <svg
-            class="nav-expand__chevron"
+            class="nav-chevron"
+            [class.nav-chevron--open]="navExpandIsOpen('relatorios')"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
             aria-hidden="true"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="m19.5 8.25-7.5 7.5-7.5-7.5"
-            />
+            <g transform="translate(12, 9)">
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
+                <path
+                  d="M0 0 L-7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
+                <path
+                  d="M0 0 L7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+            </g>
           </svg>
         </button>
+        <div class="nav-sidebar__panel">
         <ul id="nav-expand-relatorios" class="nav-expand__sub" role="list">
           <li>
             <a
@@ -615,21 +1029,33 @@
               aria-label="Painel de relatórios"
               title="Painel"
             >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 16v5" />
+                <path d="M16 14v7" />
+                <path d="M20 10v11" />
+                <path
+                  d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"
+                />
+                <path d="M4 18v3" />
+                <path d="M8 14v7" />
+              </svg>
               <span class="nav-item__label">Painel</span>
             </a>
           </li>
-          <li>
-            <a
-              routerLink="/relatorios/meta"
-              routerLinkActive="active"
-              class="nav-item nav-item--sub"
-              aria-label="Meta"
-              title="Meta"
-            >
-              <span class="nav-item__label">Meta</span>
-            </a>
-          </li>
         </ul>
+        </div>
       </div>
 
       <a

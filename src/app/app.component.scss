@@ -2,12 +2,19 @@
 
 
 .shell {
-  --sidebar-w: 320px;
+  /** Largura mínima para o título da marca numa linha com o botão de recolher */
+  --sidebar-w: 268px;
   --sidebar-w-collapsed: 4.5rem;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: row;
+  flex-wrap: nowrap;
   align-items: stretch;
+  /** Pequeno respiro entre a sidebar e a coluna do conteúdo. */
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 100%;
   background: var(--color-bg);
 }
 
@@ -15,31 +22,62 @@
   --sidebar-fg: #fafaf9;
   --sidebar-active: rgba(255, 255, 255, 0.14);
   --sidebar-hover: rgba(255, 255, 255, 0.08);
+  /** Cabeçalhos de dropdown e fila de secção */
+  /** Itens de 1.º nível no nav (prints / DevTools) */
+  --sidebar-nav-tier1-bg: transparent;
+  /** Por defeito pouco margem por baixo do cabeçalho tier-1 (secções mais juntas).
+   * Com submenu aberto, o espaço até aos tier-2 fica em `.nav-group--open` / `.nav-expand--open`. */
+  --sidebar-nav-tier1-margin: 0 0 2px 4px;
+  --sidebar-nav-tier1-padding: 0 20px 0 10px;
+  /** Itens dentro dos dropdowns */
+  --sidebar-nav-tier2-margin: 0 0 4px 4px;
+  --sidebar-nav-tier2-padding: 0 16px 0 32px;
+  --sidebar-nav-radius: 6px;
+  --sidebar-dd-bg: var(--sidebar-nav-tier1-bg);
+  /** Só cabeçalhos / link de 1.º nível — hover sobre fundo transparente */
+  --sidebar-dd-hover: rgba(255, 255, 255, 0.16);
+  --sidebar-dd-section: rgba(255, 255, 255, 0.2);
+  /** Só subitens dos dropdowns */
+  --sidebar-sub-hover: rgba(255, 255, 255, 0.2);
+  --sidebar-nav-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --sidebar-nav-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --sidebar-hover-ms: 320ms;
+  --sidebar-panel-ms: 420ms;
+  /** Sumir o conteúdo do submenu antes do clip do grid (quanto mais baixo, menos “recolher” visível). */
+  --sidebar-panel-fade-out: 12ms;
+  --sidebar-chevron-ms: 880ms;
   --sidebar-icon-size: 1.125rem;
+  /** Ícone do botão recolher (ligeiramente < 24px para alinhar melhor ao header) */
+  --sidebar-toggle-icon-size: 1.3125rem;
+  /** Chevron dos dropdowns: alinha com hierarquia visual do menu (~15px @ 16px root) */
   --sidebar-chevron-size: 0.9375rem;
   flex: 0 0 auto;
+  flex-shrink: 0;
   width: var(--sidebar-w);
   min-height: 100vh;
-  padding: 0.75rem 0.5rem;
+  min-height: 100dvh;
+  /** Sem padding à direita: fica colada à coluna do conteúdo; o `main` expande quando recolhe. */
+  padding: 0 0 0.75rem 0;
   display: flex;
   flex-direction: column;
   background: color-mix(in srgb, var(--color-primary) 78%, #1c1917 22%);
   color: var(--sidebar-fg);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.06);
   border-right: none;
-  transition: width 0.2s ease, padding 0.2s ease;
+  transition: width 0.22s cubic-bezier(0.32, 0.72, 0, 1), padding 0.22s cubic-bezier(0.32, 0.72, 0, 1);
   overflow-x: hidden;
   overflow-y: auto;
 }
 
 .shell--sidebar-collapsed .app-sidebar {
   width: var(--sidebar-w-collapsed);
-  padding-left: 0.35rem;
-  padding-right: 0.35rem;
+  /** Simétrico: evita desvio horizontal dos ícones no modo recolhido. */
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
 }
 
 .app-main-column {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -49,15 +87,19 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
   flex-shrink: 0;
-  padding: 0.2rem 0.35rem 0.5rem;
+  /** Respiro único no bloco — evita padding-top só na marca (desalinhava o toggle em relação ao texto). */
+  padding: 10px 16px 14px 14px;
+  border: none;
+  box-sizing: border-box;
+  min-height: 2.75rem;
 }
 
 .app-sidebar__divider {
   height: 1px;
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.55rem;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.22);
   border-radius: 1px;
@@ -65,19 +107,21 @@
 
 .app-sidebar .brand {
   font-weight: 700;
-  font-size: 1.8rem;
+  font-size: 1.65rem;
   text-decoration: none;
   color: var(--sidebar-fg);
   flex: 1 1 auto;
   min-width: 0;
-  padding: 0;
+  /** Só horizontal: o alinhamento vertical vem do flex do header (mesmo eixo que o botão). */
+  padding: 0 0 0 4px;
   margin: 0;
   min-height: unset;
   display: inline-flex;
   align-items: center;
-  align-self: center;
-  line-height: 1.15;
+  align-self: stretch;
+  line-height: 1.1;
   font-family: 'Playfair Display', serif;
+  white-space: nowrap;
 
   &:hover {
     color: #fff;
@@ -92,10 +136,11 @@
   justify-content: center;
   box-sizing: border-box;
   width: auto;
-  height: auto;
-  min-width: 0;
-  min-height: 0;
-  padding: 0.2rem;
+  /** Área de clique junto ao desenho (evita “hit box” gigante à volta do ícone). */
+  min-width: unset;
+  min-height: unset;
+  /** Um pouco mais de padding em cima desce o ícone e alinha melhor com a brand (serif / cap height). */
+  padding: 10px 4px 4px 4px;
   margin: 0;
   line-height: 0;
   border: none;
@@ -104,12 +149,14 @@
   color: var(--sidebar-fg);
   cursor: pointer;
   transition: color 0.12s ease, opacity 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
 
-  svg {
-    width: 1.35rem;
-    height: 1.35rem;
+  svg.sidebar-toggle__icon {
+    width: var(--sidebar-toggle-icon-size);
+    height: var(--sidebar-toggle-icon-size);
     display: block;
     flex-shrink: 0;
+    pointer-events: none;
   }
 
   &:hover {
@@ -127,7 +174,7 @@
 .nav--sidebar {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
@@ -137,36 +184,53 @@
 .nav-group {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  margin-bottom: 0.35rem;
+  gap: 0.08rem;
+  /** Só espaço entre blocos tier-1 (não confundir com cabeçalho → subitens). */
+  margin-bottom: 0.12rem;
 }
 
 .nav-group__head {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.5rem;
-  width: 100%;
+  align-self: flex-start;
+  width: calc(100% - 4px);
   min-height: var(--touch-min);
-  padding: 0.4rem 0.5rem;
+  margin: var(--sidebar-nav-tier1-margin);
+  padding: var(--sidebar-nav-tier1-padding);
   border: none;
-  border-radius: var(--radius);
-  background: var(--sidebar-active);
+  border-radius: var(--sidebar-nav-radius);
+  background: var(--sidebar-nav-tier1-bg);
   color: inherit;
   font: inherit;
   font-weight: 600;
   font-size: 0.9rem;
   text-align: left;
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background var(--sidebar-hover-ms) var(--sidebar-nav-ease);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--sidebar-dd-hover);
   }
 
   &:focus-visible {
     outline: 2px solid var(--sidebar-fg);
     outline-offset: 2px;
   }
+}
+
+.nav-group--open .nav-group__head {
+  margin-bottom: 8px;
+}
+
+.nav-group:has(.nav-item.active) .nav-group__head {
+  background: var(--sidebar-dd-section);
+}
+
+.nav-group:has(.nav-item.active) .nav-group__head:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .nav-group__head-icon {
@@ -184,64 +248,96 @@
   white-space: nowrap;
 }
 
-.nav-group__chevron {
-  width: var(--sidebar-chevron-size);
-  height: var(--sidebar-chevron-size);
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
+/** Painel animado (altura + overflow); substitui display:none nos submenus. */
+.nav-sidebar__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows var(--sidebar-panel-ms) var(--sidebar-nav-ease);
 }
 
-.nav-group--open .nav-group__chevron {
-  transform: rotate(180deg);
+.nav-sidebar__panel > ul {
+  min-height: 0;
+  overflow: visible;
+}
+
+/**
+ * Ao fechar: sem `translateY`. Opacidade desce em ~35ms (variável) — antes do clip do grid.
+ */
+.shell:not(.shell--sidebar-collapsed) .nav-sidebar__panel > ul {
+  opacity: 0;
+  transition:
+    opacity var(--sidebar-panel-fade-out) linear 0s,
+    visibility 0s linear var(--sidebar-panel-fade-out);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.shell:not(.shell--sidebar-collapsed) .nav-group--open > .nav-sidebar__panel > ul,
+.shell:not(.shell--sidebar-collapsed) .nav-expand--open > .nav-sidebar__panel > ul {
+  opacity: 1;
+  transition:
+    opacity 0.22s var(--sidebar-nav-ease-out) 0.05s,
+    visibility 0s;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.shell:not(.shell--sidebar-collapsed) .nav-group--open > .nav-sidebar__panel,
+.shell:not(.shell--sidebar-collapsed) .nav-expand--open > .nav-sidebar__panel {
+  grid-template-rows: 1fr;
+}
+
+.shell.shell--sidebar-collapsed .nav-sidebar__panel {
+  grid-template-rows: 1fr !important;
+  width: 100%;
 }
 
 .nav-group__sub {
   list-style: none;
   margin: 0;
-  padding: 0.15rem 0 0.15rem 1.25rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-}
-
-.shell:not(.shell--sidebar-collapsed) .nav-group:not(.nav-group--open) .nav-group__sub {
-  display: none;
+  gap: 0;
 }
 
 .shell.shell--sidebar-collapsed .nav-group__sub {
-  display: flex !important;
   padding-left: 0;
+  padding-right: 0;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: stretch;
 }
 
-.shell.shell--sidebar-collapsed .nav-group__head {
+.shell.shell--sidebar-collapsed .nav-group,
+.shell.shell--sidebar-collapsed .nav-expand {
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+}
+
+/* Só o cabeçalho do acordeão «Principal»; triggers nav-expand ficam visíveis (ícone). */
+.shell.shell--sidebar-collapsed .nav-group > .nav-group__head {
   display: none;
 }
 
-.nav-item {
+.nav--sidebar .nav-item {
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
   gap: 0.55rem;
   min-height: var(--touch-min);
-  padding: 0.45rem 0.55rem;
-  border-radius: var(--radius);
+  border-radius: var(--sidebar-nav-radius);
   text-decoration: none;
   color: var(--sidebar-fg);
   font-weight: 500;
   font-size: 0.875rem;
   line-height: 1.2;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
-
-  &:hover {
-    background: var(--sidebar-hover);
-    color: var(--sidebar-fg);
-  }
 
   &.active {
-    background: var(--sidebar-active);
     color: var(--sidebar-fg);
     font-weight: 600;
 
@@ -251,17 +347,71 @@
   }
 }
 
-.nav-item--sub {
-  padding-left: 0.85rem;
+/** Configurações (único link de 1.º nível no nav) — mesmo bloco do print 1 */
+.nav--sidebar > .nav-item:not(.nav-item--sub) {
+  align-self: flex-start;
+  width: calc(100% - 4px);
+  margin: var(--sidebar-nav-tier1-margin);
+  padding: var(--sidebar-nav-tier1-padding);
+  background: var(--sidebar-nav-tier1-bg);
+  transition: background var(--sidebar-hover-ms) var(--sidebar-nav-ease);
+
+  &:hover {
+    background: var(--sidebar-dd-hover);
+  }
+
+  &.active {
+    background: var(--sidebar-dd-section);
+  }
+}
+
+/** Subitens: hover só altera a cor do fundo da própria área do link (sem deslocar layout). */
+.nav--sidebar .nav-item--sub {
+  align-self: flex-start;
+  box-sizing: border-box;
+  width: calc(100% - 4px);
+  max-width: calc(100% - 4px);
+  margin: var(--sidebar-nav-tier2-margin);
+  padding: var(--sidebar-nav-tier2-padding);
+  background: transparent;
   font-size: 0.84rem;
+  transition: background var(--sidebar-hover-ms) var(--sidebar-nav-ease);
+
+  &:hover {
+    background: var(--sidebar-sub-hover);
+  }
+
+  &.active {
+    background: rgba(255, 255, 255, 0.24);
+    font-weight: 600;
+  }
+
+  &.active:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
 
 .shell.shell--sidebar-collapsed .nav-item--sub {
-  padding-left: 0.55rem;
+  /**
+   * Reset do indent do modo expandido (32px / 16px) — manter esquerda e direita iguais
+   * para o ícone ficar no eixo central da coluna.
+   */
+  padding: 0 0.2rem;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
   justify-content: center;
 }
 
 .shell.shell--sidebar-collapsed .nav-item:not(.nav-item--sub) {
+  padding: 0 0.2rem;
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
   justify-content: center;
 }
 
@@ -280,6 +430,7 @@
 
 .shell.shell--sidebar-collapsed .nav-item__label,
 .shell.shell--sidebar-collapsed .nav-group__head-label,
+.shell.shell--sidebar-collapsed .nav-expand__trigger-label,
 .shell.shell--sidebar-collapsed .app-sidebar .brand {
   position: absolute;
   width: 1px;
@@ -295,8 +446,16 @@
 .shell.shell--sidebar-collapsed .app-sidebar__header {
   flex-direction: column;
   justify-content: center;
-  padding-bottom: 0.35rem;
+  align-items: center;
+  padding: 10px 0;
   gap: 0.35rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.shell.shell--sidebar-collapsed .app-sidebar .sidebar-toggle {
+  margin: 0;
+  padding: 4px;
 }
 
 .shell.shell--sidebar-collapsed .app-sidebar__divider {
@@ -304,7 +463,7 @@
 }
 
 .shell.shell--sidebar-collapsed .nav-group__head-icon,
-.shell.shell--sidebar-collapsed .nav-group__chevron {
+.shell.shell--sidebar-collapsed .nav-chevron {
   display: none;
 }
 
@@ -312,62 +471,193 @@
 .nav-expand {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.08rem;
+  margin-bottom: 0.12rem;
 }
 
+/** Mesma aparência que `.nav-group__head` (linha «Principal»). */
 .nav-expand__trigger {
-  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  align-self: flex-start;
+  width: calc(100% - 4px);
+  min-height: var(--touch-min);
+  margin: var(--sidebar-nav-tier1-margin);
+  padding: var(--sidebar-nav-tier1-padding);
+  border: none;
+  border-radius: var(--sidebar-nav-radius);
+  background: var(--sidebar-nav-tier1-bg);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
   text-align: left;
+  cursor: pointer;
+  transition: background var(--sidebar-hover-ms) var(--sidebar-nav-ease);
+
+  &:hover {
+    background: var(--sidebar-dd-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sidebar-fg);
+    outline-offset: 2px;
+  }
 }
 
-.nav-expand__chevron {
-  width: var(--sidebar-chevron-size);
-  height: var(--sidebar-chevron-size);
+.nav-expand--open .nav-expand__trigger {
+  margin-bottom: 8px;
+}
+
+.nav-expand--active .nav-expand__trigger {
+  background: var(--sidebar-dd-section);
+}
+
+.nav-expand--active .nav-expand__trigger:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.shell.shell--sidebar-collapsed .nav-expand__trigger {
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0 0.2rem;
+}
+
+.nav-expand__trigger-icon {
+  width: var(--sidebar-icon-size);
+  height: var(--sidebar-icon-size);
   flex-shrink: 0;
-  margin-left: auto;
-  transition: transform 0.15s ease;
+  color: var(--sidebar-fg);
 }
 
-.nav-expand--open .nav-expand__chevron {
-  transform: rotate(180deg);
+.nav-expand__trigger-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-expand__sub {
   list-style: none;
   margin: 0;
-  padding: 0.1rem 0 0.15rem 1.25rem;
-  display: none;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.shell:not(.shell--sidebar-collapsed) .nav-expand--open .nav-expand__sub {
+  padding: 0;
   display: flex;
-}
-
-.shell:not(.shell--sidebar-collapsed) .nav-expand:not(.nav-expand--open) .nav-expand__sub {
-  display: none;
+  flex-direction: column;
+  gap: 0;
 }
 
 .shell.shell--sidebar-collapsed .nav-expand__sub {
   display: none !important;
 }
 
-.shell.shell--sidebar-collapsed .nav-expand__chevron {
-  display: none;
+.shell.shell--sidebar-collapsed .nav-expand .nav-sidebar__panel {
+  display: none !important;
 }
 
-.nav-expand--active > .nav-expand__trigger {
-  background: var(--sidebar-active);
-  font-weight: 600;
+/**
+ * Chevron: `nav-chevron--open` no SVG. Orientação trocada em relação à geometria bruta
+ * (fechado / aberto = inversão de `transform` em relação à versão anterior).
+ * Não alterar `transition` / duração — só os valores de `transform` abaixo.
+ */
+.nav-chevron {
+  box-sizing: border-box;
+  width: var(--sidebar-chevron-size);
+  height: var(--sidebar-chevron-size);
+  min-width: var(--sidebar-chevron-size);
+  min-height: var(--sidebar-chevron-size);
+  max-width: var(--sidebar-chevron-size);
+  max-height: var(--sidebar-chevron-size);
+  flex: 0 0 var(--sidebar-chevron-size);
+  flex-shrink: 0;
+  align-self: center;
+  color: inherit;
+  overflow: visible;
+  display: block;
+  transform: translate3d(0, 0, 0) scaleY(-1);
+  transform-origin: 50% 50%;
+  transition: transform var(--sidebar-chevron-ms) var(--sidebar-nav-ease);
+
+  path {
+    stroke-width: 3;
+  }
+}
+
+.nav-chevron.nav-chevron--open {
+  transform: translate3d(0, -1px, 0);
+}
+
+@keyframes nav-sidebar-cascade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.shell:not(.shell--sidebar-collapsed) .nav-group--open .nav-group__sub > li,
+.shell:not(.shell--sidebar-collapsed) .nav-expand--open .nav-expand__sub > li {
+  animation: nav-sidebar-cascade-in 0.44s var(--sidebar-nav-ease-out) backwards;
+}
+
+@for $i from 1 through 12 {
+  .shell:not(.shell--sidebar-collapsed) .nav-group--open .nav-group__sub > li:nth-child(#{$i}),
+  .shell:not(.shell--sidebar-collapsed) .nav-expand--open .nav-expand__sub > li:nth-child(#{$i}) {
+    animation-delay: #{($i - 1) * 0.04}s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-group__head,
+  .nav-expand__trigger,
+  .nav-item {
+    transition-duration: 0.01ms !important;
+  }
+
+  .nav-sidebar__panel {
+    transition-duration: 0.01ms !important;
+  }
+
+  .nav-sidebar__panel > ul {
+    transition-duration: 0.01ms !important;
+  }
+
+  .nav-chevron {
+    transition-duration: 0.01ms !important;
+  }
+
+  .shell:not(.shell--sidebar-collapsed) .nav-group--open .nav-group__sub > li,
+  .shell:not(.shell--sidebar-collapsed) .nav-expand--open .nav-expand__sub > li {
+    animation: none !important;
+  }
 }
 
 .main {
   flex: 1 1 auto;
-  padding: 1rem 1.25rem 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+  /** Encostado à sidebar (esq.) e à viewport (dir.); respiro só no safe-area e top/bottom. */
+  padding: clamp(0.5rem, 1.2vw, 0.75rem) max(0.5rem, env(safe-area-inset-right, 0px)) clamp(0.75rem, 2vw, 1.25rem) 0;
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 0.5rem max(0.5rem, env(safe-area-inset-right, 0px)) 1rem 0;
+  }
 }
 
 @supports not (background: color-mix(in srgb, red 50%, blue)) {

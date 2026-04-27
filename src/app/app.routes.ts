@@ -41,12 +41,37 @@ export const routes: Routes = [
   {
     path: 'estoque',
     component: EstoqueComponent,
-    data: { titulo: 'Estoque' },
+    data: { titulo: 'Produtos' },
+  },
+  {
+    path: 'categorias',
+    component: EmBreveComponent,
+    data: { titulo: 'Categorias' },
+  },
+  {
+    path: 'marcas',
+    component: EmBreveComponent,
+    data: { titulo: 'Marcas' },
+  },
+  {
+    path: 'compras',
+    component: EmBreveComponent,
+    data: { titulo: 'Compras' },
   },
   {
     path: 'promocoes',
     component: EmBreveComponent,
     data: { titulo: 'Promoções' },
+  },
+  {
+    path: 'cashback',
+    component: EmBreveComponent,
+    data: { titulo: 'Cashback' },
+  },
+  {
+    path: 'avaliacoes',
+    component: EmBreveComponent,
+    data: { titulo: 'Avaliações' },
   },
   {
     path: 'relatorios/painel',
@@ -55,8 +80,8 @@ export const routes: Routes = [
   },
   {
     path: 'relatorios/meta',
-    component: EmBreveComponent,
-    data: { titulo: 'Relatórios — Meta' },
+    redirectTo: '/relatorios/painel',
+    pathMatch: 'full',
   },
   { path: 'relatorios', redirectTo: '/relatorios/painel', pathMatch: 'full' },
   {
