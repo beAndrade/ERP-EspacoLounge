@@ -38,10 +38,10 @@
         <div class="toolbar__left">
           @if (emSubrotaFolha) {
             <a
-              routerLink="/financeiro"
+              routerLink="/financeiro/painel"
               class="btn-back-hero"
-              aria-label="Voltar ao resumo do dia"
-              title="Voltar ao resumo do dia"
+              aria-label="Voltar ao painel financeiro"
+              title="Voltar ao painel financeiro"
             >
               <svg
                 class="btn-back-hero__svg"
@@ -76,7 +76,7 @@
           @if (!emSubrotaFolha) {
             <a routerLink="/financeiro/comissoes" class="btn-folha-pagamento">
               <span class="btn-folha-pagamento__icon" aria-hidden="true">$</span>
-              Folha de Pagamento
+              Comissões
             </a>
           }
         </div>

@@ -49,10 +49,16 @@ export const routes: Routes = [
     data: { titulo: 'Promoções' },
   },
   {
-    path: 'relatorios',
+    path: 'relatorios/painel',
     component: EmBreveComponent,
-    data: { titulo: 'Relatórios' },
+    data: { titulo: 'Relatórios — Painel' },
   },
+  {
+    path: 'relatorios/meta',
+    component: EmBreveComponent,
+    data: { titulo: 'Relatórios — Meta' },
+  },
+  { path: 'relatorios', redirectTo: '/relatorios/painel', pathMatch: 'full' },
   {
     path: 'consultoria',
     component: EmBreveComponent,
@@ -64,6 +70,11 @@ export const routes: Routes = [
     data: { titulo: 'Profissionais' },
   },
   {
+    path: 'fornecedores',
+    component: EmBreveComponent,
+    data: { titulo: 'Fornecedores' },
+  },
+  {
     path: 'configuracoes',
     component: EmBreveComponent,
     data: { titulo: 'Configurações' },
@@ -72,8 +83,14 @@ export const routes: Routes = [
     path: 'financeiro',
     component: FinanceiroShellComponent,
     children: [
+      { path: '', pathMatch: 'full', redirectTo: 'painel' },
+      { path: 'painel', component: FinanceiroComponent },
+      {
+        path: 'transacoes',
+        component: EmBreveComponent,
+        data: { titulo: 'Transações' },
+      },
       { path: 'comissoes', component: FinanceiroComissoesComponent },
-      { path: '', component: FinanceiroComponent },
     ],
   },
   { path: '**', redirectTo: '' },

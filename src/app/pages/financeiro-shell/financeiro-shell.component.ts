@@ -30,9 +30,9 @@ export class FinanceiroShellComponent implements OnInit {
     return path.includes('/financeiro/comissoes');
   }
 
-  /** Subtítulo ao lado do título: resumo do dia vs folha de comissões. */
+  /** Subtítulo ao lado do título: painel vs comissões. */
   get toolbarSubtitulo(): string {
-    return this.emSubrotaFolha ? '// Comissões' : '// Visão Geral';
+    return this.emSubrotaFolha ? '// Comissões' : '// Painel';
   }
 
   pinDraft = '';

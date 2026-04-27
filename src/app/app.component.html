@@ -240,171 +240,398 @@
         </ul>
       </div>
 
-      <a
-        routerLink="/financeiro"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: false }"
-        class="nav-item"
-        aria-label="Financeiro"
-        title="Financeiro"
+      <div
+        class="nav-expand"
+        [class.nav-expand--open]="navExpandIsOpen('financeiro')"
+        [class.nav-expand--active]="urlActivePrefix('/financeiro')"
       >
-        <svg
-          class="nav-item__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+        <button
+          type="button"
+          class="nav-expand__trigger nav-item"
+          [class.active]="urlActivePrefix('/financeiro')"
+          (click)="onNavExpandTrigger($event, 'financeiro')"
+          [attr.aria-expanded]="navExpandIsOpen('financeiro')"
+          aria-controls="nav-expand-financeiro"
+          aria-label="Financeiro — abrir subitens"
         >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-          <path d="M12 18V6" />
-        </svg>
-        <span class="nav-item__label">Financeiro</span>
-      </a>
-      <a
-        routerLink="/estoque"
-        routerLinkActive="active"
-        class="nav-item"
-        aria-label="Estoque"
-        title="Estoque"
+          <svg
+            class="nav-item__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+            <path d="M12 18V6" />
+          </svg>
+          <span class="nav-item__label">Financeiro</span>
+          <svg
+            class="nav-expand__chevron"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            />
+          </svg>
+        </button>
+        <ul
+          id="nav-expand-financeiro"
+          class="nav-expand__sub"
+          role="list"
+        >
+          <li>
+            <a
+              routerLink="/financeiro/painel"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="nav-item nav-item--sub"
+              aria-label="Painel financeiro"
+              title="Painel"
+            >
+              <span class="nav-item__label">Painel</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/financeiro/transacoes"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Transações"
+              title="Transações"
+            >
+              <span class="nav-item__label">Transações</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/financeiro/comissoes"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Comissões"
+              title="Comissões"
+            >
+              <span class="nav-item__label">Comissões</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div
+        class="nav-expand"
+        [class.nav-expand--open]="navExpandIsOpen('controle')"
+        [class.nav-expand--active]="urlActivePrefix('/estoque')"
       >
-        <svg
-          class="nav-item__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+        <button
+          type="button"
+          class="nav-expand__trigger nav-item"
+          [class.active]="urlActivePrefix('/estoque')"
+          (click)="onNavExpandTrigger($event, 'controle')"
+          [attr.aria-expanded]="navExpandIsOpen('controle')"
+          aria-controls="nav-expand-controle"
+          aria-label="Controle — abrir subitens"
         >
-          <path d="M12 17v4" />
-          <path d="M8 21h8" />
-          <path d="m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15" />
-          <circle cx="8" cy="9" r="2" />
-          <rect x="2" y="3" width="20" height="14" rx="2" />
-        </svg>
-        <span class="nav-item__label">Estoque</span>
-      </a>
-      <a
-        routerLink="/clientes"
-        routerLinkActive="active"
-        class="nav-item"
-        aria-label="Clientes"
-        title="Clientes"
+          <svg
+            class="nav-item__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 17v4" />
+            <path d="M8 21h8" />
+            <path d="m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15" />
+            <circle cx="8" cy="9" r="2" />
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+          </svg>
+          <span class="nav-item__label">Controle</span>
+          <svg
+            class="nav-expand__chevron"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            />
+          </svg>
+        </button>
+        <ul id="nav-expand-controle" class="nav-expand__sub" role="list">
+          <li>
+            <a
+              routerLink="/estoque"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Estoque"
+              title="Estoque"
+            >
+              <span class="nav-item__label">Estoque</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div
+        class="nav-expand"
+        [class.nav-expand--open]="navExpandIsOpen('cadastros')"
+        [class.nav-expand--active]="
+          urlActivePrefix('/clientes') ||
+          urlActivePrefix('/profissionais') ||
+          urlActivePrefix('/fornecedores')
+        "
       >
-        <svg
-          class="nav-item__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+        <button
+          type="button"
+          class="nav-expand__trigger nav-item"
+          [class.active]="
+            urlActivePrefix('/clientes') ||
+            urlActivePrefix('/profissionais') ||
+            urlActivePrefix('/fornecedores')
+          "
+          (click)="onNavExpandTrigger($event, 'cadastros')"
+          [attr.aria-expanded]="navExpandIsOpen('cadastros')"
+          aria-controls="nav-expand-cadastros"
+          aria-label="Cadastros — abrir subitens"
         >
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <path d="M16 3.128a4 4 0 0 1 0 7.744" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-          <circle cx="9" cy="7" r="4" />
-        </svg>
-        <span class="nav-item__label">Clientes</span>
-      </a>
-      <a
-        routerLink="/promocoes"
-        routerLinkActive="active"
-        class="nav-item"
-        aria-label="Promoções"
-        title="Promoções"
+          <svg
+            class="nav-item__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+          <span class="nav-item__label">Cadastros</span>
+          <svg
+            class="nav-expand__chevron"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            />
+          </svg>
+        </button>
+        <ul id="nav-expand-cadastros" class="nav-expand__sub" role="list">
+          <li>
+            <a
+              routerLink="/clientes"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: false }"
+              class="nav-item nav-item--sub"
+              aria-label="Clientes"
+              title="Clientes"
+            >
+              <span class="nav-item__label">Clientes</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/profissionais"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Profissionais"
+              title="Profissionais"
+            >
+              <span class="nav-item__label">Profissionais</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/fornecedores"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Fornecedores"
+              title="Fornecedores"
+            >
+              <span class="nav-item__label">Fornecedores</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div
+        class="nav-expand"
+        [class.nav-expand--open]="navExpandIsOpen('marketing')"
+        [class.nav-expand--active]="urlActivePrefix('/promocoes')"
       >
-        <svg
-          class="nav-item__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+        <button
+          type="button"
+          class="nav-expand__trigger nav-item"
+          [class.active]="urlActivePrefix('/promocoes')"
+          (click)="onNavExpandTrigger($event, 'marketing')"
+          [attr.aria-expanded]="navExpandIsOpen('marketing')"
+          aria-controls="nav-expand-marketing"
+          aria-label="Marketing — abrir subitens"
         >
-          <path
-            d="M13.172 2a2 2 0 0 1 1.414.586l6.71 6.71a2.4 2.4 0 0 1 0 3.408l-4.592 4.592a2.4 2.4 0 0 1-3.408 0l-6.71-6.71A2 2 0 0 1 6 9.172V3a1 1 0 0 1 1-1z"
-          />
-          <path
-            d="M2 7v6.172a2 2 0 0 0 .586 1.414l6.71 6.71a2.4 2.4 0 0 0 3.191.193"
-          />
-          <circle cx="10.5" cy="6.5" r=".5" fill="currentColor" />
-        </svg>
-        <span class="nav-item__label">Promoções</span>
-      </a>
-      <a
-        routerLink="/relatorios"
-        routerLinkActive="active"
-        class="nav-item"
-        aria-label="Relatórios"
-        title="Relatórios"
+          <svg
+            class="nav-item__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M13.172 2a2 2 0 0 1 1.414.586l6.71 6.71a2.4 2.4 0 0 1 0 3.408l-4.592 4.592a2.4 2.4 0 0 1-3.408 0l-6.71-6.71A2 2 0 0 1 6 9.172V3a1 1 0 0 1 1-1z"
+            />
+            <path
+              d="M2 7v6.172a2 2 0 0 0 .586 1.414l6.71 6.71a2.4 2.4 0 0 0 3.191.193"
+            />
+            <circle cx="10.5" cy="6.5" r=".5" fill="currentColor" />
+          </svg>
+          <span class="nav-item__label">Marketing</span>
+          <svg
+            class="nav-expand__chevron"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            />
+          </svg>
+        </button>
+        <ul id="nav-expand-marketing" class="nav-expand__sub" role="list">
+          <li>
+            <a
+              routerLink="/promocoes"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Promoções"
+              title="Promoções"
+            >
+              <span class="nav-item__label">Promoções</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div
+        class="nav-expand"
+        [class.nav-expand--open]="navExpandIsOpen('relatorios')"
+        [class.nav-expand--active]="urlActivePrefix('/relatorios')"
       >
-        <svg
-          class="nav-item__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+        <button
+          type="button"
+          class="nav-expand__trigger nav-item"
+          [class.active]="urlActivePrefix('/relatorios')"
+          (click)="onNavExpandTrigger($event, 'relatorios')"
+          [attr.aria-expanded]="navExpandIsOpen('relatorios')"
+          aria-controls="nav-expand-relatorios"
+          aria-label="Relatórios — abrir subitens"
         >
-          <path
-            d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"
-          />
-          <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-        </svg>
-        <span class="nav-item__label">Relatórios</span>
-      </a>
-      <a
-        routerLink="/profissionais"
-        routerLinkActive="active"
-        class="nav-item"
-        aria-label="Profissionais"
-        title="Profissionais"
-      >
-        <svg
-          class="nav-item__icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M18 21a6 6 0 0 0-12 0" />
-          <circle cx="12" cy="11" r="4" />
-          <rect width="18" height="18" x="3" y="3" rx="2" />
-        </svg>
-        <span class="nav-item__label">Profissionais</span>
-      </a>
+          <svg
+            class="nav-item__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"
+            />
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+          </svg>
+          <span class="nav-item__label">Relatórios</span>
+          <svg
+            class="nav-expand__chevron"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            />
+          </svg>
+        </button>
+        <ul id="nav-expand-relatorios" class="nav-expand__sub" role="list">
+          <li>
+            <a
+              routerLink="/relatorios/painel"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Painel de relatórios"
+              title="Painel"
+            >
+              <span class="nav-item__label">Painel</span>
+            </a>
+          </li>
+          <li>
+            <a
+              routerLink="/relatorios/meta"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Meta"
+              title="Meta"
+            >
+              <span class="nav-item__label">Meta</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
       <a
         routerLink="/configuracoes"
         routerLinkActive="active"
