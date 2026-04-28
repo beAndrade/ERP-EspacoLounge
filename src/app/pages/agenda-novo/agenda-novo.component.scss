@@ -197,7 +197,7 @@
 :host.agenda-novo--drawer .agenda-modal__header {
   align-items: center;
   margin: 0;
-  padding: 20px 0;
+  padding: 0;
 }
 
 :host.agenda-novo--drawer .agenda-modal__close {
@@ -2079,19 +2079,26 @@ textarea {
     padding-top: 0.25rem;
     /** Mesmo respiro inferior em novo e em editar (spacer vs margin-top: auto). */
     padding-bottom: 0.3rem;
-    margin-bottom: 0;
+    /** Respiro entre observações e o rodapé (textarea ↔ footer). */
+    margin-bottom: 1rem;
     background: #fff;
     position: relative;
     z-index: 1;
   }
 
   /**
-   * Rodapé encostado ao fundo do drawer; eixo X alinhado ao inset do `.app-drawer`.
+   * Rodapé encostado ao fundo do drawer; padding-left = inset do `.app-drawer`; sem padding-right.
+   * Botões agrupados à direita: Cancelar fica imediatamente à esquerda de Salvar.
    */
   .agenda-modal__footer {
     margin-top: auto;
     margin-bottom: 0;
-    padding: 10px var(--drawer-pad-x);
+    justify-content: flex-end;
+    padding: 10px 0 10px var(--drawer-pad-x);
+
+    .agenda-modal__footer-salvar {
+      margin-left: 0;
+    }
   }
 
   /**
