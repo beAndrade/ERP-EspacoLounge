@@ -533,29 +533,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.55rem;
   flex: 0 0 auto;
   margin-top: 0.75rem;
-  padding: 0.9rem 0 0.25rem;
+  padding: 10px 15px;
   border-top: none;
   background: #fff;
   position: relative;
   z-index: 2;
-
-  .agenda-modal__footer-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.55rem;
-    width: 100%;
-    min-width: 0;
-    margin-top: 0.65rem;
-  }
+  /** Painel «Excluir» (absolute) não ser recortado pelo flex/scroller. */
+  overflow: visible;
 
   .agenda-modal__footer-salvar {
-    margin-left: 0;
+    margin-left: auto;
   }
 
   :host.agenda-novo--drawer & {
@@ -602,6 +593,7 @@
 .agenda-modal__excluir-wrap {
   position: relative;
   display: inline-block;
+  overflow: visible;
 
   &--open {
     z-index: 30;
@@ -628,14 +620,35 @@
 .agenda-modal__excluir-panel {
   position: absolute;
   bottom: calc(100% + 6px);
-  left: 0;
-  min-width: 15.5rem;
-  padding: 0.35rem 0;
+  right: 0;
+  left: auto;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  max-width: min(18.5rem, calc(100vw - 1.5rem));
+  margin: 0;
+  padding: 4px;
+  list-style: none;
   background: #fff;
   border-radius: 10px;
   box-shadow:
-    0 4px 18px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+
+  > li {
+    margin: 0;
+    padding: 0;
+  }
+
+  .agenda-modal__excluir-opt {
+    width: 100%;
+    margin: 0;
+    padding: 5px 12px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
 }
 
 .agenda-modal__excluir-opt {
@@ -643,36 +656,49 @@
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
   border: none;
   background: transparent;
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #b91c1c;
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  color: #ff4d4f;
   cursor: pointer;
   text-align: left;
+  border-radius: 6px;
+  transition: all 0.2s;
 
-  &:hover {
-    background: #fef2f2;
+  &:hover:not(:disabled) {
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 1.5714285714285714;
+    cursor: pointer;
+    display: flex;
+    margin: 0;
+    padding: 5px 12px;
+    background: #ff4d4f;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }
 
-.agenda-modal__excluir-ico {
-  flex: 0 0 1.1rem;
-  width: 1.1rem;
-  height: 1.1rem;
-  opacity: 0.9;
+.agenda-modal__excluir-opt-ico {
+  flex: 0 0 auto;
+  display: block;
+  width: 12px;
+  height: 12px;
+  color: #ff4d4f;
+  transition: all 0.2s;
+}
 
-  &--trash {
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b91c1c' stroke-width='2'%3E%3Cpath stroke-linecap='round' d='M3 6h18M8 6V4h8v2m-1 0v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V6h10z'/%3E%3C/svg%3E")
-      center / contain no-repeat;
-  }
-
-  &--list {
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23b91c1c' stroke-width='2'%3E%3Cpath stroke-linecap='round' d='M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01'/%3E%3C/svg%3E")
-      center / contain no-repeat;
-  }
+.agenda-modal__excluir-opt:hover:not(:disabled) .agenda-modal__excluir-opt-ico {
+  color: #fff;
 }
 
 .form-shell__client--placeholder {
@@ -1019,8 +1045,9 @@ textarea {
   box-sizing: border-box;
   min-height: 40px;
   height: 40px;
-  padding: 0 1.1rem;
-  border-radius: 12px;
+  padding: 0 15px;
+  border-radius: 14px;
+  font-size: 14px;
   font-weight: 500;
   margin-top: 0;
 }
@@ -1032,9 +1059,26 @@ textarea {
   border-color: #e7e5e4;
 
   &:hover:not(:disabled) {
-    color: #000000d9;
-    background: #fafaf9;
-    border-color: #d6d3d1;
+    color: #7a88ff;
+    border-color: #7a88ff;
+    background: #ffffff;
+  }
+}
+
+.agenda-modal__footer .btn.btn-footer--comanda {
+  background: #70c040;
+  border-color: #70c040;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.06);
+    transform: scale(1.02);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
   }
 }
 
@@ -1059,7 +1103,21 @@ textarea {
     background: #7b82fc;
     border-color: #7b82fc;
     filter: none;
+    transform: scale(1.02);
   }
+}
+
+/** Salvar + Comanda: feedback tátil/hover alinhado ao pedido. */
+.agenda-modal__footer .agenda-modal__footer-salvar.btn,
+.agenda-modal__footer .btn.btn-footer--comanda {
+  position: relative;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  transition:
+    transform 0.1s,
+    filter 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease !important;
 }
 
 /** Icôni: a regra base `.btn` acima não pode sobrepor (background branco). */
@@ -1080,6 +1138,12 @@ textarea {
   transition:
     background 0.12s ease,
     color 0.12s ease;
+
+  svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
 
   svg,
   path {
@@ -1604,6 +1668,19 @@ textarea {
     border-color: var(--drawer-field-border);
   }
 
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--el-drawer-field-border-hover);
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file'])::placeholder,
+  textarea::placeholder {
+    color: var(--drawer-input-text-idle);
+    opacity: 1;
+  }
+
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(:focus):not(
       :placeholder-shown
     ),
@@ -1966,12 +2043,6 @@ textarea {
 
   /* Glow no próprio trilho (não em pseudo interno) para não ser cortado pelo overflow. */
 
-  /** Margem interna do scroll: o ripple do toggle não encosta no clip horizontal. */
-  .form-shell__flow--modal {
-    padding-inline: 0.45rem;
-    box-sizing: border-box;
-  }
-
   /**
    * Observações colada ao footer: `margin-top: auto` (novo) ou `form-shell__flow-spacer` (edição).
    */
@@ -1989,12 +2060,12 @@ textarea {
   }
 
   /**
-   * Respiro entre Observações e barra de ações (footer é irmão do flow no `form-shell__main`).
+   * Rodapé encostado ao fundo do drawer; padding 10px 15px.
    */
   .agenda-modal__footer {
-    margin-top: 1rem;
-    padding-top: 0.4rem;
-    padding-bottom: 0.2rem;
+    margin-top: auto;
+    margin-bottom: 0;
+    padding: 10px 15px;
   }
 
   /**
@@ -2099,7 +2170,7 @@ textarea {
     }
   }
 
-  /** Drawer: hover só borda vinho em campos de texto. */
+  /** Drawer: hover com borda vinho nos campos de texto. */
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
       [type='file']
     ),
@@ -2148,6 +2219,8 @@ textarea {
     svg {
       display: block;
       flex-shrink: 0;
+      width: 16px;
+      height: 16px;
     }
   }
 
@@ -2233,45 +2306,44 @@ textarea {
   }
 
   /**
-   * Repetição (modal): rótulo acima; gatilho + toggle na mesma linha, respiro compacto.
+   * Repetição (modal): bloco `arpc` alinhado à esquerda do `servicos-block`;
+   * toggle imediatamente após o gatilho (sem empurrar à direita da view).
    */
   .itens-atendimento--modal .arpc-modal-row {
-    display: grid;
-    grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    column-gap: 2.5rem;
-    row-gap: 0.4rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.55rem 0.65rem;
     margin-top: 0.45rem;
     width: 100%;
-    align-items: center;
   }
 
-  /** Só toggle «Aplicar…»: uma coluna, alinhado à direita. */
   .itens-atendimento--modal .arpc-modal-row--sem-cascade {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: end;
-  }
-
-  .itens-atendimento--modal .arpc-modal-row--sem-cascade .arpc-modal-row__toggle-wrap {
-    grid-column: 1;
-    width: 100%;
-    display: flex;
     justify-content: flex-end;
   }
 
   .itens-atendimento--modal .arpc-modal-row__cascade {
-    grid-column: 1;
-    grid-row: 1 / span 2;
+    flex: 0 1 auto;
     min-width: 0;
     max-width: 30rem;
-    display: grid;
-    grid-template-rows: auto auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
     row-gap: 0.4rem;
 
     app-agenda-repetir-cascade {
       display: block;
       width: 100%;
-      max-width: 100%;
+      max-width: 30rem;
+      align-self: flex-start;
+    }
+
+    app-agenda-repetir-cascade .arpc {
+      width: 100%;
     }
 
     app-agenda-repetir-cascade .arpc__field {
@@ -2282,47 +2354,43 @@ textarea {
   }
 
   .itens-atendimento--modal .arpc-modal-row__toggle-wrap {
-    grid-column: 2;
-    grid-row: 1 / span 2;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
-    justify-content: center;
+    align-self: center;
+    justify-content: flex-start;
     min-width: 0;
-    padding: 0;
-    align-self: stretch;
-    min-height: 0;
+    margin-left: 0;
+    /* Desce p/ alinhar ao eixo vertical do gatilho (abaixo do rótulo) */
+    padding: 35px 0 0 20px
   }
 
   @media (max-width: 720px) {
     .itens-atendimento--modal .arpc-modal-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
+      flex-direction: column;
+      align-items: stretch;
     }
 
     .itens-atendimento--modal .arpc-modal-row__cascade {
       width: 100%;
       max-width: 100%;
-      grid-column: auto;
-      grid-row: auto;
     }
 
     .itens-atendimento--modal .arpc-modal-row__toggle-wrap {
-      grid-column: auto;
-      grid-row: auto;
-      max-width: 100%;
+      margin-left: 0;
       width: 100%;
-      display: flex;
       justify-content: center;
+      padding-top: 0;
     }
   }
 
-  /** Alinhar ao `app-saas-select` do drawer (altura, borda, cantos). */
+  /** Texto do gatilho alinhado à esquerda (seta continua absoluta). */
   .itens-atendimento--modal
     .arpc-modal-row__cascade
     app-agenda-repetir-cascade
     .arpc__trigger {
     box-sizing: border-box;
+    justify-content: flex-start;
     width: 100%;
     min-width: 11rem;
     max-width: none;
@@ -2337,6 +2405,15 @@ textarea {
     font: inherit;
     box-shadow: none;
     transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .itens-atendimento--modal
+    .arpc-modal-row__cascade
+    app-agenda-repetir-cascade
+    .arpc__trigger-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: left;
   }
 
   .itens-atendimento--modal
@@ -2390,36 +2467,52 @@ textarea {
     min-width: 0;
   }
 
+  /** Data da série: altura 32px; rodapé do modal mantém 40px. */
   .itens-atendimento--modal .arpc-proximos-saved__chip {
-    border: 1px solid rgba(122, 136, 255, 0.45);
-    border-radius: 10px;
-    padding: 0.52rem 1.05rem;
-    font-size: 0.84rem;
-    font-weight: 400;
+    box-sizing: border-box;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 32px;
+    height: 32px;
+    border: 1px solid #505afb;
+    border-radius: 12px;
+    padding: 0 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
     cursor: pointer;
-    line-height: 1.25;
-    background: #fff;
-    color: #7a88ff;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
+    background: #505afb;
+    color: #fff;
   }
 
-  .itens-atendimento--modal .arpc-proximos-saved__chip--ancla {
-    background: rgba(122, 136, 255, 0.06);
-    color: rgba(122, 136, 255, 0.75);
-    border-color: rgba(122, 136, 255, 0.35);
+  .itens-atendimento--modal
+    .arpc-proximos-saved__chip-txt {
+    text-align: center;
   }
 
+  .itens-atendimento--modal
+    .arpc-proximos-saved__chip:not(.arpc-proximos-saved__chip--ativo):hover {
+    background: #7b82fc;
+    border-color: #7b82fc;
+  }
+
+  /* Dia em edição (único com --ativo): bloqueado, estilo do print */
   .itens-atendimento--modal .arpc-proximos-saved__chip--ativo {
-    background: rgba(122, 136, 255, 0.14);
-    border-color: #7a88ff;
-    color: #7a88ff;
+    min-height: 32px;
+    height: 32px;
+    background: #f1f1f1;
+    border-color: #f1f1f1;
+    color: #00000040;
+    cursor: not-allowed;
   }
 
-  .itens-atendimento--modal .arpc-proximos-saved__chip:hover {
-    background: rgba(122, 136, 255, 0.1);
-    border-color: #7a88ff;
+  .itens-atendimento--modal .arpc-proximos-saved__chip--ativo:hover {
+    background: #f1f1f1;
+    border-color: #f1f1f1;
+    color: #00000040;
   }
 }
 
