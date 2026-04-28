@@ -1124,7 +1124,9 @@
                 [(value)]="repetirAgendamento"
               />
             </div>
-            @if (idAtendimentoEmEdicao?.trim()) {
+            @if (
+              idAtendimentoEmEdicao?.trim() && temAgendamentosFuturosNaSerieSalva()
+            ) {
               <div
                 class="arpc-modal-row__toggle-wrap block-toggles block-toggles--inline"
                 role="group"
@@ -1258,46 +1260,66 @@
                 Cancelar
               </button>
               @if (idAtendimentoEmEdicao?.trim()) {
-                <div
-                  class="agenda-modal__excluir-wrap"
-                  [class.agenda-modal__excluir-wrap--open]="excluirMenuAberto"
-                >
+                @if (temAgendamentosFuturosNaSerieSalva()) {
+                  <div
+                    class="agenda-modal__excluir-wrap"
+                    [class.agenda-modal__excluir-wrap--open]="excluirMenuAberto"
+                  >
+                    <button
+                      type="button"
+                      class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
+                      (click)="toggleExcluirMenu(); $event.stopPropagation()"
+                      [disabled]="salvando || excluindo"
+                      [attr.aria-expanded]="excluirMenuAberto"
+                      aria-haspopup="menu"
+                    >
+                      {{ excluindo ? 'Excluindo…' : 'Excluir' }}
+                      <span
+                        class="agenda-modal__excluir-chev"
+                        aria-hidden="true"
+                      ></span>
+                    </button>
+                    @if (excluirMenuAberto) {
+                      <div class="agenda-modal__excluir-panel" role="menu">
+                        <button
+                          type="button"
+                          class="agenda-modal__excluir-opt"
+                          role="menuitem"
+                          (click)="excluirSomente()"
+                          [disabled]="salvando || excluindo"
+                        >
+                          <span
+                            class="agenda-modal__excluir-ico agenda-modal__excluir-ico--trash"
+                            aria-hidden="true"
+                          ></span>
+                          Excluir agendamento
+                        </button>
+                        <button
+                          type="button"
+                          class="agenda-modal__excluir-opt"
+                          role="menuitem"
+                          (click)="excluirEsteEProximosSerie()"
+                          [disabled]="salvando || excluindo"
+                        >
+                          <span
+                            class="agenda-modal__excluir-ico agenda-modal__excluir-ico--list"
+                            aria-hidden="true"
+                          ></span>
+                          Excluir este e os próximos
+                        </button>
+                      </div>
+                    }
+                  </div>
+                } @else {
                   <button
                     type="button"
                     class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
-                    (click)="toggleExcluirMenu(); $event.stopPropagation()"
+                    (click)="excluirSomente()"
                     [disabled]="salvando || excluindo"
-                    [attr.aria-expanded]="excluirMenuAberto"
-                    aria-haspopup="menu"
                   >
                     {{ excluindo ? 'Excluindo…' : 'Excluir' }}
-                    <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
                   </button>
-                  @if (excluirMenuAberto) {
-                    <div class="agenda-modal__excluir-panel" role="menu">
-                      <button
-                        type="button"
-                        class="agenda-modal__excluir-opt"
-                        role="menuitem"
-                        (click)="excluirSomente()"
-                        [disabled]="salvando || excluindo"
-                      >
-                        <span class="agenda-modal__excluir-ico agenda-modal__excluir-ico--trash" aria-hidden="true"></span>
-                        Excluir agendamento
-                      </button>
-                      <button
-                        type="button"
-                        class="agenda-modal__excluir-opt"
-                        role="menuitem"
-                        (click)="excluirEsteEProximosSerie()"
-                        [disabled]="salvando || excluindo"
-                      >
-                        <span class="agenda-modal__excluir-ico agenda-modal__excluir-ico--list" aria-hidden="true"></span>
-                        Excluir este e os próximos
-                      </button>
-                    </div>
-                  }
-                </div>
+                }
               }
               <button
                 type="submit"

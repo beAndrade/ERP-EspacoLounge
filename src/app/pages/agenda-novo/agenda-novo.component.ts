@@ -2361,6 +2361,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  /**
+   * Há ao menos uma data gravada (mesmo cliente + hora) depois da data em edição —
+   * exibe menu de exclusão em cascata e o toggle «Aplicar alterações para os próximos».
+   */
+  temAgendamentosFuturosNaSerieSalva(): boolean {
+    if (!this.modoModal || !this.idAtendimentoEmEdicao?.trim()) return false;
+    const base = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    if (!base) return false;
+    return this.datasSerieOcorrenciasSalvas.some((d) => d > base);
+  }
+
   chipsProximosAgendamentosSalvos(): { ymd: string; ancla: boolean }[] {
     const base = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
     const sorted = [...this.datasSerieOcorrenciasSalvas].sort();

@@ -38,16 +38,25 @@ $hub-sidebar-w: 20rem;
 }
 
 .hub-layout {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-  align-items: flex-start;
-  margin-bottom: 2rem;
+  display: grid;
+  grid-template-columns: minmax(17rem, min(20rem, 32vw)) 1fr;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 1.5rem;
 }
 
 .hub-sidebar {
-  flex: 0 0 $hub-sidebar-w;
-  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .hub-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .mini-cal {
@@ -167,7 +176,7 @@ $hub-sidebar-w: 20rem;
 }
 
 .hub-main {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
@@ -346,8 +355,7 @@ $agenda-slot-rows: 31;
   cursor: pointer;
   border: none;
   border-radius: 9px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: visible;
   z-index: 2;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   display: flex;
@@ -361,6 +369,7 @@ $agenda-slot-rows: 31;
 .day-col__card:hover:not(:disabled) {
   filter: brightness(1.04);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+  z-index: 4;
 }
 
 .day-col__card:disabled {

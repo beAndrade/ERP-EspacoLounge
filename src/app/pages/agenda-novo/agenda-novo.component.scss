@@ -551,6 +551,7 @@
     gap: 0.55rem;
     width: 100%;
     min-width: 0;
+    margin-top: 0.65rem;
   }
 
   .agenda-modal__footer-salvar {
@@ -611,7 +612,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border-radius: 0.75rem;
+  border-radius: 12px;
 }
 
 .agenda-modal__excluir-chev {
@@ -1015,19 +1016,23 @@ textarea {
 
 /** Footer do modal/drawer: alinhamento à direita já em `.agenda-modal__footer`; aqui cores e radius (especificidade > `.btn`). */
 .agenda-modal__footer .btn.btn-footer {
-  border-radius: 0.75rem;
+  box-sizing: border-box;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 1.1rem;
+  border-radius: 12px;
   font-weight: 500;
   margin-top: 0;
 }
 
 .agenda-modal__footer .btn.btn-footer--ghost {
   font-weight: 400;
-  color: #c4c2bf;
+  color: #000000bf;
   background: transparent;
   border-color: #e7e5e4;
 
   &:hover:not(:disabled) {
-    color: #a8a6a3;
+    color: #000000d9;
     background: #fafaf9;
     border-color: #d6d3d1;
   }
@@ -1044,13 +1049,16 @@ textarea {
   }
 }
 
-.agenda-modal__footer .btn.btn-footer.primary {
-  background: #7a88ff;
-  border-color: #7a88ff;
+.agenda-modal__footer .btn.btn-footer.primary,
+.agenda-modal__footer .agenda-modal__footer-salvar.btn {
+  background: #505afb;
+  border-color: #505afb;
   color: #fff;
 
   &:hover:not(:disabled) {
-    filter: brightness(0.95);
+    background: #7b82fc;
+    border-color: #7b82fc;
+    filter: none;
   }
 }
 
@@ -2229,12 +2237,13 @@ textarea {
    */
   .itens-atendimento--modal .arpc-modal-row {
     display: grid;
-    grid-template-columns: minmax(0, 30rem) max-content;
+    grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
     grid-template-rows: auto auto;
     column-gap: 2.5rem;
     row-gap: 0.4rem;
     margin-top: 0.45rem;
     width: 100%;
+    align-items: center;
   }
 
   .itens-atendimento--modal .arpc-modal-row__cascade {
@@ -2261,14 +2270,14 @@ textarea {
 
   .itens-atendimento--modal .arpc-modal-row__toggle-wrap {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1 / span 2;
     display: flex;
     align-items: center;
+    justify-content: center;
     min-width: 0;
     padding: 0;
-    align-self: center;
-    /* Centraliza visualmente no meio do input (44px). */
-    min-height: var(--touch-min, 2.75rem);
+    align-self: stretch;
+    min-height: 0;
   }
 
   @media (max-width: 720px) {
@@ -2289,8 +2298,9 @@ textarea {
       grid-column: auto;
       grid-row: auto;
       max-width: 100%;
+      width: 100%;
       display: flex;
-      justify-content: flex-start;
+      justify-content: center;
     }
   }
 
