@@ -516,6 +516,10 @@ $agenda-slot-rows: 31;
     min-width: 0;
   }
 
+  /**
+   * Segundo painel: mesmo `fixed` rect, `transform`, `padding` e media query
+   * que o drawer de agendamento — empilha por cima (`z-index` maior).
+   */
   &--comanda {
     z-index: 1003;
 
