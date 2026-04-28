@@ -54,6 +54,7 @@ import {
   skip,
   Subject,
   Subscription,
+  distinctUntilChanged,
   switchMap,
   take,
   takeUntil,
@@ -67,7 +68,11 @@ import { AgendaStatusSelectComponent } from './agenda-status-select.component';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { expandirDatasRepeticao } from './agenda-repetir-datas';
 import { AgendaRepetirCascadeComponent } from './agenda-repetir-cascade.component';
-import type { ValorRepetirAgendamento } from './agenda-repetir-cascade.models';
+import {
+  ITENS_FREQUENCIA,
+  type ValorRepetirAgendamento,
+  type FrequenciaRepetirAgendamento,
+} from './agenda-repetir-cascade.models';
 import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.component';
 import {
   SaasSelectComponent,
@@ -344,6 +349,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    */
   repetirAgendamento: ValorRepetirAgendamento = { modo: 'nenhum' };
 
+  /** Persistência da escolha “Além deste…” por cliente no drawer (hub). */
+  private readonly repetirClienteStorageKey =
+    'espaco-lounge-agenda-repetir-por-cliente-v1';
+
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
   /**
@@ -477,6 +486,74 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const ymd = normalizarDataIso(String(d ?? ''));
         if (ymd) this.atualizarOcupacaoDia(ymd);
       });
+
+    this.form.controls.cliente_id.valueChanges
+      .pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        if (!this.modoModal || this.carregandoListas || this.prefillEmCurso) {
+          return;
+        }
+        this.restaurarRepetirPreferenciaClienteArmazem();
+      });
+  }
+
+  onRepetirAgendamentoChange(valor: ValorRepetirAgendamento): void {
+    this.repetirAgendamento = valor;
+    this.persistirRepetirPreferenciaClienteArmazem();
+  }
+
+  private persistirRepetirPreferenciaClienteArmazem(): void {
+    if (!this.modoModal) return;
+    const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+    if (!cid) return;
+    try {
+      const raw = sessionStorage.getItem(this.repetirClienteStorageKey);
+      const map = raw
+        ? (JSON.parse(raw) as Record<string, ValorRepetirAgendamento>)
+        : {};
+      map[cid] = this.repetirAgendamento;
+      sessionStorage.setItem(
+        this.repetirClienteStorageKey,
+        JSON.stringify(map),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private restaurarRepetirPreferenciaClienteArmazem(): void {
+    if (!this.modoModal) return;
+    const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+    if (!cid) return;
+    try {
+      const raw = sessionStorage.getItem(this.repetirClienteStorageKey);
+      if (!raw) return;
+      const map = JSON.parse(raw) as Record<string, unknown>;
+      const v = map[cid] as ValorRepetirAgendamento | undefined;
+      if (!v || typeof v !== 'object') return;
+      if (v.modo === 'nenhum') {
+        this.repetirAgendamento = { modo: 'nenhum' };
+        return;
+      }
+      if (v.modo !== 'repetir' || v.vezes == null || !v.frequencia) return;
+      const f = v.frequencia as string;
+      if (
+        !ITENS_FREQUENCIA.includes(f as FrequenciaRepetirAgendamento)
+      ) {
+        return;
+      }
+      const n = Math.min(60, Math.max(1, Math.floor(Number(v.vezes))));
+      this.repetirAgendamento = {
+        modo: 'repetir',
+        frequencia: f as FrequenciaRepetirAgendamento,
+        vezes: n,
+      };
+    } catch {
+      /* ignore */
+    }
   }
 
   onDataModalPicked(ymd: string): void {
@@ -1544,6 +1621,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
         this.repetirAgendamento = { modo: 'nenhum' };
+        this.persistirRepetirPreferenciaClienteArmazem();
         this.aplicarAlteracoesProximos = false;
         this.datasSerieOcorrenciasSalvas = [];
         this.yminSerieOcorrenciasSalvas = null;
@@ -1869,6 +1947,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       this.reforcarHoraInicialSeVazia(sorted, dataYmd);
       this.prefillEmCurso = false;
       this.aplicarValidadoresLinhas();
+      if (this.modoModal) this.restaurarRepetirPreferenciaClienteArmazem();
       return;
     }
 
@@ -2016,6 +2095,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.prefillEmCurso = false;
     this.garantirMinUmaLinha();
     this.aplicarValidadoresLinhas();
+    if (this.modoModal) this.restaurarRepetirPreferenciaClienteArmazem();
   }
 
   private buscarServicoIdPorNomeColuna(nome: string): string {
@@ -2351,6 +2431,59 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   fecharExcluirMenu(): void {
     this.excluirMenuAberto = false;
+  }
+
+  /** Próximos datas previstas só pelo formulário (antes da série estar gravada assim). */
+  mostrarSecaoProximosAgendamentosPreview(): boolean {
+    if (!this.modoModal || this.mostrarSecaoProximosAgendamentosSalvos()) {
+      return false;
+    }
+    if (
+      this.repetirAgendamento.modo !== 'repetir' ||
+      this.repetirAgendamento.vezes <= 0
+    ) {
+      return false;
+    }
+    return !!normalizarDataIso(
+      String(this.form.get('data')?.value ?? ''),
+    );
+  }
+
+  chipsProximosAgendamentosPreview(): { ymd: string; ancla: boolean }[] {
+    const base = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    if (!base || this.repetirAgendamento.modo !== 'repetir') return [];
+    const datas = expandirDatasRepeticao(
+      base,
+      this.repetirAgendamento.vezes,
+      this.repetirAgendamento.frequencia,
+    );
+    return datas.map((ymd, idx) => ({ ymd, ancla: idx === 0 }));
+  }
+
+  /**
+   * Chips previstos: âncora como na série gravada; outras datas atualizam o formulário
+   * ou navegam quando já existe ID na série.
+   */
+  onChipProximoPreviewClick(chip: { ymd: string; ancla: boolean }): void {
+    if (!this.modoModal) return;
+    const idEdit = this.idAtendimentoEmEdicao?.trim();
+    if (chip.ancla && idEdit) {
+      this.navegacaoNoHub.emit({
+        data: chip.ymd,
+        id_atendimento: idEdit,
+      });
+      return;
+    }
+    if (!chip.ancla && idEdit) {
+      this.pularParaDataRepeticao(chip.ymd);
+      return;
+    }
+    const ymd = chip.ymd.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.prefillEmCurso = true;
+    this.form.patchValue({ data: ymd }, { emitEvent: false });
+    this.prefillEmCurso = false;
+    this.atualizarOcupacaoDia(ymd);
   }
 
   mostrarSecaoProximosAgendamentosSalvos(): boolean {

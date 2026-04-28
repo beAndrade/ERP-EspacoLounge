@@ -1121,7 +1121,8 @@
             <div class="arpc-modal-row__cascade">
               <app-agenda-repetir-cascade
                 [dataReferencia]="form.get('data')?.value ?? null"
-                [(value)]="repetirAgendamento"
+                [value]="repetirAgendamento"
+                (valueChange)="onRepetirAgendamentoChange($event)"
               />
             </div>
             @if (
@@ -1150,6 +1151,37 @@
               </div>
             }
           </div>
+          @if (mostrarSecaoProximosAgendamentosPreview()) {
+            <section
+              class="arpc-proximos-saved arpc-proximos-preview"
+              aria-label="Próximos agendamentos previstos"
+            >
+              <h3 class="arpc-proximos-saved__title">Próximos agendamentos</h3>
+              <div class="arpc-proximos-saved__chips">
+                @for (
+                  chip of chipsProximosAgendamentosPreview();
+                  track chip.ymd
+                ) {
+                  <button
+                    type="button"
+                    class="arpc-proximos-saved__chip"
+                    [class.arpc-proximos-saved__chip--ancla]="chip.ancla"
+                    [class.arpc-proximos-saved__chip--ativo]="
+                      chipAtivoProximoSerieSalva(chip)
+                    "
+                    [attr.aria-label]="
+                      chip.ancla
+                        ? 'Data deste agendamento'
+                        : 'Ir para data prevista ' + formatarDataBadgePt(chip.ymd)
+                    "
+                    (click)="onChipProximoPreviewClick(chip)"
+                  >
+                    {{ formatarDataBadgePt(chip.ymd) }}
+                  </button>
+                }
+              </div>
+            </section>
+          }
           @if (mostrarSecaoProximosAgendamentosSalvos()) {
             <section
               class="arpc-proximos-saved"
