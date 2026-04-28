@@ -463,8 +463,21 @@ $agenda-slot-rows: 31;
  * Fechado: translateX(100%); aberto: translateX(0).
  */
 .app-drawer {
-  /** Herdado por `app-agenda-novo` — linhas de divisão em largura total. */
-  --drawer-pad-x: clamp(1rem, 2.5vw, 1.5rem);
+  /**
+   * --- Inset do painel (uma fonte de verdade) ---
+   * O espaço horizontal entre a borda do drawer e o conteúdo vem **só** daqui.
+   * Filhos (`app-agenda-novo`, `form`, `form-shell`) não devem repetir `padding-inline`
+   * “de gaveta”; use apenas `gap`, padding interno de cartões ou `--drawer-pad-x` em traços.
+   *
+   * `--drawer-pad-x` = mesmo valor que o inset horizontal, para `--drawer-bleed-*` no
+   * `agenda-novo` alinhar divisórias ao conteúdo (evita mismatch tipo clamp vs 15px fixo).
+   *
+   * Mapa rápido: `.app-drawer` padding-inline → `app-agenda-novo` 0 → `.form--modal` 0 →
+   * `.form-shell--modal` 0 (eixo X) → cabeçalho modal só `padding: 20px 0` → rodapé modal
+   * no drawer usa `var(--drawer-pad-x)` em `agenda-novo.component.scss`.
+   */
+  --drawer-inset-x: 15px;
+  --drawer-pad-x: var(--drawer-inset-x);
   position: fixed;
   top: 0;
   left: 0;
@@ -487,7 +500,7 @@ $agenda-slot-rows: 31;
    * `overflow-clip-margin` alarga a região de pintura em relação ao clip.
    */
   overflow-clip-margin: 20px 16px 24px 32px;
-  padding: 0 15px 0;
+  padding: 0 var(--drawer-inset-x) 0;
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 

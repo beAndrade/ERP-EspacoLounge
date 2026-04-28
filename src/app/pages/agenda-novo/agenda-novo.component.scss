@@ -181,10 +181,12 @@
 }
 
 :host.agenda-novo--drawer .form-shell.form-shell--modal {
+  /** Inset horizontal: só `.app-drawer`; evita somar padding em duplicado. */
+  padding-inline: 0;
   --drawer-bleed-l: calc(
-    var(--modal-sidebar-w) + var(--modal-col-gap) + var(--drawer-pad-x, 1rem)
+    var(--modal-sidebar-w) + var(--modal-col-gap) + var(--drawer-pad-x, 0px)
   );
-  --drawer-bleed-r: var(--drawer-pad-x, 1rem);
+  --drawer-bleed-r: var(--drawer-pad-x, 0px);
   padding-bottom: 0;
 
   @media (max-width: 720px) {
@@ -1653,6 +1655,11 @@ textarea {
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
+  /**
+   * Inset horizontal vem do pai `.app-drawer` (`--drawer-pad-x`). Não acrescentar
+   * `padding-inline` aqui — ver contrato em `agenda-hub.component.scss` (`.app-drawer`).
+   */
+  padding-inline: 0;
   /** Bordas de input e traços (divisórias) do hub: mesma família de cor. */
   --drawer-stroke: #ececec;
   --el-drawer-field-border-hover: #a51851;
@@ -1789,6 +1796,8 @@ textarea {
 
 /** Hub drawer: tipografia do drawer (labels padronizados). */
 :host.agenda-novo--drawer .form.form--modal {
+  /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
+  padding-inline: 0;
   /** Coluna «Tipo de linha»: igual em Serviço e Produto (drawer). */
   --drawer-tipo-linha-col: clamp(6.25rem, 8.8vw, 9rem);
   /** Padrão do drawer: inputs 40px e radius 14px. */
@@ -2077,12 +2086,12 @@ textarea {
   }
 
   /**
-   * Rodapé encostado ao fundo do drawer; padding 10px 15px.
+   * Rodapé encostado ao fundo do drawer; eixo X alinhado ao inset do `.app-drawer`.
    */
   .agenda-modal__footer {
     margin-top: auto;
     margin-bottom: 0;
-    padding: 10px 15px;
+    padding: 10px var(--drawer-pad-x);
   }
 
   /**
