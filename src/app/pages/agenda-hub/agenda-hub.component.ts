@@ -23,6 +23,8 @@ import {
   normalizarAgendaStatusId,
 } from '../../core/utils/agenda-status-card';
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
+import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
+import { NovaComandaDrawerComponent } from './nova-comanda-drawer.component';
 
 type CelulaCalendario = { dia: number | null; ymd: string | null };
 
@@ -46,8 +48,8 @@ const AGENDA_SLOT_COUNT = GRID_RANGE / AGENDA_SLOT_MIN;
 /** Último slot de 30 min a começar na grelha (23:00). */
 const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
 
-/** Duração da animação do drawer (ms), alinhada ao CSS `transition`. */
-const DRAWER_ANIM_MS = 350;
+/** Duração da animação do drawer (ms); manter igual a `--drawer-slide-duration` no SCSS. */
+const DRAWER_ANIM_MS = 430;
 
 /** Um cartão na grelha = mesmo `id` + mesmo profissional (várias linhas = um bloco). */
 type AgendaHubBloco = {
@@ -58,7 +60,7 @@ type AgendaHubBloco = {
 @Component({
   selector: 'app-agenda-hub',
   standalone: true,
-  imports: [FormsModule, AgendaNovoComponent],
+  imports: [FormsModule, AgendaNovoComponent, NovaComandaDrawerComponent],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda-hub.component.html',
   styleUrl: './agenda-hub.component.scss',
@@ -96,13 +98,24 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    */
   drawerPanelOpen = false;
 
+  /** Segundo painel («Nova comanda») por cima do drawer de agendamento. */
+  comandaPainelAberto = false;
+  comandaDrawerPanelOpen = false;
+  /** Último pedido de abertura (para ligar o drawer de comanda à API depois). */
+  comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
+
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
 
   private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
     ev.preventDefault();
+    if (this.comandaPainelAberto && this.comandaDrawerPanelOpen) {
+      this.fecharComandaDrawer();
+      return;
+    }
     this.fecharModal();
   };
 
@@ -124,6 +137,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (this.drawerCloseTimer != null) {
       clearTimeout(this.drawerCloseTimer);
       this.drawerCloseTimer = null;
+    }
+    if (this.comandaDrawerCloseTimer != null) {
+      clearTimeout(this.comandaDrawerCloseTimer);
+      this.comandaDrawerCloseTimer = null;
     }
     this.limparEfeitosDrawer();
   }
@@ -350,11 +367,55 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     window.scrollTo(0, this.bodyScrollPreDrawer);
   }
 
+  /** Abre o drawer «Nova comanda» (mesma largura/animação do agendamento). */
+  abrirComandaDesdeAgenda(payload: ComandaDrawerContextoAgenda): void {
+    if (!this.modalAberto) return;
+    this.comandaDrawerContexto = payload;
+    this.comandaPainelAberto = true;
+    this.comandaDrawerPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.comandaDrawerPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  fecharComandaDrawer(): void {
+    if (!this.comandaPainelAberto) return;
+    if (!this.comandaDrawerPanelOpen) {
+      this.comandaPainelAberto = false;
+      this.comandaDrawerContexto = null;
+      return;
+    }
+    this.comandaDrawerPanelOpen = false;
+    if (this.comandaDrawerCloseTimer != null) {
+      clearTimeout(this.comandaDrawerCloseTimer);
+    }
+    this.comandaDrawerCloseTimer = setTimeout(() => {
+      this.comandaDrawerCloseTimer = null;
+      this.comandaPainelAberto = false;
+      this.comandaDrawerContexto = null;
+    }, DRAWER_ANIM_MS);
+  }
+
+  private limparComandaDrawerSemAnimacao(): void {
+    this.comandaPainelAberto = false;
+    this.comandaDrawerPanelOpen = false;
+    this.comandaDrawerContexto = null;
+    if (this.comandaDrawerCloseTimer != null) {
+      clearTimeout(this.comandaDrawerCloseTimer);
+      this.comandaDrawerCloseTimer = null;
+    }
+  }
+
   fecharModal(): void {
     if (!this.modalAberto || !this.modalContexto) {
       this.limparEfeitosDrawer();
       return;
     }
+    this.limparComandaDrawerSemAnimacao();
     if (!this.drawerPanelOpen) {
       this.modalAberto = false;
       this.modalContexto = null;
@@ -376,6 +437,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   onSalvoModal(): void {
     this.fecharModal();
+    this.carregarMes();
+    this.carregarDia();
+  }
+
+  /** Comanda excluída na API: fecha só o painel e atualiza grelha / mês. */
+  onComandaExcluida(): void {
+    this.fecharComandaDrawer();
     this.carregarMes();
     this.carregarDia();
   }

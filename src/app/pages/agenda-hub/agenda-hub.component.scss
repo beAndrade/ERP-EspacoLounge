@@ -1,6 +1,12 @@
 /* Largura da coluna esquerda (mini-cal + filtros + ações). */
 $hub-sidebar-w: 20rem;
 
+:host {
+  display: block;
+  /** Igual a `DRAWER_ANIM_MS` em `agenda-hub.component.ts` (overlay + drawers). */
+  --drawer-slide-duration: 0.43s;
+}
+
 .hub-sidebar__actions {
   margin-top: 0.75rem;
 }
@@ -441,7 +447,8 @@ $agenda-slot-rows: 31;
   box-sizing: border-box;
   background: rgba(0, 0, 0, 0.3);
   opacity: 0;
-  transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity var(--drawer-slide-duration, 0.43s)
+    cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
 
   &--open {
@@ -502,7 +509,8 @@ $agenda-slot-rows: 31;
   overflow-clip-margin: 20px 16px 24px 32px;
   padding: 0 var(--drawer-inset-x) 0;
   transform: translateX(100%);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--drawer-slide-duration, 0.43s)
+    cubic-bezier(0.22, 1, 0.36, 1);
 
   &--open {
     transform: translateX(0);

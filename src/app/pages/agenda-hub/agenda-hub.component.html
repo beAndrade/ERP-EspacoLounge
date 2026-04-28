@@ -168,6 +168,29 @@
       (salvoComSucesso)="onSalvoModal()"
       (cancelarModal)="fecharModal()"
       (navegacaoNoHub)="onNavegarAgendamentoDrawer($event)"
+      (abrirComanda)="abrirComandaDesdeAgenda($event)"
     />
   </div>
+  @if (comandaPainelAberto) {
+    <div
+      class="overlay overlay--comanda"
+      [class.overlay--open]="comandaDrawerPanelOpen"
+      aria-hidden="true"
+      (click)="fecharComandaDrawer()"
+    ></div>
+    <div
+      class="app-drawer app-drawer--comanda"
+      [class.app-drawer--open]="comandaDrawerPanelOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Nova comanda"
+      (click)="$event.stopPropagation()"
+    >
+      <app-nova-comanda-drawer
+        [contexto]="comandaDrawerContexto"
+        (fechar)="fecharComandaDrawer()"
+        (comandaExcluida)="onComandaExcluida()"
+      />
+    </div>
+  }
 }
