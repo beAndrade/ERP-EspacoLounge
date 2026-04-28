@@ -355,7 +355,7 @@ $agenda-slot-rows: 31;
   cursor: pointer;
   border: none;
   border-radius: 9px;
-  overflow: visible;
+  overflow: hidden;
   z-index: 2;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   display: flex;
@@ -369,7 +369,6 @@ $agenda-slot-rows: 31;
 .day-col__card:hover:not(:disabled) {
   filter: brightness(1.04);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
-  z-index: 4;
 }
 
 .day-col__card:disabled {
@@ -382,7 +381,10 @@ $agenda-slot-rows: 31;
   flex-direction: column;
   gap: 0.18rem;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
   width: 100%;
+  overflow: hidden;
 }
 
 .day-col__card-time-range {
@@ -410,6 +412,8 @@ $agenda-slot-rows: 31;
   flex-direction: column;
   gap: 0.06rem;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .day-col__card-item-line {
