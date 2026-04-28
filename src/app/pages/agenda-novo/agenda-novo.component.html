@@ -1117,40 +1117,50 @@
               <span class="toggle-switch__label">Enviar lembrete</span>
             </div>
           </div>
-          <div class="arpc-modal-row">
-            <div class="arpc-modal-row__cascade">
-              <app-agenda-repetir-cascade
-                [dataReferencia]="form.get('data')?.value ?? null"
-                [value]="repetirAgendamento"
-                (valueChange)="onRepetirAgendamentoChange($event)"
-              />
-            </div>
-            @if (
-              idAtendimentoEmEdicao?.trim() && temAgendamentosFuturosNaSerieSalva()
-            ) {
-              <div
-                class="arpc-modal-row__toggle-wrap block-toggles block-toggles--inline"
-                role="group"
-                aria-label="Propagar alterações"
-              >
-                <div class="toggle-switch toggle-switch--inline">
-                  <span
-                    class="toggle toggle--liquid"
-                    role="switch"
-                    tabindex="0"
-                    [class.active]="aplicarAlteracoesProximos"
-                    [class.toggle--liq-armed]="lembreteToggleLiqArmed"
-                    [attr.aria-checked]="aplicarAlteracoesProximos"
-                    aria-label="Aplicar alterações para os próximos"
-                    (click)="onAplicarProximosToggleClick($event)"
-                    (keydown)="onAplicarProximosToggleKeydown($event)"
-                  ></span>
-                  <span class="toggle-switch__label"
-                    >Aplicar alterações para os próximos</span>
+          @if (mostrarLinhaArpcModal()) {
+            <div
+              class="arpc-modal-row"
+              [class.arpc-modal-row--sem-cascade]="
+                !mostrarCascadeRepeticaoNoModal()
+              "
+            >
+              @if (mostrarCascadeRepeticaoNoModal()) {
+                <div class="arpc-modal-row__cascade">
+                  <app-agenda-repetir-cascade
+                    [dataReferencia]="form.get('data')?.value ?? null"
+                    [value]="repetirAgendamento"
+                    (valueChange)="onRepetirAgendamentoChange($event)"
+                  />
                 </div>
-              </div>
-            }
-          </div>
+              }
+              @if (
+                idAtendimentoEmEdicao?.trim() &&
+                temAgendamentosFuturosNaSerieSalva()
+              ) {
+                <div
+                  class="arpc-modal-row__toggle-wrap block-toggles block-toggles--inline"
+                  role="group"
+                  aria-label="Propagar alterações"
+                >
+                  <div class="toggle-switch toggle-switch--inline">
+                    <span
+                      class="toggle toggle--liquid"
+                      role="switch"
+                      tabindex="0"
+                      [class.active]="aplicarAlteracoesProximos"
+                      [class.toggle--liq-armed]="lembreteToggleLiqArmed"
+                      [attr.aria-checked]="aplicarAlteracoesProximos"
+                      aria-label="Aplicar alterações para os próximos"
+                      (click)="onAplicarProximosToggleClick($event)"
+                      (keydown)="onAplicarProximosToggleKeydown($event)"
+                    ></span>
+                    <span class="toggle-switch__label"
+                      >Aplicar alterações para os próximos</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
           @if (mostrarSecaoProximosAgendamentosPreview()) {
             <section
               class="arpc-proximos-saved arpc-proximos-preview"

@@ -352,6 +352,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Persistência da escolha “Além deste…” por cliente no drawer (hub). */
   private readonly repetirClienteStorageKey =
     'espaco-lounge-agenda-repetir-por-cliente-v1';
+  /**
+   * Data `AAAA-MM-DD` base da repetição no preview (não muda ao navegar chips);
+   * só com edição e `modo: 'repetir'`.
+   */
+  repetirDataAncoraModal: string | null = null;
 
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
@@ -446,6 +451,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             this.carregarEdicaoPorIdParaModal(ctxId);
           } else {
             this.aplicarContextoSlotInput();
+            this.repetirAgendamento = { modo: 'nenhum' };
+            this.repetirDataAncoraModal = null;
             this.carregandoListas = false;
             const ymd = normalizarDataIso(
               String(this.form.get('data')?.value ?? ''),
@@ -496,12 +503,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!this.modoModal || this.carregandoListas || this.prefillEmCurso) {
           return;
         }
+        if (!this.idAtendimentoEmEdicao?.trim()) {
+          return;
+        }
         this.restaurarRepetirPreferenciaClienteArmazem();
       });
   }
 
   onRepetirAgendamentoChange(valor: ValorRepetirAgendamento): void {
     this.repetirAgendamento = valor;
+    if (valor.modo === 'repetir') {
+      this.repetirDataAncoraModal = normalizarDataIso(
+        String(this.form.get('data')?.value ?? ''),
+      );
+    } else {
+      this.repetirDataAncoraModal = null;
+    }
     this.persistirRepetirPreferenciaClienteArmazem();
   }
 
@@ -525,17 +542,26 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private restaurarRepetirPreferenciaClienteArmazem(): void {
-    if (!this.modoModal) return;
+    if (!this.modoModal || !this.idAtendimentoEmEdicao?.trim()) return;
     const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
     if (!cid) return;
     try {
       const raw = sessionStorage.getItem(this.repetirClienteStorageKey);
-      if (!raw) return;
+      if (!raw) {
+        this.repetirAgendamento = { modo: 'nenhum' };
+        this.repetirDataAncoraModal = null;
+        return;
+      }
       const map = JSON.parse(raw) as Record<string, unknown>;
       const v = map[cid] as ValorRepetirAgendamento | undefined;
-      if (!v || typeof v !== 'object') return;
+      if (!v || typeof v !== 'object') {
+        this.repetirAgendamento = { modo: 'nenhum' };
+        this.repetirDataAncoraModal = null;
+        return;
+      }
       if (v.modo === 'nenhum') {
         this.repetirAgendamento = { modo: 'nenhum' };
+        this.repetirDataAncoraModal = null;
         return;
       }
       if (v.modo !== 'repetir' || v.vezes == null || !v.frequencia) return;
@@ -551,6 +577,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         frequencia: f as FrequenciaRepetirAgendamento,
         vezes: n,
       };
+      this.repetirDataAncoraModal = normalizarDataIso(
+        String(this.form.get('data')?.value ?? ''),
+      );
     } catch {
       /* ignore */
     }
@@ -691,6 +720,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.carregarEdicaoPorIdParaModal(curId);
       } else if (!curId && prevId) {
         this.idAtendimentoEmEdicao = null;
+        this.repetirAgendamento = { modo: 'nenhum' };
+        this.repetirDataAncoraModal = null;
         this.aplicarContextoSlotInput();
         const ymd = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
         if (ymd) this.atualizarOcupacaoDia(ymd);
@@ -1618,10 +1649,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     salvar$.subscribe({
       next: () => {
         this.salvando = false;
+        this.repetirAgendamento = { modo: 'nenhum' };
+        this.repetirDataAncoraModal = null;
+        this.persistirRepetirPreferenciaClienteArmazem();
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
-        this.repetirAgendamento = { modo: 'nenhum' };
-        this.persistirRepetirPreferenciaClienteArmazem();
         this.aplicarAlteracoesProximos = false;
         this.datasSerieOcorrenciasSalvas = [];
         this.yminSerieOcorrenciasSalvas = null;
@@ -2433,9 +2465,37 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.excluirMenuAberto = false;
   }
 
-  /** Próximos datas previstas só pelo formulário (antes da série estar gravada assim). */
+  /**
+   * Com `idAtendimentoEmEdicao` e repetição ativa: mostra o cascade só no dia âncora
+   * (data base da série). Com «não repete», o cascade aparece em qualquer dia da edição.
+   */
+  mostrarCascadeRepeticaoNoModal(): boolean {
+    if (!this.modoModal) return false;
+    if (!this.idAtendimentoEmEdicao?.trim()) return false;
+    const d = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    if (!d) return false;
+    if (this.repetirAgendamento.modo === 'nenhum') {
+      return true;
+    }
+    return !!this.repetirDataAncoraModal && d === this.repetirDataAncoraModal;
+  }
+
+  /** Linha (cascade + toggle Aplicar): some totalmente se não houver o que mostrar. */
+  mostrarLinhaArpcModal(): boolean {
+    if (!this.modoModal) return false;
+    return (
+      this.mostrarCascadeRepeticaoNoModal() ||
+      (!!this.idAtendimentoEmEdicao?.trim() &&
+        this.temAgendamentosFuturosNaSerieSalva())
+    );
+  }
+
+  /** Só em edição; prévia fixa na data âncora, não no «novo agendamento». */
   mostrarSecaoProximosAgendamentosPreview(): boolean {
     if (!this.modoModal || this.mostrarSecaoProximosAgendamentosSalvos()) {
+      return false;
+    }
+    if (!this.idAtendimentoEmEdicao?.trim()) {
       return false;
     }
     if (
@@ -2444,20 +2504,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     ) {
       return false;
     }
-    return !!normalizarDataIso(
-      String(this.form.get('data')?.value ?? ''),
-    );
+    return !!this.repetirDataAncoraModal;
   }
 
   chipsProximosAgendamentosPreview(): { ymd: string; ancla: boolean }[] {
-    const base = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
-    if (!base || this.repetirAgendamento.modo !== 'repetir') return [];
+    const base = this.repetirDataAncoraModal;
+    if (!base || this.repetirAgendamento.modo !== 'repetir') {
+      return [];
+    }
     const datas = expandirDatasRepeticao(
       base,
       this.repetirAgendamento.vezes,
       this.repetirAgendamento.frequencia,
     );
-    return datas.map((ymd, idx) => ({ ymd, ancla: idx === 0 }));
+    return datas.map((ymd) => ({
+      ymd,
+      ancla: ymd === base,
+    }));
   }
 
   /**

@@ -2246,6 +2246,19 @@ textarea {
     align-items: center;
   }
 
+  /** Só toggle «Aplicar…»: uma coluna, alinhado à direita. */
+  .itens-atendimento--modal .arpc-modal-row--sem-cascade {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: end;
+  }
+
+  .itens-atendimento--modal .arpc-modal-row--sem-cascade .arpc-modal-row__toggle-wrap {
+    grid-column: 1;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
   .itens-atendimento--modal .arpc-modal-row__cascade {
     grid-column: 1;
     grid-row: 1 / span 2;
