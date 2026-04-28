@@ -66,7 +66,7 @@
             <button
               type="button"
               class="agenda-modal__close"
-              (click)="cancelarModal.emit()"
+              (click)="onCancelarModalClique()"
               aria-label="Fechar"
             >
               <svg
@@ -1141,6 +1141,8 @@
                   <app-agenda-repetir-cascade
                     [dataReferencia]="form.get('data')?.value ?? null"
                     [value]="repetirAgendamento"
+                    [disabled]="cascadeRepeticaoDesabilitadoNoModal()"
+                    [hintDisabled]="textoHintCascadeRepeticaoDesabilitado()"
                     (valueChange)="onRepetirAgendamentoChange($event)"
                   />
                 </div>
@@ -1275,7 +1277,7 @@
             <button
               type="button"
               class="btn btn-footer btn-footer--ghost"
-              (click)="cancelarModal.emit()"
+              (click)="onCancelarModalClique()"
               [disabled]="salvando || excluindo"
             >
               Cancelar

@@ -66,7 +66,10 @@ import {
 } from './agenda-horario-slots.component';
 import { AgendaStatusSelectComponent } from './agenda-status-select.component';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { expandirDatasRepeticao } from './agenda-repetir-datas';
+import {
+  expandirDatasRepeticao,
+  inferirRepeticaoDasDatasOrdenadas,
+} from './agenda-repetir-datas';
 import { AgendaRepetirCascadeComponent } from './agenda-repetir-cascade.component';
 import {
   ITENS_FREQUENCIA,
@@ -261,6 +264,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
+  /**
+   * Hub: abrir drawer de comanda. `acessar` = já existe comanda aberta para o cliente na data;
+   * `idAtendimento` = pedido a focar (quando existir).
+   */
+  readonly abrirComanda = output<{
+    acessar: boolean;
+    idAtendimento?: string | null;
+  }>();
   /** Hub: saltar para outro dia/pedido (próximas ocorrências). */
   readonly navegacaoNoHub = output<{
     data: string;
@@ -392,6 +403,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Menu Excluir (dropdown). */
   excluirMenuAberto = false;
 
+  /**
+   * Modal: no dia do formulário, cliente tem pelo menos um pedido com cobrança ainda não finalizada
+   * (`cobranca_status` ≠ finalizada) → «Acessar comanda»; caso contrário → «Criar comanda».
+   */
+  comandaAbertaParaClienteNoDia = false;
+  /** `id` do pedido (mesmo em todas as linhas) para abrir a comanda existente. */
+  idComandaPedidoAberto: string | null = null;
+
+  /** Última listagem do dia no modal (evita novo GET só ao mudar cliente). */
+  private ultimosItensDiaModal: AtendimentoListaItem[] = [];
+  private ultimoYmdListagemModal = '';
+
   @ViewChild('horarioSlots') horarioSlots?: AgendaHorarioSlotsComponent;
   @ViewChild('clienteSelectModal') clienteSelectModal?: SaasSelectComponent;
 
@@ -491,7 +514,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       .subscribe((d) => {
         if (!this.modoModal || this.carregandoListas) return;
         const ymd = normalizarDataIso(String(d ?? ''));
-        if (ymd) this.atualizarOcupacaoDia(ymd);
+        if (ymd) {
+          this.atualizarOcupacaoDia(ymd);
+          /* Novo agendamento: a âncora da série segue a data escolhida no formulário */
+          if (
+            !this.idAtendimentoEmEdicao?.trim() &&
+            this.repetirAgendamento.modo === 'repetir'
+          ) {
+            this.repetirDataAncoraModal = ymd;
+          }
+        }
       });
 
     this.form.controls.cliente_id.valueChanges
@@ -503,10 +535,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!this.modoModal || this.carregandoListas || this.prefillEmCurso) {
           return;
         }
-        if (!this.idAtendimentoEmEdicao?.trim()) {
+        if (this.idAtendimentoEmEdicao?.trim()) {
+          this.restaurarRepetirPreferenciaClienteArmazem();
+        }
+        const ymd = normalizarDataIso(
+          String(this.form.get('data')?.value ?? ''),
+        );
+        if (!ymd) {
+          this.comandaAbertaParaClienteNoDia = false;
+          this.idComandaPedidoAberto = null;
           return;
         }
-        this.restaurarRepetirPreferenciaClienteArmazem();
+        if (this.ultimoYmdListagemModal === ymd) {
+          this.aplicarDetecaoComandaAberta(this.ultimosItensDiaModal, ymd);
+        } else {
+          this.atualizarOcupacaoDia(ymd);
+        }
       });
   }
 
@@ -621,11 +665,24 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.modalDataPickerOpen = !this.modalDataPickerOpen;
   }
 
+  /**
+   * O `app-drawer` do hub faz `stopPropagation` nos cliques; o menu «Excluir» fecha
+   * aqui (bolha até `app-agenda-novo` antes do drawer).
+   */
+  @HostListener('click', ['$event'])
+  onHostClickFecharMenuExcluir(ev: MouseEvent): void {
+    if (!this.excluirMenuAberto) return;
+    const el = ev.target as HTMLElement | null;
+    if (el && !el.closest('.agenda-modal__excluir-wrap')) {
+      this.fecharExcluirMenu();
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocClickModalData(ev: MouseEvent): void {
     const el = ev.target as HTMLElement | null;
     if (this.excluirMenuAberto && el && !el.closest('.agenda-modal__excluir-wrap')) {
-      this.excluirMenuAberto = false;
+      this.fecharExcluirMenu();
     }
     if (!this.modoModal || !this.modalDataPickerOpen) return;
     const t = ev.target;
@@ -656,12 +713,76 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         catchError(() => of([] as AtendimentoListaItem[])),
       )
       .subscribe((items) => {
+        this.ultimosItensDiaModal = items;
+        this.ultimoYmdListagemModal = ymd;
         this.intervalosOcupacaoDia = this.montarIntervalosOcupados(
           items,
           ymd,
           this.idAtendimentoEmEdicao,
         );
+        this.aplicarDetecaoComandaAberta(items, ymd);
       });
+  }
+
+  /** `finalizada` = serviço encerrado na receção; antes disso a comanda considera-se «aberta». */
+  private cobrancaEstaFinalizada(status: string | null | undefined): boolean {
+    return String(status ?? '').trim().toLowerCase() === 'finalizada';
+  }
+
+  private aplicarDetecaoComandaAberta(
+    items: AtendimentoListaItem[],
+    ymd: string,
+  ): void {
+    if (!this.modoModal) {
+      this.comandaAbertaParaClienteNoDia = false;
+      this.idComandaPedidoAberto = null;
+      return;
+    }
+    const dataForm = normalizarDataIso(
+      String(this.form.get('data')?.value ?? ''),
+    );
+    if (dataForm !== ymd) {
+      return;
+    }
+    const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+    if (!cid) {
+      this.comandaAbertaParaClienteNoDia = false;
+      this.idComandaPedidoAberto = null;
+      return;
+    }
+    const abertas = items.filter(
+      (it) =>
+        it.data === ymd &&
+        String(it.idCliente ?? '').trim() === cid &&
+        !this.cobrancaEstaFinalizada(it.cobrancaStatus),
+    );
+    if (abertas.length > 0) {
+      this.comandaAbertaParaClienteNoDia = true;
+      const cur = this.idAtendimentoEmEdicao?.trim();
+      this.idComandaPedidoAberto =
+        cur && abertas.some((x) => x.id === cur) ? cur : abertas[0].id;
+    } else {
+      this.comandaAbertaParaClienteNoDia = false;
+      this.idComandaPedidoAberto = null;
+    }
+  }
+
+  /** Modal: com cliente e data válidos para usar comanda. */
+  podeUsarAcaoComanda(): boolean {
+    if (!this.modoModal) return false;
+    const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const ymd = normalizarDataIso(
+      String(this.form.get('data')?.value ?? ''),
+    );
+    return Boolean(cid && ymd);
+  }
+
+  onAbrirComandaClick(ev: MouseEvent): void {
+    ev.stopPropagation();
+    this.abrirComanda.emit({
+      acessar: this.comandaAbertaParaClienteNoDia,
+      idAtendimento: this.idComandaPedidoAberto,
+    });
   }
 
   private montarIntervalosOcupados(
@@ -1530,6 +1651,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.aplicarValidadoresLinhas();
   }
 
+  /**
+   * Datas da série já gravada (mesmo cliente+hora) desde `dataBase` (inclusive),
+   * ordenadas — usado com «Aplicar alterações para os próximos».
+   */
+  private datasSerieGravadaDesde(dataBase: string): string[] {
+    return [...this.datasSerieOcorrenciasSalvas]
+      .map((x) => normalizarDataIso(String(x ?? '')))
+      .filter((x): x is string => x !== null && /^\d{4}-\d{2}-\d{2}$/.test(x))
+      .sort()
+      .filter((d) => d >= dataBase);
+  }
+
   salvar(): void {
     this.erro = '';
     this.form.markAllAsTouched();
@@ -1550,24 +1683,49 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
-    const datas: string[] =
-      this.repetirAgendamento.modo === 'nenhum'
-        ? [dataBase]
-        : this.repetirAgendamento.modo === 'repetir'
-          ? expandirDatasRepeticao(
-              dataBase,
-              this.repetirAgendamento.vezes,
-              this.repetirAgendamento.frequencia,
-            )
-          : [dataBase];
+    const editId = this.idAtendimentoEmEdicao?.trim();
+    const togglePropagar =
+      this.aplicarAlteracoesProximos && !!editId;
 
-    const aplicarProx =
-      this.aplicarAlteracoesProximos &&
-      !!this.idAtendimentoEmEdicao?.trim() &&
+    const propagarPelaRepeticaoNoForm =
+      togglePropagar &&
       this.repetirAgendamento.modo === 'repetir' &&
       this.repetirAgendamento.vezes > 0;
 
-    if (this.idAtendimentoEmEdicao?.trim() && datas.length > 1 && !aplicarProx) {
+    const propagarPelaSerieGravada =
+      togglePropagar && this.datasSerieOcorrenciasSalvas.length >= 2;
+
+    const aplicarProx = propagarPelaRepeticaoNoForm || propagarPelaSerieGravada;
+
+    let datas: string[];
+    if (propagarPelaRepeticaoNoForm) {
+      const rep = this.repetirAgendamento;
+      if (rep.modo !== 'repetir') {
+        datas = [dataBase];
+      } else {
+        datas = expandirDatasRepeticao(
+          dataBase,
+          rep.vezes,
+          rep.frequencia,
+        );
+      }
+    } else if (aplicarProx && propagarPelaSerieGravada) {
+      datas = this.datasSerieGravadaDesde(dataBase);
+      if (datas.length < 2) {
+        this.erro =
+          'Não há outras ocorrências na série para propagar. Abra o agendamento de novo.';
+        return;
+      }
+    } else if (this.repetirAgendamento.modo === 'nenhum') {
+      datas = [dataBase];
+    } else if (this.repetirAgendamento.modo === 'repetir') {
+      const rep = this.repetirAgendamento;
+      datas = expandirDatasRepeticao(dataBase, rep.vezes, rep.frequencia);
+    } else {
+      datas = [dataBase];
+    }
+
+    if (editId && datas.length > 1 && !aplicarProx) {
       this.erro =
         'Ao editar, use «Aplicar alterações para os próximos» para gravar em várias datas, ou deixe a repetição em «não se repete».';
       return;
@@ -1585,8 +1743,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         'Confira os campos obrigatórios (data válida, cliente, serviços, etc.).';
       return;
     }
-
-    const editId = this.idAtendimentoEmEdicao?.trim();
     const clienteId = String(raw['cliente_id'] ?? '').trim();
     const horaIni = String(raw['hora_inicial'] ?? '');
 
@@ -2466,87 +2622,97 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Com `idAtendimentoEmEdicao` e repetição ativa: mostra o cascade só no dia âncora
-   * (data base da série). Com «não repete», o cascade aparece em qualquer dia da edição.
+   * Modal: mostra o cascade em novo agendamento e em edição. Com repetição ativa,
+   * só no dia âncora (data base da série). Com «não repete», o cascade aparece sempre
+   * que houver data no formulário.
    */
   mostrarCascadeRepeticaoNoModal(): boolean {
     if (!this.modoModal) return false;
-    if (!this.idAtendimentoEmEdicao?.trim()) return false;
     const d = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
     if (!d) return false;
     if (this.repetirAgendamento.modo === 'nenhum') {
       return true;
     }
+    /** Série gravada: mostrar o resumo em qualquer dia que pertença à série. */
+    if (
+      this.idAtendimentoEmEdicao?.trim() &&
+      this.datasSerieOcorrenciasSalvas.length >= 2 &&
+      this.repetirAgendamento.modo === 'repetir'
+    ) {
+      return this.datasSerieOcorrenciasSalvas.some(
+        (x) => normalizarDataIso(String(x ?? '')) === d,
+      );
+    }
     return !!this.repetirDataAncoraModal && d === this.repetirDataAncoraModal;
   }
 
-  /** Linha (cascade + toggle Aplicar): some totalmente se não houver o que mostrar. */
+  /** Edição: só alterar repetição na data âncora; noutros dias da série o painel fica só leitura. */
+  cascadeRepeticaoDesabilitadoNoModal(): boolean {
+    if (!this.modoModal || !this.idAtendimentoEmEdicao?.trim()) return false;
+    if (this.repetirAgendamento.modo !== 'repetir') return false;
+    const d = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    const anc = this.repetirDataAncoraModal;
+    return !!(anc && d && d !== anc);
+  }
+
+  textoHintCascadeRepeticaoDesabilitado(): string {
+    return this.cascadeRepeticaoDesabilitadoNoModal()
+      ? 'Para alterar a repetição, use a primeira data da série (chip «Próximos agendamentos»).'
+      : '';
+  }
+
+  /**
+   * Cancelar o drawer: em agendamento **novo**, remove o rascunho de repetição
+   * em sessionStorage para o cliente — ao reabrir, o cascade fica neutro.
+   */
+  onCancelarModalClique(): void {
+    if (this.modoModal && !this.idAtendimentoEmEdicao?.trim()) {
+      const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
+      if (cid) {
+        try {
+          const raw = sessionStorage.getItem(this.repetirClienteStorageKey);
+          if (raw) {
+            const map = JSON.parse(raw) as Record<string, unknown>;
+            delete map[cid];
+            sessionStorage.setItem(
+              this.repetirClienteStorageKey,
+              JSON.stringify(map),
+            );
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    this.cancelarModal.emit();
+  }
+
+  /**
+   * Linha (cascade + toggle Aplicar): cascade conforme data/âncora; toggle só no
+   * primeiro dia da série gravada, se houver 2+ ocorrências.
+   */
   mostrarLinhaArpcModal(): boolean {
     if (!this.modoModal) return false;
     return (
       this.mostrarCascadeRepeticaoNoModal() ||
-      (!!this.idAtendimentoEmEdicao?.trim() &&
-        this.temAgendamentosFuturosNaSerieSalva())
+      this.mostrarToggleAplicarProximosModal()
     );
-  }
-
-  /** Só em edição; prévia fixa na data âncora, não no «novo agendamento». */
-  mostrarSecaoProximosAgendamentosPreview(): boolean {
-    if (!this.modoModal || this.mostrarSecaoProximosAgendamentosSalvos()) {
-      return false;
-    }
-    if (!this.idAtendimentoEmEdicao?.trim()) {
-      return false;
-    }
-    if (
-      this.repetirAgendamento.modo !== 'repetir' ||
-      this.repetirAgendamento.vezes <= 0
-    ) {
-      return false;
-    }
-    return !!this.repetirDataAncoraModal;
-  }
-
-  chipsProximosAgendamentosPreview(): { ymd: string; ancla: boolean }[] {
-    const base = this.repetirDataAncoraModal;
-    if (!base || this.repetirAgendamento.modo !== 'repetir') {
-      return [];
-    }
-    const datas = expandirDatasRepeticao(
-      base,
-      this.repetirAgendamento.vezes,
-      this.repetirAgendamento.frequencia,
-    );
-    return datas.map((ymd) => ({
-      ymd,
-      ancla: ymd === base,
-    }));
   }
 
   /**
-   * Chips previstos: âncora como na série gravada; outras datas atualizam o formulário
-   * ou navegam quando já existe ID na série.
+   * Toggle «Aplicar alterações para os próximos»: edição, série com 2+ datas e
+   * data do formulário = primeiro dia (mínimo) da série.
    */
-  onChipProximoPreviewClick(chip: { ymd: string; ancla: boolean }): void {
-    if (!this.modoModal) return;
-    const idEdit = this.idAtendimentoEmEdicao?.trim();
-    if (chip.ancla && idEdit) {
-      this.navegacaoNoHub.emit({
-        data: chip.ymd,
-        id_atendimento: idEdit,
-      });
-      return;
-    }
-    if (!chip.ancla && idEdit) {
-      this.pularParaDataRepeticao(chip.ymd);
-      return;
-    }
-    const ymd = chip.ymd.trim().slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
-    this.prefillEmCurso = true;
-    this.form.patchValue({ data: ymd }, { emitEvent: false });
-    this.prefillEmCurso = false;
-    this.atualizarOcupacaoDia(ymd);
+  mostrarToggleAplicarProximosModal(): boolean {
+    if (!this.modoModal || !this.idAtendimentoEmEdicao?.trim()) return false;
+    if (this.datasSerieOcorrenciasSalvas.length < 2) return false;
+    const sorted = [...this.datasSerieOcorrenciasSalvas]
+      .map((x) => normalizarDataIso(String(x ?? '')))
+      .filter((x): x is string => x !== null && /^\d{4}-\d{2}-\d{2}$/.test(x))
+      .sort();
+    const primeiro = sorted[0] ?? null;
+    const d = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
+    return !!primeiro && !!d && d === primeiro;
   }
 
   mostrarSecaoProximosAgendamentosSalvos(): boolean {
@@ -2584,10 +2750,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   onChipProximoSalvoClick(chip: { ymd: string; ancla: boolean }): void {
     if (chip.ancla) {
-      const id = this.idAtendimentoEmEdicao?.trim();
-      if (id && this.modoModal) {
-        this.navegacaoNoHub.emit({ data: chip.ymd, id_atendimento: id });
-      }
+      /* Já a editar este dia — chip bloqueado na UI */
       return;
     }
     this.pularParaDataRepeticao(chip.ymd);
@@ -2636,12 +2799,35 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           const sorted = [...datas].sort();
           this.datasSerieOcorrenciasSalvas = sorted;
           this.yminSerieOcorrenciasSalvas = sorted.length > 0 ? sorted[0]! : null;
+          this.aplicarRepetirInferidoDaSerieSalvaSePossivel();
         },
         error: () => {
           this.datasSerieOcorrenciasSalvas = [];
           this.yminSerieOcorrenciasSalvas = null;
         },
       });
+  }
+
+  /**
+   * Após carregar as datas da série gravada, preenche o cascade (span) com a
+   * frequência e N inferidos — não depende só do sessionStorage.
+   */
+  private aplicarRepetirInferidoDaSerieSalvaSePossivel(): void {
+    if (!this.modoModal || !this.idAtendimentoEmEdicao?.trim()) return;
+    const sorted = [...this.datasSerieOcorrenciasSalvas]
+      .map((x) => normalizarDataIso(String(x ?? '')))
+      .filter((x): x is string => x !== null && /^\d{4}-\d{2}-\d{2}$/.test(x))
+      .sort();
+    if (sorted.length < 2) return;
+    const inf = inferirRepeticaoDasDatasOrdenadas(sorted);
+    if (!inf) return;
+    this.repetirAgendamento = {
+      modo: 'repetir',
+      frequencia: inf.frequencia,
+      vezes: inf.vezes,
+    };
+    this.repetirDataAncoraModal = inf.dataBase;
+    this.persistirRepetirPreferenciaClienteArmazem();
   }
 
   private ymdAddMeses(ymd: string, meses: number): string {

@@ -1,4 +1,7 @@
-import type { FrequenciaRepetirAgendamento } from './agenda-repetir-cascade.models';
+import {
+  ITENS_FREQUENCIA,
+  type FrequenciaRepetirAgendamento,
+} from './agenda-repetir-cascade.models';
 
 function parseYmd(ymd: string): { y: number; m: number; d: number } | null {
   const s = ymd.trim();
@@ -89,4 +92,34 @@ export function expandirDatasRepeticao(
     out.push(dataAposKPassos(b, frequencia, k));
   }
   return out;
+}
+
+/**
+ * Dada uma série gravada (datas ordenadas, mesma hora/cliente), infere frequência e N
+ * (“além deste”) se coincidir exactamente com a expansão a partir da primeira data.
+ */
+export function inferirRepeticaoDasDatasOrdenadas(
+  sortedYmd: string[],
+): {
+  frequencia: FrequenciaRepetirAgendamento;
+  vezes: number;
+  dataBase: string;
+} | null {
+  const sorted = [...sortedYmd]
+    .map((x) => x.trim().slice(0, 10))
+    .filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x))
+    .sort();
+  if (sorted.length < 2) return null;
+  const dataBase = sorted[0]!;
+  const vezes = sorted.length - 1;
+  for (const freq of ITENS_FREQUENCIA) {
+    const exp = expandirDatasRepeticao(dataBase, vezes, freq);
+    if (
+      exp.length === sorted.length &&
+      exp.every((d, i) => d === sorted[i])
+    ) {
+      return { frequencia: freq, vezes, dataBase };
+    }
+  }
+  return null;
 }

@@ -4,7 +4,9 @@ import {
   EventEmitter,
   HostListener,
   Input,
+  OnChanges,
   Output,
+  SimpleChanges,
   inject,
 } from '@angular/core';
 import {
@@ -28,10 +30,12 @@ type FaseRepetir = 'frequencia' | 'repeticoes';
     '[class.agenda-repetir-cascade--disabled]': 'disabled',
   },
 })
-export class AgendaRepetirCascadeComponent {
+export class AgendaRepetirCascadeComponent implements OnChanges {
   private readonly host = inject(ElementRef<HTMLElement>);
 
   @Input() disabled = false;
+  /** Texto sob o campo quando `disabled` (vazio = mensagem genérica no template). */
+  @Input() hintDisabled = '';
   /** Data do atendamento (`yyyy-MM-dd` ou `Date`) para textos do tipo "toda a(o) sábado", "todo dia 12…". */
   @Input() dataReferencia: string | Date | null = null;
   @Input() value: ValorRepetirAgendamento = { modo: 'nenhum' };
@@ -46,6 +50,13 @@ export class AgendaRepetirCascadeComponent {
 
   readonly itensFrequencia = ITENS_FREQUENCIA;
   readonly rotuloFrequencia = ROTULO_FREQUENCIA;
+
+  ngOnChanges(ch: SimpleChanges): void {
+    if (!ch['value'] || ch['value'].isFirstChange()) return;
+    this.aberto = false;
+    this.fase = 'frequencia';
+    this.freqAlvo = null;
+  }
 
   get rotuloTrigger(): string {
     if (this.value.modo === 'nenhum') {
@@ -125,4 +136,4 @@ export class AgendaRepetirCascadeComponent {
     }
   }
 }
-
+
