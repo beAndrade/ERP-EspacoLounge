@@ -185,10 +185,24 @@
     var(--modal-sidebar-w) + var(--modal-col-gap) + var(--drawer-pad-x, 1rem)
   );
   --drawer-bleed-r: var(--drawer-pad-x, 1rem);
+  padding-bottom: 0;
 
   @media (max-width: 720px) {
     --drawer-bleed-l: var(--drawer-pad-x, 1rem);
   }
+}
+
+:host.agenda-novo--drawer .agenda-modal__header {
+  align-items: center;
+  margin: 0;
+  padding: 20px 0;
+}
+
+:host.agenda-novo--drawer .agenda-modal__close {
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 30px;
 }
 
 .form-shell__main {

@@ -487,7 +487,7 @@ $agenda-slot-rows: 31;
    * `overflow-clip-margin` alarga a região de pintura em relação ao clip.
    */
   overflow-clip-margin: 20px 16px 24px 32px;
-  padding: 0 15px 25px;
+  padding: 0 15px 0;
   transform: translateX(100%);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 
