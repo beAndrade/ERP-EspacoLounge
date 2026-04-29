@@ -103,6 +103,16 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   comandaDrawerPanelOpen = false;
   /** Último pedido de abertura (para ligar o drawer de comanda à API depois). */
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
+  /**
+   * Incrementado após `carregarDia` (grelha) para o agendamento reaberto no modal
+   * recarregar o pedido a partir da API, espelhando a comanda / alterações salvas.
+   */
+  dadosDiaVersaoSinc = 0;
+  /**
+   * Linhas do atendimento corrente na comanda, derivadas de `linhasDia` (mesma
+   * fonte que a grelha) — espelha com a API sem duplicar GETs no drawer.
+   */
+  comandaAtendimentoLinhasCache: AtendimentoListaItem[] = [];
 
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -373,6 +383,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDrawerContexto = payload;
     this.comandaPainelAberto = true;
     this.comandaDrawerPanelOpen = false;
+    this.recalcularComandaAtendimentoLinhas();
     queueMicrotask(() => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -908,6 +919,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       next: (items) => {
         this.linhasDia = items;
         this.carregandoDia = false;
+        this.recalcularComandaAtendimentoLinhas();
+        this.dadosDiaVersaoSinc += 1;
       },
       error: (e: Error) => {
         this.erro =
@@ -915,7 +928,22 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
           'Não foi possível carregar os atendimentos do dia.';
         this.linhasDia = [];
         this.carregandoDia = false;
+        this.recalcularComandaAtendimentoLinhas();
       },
     });
+  }
+
+  /** Filtro das linhas do dia do atendimento aberto na comanda (mesma fonte que a grelha). */
+  private recalcularComandaAtendimentoLinhas(): void {
+    this.comandaAtendimentoLinhasCache = [];
+    if (!this.comandaDrawerContexto) return;
+    const id = String(this.comandaDrawerContexto.idAtendimento ?? '').trim();
+    if (!id) return;
+    const d = this.diaYmd;
+    const rows = this.linhasDia.filter(
+      (r) => String(r.id) === id && (r.data ?? '') === d,
+    );
+    ordenarLinhasAtendimentoInPlace(rows);
+    this.comandaAtendimentoLinhasCache = rows;
   }
 }

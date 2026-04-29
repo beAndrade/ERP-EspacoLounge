@@ -43,8 +43,9 @@ type TipoLinhaComanda =
   | 'Cabelo';
 
 /**
- * Shell do drawer «Nova comanda» (hub): itens = mesmo padrão visual do agendamento
- * (tipo, descrição, profissional, duração) + colunas de comanda e +/lixeira.
+ * Shell do drawer «Nova comanda» (hub): itens alinhados ao agendamento (tipo, descrição,
+ * profissional) + colunas de comanda e +/lixeira. A lista vem de `atendimentoLinhas`
+ * (grelha / mesma origem do hub), com reforço de versão de dia.
  */
 @Component({
   selector: 'app-nova-comanda-drawer',
@@ -60,6 +61,15 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   /** Preenchido ao abrir a partir do drawer de agendamento (cliente / data correntes). */
   readonly contexto = input<ComandaDrawerContextoAgenda | null>(null);
+  /**
+   * Linhas do atendimento no `diaYmd` (filtrado no hub) — mesma visão que a grelha.
+   */
+  readonly atendimentoLinhas = input<AtendimentoListaItem[]>([]);
+  /**
+   * Incrementado no hub após `carregarDia`; aplica a lista vinda do hub ainda com rascunho
+   * local (força espelhamento pós-API / outro ecrã).
+   */
+  readonly dadosDiaSync = input(0);
   readonly fechar = output<void>();
   /** Após excluir o atendimento (comanda) na API com sucesso. */
   readonly comandaExcluida = output<void>();
@@ -102,6 +112,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   modalOutrosOpcao: 'imprimir' | 'historico' | null = null;
   excluindo = false;
   erroExcluir = '';
+  private idAtendimentoContextoAnterior = '';
+  private versDiaSyncLida = -1;
 
   constructor() {
     effect(() => {
@@ -117,15 +129,43 @@ export class NovaComandaDrawerComponent implements OnInit {
         const ctx = this.contexto();
         const ymd = (ctx?.dataYmd ?? '').trim();
         const idAt = (ctx?.idAtendimento ?? '').trim();
-        this.linhasAtendimentoApi.length = 0;
+        const fromHub = this.atendimentoLinhas() ?? [];
+        const vd = this.dadosDiaSync();
+
+        let mudouVersDia = false;
+        if (this.versDiaSyncLida < 0) {
+          this.versDiaSyncLida = vd;
+        } else if (vd !== this.versDiaSyncLida) {
+          this.versDiaSyncLida = vd;
+          mudouVersDia = true;
+        }
+        const idMudou = idAt !== this.idAtendimentoContextoAnterior;
+        this.idAtendimentoContextoAnterior = idAt;
+
+        const forcarEspelho = Boolean(idMudou || mudouVersDia);
+
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
           this.carregandoItens = false;
           this.erroItens = '';
+          this.linhasAtendimentoApi.length = 0;
+          this.idAtendimentoContextoAnterior = idAt;
           this.sincronizarFormularioAposDados();
           return;
         }
-        this.carregandoItens = true;
+
         this.erroItens = '';
+
+        if (fromHub.length > 0) {
+          this.carregandoItens = false;
+          this.aplicarFonteDeLinhas(fromHub, forcarEspelho);
+          return;
+        }
+
+        if (this.itensComandaForm.dirty && !forcarEspelho) {
+          this.carregandoItens = false;
+          return;
+        }
+        this.carregandoItens = true;
         const sub = this.api
           .listAgendamentos(ymd, ymd, idAt)
           .pipe(
@@ -133,22 +173,34 @@ export class NovaComandaDrawerComponent implements OnInit {
             catchError((e: Error) => {
               this.erroItens =
                 e.message || 'Não foi possível carregar os itens do agendamento.';
+              this.carregandoItens = false;
               return of([] as AtendimentoListaItem[]);
             }),
           )
           .subscribe({
             next: (rows) => {
-              const copy = [...rows];
-              ordenarLinhasAtendimentoInPlace(copy);
-              this.linhasAtendimentoApi.length = 0;
-              this.linhasAtendimentoApi.push(...copy);
               this.carregandoItens = false;
-              this.sincronizarFormularioAposDados();
+              this.aplicarFonteDeLinhas(rows, true);
             },
           });
         onCleanup(() => sub.unsubscribe());
       },
     );
+  }
+
+  /** Aplica o mesmo corte de linhas que a grelha, ou a resposta da API (retorno vazio = linha vazia). */
+  private aplicarFonteDeLinhas(
+    rows: AtendimentoListaItem[],
+    forcarEspelho: boolean,
+  ): void {
+    const copy = [...rows];
+    ordenarLinhasAtendimentoInPlace(copy);
+    this.linhasAtendimentoApi.length = 0;
+    this.linhasAtendimentoApi.push(...copy);
+    if (!forcarEspelho && this.itensComandaForm.dirty) {
+      return;
+    }
+    this.sincronizarFormularioAposDados();
   }
 
   ngOnInit(): void {
@@ -284,15 +336,22 @@ export class NovaComandaDrawerComponent implements OnInit {
     return 'Curto';
   }
 
+  /**
+   * Uma linha lógica da lista = 1 qtd. na comanda. A soma de vários itens na
+   * pivot (ex.: dois 'serviço' com qtd. 1) não representa 2 unidades a cobrar
+   * na linha, mas 1 linha com 1 item — usa-se a quantidade do primeiro registo
+   * relevante (e não a soma).
+   */
   private quantidadeApi(l: AtendimentoListaItem): number {
     const itens = l.itens_catalogo ?? l.itens;
     if (!itens || itens.length === 0) return 1;
-    const s = itens.reduce(
-      (acc, it) =>
-        acc + (Number(it.quantidade) > 0 ? Number(it.quantidade) : 1),
-      0,
-    );
-    return Math.max(1, s);
+    for (const it of itens) {
+      const q = Number(it.quantidade);
+      if (Number.isFinite(q) && q > 0) {
+        return Math.max(1, q);
+      }
+    }
+    return 1;
   }
 
   private valoresMonetarioLinha(
@@ -304,50 +363,6 @@ export class NovaComandaDrawerComponent implements OnInit {
     const total = Math.max(0, v - d);
     const unit = q > 0 ? total / q : total;
     return { v, d, q, total, unit };
-  }
-
-  private duracaoMinutosDoServico(
-    s: Servico | undefined,
-    tamanhoCtx?: string,
-  ): number {
-    if (!s) return 30;
-    const padrao = (): number => {
-      const raw =
-        s['duracao_minutos'] ??
-        s['Duração Minutos'] ??
-        s['Duracao Minutos'] ??
-        s['duracaoMinutos'];
-      const n = Number(raw);
-      if (Number.isFinite(n) && n >= 5 && n <= 24 * 60) return Math.round(n);
-      return 30;
-    };
-    const tipo = String(s['Tipo'] ?? '').trim().toLowerCase();
-    if (tipo === 'fixo') return padrao();
-    const tam = (tamanhoCtx || 'Curto').trim();
-    const keyMap: Record<string, string> = {
-      Curto: 'duracao_curto',
-      Médio: 'duracao_medio',
-      'M/L': 'duracao_m_l',
-      Longo: 'duracao_longo',
-    };
-    const key = keyMap[tam] ?? 'duracao_curto';
-    const rawD = s[key as keyof Servico];
-    const n = Number(rawD);
-    if (Number.isFinite(n) && n >= 5 && n <= 24 * 60) return Math.round(n);
-    return padrao();
-  }
-
-  duracaoServicoLinhaExibicao(i: number): string {
-    const g = this.linhasComandaArray.at(i);
-    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
-    const sid = String(g.get('servico_id')?.value ?? '').trim();
-    if (!sid) return '—';
-    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
-    const n = this.duracaoMinutosDoServico(
-      this.servicoPorId(sid),
-      tam,
-    );
-    return `${n} min`;
   }
 
   onItemTipoChange(i: number): void {

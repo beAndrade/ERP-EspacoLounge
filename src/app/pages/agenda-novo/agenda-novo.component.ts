@@ -261,6 +261,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     /** Hub: carregar este pedido em edição. */
     id_atendimento?: string;
   } | null = null;
+  /**
+   * Hub: incrementa após `listAgendamentos` do dia; no modal, recarrega o pedido
+   * da API para alinhar com a grelha (espelho da comanda), se o rascunho local
+   * não tiver alterações pendentes.
+   */
+  @Input() sincDadosDia = 0;
 
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
@@ -271,6 +277,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   readonly abrirComanda = output<{
     acessar: boolean;
     idAtendimento?: string | null;
+    numeroComandaTitulo: number;
+    clienteId: string;
+    cliente: Cliente | null;
+    opcoesClientes: import('./saas-select.component').SaasSelectOption[];
+    dataYmd: string | null;
   }>();
   /** Hub: saltar para outro dia/pedido (próximas ocorrências). */
   readonly navegacaoNoHub = output<{
@@ -729,6 +740,65 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return String(status ?? '').trim().toLowerCase() === 'finalizada';
   }
 
+  /**
+   * Uma linha por `id` de atendimento aberto (cobrança não finalizada), com menor `inicio` quando houver.
+   */
+  private representantesComandasAbertasClienteDia(
+    items: AtendimentoListaItem[],
+    ymd: string,
+    cid: string,
+  ): AtendimentoListaItem[] {
+    const cidTrim = cid.trim();
+    if (!cidTrim || !ymd) return [];
+    const rows = items.filter(
+      (it) =>
+        it.data === ymd &&
+        String(it.idCliente ?? '').trim() === cidTrim &&
+        !this.cobrancaEstaFinalizada(it.cobrancaStatus),
+    );
+    const byId = new Map<string, AtendimentoListaItem>();
+    for (const r of rows) {
+      const id = String(r.id ?? '').trim();
+      if (!id) continue;
+      const cur = byId.get(id);
+      if (!cur) {
+        byId.set(id, r);
+        continue;
+      }
+      const t0 = cur.inicio ?? '';
+      const t1 = r.inicio ?? '';
+      if (t1 && (!t0 || t1 < t0)) byId.set(id, r);
+    }
+    const reps = [...byId.values()];
+    reps.sort((a, b) => {
+      const ia = a.inicio ?? '';
+      const ib = b.inicio ?? '';
+      if (ia !== ib) return ia.localeCompare(ib);
+      return String(a.id).localeCompare(String(b.id));
+    });
+    return reps;
+  }
+
+  /** `#N` no drawer: posição entre abertas ou próximo número ao criar. */
+  private numeroComandaParaTituloModal(
+    items: AtendimentoListaItem[],
+    ymd: string,
+    cid: string,
+    acessarExistente: boolean,
+    idAtendimentoFoco: string | null | undefined,
+  ): number {
+    const reps = this.representantesComandasAbertasClienteDia(items, ymd, cid);
+    if (acessarExistente) {
+      const id = String(idAtendimentoFoco ?? '').trim();
+      if (id) {
+        const idx = reps.findIndex((r) => String(r.id) === id);
+        if (idx >= 0) return idx + 1;
+      }
+      return 1;
+    }
+    return Math.max(1, reps.length + 1);
+  }
+
   private aplicarDetecaoComandaAberta(
     items: AtendimentoListaItem[],
     ymd: string,
@@ -779,9 +849,26 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   onAbrirComandaClick(ev: MouseEvent): void {
     ev.stopPropagation();
+    const ymd =
+      normalizarDataIso(String(this.form.get('data')?.value ?? '')) ?? '';
+    const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const itemsParaTitulo =
+      this.ultimoYmdListagemModal === ymd ? this.ultimosItensDiaModal : [];
+    const numeroComandaTitulo = this.numeroComandaParaTituloModal(
+      itemsParaTitulo,
+      ymd,
+      clienteId,
+      this.comandaAbertaParaClienteNoDia,
+      this.idComandaPedidoAberto,
+    );
     this.abrirComanda.emit({
       acessar: this.comandaAbertaParaClienteNoDia,
       idAtendimento: this.idComandaPedidoAberto,
+      numeroComandaTitulo,
+      clienteId,
+      cliente: this.clienteSelecionado(),
+      opcoesClientes: this.opcoesClientesNomes(),
+      dataYmd: ymd || null,
     });
   }
 
@@ -846,6 +933,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.aplicarContextoSlotInput();
         const ymd = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
         if (ymd) this.atualizarOcupacaoDia(ymd);
+      }
+    }
+
+    const sinc = ch['sincDadosDia'];
+    if (sinc && this.modoModal && !sinc.firstChange) {
+      const id = this.contextoSlot?.id_atendimento?.trim();
+      if (id && !this.form.dirty) {
+        this.carregarEdicaoPorIdParaModal(id);
       }
     }
 
@@ -1716,6 +1811,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           'Não há outras ocorrências na série para propagar. Abra o agendamento de novo.';
         return;
       }
+    } else if (editId && !aplicarProx) {
+      /**
+       * Edição com o toggle «Aplicar alterações para os próximos» desligado: o utilizador
+       * altera só o dia do formulário (ex.: adiciona serviço só nessa data); a repetição
+       * exibida no cascade não implica multi-gravação nesse caso.
+       */
+      datas = [dataBase];
     } else if (this.repetirAgendamento.modo === 'nenhum') {
       datas = [dataBase];
     } else if (this.repetirAgendamento.modo === 'repetir') {
@@ -1723,12 +1825,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       datas = expandirDatasRepeticao(dataBase, rep.vezes, rep.frequencia);
     } else {
       datas = [dataBase];
-    }
-
-    if (editId && datas.length > 1 && !aplicarProx) {
-      this.erro =
-        'Ao editar, use «Aplicar alterações para os próximos» para gravar em várias datas, ou deixe a repetição em «não se repete».';
-      return;
     }
 
     const slotBak = this.slotAgenda;

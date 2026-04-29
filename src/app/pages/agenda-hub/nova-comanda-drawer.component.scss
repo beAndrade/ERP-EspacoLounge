@@ -1003,7 +1003,7 @@
   }
 }
 
-.servico-row--comanda.servico-row--drawer:has(.servico-row__field--duracao) {
+.servico-row--comanda.servico-row--drawer:has(.servico-row__field--comanda-qtd) {
   flex-wrap: wrap;
 
   .servico-row__field--tipo-linha {
@@ -1026,11 +1026,6 @@
   .servico-row__field--pro {
     flex: 1.15 1 5.25rem;
     min-width: 5.25rem;
-  }
-
-  .servico-row__field--duracao {
-    flex: 0 0 5.9rem;
-    min-width: 5.2rem;
   }
 
   .servico-row__field--comanda-qtd {
@@ -1056,19 +1051,6 @@
   .servico-row__actions--comanda {
     flex: 0 0 calc(2.5rem * 2 + 0.4rem);
   }
-}
-
-.servico-row__duracao {
-  box-sizing: border-box;
-  min-height: 40px;
-  padding: 0.5rem 0.65rem;
-  border-radius: 14px;
-  border: 1px solid #e7e5e4;
-  background: #f4f2f0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #57534e;
-  font-variant-numeric: tabular-nums;
 }
 
 .nc-comanda-iten__text {

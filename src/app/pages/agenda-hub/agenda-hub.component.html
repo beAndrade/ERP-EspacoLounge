@@ -165,6 +165,7 @@
     <app-agenda-novo
       [modoModal]="true"
       [contextoSlot]="modalContexto"
+      [sincDadosDia]="dadosDiaVersaoSinc"
       (salvoComSucesso)="onSalvoModal()"
       (cancelarModal)="fecharModal()"
       (navegacaoNoHub)="onNavegarAgendamentoDrawer($event)"
@@ -188,6 +189,8 @@
     >
       <app-nova-comanda-drawer
         [contexto]="comandaDrawerContexto"
+        [atendimentoLinhas]="comandaAtendimentoLinhasCache"
+        [dadosDiaSync]="dadosDiaVersaoSinc"
         (fechar)="fecharComandaDrawer()"
         (comandaExcluida)="onComandaExcluida()"
       />

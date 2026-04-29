@@ -148,15 +148,6 @@
                               aria-label="Profissional"
                             />
                           </div>
-                          <div class="servico-row__field servico-row__field--duracao">
-                            <span>Duração</span>
-                            <div
-                              class="servico-row__duracao"
-                              [attr.aria-label]="'Duração: ' + duracaoServicoLinhaExibicao(i)"
-                            >
-                              {{ duracaoServicoLinhaExibicao(i) }}
-                            </div>
-                          </div>
                         } @else {
                           <div class="servico-row__field servico-row__field--descricao">
                             <span>Descrição</span>
@@ -177,10 +168,6 @@
                               placeholder="Selecione…"
                               aria-label="Profissional"
                             />
-                          </div>
-                          <div class="servico-row__field servico-row__field--duracao">
-                            <span>Duração</span>
-                            <div class="servico-row__duracao" aria-hidden="true">—</div>
                           </div>
                         }
 
