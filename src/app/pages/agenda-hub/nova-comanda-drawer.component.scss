@@ -299,6 +299,9 @@
 }
 
 .nc-itens__body {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   overflow-x: auto;
   padding-bottom: 0.15rem;
   margin: 0 -0.15rem;
@@ -520,8 +523,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: 0.35rem;
-  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
 }
 
 .nc-itens-summary__row {
@@ -576,12 +579,12 @@
   }
 }
 
-/** Observações coladas ao rodapé da coluna (fora da área com scroll). */
+/** Observações: no fluxo do scroll (abaixo do resumo), sem traço superior. */
 .nc-drawer__obs {
   flex: 0 0 auto;
-  padding: 0.85rem 0 0;
-  margin-top: 0.25rem;
-  border-top: 1px solid var(--drawer-stroke, #ececec);
+  padding: 0.75rem 0 0;
+  margin-top: 0;
+  border-top: none;
 }
 
 .nc-field--obs {

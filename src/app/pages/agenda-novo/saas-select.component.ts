@@ -102,8 +102,16 @@ export class SaasSelectComponent
 
   get displayLabel(): string {
     if (this.inner === '') return '';
-    const hit = this.options.find((o) => o.value === this.inner);
+    const hit = this.options.find(
+      (o) => String(o.value) === String(this.inner),
+    );
     return hit?.label ?? '';
+  }
+
+  /** Compara valor da opção com o interno (evita falha número vs string). */
+  optionIsSelected(opt: SaasSelectOption): boolean {
+    if (this.inner === '') return false;
+    return String(opt.value) === String(this.inner);
   }
 
   get filteredOptions(): SaasSelectOption[] {
@@ -160,7 +168,10 @@ export class SaasSelectComponent
 
   choose(opt: SaasSelectOption, ev: Event): void {
     ev.stopPropagation();
-    this.inner = opt.value;
+    this.inner =
+      opt.value === null || opt.value === undefined || opt.value === ''
+        ? ''
+        : String(opt.value);
     this.emitValue();
     this.panelOpen = false;
     this.notifyTouched();

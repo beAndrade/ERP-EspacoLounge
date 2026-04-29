@@ -209,7 +209,7 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   opcoesServicosCatalogo(): SaasSelectOption[] {
     return this.servicosTipoServico.map((s) => ({
-      value: s.id,
+      value: String(s.id),
       label: this.rotuloServico(s),
     }));
   }
@@ -229,6 +229,14 @@ export class NovaComandaDrawerComponent implements OnInit {
     const sid = String(id ?? '').trim();
     if (!sid) return undefined;
     return this.servicosTipoServico.find((s) => String(s.id) === sid);
+  }
+
+  /** Catálogo completo (preço) mesmo que o tipo não entre em `servicosTipoServico`. */
+  private servicoPorIdQualquer(id: string | null | undefined): Servico | undefined {
+    return (
+      this.servicoPorId(id) ??
+      this.servicos.find((s) => String(s.id) === String(id ?? '').trim())
+    );
   }
 
   /** Igual a `precisaTamanhoServicoId` do agendamento. */
@@ -251,6 +259,14 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   private profissionalValorForm(l: AtendimentoListaItem): number | null {
+    const itens = l.itens_catalogo ?? l.itens ?? [];
+    for (const it of itens) {
+      const pid = it.profissional_id;
+      if (pid != null && Number(pid) > 0) {
+        const id = Number(pid);
+        if (this.profissionais.some((p) => p.id === id)) return id;
+      }
+    }
     const rid = l.profissional_id;
     if (rid != null && Number(rid) > 0) {
       const id = Number(rid);
@@ -272,6 +288,34 @@ export class NovaComandaDrawerComponent implements OnInit {
       }
     }
     return '';
+  }
+
+  /**
+   * Preço unitário no catálogo (aba Serviços), alinhado à API `listServicosForApi`.
+   */
+  private precoUnitarioServicoCatalogo(
+    s: Servico | undefined,
+    tamanho: string,
+  ): number | null {
+    if (!s) return null;
+    const tipo = String(s['Tipo'] ?? '')
+      .trim()
+      .toLowerCase();
+    if (tipo === 'fixo') {
+      const v = valorMonetarioParaNumero(s['Valor Base']);
+      return v != null && v > 0 ? v : null;
+    }
+    const tam = (tamanho || 'Curto').trim();
+    const keyMap: Record<string, string> = {
+      Curto: 'Preço Curto',
+      Médio: 'Preço Médio',
+      'M/L': 'Preço Médio/Longo',
+      Longo: 'Preço Longo',
+    };
+    const col = keyMap[tam] ?? 'Preço Curto';
+    const raw = (s as Record<string, unknown>)[col];
+    const v = valorMonetarioParaNumero(raw);
+    return v != null && v > 0 ? v : null;
   }
 
   private tamanhoDaLinha(l: AtendimentoListaItem): string {
@@ -306,8 +350,18 @@ export class NovaComandaDrawerComponent implements OnInit {
     const v = valorMonetarioParaNumero(l.valor) ?? 0;
     const d = valorMonetarioParaNumero(l.desconto) ?? 0;
     const q = this.quantidadeApi(l);
-    const total = Math.max(0, v - d);
-    const unit = q > 0 ? total / q : total;
+    let total = Math.max(0, v - d);
+    let unit = q > 0 ? total / q : total;
+    if ((total <= 0 || unit <= 0) && this.servicoIdDaLinha(l)) {
+      const cat = this.precoUnitarioServicoCatalogo(
+        this.servicoPorIdQualquer(this.servicoIdDaLinha(l)),
+        this.tamanhoDaLinha(l),
+      );
+      if (cat != null && cat > 0) {
+        unit = cat;
+        total = Math.max(0, cat * q - d);
+      }
+    }
     return { v, d, q, total, unit };
   }
 
@@ -341,9 +395,10 @@ export class NovaComandaDrawerComponent implements OnInit {
     const tipo = this.mapTipoForm(l);
     const { d, q, unit } = this.valoresMonetarioLinha(l);
     if (tipo === 'Serviço') {
+      const sid = this.servicoIdDaLinha(l);
       return this.fb.group({
         itemTipo: this.fb.control<TipoLinhaComanda>('Serviço'),
-        servico_id: [this.servicoIdDaLinha(l)],
+        servico_id: [sid ? String(sid) : ''],
         tamanho: this.fb.nonNullable.control(this.tamanhoDaLinha(l)),
         profissional: this.fb.control<number | null>(
           this.profissionalValorForm(l),

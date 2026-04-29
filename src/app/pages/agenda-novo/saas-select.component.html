@@ -81,7 +81,7 @@
             type="button"
             class="saas-select__option"
             role="option"
-            [class.saas-select__option--active]="opt.value === selectedValue"
+            [class.saas-select__option--active]="optionIsSelected(opt)"
             [tabindex]="panelOpen ? 0 : -1"
             (click)="choose(opt, $event)"
           >
