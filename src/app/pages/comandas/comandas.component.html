@@ -1,0 +1,276 @@
+<div class="comandas-page">
+  <header class="comandas-head">
+    <div class="comandas-head__title-row">
+      <h1 class="comandas-head__title">Comandas</h1>
+      <div class="comandas-head__title-actions" aria-hidden="true">
+        <button type="button" class="icon-btn" title="Em breve" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+        </button>
+        <button type="button" class="icon-btn" title="Ajuda" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <path d="M12 17h.01" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="comandas-toolbar">
+      @if (buscaAberta) {
+        <label class="comandas-toolbar__search">
+          <span class="sr-only">Buscar comandas</span>
+          <input
+            type="search"
+            [(ngModel)]="busca"
+            name="buscaComandas"
+            placeholder="Cliente ou ticket…"
+            autocomplete="off"
+          />
+        </label>
+      }
+      <div class="comandas-toolbar__actions">
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [class.btn--active]="buscaAberta"
+          (click)="toggleBusca()"
+          aria-label="Buscar"
+          title="Buscar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <span class="btn__label">Buscar</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn--ghost"
+          [class.btn--active]="filtrosAbertos"
+          (click)="toggleFiltros()"
+          aria-label="Filtrar por período"
+          title="Filtrar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          <span class="btn__label">Filtrar</span>
+        </button>
+        <a routerLink="/agenda/novo" class="btn primary">+ Novo</a>
+      </div>
+    </div>
+  </header>
+
+  @if (filtrosAbertos) {
+    <div class="filtros" role="region" aria-label="Período da lista">
+      <label>
+        <span>De (dd-mm-aaaa)</span>
+        <input
+          type="text"
+          [(ngModel)]="dataInicio"
+          name="di"
+          inputmode="numeric"
+          maxlength="10"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </label>
+      <label>
+        <span>Até (dd-mm-aaaa)</span>
+        <input
+          type="text"
+          [(ngModel)]="dataFim"
+          name="df"
+          inputmode="numeric"
+          maxlength="10"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </label>
+      <button type="button" class="btn" (click)="carregar()">Aplicar</button>
+    </div>
+  }
+
+  @if (erro) {
+    <p class="alert" role="alert">{{ erro }}</p>
+  }
+  @if (carregando) {
+    <p class="hint">Carregando…</p>
+  }
+
+  @if (!carregando && !erro && totalFiltrado() === 0) {
+    <p class="hint">Nenhuma comanda neste período.</p>
+  }
+
+  @if (!carregando && !erro && totalFiltrado() > 0) {
+    <div class="comandas-table-card">
+      <div class="table-wrap" role="region" aria-label="Lista de comandas">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-check" scope="col">
+                <input
+                  type="checkbox"
+                  [checked]="todosDaPaginaSelecionados()"
+                  (change)="toggleSelecionarTodos($event)"
+                  title="Selecionar página"
+                />
+              </th>
+              <th scope="col">Ticket</th>
+              <th scope="col">Data</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Status</th>
+              <th scope="col">Valor</th>
+              <th scope="col">Pagamento</th>
+              <th class="col-gear" scope="col">
+                <span class="sr-only">Colunas</span>
+                <button type="button" class="icon-btn icon-btn--muted" disabled title="Configuração de colunas (em breve)" aria-label="Configuração de colunas">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <path d="M12 20v-2" />
+                    <path d="M12 6V4" />
+                    <path d="M4 12H2" />
+                    <path d="M22 12h-2" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of gruposPagina(); track g.id) {
+              <tr>
+                <td class="col-check">
+                  <input
+                    type="checkbox"
+                    [checked]="estaSelecionado(g)"
+                    (change)="toggleSelecionar(g, $event)"
+                    [attr.aria-label]="'Selecionar comanda ' + rotuloTicket(g)"
+                  />
+                </td>
+                <td>
+                  @if (idAtendimento(g); as idAt) {
+                    <a
+                      [routerLink]="['/agenda/novo']"
+                      [queryParams]="{ atendimento: idAt }"
+                      class="link-ticket"
+                    >{{ rotuloTicket(g) }}</a>
+                  } @else {
+                    <span>{{ rotuloTicket(g) }}</span>
+                  }
+                </td>
+                <td>{{ dataDdMmBarraAaaa(g.data) }}</td>
+                <td>
+                  @if (idCliente(g); as cid) {
+                    <a [routerLink]="['/clientes', cid, 'editar']" class="link-cliente">{{ g.nomeCliente }}</a>
+                  } @else {
+                    {{ g.nomeCliente }}
+                  }
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge--aviso]="!cobrancaFinalizada(g)"
+                    [class.badge--info]="cobrancaFinalizada(g) && !pagamentoConfirmado(g)"
+                    [class.badge--ok]="pagamentoConfirmado(g)"
+                  >{{ rotuloStatus(g) }}</span>
+                </td>
+                <td>
+                  @if (valorExibicao(g) !== null) {
+                    {{ valorExibicao(g)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge--aviso]="!pagamentoConfirmado(g)"
+                    [class.badge--ok]="pagamentoConfirmado(g)"
+                  >{{ rotuloPagamento(g) }}</span>
+                </td>
+                <td class="col-menu">
+                  <div class="comandas-row-menu">
+                    <button
+                      type="button"
+                      class="icon-btn row-menu__trigger"
+                      (click)="toggleMenu(g, $event)"
+                      [attr.aria-expanded]="menuAbertoParaId === g.id"
+                      [attr.aria-label]="'Ações da comanda ' + rotuloTicket(g)"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M4 6h16" />
+                        <path d="M4 12h16" />
+                        <path d="M4 18h16" />
+                      </svg>
+                    </button>
+                    @if (menuAbertoParaId === g.id) {
+                      <ul class="row-menu__panel" role="menu" (click)="$event.stopPropagation()">
+                        <li role="none">
+                          <button type="button" role="menuitem" (click)="editar(g, $event)">Editar</button>
+                        </li>
+                        <li role="none">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            class="danger"
+                            [disabled]="excluindoIdAt === idAtendimento(g)"
+                            (click)="excluir(g, $event)"
+                          >
+                            {{ excluindoIdAt === idAtendimento(g) ? 'A excluir…' : 'Excluir' }}
+                          </button>
+                        </li>
+                      </ul>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="comandas-footer">
+        <span class="comandas-footer__total">{{ totalFiltrado() }} no total</span>
+        <div class="comandas-footer__pager">
+          <button
+            type="button"
+            class="icon-btn"
+            (click)="paginaAnterior()"
+            [disabled]="pagina <= 1"
+            aria-label="Página anterior"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <span class="comandas-footer__page-num" aria-current="page">{{ pagina }}</span>
+          <button
+            type="button"
+            class="icon-btn"
+            (click)="paginaSeguinte()"
+            [disabled]="pagina >= totalPaginas()"
+            aria-label="Página seguinte"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+        <label class="comandas-footer__per-page">
+          <span class="sr-only">Itens por página</span>
+          <select
+            [(ngModel)]="itensPorPagina"
+            name="perPage"
+            (ngModelChange)="aoMudarItensPorPagina()"
+          >
+            @for (n of opcoesItensPorPagina; track n) {
+              <option [ngValue]="n">{{ n }} / página</option>
+            }
+          </select>
+        </label>
+      </footer>
+    </div>
+  }
+</div>
