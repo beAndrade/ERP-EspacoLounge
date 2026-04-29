@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   Component,
   ElementRef,
   EventEmitter,
@@ -12,6 +13,7 @@ import {
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
+import { NgStyle } from '@angular/common';
 import {
   ControlValueAccessor,
   FormControl,
@@ -24,6 +26,7 @@ export type SaasSelectOption = { value: string; label: string };
 @Component({
   selector: 'app-saas-select',
   standalone: true,
+  imports: [NgStyle],
   templateUrl: './saas-select.component.html',
   styleUrl: './saas-select.component.scss',
   host: {
@@ -40,7 +43,7 @@ export type SaasSelectOption = { value: string; label: string };
   ],
 })
 export class SaasSelectComponent
-  implements ControlValueAccessor, OnChanges, OnDestroy
+  implements AfterViewInit, ControlValueAccessor, OnChanges, OnDestroy
 {
   private readonly host = inject(ElementRef<HTMLElement>);
   @ViewChild('triggerBtn', { static: true })
@@ -74,6 +77,14 @@ export class SaasSelectComponent
   filterText = '';
   private inner = '';
 
+  /**
+   * Dentro de `.nc-itens--panel-fixed` (comanda no hub): painel em `position: fixed`
+   * para não ser recortado por `overflow` dos ascendentes.
+   */
+  panelFixedMode = false;
+  fixedPanelStyle: Record<string, string> = {};
+  private scrollResizeUnsub?: () => void;
+
   /** Exposto ao template para realce da opção activa. */
   get selectedValue(): string {
     return this.inner;
@@ -95,7 +106,14 @@ export class SaasSelectComponent
     }
   }
 
+  ngAfterViewInit(): void {
+    this.panelFixedMode = !!this.host.nativeElement.closest(
+      '.nc-itens--panel-fixed',
+    );
+  }
+
   ngOnDestroy(): void {
+    this.detachFixedPanelScrollListeners();
     this.bindSyncSub?.unsubscribe();
     this.bindSyncSub = null;
   }
@@ -139,7 +157,11 @@ export class SaasSelectComponent
 
   setDisabledState(isDisabled: boolean): void {
     this.onDisabled = isDisabled;
-    if (isDisabled) this.panelOpen = false;
+    if (isDisabled) {
+      this.panelOpen = false;
+      this.fixedPanelStyle = {};
+      this.detachFixedPanelScrollListeners();
+    }
   }
 
   get isDisabled(): boolean {
@@ -149,6 +171,8 @@ export class SaasSelectComponent
   /** Fecha a lista (uso pelo pai no hub). */
   fecharPainel(): void {
     this.panelOpen = false;
+    this.fixedPanelStyle = {};
+    this.detachFixedPanelScrollListeners();
     this.focusTriggerSoon();
   }
 
@@ -157,6 +181,8 @@ export class SaasSelectComponent
     if (this.isDisabled) return;
     if (this.panelOpen) {
       this.panelOpen = false;
+      this.fixedPanelStyle = {};
+      this.detachFixedPanelScrollListeners();
       this.notifyTouched();
       this.focusTriggerSoon();
       return;
@@ -164,6 +190,13 @@ export class SaasSelectComponent
     this.panelOpen = true;
     this.filterText = '';
     this.painelAberto.emit();
+    if (this.panelFixedMode) {
+      queueMicrotask(() => {
+        this.syncFixedPanelPosition();
+        requestAnimationFrame(() => this.syncFixedPanelPosition());
+      });
+      this.attachFixedPanelScrollListeners();
+    }
   }
 
   choose(opt: SaasSelectOption, ev: Event): void {
@@ -174,6 +207,8 @@ export class SaasSelectComponent
         : String(opt.value);
     this.emitValue();
     this.panelOpen = false;
+    this.fixedPanelStyle = {};
+    this.detachFixedPanelScrollListeners();
     this.notifyTouched();
     this.picked.emit();
     this.focusTriggerSoon();
@@ -183,6 +218,8 @@ export class SaasSelectComponent
     ev.stopPropagation();
     ev.preventDefault();
     this.panelOpen = false;
+    this.fixedPanelStyle = {};
+    this.detachFixedPanelScrollListeners();
     this.criarCliente.emit();
     this.focusTriggerSoon();
   }
@@ -197,6 +234,8 @@ export class SaasSelectComponent
     const t = ev.target as Node;
     if (!this.host.nativeElement.contains(t)) {
       this.panelOpen = false;
+      this.fixedPanelStyle = {};
+      this.detachFixedPanelScrollListeners();
       this.notifyTouched();
       this.focusTriggerSoon();
     }
@@ -212,6 +251,50 @@ export class SaasSelectComponent
       this.bindToControl.markAsTouched();
     }
     this.onTouched();
+  }
+
+  private attachFixedPanelScrollListeners(): void {
+    this.detachFixedPanelScrollListeners();
+    if (!this.panelFixedMode) return;
+    const fn = () => {
+      if (this.panelOpen) {
+        requestAnimationFrame(() => this.syncFixedPanelPosition());
+      }
+    };
+    document.addEventListener('scroll', fn, true);
+    window.addEventListener('resize', fn);
+    this.scrollResizeUnsub = () => {
+      document.removeEventListener('scroll', fn, true);
+      window.removeEventListener('resize', fn);
+    };
+  }
+
+  private detachFixedPanelScrollListeners(): void {
+    this.scrollResizeUnsub?.();
+    this.scrollResizeUnsub = undefined;
+  }
+
+  private syncFixedPanelPosition(): void {
+    if (!this.panelFixedMode || !this.panelOpen || !this.triggerBtn?.nativeElement) {
+      return;
+    }
+    const el = this.triggerBtn.nativeElement;
+    const r = el.getBoundingClientRect();
+    const gap = 4;
+    const estPanelH = Math.min(320, window.innerHeight * 0.5);
+    const spaceBelow = window.innerHeight - r.bottom - gap;
+    let topPx = r.bottom + gap;
+    if (spaceBelow < Math.min(estPanelH, 200) && r.top > estPanelH + gap) {
+      topPx = Math.max(gap, r.top - estPanelH - gap);
+    }
+    const leftPx = Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8));
+    this.fixedPanelStyle = {
+      position: 'fixed',
+      top: `${topPx}px`,
+      left: `${leftPx}px`,
+      width: `${r.width}px`,
+      'z-index': '10060',
+    };
   }
 
   private emitValue(): void {

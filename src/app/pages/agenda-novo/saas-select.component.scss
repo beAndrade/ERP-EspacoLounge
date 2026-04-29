@@ -102,6 +102,17 @@
   visibility: visible;
 }
 
+/** Comanda no hub: posição via `fixedPanelStyle` (evita clip por overflow do drawer). */
+.saas-select__panel-elev--fixed {
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s;
+}
+
 .saas-select__panel {
   position: relative;
   background: #fff;

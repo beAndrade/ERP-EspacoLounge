@@ -54,6 +54,8 @@
   <div
     class="saas-select__panel-elev"
     [class.saas-select__panel-elev--open]="panelOpen"
+    [class.saas-select__panel-elev--fixed]="panelFixedMode"
+    [ngStyle]="panelFixedMode && panelOpen ? fixedPanelStyle : null"
     [attr.inert]="panelOpen ? null : ''"
   >
     <div class="saas-select__panel" role="listbox">
