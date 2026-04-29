@@ -1,5 +1,6 @@
 <div class="comandas-page">
-  <header class="comandas-head">
+  <div class="comandas-page__lead">
+    <header class="comandas-head">
     <div class="comandas-head__title-row">
       <div class="comandas-head__left">
         <h1 class="comandas-head__title">Comandas</h1>
@@ -126,6 +127,7 @@
   @if (erro) {
     <p class="alert" role="alert">{{ erro }}</p>
   }
+  </div>
 
   @if (!erro) {
     <div class="comandas-table-card">
