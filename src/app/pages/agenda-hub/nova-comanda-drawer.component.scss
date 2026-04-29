@@ -1003,7 +1003,7 @@
   }
 }
 
-.servico-row--comanda.servico-row--drawer:has(.servico-row__field--comanda-qtd) {
+.servico-row--comanda.servico-row--drawer {
   flex-wrap: wrap;
 
   .servico-row__field--tipo-linha {

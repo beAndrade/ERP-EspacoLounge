@@ -60,7 +60,7 @@
                 type="button"
                 class="nc-itens__info"
                 aria-label="Informação sobre itens"
-                title="Itens de serviço, produto ou pacote. O layout segue o pedido de agendamento, com colunas de quantidade, valores e totais."
+                title="A comanda copia o pedido do agendamento; pode acrescentar serviços extra aqui antes de faturar. Quantidade, valores e totais por linha."
               >
                 <svg
                   width="14"
@@ -86,8 +86,8 @@
                 }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
-                    Ligue a comanda a um atendimento guardado para sincronizar com o agendamento, ou
-                    preencha as linhas abaixo manualmente.
+                    Com um atendimento aberto, a comanda preenche com os itens agendados; pode acrescentar
+                    serviços extra na hora. Sem atendimento, preencha as linhas à mão.
                   </p>
                 }
 

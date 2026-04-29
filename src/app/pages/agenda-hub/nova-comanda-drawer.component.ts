@@ -43,9 +43,8 @@ type TipoLinhaComanda =
   | 'Cabelo';
 
 /**
- * Shell do drawer «Nova comanda» (hub): itens alinhados ao agendamento (tipo, descrição,
- * profissional) + colunas de comanda e +/lixeira. A lista vem de `atendimentoLinhas`
- * (grelha / mesma origem do hub), com reforço de versão de dia.
+ * Drawer «Comanda» no hub: espelha o pedido do atendimento (agendamento) para
+ * faturação; o utilizador pode acrescentar linhas extra. Não é edição do agendamento.
  */
 @Component({
   selector: 'app-nova-comanda-drawer',
@@ -61,15 +60,6 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   /** Preenchido ao abrir a partir do drawer de agendamento (cliente / data correntes). */
   readonly contexto = input<ComandaDrawerContextoAgenda | null>(null);
-  /**
-   * Linhas do atendimento no `diaYmd` (filtrado no hub) — mesma visão que a grelha.
-   */
-  readonly atendimentoLinhas = input<AtendimentoListaItem[]>([]);
-  /**
-   * Incrementado no hub após `carregarDia`; aplica a lista vinda do hub ainda com rascunho
-   * local (força espelhamento pós-API / outro ecrã).
-   */
-  readonly dadosDiaSync = input(0);
   readonly fechar = output<void>();
   /** Após excluir o atendimento (comanda) na API com sucesso. */
   readonly comandaExcluida = output<void>();
@@ -112,8 +102,6 @@ export class NovaComandaDrawerComponent implements OnInit {
   modalOutrosOpcao: 'imprimir' | 'historico' | null = null;
   excluindo = false;
   erroExcluir = '';
-  private idAtendimentoContextoAnterior = '';
-  private versDiaSyncLida = -1;
 
   constructor() {
     effect(() => {
@@ -129,43 +117,15 @@ export class NovaComandaDrawerComponent implements OnInit {
         const ctx = this.contexto();
         const ymd = (ctx?.dataYmd ?? '').trim();
         const idAt = (ctx?.idAtendimento ?? '').trim();
-        const fromHub = this.atendimentoLinhas() ?? [];
-        const vd = this.dadosDiaSync();
-
-        let mudouVersDia = false;
-        if (this.versDiaSyncLida < 0) {
-          this.versDiaSyncLida = vd;
-        } else if (vd !== this.versDiaSyncLida) {
-          this.versDiaSyncLida = vd;
-          mudouVersDia = true;
-        }
-        const idMudou = idAt !== this.idAtendimentoContextoAnterior;
-        this.idAtendimentoContextoAnterior = idAt;
-
-        const forcarEspelho = Boolean(idMudou || mudouVersDia);
-
+        this.linhasAtendimentoApi.length = 0;
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
           this.carregandoItens = false;
           this.erroItens = '';
-          this.linhasAtendimentoApi.length = 0;
-          this.idAtendimentoContextoAnterior = idAt;
           this.sincronizarFormularioAposDados();
           return;
         }
-
-        this.erroItens = '';
-
-        if (fromHub.length > 0) {
-          this.carregandoItens = false;
-          this.aplicarFonteDeLinhas(fromHub, forcarEspelho);
-          return;
-        }
-
-        if (this.itensComandaForm.dirty && !forcarEspelho) {
-          this.carregandoItens = false;
-          return;
-        }
         this.carregandoItens = true;
+        this.erroItens = '';
         const sub = this.api
           .listAgendamentos(ymd, ymd, idAt)
           .pipe(
@@ -173,34 +133,22 @@ export class NovaComandaDrawerComponent implements OnInit {
             catchError((e: Error) => {
               this.erroItens =
                 e.message || 'Não foi possível carregar os itens do agendamento.';
-              this.carregandoItens = false;
               return of([] as AtendimentoListaItem[]);
             }),
           )
           .subscribe({
             next: (rows) => {
+              const copy = [...rows];
+              ordenarLinhasAtendimentoInPlace(copy);
+              this.linhasAtendimentoApi.length = 0;
+              this.linhasAtendimentoApi.push(...copy);
               this.carregandoItens = false;
-              this.aplicarFonteDeLinhas(rows, true);
+              this.sincronizarFormularioAposDados();
             },
           });
         onCleanup(() => sub.unsubscribe());
       },
     );
-  }
-
-  /** Aplica o mesmo corte de linhas que a grelha, ou a resposta da API (retorno vazio = linha vazia). */
-  private aplicarFonteDeLinhas(
-    rows: AtendimentoListaItem[],
-    forcarEspelho: boolean,
-  ): void {
-    const copy = [...rows];
-    ordenarLinhasAtendimentoInPlace(copy);
-    this.linhasAtendimentoApi.length = 0;
-    this.linhasAtendimentoApi.push(...copy);
-    if (!forcarEspelho && this.itensComandaForm.dirty) {
-      return;
-    }
-    this.sincronizarFormularioAposDados();
   }
 
   ngOnInit(): void {
@@ -337,21 +285,19 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   /**
-   * Uma linha lógica da lista = 1 qtd. na comanda. A soma de vários itens na
-   * pivot (ex.: dois 'serviço' com qtd. 1) não representa 2 unidades a cobrar
-   * na linha, mas 1 linha com 1 item — usa-se a quantidade do primeiro registo
-   * relevante (e não a soma).
+   * Quantidade da **linha da comanda** (uma linha = um item de fatura).
+   * Não somar todas as entradas da pivot: vários `itens_catalogo` na mesma linha de
+   * atendimento (ex.: detalhes internos) não devem multiplicar a quantidade.
    */
   private quantidadeApi(l: AtendimentoListaItem): number {
     const itens = l.itens_catalogo ?? l.itens;
     if (!itens || itens.length === 0) return 1;
-    for (const it of itens) {
-      const q = Number(it.quantidade);
-      if (Number.isFinite(q) && q > 0) {
-        return Math.max(1, q);
-      }
-    }
-    return 1;
+    const principal =
+      itens.find((it) => it.tipo === 'servico') ??
+      itens.find((it) => it.tipo === 'produto') ??
+      itens[0];
+    const q = Number(principal?.quantidade);
+    return Number.isFinite(q) && q > 0 ? q : 1;
   }
 
   private valoresMonetarioLinha(
