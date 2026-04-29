@@ -81,6 +81,8 @@ import {
   SaasSelectComponent,
   type SaasSelectOption,
 } from './saas-select.component';
+import type { ComandaLinhaInicial } from '../../core/models/comanda-linha-inicial';
+import { precoUnitarioServicoCatalogo } from '../../core/utils/servico-preco';
 import {
   AtendimentoListaItem,
   CabeloCatalogoItem,
@@ -261,12 +263,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     /** Hub: carregar este pedido em edição. */
     id_atendimento?: string;
   } | null = null;
-  /**
-   * Hub: incrementa após `listAgendamentos` do dia; no modal, recarrega o pedido
-   * da API para alinhar com a grelha (espelho da comanda), se o rascunho local
-   * não tiver alterações pendentes.
-   */
-  @Input() sincDadosDia = 0;
 
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
@@ -282,6 +278,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     cliente: Cliente | null;
     opcoesClientes: import('./saas-select.component').SaasSelectOption[];
     dataYmd: string | null;
+    linhasSnapshot?: ComandaLinhaInicial[];
   }>();
   /** Hub: saltar para outro dia/pedido (próximas ocorrências). */
   readonly navegacaoNoHub = output<{
@@ -847,6 +844,91 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return Boolean(cid && ymd);
   }
 
+  /**
+   * Espelha o pedido actual do modal na comanda (novo agendamento sem `idAtendimento`
+   * ou fallback). Valores de serviço vêm do catálogo + tamanho.
+   */
+  private montarLinhasSnapshotParaComanda(): ComandaLinhaInicial[] {
+    const out: ComandaLinhaInicial[] = [];
+    const formatPt = (n: number) =>
+      n.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      if (!g) continue;
+      const tipo = String(
+        g.get('itemTipo')?.value ?? 'Serviço',
+      ) as TipoLinhaAtendimento;
+
+      if (tipo === 'Serviço') {
+        const sid = String(g.get('servico_id')?.value ?? '').trim();
+        const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+        const prof = (g.get('profissional')?.value ?? null) as number | null;
+        const q = Math.max(0.01, Number(g.get('quantidade')?.value) || 1);
+        const svc = this.servicoPorIdQualquerComanda(sid);
+        const unit = precoUnitarioServicoCatalogo(svc, tam) ?? 0;
+        out.push({
+          itemTipo: 'Serviço',
+          servico_id: sid,
+          tamanho: tam,
+          profissional: prof,
+          quantidade: q,
+          valorUnitStr: formatPt(unit),
+          descontoStr: '0,00',
+        });
+      } else if (tipo === 'Produto') {
+        const nome = String(g.get('produto')?.value ?? '').trim();
+        const q = Math.max(0.01, Number(g.get('quantidade')?.value) || 1);
+        const manual = this.parseValorPt(
+          String(g.get('preco_unitario')?.value ?? '').trim(),
+        );
+        let unit = manual;
+        if (unit == null || unit <= 0) {
+          unit = this.precoCatalogoProduto(nome) ?? 0;
+        }
+        out.push({
+          itemTipo: 'Produto',
+          profissional: (g.get('profissional')?.value ?? null) as number | null,
+          resumoNaoServico: nome || 'Produto',
+          quantidade: q,
+          valorUnitStr: formatPt(unit ?? 0),
+          descontoStr: '0,00',
+        });
+      } else if (tipo === 'Mega' || tipo === 'Pacote') {
+        const pac = String(g.get('pacote')?.value ?? '').trim();
+        const prof = (g.get('profissional')?.value ?? null) as number | null;
+        const resumo = pac ? `${tipo} — ${pac}` : tipo;
+        out.push({
+          itemTipo: tipo,
+          profissional: prof,
+          resumoNaoServico: resumo,
+          quantidade: 1,
+          valorUnitStr: '0,00',
+          descontoStr: '0,00',
+        });
+      } else if (tipo === 'Cabelo') {
+        const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
+        const vc = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+        const unit = vc != null && vc > 0 ? vc : 0;
+        const prof = (g.get('profissional_cabelo')?.value ??
+          g.get('profissional')?.value ??
+          null) as number | null;
+        out.push({
+          itemTipo: 'Cabelo',
+          profissional: prof,
+          resumoNaoServico: det || 'Cabelo',
+          quantidade: 1,
+          valorUnitStr: formatPt(unit),
+          descontoStr: '0,00',
+        });
+      }
+    }
+    return out;
+  }
+
   onAbrirComandaClick(ev: MouseEvent): void {
     ev.stopPropagation();
     const ymd =
@@ -861,14 +943,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       this.comandaAbertaParaClienteNoDia,
       this.idComandaPedidoAberto,
     );
+    const idAtendimento =
+      this.idAtendimentoEmEdicao?.trim() ||
+      this.idComandaPedidoAberto?.trim() ||
+      null;
     this.abrirComanda.emit({
       acessar: this.comandaAbertaParaClienteNoDia,
-      idAtendimento: this.idComandaPedidoAberto,
+      idAtendimento,
       numeroComandaTitulo,
       clienteId,
       cliente: this.clienteSelecionado(),
       opcoesClientes: this.opcoesClientesNomes(),
       dataYmd: ymd || null,
+      linhasSnapshot: this.montarLinhasSnapshotParaComanda(),
     });
   }
 
@@ -933,14 +1020,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.aplicarContextoSlotInput();
         const ymd = normalizarDataIso(String(this.form.get('data')?.value ?? ''));
         if (ymd) this.atualizarOcupacaoDia(ymd);
-      }
-    }
-
-    const sinc = ch['sincDadosDia'];
-    if (sinc && this.modoModal && !sinc.firstChange) {
-      const id = this.contextoSlot?.id_atendimento?.trim();
-      if (id && !this.form.dirty) {
-        this.carregarEdicaoPorIdParaModal(id);
       }
     }
 
@@ -1415,6 +1494,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const sid = String(id ?? '').trim();
     if (!sid) return undefined;
     return this.servicosTipoServico.find((s) => String(s.id) === sid);
+  }
+
+  /** Preço na comanda: procura também em `servicos` completo. */
+  private servicoPorIdQualquerComanda(
+    id: string | null | undefined,
+  ): Servico | undefined {
+    const sid = String(id ?? '').trim();
+    if (!sid) return undefined;
+    return (
+      this.servicoPorId(id) ??
+      this.servicos.find((s) => String(s.id) === sid)
+    );
   }
 
   /** Fixo não usa tamanho no payload; Tamanho (e legado Serviço) enviam tamanho. */

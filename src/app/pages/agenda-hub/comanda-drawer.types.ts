@@ -1,3 +1,4 @@
+import type { ComandaLinhaInicial } from '../../core/models/comanda-linha-inicial';
 import type { Cliente } from '../../core/models/api.models';
 import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 
@@ -5,6 +6,11 @@ import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 export type ComandaDrawerContextoAgenda = {
   acessar: boolean;
   idAtendimento?: string | null;
+  /**
+   * Linhas do pedido no formulário de agendamento (quando ainda não há `idAtendimento`
+   * ou como referência). O drawer prefere dados da API quando `idAtendimento` devolve linhas.
+   */
+  linhasSnapshot?: ComandaLinhaInicial[];
   /**
    * Índice exibido no título «Editando comanda #N»: entre comandas abertas do cliente no dia,
    * ou `abertas + 1` ao criar nova.

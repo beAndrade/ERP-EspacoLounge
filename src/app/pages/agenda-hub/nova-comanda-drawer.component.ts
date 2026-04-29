@@ -13,11 +13,13 @@ import { FormArray, FormBuilder, FormGroup, FormControl, ReactiveFormsModule, Va
 import { forkJoin, of, catchError } from 'rxjs';
 import { AgendaNovoClientSidebarComponent } from '../agenda-novo/agenda-novo-client-sidebar.component';
 import { SaasSelectComponent, type SaasSelectOption } from '../agenda-novo/saas-select.component';
+import type { ComandaLinhaInicial } from '../../core/models/comanda-linha-inicial';
 import type {
   AtendimentoListaItem,
   ProfissionalListaItem,
   Servico,
 } from '../../core/models/api.models';
+import { precoUnitarioServicoCatalogo } from '../../core/utils/servico-preco';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import {
   linhaResumoAtendimentoLista,
@@ -290,34 +292,6 @@ export class NovaComandaDrawerComponent implements OnInit {
     return '';
   }
 
-  /**
-   * Preço unitário no catálogo (aba Serviços), alinhado à API `listServicosForApi`.
-   */
-  private precoUnitarioServicoCatalogo(
-    s: Servico | undefined,
-    tamanho: string,
-  ): number | null {
-    if (!s) return null;
-    const tipo = String(s['Tipo'] ?? '')
-      .trim()
-      .toLowerCase();
-    if (tipo === 'fixo') {
-      const v = valorMonetarioParaNumero(s['Valor Base']);
-      return v != null && v > 0 ? v : null;
-    }
-    const tam = (tamanho || 'Curto').trim();
-    const keyMap: Record<string, string> = {
-      Curto: 'Preço Curto',
-      Médio: 'Preço Médio',
-      'M/L': 'Preço Médio/Longo',
-      Longo: 'Preço Longo',
-    };
-    const col = keyMap[tam] ?? 'Preço Curto';
-    const raw = (s as Record<string, unknown>)[col];
-    const v = valorMonetarioParaNumero(raw);
-    return v != null && v > 0 ? v : null;
-  }
-
   private tamanhoDaLinha(l: AtendimentoListaItem): string {
     const itens = l.itens_catalogo ?? l.itens ?? [];
     for (const it of itens) {
@@ -353,7 +327,7 @@ export class NovaComandaDrawerComponent implements OnInit {
     let total = Math.max(0, v - d);
     let unit = q > 0 ? total / q : total;
     if ((total <= 0 || unit <= 0) && this.servicoIdDaLinha(l)) {
-      const cat = this.precoUnitarioServicoCatalogo(
+      const cat = precoUnitarioServicoCatalogo(
         this.servicoPorIdQualquer(this.servicoIdDaLinha(l)),
         this.tamanhoDaLinha(l),
       );
@@ -389,6 +363,52 @@ export class NovaComandaDrawerComponent implements OnInit {
       valorUnitStr: ['0,00'],
       descontoStr: ['0,00'],
     });
+  }
+
+  private formFromSnapshot(row: ComandaLinhaInicial): FormGroup {
+    const tipo = this.mapTipoSnapshot(row.itemTipo);
+    const q = Math.max(0.01, Number(row.quantidade) || 1);
+    const vu = String(row.valorUnitStr ?? '0,00').trim() || '0,00';
+    const ds = String(row.descontoStr ?? '0,00').trim() || '0,00';
+    if (tipo === 'Serviço') {
+      return this.fb.group({
+        itemTipo: this.fb.control<TipoLinhaComanda>('Serviço'),
+        servico_id: [String(row.servico_id ?? '').trim()],
+        tamanho: this.fb.nonNullable.control(
+          String(row.tamanho ?? 'Curto').trim() || 'Curto',
+        ),
+        profissional: this.fb.control<number | null>(row.profissional ?? null),
+        resumoNaoServico: [''],
+        quantidade: this.fb.control(q, { validators: [Validators.min(0.01)] }),
+        valorUnitStr: [vu],
+        descontoStr: [ds],
+      });
+    }
+    return this.fb.group({
+      itemTipo: this.fb.control(tipo),
+      servico_id: [''],
+      tamanho: this.fb.nonNullable.control('Curto'),
+      profissional: this.fb.control<number | null>(row.profissional ?? null),
+      resumoNaoServico: [
+        String(row.resumoNaoServico ?? '').trim() || '—',
+      ],
+      quantidade: this.fb.control(q, { validators: [Validators.min(0.01)] }),
+      valorUnitStr: [vu],
+      descontoStr: [ds],
+    });
+  }
+
+  private mapTipoSnapshot(t: string): TipoLinhaComanda {
+    const x = String(t ?? '').trim();
+    if (
+      x === 'Produto' ||
+      x === 'Mega' ||
+      x === 'Pacote' ||
+      x === 'Cabelo'
+    ) {
+      return x;
+    }
+    return 'Serviço';
   }
 
   private formFromApi(l: AtendimentoListaItem): FormGroup {
@@ -496,15 +516,27 @@ export class NovaComandaDrawerComponent implements OnInit {
       this.pendenteSyncAposCatalogo = true;
       return;
     }
-    const idOk = (this.contexto()?.idAtendimento ?? '').trim();
+    const ctx = this.contexto();
+    const idOk = (ctx?.idAtendimento ?? '').trim();
+    const snap = ctx?.linhasSnapshot;
+
     this.linhasComandaArray.clear();
+
     if (idOk && this.linhasAtendimentoApi.length > 0) {
       for (const l of this.linhasAtendimentoApi) {
         this.linhasComandaArray.push(this.formFromApi(l));
       }
-    } else {
-      this.linhasComandaArray.push(this.criarFormLinhaVazia('Serviço'));
+      return;
     }
+
+    if (snap && snap.length > 0) {
+      for (const row of snap) {
+        this.linhasComandaArray.push(this.formFromSnapshot(row));
+      }
+      return;
+    }
+
+    this.linhasComandaArray.push(this.criarFormLinhaVazia('Serviço'));
   }
 
   @HostListener('click', ['$event'])
