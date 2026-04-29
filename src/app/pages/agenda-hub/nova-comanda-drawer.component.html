@@ -123,6 +123,7 @@
                               [options]="opcoesServicosCatalogo()"
                               placeholder="Selecionar serviço"
                               aria-label="Serviço"
+                              (picked)="onServicoOuTamanhoComandaChange(i)"
                             />
                           </div>
                           @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
@@ -134,6 +135,7 @@
                                 [options]="opcoesTamanhosSelect()"
                                 placeholder="Tamanho…"
                                 aria-label="Tamanho (preço)"
+                                (picked)="onServicoOuTamanhoComandaChange(i)"
                               />
                             </div>
                           }

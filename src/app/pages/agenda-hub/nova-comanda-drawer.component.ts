@@ -241,12 +241,35 @@ export class NovaComandaDrawerComponent implements OnInit {
     );
   }
 
-  /** Igual a `precisaTamanhoServicoId` do agendamento. */
+  /** Igual a `precisaTamanhoServicoId` do agendamento (catálogo completo). */
   precisaTamanhoServicoId(id: string | null | undefined): boolean {
-    const s = this.servicoPorId(id);
+    const s = this.servicoPorIdQualquer(id);
     if (!s) return false;
     const t = String(s['Tipo'] ?? '').trim().toLowerCase();
     return t === 'tamanho' || t === 'serviço' || t === 'servico';
+  }
+
+  /**
+   * Ao escolher serviço ou tamanho na comanda, preenche o valor unitário com o preço do catálogo.
+   */
+  onServicoOuTamanhoComandaChange(i: number): void {
+    this.atualizarValorUnitarioLinhaServico(i);
+  }
+
+  private atualizarValorUnitarioLinhaServico(i: number): void {
+    const g = this.linhasComandaArray.at(i);
+    if (!g) return;
+    if (g.get('itemTipo')?.value !== 'Serviço') return;
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    if (!sid) return;
+    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+    const svc = this.servicoPorIdQualquer(sid);
+    const preco = precoUnitarioServicoCatalogo(svc, tam);
+    if (preco == null || preco <= 0) return;
+    g.patchValue(
+      { valorUnitStr: this.formatarInputPt(preco) },
+      { emitEvent: true },
+    );
   }
 
   private mapTipoForm(l: AtendimentoListaItem): TipoLinhaComanda {
