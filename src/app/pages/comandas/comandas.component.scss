@@ -47,6 +47,27 @@
   margin-top: 0.75rem;
 }
 
+/** Ícones Lucide na toolbar / coluna configurar — exibição 14×14px (viewBox 24). */
+.comandas-icon-sm {
+  flex-shrink: 0;
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.comandas-table thead .col-gear .icon-btn.comandas-table__settings {
+  min-width: unset;
+  min-height: unset;
+  padding: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    display: block;
+  }
+}
+
 /* Buscar / Filtrar — brancos com borda suave; + Novo — cor de destaque (modificador --link). */
 .comandas-head__toolbar-btn {
   display: inline-flex;

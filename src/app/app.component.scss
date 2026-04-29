@@ -424,6 +424,12 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
+/** Ícone menor (ex.: lucide-settings em Configurações), 14×14px. */
+.nav-item__icon.nav-item__icon--14 {
+  width: 14px;
+  height: 14px;
+}
+
 .nav-item__label {
   overflow: hidden;
   text-overflow: ellipsis;
