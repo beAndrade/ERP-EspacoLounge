@@ -657,13 +657,12 @@
   max-width: none;
   margin: 0;
   box-sizing: border-box;
-  /** Encostado à sidebar (esq.) e à viewport (dir.); respiro só no safe-area e top/bottom. */
-  padding: clamp(0.5rem, 1.2vw, 0.75rem) max(0.5rem, env(safe-area-inset-right, 0px)) clamp(0.75rem, 2vw, 1.25rem) 0;
+  padding: 0;
 }
 
 @media (max-width: 640px) {
   .main {
-    padding: 0.5rem max(0.5rem, env(safe-area-inset-right, 0px)) 1rem 0;
+    padding: 0;
   }
 }
 
