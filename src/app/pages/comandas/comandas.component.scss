@@ -10,17 +10,17 @@
   box-sizing: border-box;
 }
 
-/** Topo (título + toolbar + filtros + alertas) — separado no DOM da tabela */
+/** Topo (título + toolbar + filtros + alertas) — sem gap vertical extra */
 .comandas-page__lead {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0;
 }
 
-/** Cartão da grelha: irmão do bloco `lead`, destacado só */
+/** Cartão colado ao bloco inicial */
 .comandas-page > .comandas-page__lead + .comandas-table-card {
-  margin-top: 1.75rem;
+  margin-top: 0;
 }
 
 .comandas-head {
@@ -61,10 +61,6 @@
   margin-left: auto;
 }
 
-.comandas-head__search-row {
-  margin-top: 0.75rem;
-}
-
 /** Ícones Lucide na toolbar / coluna configurar — exibição 14×14px (viewBox 24). */
 .comandas-icon-sm {
   flex-shrink: 0;
@@ -86,8 +82,9 @@
   }
 }
 
-/* Buscar / Filtrar — brancos com borda suave; + Novo — cor de destaque (modificador --link). */
+/* Buscar / Filtrar: ghost igual a `.btn-footer--ghost`; Novo hover como Salvar modal */
 .comandas-head__toolbar-btn {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -103,40 +100,68 @@
   text-decoration: none;
   cursor: pointer;
   outline: none;
-  border: 1px solid #f1f1f1;
+  border: 1px solid #e7e5e4;
   border-radius: 12px;
-  background: #ffffff;
+  background: transparent;
   transition:
-    color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1),
-    background 0.2s cubic-bezier(0.645, 0.045, 0.355, 1),
-    border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 
-  &:hover:not(:disabled) {
-    color: #000000d9;
-    background: #fafafa;
-    border-color: #e8e8e8;
+  &:hover:not(:disabled):not(.comandas-head__toolbar-btn--filtro-on):not(.comandas-head__toolbar-btn--link) {
+    color: #7a88ff;
+    border-color: #7a88ff;
+    background: #ffffff;
   }
 
-  &--active:not(.comandas-head__toolbar-btn--link) {
-    color: #000000e6;
-    background: #f5f5f5;
-    border-color: #e5e5e5;
+  &.comandas-head__toolbar-btn--search-open:not(.comandas-head__toolbar-btn--link) {
+    color: #505afb;
+    border-color: #505afb;
+    background: #ffffff;
   }
 
-  &--link {
+  &.comandas-head__toolbar-btn--search-open:hover:not(:disabled):not(.comandas-head__toolbar-btn--link) {
+    color: #7a88ff;
+    border-color: #7a88ff;
+    background: #ffffff;
+  }
+
+  &.comandas-head__toolbar-btn--filtro-on {
+    background: #efaf41;
+    border-color: #efaf41;
+    color: #ffffff;
+    animation: comandasFiltroPulse 1.5s ease-out infinite;
+
+    svg {
+      color: #ffffff;
+      stroke: currentColor;
+    }
+
+    &:hover:not(:disabled) {
+      animation: none;
+      background: #f4be5a;
+      border-color: #f4be5a;
+      color: #ffffff;
+      box-shadow: none;
+    }
+  }
+
+  &.comandas-head__toolbar-btn--link {
     border-color: #811741;
     background-color: #811741;
     color: #ffffff;
+    font-weight: 500;
 
     &:hover:not(:disabled) {
-      border-color: #6f1437;
-      background-color: #6f1437;
+      background-color: #9d3a5c;
+      border-color: #9d3a5c;
       color: #ffffff;
     }
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid #505afb;
     outline-offset: 2px;
   }
 
@@ -146,24 +171,92 @@
   }
 }
 
+@keyframes comandasFiltroPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 175, 65, 0.45);
+  }
+  45% {
+    box-shadow: 0 0 0 10px rgba(239, 175, 65, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 175, 65, 0);
+  }
+}
+
 .comandas-head__toolbar-label {
   @media (max-width: 520px) {
     display: none;
   }
 }
 
-.comandas-head__search {
-  display: block;
+/** Barra ao abrir Buscar — pill única + enter à direita (ícone pesquisa). */
+.comandas-search-bar {
   width: 100%;
+  max-width: 720px;
+  margin-top: 0;
+  padding-top: 0;
+}
 
-  input {
-    width: 100%;
-    max-width: 420px;
-    min-height: var(--touch-min);
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--radius);
-    border: 1px solid #d6d3d1;
-    background: var(--color-surface);
+.comandas-search-bar__pill {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-height: 40px;
+  background: #ffffff;
+  border-radius: 999px;
+  border: 1px solid #505afb;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.comandas-search-bar__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  outline: none;
+  padding: 0.5rem 1rem 0.5rem 1.1rem;
+  font: inherit;
+  font-size: 14px;
+  color: #1c1917;
+  background: transparent;
+
+  &::placeholder {
+    color: #a8a29e;
+  }
+}
+
+.comandas-search-bar__submit {
+  flex: 0 0 44px;
+  width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-left: 1px solid rgba(80, 90, 251, 0.25);
+  border-radius: 0 999px 999px 0;
+  background: #ffffff;
+  color: #505afb;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  svg {
+    display: block;
+  }
+
+  &:hover:not(:disabled) {
+    background: #f8faff;
+    color: #7a88ff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #505afb;
+    outline-offset: -2px;
+    z-index: 1;
   }
 }
 

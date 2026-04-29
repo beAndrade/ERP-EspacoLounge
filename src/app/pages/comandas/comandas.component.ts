@@ -120,6 +120,19 @@ export class ComandasComponent implements OnInit {
     this.buscaAberta = !this.buscaAberta;
   }
 
+  /** Enter / botão direito: fecha o teclado; a lista já filtra em tempo real. */
+  onBuscaSubmit(): void {
+    const el = document.getElementById('comandas-busca-input');
+    if (el instanceof HTMLInputElement) {
+      el.blur();
+    }
+  }
+
+  onBuscaEnter(ev: Event): void {
+    ev.preventDefault();
+    this.onBuscaSubmit();
+  }
+
   gruposFiltrados(): ComandaGrupo[] {
     const q = this.busca.trim().toLowerCase();
     let list = this.grupos;
