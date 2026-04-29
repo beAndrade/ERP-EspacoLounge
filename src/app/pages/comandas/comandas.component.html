@@ -3,26 +3,12 @@
     <div class="comandas-head__title-row">
       <div class="comandas-head__left">
         <h1 class="comandas-head__title">Comandas</h1>
-        <div class="comandas-head__title-actions" aria-hidden="true">
-          <button type="button" class="icon-btn" title="Em breve" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
-          </button>
-          <button type="button" class="icon-btn" title="Ajuda" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-              <path d="M12 17h.01" />
-            </svg>
-          </button>
-        </div>
       </div>
       <div class="comandas-head__actions">
         <button
           type="button"
-          class="btn btn--ghost"
-          [class.btn--active]="buscaAberta"
+          class="comandas-head__toolbar-btn"
+          [class.comandas-head__toolbar-btn--active]="buscaAberta"
           (click)="toggleBusca()"
           aria-label="Buscar"
           title="Buscar"
@@ -31,12 +17,12 @@
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.3-4.3" />
           </svg>
-          <span class="btn__label">Buscar</span>
+          <span class="comandas-head__toolbar-label">Buscar</span>
         </button>
         <button
           type="button"
-          class="btn btn--ghost"
-          [class.btn--active]="filtrosAbertos"
+          class="comandas-head__toolbar-btn"
+          [class.comandas-head__toolbar-btn--active]="filtrosAbertos"
           (click)="toggleFiltros()"
           aria-label="Filtrar por período"
           title="Filtrar"
@@ -44,9 +30,9 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
           </svg>
-          <span class="btn__label">Filtrar</span>
+          <span class="comandas-head__toolbar-label">Filtrar</span>
         </button>
-        <a routerLink="/agenda/novo" class="btn primary">+ Novo</a>
+        <a routerLink="/agenda/novo" class="comandas-head__toolbar-btn comandas-head__toolbar-btn--link">+ Novo</a>
       </div>
     </div>
     @if (buscaAberta) {
@@ -114,11 +100,11 @@
                   title="Selecionar página"
                 />
               </th>
-              <th scope="col">Ticket</th>
+              <th class="col-ticket" scope="col">Ticket</th>
               <th scope="col">Data</th>
               <th scope="col">Cliente</th>
               <th scope="col">Status</th>
-              <th scope="col">Valor</th>
+              <th class="col-valor" scope="col">Valor</th>
               <th scope="col">Pagamento</th>
               <th class="col-gear" scope="col">
                 <span class="sr-only">Colunas</span>
@@ -169,7 +155,7 @@
                       [attr.aria-label]="'Selecionar comanda ' + rotuloTicket(g)"
                     />
                   </td>
-                  <td>
+                  <td class="col-ticket">
                     @if (idAtendimento(g); as idAt) {
                       <a
                         [routerLink]="['/agenda/novo']"
@@ -196,7 +182,7 @@
                       [class.badge--ok]="pagamentoConfirmado(g)"
                     >{{ rotuloStatus(g) }}</span>
                   </td>
-                  <td>
+                  <td class="col-valor">
                     @if (valorExibicao(g) !== null) {
                       {{ valorExibicao(g)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
                     } @else {
@@ -253,33 +239,35 @@
       </div>
 
       <footer class="comandas-footer">
-        <span class="comandas-footer__total">
-          {{ carregando ? '…' : totalFiltrado() }} no total
-        </span>
-        <div class="comandas-footer__pager">
-          <button
-            type="button"
-            class="icon-btn"
-            (click)="paginaAnterior()"
-            [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
-            aria-label="Página anterior"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </button>
-          <span class="comandas-footer__page-num" aria-current="page">{{ pagina }}</span>
-          <button
-            type="button"
-            class="icon-btn"
-            (click)="paginaSeguinte()"
-            [disabled]="carregando || pagina >= totalPaginas() || totalFiltrado() === 0"
-            aria-label="Página seguinte"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </button>
+        <div class="comandas-footer__toolbar">
+          <span class="comandas-footer__total">
+            {{ carregando ? '…' : totalFiltrado() }} no total
+          </span>
+          <div class="comandas-footer__pager">
+            <button
+              type="button"
+              class="comandas-footer__chev"
+              (click)="paginaAnterior()"
+              [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
+              aria-label="Página anterior"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <span class="comandas-footer__page-num" aria-current="page">{{ pagina }}</span>
+            <button
+              type="button"
+              class="comandas-footer__chev"
+              (click)="paginaSeguinte()"
+              [disabled]="carregando || pagina >= totalPaginas() || totalFiltrado() === 0"
+              aria-label="Página seguinte"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+          </div>
         </div>
         <label class="comandas-footer__per-page">
           <span class="sr-only">Itens por página</span>
