@@ -15,6 +15,7 @@
   gap: 0.4rem;
   width: 100%;
   max-width: 100%;
+  overflow-x: hidden;
   background: var(--color-bg);
 }
 
@@ -81,6 +82,7 @@
 .app-main-column {
   flex: 1 1 0;
   min-width: 0;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -655,14 +657,48 @@
   width: 100%;
   min-width: 0;
   max-width: none;
+  overflow-x: hidden;
   margin: 0;
   box-sizing: border-box;
-  padding: 0;
+  padding: 0 0 0 8px;
+}
+
+/* Padrão visual de inputs em todos os drawers da aplicação. */
+.app-drawer input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']) {
+  background: #ffffff;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #f1f1f1;
+  transition:
+    background-color 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+
+/* Drawer de cliente (comandas): inputs de formulário principal e aside com raio 12px.
+ * Não aplica ao campo assimétrico de desconto nem ao texto das redes à direita do prefixo. */
+.app-drawer.cliente-drawer .cliente-main .cliente-form-grid .cliente-field__inner > input,
+.app-drawer.cliente-drawer .cliente-side .cliente-side-content label:not(.cliente-social-field) input {
+  border-radius: 12px;
+  height: 32px;
+  min-height: 32px;
+  box-sizing: border-box;
+}
+
+.app-drawer.cliente-drawer .cliente-main .cliente-phone-input {
+  border-radius: 12px;
+  height: 32px;
+  min-height: 32px;
+  box-sizing: border-box;
+}
+.app-drawer input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):hover {
+  border-color: var(--color-primary, #505afb);
 }
 
 @media (max-width: 640px) {
   .main {
-    padding: 0;
+    padding: 0 0 0 6px;
   }
 }
 

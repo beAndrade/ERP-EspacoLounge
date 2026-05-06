@@ -220,7 +220,7 @@
                 <col class="comandas-table__col-data" />
                 <col class="comandas-table__col-cliente" />
                 <col class="comandas-table__col-status" />
-                <col />
+                <col class="comandas-table__col-valor" />
                 <col class="comandas-table__col-pagamento" />
                 <col class="comandas-table__col-menu" />
               </colgroup>
@@ -567,20 +567,14 @@
           <div class="cliente-head__title-wrap">
             <div class="cliente-head__title-row">
               <span class="cliente-head__user-icon" aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                @if (cadastroFotoUrl) {
+                  <img [src]="cadastroFotoUrl" alt="" />
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round-icon lucide-user-round">
+                    <circle cx="12" cy="8" r="5"/>
+                    <path d="M20 21a8 8 0 0 0-16 0"/>
+                  </svg>
+                }
               </span>
               <h2 class="cliente-head__title">{{ tituloCabecalhoClienteDrawer() }}</h2>
             </div>
@@ -622,13 +616,37 @@
             <main class="cliente-main">
               @if (clienteAbaAtiva === 'Cadastro') {
                 <div class="cliente-photo-block">
-                  <div class="cliente-photo" aria-hidden="true"></div>
+                  <div class="cliente-photo" aria-hidden="true">
+                    @if (cadastroFotoUrl) {
+                      <img [src]="cadastroFotoUrl" alt="Foto do cliente" />
+                    } @else {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round-icon lucide-user-round">
+                        <circle cx="12" cy="8" r="5"/>
+                        <path d="M20 21a8 8 0 0 0-16 0"/>
+                      </svg>
+                    }
+                  </div>
+                  <input
+                    #fotoInput
+                    type="file"
+                    accept="image/*"
+                    class="cliente-photo-file-input"
+                    (change)="onFotoSelecionada($event)"
+                  />
                   <div class="cliente-photo-actions">
-                    <button type="button" class="cliente-photo-btn cliente-photo-btn--primary">
+                    <button
+                      type="button"
+                      class="cliente-photo-btn cliente-photo-btn--primary"
+                      (click)="fotoInput.click()"
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                       Alterar
                     </button>
-                    <button type="button" class="cliente-photo-btn cliente-photo-btn--danger">
+                    <button
+                      type="button"
+                      class="cliente-photo-btn cliente-photo-btn--danger"
+                      (click)="removerFotoSelecionada()"
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                       Remover
                     </button>
@@ -657,16 +675,14 @@
                       <label class="cliente-field__inner">
                         <span class="cliente-field-label">Celular</span>
                         <div class="cliente-phone-input">
-                          <span class="cliente-phone-input__prefix" aria-hidden="true">
-                            <span class="cliente-phone-input__flag">🇧🇷</span>
-                            +55
-                          </span>
                           <input
                             type="tel"
                             [(ngModel)]="cadastroCelular"
+                            (ngModelChange)="onCelularChange($event)"
                             name="cc_celular"
                             inputmode="numeric"
                             autocomplete="tel-national"
+                            placeholder="(11) 99999-9999"
                           />
                         </div>
                       </label>
@@ -675,16 +691,14 @@
                       <label class="cliente-field__inner">
                         <span class="cliente-field-label">Telefone</span>
                         <div class="cliente-phone-input">
-                          <span class="cliente-phone-input__prefix" aria-hidden="true">
-                            <span class="cliente-phone-input__flag">🇧🇷</span>
-                            +55
-                          </span>
                           <input
                             type="tel"
                             [(ngModel)]="cadastroTelefone"
+                            (ngModelChange)="onTelefoneChange($event)"
                             name="cc_telefone"
                             inputmode="numeric"
                             autocomplete="tel"
+                            placeholder="(11) 3333-4444"
                           />
                         </div>
                       </label>
@@ -754,17 +768,19 @@
                     <span class="cliente-side-chevron" [class.cliente-side-chevron--open]="secaoEnderecoAberta"></span>
                   </button>
                 </div>
-                @if (secaoEnderecoAberta) {
-                  <div class="cliente-side-content endereco-grid">
-                    <label><span class="cliente-field-label">CEP</span><input type="text" placeholder="CEP" /></label>
-                    <label class="full"><span class="cliente-field-label">Logradouro</span><input type="text" placeholder="Rua, Avenida, Travessa..." /></label>
-                    <label><span class="cliente-field-label">Número</span><input type="text" placeholder="Número" /></label>
-                    <label><span class="cliente-field-label">Complemento</span><input type="text" placeholder="Complemento" /></label>
-                    <label><span class="cliente-field-label">Bairro</span><input type="text" placeholder="Bairro" /></label>
-                    <label><span class="cliente-field-label">Estado</span><input type="text" value="São Paulo" /></label>
-                    <label><span class="cliente-field-label">Cidade</span><input type="text" value="São Paulo" /></label>
-                  </div>
-                }
+                <div
+                  class="cliente-side-content endereco-grid"
+                  [class.cliente-side-content--open]="secaoEnderecoAberta"
+                  [attr.aria-hidden]="!secaoEnderecoAberta"
+                >
+                  <label><span class="cliente-field-label">CEP</span><input type="text" placeholder="CEP" /></label>
+                  <label class="full"><span class="cliente-field-label">Logradouro</span><input type="text" placeholder="Rua, Avenida, Travessa..." /></label>
+                  <label><span class="cliente-field-label">Número</span><input type="text" placeholder="Número" /></label>
+                  <label><span class="cliente-field-label">Complemento</span><input type="text" placeholder="Complemento" /></label>
+                  <label><span class="cliente-field-label">Bairro</span><input type="text" placeholder="Bairro" /></label>
+                  <label><span class="cliente-field-label">Estado</span><input type="text" placeholder="Estado" /></label>
+                  <label><span class="cliente-field-label">Cidade</span><input type="text" placeholder="Cidade" /></label>
+                </div>
               </div>
 
               <div class="cliente-side-block">
@@ -779,12 +795,36 @@
                     <span class="cliente-side-chevron" [class.cliente-side-chevron--open]="secaoRedesAberta"></span>
                   </button>
                 </div>
-                @if (secaoRedesAberta) {
-                  <div class="cliente-side-content">
-                    <label><span class="cliente-field-label">Instagram</span><input type="text" placeholder="instagram.com/" /></label>
-                    <label><span class="cliente-field-label">Facebook</span><input type="text" placeholder="facebook.com/" /></label>
-                  </div>
-                }
+                <div
+                  class="cliente-side-content"
+                  [class.cliente-side-content--open]="secaoRedesAberta"
+                  [attr.aria-hidden]="!secaoRedesAberta"
+                >
+                  <label class="cliente-social-field">
+                    <span class="cliente-field-label">Instagram</span>
+                    <div class="cliente-social-input">
+                      <span class="cliente-social-input__prefix">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-instagram" viewBox="0 0 16 16" aria-hidden="true">
+                          <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/>
+                        </svg>
+                        instagram.com/
+                      </span>
+                      <input type="text" placeholder="Instagram do cliente" />
+                    </div>
+                  </label>
+                  <label class="cliente-social-field">
+                    <span class="cliente-field-label">Facebook</span>
+                    <div class="cliente-social-input">
+                      <span class="cliente-social-input__prefix">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-facebook" viewBox="0 0 16 16" aria-hidden="true">
+                          <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951"/>
+                        </svg>
+                        facebook.com/
+                      </span>
+                      <input type="text" placeholder="Facebook do cliente" />
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <div class="cliente-side-block cliente-side-block--last">
@@ -799,13 +839,22 @@
                     <span class="cliente-side-chevron" [class.cliente-side-chevron--open]="secaoConfiguracoesAberta"></span>
                   </button>
                 </div>
-                @if (secaoConfiguracoesAberta) {
-                  <div class="cliente-side-content cliente-side-content--settings">
+                <div
+                  class="cliente-side-content cliente-side-content--settings"
+                  [class.cliente-side-content--open]="secaoConfiguracoesAberta"
+                  [attr.aria-hidden]="!secaoConfiguracoesAberta"
+                >
                     <div class="cliente-discount-wrap">
                       <span class="cliente-field-label cliente-field-label--with-help">
                         Desconto padrão
-                        <button type="button" class="cliente-info-btn" tabindex="-1" aria-label="Ajuda sobre desconto padrão" title="Ajuda sobre desconto">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                        <button type="button" class="cliente-info-btn cliente-info-btn--discount" aria-label="Ajuda sobre desconto padrão">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info-icon lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                          <span class="cliente-info-tooltip" role="tooltip">
+                            <strong>Desconto padrão</strong>
+                            Defina um desconto em porcentagem para ser aplicado nas comandas desse cliente.<br />
+                            Se a opção Na comanda for selecionada, o desconto será aplicado no valor total da comanda.<br />
+                            Se a opção No Item for selecionada, o desconto será aplicado nos itens da comanda.
+                          </span>
                         </button>
                       </span>
                       <div class="cliente-discount">
@@ -825,31 +874,39 @@
                             [class.cliente-discount__toggle--open]="descontoDropdownAberto"
                             (click)="toggleDescontoDropdown($event)"
                           >
-                            <span class="cliente-discount__toggle-label">{{ descontoPadraoModo }}</span>
-                            <span class="cliente-discount__toggle-chev" aria-hidden="true"></span>
+                            <span class="cliente-discount__toggle-label">
+                              {{ descontoPadraoModo }}
+                            <svg class="cliente-discount__toggle-chev" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M6 9l6 6 6-6" />
+                            </svg>
+                            </span>
                           </button>
-                          @if (descontoDropdownAberto) {
-                            <div class="cliente-discount__menu" role="listbox" (click)="$event.stopPropagation()">
-                              <button
-                                type="button"
-                                role="option"
-                                class="cliente-discount__opt"
-                                [class.cliente-discount__opt--active]="descontoPadraoModo === 'Na comanda'"
-                                (click)="selecionarDescontoModo('Na comanda')"
-                              >
-                                Na comanda
-                              </button>
-                              <button
-                                type="button"
-                                role="option"
-                                class="cliente-discount__opt"
-                                [class.cliente-discount__opt--active]="descontoPadraoModo === 'No item'"
-                                (click)="selecionarDescontoModo('No item')"
-                              >
-                                No item
-                              </button>
-                            </div>
-                          }
+                          <div
+                            class="cliente-discount__menu"
+                            [class.cliente-discount__menu--open]="descontoDropdownAberto"
+                            role="listbox"
+                            [attr.aria-hidden]="!descontoDropdownAberto"
+                            (click)="$event.stopPropagation()"
+                          >
+                            <button
+                              type="button"
+                              role="option"
+                              class="cliente-discount__opt"
+                              [class.cliente-discount__opt--active]="descontoPadraoModo === 'Na comanda'"
+                              (click)="selecionarDescontoModo('Na comanda')"
+                            >
+                              Na comanda
+                            </button>
+                            <button
+                              type="button"
+                              role="option"
+                              class="cliente-discount__opt"
+                              [class.cliente-discount__opt--active]="descontoPadraoModo === 'No item'"
+                              (click)="selecionarDescontoModo('No item')"
+                            >
+                              No item
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -870,7 +927,6 @@
                       </div>
                     </div>
                   </div>
-                }
               </div>
             </aside>
           </div>

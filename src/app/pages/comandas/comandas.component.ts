@@ -130,6 +130,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   cadastroCnpj = '';
   cadastroCpf = '';
   cadastroRg = '';
+  cadastroFotoUrl = '';
   secaoEnderecoAberta = false;
   secaoRedesAberta = false;
   secaoConfiguracoesAberta = true;
@@ -342,13 +343,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
       dataYmd: toYmd(new Date()),
       linhasSnapshot: [],
     };
-    this.comandaPainelAberto = true;
-    this.comandaDrawerPanelOpen = false;
-    this.bloquearScrollPagina();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        this.comandaDrawerPanelOpen = true;
-      });
+    this.abrirDrawerComAnimacao(() => {
+      this.comandaPainelAberto = true;
+    }, (open) => {
+      this.comandaDrawerPanelOpen = open;
     });
   }
 
@@ -409,6 +407,23 @@ export class ComandasComponent implements OnInit, OnDestroy {
     body.style.paddingRight = '';
     this.pageScrollLockAtivo = false;
     window.scrollTo(0, this.bodyScrollPreDrawer);
+  }
+
+  /** Reuso padrão para abertura animada dos drawers laterais. */
+  private abrirDrawerComAnimacao(
+    marcarDrawerAberto: () => void,
+    setPanelOpen: (open: boolean) => void,
+  ): void {
+    marcarDrawerAberto();
+    this.bloquearScrollPagina();
+    setPanelOpen(false);
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setPanelOpen(true);
+        });
+      });
+    });
   }
 
   /** Enter / botão direito: fecha o teclado; a lista já filtra em tempo real. */
@@ -609,13 +624,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   private abrirPainelClienteDrawer(): void {
-    this.clienteDrawerAberto = true;
-    this.clienteDrawerPanelOpen = false;
-    this.bloquearScrollPagina();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        this.clienteDrawerPanelOpen = true;
-      });
+    this.abrirDrawerComAnimacao(() => {
+      this.clienteDrawerAberto = true;
+    }, (open) => {
+      this.clienteDrawerPanelOpen = open;
     });
   }
 
@@ -656,6 +668,49 @@ export class ComandasComponent implements OnInit, OnDestroy {
   selecionarDescontoModo(modo: string): void {
     this.descontoPadraoModo = modo;
     this.descontoDropdownAberto = false;
+  }
+
+  onCelularChange(value: string): void {
+    this.cadastroCelular = this.formatarTelefone(value, true);
+  }
+
+  onTelefoneChange(value: string): void {
+    this.cadastroTelefone = this.formatarTelefone(value, false);
+  }
+
+  private formatarTelefone(value: string, celular: boolean): string {
+    const digits = (value ?? '').replace(/\D/g, '').slice(0, celular ? 11 : 10);
+    if (digits.length <= 2) return digits ? `(${digits}` : '';
+    const ddd = digits.slice(0, 2);
+    const corpo = digits.slice(2);
+    if (celular) {
+      if (corpo.length <= 5) return `(${ddd}) ${corpo}`;
+      return `(${ddd}) ${corpo.slice(0, 5)}-${corpo.slice(5)}`;
+    }
+    if (corpo.length <= 4) return `(${ddd}) ${corpo}`;
+    return `(${ddd}) ${corpo.slice(0, 4)}-${corpo.slice(4)}`;
+  }
+
+  onFotoSelecionada(ev: Event): void {
+    const input = ev.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      if (input) input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.cadastroFotoUrl = typeof reader.result === 'string' ? reader.result : '';
+      if (input) input.value = '';
+    };
+    reader.onerror = () => {
+      if (input) input.value = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removerFotoSelecionada(): void {
+    this.cadastroFotoUrl = '';
   }
 
   private opcoesClientes(): SaasSelectOption[] {
