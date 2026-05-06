@@ -647,6 +647,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   tituloComandaDrawer(): string {
+    const idAt = this.contexto()?.idAtendimento?.trim();
+    if (!idAt) return 'Nova comanda';
     const n = this.contexto()?.numeroComandaTitulo;
     const num = typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 1;
     return `Editando comanda #${num}`;

@@ -40,7 +40,7 @@
             <label class="nc-field">
               <span class="nc-field__label">Cliente</span>
               <div class="nc-field__fake">
-                {{ contexto()?.cliente?.nome?.trim() || '—' }}
+                {{ contexto()?.cliente?.nome?.trim() || 'Busque por um cliente' }}
               </div>
             </label>
             <label class="nc-field">
@@ -49,7 +49,9 @@
             </label>
             <label class="nc-field">
               <span class="nc-field__label">Número da comanda</span>
-              <div class="nc-field__fake">#{{ contexto()?.numeroComandaTitulo ?? 1 }}</div>
+              <div class="nc-field__fake">
+                {{ contexto()?.idAtendimento?.trim() ? ('#' + (contexto()?.numeroComandaTitulo ?? 1)) : 'Número da comanda' }}
+              </div>
             </label>
           </div>
 

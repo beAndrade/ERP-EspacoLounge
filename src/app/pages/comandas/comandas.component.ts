@@ -3,17 +3,23 @@ import {
   HostListener,
   inject,
   LOCALE_ID,
+  OnDestroy,
   OnInit,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { AtendimentoListaItem } from '../../core/models/api.models';
+import { AtendimentoListaItem, Cliente } from '../../core/models/api.models';
+import { NovaComandaDrawerComponent } from '../agenda-hub/nova-comanda-drawer.component';
+import type { ComandaDrawerContextoAgenda } from '../agenda-hub/comanda-drawer.types';
+import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 import {
   dataDdMmBarraAaaa,
   parseFiltroDataDdMm,
+  toYmd,
   toDdMmYyyy,
   ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
@@ -32,15 +38,17 @@ interface ComandaGrupo {
   valorTotal: number | null;
 }
 
+const DRAWER_ANIM_MS = 430;
+
 @Component({
   selector: 'app-comandas',
   standalone: true,
-  imports: [RouterLink, FormsModule, CurrencyPipe],
+  imports: [FormsModule, CurrencyPipe, NovaComandaDrawerComponent],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './comandas.component.html',
   styleUrl: './comandas.component.scss',
 })
-export class ComandasComponent implements OnInit {
+export class ComandasComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly router = inject(Router);
 
@@ -56,13 +64,86 @@ export class ComandasComponent implements OnInit {
   buscaAberta = false;
   busca = '';
 
+  /** Pulse único ao clicar (CSS); azul = Buscar, amarelo = Filtrar. */
+  pulsoToolbarBusca = false;
+  pulsoToolbarFiltro = false;
+  private tPulsoBusca = 0;
+  private tPulsoFiltro = 0;
+  private readonly duracaoPulsoToolbarMs = 680;
+
   pagina = 1;
   itensPorPagina = 20;
-  readonly opcoesItensPorPagina = [10, 20, 50];
+  readonly opcoesItensPorPagina = [10, 20, 40, 50, 100];
+  /** Select nativo não estiliza o painel; menu custom igual ao layout de referência. */
+  perPageMenuAberto = false;
+
+  /** Chips do painel lateral (UI Belasis; ligação a filtros reais a definir). */
+  readonly etiquetasPagamentoStub = [
+    'Bloqueado',
+    'Disponível',
+    'Em aberto',
+    'Atrasado',
+    'Pago',
+  ];
+
+  readonly formasPagamentoStub = [
+    'Boleto',
+    'Cartão de Crédito',
+    'Cartão de Débito',
+    'Dinheiro',
+    'PIX',
+    'Transferência',
+  ];
 
   selecionados = new Set<string>();
   menuAbertoParaId: string | null = null;
   excluindoIdAt: string | null = null;
+
+  comandaPainelAberto = false;
+  comandaDrawerPanelOpen = false;
+  comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
+
+  clienteDrawerAberto = false;
+  clienteDrawerPanelOpen = false;
+  /** Modo atual do drawer de cliente (perfil do cliente clicado). */
+  clienteDrawerModo: 'perfil' = 'perfil';
+  clienteDrawerNome = '';
+  clienteAbaAtiva = 'Cadastro';
+  abasCliente = [
+    'Cadastro',
+    'Painel',
+    'Débitos',
+    'Créditos',
+    'Cashback',
+    'Agendamentos',
+    'Vendas',
+    'Pacotes',
+    'Mensagens',
+  ] as const;
+
+  cadastroNome = '';
+  cadastroApelido = '';
+  cadastroCelular = '';
+  cadastroTelefone = '';
+  cadastroEmail = '';
+  cadastroAniversario = '';
+  cadastroCnpj = '';
+  cadastroCpf = '';
+  cadastroRg = '';
+  secaoEnderecoAberta = false;
+  secaoRedesAberta = false;
+  secaoConfiguracoesAberta = true;
+  descontoDropdownAberto = false;
+  descontoPadraoModo = 'Na comanda';
+  /** Valor livre do desconto (UI «% 0,00»); persistência/API pode formatar depois. */
+  descontoPadraoTexto = '';
+  notificacoesAtivo = true;
+
+  private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private clienteDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private bodyScrollPreDrawer = 0;
+  private pageScrollLockAtivo = false;
+  private clientesCatalogo: Cliente[] = [];
 
   ngOnInit(): void {
     const hoje = new Date();
@@ -70,7 +151,57 @@ export class ComandasComponent implements OnInit {
     inicio.setDate(hoje.getDate() - 90);
     this.dataInicio = toDdMmYyyy(inicio);
     this.dataFim = toDdMmYyyy(hoje);
-    this.carregar();
+    forkJoin({
+      ags: this.api.listAgendamentos(toYmd(inicio), toYmd(hoje)),
+      clientes: this.api.listClientes(),
+    }).subscribe({
+      next: ({ ags, clientes }) => {
+        this.grupos = this.agruparPorIdAtendimento(ags);
+        this.clientesCatalogo = clientes ?? [];
+        this.selecionados.clear();
+        this.pagina = 1;
+        this.carregando = false;
+      },
+      error: () => {
+        this.carregar();
+      },
+    });
+  }
+
+  ngOnDestroy(): void {
+    window.clearTimeout(this.tPulsoBusca);
+    window.clearTimeout(this.tPulsoFiltro);
+    if (this.comandaDrawerCloseTimer != null) {
+      clearTimeout(this.comandaDrawerCloseTimer);
+      this.comandaDrawerCloseTimer = null;
+    }
+    if (this.clienteDrawerCloseTimer != null) {
+      clearTimeout(this.clienteDrawerCloseTimer);
+      this.clienteDrawerCloseTimer = null;
+    }
+    this.desbloquearScrollPagina();
+  }
+
+  private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
+    if (which === 'busca') {
+      window.clearTimeout(this.tPulsoBusca);
+      this.pulsoToolbarBusca = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarBusca = true;
+        this.tPulsoBusca = window.setTimeout(() => {
+          this.pulsoToolbarBusca = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+    } else {
+      window.clearTimeout(this.tPulsoFiltro);
+      this.pulsoToolbarFiltro = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarFiltro = true;
+        this.tPulsoFiltro = window.setTimeout(() => {
+          this.pulsoToolbarFiltro = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+    }
   }
 
   @HostListener('document:click', ['$event'])
@@ -78,6 +209,77 @@ export class ComandasComponent implements OnInit {
     const t = ev.target as HTMLElement | null;
     if (t?.closest?.('.comandas-row-menu')) return;
     this.menuAbertoParaId = null;
+
+    if (this.descontoDropdownAberto && !t?.closest?.('.cliente-discount')) {
+      this.descontoDropdownAberto = false;
+    }
+
+    if (this.buscaAberta && !t?.closest?.('.comandas-head__busca-wrap')) {
+      this.fecharPainelBusca();
+    }
+
+    if (
+      this.perPageMenuAberto &&
+      !t?.closest?.('.comandas-footer__per-page-dropdown')
+    ) {
+      this.perPageMenuAberto = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  fecharBuscaAoEscape(ev: KeyboardEvent): void {
+    if (this.clienteDrawerAberto) {
+      ev.preventDefault();
+      this.fecharClienteDrawer();
+      return;
+    }
+    if (this.comandaPainelAberto) {
+      ev.preventDefault();
+      this.fecharComandaDrawer();
+      return;
+    }
+    if (this.perPageMenuAberto) {
+      ev.preventDefault();
+      this.perPageMenuAberto = false;
+      return;
+    }
+    if (!this.buscaAberta) return;
+    ev.preventDefault();
+    this.fecharPainelBusca();
+  }
+
+  /** Fecha apenas o painel de busca (sem pulse): clique fora ou Escape. */
+  fecharPainelBusca(): void {
+    this.buscaAberta = false;
+  }
+
+  get buscaPlaceholder(): string {
+    return this.buscaAberta
+      ? 'Procure por ticket, cliente, número ou valor...'
+      : '';
+  }
+
+  onBuscaWrapClick(): void {
+    if (!this.buscaAberta) {
+      this.abrirPainelBusca();
+    }
+  }
+
+  private abrirPainelBusca(): void {
+    this.dispararPulsoToolbar('busca');
+    this.buscaAberta = true;
+    queueMicrotask(() => {
+      document.getElementById('comandas-busca-input')?.focus();
+    });
+  }
+
+  /** Alterna aberto/fechado (pulso apenas ao abrir). */
+  toggleBusca(): void {
+    if (this.buscaAberta) {
+      this.fecharPainelBusca();
+    } else {
+      this.abrirPainelBusca();
+    }
   }
 
   carregar(): void {
@@ -113,11 +315,100 @@ export class ComandasComponent implements OnInit {
   }
 
   toggleFiltros(): void {
+    this.dispararPulsoToolbar('filtro');
     this.filtrosAbertos = !this.filtrosAbertos;
   }
 
-  toggleBusca(): void {
-    this.buscaAberta = !this.buscaAberta;
+  /** Abre o drawer «Nova comanda» reutilizando o fluxo da comanda. */
+  abrirNovaComandaDrawer(): void {
+    this.menuAbertoParaId = null;
+    this.fecharPainelBusca();
+    if (this.clienteDrawerAberto) {
+      this.clienteDrawerAberto = false;
+      this.clienteDrawerPanelOpen = false;
+      if (this.clienteDrawerCloseTimer != null) {
+        clearTimeout(this.clienteDrawerCloseTimer);
+        this.clienteDrawerCloseTimer = null;
+      }
+      this.descontoDropdownAberto = false;
+    }
+    this.comandaDrawerContexto = {
+      acessar: false,
+      idAtendimento: null,
+      numeroComandaTitulo: 1,
+      clienteId: '',
+      cliente: null,
+      opcoesClientes: this.opcoesClientes(),
+      dataYmd: toYmd(new Date()),
+      linhasSnapshot: [],
+    };
+    this.comandaPainelAberto = true;
+    this.comandaDrawerPanelOpen = false;
+    this.bloquearScrollPagina();
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        this.comandaDrawerPanelOpen = true;
+      });
+    });
+  }
+
+  tituloCabecalhoClienteDrawer(): string {
+    return this.clienteDrawerNome.trim() || 'Cliente';
+  }
+
+  ariaLabelClienteDrawer(): string {
+    return 'Perfil do cliente';
+  }
+
+  ariaLabelComandaDrawer(): string {
+    return this.comandaDrawerContexto?.idAtendimento?.trim()
+      ? 'Editando comanda'
+      : 'Nova comanda';
+  }
+
+  selecionarAbaCliente(aba: string): void {
+    this.clienteAbaAtiva = aba;
+  }
+
+  salvarClienteDrawerStub(): void {
+    // Persistência será ligada à API numa etapa seguinte.
+    this.fecharClienteDrawer();
+  }
+
+  private obterLarguraScrollbar(): number {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return 0;
+    }
+    return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  }
+
+  private bloquearScrollPagina(): void {
+    if (this.pageScrollLockAtivo) return;
+    this.bodyScrollPreDrawer = window.scrollY || 0;
+    const gutter = this.obterLarguraScrollbar();
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top = `-${this.bodyScrollPreDrawer}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    if (gutter > 0) {
+      body.style.paddingRight = `${gutter}px`;
+    }
+    this.pageScrollLockAtivo = true;
+  }
+
+  private desbloquearScrollPagina(): void {
+    if (!this.pageScrollLockAtivo) return;
+    const body = document.body;
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    body.style.width = '';
+    body.style.paddingRight = '';
+    this.pageScrollLockAtivo = false;
+    window.scrollTo(0, this.bodyScrollPreDrawer);
   }
 
   /** Enter / botão direito: fecha o teclado; a lista já filtra em tempo real. */
@@ -135,14 +426,30 @@ export class ComandasComponent implements OnInit {
 
   gruposFiltrados(): ComandaGrupo[] {
     const q = this.busca.trim().toLowerCase();
+    const qDigits = q.replace(/[^\\d]/g, '');
     let list = this.grupos;
     if (q) {
       list = list.filter((g) => {
         const nome = (g.nomeCliente || '').toLowerCase();
         const idAt = (g.linhas[0]?.id || '').toLowerCase();
         const ticket = this.rotuloTicket(g).toLowerCase();
+        const valor = this.valorExibicao(g);
+        const valorBr =
+          valor != null
+            ? valor.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+            : '';
+        const valorDigits = valorBr.replace(/[^\\d]/g, '');
+        const valorRaw = valor != null ? String(valor) : '';
         return (
-          nome.includes(q) || idAt.includes(q) || ticket.includes(q)
+          nome.includes(q) ||
+          idAt.includes(q) ||
+          ticket.includes(q) ||
+          valorBr.toLowerCase().includes(q) ||
+          valorRaw.includes(q) ||
+          (qDigits.length > 0 && valorDigits.includes(qDigits))
         );
       });
     }
@@ -173,6 +480,19 @@ export class ComandasComponent implements OnInit {
     this.pagina = 1;
   }
 
+  togglePerPageMenu(ev: Event): void {
+    ev.stopPropagation();
+    if (this.carregando) return;
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarItensPorPagina(n: number, ev: Event): void {
+    ev.stopPropagation();
+    this.itensPorPagina = n;
+    this.perPageMenuAberto = false;
+    this.aoMudarItensPorPagina();
+  }
+
   paginaAnterior(): void {
     if (this.pagina > 1) this.pagina--;
   }
@@ -191,25 +511,14 @@ export class ComandasComponent implements OnInit {
 
   rotuloStatus(g: ComandaGrupo): string {
     if (!this.cobrancaFinalizada(g)) return 'Pendente';
-    if (!this.pagamentoConfirmado(g)) return 'Cobrança finalizada';
+    if (!this.pagamentoConfirmado(g)) return 'Pendente';
     return 'Pago';
   }
 
   rotuloPagamento(g: ComandaGrupo): string {
     if (!this.cobrancaFinalizada(g)) return 'Em aberto';
-    if (this.pagamentoConfirmado(g)) {
-      const m = this.metodoPagamentoNoGrupo(g);
-      return m ? m : 'Pago';
-    }
+    if (this.pagamentoConfirmado(g)) return 'Pago';
     return 'Em aberto';
-  }
-
-  private metodoPagamentoNoGrupo(g: ComandaGrupo): string {
-    for (const l of g.linhas) {
-      const m = (l.pagamentoMetodo ?? '').trim();
-      if (m) return m;
-    }
-    return '';
   }
 
   valorExibicao(g: ComandaGrupo): number | null {
@@ -242,6 +551,118 @@ export class ComandasComponent implements OnInit {
     void this.router.navigate(['/agenda/novo'], {
       queryParams: { atendimento: idAt },
     });
+  }
+
+  abrirDrawerComanda(g: ComandaGrupo, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const idAt = this.idAtendimento(g);
+    const cid = this.idCliente(g) ?? '';
+    if (!idAt || !cid) return;
+    const cliente = this.clientesCatalogo.find((c) => c.id === cid) ?? null;
+    const numero = Number(this.rotuloTicket(g).replace(/\D/g, '')) || 1;
+    this.comandaDrawerContexto = {
+      acessar: true,
+      idAtendimento: idAt,
+      numeroComandaTitulo: numero,
+      clienteId: cid,
+      cliente,
+      opcoesClientes: this.opcoesClientes(),
+      dataYmd: g.data,
+      linhasSnapshot: [],
+    };
+    this.comandaPainelAberto = true;
+    this.comandaDrawerPanelOpen = false;
+    this.bloquearScrollPagina();
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        this.comandaDrawerPanelOpen = true;
+      });
+    });
+  }
+
+  abrirDrawerCliente(g: ComandaGrupo, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (this.comandaPainelAberto) {
+      this.comandaPainelAberto = false;
+      this.comandaDrawerPanelOpen = false;
+      this.comandaDrawerContexto = null;
+      if (this.comandaDrawerCloseTimer != null) {
+        clearTimeout(this.comandaDrawerCloseTimer);
+        this.comandaDrawerCloseTimer = null;
+      }
+    }
+    this.clienteDrawerModo = 'perfil';
+    this.clienteDrawerNome = g.nomeCliente?.trim() || 'cliente';
+    this.cadastroNome = this.clienteDrawerNome;
+    this.cadastroApelido = '';
+    this.cadastroCelular = '';
+    this.cadastroTelefone = '';
+    this.cadastroEmail = '';
+    this.cadastroAniversario = '';
+    this.cadastroCnpj = '';
+    this.cadastroCpf = '';
+    this.cadastroRg = '';
+    this.clienteAbaAtiva = 'Cadastro';
+    this.abrirPainelClienteDrawer();
+  }
+
+  private abrirPainelClienteDrawer(): void {
+    this.clienteDrawerAberto = true;
+    this.clienteDrawerPanelOpen = false;
+    this.bloquearScrollPagina();
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        this.clienteDrawerPanelOpen = true;
+      });
+    });
+  }
+
+  fecharComandaDrawer(): void {
+    if (!this.comandaPainelAberto) return;
+    this.comandaDrawerPanelOpen = false;
+    if (this.comandaDrawerCloseTimer != null) clearTimeout(this.comandaDrawerCloseTimer);
+    this.comandaDrawerCloseTimer = setTimeout(() => {
+      this.comandaDrawerCloseTimer = null;
+      this.comandaPainelAberto = false;
+      this.comandaDrawerContexto = null;
+      this.desbloquearScrollPagina();
+    }, DRAWER_ANIM_MS);
+  }
+
+  onComandaExcluida(): void {
+    this.fecharComandaDrawer();
+    this.carregar();
+  }
+
+  fecharClienteDrawer(): void {
+    if (!this.clienteDrawerAberto) return;
+    this.clienteDrawerPanelOpen = false;
+    if (this.clienteDrawerCloseTimer != null) clearTimeout(this.clienteDrawerCloseTimer);
+    this.clienteDrawerCloseTimer = setTimeout(() => {
+      this.clienteDrawerCloseTimer = null;
+      this.clienteDrawerAberto = false;
+      this.descontoDropdownAberto = false;
+      this.desbloquearScrollPagina();
+    }, DRAWER_ANIM_MS);
+  }
+
+  toggleDescontoDropdown(ev: Event): void {
+    ev.stopPropagation();
+    this.descontoDropdownAberto = !this.descontoDropdownAberto;
+  }
+
+  selecionarDescontoModo(modo: string): void {
+    this.descontoPadraoModo = modo;
+    this.descontoDropdownAberto = false;
+  }
+
+  private opcoesClientes(): SaasSelectOption[] {
+    return this.clientesCatalogo.map((c) => ({
+      value: c.id,
+      label: c.nome.trim() || '—',
+    }));
   }
 
   excluir(g: ComandaGrupo, ev: Event): void {
@@ -372,3 +793,4 @@ export class ComandasComponent implements OnInit {
     });
   }
 }
+

@@ -1,11 +1,16 @@
 import {
   Component,
+  DestroyRef,
   inject,
   LOCALE_ID,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AtendimentoListaItem,
   ProfissionalListaItem,
@@ -67,6 +72,16 @@ type AgendaHubBloco = {
 })
 export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+
+  @ViewChild(AgendaNovoComponent)
+  private agendaDrawerRef?: AgendaNovoComponent;
+
+  /** Após `?abrirNovaComanda=1`, quando um fluxo quiser já abrir o drawer de comanda. */
+  private timerAbrirNovaComandaDesdeLista: ReturnType<typeof setTimeout> | null =
+    null;
 
   mesRef = this.inicioDoMes(new Date());
   diaYmd = toYmd(new Date());
@@ -103,16 +118,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   comandaDrawerPanelOpen = false;
   /** Último pedido de abertura (para ligar o drawer de comanda à API depois). */
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
-  /**
-   * Incrementado após `carregarDia` (grelha) para o agendamento reaberto no modal
-   * recarregar o pedido a partir da API, espelhando a comanda / alterações salvas.
-   */
-  dadosDiaVersaoSinc = 0;
-  /**
-   * Linhas do atendimento corrente na comanda, derivadas de `linhasDia` (mesma
-   * fonte que a grelha) — espelha com a API sem duplicar GETs no drawer.
-   */
-  comandaAtendimentoLinhasCache: AtendimentoListaItem[] = [];
 
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -141,9 +146,33 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     });
     this.carregarMes();
     this.carregarDia();
+    this.route.queryParamMap
+      .pipe(
+        filter((qm) => qm.get('abrirNovaComanda') === '1'),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        queueMicrotask(() => this.abrirNovaComandaIgualAoBotaoRodapeAgenda());
+      });
+    this.route.queryParamMap
+      .pipe(
+        filter((qm) => qm.get('abrirNovoAgendamento') === '1'),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        queueMicrotask(() => {
+          this.limparComandaDrawerSemAnimacao();
+          this.abrirNovoAtendimentoModal();
+          this.limparQueryAbrirNovoAgendamento();
+        });
+      });
   }
 
   ngOnDestroy(): void {
+    if (this.timerAbrirNovaComandaDesdeLista != null) {
+      clearTimeout(this.timerAbrirNovaComandaDesdeLista);
+      this.timerAbrirNovaComandaDesdeLista = null;
+    }
     if (this.drawerCloseTimer != null) {
       clearTimeout(this.drawerCloseTimer);
       this.drawerCloseTimer = null;
@@ -265,6 +294,58 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.iniciarAberturaDrawer();
   }
 
+  /**
+   * `?abrirNovaComanda=1`: replica o botão «Criar comanda»
+   * do rodapé do agendamento (segundo drawer).
+   */
+  private abrirNovaComandaIgualAoBotaoRodapeAgenda(): void {
+    this.limparComandaDrawerSemAnimacao();
+    this.abrirNovoAtendimentoModal();
+    const espera = DRAWER_ANIM_MS + 220;
+    if (this.timerAbrirNovaComandaDesdeLista != null) {
+      clearTimeout(this.timerAbrirNovaComandaDesdeLista);
+    }
+    this.timerAbrirNovaComandaDesdeLista = window.setTimeout(() => {
+      this.timerAbrirNovaComandaDesdeLista = null;
+      const ag = this.agendaDrawerRef;
+      if (ag) {
+        ag.abrirComandaRodapeIgualAoBotaoFooter();
+      } else {
+        this.timerAbrirNovaComandaDesdeLista = window.setTimeout(() => {
+          this.timerAbrirNovaComandaDesdeLista = null;
+          this.agendaDrawerRef?.abrirComandaRodapeIgualAoBotaoFooter();
+          this.limparQueryAbrirNovaComanda();
+        }, 360);
+        return;
+      }
+      this.limparQueryAbrirNovaComanda();
+    }, espera);
+  }
+
+  private limparQueryAbrirNovaComanda(): void {
+    if (this.route.snapshot.queryParamMap.get('abrirNovaComanda') !== '1') {
+      return;
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { abrirNovaComanda: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private limparQueryAbrirNovoAgendamento(): void {
+    if (this.route.snapshot.queryParamMap.get('abrirNovoAgendamento') !== '1') {
+      return;
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { abrirNovoAgendamento: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
   /** Abre o drawer em modo edição (sem saltar para a receção). */
   abrirDrawerEdicaoBloco(b: AgendaHubBloco, e: Event): void {
     e.stopPropagation();
@@ -383,7 +464,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDrawerContexto = payload;
     this.comandaPainelAberto = true;
     this.comandaDrawerPanelOpen = false;
-    this.recalcularComandaAtendimentoLinhas();
     queueMicrotask(() => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -919,8 +999,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       next: (items) => {
         this.linhasDia = items;
         this.carregandoDia = false;
-        this.recalcularComandaAtendimentoLinhas();
-        this.dadosDiaVersaoSinc += 1;
       },
       error: (e: Error) => {
         this.erro =
@@ -928,22 +1006,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
           'Não foi possível carregar os atendimentos do dia.';
         this.linhasDia = [];
         this.carregandoDia = false;
-        this.recalcularComandaAtendimentoLinhas();
       },
     });
-  }
-
-  /** Filtro das linhas do dia do atendimento aberto na comanda (mesma fonte que a grelha). */
-  private recalcularComandaAtendimentoLinhas(): void {
-    this.comandaAtendimentoLinhasCache = [];
-    if (!this.comandaDrawerContexto) return;
-    const id = String(this.comandaDrawerContexto.idAtendimento ?? '').trim();
-    if (!id) return;
-    const d = this.diaYmd;
-    const rows = this.linhasDia.filter(
-      (r) => String(r.id) === id && (r.data ?? '') === d,
-    );
-    ordenarLinhasAtendimentoInPlace(rows);
-    this.comandaAtendimentoLinhasCache = rows;
   }
 }

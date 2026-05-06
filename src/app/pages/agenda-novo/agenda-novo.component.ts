@@ -929,6 +929,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return out;
   }
 
+  /**
+   * Hub: mesma lógica do botão «Criar comanda» (ex.: navegação `?abrirNovaComanda=1`).
+   */
+  abrirComandaRodapeIgualAoBotaoFooter(): void {
+    if (!this.modoModal) return;
+    this.onAbrirComandaClick({
+      preventDefault() {},
+      stopPropagation() {},
+    } as unknown as MouseEvent);
+  }
+
   onAbrirComandaClick(ev: MouseEvent): void {
     ev.stopPropagation();
     const ymd =
