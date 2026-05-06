@@ -624,6 +624,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   private abrirPainelClienteDrawer(): void {
+    /** Ao reabrir o drawer, apenas «Configurações» fica expandido no aside. */
+    this.secaoEnderecoAberta = false;
+    this.secaoRedesAberta = false;
+    this.secaoConfiguracoesAberta = true;
+
     this.abrirDrawerComAnimacao(() => {
       this.clienteDrawerAberto = true;
     }, (open) => {
