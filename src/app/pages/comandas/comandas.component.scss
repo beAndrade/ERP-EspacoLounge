@@ -651,7 +651,7 @@ thead th {
   color: #000000bf;
   text-transform: none;
   letter-spacing: normal;
-  border-bottom: none;
+  border-bottom: 1px solid #f0f0f0;
   transition: background 0.2s ease;
 }
 
@@ -975,7 +975,7 @@ thead th.col-check {
   gap: 1rem 1.25rem;
   padding: 0.75rem 1rem;
   background: #fafaf9;
-  border-top: 1px solid #efefef;
+  border-top: 1px solid #f0f0f0;
   font-size: 0.9rem;
   color: var(--color-muted);
 }
@@ -1530,11 +1530,11 @@ thead th.col-check {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.2;
   padding-bottom: 8px;
-  color: #3f3f46;
+  color: #000000bf;
 
   &--required::after {
     content: '*';
@@ -1583,7 +1583,7 @@ thead th.col-check {
   padding: 8px 24px 8px 0;
   font-size: 13px;
   font-weight: 500;
-  color: #52525b;
+  color: #000000bf;
   cursor: pointer;
   transition: color 0.09s ease, background-color 0.09s ease;
 
@@ -1772,7 +1772,8 @@ thead th.col-check {
   border-radius: 12px;
   padding: 4px 11px;
   font-size: 13px;
-  color: #18181b;
+  font-weight: 350;
+  color: #000000bf;
   background: #fff;
   transition: all 0.11s linear;
 
@@ -1803,11 +1804,18 @@ thead th.col-check {
   border-radius: 12px;
   overflow: hidden;
   background: #fff;
-  transition: border-color 0.09s ease, box-shadow 0.09s ease;
+  transition:
+    border-color 0.11s linear,
+    box-shadow 0.11s linear;
+
+  &:hover {
+    border-color: #505afb;
+  }
 
   &:focus-within {
-    border-color: #3788d8;
-    box-shadow: 0 0 0 2px rgba(55, 136, 216, 0.2);
+    border-color: #505afb;
+    box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+    outline: 0;
   }
 
   &__prefix {
@@ -1817,8 +1825,8 @@ thead th.col-check {
     flex-shrink: 0;
     padding: 0 11px;
     font-size: 13px;
-    font-weight: 500;
-    color: #52525b;
+    font-weight: 350;
+    color: #000000bf;
     background: #fafafa;
     border-right: 1px solid #f1f1f1;
   }
@@ -1837,11 +1845,21 @@ thead th.col-check {
     border: none;
     border-radius: 0;
     font-size: 13px;
+    font-weight: 350;
+    color: #000000bf;
     box-shadow: none;
 
     &:focus {
       outline: none;
       box-shadow: none;
+    }
+
+    &::placeholder {
+      color: #a1a1aa;
+    }
+
+    &:hover {
+      outline: none;
     }
   }
 }
@@ -1988,7 +2006,8 @@ thead th.col-check {
     border-radius: 12px;
     padding: 4px 11px;
     font-size: 13px;
-    color: #3f3f46;
+    font-weight: 350;
+    color: #000000bf;
     transition: all 0.11s linear;
 
     &::placeholder {
@@ -2032,10 +2051,6 @@ thead th.col-check {
   margin-bottom: 18px;
   width: 234px;
   max-width: 100%;
-
-  > .cliente-field-label {
-    font-size: 15px;
-  }
 }
 
 .cliente-switch-block {
@@ -2054,7 +2069,7 @@ thead th.col-check {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: #18181b;
+    color: #000000bf;
   }
 
   &__hint {
@@ -2181,7 +2196,7 @@ thead th.col-check {
     background: #fff;
     box-shadow: none;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 350;
     color: #000000bf;
     text-align: left;
     outline: 0;
@@ -2215,8 +2230,8 @@ thead th.col-check {
     border-radius: 0 12px 12px 0;
     background: #fff;
     font-size: 13px;
-    font-weight: 500;
-    color: #71717a;
+    font-weight: 350;
+    color: #000000bf;
     cursor: pointer;
     text-align: left;
     position: relative;
@@ -2399,7 +2414,8 @@ thead th.col-check {
     border: 1px solid #f1f1f1;
     border-right: none;
     border-radius: 12px 0 0 12px;
-    color: #71717a;
+    color: #000000bf;
+    font-weight: 350;
     font-size: 13px;
     background: #fafafa;
     box-sizing: border-box;
