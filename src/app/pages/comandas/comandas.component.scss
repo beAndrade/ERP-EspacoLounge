@@ -1621,14 +1621,16 @@ thead th.col-check {
     color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Hover: apenas cor do texto (#7a88ff); aba ativa mantém cor do foco ao passar o rato. */
+  &:hover:not(.cliente-nav__item--active) {
+    color: #7a88ff;
+    background: transparent;
+  }
+
   /* `.cliente-nav` começa pelo `<span.indicator>` → o 1º botão é `:first-of-type`. */
   &:first-of-type {
     margin-top: 0;
     padding-top: 0;
-  }
-
-  &:hover:not(.cliente-nav__item--active) {
-    color: #7a88ff;
   }
 
   &--active {
@@ -1637,6 +1639,11 @@ thead th.col-check {
     background: transparent;
     /** Só vertical zerado — recuo direito igual às outras abas. */
     padding: 0 24px 0 0;
+
+    &:hover {
+      color: var(--cliente-accent);
+      background: transparent;
+    }
   }
 
   &:focus-visible {
@@ -1644,12 +1651,6 @@ thead th.col-check {
     box-shadow: inset 0 0 0 2px rgba(55, 136, 216, 0.35);
   }
 }
-
-/* Aba ativa: hover não deve mudar para o lilás (#7a88ff). */
-button.cliente-nav__item.cliente-nav__item--active:hover {
-  color: var(--cliente-accent);
-}
-
 
 .cliente-main {
   display: flex;
@@ -2858,7 +2859,13 @@ button.cliente-nav__item.cliente-nav__item--active:hover {
         }
       }
 
-      &:hover {
+      &:hover:not(.cliente-nav__item--active) {
+        color: #7a88ff;
+        background: transparent;
+      }
+
+      &--active:hover {
+        color: var(--cliente-accent);
         background: transparent;
       }
     }
