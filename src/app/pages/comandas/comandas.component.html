@@ -601,12 +601,12 @@
         </header>
         <div class="cliente-body-scroll">
           <div class="cliente-body">
-            <nav class="cliente-nav" aria-label="Secções da ficha">
-              <span
-                class="cliente-nav__indicator"
-                aria-hidden="true"
-                [style.transform]="clienteNavIndicadorTransform()"
-              ></span>
+            <nav
+              class="cliente-nav"
+              aria-label="Secções da ficha"
+              [style.--cliente-nav-active-index]="abaAtivaClienteIndex()"
+            >
+              <span class="cliente-nav__indicator" aria-hidden="true"></span>
               @for (aba of abasCliente; track aba) {
                 <button
                   type="button"

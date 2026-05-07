@@ -203,10 +203,11 @@ $hub-sidebar-w: 20rem;
 }
 
 /* Altura fixa da faixa horária: % em cartões/slots exige bloco de contenção definido.
- * Mais alto = mais px por linha de 30 min (respiro nos rótulos sem overflow entre faixas). */
-$agenda-timeline-h: 40rem;
-/* Sincronizar com (GRID_END_MIN - GRID_START_MIN) / 30 no TS (= 31). */
+ * Cada linha da grelha (30 min) = `$agenda-slot-row-h`; total = nº de linhas × altura.
+ * Sincronizar `$agenda-slot-rows` com (GRID_END_MIN - GRID_START_MIN) / 30 no TS (= 31). */
 $agenda-slot-rows: 31;
+$agenda-slot-row-h: 35px;
+$agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
 
 .grid-wrap {
   overflow-x: auto;

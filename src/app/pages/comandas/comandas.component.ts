@@ -402,33 +402,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return ix >= 0 ? ix : 0;
   }
 
-  /**
-   * Alinhado a `--cliente-nav-item-*` em `comandas.component.scss`:
-   * abas inativas `padding-bottom` apenas; tarja usa o mesmo passo até à aba ativa.
-   */
-  private readonly clienteNavFontPx = 13;
-  private readonly clienteNavLineHeightMul = 1.3125;
-  /** Igual `--cliente-nav-item-pad-bottom`: sem padding superior na aba. */
-  private readonly clienteNavPadBottom = 8;
-  private readonly clienteNavItemGap = 16;
-
-  clienteNavIndicadorTransform(): string {
-    return `translateY(${this.clienteNavIndicadorOffsetPx()}px)`;
-  }
-
-  private clienteNavLineBoxPx(): number {
-    return this.clienteNavFontPx * this.clienteNavLineHeightMul;
-  }
-
-  private clienteNavInactiveRowStridePx(): number {
-    return this.clienteNavPadBottom + this.clienteNavLineBoxPx();
-  }
-
-  private clienteNavIndicadorOffsetPx(): number {
-    const idx = this.abaAtivaClienteIndex();
-    return idx * (this.clienteNavInactiveRowStridePx() + this.clienteNavItemGap);
-  }
-
   salvarClienteDrawer(): void {
     this.clienteSaveErro = '';
     const nome = this.cadastroNome.trim();

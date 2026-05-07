@@ -1494,7 +1494,10 @@ thead th.col-check {
 }
 
 .cliente-body-scroll {
-  /* Apenas eixo Y: evita scrollbar horizontal dentro do drawer de cliente. */
+  /*
+    REGRA DE CONTRATO (não alterar sem pedido explícito):
+    manter scroll apenas no eixo Y para impedir barra horizontal no drawer.
+  */
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -1564,33 +1567,61 @@ thead th.col-check {
 }
 
 .cliente-nav {
+  /*
+    REGRA DE CONTRATO (não alterar sem pedido explícito):
+    1) espaço da 1ª aba vem de `gap`, não de `margin-top`;
+    2) indicador lateral usa `--cliente-nav-active-index` + `.cliente-nav__indicator`
+       (não voltar para `::after` por aba).
+  */
+  --cliente-nav-item-h: 35px;
+  --cliente-nav-gap: 16px;
+  --cliente-nav-row-step: calc(var(--cliente-nav-item-h) + var(--cliente-nav-gap));
+  --cliente-nav-active-index: 0;
+
+  position: relative;
   display: flex;
   flex-direction: column;
+  gap: var(--cliente-nav-gap);
   border-right: 1px solid hsl(220, 13%, 91%);
   padding: 0 0 0 30px;
   min-height: 100%;
   box-sizing: border-box;
 }
 
+.cliente-nav__indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 1px;
+  height: var(--cliente-nav-item-h);
+  border-radius: 0;
+  background: var(--cliente-accent);
+  pointer-events: none;
+  z-index: 1;
+  transform: translateY(calc(var(--cliente-nav-active-index) * var(--cliente-nav-row-step)));
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .cliente-nav__item {
   position: relative;
+  z-index: 0;
   width: 100%;
   text-align: left;
   border: none;
   appearance: none;
   -webkit-tap-highlight-color: transparent;
   background: transparent;
-  margin: 16px 0 0;
-  padding: 8px 24px 8px 0;
+  margin: 0;
+  padding: 0 24px 0 0;
+  min-height: var(--cliente-nav-item-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 500;
   color: #52525b;
   cursor: pointer;
   transition: color 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-
-  &:first-child {
-    margin-top: 0;
-  }
 
   &:hover {
     color: #7a88ff;
@@ -1601,17 +1632,6 @@ thead th.col-check {
     color: var(--cliente-accent);
     font-weight: 600;
     background: transparent;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 2px;
-      border-radius: 0;
-      background: var(--cliente-accent);
-    }
   }
 
   &--active:hover {
@@ -1984,14 +2004,19 @@ thead th.col-check {
     }
   }
 
+  /*
+    REGRA DE CONTRATO (nao alterar sem pedido explicito):
+    inputs do bloco de endereco (aside) ficam em 32px.
+  */
   label input {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    height: 38px;
+    height: 32px;
+    min-height: 32px;
     border: 1px solid #f1f1f1;
-    border-radius: 8px;
-    padding: 0 10px;
+    border-radius: 12px;
+    padding: 4px 11px;
     font-size: 13px;
     color: #3f3f46;
     transition: all 0.2s linear;
@@ -2042,6 +2067,103 @@ thead th.col-check {
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
+
+  /* Mesmo padrão visual do toggle líquido do agenda-novo. */
+  .block-toggles.block-toggles--inline {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+
+  .block-toggles--inline .toggle-switch.toggle-switch--inline {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.65rem;
+    overflow: visible;
+  }
+
+  .block-toggles--inline .toggle {
+    --toggle-w: 44px;
+    --toggle-h: 22px;
+    --toggle-pad: 2px;
+    --knob-size: 18px;
+    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
+    --knob-x-end: calc(
+      var(--toggle-w) - (var(--toggle-pad) * 2) - var(--knob-size)
+    );
+    width: var(--toggle-w);
+    height: var(--toggle-h);
+    background: #bfbfbf;
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition:
+      background 0.25s ease,
+      filter 0.25s ease;
+    display: inline-block;
+    flex: 0 0 auto;
+    margin-left: 0;
+    overflow: visible;
+    isolation: isolate;
+    contain: layout;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid:hover:not(.active) {
+    background: #8c8c8c;
+  }
+
+  .block-toggles--inline .toggle.active {
+    background: #4f46e5;
+    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
+    filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
+  }
+
+  .block-toggles--inline .toggle.toggle--pulse {
+    animation: clienteTogglePulse 1.5s ease-out;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid::after {
+    content: '';
+    position: absolute;
+    top: calc((var(--toggle-h) - var(--knob-size)) / 2);
+    left: var(--toggle-pad);
+    width: var(--knob-size);
+    height: var(--knob-size);
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    will-change: transform, box-shadow;
+    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    transform-origin: right center;
+    transform-box: fill-box;
+    contain: paint;
+    transition: none;
+    animation: none;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.active::after {
+    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    transform-origin: left center;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed.active::after {
+    transform-origin: right center;
+    animation: clienteToggleLiquidOn 0.52s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.toggle--liq-armed:not(.active)::after {
+    transform-origin: left center;
+    animation: clienteToggleLiquidOff 0.52s cubic-bezier(0.25, 0.9, 0.25, 1) forwards;
+  }
+
+  .block-toggles--inline .toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
+  }
 
   &__labels {
     min-width: 0;
@@ -2124,26 +2246,27 @@ thead th.col-check {
   display: grid;
   width: 100%;
   max-width: 460px;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  /* 12 colunas: 3-6-3 (CEP / Rua / Número). */
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 10px;
 
   > label:nth-child(1) {
-    grid-column: span 2;
+    grid-column: span 3;
   }
 
   > label:nth-child(2) {
-    grid-column: span 2;
+    grid-column: span 6;
   }
 
   > label:nth-child(3) {
-    grid-column: span 2;
+    grid-column: span 3;
   }
 
   > label:nth-child(4),
   > label:nth-child(5),
   > label:nth-child(6),
   > label:nth-child(7) {
-    grid-column: span 3;
+    grid-column: span 6;
   }
 }
 
@@ -2165,6 +2288,33 @@ thead th.col-check {
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+
+  &:hover {
+    .cliente-discount__field,
+    .cliente-discount__toggle {
+      border-color: var(--cliente-accent);
+    }
+
+    .cliente-discount__field {
+      border-right: none;
+    }
+  }
+
+  &:focus-within {
+    .cliente-discount__field,
+    .cliente-discount__toggle {
+      border-color: var(--cliente-accent);
+    }
+
+    .cliente-discount__field {
+      border-right: none;
+      box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.08);
+    }
+
+    .cliente-discount__toggle {
+      box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.08);
+    }
+  }
 
   &__field {
     min-width: 0;
@@ -2244,7 +2394,7 @@ thead th.col-check {
 
     &:focus-visible {
       outline: none;
-      box-shadow: inset 0 0 0 2px rgba(55, 136, 216, 0.35);
+      box-shadow: none;
     }
   }
 
@@ -2590,6 +2740,10 @@ thead th.col-check {
     border-right: none;
     border-bottom: 1px solid hsl(220, 13%, 91%);
 
+    .cliente-nav__indicator {
+      display: none;
+    }
+
     &__item {
       margin-top: 0;
       padding: 8px 24px 8px 0;
@@ -2605,13 +2759,9 @@ thead th.col-check {
         background: transparent;
       }
 
-      &--active::after {
-        display: none;
-      }
-
       &--active {
         color: var(--cliente-accent, #3788d8);
-        box-shadow: inset 0 -2px 0 0 var(--cliente-accent, #3788d8);
+        box-shadow: inset 0 -1px 0 0 var(--cliente-accent, #3788d8);
       }
 
       &--active:hover {
