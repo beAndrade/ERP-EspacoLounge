@@ -9,7 +9,6 @@
   margin-right: 0;
   padding-right: 10px;
   box-sizing: border-box;
-  overflow-x: hidden;
 }
 
 .comandas-layout {
@@ -608,10 +607,6 @@ input.comandas-head__busca-input[type='search']::-webkit-search-cancel-button {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-
-  td {
-    border-bottom: none;
-  }
 }
 
 col.comandas-table__col-check {
@@ -655,7 +650,7 @@ thead th {
   color: #000000bf;
   text-transform: none;
   letter-spacing: normal;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: none;
   transition: background 0.2s ease;
 }
 
@@ -669,6 +664,10 @@ td {
   text-align: left;
   padding: 12px 8px;
   vertical-align: middle;
+}
+
+tbody td {
+  border-bottom: 1px solid #efefef;
 }
 
 td {
@@ -975,7 +974,7 @@ thead th.col-check {
   gap: 1rem 1.25rem;
   padding: 0.75rem 1rem;
   background: #fafaf9;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #efefef;
   font-size: 0.9rem;
   color: var(--color-muted);
 }
@@ -1205,7 +1204,6 @@ thead th.col-check {
   flex-direction: column;
   box-sizing: border-box;
   background: #ffffff;
-  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overflow-clip-margin: 20px 16px 24px 32px;
@@ -1370,11 +1368,11 @@ thead th.col-check {
     --cliente-form-col-gap: 16px;
     --cliente-field-input-max: 421.78px;
     --cliente-accent: #505afb;
+    overflow-x: hidden;
     left: auto;
     right: 0;
     width: min(var(--cliente-drawer-shell-w), 100vw);
     max-width: 100vw;
-    overflow-x: hidden;
     padding-inline: 0;
     display: flex;
     flex-direction: column;
@@ -1470,11 +1468,11 @@ thead th.col-check {
   padding: 30px;
   box-sizing: border-box;
   border: none;
-  border-radius: 10px;
+  border-radius: 0;
   background: transparent;
   color: #00000073;
   cursor: pointer;
-  transition: background-color 0.09s ease, color 0.09s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 
   &::before {
     content: '×';
@@ -1496,6 +1494,7 @@ thead th.col-check {
 }
 
 .cliente-body-scroll {
+  /* Apenas eixo Y: evita scrollbar horizontal dentro do drawer de cliente. */
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -1530,11 +1529,11 @@ thead th.col-check {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.2;
   padding-bottom: 8px;
-  color: #000000bf;
+  color: #3f3f46;
 
   &--required::after {
     content: '*';
@@ -1565,43 +1564,12 @@ thead th.col-check {
 }
 
 .cliente-nav {
-  position: relative;
   display: flex;
   flex-direction: column;
   border-right: 1px solid hsl(220, 13%, 91%);
   padding: 0 0 0 30px;
   min-height: 100%;
   box-sizing: border-box;
-  /* Só padding inferior nas abas inativas; topo 0 conforme especificação. */
-  --cliente-nav-item-pad-bottom: 8px;
-  --cliente-nav-item-line-box: calc(13px * 1.3125);
-
-  &__indicator {
-    position: absolute;
-    right: 0;
-    top: 0;
-    z-index: 1;
-    width: 3px;
-    height: var(--cliente-nav-item-line-box);
-    border-radius: 2px;
-    background: var(--cliente-accent);
-    pointer-events: none;
-    /* translateY aplicado pelo componente (`clienteNavIndicadorTransform`) — alinha com aba sem padding quando ativa. */
-    transition:
-      transform 0.55s cubic-bezier(0.34, 1.12, 0.32, 1),
-      opacity 0.4s cubic-bezier(0.33, 1, 0.68, 1);
-    will-change: transform;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cliente-nav__indicator {
-    transition: none;
-  }
-
-  .cliente-nav__item::before {
-    transition-duration: 0.01ms;
-  }
 }
 
 .cliente-nav__item {
@@ -1609,41 +1577,46 @@ thead th.col-check {
   width: 100%;
   text-align: left;
   border: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
   background: transparent;
   margin: 16px 0 0;
-  padding: 0 24px var(--cliente-nav-item-pad-bottom) 0;
-  box-sizing: border-box;
+  padding: 8px 24px 8px 0;
   font-size: 13px;
   font-weight: 500;
-  color: #000000bf;
+  color: #52525b;
   cursor: pointer;
-  transition:
-    color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* Hover: apenas cor do texto (#7a88ff); aba ativa mantém cor do foco ao passar o rato. */
-  &:hover:not(.cliente-nav__item--active) {
-    color: #7a88ff;
-    background: transparent;
+  &:first-child {
+    margin-top: 0;
   }
 
-  /* `.cliente-nav` começa pelo `<span.indicator>` → o 1º botão é `:first-of-type`. */
-  &:first-of-type {
-    margin-top: 0;
-    padding-top: 0;
+  &:hover {
+    color: #7a88ff;
+    background: transparent;
   }
 
   &--active {
     color: var(--cliente-accent);
     font-weight: 600;
     background: transparent;
-    /** Só vertical zerado — recuo direito igual às outras abas. */
-    padding: 0 24px 0 0;
 
-    &:hover {
-      color: var(--cliente-accent);
-      background: transparent;
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 2px;
+      border-radius: 0;
+      background: var(--cliente-accent);
     }
+  }
+
+  &--active:hover {
+    color: var(--cliente-accent);
+    background: transparent;
   }
 
   &:focus-visible {
@@ -1690,17 +1663,6 @@ thead th.col-check {
   justify-content: center;
   color: #a8a0b0;
   overflow: hidden;
-  cursor: pointer;
-  outline: none;
-  transition: box-shadow 0.12s ease, border-color 0.12s ease;
-
-  &:hover {
-    border-color: #d4d4d8;
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.45);
-  }
 
   svg {
     width: 70px;
@@ -1737,7 +1699,7 @@ thead th.col-check {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 0.09s ease, opacity 0.09s ease;
+  transition: filter 0.15s ease, opacity 0.15s ease;
 
   svg {
     flex-shrink: 0;
@@ -1813,13 +1775,12 @@ thead th.col-check {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid #f1f1f1;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 4px 11px;
   font-size: 13px;
-  font-weight: 350;
-  color: #000000bf;
+  color: #18181b;
   background: #fff;
-  transition: all 0.11s linear;
+  transition: all 0.2s linear;
 
   &::placeholder {
     color: #a1a1aa;
@@ -1845,21 +1806,14 @@ thead th.col-check {
   width: 100%;
   height: 32px;
   border: 1px solid #f1f1f1;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   background: #fff;
-  transition:
-    border-color 0.11s linear,
-    box-shadow 0.11s linear;
-
-  &:hover {
-    border-color: #505afb;
-  }
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus-within {
-    border-color: #505afb;
-    box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
-    outline: 0;
+    border-color: #3788d8;
+    box-shadow: 0 0 0 2px rgba(55, 136, 216, 0.2);
   }
 
   &__prefix {
@@ -1869,8 +1823,8 @@ thead th.col-check {
     flex-shrink: 0;
     padding: 0 11px;
     font-size: 13px;
-    font-weight: 350;
-    color: #000000bf;
+    font-weight: 500;
+    color: #52525b;
     background: #fafafa;
     border-right: 1px solid #f1f1f1;
   }
@@ -1889,21 +1843,11 @@ thead th.col-check {
     border: none;
     border-radius: 0;
     font-size: 13px;
-    font-weight: 350;
-    color: #000000bf;
     box-shadow: none;
 
     &:focus {
       outline: none;
       box-shadow: none;
-    }
-
-    &::placeholder {
-      color: #a1a1aa;
-    }
-
-    &:hover {
-      outline: none;
     }
   }
 }
@@ -1924,7 +1868,7 @@ thead th.col-check {
   justify-self: stretch;
   min-width: 0;
   box-sizing: border-box;
-  padding: 0 20px 0 20px;
+  padding: 0 40px 0 20px;
   overflow: visible;
 }
 
@@ -1959,7 +1903,7 @@ thead th.col-check {
   font-weight: 600;
   color: #000000bf;
   cursor: pointer;
-  transition: all 0.14s ease, visibility 0s;
+  transition: all 0.3s, visibility 0s;
 
   &:hover {
     color: #18181b;
@@ -1981,7 +1925,7 @@ thead th.col-check {
   border-right: 2px solid #a1a1aa;
   border-bottom: 2px solid #a1a1aa;
   transform: rotate(-45deg);
-  transition: transform 0.14s ease;
+  transition: transform 0.28s ease;
 
   &--open {
     transform: rotate(45deg);
@@ -2040,19 +1984,17 @@ thead th.col-check {
     }
   }
 
-  /* Exclui redes sociais: aqui `width:100%` faz o input cobrir o prefixo no flex. */
-  label:not(.cliente-social-field) input {
+  label input {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    height: 32px;
+    height: 38px;
     border: 1px solid #f1f1f1;
-    border-radius: 12px;
-    padding: 4px 11px;
+    border-radius: 8px;
+    padding: 0 10px;
     font-size: 13px;
-    font-weight: 350;
-    color: #000000bf;
-    transition: all 0.11s linear;
+    color: #3f3f46;
+    transition: all 0.2s linear;
 
     &::placeholder {
       color: #a1a1aa;
@@ -2071,13 +2013,6 @@ thead th.col-check {
       background-color: #ffffff;
     }
   }
-
-  .cliente-social-field .cliente-social-input input {
-    width: auto;
-    max-width: none;
-    flex: 1 1 0;
-    min-width: 0;
-  }
 }
 
 @keyframes clienteSideContentOpen {
@@ -2095,6 +2030,10 @@ thead th.col-check {
   margin-bottom: 18px;
   width: 234px;
   max-width: 100%;
+
+  > .cliente-field-label {
+    font-size: 15px;
+  }
 }
 
 .cliente-switch-block {
@@ -2103,115 +2042,6 @@ thead th.col-check {
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
-
-  /**
-   * Espelho de .block-toggles--inline no genda-novo (toggle líquido 44×22).
-   */
-  .block-toggles.block-toggles--inline {
-    padding-left: 0;
-    padding-right: 0;
-    margin-left: 0;
-    overflow: visible;
-    flex-shrink: 0;
-  }
-
-  .block-toggles--inline .toggle-switch.toggle-switch--inline {
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.65rem;
-    overflow: visible;
-  }
-
-  .block-toggles--inline .toggle {
-    --toggle-w: 44px;
-    --toggle-h: 22px;
-    --toggle-pad: 2px;
-    --knob-size: 18px;
-    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
-    --knob-x-end: calc(
-      var(--toggle-w) - (var(--toggle-pad) * 2) - var(--knob-size)
-    );
-    width: var(--toggle-w);
-    height: var(--toggle-h);
-    background: #bfbfbf;
-    border-radius: 999px;
-    position: relative;
-    cursor: pointer;
-    transition:
-      background 0.25s ease,
-      filter 0.25s ease;
-    display: inline-block;
-    flex: 0 0 auto;
-    margin-left: 0;
-    overflow: visible;
-    isolation: isolate;
-    contain: layout;
-    box-sizing: border-box;
-    border: none;
-    outline: none;
-    padding: 0;
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-    flex-shrink: 0;
-  }
-
-  .block-toggles--inline .toggle.toggle--liquid:hover:not(.active) {
-    background: #8c8c8c;
-  }
-
-  .block-toggles--inline .toggle.active {
-    background: #4f46e5;
-    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
-    filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
-  }
-
-  .block-toggles--inline .toggle.toggle--pulse {
-    animation: clienteDrawerTogglePulse 1.5s ease-out;
-  }
-
-  .block-toggles--inline .toggle.toggle--liquid::after {
-    content: '';
-    position: absolute;
-    top: calc((var(--toggle-h) - var(--knob-size)) / 2);
-    left: var(--toggle-pad);
-    width: var(--knob-size);
-    height: var(--knob-size);
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    z-index: 1;
-    will-change: transform, box-shadow;
-    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
-    transform-origin: right center;
-    transform-box: fill-box;
-    contain: paint;
-    transition: none;
-    animation: none;
-  }
-
-  .block-toggles--inline .toggle.toggle--liquid.active::after {
-    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
-    transform-origin: left center;
-  }
-
-  .block-toggles--inline
-    .toggle.toggle--liquid.toggle--liq-armed.active::after {
-    transform-origin: right center;
-    animation: clienteDrawerToggleLiquidOn 0.52s cubic-bezier(0.25, 0.9, 0.25, 1)
-      forwards;
-  }
-
-  .block-toggles--inline
-    .toggle.toggle--liquid.toggle--liq-armed:not(.active)::after {
-    transform-origin: left center;
-    animation: clienteDrawerToggleLiquidOff 0.52s cubic-bezier(0.25, 0.9, 0.25, 1)
-      forwards;
-  }
-
-  .block-toggles--inline .toggle:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
-  }
 
   &__labels {
     min-width: 0;
@@ -2222,7 +2052,7 @@ thead th.col-check {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: #000000bf;
+    color: #18181b;
   }
 
   &__hint {
@@ -2243,64 +2073,29 @@ thead th.col-check {
   padding: 12px 24px 16px;
   border-top: 1px solid hsl(220, 13%, 91%);
   background: #fff;
-
-  /**
-   * Alinhamento com `.agenda-modal__footer`: mensagem opcional (+ erro) antes dos botões.
-   */
-  .cliente-save-hint {
-    margin: 0;
-    flex: 1 1 auto;
-    min-width: 0;
-    font-size: 13px;
-    line-height: 1.35;
-    color: #71717a;
-    text-align: left;
-
-    &--error {
-      color: #b91c1c;
-      font-weight: 500;
-    }
-  }
-
-  /*
-   * Igual ao footer do drawer de edição (`agenda-novo`):
-   * `.agenda-modal__footer .btn.btn-footer` (+ variantes ghost / primary).
-   */
 }
 
 .cliente-footer-btn {
-  border: 1px solid transparent;
-  box-sizing: border-box;
-  min-width: 0;
-  min-height: 40px;
+  min-width: 96px;
   height: 40px;
-  padding: 0 15px;
-  border-radius: 14px;
-  font-size: 14px;
-  font-weight: 500;
-  margin-top: 0;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 
   &--ghost {
-    font-weight: 400;
-    color: #000000bf;
+    border: 1px solid transparent;
     background: transparent;
-    border-color: #e7e5e4;
+    color: #52525b;
 
-    &:hover:not(:disabled) {
-      color: #7a88ff;
-      border-color: #7a88ff;
-      background: #ffffff;
+    &:hover {
+      background: #fafafa;
+      color: #18181b;
     }
 
     &:focus-visible {
@@ -2310,13 +2105,12 @@ thead th.col-check {
   }
 
   &--primary {
-    background: #505afb;
-    border-color: #505afb;
+    border: none;
+    background: var(--cliente-accent);
     color: #fff;
 
-    &:hover:not(:disabled) {
-      background: #7b82fc;
-      border-color: #7b82fc;
+    &:hover {
+      filter: brightness(1.05);
     }
 
     &:focus-visible {
@@ -2330,27 +2124,26 @@ thead th.col-check {
   display: grid;
   width: 100%;
   max-width: 460px;
-  /* 12 colunas: 3+6+3 (CEP / Logradouro / Número) — ~109px + ~220px + ~109px com max 460px e gap. */
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
 
   > label:nth-child(1) {
-    grid-column: span 3;
+    grid-column: span 2;
   }
 
   > label:nth-child(2) {
-    grid-column: span 6;
+    grid-column: span 2;
   }
 
   > label:nth-child(3) {
-    grid-column: span 3;
+    grid-column: span 2;
   }
 
   > label:nth-child(4),
   > label:nth-child(5),
   > label:nth-child(6),
   > label:nth-child(7) {
-    grid-column: span 6;
+    grid-column: span 3;
   }
 }
 
@@ -2362,21 +2155,21 @@ thead th.col-check {
   grid-template-columns: 88.56px 135px;
   gap: 0;
   align-items: stretch;
-  min-height: 32px;
-  height: 32px;
+  min-height: 30px;
+  height: 30px;
   border: none;
   border-radius: 0;
   background: #fff;
   overflow: visible;
   box-sizing: border-box;
   transition:
-    border-color 0.09s ease,
-    box-shadow 0.09s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 
   &__field {
     min-width: 0;
     width: 88.56px;
-    height: 32px;
+    height: 30px;
     margin: 0;
     padding: 4px 11px;
     border: 1px solid #d9d9d9;
@@ -2385,14 +2178,24 @@ thead th.col-check {
     background: #fff;
     box-shadow: none;
     font-size: 13px;
-    font-weight: 350;
+    font-weight: 500;
     color: #000000bf;
     text-align: left;
     outline: 0;
-    transition: all 0.11s linear;
+    transition: all 0.2s linear;
 
     &::placeholder {
       color: #a1a1aa;
+    }
+
+    &:focus {
+      outline: 0;
+      border-color: var(--cliente-accent);
+      box-shadow: none;
+    }
+
+    &:hover {
+      border-color: var(--cliente-accent);
     }
   }
 
@@ -2411,23 +2214,23 @@ thead th.col-check {
     align-items: center;
     justify-content: flex-start;
     gap: 0;
-    min-height: 32px;
-    height: 32px;
+    min-height: 30px;
+    height: 30px;
     margin: 0;
     padding: 0 10px;
     border: 1px solid #d9d9d9;
     border-radius: 0 12px 12px 0;
     background: #fff;
     font-size: 13px;
-    font-weight: 350;
-    color: #000000bf;
+    font-weight: 500;
+    color: #71717a;
     cursor: pointer;
     text-align: left;
     position: relative;
     transition:
-      background-color 0.12s cubic-bezier(0.22, 1, 0.36, 1),
-      border-color 0.12s cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+      background-color 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 
     &:hover {
       background: #fff;
@@ -2448,7 +2251,7 @@ thead th.col-check {
   &__toggle-label {
     flex: 1 1 auto;
     width: 100%;
-    height: 32px;
+    height: 30px;
     padding: 0 12px 0 0;
     display: inline-flex;
     align-items: center;
@@ -2460,7 +2263,7 @@ thead th.col-check {
     white-space: nowrap;
     color: #000000bf;
     font-weight: 400;
-    transition: color 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: color 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   &__toggle-chev {
@@ -2508,9 +2311,9 @@ thead th.col-check {
     transform: translateY(-4px) scale(0.98);
     transform-origin: top;
     transition:
-      opacity 0.1s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.1s cubic-bezier(0.22, 1, 0.36, 1),
-      visibility 0s linear 0.1s;
+      opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0.18s;
   }
 
   &__menu--open {
@@ -2519,8 +2322,8 @@ thead th.col-check {
     pointer-events: auto;
     transform: translateY(0) scale(1);
     transition:
-      opacity 0.1s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.1s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
       visibility 0s;
   }
 
@@ -2538,8 +2341,8 @@ thead th.col-check {
     text-align: left;
     cursor: pointer;
     transition:
-      background 0.09s ease,
-      color 0.09s ease;
+      background 0.16s ease,
+      color 0.16s ease;
 
     &:hover {
       background: #f4f4f5;
@@ -2557,41 +2360,38 @@ thead th.col-check {
   }
 }
 
-/* Acima do padrão `.app-drawer input` (app.component): borda direita visível no hover/focus em todo o perímetro. */
-:host .app-drawer.cliente-drawer input.cliente-discount__field {
-  border-right: none;
-
-  &:hover,
-  &:focus,
-  &:focus-visible {
-    position: relative;
-    z-index: 1;
-    border-right-style: solid;
-    border-right-width: 1px;
-    border-right-color: var(--cliente-accent);
-    border-color: var(--cliente-accent);
-    box-shadow: none;
-    outline: 0;
-  }
-}
-
 .cliente-social-field {
   width: 100%;
   max-width: 460px;
 }
 
-/* Estados de hover/focus só nos `input`; o prefix fica só visual (evita `:focus-within` no grupo). */
 .cliente-social-input {
   display: flex;
   align-items: stretch;
   width: 100%;
   max-width: 100%;
-  min-height: 32px;
-  border: none;
+  min-height: 38px;
+  border: 1px;
   border-radius: 12px;
   overflow: visible;
   background: #fff;
   box-sizing: border-box;
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear;
+
+  &:hover,
+  &:focus-within {
+    .cliente-social-input__prefix {
+      border-color: #505afb;
+    }
+
+    input {
+      border-color: #505afb;
+      outline: 0;
+      background-color: #ffffff;
+    }
+  }
 
   &__prefix {
     flex: 0 0 auto;
@@ -2601,17 +2401,13 @@ thead th.col-check {
     align-items: center;
     gap: 6px;
     border: 1px solid #f1f1f1;
-    border-right: none;
     border-radius: 12px 0 0 12px;
-    color: #000000bf;
-    font-weight: 350;
+    color: #71717a;
     font-size: 13px;
     background: #fafafa;
     box-sizing: border-box;
     cursor: not-allowed;
     user-select: none;
-    position: relative;
-    z-index: 1;
 
     svg {
       width: 13.33px;
@@ -2623,40 +2419,29 @@ thead th.col-check {
   }
 
   input {
-    flex: 1 1 0;
+    flex: 1 1 auto;
     width: auto;
     min-width: 0;
-    height: auto;
-    align-self: stretch;
-    margin: 0;
-    position: relative;
-    z-index: 0;
     border: 1px solid #f1f1f1;
-    border-left: none;
-    border-radius: 0 12px 12px 0;
-    box-shadow: inset 1px 0 0 #e4e4e7;
-    padding: 4px 12px;
-    font-size: 13px;
-    font-weight: 350;
+    border-left: 1px solid #f1f1f1 !important;
+    border-radius: 0 12px 12px 0 !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    box-shadow: none;
+    padding: 0 12px;
+    font-size: 16px;
     color: #000000bf;
-    background: #fff;
-    transition:
-      border-color 0.1s linear,
-      box-shadow 0.1s linear,
-      background-color 0.1s linear;
+    transition: all 0.2s linear;
 
     &:hover {
       border-color: #505afb;
-      box-shadow: inset 1px 0 0 #505afb;
       outline: 0;
       background-color: #ffffff;
     }
 
     &:focus {
       border-color: #505afb;
-      box-shadow:
-        inset 1px 0 0 #505afb,
-        0 0 0 2px rgba(5, 55, 255, 0.06);
+      box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
       outline: 0;
       background-color: #ffffff;
     }
@@ -2699,7 +2484,7 @@ thead th.col-check {
     visibility: hidden;
     opacity: 0;
     transform: translateY(-4px);
-    transition: opacity 0.1s ease, transform 0.1s ease, visibility 0s linear 0.1s;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
     pointer-events: none;
 
     strong {
@@ -2716,57 +2501,45 @@ thead th.col-check {
     visibility: visible;
     opacity: 1;
     transform: translateY(0);
-    transition: opacity 0.1s ease, transform 0.1s ease, visibility 0s;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s;
   }
 }
 
-@keyframes clienteDrawerTogglePulse {
-  0% {
-    box-shadow: 0 0 0 0 var(--toggle-pulse-color, rgba(79, 70, 229, 0.35));
-  }
-  45% {
-    box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-  }
-}
+.switch {
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: #d4d4d8;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 
-@keyframes clienteDrawerToggleLiquidOn {
-  0% {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+  &::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    transition: transform 0.2s ease;
   }
-  30% {
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transform: translate3d(0, 0, 0) scaleX(1.1) scaleY(0.985);
-  }
-  60% {
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    transform: translate3d(calc(var(--knob-x-end) - 0.5px), 0, 0) scaleX(1.03) scaleY(0.995);
-  }
-  100% {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
-  }
-}
 
-@keyframes clienteDrawerToggleLiquidOff {
-  0% {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+  &.on {
+    background: #3788d8;
+
+    &::after {
+      transform: translateX(18px);
+    }
   }
-  30% {
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1.1) scaleY(0.985);
-  }
-  60% {
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    transform: translate3d(1px, 0, 0) scaleX(1.03) scaleY(0.995);
-  }
-  100% {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(55, 136, 216, 0.45);
   }
 }
 
@@ -2817,56 +2590,32 @@ thead th.col-check {
     border-right: none;
     border-bottom: 1px solid hsl(220, 13%, 91%);
 
-    .cliente-nav__indicator {
-      display: none;
-    }
-
     &__item {
       margin-top: 0;
-      padding: 0 24px 8px 0;
+      padding: 8px 24px 8px 0;
       text-align: left;
       border-radius: 8px;
+      background: transparent;
+      transition:
+        color 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
-      &:first-of-type {
-        margin-top: -8px;
-        padding-top: 0;
-      }
-
-      &::before {
-        content: '';
-        position: absolute;
-        left: 10%;
-        right: 14%;
-        bottom: 4px;
-        height: 2px;
-        border-radius: 1px;
-        background: var(--cliente-accent);
-        opacity: 0;
-        transform: scaleX(0.25);
-        transform-origin: center;
-        transition:
-          opacity 0.4s cubic-bezier(0.33, 1, 0.68, 1),
-          transform 0.52s cubic-bezier(0.34, 1.12, 0.32, 1);
-        pointer-events: none;
-      }
-
-      &--active {
-        box-shadow: none;
-
-        &::before {
-          opacity: 1;
-          transform: scaleX(1);
-        }
-      }
-
-      &:hover:not(.cliente-nav__item--active) {
+      &:hover {
         color: #7a88ff;
         background: transparent;
       }
 
+      &--active::after {
+        display: none;
+      }
+
+      &--active {
+        color: var(--cliente-accent, #3788d8);
+        box-shadow: inset 0 -2px 0 0 var(--cliente-accent, #3788d8);
+      }
+
       &--active:hover {
-        color: var(--cliente-accent);
-        background: transparent;
+        color: var(--cliente-accent, #3788d8);
       }
     }
   }
