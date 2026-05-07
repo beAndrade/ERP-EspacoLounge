@@ -42,6 +42,7 @@ interface ComandaGrupo {
   valorTotal: number | null;
 }
 
+type StatusCobrancaDerivado = 'aberto' | 'pendente' | 'parcial' | 'pago';
 
 
 /** Payload em JSON na coluna `observacoes` (extras da UI não mapeadas no core da API). */
@@ -63,6 +64,15 @@ interface ClienteObsExtras {
 }
 
 const DRAWER_ANIM_MS = 430;
+
+function formataMoeda(n: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(n) ? n : 0);
+}
 
 @Component({
   selector: 'app-comandas',
@@ -107,14 +117,17 @@ export class ComandasComponent implements OnInit, OnDestroy {
   /** Select nativo não estiliza o painel; menu custom igual ao layout de referência. */
   perPageMenuAberto = false;
 
-  /** Chips do painel lateral (UI Belasis; ligação a filtros reais a definir). */
-  readonly etiquetasPagamentoStub = [
-    'Bloqueado',
-    'Disponível',
-    'Em aberto',
-    'Atrasado',
-    'Pago',
+  /** Filtro funcional de status derivado de pagamento da comanda. */
+  readonly filtrosStatusPagamento: Array<{
+    id: StatusCobrancaDerivado;
+    label: string;
+  }> = [
+    { id: 'aberto', label: 'Em aberto' },
+    { id: 'pendente', label: 'Pendente' },
+    { id: 'parcial', label: 'Parcial' },
+    { id: 'pago', label: 'Pago' },
   ];
+  statusPagamentoSelecionados = new Set<StatusCobrancaDerivado>();
 
   readonly formasPagamentoStub = [
     'Boleto',
@@ -788,11 +801,17 @@ export class ComandasComponent implements OnInit, OnDestroy {
         );
       });
     }
+    if (this.statusPagamentoSelecionados.size > 0) {
+      list = list.filter((g) =>
+        this.statusPagamentoSelecionados.has(this.statusCobrancaDerivado(g)),
+      );
+    }
     return list.slice().sort((a, b) => {
-      const c = b.data.localeCompare(a.data);
-      return c !== 0
-        ? c
-        : a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
+      const pa = this.prioridadeOrdenacaoStatus(a);
+      const pb = this.prioridadeOrdenacaoStatus(b);
+      if (pa !== pb) return pa - pb;
+      const c = a.data.localeCompare(b.data);
+      return c !== 0 ? c : a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
     });
   }
 
@@ -836,24 +855,79 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.pagina < this.totalPaginas()) this.pagina++;
   }
 
-  cobrancaFinalizada(g: ComandaGrupo): boolean {
-    return g.linhas[0]?.cobrancaStatus === 'finalizada';
+  statusCobrancaDerivado(g: ComandaGrupo): StatusCobrancaDerivado {
+    const s = g.linhas[0]?.status_cobranca;
+    if (s === 'aberto' || s === 'pendente' || s === 'parcial' || s === 'pago') {
+      return s;
+    }
+    return 'aberto';
   }
 
-  pagamentoConfirmado(g: ComandaGrupo): boolean {
-    return (g.linhas[0]?.pagamentoStatus ?? '') === 'confirmado';
+  private prioridadeOrdenacaoStatus(g: ComandaGrupo): number {
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'parcial') return 0;
+    if (s === 'pendente') return 1;
+    if (s === 'aberto') return 2;
+    return 3;
   }
 
   rotuloStatus(g: ComandaGrupo): string {
-    if (!this.cobrancaFinalizada(g)) return 'Pendente';
-    if (!this.pagamentoConfirmado(g)) return 'Pendente';
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'aberto') return 'Em aberto';
+    if (s === 'pendente') return 'Pendente';
+    if (s === 'parcial') return 'Parcial';
     return 'Pago';
   }
 
   rotuloPagamento(g: ComandaGrupo): string {
-    if (!this.cobrancaFinalizada(g)) return 'Em aberto';
-    if (this.pagamentoConfirmado(g)) return 'Pago';
-    return 'Em aberto';
+    return this.rotuloStatus(g);
+  }
+
+  classeBadgeStatus(g: ComandaGrupo): string {
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'pago') return 'badge--ok';
+    if (s === 'parcial') return 'badge--warn';
+    if (s === 'pendente') return 'badge--info';
+    return 'badge--aviso';
+  }
+
+  resumoParcial(g: ComandaGrupo): string {
+    const l0 = g.linhas[0];
+    const pago = Number(l0?.total_pago ?? 0) || 0;
+    const total = Number(l0?.total ?? g.valorTotal ?? 0) || 0;
+    if (this.statusCobrancaDerivado(g) !== 'parcial') return '';
+    return `${formataMoeda(pago)} de ${formataMoeda(total)}`;
+  }
+
+  saldoAtrasadoMaisDe7Dias(g: ComandaGrupo): boolean {
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'pago') return false;
+    const saldo = Number(g.linhas[0]?.saldo ?? 0) || 0;
+    if (saldo <= 0) return false;
+    const dt = new Date(`${g.data}T00:00:00`);
+    if (Number.isNaN(dt.getTime())) return false;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const diffDias = Math.floor((hoje.getTime() - dt.getTime()) / 86_400_000);
+    return diffDias > 7;
+  }
+
+  toggleFiltroStatusPagamento(id: StatusCobrancaDerivado): void {
+    if (this.statusPagamentoSelecionados.has(id)) {
+      this.statusPagamentoSelecionados.delete(id);
+    } else {
+      this.statusPagamentoSelecionados.add(id);
+    }
+    this.pagina = 1;
+  }
+
+  filtroStatusAtivo(id: StatusCobrancaDerivado): boolean {
+    return this.statusPagamentoSelecionados.has(id);
+  }
+
+  limparFiltrosStatusPagamento(): void {
+    this.statusPagamentoSelecionados.clear();
+    this.pagina = 1;
   }
 
   valorExibicao(g: ComandaGrupo): number | null {

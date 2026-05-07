@@ -123,6 +123,8 @@
   font-weight: 600;
   background: #f5f5f4;
   color: var(--color-muted);
+  border: 0;
+  cursor: pointer;
 
   &--accent {
     background: #fef3c7;
@@ -910,6 +912,32 @@ thead th.col-check {
     color: #389e0d;
     background: #f6ffed;
     border-color: #b7eb8f;
+  }
+
+  &--warn {
+    color: #c2410c;
+    background: #fff7ed;
+    border-color: #fdba74;
+  }
+
+  &--critical {
+    margin-top: 4px;
+    color: #b91c1c;
+    background: #fee2e2;
+    border-color: #fecaca;
+    line-height: 18px;
+    font-size: 11px;
+    display: inline-block;
+  }
+
+  &--sub {
+    margin-top: 4px;
+    color: #9a3412;
+    background: #ffedd5;
+    border-color: #fed7aa;
+    line-height: 18px;
+    font-size: 11px;
+    display: inline-block;
   }
 }
 

@@ -35,6 +35,7 @@ import {
   totalLiquidoConfirmacao,
 } from './finance-domain';
 import { getResumosPorAtendimento } from './comanda-pagamentos-domain';
+import { criarPagamentoComanda, getResumoComanda } from './comanda-pagamentos-domain';
 import { resolverPrecoUnitarioProduto } from './produtos-preco';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 
@@ -1743,6 +1744,7 @@ export async function finalizarCobrancaPorIdAtendimento(
     }
   }
 
+  const resumoAntes = await getResumoComanda(db, id);
   let atualizadas = 0;
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
@@ -1753,7 +1755,7 @@ export async function finalizarCobrancaPorIdAtendimento(
       descricao?: string;
     } = {
       cobrancaStatus: 'finalizada',
-      pagamentoStatus: 'pendente',
+      pagamentoStatus: resumoAntes.total_pago > 0 ? 'parcial' : 'pendente',
       desconto: descontoStr,
     };
 
@@ -1823,74 +1825,58 @@ export async function confirmarPagamentoPorIdAtendimento(
     throw new Error('Método de pagamento inválido. Use Dinheiro, Pix ou Cartão.');
   }
 
-  const result = await db.transaction(async (tx) => {
-    const candidatas = await tx
-      .select()
-      .from(atendimentos)
-      .where(
-        and(
-          eq(atendimentos.idAtendimento, id),
-          eq(atendimentos.cobrancaStatus, 'finalizada'),
-        ),
-      )
-      .orderBy(asc(atendimentos.id));
+  const candidatas = await db
+    .select()
+    .from(atendimentos)
+    .where(
+      and(
+        eq(atendimentos.idAtendimento, id),
+        eq(atendimentos.cobrancaStatus, 'finalizada'),
+      ),
+    )
+    .orderBy(asc(atendimentos.id));
+  if (candidatas.length === 0) {
+    return { linhasAtualizadas: 0, movimentacaoId: null };
+  }
 
-    if (candidatas.length === 0) {
-      return { linhasAtualizadas: 0, movimentacaoId: null };
-    }
-
-    await darBaixaEstoqueProdutosDoPedido(tx as unknown as Db, id);
-
-    const updated = await tx
-      .update(atendimentos)
-      .set({
-        pagamentoStatus: 'confirmado',
-        pagamentoMetodo: metodo,
-      })
-      .where(
-        and(
-          eq(atendimentos.idAtendimento, id),
-          eq(atendimentos.cobrancaStatus, 'finalizada'),
-        ),
-      )
-      .returning({ id: atendimentos.id });
-
-    let dataMov = ymdFromAtendimentoDate(
+  await darBaixaEstoqueProdutosDoPedido(db, id);
+  const total = totalLiquidoConfirmacao(candidatas);
+  if (total <= 0) {
+    return { linhasAtualizadas: 0, movimentacaoId: null };
+  }
+  const metodoComanda =
+    metodo === 'Dinheiro'
+      ? 'dinheiro'
+      : metodo === 'Pix'
+        ? 'pix'
+        : 'cartao_credito';
+  const criado = await criarPagamentoComanda(db, id, {
+    valor: total,
+    metodo: metodoComanda,
+    parcelas: metodoComanda === 'cartao_credito' ? 1 : 1,
+    data_pagamento: ymdFromAtendimentoDate(
       candidatas[0]!.data as string | Date | null,
-    );
-    if (!dataMov) {
-      const n = new Date();
-      dataMov = `${n.getFullYear()}-${pad2(n.getMonth() + 1)}-${pad2(n.getDate())}`;
-    }
-
-    const total = totalLiquidoConfirmacao(candidatas);
-    const slug = slugCategoriaReceitaPredominante(candidatas);
-    const nomeCliente = String(candidatas[0]?.nomeCliente || '').trim();
-    /** Texto do lançamento: prefixo fixo, separador e nome da cliente quando existir. */
-    const descricao = nomeCliente
-      ? `Confirmação pagamento — ${nomeCliente}`
-      : 'Confirmação pagamento';
-
-    let movimentacaoId: number | null = null;
-    if (updated.length > 0 && total > 0) {
-      movimentacaoId = await inserirReceitaConfirmacaoPagamento(
-        tx as unknown as Db,
-        {
-          idAtendimento: id,
-          dataMov,
-          valorTotal: total,
-          categoriaSlug: slug,
-          metodoPagamento: metodo,
-          descricao,
-        },
-      );
-    }
-
-    return {
-      linhasAtualizadas: updated.length,
-      movimentacaoId,
-    };
+    ) || undefined,
+    observacao: 'Confirmação via fluxo legado',
   });
+  const movId = criado.pagamento.movimentacao_id ?? null;
+  const updated = await db
+    .update(atendimentos)
+    .set({
+      pagamentoMetodo: metodo,
+    })
+    .where(
+      and(
+        eq(atendimentos.idAtendimento, id),
+        eq(atendimentos.cobrancaStatus, 'finalizada'),
+      ),
+    )
+    .returning({ id: atendimentos.id });
+
+  const result = {
+    linhasAtualizadas: updated.length,
+    movimentacaoId: movId,
+  };
 
   if (result.linhasAtualizadas > 0) {
     await recalcularFolhaAposMudancaAtendimento(db, id);

@@ -53,8 +53,16 @@
           <div class="comandas-filtros-block">
             <h3 class="comandas-filtros-block__title">Status de pagamento</h3>
             <div class="comandas-filtros-block__body comandas-filtros-chips">
-              <span class="comandas-filtros-chip">Finalizado</span>
-              <span class="comandas-filtros-chip comandas-filtros-chip--accent">Pendente</span>
+              @for (st of filtrosStatusPagamento; track st.id) {
+                <button
+                  type="button"
+                  class="comandas-filtros-chip comandas-filtros-chip--outline"
+                  [class.comandas-filtros-chip--accent]="filtroStatusAtivo(st.id)"
+                  (click)="toggleFiltroStatusPagamento(st.id)"
+                >
+                  {{ st.label }}
+                </button>
+              }
             </div>
           </div>
 
@@ -63,12 +71,9 @@
             <div class="comandas-filtros-block__body">
               <button type="button" class="comandas-filtros-link-mute" disabled>Selecionar tudo</button>
               <div class="comandas-filtros-chip-row">
-                @for (
-                  etiqueta of etiquetasPagamentoStub;
-                  track etiqueta
-                ) {
+                @for (etiqueta of filtrosStatusPagamento; track etiqueta.id) {
                   <span class="comandas-filtros-chip comandas-filtros-chip--outline">{{
-                    etiqueta
+                    etiqueta.label
                   }}</span>
                 }
               </div>
@@ -87,6 +92,9 @@
           </div>
 
           <div class="comandas-filtros-drawer__footer">
+            <button type="button" class="btn btn--ghost" (click)="limparFiltrosStatusPagamento()">
+              Limpar status
+            </button>
             <button type="button" class="btn" (click)="carregar()">Aplicar</button>
           </div>
         </div>
@@ -319,13 +327,15 @@
                       <td>
                         <span
                           class="badge"
-                          [class.badge--aviso]="!cobrancaFinalizada(g)"
-                          [class.badge--info]="
-                            cobrancaFinalizada(g) && !pagamentoConfirmado(g)
-                          "
-                          [class.badge--ok]="pagamentoConfirmado(g)"
+                          [class.badge--aviso]="classeBadgeStatus(g) === 'badge--aviso'"
+                          [class.badge--info]="classeBadgeStatus(g) === 'badge--info'"
+                          [class.badge--warn]="classeBadgeStatus(g) === 'badge--warn'"
+                          [class.badge--ok]="classeBadgeStatus(g) === 'badge--ok'"
                           >{{ rotuloStatus(g) }}</span
                         >
+                        @if (saldoAtrasadoMaisDe7Dias(g)) {
+                          <div class="badge badge--critical">Saldo > 7 dias</div>
+                        }
                       </td>
                       <td class="col-valor">
                         @if (valorExibicao(g) !== null) {
@@ -339,10 +349,15 @@
                       <td class="col-pagamento">
                         <span
                           class="badge"
-                          [class.badge--aviso]="!pagamentoConfirmado(g)"
-                          [class.badge--ok]="pagamentoConfirmado(g)"
+                          [class.badge--aviso]="classeBadgeStatus(g) === 'badge--aviso'"
+                          [class.badge--info]="classeBadgeStatus(g) === 'badge--info'"
+                          [class.badge--warn]="classeBadgeStatus(g) === 'badge--warn'"
+                          [class.badge--ok]="classeBadgeStatus(g) === 'badge--ok'"
                           >{{ rotuloPagamento(g) }}</span
                         >
+                        @if (resumoParcial(g)) {
+                          <div class="badge badge--sub">{{ resumoParcial(g) }}</div>
+                        }
                       </td>
                       <td class="col-menu">
                         <div class="comandas-row-menu">
