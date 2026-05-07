@@ -1588,8 +1588,8 @@ thead th.col-check {
     pointer-events: none;
     /* translateY aplicado pelo componente (`clienteNavIndicadorTransform`) — alinha com aba sem padding quando ativa. */
     transition:
-      transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      transform 0.55s cubic-bezier(0.34, 1.12, 0.32, 1),
+      opacity 0.4s cubic-bezier(0.33, 1, 0.68, 1);
     will-change: transform;
   }
 }
@@ -1621,8 +1621,10 @@ thead th.col-check {
     color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 
-  &:first-child {
+  /* `.cliente-nav` começa pelo `<span.indicator>` → o 1º botão é `:first-of-type`. */
+  &:first-of-type {
     margin-top: 0;
+    padding-top: 0;
   }
 
   &:hover:not(.cliente-nav__item--active) {
@@ -2824,6 +2826,11 @@ button.cliente-nav__item.cliente-nav__item--active:hover {
       text-align: left;
       border-radius: 8px;
 
+      &:first-of-type {
+        margin-top: -8px;
+        padding-top: 0;
+      }
+
       &::before {
         content: '';
         position: absolute;
@@ -2837,8 +2844,8 @@ button.cliente-nav__item.cliente-nav__item--active:hover {
         transform: scaleX(0.25);
         transform-origin: center;
         transition:
-          opacity 0.34s cubic-bezier(0.16, 1, 0.3, 1),
-          transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+          opacity 0.4s cubic-bezier(0.33, 1, 0.68, 1),
+          transform 0.52s cubic-bezier(0.34, 1.12, 0.32, 1);
         pointer-events: none;
       }
 
