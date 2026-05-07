@@ -395,6 +395,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.clienteAbaAtiva = aba;
   }
 
+  /** Índice da aba ativa para animar a barra direita na `.cliente-nav` (desktop). */
+  abaAtivaClienteIndex(): number {
+    const lista = this.abasCliente as readonly string[];
+    const ix = lista.indexOf(this.clienteAbaAtiva);
+    return ix >= 0 ? ix : 0;
+  }
+
   salvarClienteDrawer(): void {
     this.clienteSaveErro = '';
     const nome = this.cadastroNome.trim();
