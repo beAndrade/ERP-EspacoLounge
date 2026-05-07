@@ -608,6 +608,10 @@ input.comandas-head__busca-input[type='search']::-webkit-search-cancel-button {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+
+  td {
+    border-bottom: none;
+  }
 }
 
 col.comandas-table__col-check {
@@ -665,10 +669,6 @@ td {
   text-align: left;
   padding: 12px 8px;
   vertical-align: middle;
-}
-
-tbody td {
-  border-bottom: 1px solid #efefef;
 }
 
 td {
@@ -1657,6 +1657,17 @@ thead th.col-check {
   justify-content: center;
   color: #a8a0b0;
   overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+
+  &:hover {
+    border-color: #d4d4d8;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.45);
+  }
 
   svg {
     width: 70px;
@@ -2060,6 +2071,115 @@ thead th.col-check {
   justify-content: flex-start;
   gap: 12px;
 
+  /**
+   * Espelho de .block-toggles--inline no genda-novo (toggle líquido 44×22).
+   */
+  .block-toggles.block-toggles--inline {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+
+  .block-toggles--inline .toggle-switch.toggle-switch--inline {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.65rem;
+    overflow: visible;
+  }
+
+  .block-toggles--inline .toggle {
+    --toggle-w: 44px;
+    --toggle-h: 22px;
+    --toggle-pad: 2px;
+    --knob-size: 18px;
+    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
+    --knob-x-end: calc(
+      var(--toggle-w) - (var(--toggle-pad) * 2) - var(--knob-size)
+    );
+    width: var(--toggle-w);
+    height: var(--toggle-h);
+    background: #bfbfbf;
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition:
+      background 0.25s ease,
+      filter 0.25s ease;
+    display: inline-block;
+    flex: 0 0 auto;
+    margin-left: 0;
+    overflow: visible;
+    isolation: isolate;
+    contain: layout;
+    box-sizing: border-box;
+    border: none;
+    outline: none;
+    padding: 0;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    flex-shrink: 0;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid:hover:not(.active) {
+    background: #8c8c8c;
+  }
+
+  .block-toggles--inline .toggle.active {
+    background: #4f46e5;
+    --toggle-pulse-color: rgba(79, 70, 229, 0.35);
+    filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
+  }
+
+  .block-toggles--inline .toggle.toggle--pulse {
+    animation: clienteDrawerTogglePulse 1.5s ease-out;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid::after {
+    content: '';
+    position: absolute;
+    top: calc((var(--toggle-h) - var(--knob-size)) / 2);
+    left: var(--toggle-pad);
+    width: var(--knob-size);
+    height: var(--knob-size);
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    will-change: transform, box-shadow;
+    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+    transform-origin: right center;
+    transform-box: fill-box;
+    contain: paint;
+    transition: none;
+    animation: none;
+  }
+
+  .block-toggles--inline .toggle.toggle--liquid.active::after {
+    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+    transform-origin: left center;
+  }
+
+  .block-toggles--inline
+    .toggle.toggle--liquid.toggle--liq-armed.active::after {
+    transform-origin: right center;
+    animation: clienteDrawerToggleLiquidOn 0.52s cubic-bezier(0.25, 0.9, 0.25, 1)
+      forwards;
+  }
+
+  .block-toggles--inline
+    .toggle.toggle--liquid.toggle--liq-armed:not(.active)::after {
+    transform-origin: left center;
+    animation: clienteDrawerToggleLiquidOff 0.52s cubic-bezier(0.25, 0.9, 0.25, 1)
+      forwards;
+  }
+
+  .block-toggles--inline .toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.35);
+  }
+
   &__labels {
     min-width: 0;
     flex: 1;
@@ -2090,29 +2210,64 @@ thead th.col-check {
   padding: 12px 24px 16px;
   border-top: 1px solid hsl(220, 13%, 91%);
   background: #fff;
+
+  /**
+   * Alinhamento com `.agenda-modal__footer`: mensagem opcional (+ erro) antes dos botões.
+   */
+  .cliente-save-hint {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #71717a;
+    text-align: left;
+
+    &--error {
+      color: #b91c1c;
+      font-weight: 500;
+    }
+  }
+
+  /*
+   * Igual ao footer do drawer de edição (`agenda-novo`):
+   * `.agenda-modal__footer .btn.btn-footer` (+ variantes ghost / primary).
+   */
 }
 
 .cliente-footer-btn {
-  min-width: 96px;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 40px;
   height: 40px;
-  padding: 0 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 0 15px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 0;
   cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   transition:
-    background-color 0.09s ease,
-    color 0.09s ease,
-    box-shadow 0.09s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
   &--ghost {
-    border: 1px solid transparent;
+    font-weight: 400;
+    color: #000000bf;
     background: transparent;
-    color: #52525b;
+    border-color: #e7e5e4;
 
-    &:hover {
-      background: #fafafa;
-      color: #18181b;
+    &:hover:not(:disabled) {
+      color: #7a88ff;
+      border-color: #7a88ff;
+      background: #ffffff;
     }
 
     &:focus-visible {
@@ -2122,12 +2277,13 @@ thead th.col-check {
   }
 
   &--primary {
-    border: none;
-    background: var(--cliente-accent);
+    background: #505afb;
+    border-color: #505afb;
     color: #fff;
 
-    &:hover {
-      filter: brightness(1.05);
+    &:hover:not(:disabled) {
+      background: #7b82fc;
+      border-color: #7b82fc;
     }
 
     &:focus-visible {
@@ -2531,41 +2687,53 @@ thead th.col-check {
   }
 }
 
-.switch {
-  flex-shrink: 0;
-  width: 40px;
-  height: 22px;
-  border: none;
-  border-radius: 999px;
-  background: #d4d4d8;
-  position: relative;
-  cursor: pointer;
-  transition: background-color 0.11s ease;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-    transition: transform 0.11s ease;
+@keyframes clienteDrawerTogglePulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--toggle-pulse-color, rgba(79, 70, 229, 0.35));
   }
-
-  &.on {
-    background: #3788d8;
-
-    &::after {
-      transform: translateX(18px);
-    }
+  45% {
+    box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
   }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
 
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(55, 136, 216, 0.45);
+@keyframes clienteDrawerToggleLiquidOn {
+  0% {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
+  }
+  30% {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transform: translate3d(0, 0, 0) scaleX(1.1) scaleY(0.985);
+  }
+  60% {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    transform: translate3d(calc(var(--knob-x-end) - 0.5px), 0, 0) scaleX(1.03) scaleY(0.995);
+  }
+  100% {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+  }
+}
+
+@keyframes clienteDrawerToggleLiquidOff {
+  0% {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1) scaleY(1);
+  }
+  30% {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transform: translate3d(var(--knob-x-end), 0, 0) scaleX(1.1) scaleY(0.985);
+  }
+  60% {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    transform: translate3d(1px, 0, 0) scaleX(1.03) scaleY(0.995);
+  }
+  100% {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transform: translate3d(0, 0, 0) scaleX(1) scaleY(1);
   }
 }
 

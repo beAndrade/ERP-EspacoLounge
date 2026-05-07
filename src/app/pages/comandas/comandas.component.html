@@ -931,14 +931,25 @@
                       </div>
                     </div>
                     <div class="cliente-switch-block">
-                      <button
-                        type="button"
-                        class="switch"
-                        role="switch"
-                        [attr.aria-checked]="notificacoesAtivo"
-                        [class.on]="notificacoesAtivo"
-                        (click)="notificacoesAtivo = !notificacoesAtivo"
-                      ></button>
+                      <div
+                        class="block-toggles block-toggles--inline"
+                        role="group"
+                        aria-label="Preferências de notificação"
+                      >
+                        <div class="toggle-switch toggle-switch--inline">
+                          <span
+                            class="toggle toggle--liquid"
+                            role="switch"
+                            tabindex="0"
+                            [class.active]="notificacoesAtivo"
+                            [class.toggle--liq-armed]="notificacoesToggleLiqArmed"
+                            [attr.aria-checked]="notificacoesAtivo"
+                            aria-label="Ativar ou desativar notificações ao cliente"
+                            (click)="onNotificacoesToggleClick($event)"
+                            (keydown)="onNotificacoesToggleKeydown($event)"
+                          ></span>
+                        </div>
+                      </div>
                       <div class="cliente-switch-block__labels">
                         <span class="cliente-switch-block__title">Notificações</span>
                         <p class="cliente-switch-block__hint">
@@ -952,10 +963,23 @@
           </div>
         </div>
         <footer class="cliente-drawer-footer">
-          <button type="button" class="cliente-footer-btn cliente-footer-btn--ghost" (click)="fecharClienteDrawer()">
+          @if (clienteSaveErro) {
+            <p class="cliente-save-hint cliente-save-hint--error" role="alert">{{ clienteSaveErro }}</p>
+          }
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--ghost"
+            [disabled]="cadastroSalvando"
+            (click)="fecharClienteDrawer()"
+          >
             Cancelar
           </button>
-          <button type="button" class="cliente-footer-btn cliente-footer-btn--primary" (click)="salvarClienteDrawerStub()">
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--primary"
+            [disabled]="cadastroSalvando"
+            (click)="salvarClienteDrawer()"
+          >
             Salvar
           </button>
         </footer>

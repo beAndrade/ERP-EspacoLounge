@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, finalize } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { AtendimentoListaItem, Cliente } from '../../core/models/api.models';
 import { NovaComandaDrawerComponent } from '../agenda-hub/nova-comanda-drawer.component';
@@ -36,6 +36,26 @@ interface ComandaGrupo {
   valorSubtotal: number | null;
   descontoValor: number | null;
   valorTotal: number | null;
+}
+
+
+
+/** Payload em JSON na coluna `observacoes` (extras da UI não mapeadas no core da API). */
+interface ClienteObsExtras {
+  _elCli: 1;
+  textoLivre?: string;
+  apelido?: string;
+  email?: string;
+  celular?: string;
+  telefoneFixo?: string;
+  aniversario?: string;
+  cnpj?: string;
+  cpf?: string;
+  rg?: string;
+  fotoUrl?: string;
+  notificacoesAtivo?: boolean;
+  descontoPadraoTexto?: string;
+  descontoPadraoModo?: string;
 }
 
 const DRAWER_ANIM_MS = 430;
@@ -139,6 +159,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
   /** Valor livre do desconto (UI «% 0,00»); persistência/API pode formatar depois. */
   descontoPadraoTexto = '';
   notificacoesAtivo = true;
+
+  clienteDrawerClienteId: string | null = null;
+  /** Snapshot das observações ao hidratar (merge seguro ao salvar). */
+  private clienteDrawerObsSnapshot: string | null = null;
+  clienteSaveErro = '';
+  cadastroSalvando = false;
+  notificacoesToggleLiqArmed = false;
 
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private clienteDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -368,9 +395,251 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.clienteAbaAtiva = aba;
   }
 
-  salvarClienteDrawerStub(): void {
-    // Persistência será ligada à API numa etapa seguinte.
-    this.fecharClienteDrawer();
+  salvarClienteDrawer(): void {
+    this.clienteSaveErro = '';
+    const nome = this.cadastroNome.trim();
+    if (!nome) {
+      this.clienteSaveErro = 'O nome é obrigatório.';
+      return;
+    }
+    const telefone = this.telefonePrioritarioParaApi().trim();
+    const notas = this.construirObservacoesParaSalvar(this.clienteDrawerObsSnapshot);
+
+    this.cadastroSalvando = true;
+    const finalizeFn = (): void => {
+      this.cadastroSalvando = false;
+    };
+
+    const onOk = (): void => {
+      this.atualizarGruposECatalogo();
+      this.fecharClienteDrawer();
+    };
+
+    const onErr = (e: unknown): void => {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : 'Não foi possível salvar o cliente. Tente novamente.';
+      this.clienteSaveErro = msg;
+    };
+
+    if (this.clienteDrawerClienteId) {
+      this.api
+        .updateCliente({
+          cliente_id: this.clienteDrawerClienteId,
+          nome,
+          telefone: telefone || undefined,
+          notas,
+        })
+        .pipe(finalize(finalizeFn))
+        .subscribe({ next: () => onOk(), error: onErr });
+    } else {
+      this.api
+        .createCliente({
+          nome,
+          telefone: telefone || undefined,
+          notas,
+        })
+        .pipe(finalize(finalizeFn))
+        .subscribe({
+          next: () => {
+            onOk();
+          },
+          error: onErr,
+        });
+    }
+  }
+
+  private pulseClienteToggleVisual(ev: Event): void {
+    ev.stopPropagation();
+    const el = ev.currentTarget;
+    if (!(el instanceof HTMLElement)) return;
+    el.classList.remove('toggle--pulse');
+    void el.offsetWidth;
+    el.classList.add('toggle--pulse');
+    window.setTimeout(() => {
+      el.classList.remove('toggle--pulse');
+    }, 1500);
+  }
+
+  onNotificacoesToggleClick(ev: Event): void {
+    this.pulseClienteToggleVisual(ev);
+    this.notificacoesAtivo = !this.notificacoesAtivo;
+    this.armNotificacoesToggleLiq();
+  }
+
+  onNotificacoesToggleKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    ev.preventDefault();
+    this.onNotificacoesToggleClick(ev);
+  }
+
+  private armNotificacoesToggleLiq(): void {
+    if (this.notificacoesToggleLiqArmed) return;
+    this.notificacoesToggleLiqArmed = true;
+  }
+
+  private lerExtrasObservacoes(obs: string | null | undefined): ClienteObsExtras | null {
+    if (obs == null || !String(obs).trim()) return null;
+    const s = String(obs).trim();
+    try {
+      const o = JSON.parse(s) as unknown;
+      if (o != null && typeof o === 'object' && '_elCli' in o) {
+        const rec = o as { _elCli?: unknown };
+        if (rec._elCli === 1) return o as ClienteObsExtras;
+      }
+    } catch {
+      /* legado não-JSON */
+    }
+    return { _elCli: 1, textoLivre: s };
+  }
+
+  private construirObservacoesParaSalvar(obsSnapshot: string | null): string {
+    const prev = this.lerExtrasObservacoes(obsSnapshot);
+    const textoLivre =
+      prev?.textoLivre != null && String(prev.textoLivre).trim().length > 0
+        ? String(prev.textoLivre).trim()
+        : undefined;
+    let fotoUrl: string | undefined;
+    const rawFoto = (this.cadastroFotoUrl ?? '').trim();
+    if (
+      rawFoto.startsWith('http://') ||
+      rawFoto.startsWith('https://') ||
+      (rawFoto.length > 0 && rawFoto.length <= 80_000)
+    ) {
+      fotoUrl = rawFoto;
+    }
+    const payload: ClienteObsExtras = {
+      _elCli: 1,
+      apelido: this.cadastroApelido.trim(),
+      email: this.cadastroEmail.trim(),
+      celular: this.cadastroCelular.trim(),
+      telefoneFixo: this.cadastroTelefone.trim(),
+      aniversario: this.cadastroAniversario.trim(),
+      cnpj: this.cadastroCnpj.trim(),
+      cpf: this.cadastroCpf.trim(),
+      rg: this.cadastroRg.trim(),
+      notificacoesAtivo: this.notificacoesAtivo,
+      descontoPadraoTexto: this.descontoPadraoTexto.trim(),
+      descontoPadraoModo: this.descontoPadraoModo,
+    };
+    if (typeof textoLivre === 'string') payload.textoLivre = textoLivre;
+    if (fotoUrl) payload.fotoUrl = fotoUrl;
+    return JSON.stringify(payload);
+  }
+
+  private telefonePrioritarioParaApi(): string {
+    const c = ComandasComponent.apenasDigitos(this.cadastroCelular);
+    const f = ComandasComponent.apenasDigitos(this.cadastroTelefone);
+    if (c.length > 0) return this.cadastroCelular.trim();
+    if (f.length > 0) return this.cadastroTelefone.trim();
+    return '';
+  }
+
+  private static apenasDigitos(s: string): string {
+    return (s ?? '').replace(/\D/g, '');
+  }
+
+  private preencherCadastroClienteInicialDoGrupo(g: ComandaGrupo): void {
+    this.clienteDrawerObsSnapshot = null;
+    const nomeLista = g.nomeCliente?.trim() || '';
+    this.clienteDrawerNome = nomeLista || 'Cliente';
+    this.cadastroNome = nomeLista;
+    this.cadastroApelido = '';
+    this.cadastroCelular = '';
+    this.cadastroTelefone = '';
+    this.cadastroEmail = '';
+    this.cadastroAniversario = '';
+    this.cadastroCnpj = '';
+    this.cadastroCpf = '';
+    this.cadastroRg = '';
+    this.cadastroFotoUrl = '';
+    this.descontoPadraoModo = 'Na comanda';
+    this.descontoPadraoTexto = '';
+    this.notificacoesAtivo = true;
+  }
+
+  private hidratarClienteNaForm(c: Cliente): void {
+    this.clienteDrawerObsSnapshot = c.observacoes ?? null;
+    this.cadastroNome = String(c.nome ?? '').trim();
+    this.clienteDrawerNome =
+      this.cadastroNome || this.clienteDrawerNome || 'Cliente';
+    const ex = this.lerExtrasObservacoes(c.observacoes ?? null);
+
+    const celStored = String(ex?.celular ?? '').trim();
+    const telStored = String(ex?.telefoneFixo ?? '').trim();
+    const apiTel = String(c.telefone ?? '').trim();
+
+    if (celStored.length > 0) {
+      this.cadastroCelular = this.formatarTelefone(celStored, true);
+    } else if (apiTel.length > 0) {
+      this.cadastroCelular = this.formatarTelefone(apiTel, true);
+    } else {
+      this.cadastroCelular = '';
+    }
+
+    if (telStored.length > 0) {
+      this.cadastroTelefone = this.formatarTelefone(telStored, false);
+    } else {
+      this.cadastroTelefone = '';
+    }
+
+    if (ex) {
+      this.cadastroApelido = ex.apelido ?? '';
+      this.cadastroEmail = ex.email ?? '';
+      this.cadastroAniversario = ex.aniversario ?? '';
+      this.cadastroCnpj = ex.cnpj ?? '';
+      this.cadastroCpf = ex.cpf ?? '';
+      this.cadastroRg = ex.rg ?? '';
+      if (typeof ex.descontoPadraoModo === 'string' && ex.descontoPadraoModo.trim()) {
+        this.descontoPadraoModo = ex.descontoPadraoModo;
+      }
+      if (
+        typeof ex.descontoPadraoTexto === 'string' &&
+        ex.descontoPadraoTexto.length > 0
+      ) {
+        this.descontoPadraoTexto = ex.descontoPadraoTexto;
+      }
+      if (typeof ex.notificacoesAtivo === 'boolean') {
+        this.notificacoesAtivo = ex.notificacoesAtivo;
+      }
+      const foto = typeof ex.fotoUrl === 'string' ? ex.fotoUrl.trim() : '';
+      this.cadastroFotoUrl = foto;
+    } else {
+      this.cadastroApelido = '';
+      this.cadastroEmail = '';
+      this.cadastroAniversario = '';
+      this.cadastroCnpj = '';
+      this.cadastroCpf = '';
+      this.cadastroRg = '';
+    }
+  }
+
+  private atualizarGruposECatalogo(): void {
+    const di = parseFiltroDataDdMm(this.dataInicio);
+    const df = parseFiltroDataDdMm(this.dataFim);
+    if (!di || !df || di > df) {
+      this.carregar();
+      this.api.listClientes().subscribe({
+        next: (items) => {
+          this.clientesCatalogo = items ?? [];
+        },
+        error: () => {},
+      });
+      return;
+    }
+    forkJoin({
+      ags: this.api.listAgendamentos(di, df),
+      clientes: this.api.listClientes(),
+    }).subscribe({
+      next: ({ ags, clientes }) => {
+        this.grupos = this.agruparPorIdAtendimento(ags);
+        this.clientesCatalogo = clientes ?? [];
+      },
+      error: () => {
+        this.carregar();
+      },
+    });
   }
 
   private obterLarguraScrollbar(): number {
@@ -608,19 +877,30 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.comandaDrawerCloseTimer = null;
       }
     }
+    this.clienteSaveErro = '';
+    this.cadastroSalvando = false;
+    this.notificacoesToggleLiqArmed = false;
     this.clienteDrawerModo = 'perfil';
-    this.clienteDrawerNome = g.nomeCliente?.trim() || 'cliente';
-    this.cadastroNome = this.clienteDrawerNome;
-    this.cadastroApelido = '';
-    this.cadastroCelular = '';
-    this.cadastroTelefone = '';
-    this.cadastroEmail = '';
-    this.cadastroAniversario = '';
-    this.cadastroCnpj = '';
-    this.cadastroCpf = '';
-    this.cadastroRg = '';
+    this.clienteDrawerClienteId = this.idCliente(g);
+    this.preencherCadastroClienteInicialDoGrupo(g);
     this.clienteAbaAtiva = 'Cadastro';
     this.abrirPainelClienteDrawer();
+
+    const cid = this.clienteDrawerClienteId;
+    if (cid) {
+      this.api.getCliente(cid).subscribe({
+        next: (c) => {
+          if (this.clienteDrawerClienteId !== cid) return;
+          this.hidratarClienteNaForm(c);
+        },
+        error: () => {
+          if (this.clienteDrawerClienteId === cid) {
+            this.clienteSaveErro =
+              'Não foi possível carregar os dados do cliente.';
+          }
+        },
+      });
+    }
   }
 
   private abrirPainelClienteDrawer(): void {
@@ -661,6 +941,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.clienteDrawerCloseTimer = null;
       this.clienteDrawerAberto = false;
       this.descontoDropdownAberto = false;
+      this.clienteDrawerClienteId = null;
+      this.clienteDrawerObsSnapshot = null;
+      this.clienteSaveErro = '';
+      this.cadastroSalvando = false;
+      this.notificacoesToggleLiqArmed = false;
       this.desbloquearScrollPagina();
     }, DRAWER_ANIM_MS);
   }
