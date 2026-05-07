@@ -78,6 +78,72 @@ export interface AtendimentoListaItem {
   agenda_status?: string | null;
   /** Cor de fundo do cartão no hub (hex). */
   agenda_cor?: string | null;
+  /** Soma bruta dos valores das linhas (antes do desconto), em reais. */
+  total_bruto?: number;
+  /** Total a pagar = total_bruto − desconto (mín. 0), em reais. */
+  total?: number;
+  /** Desconto aplicado em reais (espelha `Desconto` em formato numérico). */
+  desconto_num?: number;
+  /** Soma de `comanda_pagamentos.valor` para este atendimento. */
+  total_pago?: number;
+  /** total − total_pago (mín. 0). */
+  saldo?: number;
+  /**
+   * Estado consolidado da cobrança derivado pela API:
+   * - `aberto`     — `cobranca_status` ainda não é `finalizada` e não há pagamentos.
+   * - `pendente`   — finalizada e total_pago = 0.
+   * - `parcial`    — finalizada e 0 < total_pago < total.
+   * - `pago`       — finalizada e total_pago ≥ total.
+   */
+  status_cobranca?: 'aberto' | 'pendente' | 'parcial' | 'pago';
+}
+
+/** Métodos aceites no sub-drawer Faturar. */
+export type MetodoPagamentoComanda =
+  | 'dinheiro'
+  | 'cartao_credito'
+  | 'cartao_debito'
+  | 'pix'
+  | 'transferencia'
+  | 'outros';
+
+/** Linha de `comanda_pagamentos` (1 evento de pagamento parcial ou total). */
+export interface ComandaPagamentoItem {
+  id: number;
+  id_atendimento: string;
+  data_pagamento: string;
+  /** String numérica em pt-en (ex.: '50.00'); converter com `parseFloat`. */
+  valor: string;
+  metodo: MetodoPagamentoComanda;
+  /** Texto amigável já localizado em pt-BR (ex.: "Cartão de crédito"). */
+  metodo_rotulo: string;
+  parcelas: number;
+  troco: string | null;
+  observacao: string | null;
+  movimentacao_id: number | null;
+  created_at: string;
+}
+
+/** Resumo financeiro consolidado de uma comanda. */
+export interface ComandaResumoPagamentos {
+  total_bruto: number;
+  desconto: number;
+  total: number;
+  total_pago: number;
+  saldo: number;
+  status: 'aberto' | 'pendente' | 'parcial' | 'pago';
+  cobranca_status: string | null;
+}
+
+/** Payload para criar 1 pagamento na comanda. */
+export interface CriarComandaPagamentoPayload {
+  /** `YYYY-MM-DD`; default = hoje. */
+  data_pagamento?: string;
+  valor: number;
+  metodo: MetodoPagamentoComanda;
+  parcelas?: number;
+  troco?: number | null;
+  observacao?: string | null;
 }
 
 export interface AtendimentoCriadoResumo {

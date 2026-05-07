@@ -847,6 +847,8 @@ export class ComandasComponent implements OnInit, OnDestroy {
   abrirDrawerComanda(g: ComandaGrupo, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
+    this.menuAbertoParaId = null;
+    this.fecharPainelBusca();
     const idAt = this.idAtendimento(g);
     const cid = this.idCliente(g) ?? '';
     if (!idAt || !cid) return;
@@ -862,13 +864,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
       dataYmd: g.data,
       linhasSnapshot: [],
     };
-    this.comandaPainelAberto = true;
-    this.comandaDrawerPanelOpen = false;
-    this.bloquearScrollPagina();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        this.comandaDrawerPanelOpen = true;
-      });
+    this.abrirDrawerComAnimacao(() => {
+      this.comandaPainelAberto = true;
+    }, (open) => {
+      this.comandaDrawerPanelOpen = open;
     });
   }
 
