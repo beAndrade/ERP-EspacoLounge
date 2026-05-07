@@ -1,0 +1,566 @@
+/**
+ * Sub-drawer Faturar — abre por cima do drawer de Comanda.
+ * Reutiliza variáveis do drawer pai (`--drawer-field-h`, `--drawer-field-stroke`).
+ */
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  --drawer-field-h: 38px;
+  --drawer-field-stroke: #f1f1f1;
+  --drawer-field-stroke-hover: #7a88ff;
+  --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+}
+
+.fat-drawer {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Cabeçalho */
+.fat-head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.75rem;
+  flex: 0 0 auto;
+}
+
+.fat-title {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.fat-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+}
+
+/* Corpo */
+.fat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0 1.25rem 1.25rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.fat-cliente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.fat-cliente__label {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.fat-cliente__nome {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.fat-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+
+  &.nc-status--aberto {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #e2e8f0;
+  }
+
+  &.nc-status--pendente {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+  }
+
+  &.nc-status--parcial {
+    background: #ffedd5;
+    color: #9a3412;
+    border-color: #fed7aa;
+  }
+
+  &.nc-status--pago {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+}
+
+.fat-alert {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+/* Form fields */
+.fat-form-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.65rem;
+}
+
+.fat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fat-field__label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  letter-spacing: 0.01em;
+}
+
+.fat-field__input,
+.fat-field__textarea {
+  height: var(--drawer-field-h);
+  width: 100%;
+  padding: 0 0.7rem;
+  font-size: 0.92rem;
+  color: #1f2937;
+  background: #fff;
+  border: 1px solid var(--drawer-field-stroke);
+  border-radius: 10px;
+  outline: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+
+  &:hover {
+    border-color: var(--drawer-field-stroke-hover);
+  }
+
+  &:focus,
+  &:focus-visible {
+    border-color: var(--drawer-field-stroke-hover);
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+  }
+}
+
+.fat-field__textarea {
+  height: auto;
+  min-height: 64px;
+  padding: 0.55rem 0.7rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.fat-field--obs {
+  margin-top: 0.25rem;
+}
+
+/* Métodos de pagamento */
+.fat-metodos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.fat-metodo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 42px;
+  padding: 0 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: #4f46e5;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease, opacity 0.15s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover:not(:disabled) {
+    background: #4338ca;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  &.fat-metodo-btn--outros {
+    background: #6b7280;
+
+    &:hover:not(:disabled) {
+      background: #4b5563;
+    }
+  }
+}
+
+/* Separador / títulos */
+.fat-sep {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 0.35rem 0;
+}
+
+.fat-h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.fat-hint {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.fat-empty {
+  margin: 0;
+  padding: 0.85rem 0.75rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Lista de pagamentos */
+.fat-pag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fat-pag-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--drawer-field-stroke);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.fat-pag-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.fat-pag-data {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.fat-pag-metodo {
+  color: #4338ca;
+  font-weight: 500;
+}
+
+.fat-pag-parcelas {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.fat-pag-obs {
+  width: 100%;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.fat-pag-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.fat-pag-valor {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #166534;
+}
+
+.fat-pag-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #fee2e2;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+/* Resumo */
+.fat-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fat-resumo__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #374151;
+
+  &.fat-resumo__row--strong {
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  &.fat-resumo__row--saldo {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #b91c1c;
+
+    &.nc-status--pago {
+      color: #166534;
+    }
+  }
+}
+
+/* Footer */
+.fat-footer {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex: 0 0 auto;
+}
+
+.fat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+  &.fat-btn--ghost {
+    background: #ffffff;
+    color: #374151;
+    border-color: #e5e7eb;
+
+    &:hover:not(:disabled) {
+      background: #f9fafb;
+      color: #111827;
+    }
+  }
+
+  &.fat-btn--primary {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+
+    &:hover:not(:disabled) {
+      background: #4338ca;
+      border-color: #4338ca;
+    }
+
+    margin-left: auto;
+  }
+
+  &.fat-btn--danger {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+
+    &:hover:not(:disabled) {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+/* Modal genérico (outros / confirmar excluir / troco) */
+.fat-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.fat-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.fat-modal__panel {
+  position: relative;
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem 1.25rem;
+  box-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.18),
+    0 4px 8px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.fat-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.fat-modal__text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.fat-modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fat-modal__btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  min-height: 42px;
+  padding: 0 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: #f9fafb;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: var(--drawer-field-stroke-hover);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.fat-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.fat-troco {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  color: #166534;
+
+  strong {
+    font-size: 1rem;
+  }
+}

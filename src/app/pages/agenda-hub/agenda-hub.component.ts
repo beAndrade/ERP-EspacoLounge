@@ -30,6 +30,8 @@ import {
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import { NovaComandaDrawerComponent } from './nova-comanda-drawer.component';
+import { FaturarDrawerComponent } from './faturar-drawer.component';
+import type { ComandaResumoPagamentos } from '../../core/models/api.models';
 
 type CelulaCalendario = { dia: number | null; ymd: string | null };
 
@@ -65,7 +67,12 @@ type AgendaHubBloco = {
 @Component({
   selector: 'app-agenda-hub',
   standalone: true,
-  imports: [FormsModule, AgendaNovoComponent, NovaComandaDrawerComponent],
+  imports: [
+    FormsModule,
+    AgendaNovoComponent,
+    NovaComandaDrawerComponent,
+    FaturarDrawerComponent,
+  ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda-hub.component.html',
   styleUrl: './agenda-hub.component.scss',
@@ -119,8 +126,21 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Último pedido de abertura (para ligar o drawer de comanda à API depois). */
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
 
+  /** Sub-drawer Faturar (camada acima da comanda). */
+  faturarDrawerAberto = false;
+  faturarDrawerPanelOpen = false;
+  faturarCtx: {
+    idAtendimento: string;
+    resumo: ComandaResumoPagamentos;
+    nomeCliente: string;
+  } | null = null;
+
+  @ViewChild(NovaComandaDrawerComponent)
+  private comandaDrawerRef?: NovaComandaDrawerComponent;
+
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
 
@@ -180,6 +200,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (this.comandaDrawerCloseTimer != null) {
       clearTimeout(this.comandaDrawerCloseTimer);
       this.comandaDrawerCloseTimer = null;
+    }
+    if (this.faturarDrawerCloseTimer != null) {
+      clearTimeout(this.faturarDrawerCloseTimer);
+      this.faturarDrawerCloseTimer = null;
     }
     this.limparEfeitosDrawer();
   }
@@ -537,6 +561,56 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.fecharComandaDrawer();
     this.carregarMes();
     this.carregarDia();
+  }
+
+  /**
+   * Botão Editar dentro do drawer da comanda no hub.
+   * O drawer de agendamento já está aberto por baixo: basta fechar a comanda
+   * para que o utilizador volte ao agendamento (modo edição) que carregou-a.
+   */
+  onEditarAgendamentoDesdeComanda(): void {
+    if (!this.comandaPainelAberto) return;
+    this.fecharComandaDrawer();
+  }
+
+  // ----- Sub-drawer Faturar -------------------------------------------------
+
+  onAbrirFaturarComanda(ev: {
+    idAtendimento: string;
+    resumo: ComandaResumoPagamentos;
+  }): void {
+    const nomeCliente =
+      this.comandaDrawerContexto?.cliente?.nome?.trim() ?? '';
+    this.faturarCtx = {
+      idAtendimento: ev.idAtendimento,
+      resumo: ev.resumo,
+      nomeCliente,
+    };
+    this.faturarDrawerAberto = true;
+    this.faturarDrawerPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.faturarDrawerPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  fecharFaturarDrawer(): void {
+    if (!this.faturarDrawerAberto) return;
+    this.faturarDrawerPanelOpen = false;
+    if (this.faturarDrawerCloseTimer != null) {
+      clearTimeout(this.faturarDrawerCloseTimer);
+    }
+    this.faturarDrawerCloseTimer = setTimeout(() => {
+      this.faturarDrawerCloseTimer = null;
+      this.faturarDrawerAberto = false;
+      this.faturarCtx = null;
+      this.comandaDrawerRef?.recarregarAposFaturar();
+      this.carregarMes();
+      this.carregarDia();
+    }, DRAWER_ANIM_MS);
   }
 
   eventosNaColuna(profId: number): AtendimentoListaItem[] {

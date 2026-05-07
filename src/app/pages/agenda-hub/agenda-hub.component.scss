@@ -461,6 +461,11 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   &--comanda {
     z-index: 1002;
   }
+
+  /** Sub-drawer Faturar — por cima da comanda. */
+  &--faturar {
+    z-index: 1004;
+  }
 }
 
 /**
@@ -540,6 +545,48 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
       min-width: 0;
     }
   }
+
+  /**
+   * Sub-drawer Faturar — terceira camada (acima da comanda).
+   * Mesmo rect; largura mais estreita em telas grandes para parecer um modal lateral.
+   */
+  &--faturar {
+    z-index: 1005;
+    background: #ffffff;
+
+    & > app-faturar-drawer {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      min-width: 0;
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-drawer.app-drawer--faturar {
+    width: min(480px, 100vw);
+    left: auto;
+    right: 0;
+  }
+}
+
+@media (min-width: 1648px) {
+  .app-drawer.app-drawer--faturar {
+    width: min(480px, 100vw);
+    left: auto;
+    right: 0;
+  }
+}
+
+/* Camadas extra para a página /comandas (mesmas regras que o hub). */
+.app-drawer--edit-agendamento {
+  z-index: 1003;
+}
+
+.overlay--edit-agendamento {
+  z-index: 1002;
 }
 
 @media (min-width: 1648px) {

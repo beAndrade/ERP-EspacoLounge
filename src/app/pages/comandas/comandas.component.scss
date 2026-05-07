@@ -1215,11 +1215,40 @@ thead th.col-check {
     transform: translateX(0);
   }
 
-  & > app-agenda-novo {
+  & > app-agenda-novo,
+  & > app-nova-comanda-drawer,
+  & > app-faturar-drawer {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /** Drawer de edição de agendamento — abre por cima da comanda. */
+  &--edit-agendamento {
+    z-index: 1002;
+  }
+
+  /** Sub-drawer Faturar — camada acima da comanda. */
+  &--faturar {
+    z-index: 1004;
+    background: #ffffff;
+  }
+}
+
+.overlay--edit-agendamento {
+  z-index: 1001;
+}
+
+.overlay--faturar {
+  z-index: 1003;
+}
+
+@media (min-width: 1024px) {
+  .app-drawer.app-drawer--faturar {
+    width: min(480px, 100vw);
+    left: auto;
+    right: 0;
   }
 }
 

@@ -543,8 +543,58 @@
         [contexto]="comandaDrawerContexto"
         (fechar)="fecharComandaDrawer()"
         (comandaExcluida)="onComandaExcluida()"
+        (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
+        (faturarComanda)="onAbrirFaturarComanda($event)"
       />
     </div>
+
+    @if (editAgendamentoAberto && editAgendamentoCtx) {
+      <div
+        class="overlay overlay--edit-agendamento"
+        [class.overlay--open]="editAgendamentoPanelOpen"
+        aria-hidden="true"
+        (click)="fecharEditAgendamento()"
+      ></div>
+      <div
+        class="app-drawer app-drawer--edit-agendamento"
+        [class.app-drawer--open]="editAgendamentoPanelOpen"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar agendamento"
+        (click)="$event.stopPropagation()"
+      >
+        <app-agenda-novo
+          [modoModal]="true"
+          [contextoSlot]="editAgendamentoCtx"
+          (salvoComSucesso)="onSalvoEditAgendamento()"
+          (cancelarModal)="fecharEditAgendamento()"
+        />
+      </div>
+    }
+
+    @if (faturarDrawerAberto && faturarCtx) {
+      <div
+        class="overlay overlay--faturar"
+        [class.overlay--open]="faturarDrawerPanelOpen"
+        aria-hidden="true"
+        (click)="fecharFaturarDrawer()"
+      ></div>
+      <div
+        class="app-drawer app-drawer--faturar"
+        [class.app-drawer--open]="faturarDrawerPanelOpen"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Faturar comanda"
+        (click)="$event.stopPropagation()"
+      >
+        <app-faturar-drawer
+          [idAtendimento]="faturarCtx.idAtendimento"
+          [nomeCliente]="faturarCtx.nomeCliente"
+          [resumoInicial]="faturarCtx.resumo"
+          (fechar)="fecharFaturarDrawer()"
+        />
+      </div>
+    }
   }
 
   @if (clienteDrawerAberto) {

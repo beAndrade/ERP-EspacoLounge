@@ -5,6 +5,7 @@ import {
   LOCALE_ID,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
@@ -13,8 +14,11 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, finalize } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { AtendimentoListaItem, Cliente } from '../../core/models/api.models';
+import type { ComandaResumoPagamentos } from '../../core/models/api.models';
 import { NovaComandaDrawerComponent } from '../agenda-hub/nova-comanda-drawer.component';
+import { FaturarDrawerComponent } from '../agenda-hub/faturar-drawer.component';
 import type { ComandaDrawerContextoAgenda } from '../agenda-hub/comanda-drawer.types';
+import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 import {
   dataDdMmBarraAaaa,
@@ -63,7 +67,13 @@ const DRAWER_ANIM_MS = 430;
 @Component({
   selector: 'app-comandas',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, NovaComandaDrawerComponent],
+  imports: [
+    FormsModule,
+    CurrencyPipe,
+    NovaComandaDrawerComponent,
+    FaturarDrawerComponent,
+    AgendaNovoComponent,
+  ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './comandas.component.html',
   styleUrl: './comandas.component.scss',
@@ -123,6 +133,30 @@ export class ComandasComponent implements OnInit, OnDestroy {
   comandaDrawerPanelOpen = false;
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
 
+  /** Drawer de edição do agendamento (aberto a partir do botão Editar na comanda). */
+  editAgendamentoAberto = false;
+  editAgendamentoPanelOpen = false;
+  editAgendamentoCtx: {
+    data: string;
+    profissional_id: number;
+    hora?: string;
+    id_atendimento?: string;
+  } | null = null;
+  /** Após salvar/excluir no drawer de edição, recarregar lista + resumo. */
+  private editReloadKey = 0;
+  /** ViewChild do drawer de comanda para chamar `recarregarAposFaturar`. */
+  @ViewChild(NovaComandaDrawerComponent)
+  comandaDrawerRef?: NovaComandaDrawerComponent;
+
+  /** Sub-drawer Faturar (pagamentos da comanda). */
+  faturarDrawerAberto = false;
+  faturarDrawerPanelOpen = false;
+  faturarCtx: {
+    idAtendimento: string;
+    resumo: ComandaResumoPagamentos;
+    nomeCliente: string;
+  } | null = null;
+
   clienteDrawerAberto = false;
   clienteDrawerPanelOpen = false;
   /** Modo atual do drawer de cliente (perfil do cliente clicado). */
@@ -169,6 +203,8 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private clienteDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private editAgendamentoCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
   private clientesCatalogo: Cliente[] = [];
@@ -206,6 +242,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.clienteDrawerCloseTimer != null) {
       clearTimeout(this.clienteDrawerCloseTimer);
       this.clienteDrawerCloseTimer = null;
+    }
+    if (this.editAgendamentoCloseTimer != null) {
+      clearTimeout(this.editAgendamentoCloseTimer);
+      this.editAgendamentoCloseTimer = null;
+    }
+    if (this.faturarDrawerCloseTimer != null) {
+      clearTimeout(this.faturarDrawerCloseTimer);
+      this.faturarDrawerCloseTimer = null;
     }
     this.desbloquearScrollPagina();
   }
@@ -937,6 +981,99 @@ export class ComandasComponent implements OnInit, OnDestroy {
   onComandaExcluida(): void {
     this.fecharComandaDrawer();
     this.carregar();
+  }
+
+  // ----- Drawer de edição do agendamento (a partir do botão Editar) ---------
+
+  /**
+   * Abre o drawer já existente `app-agenda-novo` em modo modal/edição com o
+   * `id_atendimento` da comanda actual. Mantém a comanda aberta por baixo;
+   * ao salvar/cancelar volta ao drawer da comanda recarregada.
+   */
+  onEditarAgendamentoDesdeComanda(): void {
+    const ctx = this.comandaDrawerContexto;
+    const idAt = ctx?.idAtendimento?.trim();
+    const ymd = (ctx?.dataYmd ?? '').trim();
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.editAgendamentoCtx = {
+      data: ymd,
+      profissional_id: 0,
+      id_atendimento: idAt,
+    };
+    this.abrirDrawerComAnimacao(
+      () => {
+        this.editAgendamentoAberto = true;
+      },
+      (open) => {
+        this.editAgendamentoPanelOpen = open;
+      },
+    );
+  }
+
+  fecharEditAgendamento(): void {
+    if (!this.editAgendamentoAberto) return;
+    this.editAgendamentoPanelOpen = false;
+    if (this.editAgendamentoCloseTimer != null) {
+      clearTimeout(this.editAgendamentoCloseTimer);
+    }
+    this.editAgendamentoCloseTimer = setTimeout(() => {
+      this.editAgendamentoCloseTimer = null;
+      this.editAgendamentoAberto = false;
+      this.editAgendamentoCtx = null;
+    }, DRAWER_ANIM_MS);
+  }
+
+  /** Após salvar agendamento: fecha drawer de edição e recarrega a lista + drawer da comanda. */
+  onSalvoEditAgendamento(): void {
+    this.fecharEditAgendamento();
+    this.editReloadKey++;
+    this.carregar();
+    /** Re-abre o contexto da comanda forçando refresh dos dados. */
+    if (this.comandaPainelAberto && this.comandaDrawerContexto) {
+      const ctx = { ...this.comandaDrawerContexto };
+      this.comandaDrawerContexto = null;
+      queueMicrotask(() => {
+        this.comandaDrawerContexto = ctx;
+      });
+    }
+  }
+
+  // ----- Sub-drawer Faturar -------------------------------------------------
+
+  onAbrirFaturarComanda(ev: {
+    idAtendimento: string;
+    resumo: ComandaResumoPagamentos;
+  }): void {
+    const ctx = this.comandaDrawerContexto;
+    const nomeCliente = ctx?.cliente?.nome ?? '';
+    this.faturarCtx = {
+      idAtendimento: ev.idAtendimento,
+      resumo: ev.resumo,
+      nomeCliente,
+    };
+    this.abrirDrawerComAnimacao(
+      () => {
+        this.faturarDrawerAberto = true;
+      },
+      (open) => {
+        this.faturarDrawerPanelOpen = open;
+      },
+    );
+  }
+
+  fecharFaturarDrawer(): void {
+    if (!this.faturarDrawerAberto) return;
+    this.faturarDrawerPanelOpen = false;
+    if (this.faturarDrawerCloseTimer != null) {
+      clearTimeout(this.faturarDrawerCloseTimer);
+    }
+    this.faturarDrawerCloseTimer = setTimeout(() => {
+      this.faturarDrawerCloseTimer = null;
+      this.faturarDrawerAberto = false;
+      this.faturarCtx = null;
+      this.comandaDrawerRef?.recarregarAposFaturar();
+      this.carregar();
+    }, DRAWER_ANIM_MS);
   }
 
   fecharClienteDrawer(): void {
