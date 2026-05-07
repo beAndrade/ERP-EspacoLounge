@@ -402,6 +402,32 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return ix >= 0 ? ix : 0;
   }
 
+  /**
+   * Mantém igual às variáveis em `comandas.component.scss` (--cliente-nav-item-*): aba ativa não tem padding;
+   * o translateY conta só o passo “pleto” das abas não ativas antes da selecionada.
+   */
+  private readonly clienteNavFontPx = 13;
+  private readonly clienteNavLineHeightMul = 1.3125;
+  private readonly clienteNavPadBlock = 8;
+  private readonly clienteNavItemGap = 16;
+
+  clienteNavIndicadorTransform(): string {
+    return `translateY(${this.clienteNavIndicadorOffsetPx()}px)`;
+  }
+
+  private clienteNavLineBoxPx(): number {
+    return this.clienteNavFontPx * this.clienteNavLineHeightMul;
+  }
+
+  private clienteNavInactiveRowStridePx(): number {
+    return this.clienteNavPadBlock * 2 + this.clienteNavLineBoxPx();
+  }
+
+  private clienteNavIndicadorOffsetPx(): number {
+    const idx = this.abaAtivaClienteIndex();
+    return idx * (this.clienteNavInactiveRowStridePx() + this.clienteNavItemGap);
+  }
+
   salvarClienteDrawer(): void {
     this.clienteSaveErro = '';
     const nome = this.cadastroNome.trim();

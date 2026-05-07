@@ -1572,9 +1572,9 @@ thead th.col-check {
   padding: 0 0 0 30px;
   min-height: 100%;
   box-sizing: border-box;
-  /* Barra lateral: mesmo passo vertical que margin + linha dos botões. */
-  --cliente-nav-item-gap: 16px;
-  --cliente-nav-item-h: calc(16px + 1.3125em);
+  /* Altura só da linha de texto (~13 × 1.3125): tarja igual ao tipo, não aos paddings. */
+  --cliente-nav-item-pad-block: 8px;
+  --cliente-nav-item-line-box: calc(13px * 1.3125);
 
   &__indicator {
     position: absolute;
@@ -1582,13 +1582,11 @@ thead th.col-check {
     top: 0;
     z-index: 1;
     width: 3px;
-    height: var(--cliente-nav-item-h);
+    height: var(--cliente-nav-item-line-box);
     border-radius: 2px;
     background: var(--cliente-accent);
     pointer-events: none;
-    transform: translateY(
-      calc(var(--cliente-nav-active-index, 0) * (var(--cliente-nav-item-h) + var(--cliente-nav-item-gap)))
-    );
+    /* translateY aplicado pelo componente (`clienteNavIndicadorTransform`) — alinha com aba sem padding quando ativa. */
     transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
   }
@@ -1607,7 +1605,8 @@ thead th.col-check {
   border: none;
   background: transparent;
   margin: 16px 0 0;
-  padding: 8px 24px 8px 0;
+  padding: var(--cliente-nav-item-pad-block) 24px var(--cliente-nav-item-pad-block) 0;
+  box-sizing: border-box;
   font-size: 13px;
   font-weight: 500;
   color: #000000bf;
@@ -1626,6 +1625,8 @@ thead th.col-check {
     color: var(--cliente-accent);
     font-weight: 600;
     background: transparent;
+    /** Só vertical zerado — recuo direito igual às outras abas. */
+    padding: 0 24px 0 0;
   }
 
   &--active:hover {
