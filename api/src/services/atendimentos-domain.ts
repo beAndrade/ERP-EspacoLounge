@@ -34,6 +34,7 @@ import {
   toNumberPt,
   totalLiquidoConfirmacao,
 } from './finance-domain';
+import { getResumosPorAtendimento } from './comanda-pagamentos-domain';
 import { resolverPrecoUnitarioProduto } from './produtos-preco';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 
@@ -1637,6 +1638,9 @@ export async function listAtendimentosRaw(
     }
   }
 
+  /** Resumo financeiro consolidado (total / total_pago / saldo / status) por pedido. */
+  const resumosPorId = await getResumosPorAtendimento(db, idsAt);
+
   const primeiroRegistoPorIdAt = new Set<string>();
 
   return filtered.map((a) => {
@@ -1684,6 +1688,20 @@ export async function listAtendimentosRaw(
       agenda_status: a.agendaStatus ?? null,
       agenda_cor: a.agendaCor ?? null,
       id: a.idAtendimento,
+      ...(idAtKey
+        ? (() => {
+            const r = resumosPorId.get(idAtKey);
+            if (!r) return {};
+            return {
+              total_bruto: r.total_bruto,
+              total: r.total,
+              desconto_num: r.desconto,
+              total_pago: r.total_pago,
+              saldo: r.saldo,
+              status_cobranca: r.status,
+            };
+          })()
+        : {}),
       ...(catalogo !== undefined
         ? {
             itens_catalogo: catalogo,

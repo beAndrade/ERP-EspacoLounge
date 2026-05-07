@@ -17,6 +17,12 @@ import {
 import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
 import {
+  criarPagamentoComanda,
+  excluirPagamentoComanda,
+  getResumoComanda,
+  listarPagamentosPorAtendimento,
+} from './services/comanda-pagamentos-domain';
+import {
   atualizarMovimentacaoPorId,
   criarDespesaCadastro,
   criarMovimentacaoManual,
@@ -683,6 +689,103 @@ const app = new Elysia({ adapter: node() })
       body: t.Object({
         periodo: t.String(),
         profissional_id: t.Optional(t.Number()),
+      }),
+    },
+  )
+  /**
+   * Pagamentos da comanda (parciais ou totais).
+   * Cada POST cria 1 linha em `comanda_pagamentos` e a `movimentacao` ligada.
+   */
+  .get(
+    '/api/comandas/:idAtendimento/pagamentos',
+    async ({ params }) => {
+      try {
+        const id = String(params.idAtendimento || '').trim();
+        if (!id) return fail('VALIDATION', 'idAtendimento é obrigatório');
+        const [items, resumo] = await Promise.all([
+          listarPagamentosPorAtendimento(db, id),
+          getResumoComanda(db, id),
+        ]);
+        return ok({ items, resumo });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ idAtendimento: t.String() }) },
+  )
+  .post(
+    '/api/comandas/:idAtendimento/pagamentos',
+    async ({ params, body }) => {
+      try {
+        const id = String(params.idAtendimento || '').trim();
+        if (!id) return fail('VALIDATION', 'idAtendimento é obrigatório');
+        const b = body as Record<string, unknown>;
+        const r = await criarPagamentoComanda(db, id, {
+          data_pagamento:
+            b.data_pagamento != null ? String(b.data_pagamento) : undefined,
+          valor: (b.valor as number | string) ?? 0,
+          metodo: String(b.metodo ?? '').trim(),
+          parcelas:
+            b.parcelas != null && Number.isFinite(Number(b.parcelas))
+              ? Number(b.parcelas)
+              : 1,
+          troco:
+            b.troco != null
+              ? (b.troco as number | string)
+              : null,
+          observacao:
+            b.observacao != null ? String(b.observacao) : null,
+        });
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|inválido|maior que zero|encontrado/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ idAtendimento: t.String() }),
+      body: t.Object({
+        valor: t.Union([t.Number(), t.String()]),
+        metodo: t.String(),
+        data_pagamento: t.Optional(t.String()),
+        parcelas: t.Optional(t.Number()),
+        troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
+        observacao: t.Optional(t.Union([t.String(), t.Null()])),
+      }),
+    },
+  )
+  .delete(
+    '/api/comandas/:idAtendimento/pagamentos/:pagamentoId',
+    async ({ params }) => {
+      try {
+        const idAt = String(params.idAtendimento || '').trim();
+        const pagId = Number.parseInt(
+          String(params.pagamentoId || '').trim(),
+          10,
+        );
+        if (!idAt) return fail('VALIDATION', 'idAtendimento é obrigatório');
+        if (!Number.isFinite(pagId) || pagId <= 0) {
+          return fail('VALIDATION', 'pagamentoId inválido');
+        }
+        const r = await excluirPagamentoComanda(db, pagId);
+        if (!r.idAtendimento) {
+          return fail('NOT_FOUND', 'Pagamento não encontrado');
+        }
+        const resumo = await getResumoComanda(db, idAt);
+        return ok({ resumo });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({
+        idAtendimento: t.String(),
+        pagamentoId: t.String(),
       }),
     },
   )

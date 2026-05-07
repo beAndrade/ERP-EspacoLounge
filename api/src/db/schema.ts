@@ -29,6 +29,16 @@ export const atendimentoItemTipoEnum = pgEnum('atendimento_item_tipo', [
   'cabelo',
 ]);
 
+/** Métodos de pagamento aceites na comanda (sub-drawer Faturar). */
+export const metodoPagamentoComandaEnum = pgEnum('metodo_pagamento_comanda', [
+  'dinheiro',
+  'cartao_credito',
+  'cartao_debito',
+  'pix',
+  'transferencia',
+  'outros',
+]);
+
 export const clientes = pgTable('clientes', {
   idCliente: text('id_cliente').primaryKey(),
   nomeExibido: text('nome_exibido').notNull(),
@@ -275,6 +285,41 @@ export const movimentacoes = pgTable(
       .where(
         sql`${t.origem} = 'atendimento_confirmacao' AND ${t.natureza} = 'receita'`,
       ),
+  ],
+);
+
+/**
+ * Pagamentos da comanda (parciais ou totais). 1 registo por evento de pagamento.
+ * Status da comanda é derivado: SUM(valor) >= total → pago; >0 → parcial; =0 → pendente.
+ * `movimentacao_id` liga ao razão financeiro (1 movimentação `receita` por pagamento).
+ */
+export const comandaPagamentos = pgTable(
+  'comanda_pagamentos',
+  {
+    id: serial('id').primaryKey(),
+    idAtendimento: text('id_atendimento')
+      .notNull()
+      .references(() => atendimentosPedido.idAtendimento, { onDelete: 'cascade' }),
+    /** Data do pagamento (pode ser diferente da data do atendimento). */
+    dataPagamento: date('data_pagamento').notNull(),
+    valor: numeric('valor', { precision: 14, scale: 2 }).notNull(),
+    metodo: metodoPagamentoComandaEnum('metodo').notNull(),
+    /** Para cartão (1, 2, …); padrão 1. */
+    parcelas: integer('parcelas').default(1).notNull(),
+    /** Em dinheiro: troco devolvido (informativo, não entra no total pago). */
+    troco: numeric('troco', { precision: 14, scale: 2 }),
+    observacao: text('observacao'),
+    /** Movimentação financeira (receita) gerada por este pagamento. */
+    movimentacaoId: integer('movimentacao_id').references(() => movimentacoes.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('comanda_pagamentos_id_atendimento_idx').on(t.idAtendimento),
+    index('comanda_pagamentos_data_idx').on(t.dataPagamento),
   ],
 );
 
