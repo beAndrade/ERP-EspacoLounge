@@ -92,11 +92,18 @@
   padding: 0;
 }
 
-/** Cabeçalho fixo no topo da coluna: não rola com os itens (`overflow-y` no `main`). */
+/**
+ * Título fixo ao rolar: fica acima do `main` e, se o `.app-drawer` rolar,
+ * `sticky` mantém o título no topo do painel.
+ */
 .nc-modal-header--drawer-top {
+  position: sticky;
+  top: 0;
   flex-shrink: 0;
-  z-index: 8;
+  z-index: 20;
   background: #fff;
+  overflow: visible;
+  box-shadow: 0 1px 0 0 var(--drawer-stroke, #ececec);
 }
 
 /** = `agenda-modal__title` (drawer). */
@@ -107,7 +114,7 @@
   font-weight: 700;
   color: #404040;
   padding: 20px 0;
-  padding-right: calc(60px + 0.75rem);
+  padding-right: 0;
 }
 
 /** = `agenda-modal__close` (drawer). */
@@ -151,9 +158,26 @@
   }
 }
 
-/** Compensa o `padding-inline` do `.app-drawer` — fecha encostado à direita do painel. */
-.nc-modal-header--drawer-top .nc-modal-close {
-  right: calc(-1 * var(--drawer-pad-x, 15px));
+/** Linha do X dentro do scroll: alinha à direita do painel. */
+.nc-main__close-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0 0 0.25rem;
+  padding: 0;
+  position: relative;
+  z-index: 30;
+}
+
+.nc-modal-close--scroll {
+  position: relative;
+  top: auto;
+  right: auto;
+  margin: -0.25rem 0 0;
+  margin-right: calc(-1 * var(--drawer-pad-x, 15px));
+  z-index: 30;
 }
 
 /** = `form-shell__flow--modal` (coluna direita; scroll fica em `.nc-main--comanda-scroll`). */
@@ -162,7 +186,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: visible;
+  overflow-y: hidden;
 }
 
 /**
@@ -198,7 +223,7 @@
   &--comanda-scroll {
     flex: 1 1 auto;
     min-height: 0;
-    overflow-x: hidden;
+    overflow-x: visible;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
