@@ -11,7 +11,7 @@
     </div>
 
     <div class="nc-drawer__main">
-      <header class="nc-modal-header">
+      <header class="nc-modal-header nc-modal-header--drawer-top">
         <h1 class="nc-modal-title">{{ tituloComandaDrawer() }}</h1>
         <button
           type="button"
@@ -208,9 +208,11 @@
                 <input
                   type="text"
                   class="nc-itens-summary__input"
-                  inputmode="decimal"
+                  inputmode="numeric"
                   autocomplete="off"
+                  [attr.placeholder]="placeholderMoedaResumo"
                   [formControl]="descontoResumoCtrl"
+                  (input)="onResumoMoedaInput(descontoResumoCtrl, $event)"
                   (blur)="normalizarCampoMoedaResumo(descontoResumoCtrl)"
                   [attr.aria-label]="'Desconto: ' + descontoResumoCtrl.value"
                 />
@@ -220,9 +222,11 @@
                 <input
                   type="text"
                   class="nc-itens-summary__input"
-                  inputmode="decimal"
+                  inputmode="numeric"
                   autocomplete="off"
+                  [attr.placeholder]="placeholderMoedaResumo"
                   [formControl]="creditoResumoCtrl"
+                  (input)="onResumoMoedaInput(creditoResumoCtrl, $event)"
                   (blur)="normalizarCampoMoedaResumo(creditoResumoCtrl)"
                   [attr.aria-label]="'Crédito: ' + creditoResumoCtrl.value"
                 />
@@ -230,7 +234,7 @@
               <div class="nc-itens-summary__row">
                 <span class="nc-itens-summary__label">Cashback</span>
                 <div
-                  class="nc-itens-summary__input nc-itens-summary__input--readonly"
+                  class="nc-itens-summary__input nc-itens-summary__input--readonly nc-itens-summary__input--readonly-cashback"
                   [attr.aria-label]="'Cashback: ' + brl(cashbackComandaReais())"
                 >
                   {{ brl(cashbackComandaReais()) }}

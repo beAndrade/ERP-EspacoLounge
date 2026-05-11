@@ -90,6 +90,13 @@
   padding: 0;
 }
 
+/** Cabeçalho fixo no topo da coluna: não rola com os itens (`overflow-y` no `main`). */
+.nc-modal-header--drawer-top {
+  flex-shrink: 0;
+  z-index: 8;
+  background: #fff;
+}
+
 /** = `agenda-modal__title` (drawer). */
 .nc-modal-title {
   margin: 0;
@@ -142,13 +149,13 @@
   }
 }
 
-/** = `form-shell__flow--modal` (scroll da coluna direita). */
+/** = `form-shell__flow--modal` (coluna direita; scroll fica em `.nc-main--comanda-scroll`). */
 .nc-drawer__flow {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /**
@@ -180,9 +187,13 @@
   flex-direction: column;
   gap: 1.25rem;
 
-  /** Conteúdo rolável já está em `.nc-drawer__flow`; manter esta coluna compatível com flex shrink. */
+  /** Scroll da comanda: mantém o título fora da área rolável. */
   &--comanda-scroll {
+    flex: 1 1 auto;
     min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -602,9 +613,10 @@
   font-size: 14px;
 
   &--total {
-    padding-top: 0.4rem;
-    margin-top: 0.1rem;
-    border-top: 1px solid var(--drawer-stroke, #ececec);
+    padding-top: 0;
+    margin-top: 0;
+    border-top: none;
+    border-bottom: none;
     font-weight: 700;
   }
 }
@@ -671,8 +683,15 @@
     }
   }
 
+  /** Cashback: sem alteração de borda ao hover (mantém `cursor: not-allowed`). */
+  &--readonly-cashback:hover {
+    border-color: #e7e5e4;
+    background: #f5f5f4;
+  }
+
   &--total {
     font-weight: 400;
+    border-bottom: none;
   }
 }
 
@@ -682,9 +701,9 @@
  */
 .nc-drawer__obs {
   flex: 0 0 auto;
-  padding: 0.55rem 0 0.75rem;
+  padding: 0.55rem 0 1.35rem;
   margin-top: 0;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.85rem;
   border-top: 1px solid var(--drawer-stroke, #ececec);
   background: #fff;
 }

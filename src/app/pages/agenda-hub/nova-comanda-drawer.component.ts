@@ -36,12 +36,23 @@ function formataMoedaBrl(n: number): string {
   }).format(n);
 }
 
-/** Formato «10,50» para inputs de moeda (sem símbolo R$). */
-function formatarInputPt(n: number): string {
-  return n.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+/** Máscara de moeda nos campos do resumo (placeholder + valor exibido). */
+const PLACEHOLDER_MOEDA_RESUMO = 'R$0,00';
+
+/**
+ * Entrada só por dígitos: cada dígito acrescenta à direita em centavos
+ * (ex.: 1 → R$ 0,01; 15 → R$ 0,15; 150 → R$ 1,50).
+ */
+function moedaResumoAPartirDosDigitos(raw: string): string {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  const MAX_DIG = 12;
+  const trimmed =
+    digits.length > MAX_DIG ? digits.slice(-MAX_DIG) : digits;
+  const centInt =
+    trimmed === '' ? 0 : Math.min(parseInt(trimmed, 10), 999999999999);
+  const n =
+    Number.isFinite(centInt) && centInt >= 0 ? Math.round(centInt) / 100 : 0;
+  return formataMoedaBrl(n);
 }
 
 /** Remove sufixo «— Qtd: n» do título do produto (a quantidade vai na faixa monetária). */
@@ -120,8 +131,13 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly clienteNomeCtrl = new FormControl('', { nonNullable: true });
   readonly dataComandaCtrl = new FormControl('', { nonNullable: true });
   /** Resumo manual: desconto e crédito (moeda em texto pt-BR). */
-  readonly descontoResumoCtrl = new FormControl('0,00', { nonNullable: true });
-  readonly creditoResumoCtrl = new FormControl('0,00', { nonNullable: true });
+  readonly descontoResumoCtrl = new FormControl(formataMoedaBrl(0), {
+    nonNullable: true,
+  });
+  readonly creditoResumoCtrl = new FormControl(formataMoedaBrl(0), {
+    nonNullable: true,
+  });
+  readonly placeholderMoedaResumo = PLACEHOLDER_MOEDA_RESUMO;
 
   /** Linhas espelhadas do atendimento para exibição (modo leitura). */
   readonly linhasAtendimentoApi: AtendimentoListaItem[] = [];
@@ -174,10 +190,10 @@ export class NovaComandaDrawerComponent implements OnInit {
         this.pagamentos = [];
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
           this.lastIdAtParaCamposResumo = '';
-          this.descontoResumoCtrl.setValue(formatarInputPt(0), {
+          this.descontoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
-          this.creditoResumoCtrl.setValue(formatarInputPt(0), {
+          this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
           this.carregandoItens = false;
@@ -186,7 +202,7 @@ export class NovaComandaDrawerComponent implements OnInit {
         }
         if (idAt !== this.lastIdAtParaCamposResumo) {
           this.lastIdAtParaCamposResumo = idAt;
-          this.creditoResumoCtrl.setValue(formatarInputPt(0), {
+          this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
         }
@@ -226,7 +242,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           this.pagamentos = r.items ?? [];
           this.resumoPagamentos = r.resumo ?? RESUMO_VAZIO;
           this.descontoResumoCtrl.setValue(
-            formatarInputPt(this.resumoPagamentos.desconto ?? 0),
+            formataMoedaBrl(this.resumoPagamentos.desconto ?? 0),
             { emitEvent: false },
           );
           this.carregandoPagamentos = false;
@@ -884,7 +900,24 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   normalizarCampoMoedaResumo(c: FormControl<string>): void {
     const n = this.valorMonetarioCampoResumo(c.value);
-    c.setValue(formatarInputPt(n), { emitEvent: false });
+    c.setValue(formataMoedaBrl(n), { emitEvent: false });
+  }
+
+  /**
+   * Reformata a cada tecla: interpreta os dígitos como centavos em cadeia
+   * e posiciona o cursor no fim (caixa / TEF).
+   */
+  onResumoMoedaInput(c: FormControl<string>, ev: Event): void {
+    const el = ev.target as HTMLInputElement | null;
+    if (!el) return;
+    const formatted = moedaResumoAPartirDosDigitos(el.value);
+    if (c.value !== formatted) {
+      c.setValue(formatted, { emitEvent: true });
+    }
+    queueMicrotask(() => {
+      const len = el.value.length;
+      el.setSelectionRange(len, len);
+    });
   }
 
   contextoPodeSincronizarItens(): boolean {
