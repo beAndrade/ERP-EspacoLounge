@@ -74,7 +74,9 @@
   min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
-  overflow: hidden;
+  /** `visible` evita cortar o `.nc-modal-close` quando compensa o padding do `.app-drawer`. */
+  overflow-x: visible;
+  overflow-y: hidden;
   overflow-clip-margin: 16px 12px 20px 28px;
 }
 
@@ -147,6 +149,11 @@
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
+}
+
+/** Compensa o `padding-inline` do `.app-drawer` — fecha encostado à direita do painel. */
+.nc-modal-header--drawer-top .nc-modal-close {
+  right: calc(-1 * var(--drawer-pad-x, 15px));
 }
 
 /** = `form-shell__flow--modal` (coluna direita; scroll fica em `.nc-main--comanda-scroll`). */
@@ -309,8 +316,31 @@
 .nc-itens__title-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.nc-itens__title-start {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 0.75rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.nc-itens__btn-editar {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+@media (max-width: 480px) {
+  .nc-itens__title-row {
+    flex-wrap: wrap;
+  }
 }
 
 .nc-itens__head,
@@ -704,7 +734,7 @@
   padding: 0.55rem 0 1.35rem;
   margin-top: 0;
   margin-bottom: 0.85rem;
-  border-top: 1px solid var(--drawer-stroke, #ececec);
+  border-top: none;
   background: #fff;
 }
 
@@ -1836,12 +1866,6 @@
     max-width: 100%;
     overflow-x: auto;
   }
-}
-
-.nc-leitura__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.65rem;
 }
 
 .btn.btn--editar-agendamento {
