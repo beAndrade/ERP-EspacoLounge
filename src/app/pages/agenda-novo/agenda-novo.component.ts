@@ -2567,18 +2567,79 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     };
   }
 
+  /**
+   * Cortes do pedido na ordem da API (após `ordenarLinhasAtendimentoInPlace`):
+   * cada Serviço/Produto/Cabelo é um segmento; Mega/Pacote agrupa linhas contíguas
+   * com o mesmo nome de pacote para não colapsar vários blocos num só.
+   */
+  private segmentarLinhasPedidoEdicao(
+    sorted: AtendimentoListaItem[],
+  ): Array<
+    | { k: 'servico'; row: AtendimentoListaItem }
+    | { k: 'produto'; row: AtendimentoListaItem }
+    | { k: 'cabelo'; row: AtendimentoListaItem }
+    | { k: 'mega'; rows: AtendimentoListaItem[] }
+    | { k: 'pacote'; rows: AtendimentoListaItem[] }
+  > {
+    const out: Array<
+      | { k: 'servico'; row: AtendimentoListaItem }
+      | { k: 'produto'; row: AtendimentoListaItem }
+      | { k: 'cabelo'; row: AtendimentoListaItem }
+      | { k: 'mega'; rows: AtendimentoListaItem[] }
+      | { k: 'pacote'; rows: AtendimentoListaItem[] }
+    > = [];
+    let i = 0;
+    while (i < sorted.length) {
+      const ta = mapTipoFromApi(sorted[i].tipo || '');
+      if (ta === 'Serviço') {
+        out.push({ k: 'servico', row: sorted[i++] });
+        continue;
+      }
+      if (ta === 'Produto') {
+        out.push({ k: 'produto', row: sorted[i++] });
+        continue;
+      }
+      if (ta === 'Cabelo') {
+        out.push({ k: 'cabelo', row: sorted[i++] });
+        continue;
+      }
+      if (ta === 'Mega') {
+        const start = i;
+        const pac = String(sorted[i].pacote ?? '').trim();
+        while (i < sorted.length) {
+          if (mapTipoFromApi(sorted[i].tipo || '') !== 'Mega') break;
+          if (String(sorted[i].pacote ?? '').trim() !== pac) break;
+          i++;
+        }
+        out.push({ k: 'mega', rows: sorted.slice(start, i) });
+        continue;
+      }
+      if (ta === 'Pacote') {
+        const start = i;
+        const pac = String(sorted[i].pacote ?? '').trim();
+        while (i < sorted.length) {
+          if (mapTipoFromApi(sorted[i].tipo || '') !== 'Pacote') break;
+          if (String(sorted[i].pacote ?? '').trim() !== pac) break;
+          i++;
+        }
+        out.push({ k: 'pacote', rows: sorted.slice(start, i) });
+        continue;
+      }
+      i++;
+    }
+    return out;
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
     ordenarLinhasAtendimentoInPlace(sorted);
     const l0 = sorted[0];
-    const tipoApi = mapTipoFromApi(l0.tipo || '');
     const dataYmd = this.resolverDataYmdParaEdicao(
       sorted,
       this.dataYmdValidaDoPedido(sorted) ||
         (l0.data || '').trim().slice(0, 10),
     );
-    const obsMegaPacote = stripQtdSuffixObservacao(l0.descricao || '');
     const agendaStEd = this.agendaStatusParaEdicao(sorted);
     /**
      * Catálogo de itens vem populado SOMENTE no primeiro registo do pedido na API
@@ -2595,132 +2656,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       this.linhasItensArray.removeAt(0);
     }
 
-    const tiposLinha = sorted.map((r) => mapTipoFromApi(r.tipo || ''));
-    const edicaoServicoEProduto =
-      tiposLinha.some((x) => x === 'Serviço') &&
-      tiposLinha.some((x) => x === 'Produto');
+    const segs = this.segmentarLinhasPedidoEdicao(sorted);
 
-    if (edicaoServicoEProduto) {
-      for (const row of sorted) {
-        const ta = mapTipoFromApi(row.tipo || '');
-        if (ta === 'Serviço') {
-          const nomeServ = (row.servicosRef || '').trim();
-          const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
-          const g = this.novoGrupoLinhaItem('Serviço');
-          const itemPivot = this.acharItemPivotParaRow(
-            itensCatalogoPedido,
-            row,
-            consumidos,
-          );
-          const money = this.moneyDoItem(itemPivot);
-          g.patchValue(
-            {
-              servico_id: sid,
-              tamanho: (row.tamanho || 'Curto').trim() || 'Curto',
-              profissional: this.profissionalValorForm(row),
-              desconto: money.desconto || row.desconto || '',
-              valor_unitario:
-                money.valor_unitario ||
-                formataMoedaBrl(
-                  precoUnitarioServicoCatalogo(
-                    this.servicoPorIdQualquerComanda(sid),
-                    (row.tamanho || 'Curto').trim() || 'Curto',
-                  ) ?? 0,
-                ),
-              valor_unitario_tocado: !!money.valor_unitario,
-            },
-            { emitEvent: false },
-          );
-          this.linhasItensArray.push(g);
-        } else if (ta === 'Produto') {
-          const q = parseQuantidadeFromDescricao(row.descricao || '');
-          const g = this.novoGrupoLinhaItem('Produto');
-          const itemPivot = this.acharItemPivotParaRow(
-            itensCatalogoPedido,
-            row,
-            consumidos,
-          );
-          const money = this.moneyDoItem(itemPivot);
-          g.patchValue(
-            {
-              produto: row.produtoNome || '',
-              quantidade: q > 0 ? q : 1,
-              desconto: money.desconto || row.desconto || '',
-              preco_unitario:
-                money.valor_unitario ||
-                (this.precoCatalogoProduto(row.produtoNome || '') != null
-                  ? formataMoedaBrl(this.precoCatalogoProduto(row.produtoNome || '')!)
-                  : ''),
-              preco_unitario_tocado: !!money.valor_unitario,
-            },
-            { emitEvent: false },
-          );
-          this.linhasItensArray.push(g);
-        }
-      }
-      this.garantirMinUmaLinha();
-      const servRowsOnly = sorted.filter(
-        (r) => mapTipoFromApi(r.tipo || '') === 'Serviço',
-      );
-      this.form.patchValue(
-        {
-          cliente_id: l0.idCliente || '',
-          data: dataYmd,
-          hora_inicial:
-            servRowsOnly.length > 0
-              ? this.menorHoraInicialServicoEdicao(servRowsOnly, dataYmd)
-              : '',
-          observacao: '',
-          agenda_status: agendaStEd,
-        },
-        { emitEvent: false },
-      );
-      this.reforcarHoraInicialSeVazia(sorted, dataYmd);
-      this.prefillEmCurso = false;
-      this.aplicarValidadoresLinhas();
-      if (this.modoModal) this.restaurarRepetirPreferenciaClienteArmazem();
-      return;
-    }
-
-    if (tipoApi === 'Produto') {
-      for (const row of sorted) {
-        const q = parseQuantidadeFromDescricao(row.descricao || '');
-        const g = this.novoGrupoLinhaItem('Produto');
-        const itemPivot = this.acharItemPivotParaRow(
-          itensCatalogoPedido,
-          row,
-          consumidos,
-        );
-        const money = this.moneyDoItem(itemPivot);
-        g.patchValue(
-          {
-            produto: row.produtoNome || '',
-            quantidade: q > 0 ? q : 1,
-            desconto: money.desconto || row.desconto || '',
-            preco_unitario:
-              money.valor_unitario ||
-              (this.precoCatalogoProduto(row.produtoNome || '') != null
-                ? formataMoedaBrl(this.precoCatalogoProduto(row.produtoNome || '')!)
-                : ''),
-            preco_unitario_tocado: !!money.valor_unitario,
-          },
-          { emitEvent: false },
-        );
-        this.linhasItensArray.push(g);
-      }
-      this.garantirMinUmaLinha();
-      this.form.patchValue(
-        {
-          cliente_id: l0.idCliente || '',
-          data: dataYmd,
-          observacao: stripQtdSuffixObservacao(l0.descricao || ''),
-          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
-          agenda_status: agendaStEd,
-        },
-        { emitEvent: false },
-      );
-    } else if (tipoApi === 'Serviço') {
-      for (const row of sorted) {
+    for (const seg of segs) {
+      if (seg.k === 'servico') {
+        const row = seg.row;
         const nomeServ = (row.servicosRef || '').trim();
         const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
         const g = this.novoGrupoLinhaItem('Serviço');
@@ -2749,125 +2689,137 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           { emitEvent: false },
         );
         this.linhasItensArray.push(g);
-      }
-      this.garantirMinUmaLinha();
-      this.form.patchValue(
-        {
-          cliente_id: l0.idCliente || '',
-          data: dataYmd,
-          hora_inicial: this.menorHoraInicialServicoEdicao(sorted, dataYmd),
-          observacao: '',
-          agenda_status: agendaStEd,
-        },
-        { emitEvent: false },
-      );
-    } else if (tipoApi === 'Mega') {
-      const g = this.novoGrupoLinhaItem('Mega');
-      g.patchValue(
-        { pacote: l0.pacote || '', desconto: '' },
-        { emitEvent: false },
-      );
-      const et = g.get('etapas') as FormArray<FormGroup>;
-      while (et.length) {
-        et.removeAt(0);
-      }
-      const comEtapaMega = sorted.filter((r) => (r.etapa || '').trim());
-      for (const row of comEtapaMega) {
-        et.push(
-          this.fb.group({
-            etapa: [row.etapa || '', Validators.required],
-            profissional: [
-              this.profissionalValorForm(row),
-              Validators.required,
-            ],
-          }),
+      } else if (seg.k === 'produto') {
+        const row = seg.row;
+        const q = parseQuantidadeFromDescricao(row.descricao || '');
+        const g = this.novoGrupoLinhaItem('Produto');
+        const itemPivot = this.acharItemPivotParaRow(
+          itensCatalogoPedido,
+          row,
+          consumidos,
         );
-      }
-      if (et.length < 1) {
-        et.push(this.novoGrupoEtapa());
-      }
-      this.linhasItensArray.push(g);
-      this.form.patchValue(
-        {
-          cliente_id: l0.idCliente || '',
-          data: dataYmd,
-          observacao: obsMegaPacote,
-          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
-          agenda_status: agendaStEd,
-        },
-        { emitEvent: false },
-      );
-    } else if (tipoApi === 'Pacote') {
-      const g = this.novoGrupoLinhaItem('Pacote');
-      g.patchValue(
-        { pacote: l0.pacote || '', desconto: '' },
-        { emitEvent: false },
-      );
-      const et = g.get('etapas') as FormArray<FormGroup>;
-      while (et.length) {
-        et.removeAt(0);
-      }
-      const comEtapa = sorted.filter((r) => (r.etapa || '').trim());
-      for (const row of comEtapa) {
-        et.push(
-          this.fb.group({
-            etapa: [row.etapa || '', Validators.required],
-            profissional: [
-              this.profissionalValorForm(row),
-              Validators.required,
-            ],
-          }),
+        const money = this.moneyDoItem(itemPivot);
+        g.patchValue(
+          {
+            produto: row.produtoNome || '',
+            quantidade: q > 0 ? q : 1,
+            desconto: money.desconto || row.desconto || '',
+            preco_unitario:
+              money.valor_unitario ||
+              (this.precoCatalogoProduto(row.produtoNome || '') != null
+                ? formataMoedaBrl(this.precoCatalogoProduto(row.produtoNome || '')!)
+                : ''),
+            preco_unitario_tocado: !!money.valor_unitario,
+          },
+          { emitEvent: false },
         );
+        this.linhasItensArray.push(g);
+      } else if (seg.k === 'cabelo') {
+        const row = seg.row;
+        const g = this.novoGrupoLinhaItem('Cabelo');
+        const itemPivot = this.acharItemPivotParaRow(
+          itensCatalogoPedido,
+          row,
+          consumidos,
+        );
+        const money = this.moneyDoItem(itemPivot);
+        g.patchValue(
+          {
+            profissional_cabelo: this.profissionalValorForm(row),
+            valor_cabelo:
+              money.valor_unitario || this.valorCampoCabeloDeApi(row.valor),
+            detalhes_cabelo: row.descricao || '',
+            desconto: money.desconto || row.desconto || '',
+          },
+          { emitEvent: false },
+        );
+        this.linhasItensArray.push(g);
+      } else if (seg.k === 'mega' || seg.k === 'pacote') {
+        const blockRows = seg.rows;
+        const head = blockRows[0];
+        const tipoForm = seg.k === 'mega' ? 'Mega' : 'Pacote';
+        const g = this.novoGrupoLinhaItem(tipoForm);
+        g.patchValue(
+          { pacote: head.pacote || '', desconto: '' },
+          { emitEvent: false },
+        );
+        const et = g.get('etapas') as FormArray<FormGroup>;
+        while (et.length) {
+          et.removeAt(0);
+        }
+        const comEtapa = blockRows.filter((r) => (r.etapa || '').trim());
+        for (const row of comEtapa) {
+          et.push(
+            this.fb.group({
+              etapa: [row.etapa || '', Validators.required],
+              profissional: [
+                this.profissionalValorForm(row),
+                Validators.required,
+              ],
+            }),
+          );
+        }
+        if (et.length < 1) {
+          et.push(this.novoGrupoEtapa());
+        }
+        this.linhasItensArray.push(g);
       }
-      if (et.length < 1) {
-        et.push(this.novoGrupoEtapa());
-      }
-      this.linhasItensArray.push(g);
-      this.form.patchValue(
-        {
-          cliente_id: l0.idCliente || '',
-          data: dataYmd,
-          observacao: obsMegaPacote,
-          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
-          agenda_status: agendaStEd,
-        },
-        { emitEvent: false },
-      );
-    } else if (tipoApi === 'Cabelo') {
-      const row = sorted[0];
-      const g = this.novoGrupoLinhaItem('Cabelo');
-      const itemPivot = this.acharItemPivotParaRow(
-        itensCatalogoPedido,
-        row,
-        consumidos,
-      );
-      const money = this.moneyDoItem(itemPivot);
-      g.patchValue(
-        {
-          profissional_cabelo: this.profissionalValorForm(row),
-          valor_cabelo:
-            money.valor_unitario || this.valorCampoCabeloDeApi(row.valor),
-          detalhes_cabelo: row.descricao || '',
-          desconto: money.desconto || row.desconto || '',
-        },
-        { emitEvent: false },
-      );
-      this.linhasItensArray.push(g);
-      this.form.patchValue(
-        {
-          cliente_id: row.idCliente || '',
-          data: dataYmd,
-          observacao: '',
-          hora_inicial: this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd),
-          agenda_status: agendaStEd,
-        },
-        { emitEvent: false },
-      );
     }
+
+    this.garantirMinUmaLinha();
+
+    const servRowsOnly = sorted.filter(
+      (r) => mapTipoFromApi(r.tipo || '') === 'Serviço',
+    );
+    const temServ = segs.some((s) => s.k === 'servico');
+    const temProd = segs.some((s) => s.k === 'produto');
+    const soServicoEProduto =
+      temServ &&
+      temProd &&
+      segs.every((s) => s.k === 'servico' || s.k === 'produto');
+    const soApenasServico =
+      segs.length > 0 && segs.every((s) => s.k === 'servico');
+
+    let observacao = '';
+    const firstMp = sorted.find((r) => {
+      const t = mapTipoFromApi(r.tipo || '');
+      return t === 'Mega' || t === 'Pacote';
+    });
+    if (firstMp) {
+      observacao = stripQtdSuffixObservacao(firstMp.descricao || '');
+    } else if (segs.length === 1 && segs[0].k === 'produto') {
+      observacao = stripQtdSuffixObservacao(segs[0].row.descricao || '');
+    } else if (soServicoEProduto) {
+      observacao = '';
+    } else if (mapTipoFromApi(l0.tipo || '') === 'Produto') {
+      observacao = stripQtdSuffixObservacao(l0.descricao || '');
+    }
+
+    let horaInicial = '';
+    if (soServicoEProduto) {
+      horaInicial =
+        servRowsOnly.length > 0
+          ? this.menorHoraInicialServicoEdicao(servRowsOnly, dataYmd)
+          : '';
+    } else if (soApenasServico) {
+      horaInicial = this.menorHoraInicialServicoEdicao(sorted, dataYmd);
+    } else {
+      horaInicial = this.menorHoraInicialTodasLinhasEdicao(sorted, dataYmd);
+    }
+
+    this.form.patchValue(
+      {
+        cliente_id: l0.idCliente || '',
+        data: dataYmd,
+        hora_inicial: horaInicial,
+        observacao,
+        agenda_status: agendaStEd,
+      },
+      { emitEvent: false },
+    );
 
     this.reforcarHoraInicialSeVazia(sorted, dataYmd);
     this.prefillEmCurso = false;
-    this.garantirMinUmaLinha();
     this.aplicarValidadoresLinhas();
     if (this.modoModal) this.restaurarRepetirPreferenciaClienteArmazem();
   }

@@ -147,6 +147,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
     ev.preventDefault();
+    if (this.faturarDrawerAberto && this.faturarDrawerPanelOpen) {
+      this.fecharFaturarDrawer();
+      return;
+    }
     if (this.comandaPainelAberto && this.comandaDrawerPanelOpen) {
       this.fecharComandaDrawer();
       return;

@@ -323,6 +323,16 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.fecharClienteDrawer();
       return;
     }
+    if (this.faturarDrawerAberto) {
+      ev.preventDefault();
+      this.fecharFaturarDrawer();
+      return;
+    }
+    if (this.editAgendamentoAberto) {
+      ev.preventDefault();
+      this.fecharEditAgendamento();
+      return;
+    }
     if (this.comandaPainelAberto) {
       ev.preventDefault();
       this.fecharComandaDrawer();
@@ -996,11 +1006,16 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   rotuloTicket(g: ComandaGrupo): string {
+    /** Número do ticket = id do atendimento (estável). Não usar `linha_id` da 1.ª linha — muda com a ordenação/itens. */
+    const idAt = this.idAtendimento(g);
+    if (idAt) {
+      const raw = idAt.replace(/\D/g, '');
+      const tail = raw.replace(/^0+/, '') || raw;
+      return tail ? `#${tail}` : '#—';
+    }
     const lid = g.linhas[0]?.linha_id;
     if (lid != null && Number.isFinite(lid)) return `#${lid}`;
-    const raw = String(g.linhas[0]?.id ?? '').replace(/\D/g, '');
-    const tail = raw.replace(/^0+/, '') || raw;
-    return tail ? `#${tail}` : '#—';
+    return '#—';
   }
 
   idCliente(g: ComandaGrupo): string | null {
