@@ -241,6 +241,16 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
 export function totalLinhaPreferencialAtendimento(
   l: AtendimentoListaItem,
 ): number | null {
+  const tipo = (l.tipo || '').trim().toLowerCase();
+  /**
+   * Mega/Pacote: `itens_catalogo` vem repetido em todas as linhas do pedido;
+   * o primeiro `total_linha` não-null costuma ser de outro tipo (ex. Serviço).
+   * O valor cobrado por linha está em `atendimentos.valor` (espelho do pacote / etapa).
+   */
+  if (tipo === 'mega' || tipo === 'pacote') {
+    const vLinha = valorMonetarioParaNumero(l.valor);
+    if (vLinha != null) return Math.max(0, vLinha);
+  }
   const itens = l.itens_catalogo ?? l.itens ?? [];
   for (const it of itens) {
     const n =

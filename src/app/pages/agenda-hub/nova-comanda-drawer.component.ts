@@ -350,10 +350,12 @@ export class NovaComandaDrawerComponent implements OnInit {
     const tipoNorm = String(l.tipo ?? '').trim().toLowerCase();
     const megaOuPac =
       tipoNorm === 'mega' || tipoNorm === 'pacote';
-    const totalN =
-      (itemRef?.total_linha != null
-        ? valorMonetarioParaNumero(itemRef.total_linha)
-        : null) ?? totalLinhaPreferencialAtendimento(l);
+    /** Mega/Pacote: não usar pivot partilhado (ver `totalLinhaPreferencialAtendimento`). */
+    const totalN = megaOuPac
+      ? totalLinhaPreferencialAtendimento(l)
+      : (itemRef?.total_linha != null
+          ? valorMonetarioParaNumero(itemRef.total_linha)
+          : null) ?? totalLinhaPreferencialAtendimento(l);
     /** Mega/Pacote: desconto é só ao nível da comanda — nunca por linha. */
     const descN = megaOuPac
       ? null
@@ -373,10 +375,13 @@ export class NovaComandaDrawerComponent implements OnInit {
     /** Quantidade sempre que a pivot/catalogo trouxer um valor (>0), não só quando >1. */
     const mostrarQtd = q != null && q > 0;
     const textoQtd = String(qEff).replace('.', ',');
-    const unitRaw =
-      (itemRef?.valor_unitario != null
-        ? valorMonetarioParaNumero(itemRef.valor_unitario)
-        : null) ?? (qEff > 0 ? total / qEff : total);
+    const unitRaw = megaOuPac
+      ? qEff > 0
+        ? total / qEff
+        : total
+      : (itemRef?.valor_unitario != null
+          ? valorMonetarioParaNumero(itemRef.valor_unitario)
+          : null) ?? (qEff > 0 ? total / qEff : total);
     return {
       mostrarQtd,
       textoQtd,
@@ -399,14 +404,72 @@ export class NovaComandaDrawerComponent implements OnInit {
   } | null {
     const tpMega = bloco.tipo === 'Mega' || bloco.tipo === 'Pacote';
     if (tpMega) {
-      const head = this.faixaPrecoLinha(bloco.linha);
-      if (head != null) return head;
-      for (const e of bloco.etapas) {
-        const s =
-          e.linhaEtapa != null ? this.faixaPrecoLinha(e.linhaEtapa) : null;
-        if (s != null) return s;
+      const lCab = bloco.linha;
+      const q = this.quantidadeLinha(lCab);
+      const qEff = q != null && q > 0 ? q : 1;
+      const mostrarQtd = q != null && q > 0;
+      const textoQtd = String(qEff).replace('.', ',');
+
+      if (bloco.tipo === 'Pacote') {
+        /** Valor do pacote na BD (cabeça; etapas costumam vir 0). */
+        const totalN = valorMonetarioParaNumero(lCab.valor);
+        if (totalN == null) {
+          const fb = this.faixaPrecoLinha(lCab);
+          if (fb != null) return fb;
+          for (const e of bloco.etapas) {
+            const s =
+              e.linhaEtapa != null ? this.faixaPrecoLinha(e.linhaEtapa) : null;
+            if (s != null) return s;
+          }
+          return null;
+        }
+        const total = Math.max(0, totalN);
+        const unit = qEff > 0 ? total / qEff : total;
+        return {
+          mostrarQtd,
+          textoQtd,
+          unitario: formataMoedaBrl(unit),
+          desconto: '—',
+          total: formataMoedaBrl(total),
+        };
       }
-      return null;
+
+      /** Mega: total cobrado = soma dos `valor` das etapas (regras_mega gravados na BD). */
+      let somaEtapas = 0;
+      let algumValor = false;
+      for (const e of bloco.etapas) {
+        const le = e.linhaEtapa;
+        if (!le) continue;
+        const v = valorMonetarioParaNumero(le.valor);
+        if (v != null) {
+          algumValor = true;
+          somaEtapas += Math.max(0, v);
+        }
+      }
+      let totalMega = somaEtapas;
+      if (!algumValor && bloco.etapas.length === 0) {
+        const vCab = valorMonetarioParaNumero(lCab.valor);
+        if (vCab != null) totalMega = Math.max(0, vCab);
+      }
+      if (!algumValor && bloco.etapas.length > 0) {
+        const fb = this.faixaPrecoLinha(lCab);
+        if (fb != null) return fb;
+        for (const e of bloco.etapas) {
+          const s =
+            e.linhaEtapa != null ? this.faixaPrecoLinha(e.linhaEtapa) : null;
+          if (s != null) return s;
+        }
+        return null;
+      }
+      /** V. unitário = soma das etapas (referência única para o bloco). */
+      const unitMega = qEff > 0 ? totalMega / qEff : totalMega;
+      return {
+        mostrarQtd,
+        textoQtd,
+        unitario: formataMoedaBrl(unitMega),
+        desconto: '—',
+        total: formataMoedaBrl(totalMega),
+      };
     }
     return this.faixaPrecoLinha(bloco.linha);
   }
