@@ -114,9 +114,9 @@
 
 .agenda-modal__title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 30px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.25;
   color: var(--color-text);
 }
 
@@ -1918,7 +1918,7 @@ textarea {
   --drawer-label-below: 8px;
 
   .agenda-modal__title {
-    font-size: 24px;
+    font-size: 30px;
     line-height: 1.25;
     color: #404040;
     padding: 20px 0;

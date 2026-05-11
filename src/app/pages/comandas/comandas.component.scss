@@ -623,7 +623,7 @@ input.comandas-head__busca-input[type='search']::-webkit-search-cancel-button {
 }
 
 .table-wrap {
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 .comandas-table {
@@ -984,7 +984,7 @@ thead th.col-check {
   border: 1px solid #e7e5e4;
   border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  z-index: 20;
+  z-index: 80;
 
   li {
     margin: 0;
@@ -1617,7 +1617,7 @@ thead th.col-check {
 
 .cliente-head__title {
   margin: 0;
-  font-size: 20px;
+  font-size: 30px;
   font-weight: 700;
   color: #000000bf;
   letter-spacing: -0.02em;
