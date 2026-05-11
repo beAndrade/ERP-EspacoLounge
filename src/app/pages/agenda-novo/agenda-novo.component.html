@@ -334,11 +334,20 @@
                   <button
                     type="button"
                     class="btn btn--icon-line-add"
-                    (click)="adicionarLinhaItens()"
-                    aria-label="Adicionar linha ao pedido"
-                    title="Adicionar linha"
+                    (click)="adicionarEtapaNaLinha(i)"
+                    aria-label="Adicionar etapa"
+                    title="Adicionar etapa"
                   >
                     +
+                  </button>
+                  <button
+                    type="button"
+                    class="btn small"
+                    (click)="adicionarLinhaItens()"
+                    aria-label="Adicionar outra linha ao pedido (ex.: Serviço ou Produto)"
+                    title="Outra linha no mesmo pedido"
+                  >
+                    + Linha
                   </button>
                   <button
                     type="button"

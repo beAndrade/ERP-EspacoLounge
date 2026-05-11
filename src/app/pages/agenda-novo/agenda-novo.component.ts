@@ -58,6 +58,7 @@ import {
   switchMap,
   take,
   takeUntil,
+  toArray,
 } from 'rxjs';
 import { AgendaModalCalendarComponent } from './agenda-modal-calendar.component';
 import {
@@ -2160,7 +2161,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (pl.length === 0) {
           return of(true);
         }
-        return forkJoin(pl.map((p) => this.api.createAgendamento(p)));
+        /** Em série: o mesmo `id_atendimento` em vários payloads em paralelo corrompe o pedido. */
+        return from(pl).pipe(
+          concatMap((p) => this.api.createAgendamento(p)),
+          toArray(),
+        );
       }),
     );
 
@@ -2208,7 +2213,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                   );
                   return excluirAntes.pipe(
                     switchMap(() =>
-                      forkJoin(pl.map((p) => this.api.createAgendamento(p))),
+                      from(pl).pipe(
+                        concatMap((p) => this.api.createAgendamento(p)),
+                        toArray(),
+                      ),
                     ),
                   );
                 }),
