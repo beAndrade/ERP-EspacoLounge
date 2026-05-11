@@ -36,6 +36,14 @@ function formataMoedaBrl(n: number): string {
   }).format(n);
 }
 
+/** Formato «10,50» para inputs de moeda (sem símbolo R$). */
+function formatarInputPt(n: number): string {
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 /** Remove sufixo «— Qtd: n» do título do produto (a quantidade vai na faixa monetária). */
 function tituloProdutoLeituraSemQtd(titulo: string): string {
   return (titulo || '')
@@ -111,6 +119,9 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly clienteComandaCtrl = new FormControl('', { nonNullable: true });
   readonly clienteNomeCtrl = new FormControl('', { nonNullable: true });
   readonly dataComandaCtrl = new FormControl('', { nonNullable: true });
+  /** Resumo manual: desconto e crédito (moeda em texto pt-BR). */
+  readonly descontoResumoCtrl = new FormControl('0,00', { nonNullable: true });
+  readonly creditoResumoCtrl = new FormControl('0,00', { nonNullable: true });
 
   /** Linhas espelhadas do atendimento para exibição (modo leitura). */
   readonly linhasAtendimentoApi: AtendimentoListaItem[] = [];
@@ -131,6 +142,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   modalOutrosOpcao: 'imprimir' | 'historico' | null = null;
   excluindo = false;
   erroExcluir = '';
+  /** Evita repor crédito ao reexecutar o effect com o mesmo `id_atendimento`. */
+  private lastIdAtParaCamposResumo = '';
 
   constructor() {
     effect(() => {
@@ -160,9 +173,22 @@ export class NovaComandaDrawerComponent implements OnInit {
         this.resumoPagamentos = RESUMO_VAZIO;
         this.pagamentos = [];
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+          this.lastIdAtParaCamposResumo = '';
+          this.descontoResumoCtrl.setValue(formatarInputPt(0), {
+            emitEvent: false,
+          });
+          this.creditoResumoCtrl.setValue(formatarInputPt(0), {
+            emitEvent: false,
+          });
           this.carregandoItens = false;
           this.erroItens = '';
           return;
+        }
+        if (idAt !== this.lastIdAtParaCamposResumo) {
+          this.lastIdAtParaCamposResumo = idAt;
+          this.creditoResumoCtrl.setValue(formatarInputPt(0), {
+            emitEvent: false,
+          });
         }
         this.carregandoItens = true;
         this.erroItens = '';
@@ -196,8 +222,13 @@ export class NovaComandaDrawerComponent implements OnInit {
       )
       .subscribe({
         next: (r) => {
+          if (this.contexto()?.idAtendimento?.trim() !== id) return;
           this.pagamentos = r.items ?? [];
           this.resumoPagamentos = r.resumo ?? RESUMO_VAZIO;
+          this.descontoResumoCtrl.setValue(
+            formatarInputPt(this.resumoPagamentos.desconto ?? 0),
+            { emitEvent: false },
+          );
           this.carregandoPagamentos = false;
         },
       });
@@ -695,9 +726,24 @@ export class NovaComandaDrawerComponent implements OnInit {
     const id = this.contexto()?.idAtendimento?.trim();
     if (!id || !this.podeFaturar()) return;
     this.fecharOutrosMenu();
+    const r = this.resumoPagamentos;
+    const bruto = this.somaTotaisItensComanda();
+    const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
+    const total = this.totalComandaResumoCalculado();
+    const totalPago = r.total_pago ?? 0;
+    const saldo = Math.max(
+      0,
+      Math.round((total - totalPago) * 100) / 100,
+    );
     this.faturarComanda.emit({
       idAtendimento: id,
-      resumo: this.resumoPagamentos,
+      resumo: {
+        ...r,
+        total_bruto: bruto,
+        desconto: desc,
+        total,
+        saldo,
+      },
     });
   }
 
@@ -801,6 +847,44 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   brl(n: number): string {
     return formataMoedaBrl(n);
+  }
+
+  /** Soma dos totais exibidos por item/bloco (alinhado às faixas `faixaPrecoBloc`). */
+  somaTotaisItensComanda(): number {
+    let sum = 0;
+    for (const b of this.blocosLeitura()) {
+      const stripe = this.faixaPrecoBloc(b);
+      if (!stripe) continue;
+      const n = valorMonetarioParaNumero(stripe.total);
+      if (n != null) sum += Math.max(0, n);
+    }
+    return Math.round(sum * 100) / 100;
+  }
+
+  valorMonetarioCampoResumo(s: string): number {
+    const n = valorMonetarioParaNumero(s);
+    return n != null && Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+
+  /** Reservado: quando existir crédito/cashback na API, devolver aqui. */
+  cashbackComandaReais(): number {
+    return 0;
+  }
+
+  totalComandaResumoCalculado(): number {
+    const bruto = this.somaTotaisItensComanda();
+    const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
+    const cred = this.valorMonetarioCampoResumo(this.creditoResumoCtrl.value);
+    const cash = this.cashbackComandaReais();
+    return Math.max(
+      0,
+      Math.round((bruto - desc - cred - cash) * 100) / 100,
+    );
+  }
+
+  normalizarCampoMoedaResumo(c: FormControl<string>): void {
+    const n = this.valorMonetarioCampoResumo(c.value);
+    c.setValue(formatarInputPt(n), { emitEvent: false });
   }
 
   contextoPodeSincronizarItens(): boolean {
