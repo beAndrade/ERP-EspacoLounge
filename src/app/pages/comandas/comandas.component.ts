@@ -24,7 +24,6 @@ import {
   dataDdMmBarraAaaa,
   parseFiltroDataDdMm,
   toYmd,
-  toDdMmYyyy,
   ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
@@ -141,6 +140,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
   selecionados = new Set<string>();
   menuAbertoParaId: string | null = null;
   excluindoIdAt: string | null = null;
+  excluirMassaModalAberto = false;
+  excluindoEmMassa = false;
+  get mostrarAcoesEmMassa(): boolean {
+    return this.selecionados.size > 0;
+  }
+  get quantidadeSelecionadaExclusao(): number {
+    return this.idsAtSelecionadosParaExclusao().length;
+  }
 
   comandaPainelAberto = false;
   comandaDrawerPanelOpen = false;
@@ -160,6 +167,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
   /** ViewChild do drawer de comanda para chamar `recarregarAposFaturar`. */
   @ViewChild(NovaComandaDrawerComponent)
   comandaDrawerRef?: NovaComandaDrawerComponent;
+
+  @ViewChild(AgendaNovoComponent)
+  private agendaEditComandaRef?: AgendaNovoComponent;
 
   /** Sub-drawer Faturar (pagamentos da comanda). */
   faturarDrawerAberto = false;
@@ -223,13 +233,8 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private clientesCatalogo: Cliente[] = [];
 
   ngOnInit(): void {
-    const hoje = new Date();
-    const inicio = new Date(hoje);
-    inicio.setDate(hoje.getDate() - 90);
-    this.dataInicio = toDdMmYyyy(inicio);
-    this.dataFim = toDdMmYyyy(hoje);
     forkJoin({
-      ags: this.api.listAgendamentos(toYmd(inicio), toYmd(hoje)),
+      ags: this.api.listAgendamentos(),
       clientes: this.api.listClientes(),
     }).subscribe({
       next: ({ ags, clientes }) => {
@@ -370,20 +375,27 @@ export class ComandasComponent implements OnInit, OnDestroy {
   carregar(): void {
     this.carregando = true;
     this.erro = '';
-    const di = parseFiltroDataDdMm(this.dataInicio);
-    const df = parseFiltroDataDdMm(this.dataFim);
-    if (!di || !df) {
+    const diTxt = this.dataInicio.trim();
+    const dfTxt = this.dataFim.trim();
+    const semFiltroData = !diTxt && !dfTxt;
+    const di = diTxt ? parseFiltroDataDdMm(diTxt) : null;
+    const df = dfTxt ? parseFiltroDataDdMm(dfTxt) : null;
+    if (!semFiltroData && (!diTxt || !dfTxt)) {
       this.carregando = false;
-      this.erro =
-        'Use o formato dia-mês-ano nas duas datas (ex.: 09-04-2026). Também aceita barras.';
+      this.erro = 'Preencha as duas datas ou deixe ambas vazias.';
       return;
     }
-    if (di > df) {
+    if (!semFiltroData && (!di || !df)) {
+      this.carregando = false;
+      this.erro = 'Use o formato dia-mês-ano nas duas datas (ex.: 09-04-2026). Também aceita barras.';
+      return;
+    }
+    if (!semFiltroData && di != null && df != null && di > df) {
       this.carregando = false;
       this.erro = 'A data “De” não pode ser depois da data “Até”.';
       return;
     }
-    this.api.listAgendamentos(di, df).subscribe({
+    this.api.listAgendamentos(di ?? undefined, df ?? undefined).subscribe({
       next: (items) => {
         this.grupos = this.agruparPorIdAtendimento(items);
         this.selecionados.clear();
@@ -402,6 +414,49 @@ export class ComandasComponent implements OnInit, OnDestroy {
   toggleFiltros(): void {
     this.dispararPulsoToolbar('filtro');
     this.filtrosAbertos = !this.filtrosAbertos;
+  }
+
+  onAcoesEmMassaClick(): void {
+    if (this.quantidadeSelecionadaExclusao <= 0 || this.excluindoEmMassa) return;
+    this.excluirMassaModalAberto = true;
+  }
+
+  fecharModalExcluirEmMassa(): void {
+    if (this.excluindoEmMassa) return;
+    this.excluirMassaModalAberto = false;
+  }
+
+  confirmarExcluirEmMassa(): void {
+    const ids = this.idsAtSelecionadosParaExclusao();
+    if (!ids.length || this.excluindoEmMassa) {
+      this.excluirMassaModalAberto = false;
+      return;
+    }
+    this.excluindoEmMassa = true;
+    this.erro = '';
+    forkJoin(ids.map((id) => this.api.excluirAtendimento(id))).subscribe({
+      next: () => {
+        this.excluindoEmMassa = false;
+        this.excluirMassaModalAberto = false;
+        this.selecionados.clear();
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.excluindoEmMassa = false;
+        this.erro = e.message || 'Não foi possível excluir as comandas selecionadas.';
+      },
+    });
+  }
+
+  private idsAtSelecionadosParaExclusao(): string[] {
+    const ids: string[] = [];
+    for (const g of this.grupos) {
+      if (!this.selecionados.has(g.id)) continue;
+      const idAt = this.idAtendimento(g);
+      if (!idAt) continue;
+      ids.push(idAt);
+    }
+    return ids;
   }
 
   /** Abre o drawer «Nova comanda» reutilizando o fluxo da comanda. */
@@ -680,9 +735,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   private atualizarGruposECatalogo(): void {
-    const di = parseFiltroDataDdMm(this.dataInicio);
-    const df = parseFiltroDataDdMm(this.dataFim);
-    if (!di || !df || di > df) {
+    const diTxt = this.dataInicio.trim();
+    const dfTxt = this.dataFim.trim();
+    const semFiltroData = !diTxt && !dfTxt;
+    const di = diTxt ? parseFiltroDataDdMm(diTxt) : null;
+    const df = dfTxt ? parseFiltroDataDdMm(dfTxt) : null;
+    if (
+      (!semFiltroData && (!diTxt || !dfTxt || !di || !df)) ||
+      (!semFiltroData && di != null && df != null && di > df)
+    ) {
       this.carregar();
       this.api.listClientes().subscribe({
         next: (items) => {
@@ -693,7 +754,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       return;
     }
     forkJoin({
-      ags: this.api.listAgendamentos(di, df),
+      ags: this.api.listAgendamentos(di ?? undefined, df ?? undefined),
       clientes: this.api.listClientes(),
     }).subscribe({
       next: ({ ags, clientes }) => {
@@ -1064,6 +1125,18 @@ export class ComandasComponent implements OnInit, OnDestroy {
    * `id_atendimento` da comanda actual. Mantém a comanda aberta por baixo;
    * ao salvar/cancelar volta ao drawer da comanda recarregada.
    */
+  /**
+   * Rodapé «Salvar»: com o overlay do editor aberto não dá para premir este botão —
+   * dispara `salvar()` no `app-agenda-novo` quando o editor já está por cima da comanda.
+   */
+  onSalvarDesdeDrawerComanda(): void {
+    if (this.editAgendamentoAberto && this.agendaEditComandaRef) {
+      this.agendaEditComandaRef.salvar();
+      return;
+    }
+    this.onEditarAgendamentoDesdeComanda();
+  }
+
   onEditarAgendamentoDesdeComanda(): void {
     const ctx = this.comandaDrawerContexto;
     const idAt = ctx?.idAtendimento?.trim();
@@ -1108,6 +1181,12 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.comandaDrawerContexto = null;
       queueMicrotask(() => {
         this.comandaDrawerContexto = ctx;
+        /**
+         * Em alguns ambientes o save do agendamento e a leitura da comanda
+         * podem competir por timing; forçamos refresh logo após reabrir.
+         */
+        setTimeout(() => this.comandaDrawerRef?.recarregarDadosComanda(), 220);
+        setTimeout(() => this.comandaDrawerRef?.recarregarDadosComanda(), 700);
       });
     }
   }
@@ -1297,9 +1376,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       const ymd = (a.data || '').slice(0, 10);
       const idAt = String(a.id || '').trim();
       const nome = (a.nomeCliente || '').trim().toLowerCase();
-      const key = idAt
-        ? `${ymd}\u0001${idAt}`
-        : `${ymd}\u0001legacy:${nome}:${legacyIdx++}`;
+      const key = idAt ? `id:${idAt}` : `${ymd}\u0001legacy:${nome}:${legacyIdx++}`;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(a);
     }

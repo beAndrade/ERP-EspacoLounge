@@ -35,7 +35,7 @@
       </header>
 
       <div class="nc-drawer__flow">
-        <main class="nc-main">
+        <main class="nc-main nc-main--comanda-scroll">
           <div class="nc-main__top">
             <label class="nc-field nc-field--cliente">
               <span class="nc-field__label">Cliente</span>
@@ -95,6 +95,7 @@
 
                 <ul class="nc-leitura" role="list">
                   @for (b of blocosLeitura(); track $index; let i = $index) {
+                    @let blocStripe = faixaPrecoBloc(b);
                     <li class="nc-leitura__item">
                       <div class="nc-leitura__row">
                         <span class="nc-leitura__tag" [attr.data-tipo]="b.tipo">
@@ -106,15 +107,70 @@
                             <span class="nc-leitura__sub">{{ b.subtitulo }}</span>
                           }
                         </div>
+                        @if (blocStripe) {
+                          <div
+                            class="nc-leitura__money nc-leitura__money--end"
+                            aria-label="Valores do item"
+                          >
+                            @if (blocStripe.mostrarQtd) {
+                              <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-qtd">
+                                <span class="nc-leitura__money-lbl">Qtd.</span>
+                                <span class="nc-leitura__money-val">{{ blocStripe.textoQtd }}</span>
+                              </div>
+                            }
+                            <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-unit">
+                              <span class="nc-leitura__money-lbl">V.&nbsp;unit.</span>
+                              <span class="nc-leitura__money-val">{{ blocStripe.unitario }}</span>
+                            </div>
+                            <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-desc">
+                              <span class="nc-leitura__money-lbl">Desc.</span>
+                              <span class="nc-leitura__money-val">{{ blocStripe.desconto }}</span>
+                            </div>
+                            <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-total">
+                              <span class="nc-leitura__money-lbl">Total</span>
+                              <span class="nc-leitura__money-val">{{ blocStripe.total }}</span>
+                            </div>
+                          </div>
+                        }
                       </div>
                       @if (b.etapas.length > 0) {
                         <ul class="nc-leitura__etapas" role="list">
                           @for (e of b.etapas; track $index) {
-                            <li class="nc-leitura__etapa">
-                              <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
-                              @if (e.subtitulo) {
-                                <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
-                              }
+                            @let etStripe = faixaPrecoLinha(e.linhaEtapa);
+                            <li class="nc-leitura__etapa nc-leitura__etapa--money">
+                              <div class="nc-leitura__etapa-row">
+                                <div class="nc-leitura__etapa-text">
+                                  <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
+                                  @if (e.subtitulo) {
+                                    <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                  }
+                                </div>
+                                @if (etStripe) {
+                                  <div
+                                    class="nc-leitura__money nc-leitura__money--inline nc-leitura__money--end"
+                                    aria-label="Valores da etapa"
+                                  >
+                                    @if (etStripe.mostrarQtd) {
+                                      <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-qtd">
+                                        <span class="nc-leitura__money-lbl">Qtd.</span>
+                                        <span class="nc-leitura__money-val">{{ etStripe.textoQtd }}</span>
+                                      </div>
+                                    }
+                                    <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-unit">
+                                      <span class="nc-leitura__money-lbl">V.&nbsp;unit.</span>
+                                      <span class="nc-leitura__money-val">{{ etStripe.unitario }}</span>
+                                    </div>
+                                    <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-desc">
+                                      <span class="nc-leitura__money-lbl">Desc.</span>
+                                      <span class="nc-leitura__money-val">{{ etStripe.desconto }}</span>
+                                    </div>
+                                    <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-total">
+                                      <span class="nc-leitura__money-lbl">Total</span>
+                                      <span class="nc-leitura__money-val">{{ etStripe.total }}</span>
+                                    </div>
+                                  </div>
+                                }
+                              </div>
                             </li>
                           }
                         </ul>
@@ -168,39 +224,21 @@
                   {{ brl(resumoPagamentos.total) }}
                 </div>
               </div>
-              <div class="nc-itens-summary__row">
-                <span class="nc-itens-summary__label">Total pago</span>
-                <div
-                  class="nc-itens-summary__input nc-itens-summary__input--readonly"
-                  [attr.aria-label]="'Total pago: ' + brl(resumoPagamentos.total_pago)"
-                >
-                  {{ brl(resumoPagamentos.total_pago) }}
-                </div>
-              </div>
-              <div class="nc-itens-summary__row nc-itens-summary__row--saldo">
-                <span class="nc-itens-summary__label">Saldo</span>
-                <div
-                  class="nc-itens-summary__input nc-itens-summary__input--readonly nc-itens-summary__input--saldo"
-                  [attr.aria-label]="'Saldo: ' + brl(resumoPagamentos.saldo)"
-                >
-                  {{ brl(resumoPagamentos.saldo) }}
-                </div>
-              </div>
             </div>
           </section>
-
-          <div class="nc-drawer__obs">
-            <label class="nc-field nc-field--obs">
-              <span class="nc-field__label">Observações</span>
-              <textarea
-                class="nc-obs-textarea"
-                rows="3"
-                placeholder="Escreva aqui"
-                aria-label="Observações da comanda"
-              ></textarea>
-            </label>
-          </div>
         </main>
+      </div>
+
+      <div class="nc-drawer__obs">
+        <label class="nc-field nc-field--obs">
+          <span class="nc-field__label">Observações</span>
+          <textarea
+            class="nc-obs-textarea"
+            rows="3"
+            placeholder="Escreva aqui"
+            aria-label="Observações da comanda"
+          ></textarea>
+        </label>
       </div>
     </div>
   </div>
@@ -285,14 +323,6 @@
         <button type="button" class="btn btn-footer btn-footer--ghost" (click)="fechar.emit()">
           Cancelar
         </button>
-        <button
-          type="button"
-          class="btn btn-footer btn-footer--faturar"
-          [disabled]="!podeFaturar()"
-          (click)="abrirFaturar()"
-        >
-          Faturar
-        </button>
         @if (podeExcluirComanda()) {
           <button
             type="button"
@@ -305,6 +335,22 @@
             <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
           </button>
         }
+        <button
+          type="button"
+          class="btn btn-footer btn-footer--primary-nc"
+          [disabled]="!podeSalvarComandaRodape()"
+          (click)="gravarRodape()"
+        >
+          Salvar
+        </button>
+        <button
+          type="button"
+          class="btn btn-footer btn-footer--faturar"
+          [disabled]="!podeFaturar()"
+          (click)="abrirFaturar()"
+        >
+          Faturar
+        </button>
       </div>
     </div>
   </footer>

@@ -29,6 +29,20 @@ export const postAtendimentoMutationBody = t.Object(
     detalhes_cabelo: t.Optional(t.String()),
     inicio: t.Optional(t.String()),
     fim: t.Optional(t.String()),
+    id_recorrencia: t.Optional(t.String()),
+    ordem_recorrencia: t.Optional(t.Number()),
+    /** Override do valor unitário (R$) — cabeça do pedido (single item). */
+    valor_unitario: t.Optional(
+      t.Union([t.Number(), t.String(), t.Null()]),
+    ),
+    /** Desconto aplicado no item — cabeça do pedido (single item). */
+    desconto_item: t.Optional(
+      t.Union([t.Number(), t.String(), t.Null()]),
+    ),
+    /** Preço unitário (legado, Produto). */
+    preco_unitario: t.Optional(
+      t.Union([t.Number(), t.String(), t.Null()]),
+    ),
   },
   { additionalProperties: true },
 );

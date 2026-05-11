@@ -84,6 +84,7 @@ import {
 import type { ComandaLinhaInicial } from '../../core/models/comanda-linha-inicial';
 import { precoUnitarioServicoCatalogo } from '../../core/utils/servico-preco';
 import {
+  AtendimentoItemCatalogo,
   AtendimentoListaItem,
   CabeloCatalogoItem,
   Cliente,
@@ -855,6 +856,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
+    const totalComDesconto = (
+      q: number,
+      unit: number,
+      descontoStrLocal: string,
+    ) => {
+      const bruto = Math.max(0, q * unit);
+      const d = this.parseValorPt(String(descontoStrLocal ?? '').trim());
+      const descNum = d != null && d > 0 ? d : 0;
+      return formatPt(Math.max(0, bruto - descNum));
+    };
 
     for (let i = 0; i < this.linhasItensArray.length; i++) {
       const g = this.linhasItensArray.at(i);
@@ -868,16 +879,28 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
         const prof = (g.get('profissional')?.value ?? null) as number | null;
         const q = Math.max(0.01, Number(g.get('quantidade')?.value) || 1);
-        const svc = this.servicoPorIdQualquerComanda(sid);
-        const unit = precoUnitarioServicoCatalogo(svc, tam) ?? 0;
+        const manualUnit = this.parseValorPt(
+          String(g.get('valor_unitario')?.value ?? '').trim(),
+        );
+        let unit: number = manualUnit ?? 0;
+        if (unit <= 0) {
+          const svc = this.servicoPorIdQualquerComanda(sid);
+          unit = precoUnitarioServicoCatalogo(svc, tam) ?? 0;
+        }
+        const descontoStr =
+          this.normalizarDescontoLinhaStr(
+            String(g.get('desconto')?.value ?? ''),
+          ) ?? '0,00';
+        const unitSafe = Math.max(0, unit);
         out.push({
           itemTipo: 'Serviço',
           servico_id: sid,
           tamanho: tam,
           profissional: prof,
           quantidade: q,
-          valorUnitStr: formatPt(unit),
-          descontoStr: '0,00',
+          valorUnitStr: formatPt(unitSafe),
+          descontoStr,
+          totalLinhaStr: totalComDesconto(q, unitSafe, descontoStr),
         });
       } else if (tipo === 'Produto') {
         const nome = String(g.get('produto')?.value ?? '').trim();
@@ -889,25 +912,34 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (unit == null || unit <= 0) {
           unit = this.precoCatalogoProduto(nome) ?? 0;
         }
+        const unitSafe = Math.max(0, unit ?? 0);
+        const descontoStr =
+          this.normalizarDescontoLinhaStr(
+            String(g.get('desconto')?.value ?? ''),
+          ) ?? '0,00';
         out.push({
           itemTipo: 'Produto',
           profissional: (g.get('profissional')?.value ?? null) as number | null,
           resumoNaoServico: nome || 'Produto',
           quantidade: q,
-          valorUnitStr: formatPt(unit ?? 0),
-          descontoStr: '0,00',
+          valorUnitStr: formatPt(unitSafe),
+          descontoStr,
+          totalLinhaStr: totalComDesconto(q, unitSafe, descontoStr),
         });
       } else if (tipo === 'Mega' || tipo === 'Pacote') {
         const pac = String(g.get('pacote')?.value ?? '').trim();
         const prof = (g.get('profissional')?.value ?? null) as number | null;
         const resumo = pac ? `${tipo} — ${pac}` : tipo;
+        /** Mega/Pacote: sem desconto por linha (só Serviço/Produto; desconto global na comanda). */
+        const descontoStr = '0,00';
         out.push({
           itemTipo: tipo,
           profissional: prof,
           resumoNaoServico: resumo,
           quantidade: 1,
           valorUnitStr: '0,00',
-          descontoStr: '0,00',
+          descontoStr,
+          totalLinhaStr: totalComDesconto(1, 0, descontoStr),
         });
       } else if (tipo === 'Cabelo') {
         const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
@@ -916,13 +948,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const prof = (g.get('profissional_cabelo')?.value ??
           g.get('profissional')?.value ??
           null) as number | null;
+        const descontoStr =
+          this.normalizarDescontoLinhaStr(
+            String(g.get('desconto')?.value ?? ''),
+          ) ?? '0,00';
         out.push({
           itemTipo: 'Cabelo',
           profissional: prof,
           resumoNaoServico: det || 'Cabelo',
           quantidade: 1,
           valorUnitStr: formatPt(unit),
-          descontoStr: '0,00',
+          descontoStr,
+          totalLinhaStr: totalComDesconto(1, Math.max(0, unit), descontoStr),
         });
       }
     }
@@ -1275,6 +1312,160 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
     const n = this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
     return `${n} min`;
+  }
+
+  /** Modal (e leitura): produto — total estimado qtd × (preço manual ou catálogo) − desconto. */
+  totalEstimadoProdutoLinhaBrl(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Produto') return '—';
+    const q = Math.max(0.01, Number(g.get('quantidade')?.value) || 1);
+    const nome = String(g.get('produto')?.value ?? '').trim();
+    const manual = this.parseValorPt(
+      String(g.get('preco_unitario')?.value ?? '').trim(),
+    );
+    let unit = manual;
+    if (unit == null || unit <= 0) unit = this.precoCatalogoProduto(nome) ?? 0;
+    const desc =
+      this.parseValorPt(String(g.get('desconto')?.value ?? '').trim()) ?? 0;
+    const t = Math.max(0, q * (unit ?? 0) - desc);
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(t);
+  }
+
+  /**
+   * Total da linha de Serviço: max(0, qtde × valor_unitário − desconto).
+   * Quando V.Unit estiver vazio, usa o preço do catálogo (servico + tamanho).
+   */
+  totalEstimadoServicoLinhaBrl(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
+    const q = Math.max(0.01, Number(g.get('quantidade')?.value) || 1);
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+    const manual = this.parseValorPt(
+      String(g.get('valor_unitario')?.value ?? '').trim(),
+    );
+    let unit: number | null = manual;
+    if (unit == null || unit <= 0) {
+      const svc = this.servicoPorIdQualquerComanda(sid);
+      unit = precoUnitarioServicoCatalogo(svc, tam) ?? 0;
+    }
+    const desc =
+      this.parseValorPt(String(g.get('desconto')?.value ?? '').trim()) ?? 0;
+    const t = Math.max(0, q * (unit ?? 0) - desc);
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(t);
+  }
+
+  /** Total da linha de Cabelo: max(0, valor_cabelo − desconto). */
+  totalEstimadoCabeloLinhaBrl(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Cabelo') return '—';
+    const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? '').trim());
+    const unit = v != null && v > 0 ? v : 0;
+    const desc =
+      this.parseValorPt(String(g.get('desconto')?.value ?? '').trim()) ?? 0;
+    const t = Math.max(0, unit - desc);
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(t);
+  }
+
+  /**
+   * Auto-preenche `valor_unitario` da linha de Serviço a partir do catálogo
+   * quando o utilizador ainda não tocou no campo. Disparado em mudanças de
+   * `servico_id`/`tamanho`.
+   */
+  atualizarValorUnitarioServicoSeIntacto(linhaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return;
+    const tocado = g.get('valor_unitario_tocado')?.value === true;
+    if (tocado) return;
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+    if (!sid) {
+      g.get('valor_unitario')?.setValue('', { emitEvent: false });
+      return;
+    }
+    const svc = this.servicoPorIdQualquerComanda(sid);
+    const preco = precoUnitarioServicoCatalogo(svc, tam) ?? 0;
+    g.get('valor_unitario')?.setValue(formataMoedaBrl(Math.max(0, preco)), {
+      emitEvent: false,
+    });
+  }
+
+  /**
+   * Auto-preenche `preco_unitario` da linha de Produto com o preço de catálogo
+   * quando o campo ainda está vazio e o utilizador não tocou manualmente.
+   */
+  atualizarValorUnitarioProdutoSeVazio(linhaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Produto') return;
+    if (g.get('preco_unitario_tocado')?.value === true) return;
+    const c = g.get('preco_unitario');
+    if (!c) return;
+    const atual = String(c.value ?? '').trim();
+    if (atual) return;
+    const nome = String(g.get('produto')?.value ?? '').trim();
+    if (!nome) return;
+    const preco = this.precoCatalogoProduto(nome);
+    if (preco == null || preco < 0) return;
+    c.setValue(formataMoedaBrl(preco), { emitEvent: false });
+  }
+
+  /**
+   * Ao escolher outro produto no select: actualiza sempre o valor unitário com o catálogo
+   * do produto seleccionado (evita ficar com o preço da linha anterior na edição em modal).
+   */
+  aoEscolherProdutoNaLinha(linhaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Produto') return;
+    g.get('preco_unitario_tocado')?.setValue(false, { emitEvent: false });
+    const c = g.get('preco_unitario');
+    if (!c) return;
+    const nome = String(g.get('produto')?.value ?? '').trim();
+    if (!nome) {
+      c.setValue('', { emitEvent: false });
+      return;
+    }
+    const preco = this.precoCatalogoProduto(nome);
+    if (preco == null || preco < 0) {
+      c.setValue('', { emitEvent: false });
+      return;
+    }
+    c.setValue(formataMoedaBrl(preco), { emitEvent: false });
+  }
+
+  /** Marca o `valor_unitario` como tocado e normaliza ao perder o foco. */
+  onValorUnitarioBlur(linhaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g) return;
+    const c = g.get('valor_unitario');
+    if (!c) return;
+    g.get('valor_unitario_tocado')?.setValue(true, { emitEvent: false });
+    const s = String(c.value ?? '').trim();
+    if (!s) {
+      c.setValue('', { emitEvent: true });
+      return;
+    }
+    const n = this.parseValorPt(s);
+    if (n == null || n < 0) {
+      c.setValue('', { emitEvent: true });
+      return;
+    }
+    c.setValue(formataMoedaBrl(n), { emitEvent: true });
+    c.updateValueAndValidity({ emitEvent: true });
   }
 
   opcoesClientesSelect(): SaasSelectOption[] {
@@ -1833,6 +2024,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (fb != null) {
         g.patchValue({ profissional: fb }, { emitEvent: false });
       }
+      this.atualizarValorUnitarioProdutoSeVazio(i);
+    }
+    if (t === 'Serviço') {
+      this.atualizarValorUnitarioServicoSeIntacto(i);
     }
   }
 
@@ -1913,11 +2108,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           'Não há outras ocorrências na série para propagar. Abra o agendamento de novo.';
         return;
       }
+    } else if (
+      this.repetirAgendamento.modo === 'repetir' &&
+      this.repetirAgendamento.vezes > 0
+    ) {
+      const rep = this.repetirAgendamento;
+      datas = expandirDatasRepeticao(dataBase, rep.vezes, rep.frequencia);
     } else if (editId && !aplicarProx) {
       /**
        * Edição com o toggle «Aplicar alterações para os próximos» desligado: o utilizador
-       * altera só o dia do formulário (ex.: adiciona serviço só nessa data); a repetição
-       * exibida no cascade não implica multi-gravação nesse caso.
+       * altera só o dia do formulário (ex.: adiciona serviço só nessa data). Com repetição
+       * ativa (`repetir` + N>0), o ramo acima grava várias datas.
        */
       datas = [dataBase];
     } else if (this.repetirAgendamento.modo === 'nenhum') {
@@ -1943,12 +2144,25 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
     const clienteId = String(raw['cliente_id'] ?? '').trim();
     const horaIni = String(raw['hora_inicial'] ?? '');
+    const idRecorrenciaSerie = datas.length > 1 ? this.gerarIdRecorrencia() : null;
 
     const criar$ = from(datas).pipe(
       concatMap((d, i) => {
         this.slotAgenda = i === 0 ? slotBak : null;
         const r = { ...raw, data: d } as Record<string, unknown>;
-        const pl = this.montarPayloadsDasLinhas(r);
+        let pl = this.montarPayloadsDasLinhas(r).map((payload) =>
+          idRecorrenciaSerie
+            ? {
+                ...payload,
+                id_recorrencia: idRecorrenciaSerie,
+                ordem_recorrencia: i + 1,
+              }
+            : payload,
+        );
+        /** Várias datas: não forçar o id da edição — a API define comanda por dia. */
+        if (editId && datas.length === 1) {
+          pl = pl.map((payload) => ({ ...payload, id_atendimento: editId }));
+        }
         this.slotAgenda = slotBak;
         if (pl.length === 0) {
           return of(true);
@@ -1963,9 +2177,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             concatMap((d, i) => {
               const r = { ...raw, data: d } as Record<string, unknown>;
               this.slotAgenda = i === 0 ? slotBak : null;
-              const pl = this.montarPayloadsDasLinhas(r);
+              const plBase = this.montarPayloadsDasLinhas(r).map((payload) =>
+                idRecorrenciaSerie
+                  ? {
+                      ...payload,
+                      id_recorrencia: idRecorrenciaSerie,
+                      ordem_recorrencia: i + 1,
+                    }
+                  : payload,
+              );
               this.slotAgenda = slotBak;
-              if (!pl.length) return of(true);
+              if (!plBase.length) return of(true);
               const idVelho$ =
                 i === 0
                   ? of(editId)
@@ -1986,6 +2208,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                     idEx.length > 0
                       ? this.api.excluirAtendimento(idEx)
                       : of({ removidas: 0 });
+                  const pl = plBase.map((payload) =>
+                    idEx.length > 0
+                      ? { ...payload, id_atendimento: idEx }
+                      : payload,
+                  );
                   return excluirAntes.pipe(
                     switchMap(() =>
                       forkJoin(pl.map((p) => this.api.createAgendamento(p))),
@@ -2259,6 +2486,87 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return 'confirmado';
   }
 
+  /**
+   * Busca o item da pivot (`itens_catalogo`) associado a uma linha `atendimentos`.
+   * Para Serviço: match por `servico_id` (+ tamanho quando ambíguo).
+   * Para Produto: match por `produto_id` ou nome.
+   * Para Cabelo: 1:1 (primeiro `cabelo` da pivot).
+   */
+  private acharItemPivotParaRow(
+    itens: AtendimentoItemCatalogo[] | undefined,
+    row: AtendimentoListaItem,
+    consumidos: Set<number>,
+  ): AtendimentoItemCatalogo | null {
+    if (!itens || !itens.length) return null;
+    const tipoApi = mapTipoFromApi(row.tipo || '');
+    const tipoPivot =
+      tipoApi === 'Serviço'
+        ? 'servico'
+        : tipoApi === 'Produto'
+          ? 'produto'
+          : tipoApi === 'Cabelo'
+            ? 'cabelo'
+            : tipoApi === 'Mega'
+              ? 'mega'
+              : tipoApi === 'Pacote'
+                ? 'pacote'
+                : null;
+    if (!tipoPivot) return null;
+    if (tipoPivot === 'servico') {
+      const nomeServ = (row.servicosRef || '').trim();
+      const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
+      const sidNum = sid ? Number(sid) : null;
+      const tam = String(row.tamanho || '').trim().toLowerCase();
+      for (let i = 0; i < itens.length; i++) {
+        if (consumidos.has(i)) continue;
+        const it = itens[i];
+        if (it.tipo !== 'servico') continue;
+        if (sidNum != null && it.servico_id !== sidNum) continue;
+        const itTam = String(it.tamanho || '').trim().toLowerCase();
+        if (tam && itTam && tam !== itTam) continue;
+        consumidos.add(i);
+        return it;
+      }
+    } else if (tipoPivot === 'produto') {
+      const nome = (row.produtoNome || '').trim().toLowerCase();
+      for (let i = 0; i < itens.length; i++) {
+        if (consumidos.has(i)) continue;
+        const it = itens[i];
+        if (it.tipo !== 'produto') continue;
+        consumidos.add(i);
+        return it;
+      }
+      void nome;
+    } else if (tipoPivot === 'cabelo') {
+      for (let i = 0; i < itens.length; i++) {
+        if (consumidos.has(i)) continue;
+        const it = itens[i];
+        if (it.tipo !== 'cabelo') continue;
+        consumidos.add(i);
+        return it;
+      }
+    }
+    return null;
+  }
+
+  /** Devolve `valor_unitario`/`desconto` formatados em pt-BR a partir de um item da pivot. */
+  private moneyDoItem(
+    it: AtendimentoItemCatalogo | null,
+  ): { valor_unitario: string; desconto: string } {
+    const fmt = (v: string | null | undefined): string => {
+      if (v == null) return '';
+      const s = String(v).trim();
+      if (!s) return '';
+      const n = Number(s);
+      if (!Number.isFinite(n) || n <= 0) return '';
+      return formataMoedaBrl(n);
+    };
+    return {
+      valor_unitario: fmt(it?.valor_unitario ?? null),
+      desconto: fmt(it?.desconto ?? null),
+    };
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
@@ -2272,6 +2580,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
     const obsMegaPacote = stripQtdSuffixObservacao(l0.descricao || '');
     const agendaStEd = this.agendaStatusParaEdicao(sorted);
+    /**
+     * Catálogo de itens vem populado SOMENTE no primeiro registo do pedido na API
+     * (`itens_catalogo` em `listAtendimentosRaw`). Lemos uma única fonte por pedido.
+     */
+    const itensCatalogoPedido: AtendimentoItemCatalogo[] | undefined =
+      sorted.find((r) => Array.isArray(r.itens_catalogo) && r.itens_catalogo!.length > 0)
+        ?.itens_catalogo;
+    const consumidos = new Set<number>();
 
     this.prefillEmCurso = true;
 
@@ -2291,11 +2607,27 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           const nomeServ = (row.servicosRef || '').trim();
           const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
           const g = this.novoGrupoLinhaItem('Serviço');
+          const itemPivot = this.acharItemPivotParaRow(
+            itensCatalogoPedido,
+            row,
+            consumidos,
+          );
+          const money = this.moneyDoItem(itemPivot);
           g.patchValue(
             {
               servico_id: sid,
               tamanho: (row.tamanho || 'Curto').trim() || 'Curto',
               profissional: this.profissionalValorForm(row),
+              desconto: money.desconto || row.desconto || '',
+              valor_unitario:
+                money.valor_unitario ||
+                formataMoedaBrl(
+                  precoUnitarioServicoCatalogo(
+                    this.servicoPorIdQualquerComanda(sid),
+                    (row.tamanho || 'Curto').trim() || 'Curto',
+                  ) ?? 0,
+                ),
+              valor_unitario_tocado: !!money.valor_unitario,
             },
             { emitEvent: false },
           );
@@ -2303,10 +2635,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         } else if (ta === 'Produto') {
           const q = parseQuantidadeFromDescricao(row.descricao || '');
           const g = this.novoGrupoLinhaItem('Produto');
+          const itemPivot = this.acharItemPivotParaRow(
+            itensCatalogoPedido,
+            row,
+            consumidos,
+          );
+          const money = this.moneyDoItem(itemPivot);
           g.patchValue(
             {
               produto: row.produtoNome || '',
               quantidade: q > 0 ? q : 1,
+              desconto: money.desconto || row.desconto || '',
+              preco_unitario:
+                money.valor_unitario ||
+                (this.precoCatalogoProduto(row.produtoNome || '') != null
+                  ? formataMoedaBrl(this.precoCatalogoProduto(row.produtoNome || '')!)
+                  : ''),
+              preco_unitario_tocado: !!money.valor_unitario,
             },
             { emitEvent: false },
           );
@@ -2341,10 +2686,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       for (const row of sorted) {
         const q = parseQuantidadeFromDescricao(row.descricao || '');
         const g = this.novoGrupoLinhaItem('Produto');
+        const itemPivot = this.acharItemPivotParaRow(
+          itensCatalogoPedido,
+          row,
+          consumidos,
+        );
+        const money = this.moneyDoItem(itemPivot);
         g.patchValue(
           {
             produto: row.produtoNome || '',
             quantidade: q > 0 ? q : 1,
+            desconto: money.desconto || row.desconto || '',
+            preco_unitario:
+              money.valor_unitario ||
+              (this.precoCatalogoProduto(row.produtoNome || '') != null
+                ? formataMoedaBrl(this.precoCatalogoProduto(row.produtoNome || '')!)
+                : ''),
+            preco_unitario_tocado: !!money.valor_unitario,
           },
           { emitEvent: false },
         );
@@ -2366,11 +2724,27 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const nomeServ = (row.servicosRef || '').trim();
         const sid = this.buscarServicoIdPorNomeColuna(nomeServ);
         const g = this.novoGrupoLinhaItem('Serviço');
+        const itemPivot = this.acharItemPivotParaRow(
+          itensCatalogoPedido,
+          row,
+          consumidos,
+        );
+        const money = this.moneyDoItem(itemPivot);
         g.patchValue(
           {
             servico_id: sid,
             tamanho: (row.tamanho || 'Curto').trim() || 'Curto',
             profissional: this.profissionalValorForm(row),
+            desconto: money.desconto || row.desconto || '',
+            valor_unitario:
+              money.valor_unitario ||
+              formataMoedaBrl(
+                precoUnitarioServicoCatalogo(
+                  this.servicoPorIdQualquerComanda(sid),
+                  (row.tamanho || 'Curto').trim() || 'Curto',
+                ) ?? 0,
+              ),
+            valor_unitario_tocado: !!money.valor_unitario,
           },
           { emitEvent: false },
         );
@@ -2389,7 +2763,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       );
     } else if (tipoApi === 'Mega') {
       const g = this.novoGrupoLinhaItem('Mega');
-      g.patchValue({ pacote: l0.pacote || '' }, { emitEvent: false });
+      g.patchValue(
+        { pacote: l0.pacote || '', desconto: '' },
+        { emitEvent: false },
+      );
       const et = g.get('etapas') as FormArray<FormGroup>;
       while (et.length) {
         et.removeAt(0);
@@ -2422,7 +2799,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       );
     } else if (tipoApi === 'Pacote') {
       const g = this.novoGrupoLinhaItem('Pacote');
-      g.patchValue({ pacote: l0.pacote || '' }, { emitEvent: false });
+      g.patchValue(
+        { pacote: l0.pacote || '', desconto: '' },
+        { emitEvent: false },
+      );
       const et = g.get('etapas') as FormArray<FormGroup>;
       while (et.length) {
         et.removeAt(0);
@@ -2456,11 +2836,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     } else if (tipoApi === 'Cabelo') {
       const row = sorted[0];
       const g = this.novoGrupoLinhaItem('Cabelo');
+      const itemPivot = this.acharItemPivotParaRow(
+        itensCatalogoPedido,
+        row,
+        consumidos,
+      );
+      const money = this.moneyDoItem(itemPivot);
       g.patchValue(
         {
           profissional_cabelo: this.profissionalValorForm(row),
-          valor_cabelo: this.valorCampoCabeloDeApi(row.valor),
+          valor_cabelo:
+            money.valor_unitario || this.valorCampoCabeloDeApi(row.valor),
           detalhes_cabelo: row.descricao || '',
+          desconto: money.desconto || row.desconto || '',
         },
         { emitEvent: false },
       );
@@ -2542,6 +2930,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       quantidade: [1, [Validators.min(0.01)]],
       /** Usado quando o catálogo não tem preço (API `preco_unitario`). */
       preco_unitario: [''],
+      /** Evita sobrescrever ao trocar produto apenas quando o utilizador editou manualmente. */
+      preco_unitario_tocado: [false],
+      /** Valor unitário do item (Serviço/Produto). Auto-preenche do catálogo se intacto. */
+      valor_unitario: [''],
+      /**
+       * Marca se o utilizador já editou manualmente `valor_unitario` (evita
+       * sobrescrita ao trocar serviço/tamanho).
+       */
+      valor_unitario_tocado: [false],
+      desconto: [''],
       pacote: [''],
       etapas: this.fb.array<FormGroup>([]),
       valor_cabelo: [''],
@@ -3341,19 +3739,50 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!servico_id) continue;
         const profissional_id = Number(g.get('profissional')?.value);
         if (!(profissional_id > 0)) continue;
+        const desconto = this.normalizarDescontoLinhaStr(
+          String(g.get('desconto')?.value ?? ''),
+        );
+        const valorUnitarioNum = this.parseValorPt(
+          String(g.get('valor_unitario')?.value ?? '').trim(),
+        );
+        const descontoItemNum = this.parseValorPt(
+          String(g.get('desconto')?.value ?? '').trim(),
+        );
+        /** API antiga lia só `desconto` texto; enviamos também quando só há `desconto_item`. */
+        const descontoPayload =
+          desconto ??
+          (descontoItemNum != null && descontoItemNum > 0
+            ? formataMoedaBrl(descontoItemNum)
+            : undefined);
         const pr = servicosPrep[servicoIdx];
         const sp = slotPairs[servicoIdx];
         servicoIdx += 1;
         if (!pr) continue;
         const slotPatch =
           sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
+        const moneyPatch = {
+          ...(valorUnitarioNum != null && valorUnitarioNum >= 0
+            ? { valor_unitario: valorUnitarioNum }
+            : {}),
+          ...(descontoItemNum != null && descontoItemNum > 0
+            ? { desconto_item: descontoItemNum }
+            : {}),
+        };
         if (pr.st === 'fixo') {
-          out.push({ ...pr.base, ...slotPatch, ...agendaCartao });
+          out.push({
+            ...pr.base,
+            ...slotPatch,
+            ...(descontoPayload ? { desconto: descontoPayload } : {}),
+            ...moneyPatch,
+            ...agendaCartao,
+          });
         } else {
           out.push({
             ...pr.base,
             tamanho: pr.tamanho ?? 'Curto',
             ...slotPatch,
+            ...(descontoPayload ? { desconto: descontoPayload } : {}),
+            ...moneyPatch,
             ...agendaCartao,
           });
         }
@@ -3374,7 +3803,29 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const manualPreco = this.parseValorPt(
           String(g.get('preco_unitario')?.value ?? '').trim(),
         );
+        const desconto = this.normalizarDescontoLinhaStr(
+          String(g.get('desconto')?.value ?? ''),
+        );
+        const descontoItemNum = this.parseValorPt(
+          String(g.get('desconto')?.value ?? '').trim(),
+        );
+        const descontoPayload =
+          desconto ??
+          (descontoItemNum != null && descontoItemNum > 0
+            ? formataMoedaBrl(descontoItemNum)
+            : undefined);
         const semPrecoCatalogo = this.precoCatalogoProduto(nome) == null;
+        /**
+         * Preço efetivo para `valor_unitario` na pivot: manual se preenchido,
+         * senão preço do catálogo (lookup local). API faz fallback igual em qualquer caso.
+         */
+        const precoCat = this.precoCatalogoProduto(nome);
+        const valorUnitarioFinal =
+          manualPreco != null && manualPreco >= 0
+            ? manualPreco
+            : precoCat != null && precoCat >= 0
+              ? precoCat
+              : null;
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -3393,6 +3844,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               manualPreco >= 0
                 ? { preco_unitario: manualPreco }
                 : {}),
+              ...(valorUnitarioFinal != null
+                ? { valor_unitario: valorUnitarioFinal }
+                : {}),
+              ...(descontoItemNum != null && descontoItemNum > 0
+                ? { desconto_item: descontoItemNum }
+                : {}),
+              ...(descontoPayload ? { desconto: descontoPayload } : {}),
             },
             primeiroMerge,
             dataYmd,
@@ -3476,6 +3934,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (v == null) continue;
         const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
         const pid = Number(g.get('profissional_cabelo')?.value);
+        const desconto = this.normalizarDescontoLinhaStr(
+          String(g.get('desconto')?.value ?? ''),
+        );
+        const descontoItemNum = this.parseValorPt(
+          String(g.get('desconto')?.value ?? ''),
+        );
+        const descontoPayload =
+          desconto ??
+          (descontoItemNum != null && descontoItemNum > 0
+            ? formataMoedaBrl(descontoItemNum)
+            : undefined);
         if (!(pid > 0)) continue;
         out.push(
           this.mergeSlotOuHoraInicial(
@@ -3487,6 +3956,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               valor: v,
               observacao,
               detalhes_cabelo: det || undefined,
+              ...(descontoPayload ? { desconto: descontoPayload } : {}),
+              ...(descontoItemNum != null && descontoItemNum > 0
+                ? { desconto_item: descontoItemNum }
+                : {}),
               ...agendaCartao,
             },
             primeiroMerge,
@@ -3505,6 +3978,50 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return parseNumeroMonetarioPtString(s);
   }
 
+  private normalizarDescontoLinhaStr(s: string): string | undefined {
+    const n = parseNumeroMonetarioPtString(String(s ?? '').trim());
+    if (n == null || n <= 0) return undefined;
+    return formataMoedaBrl(n);
+  }
+
+  private gerarIdRecorrencia(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `rec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  /**
+   * Máscara monetária em tempo real (pt-BR): ao digitar "1234" => "R$ 12,34".
+   * Mantém vazio quando o input está limpo.
+   */
+  onMoedaInput(
+    i: number,
+    controlName: 'valor_unitario' | 'preco_unitario' | 'desconto' | 'valor_cabelo',
+  ): void {
+    const g = this.linhasItensArray.at(i);
+    if (!g) return;
+    const c = g.get(controlName);
+    if (!c) return;
+    const raw = String(c.value ?? '');
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) {
+      c.setValue('', { emitEvent: true });
+      if (controlName === 'preco_unitario') {
+        g.get('preco_unitario_tocado')?.setValue(false, { emitEvent: false });
+      }
+      return;
+    }
+    const n = Number(digits) / 100;
+    c.setValue(formataMoedaBrl(n), { emitEvent: true });
+    if (controlName === 'valor_unitario') {
+      g.get('valor_unitario_tocado')?.setValue(true, { emitEvent: false });
+    }
+    if (controlName === 'preco_unitario') {
+      g.get('preco_unitario_tocado')?.setValue(true, { emitEvent: false });
+    }
+  }
+
   onValorCabeloMoedaBlur(i: number): void {
     const g = this.linhasItensArray.at(i);
     if (!g) return;
@@ -3514,6 +4031,25 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!s) return;
     const n = parseNumeroMonetarioPtString(s);
     if (n === null || n <= 0) return;
+    c.setValue(formataMoedaBrl(n), { emitEvent: true });
+    c.updateValueAndValidity({ emitEvent: true });
+  }
+
+  onDescontoLinhaMoedaBlur(i: number): void {
+    const g = this.linhasItensArray.at(i);
+    if (!g) return;
+    const c = g.get('desconto');
+    if (!c) return;
+    const s = String(c.value ?? '').trim();
+    if (!s) {
+      c.setValue('', { emitEvent: true });
+      return;
+    }
+    const n = parseNumeroMonetarioPtString(s);
+    if (n == null || n <= 0) {
+      c.setValue('', { emitEvent: true });
+      return;
+    }
     c.setValue(formataMoedaBrl(n), { emitEvent: true });
     c.updateValueAndValidity({ emitEvent: true });
   }

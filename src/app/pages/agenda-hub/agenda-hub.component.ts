@@ -573,6 +573,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.fecharComandaDrawer();
   }
 
+  /** Gravação do agendamento com o formulário já aberto por baixo da comanda. */
+  onSalvarAgendamentoDesdeDrawerComanda(): void {
+    if (!this.comandaPainelAberto) return;
+    this.agendaDrawerRef?.salvar();
+  }
+
   // ----- Sub-drawer Faturar -------------------------------------------------
 
   onAbrirFaturarComanda(ev: {

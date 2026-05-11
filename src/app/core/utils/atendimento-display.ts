@@ -175,6 +175,25 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
   return (l.descricao || '').trim() || '—';
 }
 
+/**
+ * Total preferencial da linha para telas de leitura da comanda.
+ * Prioriza `itens_catalogo[].total_linha` (quando a API já enriqueceu a pivot),
+ * com fallback para o valor legado (`atendimentos.valor`).
+ */
+export function totalLinhaPreferencialAtendimento(
+  l: AtendimentoListaItem,
+): number | null {
+  const itens = l.itens_catalogo ?? l.itens ?? [];
+  for (const it of itens) {
+    const n =
+      typeof it.total_linha === 'number'
+        ? it.total_linha
+        : valorMonetarioParaNumero(it.total_linha);
+    if (n != null) return Math.max(0, n);
+  }
+  return valorMonetarioParaNumero(l.valor);
+}
+
 function horaDeInicioParaDiaAtendimento(
   inicio: string | null | undefined,
   dataYmd: string,

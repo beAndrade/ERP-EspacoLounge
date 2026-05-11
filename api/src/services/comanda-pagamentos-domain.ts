@@ -14,6 +14,7 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import {
+  atendimentoItens,
   atendimentos,
   comandaPagamentos,
   movimentacoes,
@@ -87,6 +88,53 @@ interface AtendLinhaResumo {
   cobrancaStatus: string | null;
 }
 
+interface ItemLinhaResumo {
+  /** Numero (NUMERIC) ou null. */
+  valorUnitario: string | number | null;
+  /** Numero (NUMERIC) ou null. */
+  desconto: string | number | null;
+  quantidade: number | null;
+}
+
+/**
+ * Soma de itens da pivot `atendimento_itens`. Quando NENHUM item tem `valor_unitario`,
+ * devolve `null` (sinal para o caller cair no cálculo legado por `atendimentos`).
+ */
+function calcularTotaisDeItens(rows: ItemLinhaResumo[]): {
+  total_bruto: number;
+  desconto: number;
+  total: number;
+} | null {
+  let bruto = 0;
+  let desc = 0;
+  let temValor = false;
+  for (const r of rows) {
+    const v =
+      r.valorUnitario === null || r.valorUnitario === undefined
+        ? null
+        : Number(r.valorUnitario);
+    if (v !== null && Number.isFinite(v)) {
+      temValor = true;
+      const q = Number(r.quantidade ?? 0);
+      bruto += v * (Number.isFinite(q) ? q : 0);
+    }
+    const d =
+      r.desconto === null || r.desconto === undefined
+        ? null
+        : Number(r.desconto);
+    if (d !== null && Number.isFinite(d) && d > 0) {
+      desc += d;
+    }
+  }
+  if (!temValor) return null;
+  const total = Math.max(0, bruto - desc);
+  return {
+    total_bruto: Math.round(bruto * 100) / 100,
+    desconto: Math.round(desc * 100) / 100,
+    total: Math.round(total * 100) / 100,
+  };
+}
+
 function calcularTotaisDeLinhas(rows: AtendLinhaResumo[]): {
   total_bruto: number;
   desconto: number;
@@ -157,8 +205,20 @@ export async function getResumoComanda(
     .from(atendimentos)
     .where(eq(atendimentos.idAtendimento, id));
 
-  const { total_bruto, desconto, total, cobranca_status } =
-    calcularTotaisDeLinhas(linhas as AtendLinhaResumo[]);
+  const itens = await db
+    .select({
+      valorUnitario: atendimentoItens.valorUnitario,
+      desconto: atendimentoItens.desconto,
+      quantidade: atendimentoItens.quantidade,
+    })
+    .from(atendimentoItens)
+    .where(eq(atendimentoItens.idAtendimento, id));
+
+  const totaisItens = calcularTotaisDeItens(itens as ItemLinhaResumo[]);
+  const legacy = calcularTotaisDeLinhas(linhas as AtendLinhaResumo[]);
+  const { total_bruto, desconto, total, cobranca_status } = totaisItens
+    ? { ...totaisItens, cobranca_status: legacy.cobranca_status }
+    : legacy;
 
   const [agg] = await db
     .select({
@@ -223,6 +283,28 @@ export async function getResumosPorAtendimento(
     linhasPorId.set(k, arr);
   }
 
+  const itensRows = await db
+    .select({
+      idAtendimento: atendimentoItens.idAtendimento,
+      valorUnitario: atendimentoItens.valorUnitario,
+      desconto: atendimentoItens.desconto,
+      quantidade: atendimentoItens.quantidade,
+    })
+    .from(atendimentoItens)
+    .where(inArray(atendimentoItens.idAtendimento, lista));
+
+  const itensPorId = new Map<string, ItemLinhaResumo[]>();
+  for (const r of itensRows) {
+    const k = String(r.idAtendimento || '').trim();
+    const arr = itensPorId.get(k) ?? [];
+    arr.push({
+      valorUnitario: r.valorUnitario,
+      desconto: r.desconto,
+      quantidade: r.quantidade,
+    });
+    itensPorId.set(k, arr);
+  }
+
   const pagosRows = await db
     .select({
       idAtendimento: comandaPagamentos.idAtendimento,
@@ -242,8 +324,12 @@ export async function getResumosPorAtendimento(
 
   for (const id of lista) {
     const rows = linhasPorId.get(id) ?? [];
-    const { total_bruto, desconto, total, cobranca_status } =
-      calcularTotaisDeLinhas(rows);
+    const itens = itensPorId.get(id) ?? [];
+    const totaisItens = calcularTotaisDeItens(itens);
+    const legacy = calcularTotaisDeLinhas(rows);
+    const { total_bruto, desconto, total, cobranca_status } = totaisItens
+      ? { ...totaisItens, cobranca_status: legacy.cobranca_status }
+      : legacy;
     const totalPago = pagosMap.get(id) ?? 0;
     const saldo = Math.max(0, Math.round((total - totalPago) * 100) / 100);
     out.set(id, {

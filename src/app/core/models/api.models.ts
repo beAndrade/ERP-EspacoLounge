@@ -188,6 +188,12 @@ export interface AtendimentoItemCatalogo {
   regra_mega_id?: number | null;
   /** FK opcional a `pacotes` (cabeça Pacote ou referência ao pacote comercial). */
   pacote_id?: number | null;
+  /** Valor unitário gravado no carrinho (Servico/Produto/Cabelo). String numérica ou null. */
+  valor_unitario?: string | null;
+  /** Desconto aplicado ao item (R$). String numérica ou null. */
+  desconto?: string | null;
+  /** Total da linha calculado pelo backend: max(0, qtde × valor_unitario − desconto). */
+  total_linha?: number | null;
 }
 
 export interface ProdutoCatalogoItem {
@@ -305,6 +311,22 @@ export type AgendaCartaoCriacaoOpcional = {
   agenda_cor?: string;
 };
 
+/** Metadados opcionais para ocorrências de uma mesma série de repetição. */
+export type RecorrenciaCriacaoOpcional = {
+  id_recorrencia?: string;
+  ordem_recorrencia?: number;
+};
+
+/** Força reutilizar um id de atendimento existente em fluxo de edição. */
+export type AtendimentoIdCriacaoOpcional = {
+  id_atendimento?: string;
+};
+
+/** Desconto por linha (R$) na criação/edição do atendimento. */
+export type DescontoCriacaoOpcional = {
+  desconto?: string;
+};
+
 /** União de payloads para createAgendamento / createAtendimento. */
 export type CreateAtendimentoPayload = (
   | {
@@ -315,15 +337,21 @@ export type CreateAtendimentoPayload = (
       servico_id: string;
       tamanho?: string;
       observacao?: string;
+      /** Override do valor unitário (R$); ausente = preço do catálogo. */
+      valor_unitario?: number | string | null;
+      /** Desconto aplicado ao item (R$). */
+      desconto_item?: number | string | null;
       /** Vários serviços no mesmo pedido; cada entrada → linha em `atendimentos` + `atendimento_itens`. */
       itens_servicos?: {
         servico_id: string;
         quantidade: number;
         profissional_id?: number | null;
         tamanho?: string;
+        valor_unitario?: number | string | null;
+        desconto?: number | string | null;
       }[];
     }
-  | {
+    | {
       tipo: 'Mega';
       cliente_id: string;
       data: string;
@@ -351,11 +379,17 @@ export type CreateAtendimentoPayload = (
       observacao?: string;
       /** Se o catálogo não tiver `preco` preenchido. */
       preco_unitario?: number;
+      /** Override do valor unitário (R$). Tem prioridade sobre `preco_unitario` e catálogo. */
+      valor_unitario?: number | string | null;
+      /** Desconto aplicado ao item (R$). */
+      desconto_item?: number | string | null;
       /** Vários produtos no mesmo pedido (`produto_id` = `produtos.id`). */
       itens_produtos?: {
         produto_id: number;
         quantidade: number;
         profissional_id?: number | null;
+        valor_unitario?: number | string | null;
+        desconto?: number | string | null;
       }[];
     }
   | {
@@ -366,7 +400,12 @@ export type CreateAtendimentoPayload = (
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;
+      /** Desconto aplicado ao item Cabelo (R$). */
+      desconto_item?: number | string | null;
     }
 ) &
   AgendaSlotCriacaoOpcional &
-  AgendaCartaoCriacaoOpcional;
+  AgendaCartaoCriacaoOpcional &
+  RecorrenciaCriacaoOpcional &
+  AtendimentoIdCriacaoOpcional &
+  DescontoCriacaoOpcional;

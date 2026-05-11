@@ -166,6 +166,10 @@ export const atendimentosPedido = pgTable('atendimentos_pedido', {
   idCliente: text('id_cliente')
     .notNull()
     .references(() => clientes.idCliente),
+  /** Série de recorrência para ocorrências criadas no mesmo salvar. */
+  idRecorrencia: text('id_recorrencia'),
+  /** Posição da ocorrência dentro da série (1, 2, 3...). */
+  ordemRecorrencia: integer('ordem_recorrencia'),
 });
 
 export const atendimentoItens = pgTable(
@@ -195,6 +199,10 @@ export const atendimentoItens = pgTable(
     }),
     /** Cabelo: texto da linha (descrição). */
     detalhes: text('detalhes'),
+    /** Valor unitário registado no carrinho (Serviço/Produto/Cabelo). Mega/Pacote: null. */
+    valorUnitario: numeric('valor_unitario', { precision: 14, scale: 2 }),
+    /** Desconto aplicado à linha (em reais). Mega/Pacote: null. */
+    desconto: numeric('desconto', { precision: 14, scale: 2 }),
   },
   (t) => [index('atendimento_itens_id_atendimento_idx').on(t.idAtendimento)],
 );

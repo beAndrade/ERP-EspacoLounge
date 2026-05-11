@@ -307,4 +307,56 @@ CREATE INDEX IF NOT EXISTS "comanda_pagamentos_id_atendimento_idx"
 CREATE INDEX IF NOT EXISTS "comanda_pagamentos_data_idx"
   ON "comanda_pagamentos" ("data_pagamento");
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'id_recorrencia'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "id_recorrencia" text;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'ordem_recorrencia'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "ordem_recorrencia" integer;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+CREATE INDEX IF NOT EXISTS "atendimentos_pedido_id_recorrencia_idx"
+  ON "atendimentos_pedido" ("id_recorrencia");
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimento_itens' AND c.column_name = 'valor_unitario'
+  ) THEN
+    ALTER TABLE "atendimento_itens" ADD COLUMN "valor_unitario" numeric(14, 2);
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimento_itens' AND c.column_name = 'desconto'
+  ) THEN
+    ALTER TABLE "atendimento_itens" ADD COLUMN "desconto" numeric(14, 2);
+  END IF;
+END $$;
+`));
 }

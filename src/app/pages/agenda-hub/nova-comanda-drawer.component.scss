@@ -24,6 +24,8 @@
   --comanda-col-pro: clamp(6.1rem, 9.2vw, 7.35rem);
   --comanda-col-qtd: 58.06px;
   --comanda-col-money: 110px;
+  /** Largura da coluna da faixa monetária (igual em todas as linhas do mesmo painel). */
+  --nc-leitura-money-col: minmax(17.5rem, 48%);
   padding-inline: 0;
 }
 
@@ -177,6 +179,11 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+
+  /** Conteúdo rolável já está em `.nc-drawer__flow`; manter esta coluna compatível com flex shrink. */
+  &--comanda-scroll {
+    min-height: 0;
+  }
 }
 
 .nc-main__top {
@@ -667,12 +674,16 @@
   }
 }
 
-/** Observações: no fluxo do scroll (abaixo do resumo), sem traço superior. */
+/**
+ * Observações: fora da área com scroll (`nc-drawer__flow`), junto ao rodapé de ações
+ * (`nc-footer` no `:host`).
+ */
 .nc-drawer__obs {
   flex: 0 0 auto;
-  padding: 0.75rem 0 0;
+  padding: 0.55rem 0 0;
   margin-top: 0;
-  border-top: none;
+  border-top: 1px solid var(--drawer-stroke, #ececec);
+  background: #fff;
 }
 
 .nc-field--obs {
@@ -1454,23 +1465,46 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0;
 }
 
 .nc-leitura__item {
-  border: 1px solid var(--drawer-field-stroke, #f1f1f1);
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0.65rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.45rem 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
+
+  /** Divider discreto entre itens — linha não encosta ao conteúdo vizinho pelo respiro vertical. */
+  & + & {
+    margin-top: 0.4rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.07);
+  }
 }
 
 .nc-leitura__row {
-  display: flex;
   align-items: center;
-  gap: 0.6rem;
+  min-width: 0;
+  column-gap: 0.35rem;
+  row-gap: 0.35rem;
+
+  /** Sem faixa de valores: layout flex legado. */
+  &:not(:has(.nc-leitura__money--end)) {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  /**
+   * Com faixa: grelha — coluna monetária com largura fixa em % do painel,
+   * igual em todos os itens (não depende do tamanho do título).
+   */
+  &:has(.nc-leitura__money--end) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) var(--nc-leitura-money-col);
+  }
 }
 
 .nc-leitura__tag {
@@ -1524,7 +1558,8 @@
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
-  flex: 1 1 auto;
+  /** Largura conforme o texto — o espaço livre vai para `.nc-leitura__money--end`. */
+  flex: 0 1 auto;
 }
 
 .nc-leitura__titulo {
@@ -1541,26 +1576,188 @@
   line-height: 1.3;
 }
 
+.nc-leitura__money {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+
+  &--inline {
+    flex: 0 1 auto;
+    margin-left: auto;
+    min-width: 0;
+    max-width: min(100%, 20rem);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /**
+   * Depois de `--inline`: nas etapas o elemento tem `inline` + `end`;
+   * grelha interna para colunas (Qtd / V.unit / Desc / Total) com a mesma largura.
+   */
+  &--end {
+    display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    max-width: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    align-items: center;
+    justify-items: stretch;
+    gap: 0.55rem;
+    min-height: var(--drawer-field-h);
+    padding-block: 0.2rem;
+    padding-inline: 0.55rem;
+    border: 1px solid var(--drawer-field-stroke, #ececec);
+    border-radius: 8px;
+    background: transparent;
+
+    &:has(.nc-leitura__money-qtd) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    &:not(:has(.nc-leitura__money-qtd)) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    > .nc-leitura__money-cell {
+      min-width: 0;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    > .nc-leitura__money-cell--compact {
+      justify-content: center;
+      flex-shrink: 1;
+    }
+  }
+}
+
+/** Separadores entre colunas só onde não há repartição igual (ex.: drawer etapas). */
+.nc-leitura__money--inline:not(.nc-leitura__money--end)
+  > .nc-leitura__money-cell
+  + .nc-leitura__money-cell {
+  padding-left: 0.4rem;
+  margin-left: 0.35rem;
+  border-left: 1px solid #e7e5e4;
+}
+
+.nc-leitura__money-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+
+  &--compact {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.2rem;
+    flex-shrink: 0;
+
+    .nc-leitura__money-lbl {
+      font-size: 0.62rem;
+    }
+
+    .nc-leitura__money-val {
+      font-size: 0.78rem;
+    }
+  }
+}
+
+.nc-leitura__money-lbl {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.nc-leitura__money-val {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nc-leitura__money-total .nc-leitura__money-val {
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
 .nc-leitura__etapas {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 calc(70px + 0.6rem);
+  padding: 0 0 0 calc(70px + 0.45rem);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
 .nc-leitura__etapa {
-  display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
   font-size: 0.85rem;
   color: #334155;
+
+  /** Bullets passam para `.nc-leitura__etapa-text`. */
+  &::before {
+    content: none;
+  }
+
+  &--money {
+    display: block;
+  }
+}
+
+.nc-leitura__etapa-row {
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  column-gap: 0.35rem;
+  row-gap: 0.35rem;
+
+  &:not(:has(.nc-leitura__money--end)) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.35rem 0.6rem;
+  }
+
+  /** Mesma lógica de coluna monetária fixa que na linha principal. */
+  &:has(.nc-leitura__money--end) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--nc-leitura-money-col);
+  }
+}
+
+.nc-leitura__etapa-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1 1 12rem;
 
   &::before {
     content: '•';
     color: #94a3b8;
     flex-shrink: 0;
+    line-height: 1;
   }
 }
 
@@ -1576,6 +1773,29 @@
   color: #6b7280;
   font-size: 0.9rem;
   padding: 0.4rem 0.2rem;
+}
+
+/** Em painéis estreitos, empilhar tag / info / faixa (largura total da faixa). */
+@media (max-width: 540px) {
+  .nc-leitura__row:has(.nc-leitura__money--end) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nc-leitura__row .nc-leitura__money--end {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 0;
+  }
+
+  .nc-leitura__etapa-row:has(.nc-leitura__money--end) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nc-leitura__etapa-row .nc-leitura__money--inline {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+  }
 }
 
 .nc-leitura__actions {

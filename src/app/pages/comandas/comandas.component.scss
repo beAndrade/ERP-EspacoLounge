@@ -363,7 +363,7 @@ input.comandas-head__busca-input[type='search']::-webkit-search-cancel-button {
 
 .comandas-head__actions {
   display: grid;
-  grid-template-columns: var(--comandas-search-open-width) auto auto;
+  grid-template-columns: var(--comandas-search-open-width) auto auto auto;
   align-items: center;
   column-gap: 0.5rem;
   margin-left: auto;
@@ -443,6 +443,27 @@ input.comandas-head__busca-input[type='search']::-webkit-search-cancel-button {
       background-color: #9d3a5c;
       border-color: #9d3a5c;
       color: #ffffff;
+    }
+  }
+
+  &.comandas-head__toolbar-btn--bulk-delete {
+    border-color: #ffd6d6;
+    background: #fff;
+    color: #ff4d4f;
+    font-weight: 500;
+
+    svg {
+      color: #ff4d4f;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: #ff4d4f;
+      background: #ff4d4f;
+      color: #fff;
+
+      svg {
+        color: #fff;
+      }
     }
   }
 
@@ -1216,6 +1237,98 @@ thead th.col-check {
   &--open {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+.comandas-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.comandas-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1201;
+  width: min(520px, calc(100vw - 32px));
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+  padding: 22px 24px 20px;
+  text-align: center;
+}
+
+.comandas-modal__icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.comandas-modal__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #f3ac1f;
+  color: #fff;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 42px;
+}
+
+.comandas-modal__title {
+  margin: 0 0 10px;
+  font-size: 36px;
+  font-weight: 700;
+  color: #2f3136;
+}
+
+.comandas-modal__text {
+  margin: 0;
+  color: #34363b;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.comandas-modal__actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.comandas-modal__btn {
+  height: 42px;
+  min-width: 112px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.comandas-modal__btn--cancel {
+  border-color: #ebedf0;
+  color: #4b4e57;
+}
+
+.comandas-modal__btn--confirm {
+  border-color: #ff4d4f;
+  color: #ff4d4f;
+
+  &:hover:not(:disabled) {
+    background: #ff4d4f;
+    color: #fff;
   }
 }
 

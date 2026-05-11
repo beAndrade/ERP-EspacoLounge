@@ -10,9 +10,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { catchError, of } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 import { AgendaNovoClientSidebarComponent } from '../agenda-novo/agenda-novo-client-sidebar.component';
 import type {
+  AtendimentoItemCatalogo,
   AtendimentoListaItem,
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
@@ -21,6 +22,8 @@ import { SheetsApiService } from '../../core/services/sheets-api.service';
 import {
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
+  totalLinhaPreferencialAtendimento,
+  valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 
@@ -44,8 +47,12 @@ export interface LinhaResumoComanda {
   titulo: string;
   /** Texto secundário (ex.: profissional / detalhes). */
   subtitulo: string;
-  /** Quando há etapas (Mega/Pacote), descrição rápida de cada uma. */
-  etapas: { titulo: string; subtitulo: string }[];
+  /** Quando há etapas (Mega/Pacote), descrição rápida + linha BD para valores. */
+  etapas: {
+    titulo: string;
+    subtitulo: string;
+    linhaEtapa: AtendimentoListaItem | null;
+  }[];
   /** Tipo do bloco (`Serviço`/`Produto`/`Mega`/`Pacote`/`Cabelo`). */
   tipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Cabelo' | 'Outro';
   /** Quantidade quando aplicável (Produto/Serviço). */
@@ -90,6 +97,8 @@ export class NovaComandaDrawerComponent implements OnInit {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
   }>();
+  /** Pede gravar o agendamento (hub: formulário atrás da comanda; comandas: editor em modo modal). */
+  readonly salvarComanda = output<void>();
 
   readonly clienteComandaCtrl = new FormControl('', { nonNullable: true });
   readonly clienteNomeCtrl = new FormControl('', { nonNullable: true });
@@ -104,6 +113,10 @@ export class NovaComandaDrawerComponent implements OnInit {
   resumoPagamentos: ComandaResumoPagamentos = RESUMO_VAZIO;
   pagamentos: ComandaPagamentoItem[] = [];
   carregandoPagamentos = false;
+  /** Quantidade por linha (`linha_id`) inferida da pivot `itens_catalogo`. */
+  private quantidadePorLinhaId = new Map<number, number>();
+  /** Pivot correspondente por `linha_id` (ordem igual a `quantidadePorLinhaId`). */
+  private pivotCatalogoPorLinhaId = new Map<number, AtendimentoItemCatalogo>();
 
   outrosMenuAberto = false;
   modalConfirmExcluirAberto = false;
@@ -134,6 +147,8 @@ export class NovaComandaDrawerComponent implements OnInit {
         const ymd = (ctx?.dataYmd ?? '').trim();
         const idAt = (ctx?.idAtendimento ?? '').trim();
         this.linhasAtendimentoApi.length = 0;
+        this.quantidadePorLinhaId.clear();
+        this.pivotCatalogoPorLinhaId.clear();
         this.resumoPagamentos = RESUMO_VAZIO;
         this.pagamentos = [];
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
@@ -143,25 +158,7 @@ export class NovaComandaDrawerComponent implements OnInit {
         }
         this.carregandoItens = true;
         this.erroItens = '';
-        const sub = this.api
-          .listAgendamentos(ymd, ymd, idAt)
-          .pipe(
-            takeUntilDestroyed(this.destroyRef),
-            catchError((e: Error) => {
-              this.erroItens =
-                e.message || 'Não foi possível carregar os itens do agendamento.';
-              return of([] as AtendimentoListaItem[]);
-            }),
-          )
-          .subscribe({
-            next: (rows) => {
-              const copy = [...rows];
-              ordenarLinhasAtendimentoInPlace(copy);
-              this.linhasAtendimentoApi.length = 0;
-              this.linhasAtendimentoApi.push(...copy);
-              this.carregandoItens = false;
-            },
-          });
+        const sub = this.carregarLinhasAtendimento(ymd, idAt);
         onCleanup(() => sub.unsubscribe());
         this.recarregarResumoPagamentos(idAt);
       },
@@ -204,6 +201,16 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (id) this.recarregarResumoPagamentos(id);
   }
 
+  /** Recarrega itens + resumo com o contexto actual (usado após salvar edição). */
+  recarregarDadosComanda(): void {
+    const ctx = this.contexto();
+    const ymd = (ctx?.dataYmd ?? '').trim();
+    const idAt = (ctx?.idAtendimento ?? '').trim();
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.carregarLinhasAtendimento(ymd, idAt);
+    this.recarregarResumoPagamentos(idAt);
+  }
+
   // ----- Itens (leitura) ----------------------------------------------------
 
   blocosLeitura(): LinhaResumoComanda[] {
@@ -241,6 +248,7 @@ export class NovaComandaDrawerComponent implements OnInit {
         etapas.push({
           titulo: et,
           subtitulo: prof ? `Profissional: ${prof}` : '',
+          linhaEtapa: l,
         });
       }
       out.push({
@@ -270,7 +278,6 @@ export class NovaComandaDrawerComponent implements OnInit {
       const subParts: string[] = [];
       if (profissional) subParts.push(`Profissional: ${profissional}`);
       const qNum = this.quantidadeLinha(l);
-      if (qNum != null && qNum > 1) subParts.push(`Qtde.: ${qNum}`);
       out.push({
         linha: l,
         titulo,
@@ -284,7 +291,105 @@ export class NovaComandaDrawerComponent implements OnInit {
     return out;
   }
 
+  /** Colunas monetárias (V. unit., desc., total) nas listagens de item. */
+  faixaPrecoLinha(l: AtendimentoListaItem | null): {
+    mostrarQtd: boolean;
+    textoQtd: string;
+    unitario: string;
+    desconto: string;
+    total: string;
+  } | null {
+    if (!l) return null;
+    const lid = l.linha_id;
+    const porLinha =
+      lid != null ? this.pivotCatalogoPorLinhaId.get(lid) : undefined;
+    /** Preferir vínculo por linha — evita pegar sempre o primeiro serviço quando há produto a seguir. */
+    const itemRef =
+      porLinha ??
+      (l.itens_catalogo ?? l.itens ?? []).find((it) =>
+        String(l.tipo ?? '').trim().toLowerCase() === 'produto'
+          ? it.tipo === 'produto'
+          : String(l.tipo ?? '').trim().toLowerCase() === 'serviço' ||
+              String(l.tipo ?? '').trim().toLowerCase() === 'servico'
+            ? it.tipo === 'servico'
+            : String(l.tipo ?? '').trim().toLowerCase() === 'cabelo'
+              ? it.tipo === 'cabelo'
+              : false,
+      ) ??
+      (l.itens_catalogo ?? l.itens ?? []).find(
+        (it) =>
+          it.tipo === 'servico' ||
+          it.tipo === 'produto' ||
+          it.tipo === 'cabelo',
+      );
+    const tipoNorm = String(l.tipo ?? '').trim().toLowerCase();
+    const megaOuPac =
+      tipoNorm === 'mega' || tipoNorm === 'pacote';
+    const totalN =
+      (itemRef?.total_linha != null
+        ? valorMonetarioParaNumero(itemRef.total_linha)
+        : null) ?? totalLinhaPreferencialAtendimento(l);
+    /** Mega/Pacote: desconto é só ao nível da comanda — nunca por linha. */
+    const descN = megaOuPac
+      ? null
+      : ((itemRef?.desconto != null
+          ? valorMonetarioParaNumero(itemRef.desconto)
+          : null) ?? valorMonetarioParaNumero(l.desconto));
+    if (
+      totalN === null &&
+      (descN === null || descN <= 0)
+    ) {
+      return null;
+    }
+    const total = totalN ?? 0;
+    const desc = descN && descN > 0 ? descN : 0;
+    const q = this.quantidadeLinha(l);
+    const qEff = q != null && q > 0 ? q : 1;
+    /** Quantidade sempre que a pivot/catalogo trouxer um valor (>0), não só quando >1. */
+    const mostrarQtd = q != null && q > 0;
+    const textoQtd = String(qEff).replace('.', ',');
+    const unitRaw =
+      (itemRef?.valor_unitario != null
+        ? valorMonetarioParaNumero(itemRef.valor_unitario)
+        : null) ?? (qEff > 0 ? total / qEff : total);
+    return {
+      mostrarQtd,
+      textoQtd,
+      unitario: formataMoedaBrl(Math.max(0, unitRaw ?? 0)),
+      desconto: desc > 0 ? formataMoedaBrl(desc) : '—',
+      total: formataMoedaBrl(total),
+    };
+  }
+
+  /**
+   * Faixa monetária do cartão inteiro (não Mega/Pacote quando etapas já mostram valores).
+   */
+  faixaPrecoBloc(bloco: LinhaResumoComanda): {
+    mostrarQtd: boolean;
+    textoQtd: string;
+    unitario: string;
+    desconto: string;
+    total: string;
+  } | null {
+    const tpMega =
+      bloco.tipo === 'Mega' || bloco.tipo === 'Pacote';
+    if (
+      tpMega &&
+      bloco.etapas.some(
+        (e) => e.linhaEtapa != null && this.faixaPrecoLinha(e.linhaEtapa) != null,
+      )
+    ) {
+      return null;
+    }
+    return this.faixaPrecoLinha(bloco.linha);
+  }
+
   private quantidadeLinha(l: AtendimentoListaItem): number | null {
+    const id = l.linha_id;
+    if (id != null) {
+      const qKnown = this.quantidadePorLinhaId.get(id);
+      if (qKnown != null && qKnown > 0) return qKnown;
+    }
     const itens = l.itens_catalogo ?? l.itens;
     if (!itens || itens.length === 0) return null;
     const principal =
@@ -293,6 +398,79 @@ export class NovaComandaDrawerComponent implements OnInit {
       itens[0];
     const q = Number(principal?.quantidade);
     return Number.isFinite(q) && q > 0 ? q : null;
+  }
+
+  /**
+   * Carrega linhas do atendimento e atualiza o mapa de quantidade por `linha_id`.
+   * A API pode devolver `itens_catalogo` completo só numa linha; aqui distribuímos
+   * as quantidades por ordem/tipo para cada linha renderizada da comanda.
+   */
+  private carregarLinhasAtendimento(
+    ymd: string,
+    idAt: string,
+  ): { unsubscribe(): void } {
+    this.carregandoItens = true;
+    this.erroItens = '';
+    return this.api
+      .listAgendamentos(ymd, ymd, idAt)
+      .pipe(
+      takeUntilDestroyed(this.destroyRef),
+      catchError((e: Error) => {
+        this.erroItens =
+          e.message || 'Não foi possível carregar os itens do agendamento.';
+        return of([] as AtendimentoListaItem[]);
+      }),
+      map((rows) => {
+        const copy = [...rows];
+        ordenarLinhasAtendimentoInPlace(copy);
+        this.linhasAtendimentoApi.length = 0;
+        this.linhasAtendimentoApi.push(...copy);
+        this.reconstruirMapaQuantidade(copy);
+        this.carregandoItens = false;
+        return copy;
+      }),
+      )
+      .subscribe({
+        next: () => {},
+      });
+  }
+
+  private reconstruirMapaQuantidade(rows: AtendimentoListaItem[]): void {
+    this.quantidadePorLinhaId.clear();
+    this.pivotCatalogoPorLinhaId.clear();
+    const itensAny = rows.find((r) => (r.itens_catalogo?.length ?? 0) > 0 || (r.itens?.length ?? 0) > 0);
+    const catalogo = (itensAny?.itens_catalogo ?? itensAny?.itens ?? []).slice();
+    if (!catalogo.length) return;
+    const filaServicoProduto = catalogo.filter(
+      (it) => it.tipo === 'servico' || it.tipo === 'produto',
+    );
+    const filaMegaPacote = catalogo.filter(
+      (it) => it.tipo === 'mega' || it.tipo === 'pacote',
+    );
+    const filaCabelo = catalogo.filter((it) => it.tipo === 'cabelo');
+
+    for (const row of rows) {
+      if (row.linha_id == null) continue;
+      const tipo = String(row.tipo ?? '').trim().toLowerCase();
+      let q: number | null = null;
+      let hit: AtendimentoItemCatalogo | undefined;
+      if (tipo === 'serviço' || tipo === 'servico' || tipo === 'produto') {
+        hit = filaServicoProduto.shift();
+        q = Number(hit?.quantidade ?? 0);
+      } else if (tipo === 'mega' || tipo === 'pacote') {
+        hit = filaMegaPacote.shift();
+        q = Number(hit?.quantidade ?? 0);
+      } else if (tipo === 'cabelo') {
+        hit = filaCabelo.shift();
+        q = Number(hit?.quantidade ?? 0);
+      }
+      if (hit != null) {
+        this.pivotCatalogoPorLinhaId.set(row.linha_id, hit);
+      }
+      if (q != null && Number.isFinite(q) && q > 0) {
+        this.quantidadePorLinhaId.set(row.linha_id, q);
+      }
+    }
   }
 
   // ----- Resumo / status ----------------------------------------------------
@@ -329,6 +507,10 @@ export class NovaComandaDrawerComponent implements OnInit {
     return Boolean(this.contexto()?.idAtendimento?.trim());
   }
 
+  podeSalvarComandaRodape(): boolean {
+    return this.podeEditar();
+  }
+
   podeExcluirComanda(): boolean {
     return Boolean(this.contexto()?.idAtendimento?.trim());
   }
@@ -347,6 +529,12 @@ export class NovaComandaDrawerComponent implements OnInit {
       idAtendimento: id,
       resumo: this.resumoPagamentos,
     });
+  }
+
+  gravarRodape(): void {
+    if (!this.podeSalvarComandaRodape()) return;
+    this.fecharOutrosMenu();
+    this.salvarComanda.emit();
   }
 
   // ----- Outros / excluir ---------------------------------------------------

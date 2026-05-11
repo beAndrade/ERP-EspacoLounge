@@ -194,6 +194,32 @@
   }
 }
 
+/**
+ * Quando o viewport afunila no desktop/tablet:
+ * - remove a sidebar do cliente para priorizar os itens;
+ * - impede o “arrasto” da grelha para a esquerda;
+ * - mantém a coluna principal em largura total.
+ */
+@media (max-width: 1336px) {
+  :host.agenda-novo--drawer .form-shell.form-shell--modal {
+    display: block;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    --drawer-bleed-l: var(--drawer-pad-x, 0px);
+  }
+
+  :host.agenda-novo--drawer .form-shell.form-shell--modal .form-shell__client {
+    display: none;
+  }
+
+  :host.agenda-novo--drawer
+    .form-shell.form-shell--modal
+    .form-shell__main--modal {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 :host.agenda-novo--drawer .agenda-modal__header {
   position: relative;
   align-items: flex-start;
@@ -1421,7 +1447,12 @@ textarea {
   align-items: stretch;
   row-gap: 0.4rem;
   column-gap: 0.55rem;
-  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.92fr) minmax(0, 1fr) auto;
+  grid-template-columns:
+    minmax(0, 0.62fr)
+    minmax(0, 1.55fr)
+    minmax(0, 0.78fr)
+    minmax(0, 0.78fr)
+    auto;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -1479,6 +1510,31 @@ textarea {
     min-height: var(--touch-min, 2.75rem);
     text-align: center;
   }
+}
+
+.servico-row--drawer .servico-row__field--modal-prod-money {
+  flex: 1 1 6.5rem;
+  min-width: 5.75rem;
+}
+
+.servico-row--drawer .servico-row__field--produto-total-estimado {
+  flex: 0 1 5.9rem;
+  min-width: 5.2rem;
+}
+
+.servico-row__total-estimado {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--touch-min, 2.75rem);
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--drawer-field-stroke, #f1f1f1);
+  border-radius: 14px;
+  background: #f5f5f4;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(0, 0, 0, 0.56);
+  display: flex;
+  align-items: center;
 }
 
 .etapa-row__etapa-cel {
@@ -1833,10 +1889,16 @@ textarea {
 :host.agenda-novo--drawer .form.form--modal {
   /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
   padding-inline: 0;
-  /** Coluna «Tipo de linha»: igual em Serviço e Produto (drawer). */
-  --drawer-tipo-linha-col: clamp(6.25rem, 8.8vw, 9rem);
-  /** Padrão do drawer: inputs 40px e radius 14px. */
-  --touch-min: 40px;
+  /** Coluna «Tipo de linha»: compacta para abrir espaço de leitura. */
+  --drawer-tipo-linha-col: 120px;
+  /** Descrição (Serviço/Produto) ocupa a área livre da linha. */
+  --drawer-descricao-col: auto;
+  /** Profissional em Serviço. */
+  --drawer-pro-col: 140px;
+  /** Campos monetários (V.Unit, Desconto, Total): largura fixa para simetria visual. */
+  --drawer-money-col: 140px;
+  /** Padrão do drawer: inputs com 38px de altura. */
+  --touch-min: 38px;
   --radius: 14px;
   /** Tokens de label do drawer (um único ponto de ajuste). */
   --drawer-label-size: 15px;
@@ -2168,7 +2230,7 @@ textarea {
    * Linha “Serviço” no modal: uma linha, campos a crescer até preencher o drawer
    * (somatório flex + mínimos; sem max-width que corte a descrição).
    */
-  .servico-row--drawer:has(.servico-row__duracao) {
+  .servico-row--drawer:has(.servico-row__total-estimado) {
     width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
@@ -2182,8 +2244,9 @@ textarea {
     }
 
     .servico-row__field--descricao {
-      flex: 2.6 1 0%;
-      min-width: 6rem;
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
       max-width: none;
     }
 
@@ -2192,32 +2255,23 @@ textarea {
     }
 
     .servico-row__field--pro {
-      flex: 1.25 1 0%;
-      min-width: 5.25rem;
-      max-width: none;
+      flex: 0 0 var(--drawer-pro-col);
+      width: var(--drawer-pro-col);
+      min-width: var(--drawer-pro-col);
+      max-width: var(--drawer-pro-col);
     }
 
-    .servico-row__field--duracao {
-      flex: 0 0 5.9rem;
-      min-width: 5.2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-
-      > span {
-        font-size: var(--drawer-label-size);
-        line-height: var(--drawer-label-line-height);
-        font-weight: var(--drawer-label-weight);
-        color: var(--drawer-label-strong);
-      }
+    .servico-row__field--money,
+    .servico-row__field--produto-total-estimado {
+      flex: 0 0 var(--drawer-money-col);
+      width: var(--drawer-money-col);
+      min-width: var(--drawer-money-col);
+      max-width: var(--drawer-money-col);
     }
 
     .servico-row__actions--drawer {
       flex: 0 0 calc(2.5rem * 2 + 0.4rem);
-    }
-
-    .servico-row__duracao {
-      font-size: 15px;
+      margin-left: auto;
     }
   }
 
@@ -2236,10 +2290,28 @@ textarea {
     }
 
     .servico-row__field--produto-catalogo {
-      flex: 2.82 1 0%;
-      min-width: 6rem;
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
       max-width: none;
     }
+  }
+
+  .servico-row--drawer .servico-row__field--modal-prod-money {
+    flex: 0 0 var(--drawer-money-col);
+    width: var(--drawer-money-col);
+    min-width: var(--drawer-money-col);
+    max-width: var(--drawer-money-col);
+  }
+
+  /**
+   * Sem sidebar (<=1336): reduz ligeiramente colunas fixas para manter
+   * leitura equilibrada sem quebrar visual.
+   */
+  @media (max-width: 1336px) {
+    --drawer-tipo-linha-col: 107px;
+    --drawer-pro-col: 124px;
+    --drawer-money-col: 128px;
   }
 
   /** Drawer: hover com borda vinho nos campos de texto. */
@@ -2268,24 +2340,6 @@ textarea {
     border-color: var(--el-drawer-field-border-hover);
   }
 
-  .servico-row--drawer .servico-row__duracao {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .servico-row--drawer .servico-row__duracao:hover {
-    color: transparent;
-    border-color: var(--drawer-stroke);
-    cursor: not-allowed;
-    background-color: #f4f2f0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0110 0v4'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 1.1rem 1.1rem;
-  }
 
   .btn.btn--icon-danger {
     svg {
@@ -2360,6 +2414,11 @@ textarea {
   .itens-atendimento--modal input,
   .itens-atendimento--modal textarea {
     font-size: 15px;
+  }
+
+  .itens-atendimento--modal .saas-select__trigger {
+    min-height: var(--touch-min, 38px);
+    height: var(--touch-min, 38px);
   }
 
   app-agenda-horario-slots {
@@ -2585,6 +2644,23 @@ textarea {
     background: #f1f1f1;
     border-color: #f1f1f1;
     color: #00000040;
+  }
+}
+
+/* Alinhamento fino de largura/altura no modal de edição (Serviço/Produto/Cabelo). */
+:host.agenda-novo--drawer .form.form--modal {
+  .servico-row--drawer .servico-row__field--produto-qtd-drawer {
+    flex: 0 0 58px;
+    width: 58px;
+    min-width: 58px;
+    max-width: 58px;
+  }
+
+  .servico-row--drawer .servico-row__field--produto-qtd-drawer input,
+  .servico-row--drawer .servico-row__field--money input,
+  .servico-row__total-estimado {
+    min-height: var(--touch-min, 38px);
+    height: var(--touch-min, 38px);
   }
 }
 

@@ -186,6 +186,34 @@
                 </svg>
                 <span class="comandas-head__toolbar-label">Filtrar</span>
               </button>
+              @if (mostrarAcoesEmMassa) {
+                <button
+                  type="button"
+                  class="comandas-head__toolbar-btn comandas-head__toolbar-btn--bulk-delete"
+                  (click)="onAcoesEmMassaClick()"
+                  aria-label="Excluir selecionadas"
+                  title="Excluir"
+                >
+                  <svg
+                    class="comandas-icon-sm"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  <span class="comandas-head__toolbar-label">Excluir</span>
+                </button>
+              }
               <button
                 type="button"
                 (click)="abrirNovaComandaDrawer()"
@@ -539,6 +567,41 @@
     </div>
   </div>
 
+  @if (excluirMassaModalAberto) {
+    <div
+      class="comandas-modal-overlay"
+      aria-hidden="true"
+      (click)="fecharModalExcluirEmMassa()"
+    ></div>
+    <div class="comandas-modal" role="dialog" aria-modal="true" aria-label="Confirmação de exclusão em massa">
+      <div class="comandas-modal__icon-wrap" aria-hidden="true">
+        <span class="comandas-modal__icon">!</span>
+      </div>
+      <h3 class="comandas-modal__title">Atenção</h3>
+      <p class="comandas-modal__text">
+        Tem certeza que deseja excluir {{ quantidadeSelecionadaExclusao }} comandas?
+      </p>
+      <div class="comandas-modal__actions">
+        <button
+          type="button"
+          class="comandas-modal__btn comandas-modal__btn--cancel"
+          [disabled]="excluindoEmMassa"
+          (click)="fecharModalExcluirEmMassa()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="comandas-modal__btn comandas-modal__btn--confirm"
+          [disabled]="excluindoEmMassa"
+          (click)="confirmarExcluirEmMassa()"
+        >
+          {{ excluindoEmMassa ? 'Excluindo…' : 'Sim, excluir' }}
+        </button>
+      </div>
+    </div>
+  }
+
   @if (comandaPainelAberto && comandaDrawerContexto) {
     <div
       class="overlay"
@@ -559,6 +622,7 @@
         (fechar)="fecharComandaDrawer()"
         (comandaExcluida)="onComandaExcluida()"
         (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
+        (salvarComanda)="onSalvarDesdeDrawerComanda()"
         (faturarComanda)="onAbrirFaturarComanda($event)"
       />
     </div>

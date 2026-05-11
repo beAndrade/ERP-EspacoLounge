@@ -599,6 +599,20 @@ export class SheetsApiService {
             o['pacote_id'] != null && Number.isFinite(Number(o['pacote_id']))
               ? Number(o['pacote_id'])
               : null;
+          const valor_unitario =
+            o['valor_unitario'] != null && String(o['valor_unitario']).trim()
+              ? String(o['valor_unitario']).trim()
+              : null;
+          const descontoItem =
+            o['desconto'] != null && String(o['desconto']).trim()
+              ? String(o['desconto']).trim()
+              : null;
+          const totalLinhaRaw = o['total_linha'];
+          const total_linha =
+            totalLinhaRaw != null &&
+            Number.isFinite(Number(totalLinhaRaw))
+              ? Number(totalLinhaRaw)
+              : null;
           return {
             ...base,
             pacote,
@@ -606,6 +620,9 @@ export class SheetsApiService {
             detalhes,
             regra_mega_id,
             pacote_id,
+            valor_unitario,
+            desconto: descontoItem,
+            total_linha,
           } as AtendimentoItemCatalogo;
         })
         .filter(Boolean) as AtendimentoItemCatalogo[];
