@@ -1967,7 +1967,8 @@ export async function listAtendimentosRaw(
     const itensRows = await db
       .select()
       .from(atendimentoItens)
-      .where(inArray(atendimentoItens.idAtendimento, idsAt));
+      .where(inArray(atendimentoItens.idAtendimento, idsAt))
+      .orderBy(asc(atendimentoItens.id));
     for (const row of itensRows) {
       const k = String(row.idAtendimento || '').trim();
       const arr = itensPorPedido.get(k) ?? [];
@@ -2007,6 +2008,24 @@ export async function listAtendimentosRaw(
 
   /** Resumo financeiro consolidado (total / total_pago / saldo / status) por pedido. */
   const resumosPorId = await getResumosPorAtendimento(db, idsAt);
+
+  const numerosPorIdAt = new Map<string, number>();
+  if (idsAt.length > 0) {
+    const pedNum = await db
+      .select({
+        id: atendimentosPedido.idAtendimento,
+        n: atendimentosPedido.numeroComanda,
+      })
+      .from(atendimentosPedido)
+      .where(inArray(atendimentosPedido.idAtendimento, idsAt));
+    for (const r of pedNum) {
+      const k = String(r.id || '').trim();
+      const nv = r.n != null ? Number(r.n) : NaN;
+      if (k && Number.isFinite(nv) && nv > 0) {
+        numerosPorIdAt.set(k, nv);
+      }
+    }
+  }
 
   return filtered.map((a) => {
     const dataStr = ymdFromAtendimentoDate(a.data as string | Date | null);
@@ -2070,6 +2089,7 @@ export async function listAtendimentosRaw(
             itens: catalogoLista,
           }
         : {}),
+      numero_comanda: numerosPorIdAt.get(idAtKey) ?? null,
     };
   });
 }

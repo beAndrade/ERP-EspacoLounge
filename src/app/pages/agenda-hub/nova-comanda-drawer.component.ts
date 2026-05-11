@@ -36,6 +36,14 @@ function formataMoedaBrl(n: number): string {
   }).format(n);
 }
 
+/** Remove sufixo «— Qtd: n» do título do produto (a quantidade vai na faixa monetária). */
+function tituloProdutoLeituraSemQtd(titulo: string): string {
+  return (titulo || '')
+    .replace(/\s*[—–]\s*Qtd\.?\s*:?\s*[\d.,]+\s*$/i, '')
+    .replace(/\s*[—–]\s*Qtde\.?\s*:?\s*[\d.,]+\s*$/i, '')
+    .trim();
+}
+
 /**
  * Itens da comanda em modo leitura — agrupados por tipo (Serviço/Mega/Pacote/Cabelo/Produto).
  * Para Mega/Pacote, listamos a cabeça (sem etapa) e as etapas no mesmo bloco.
@@ -263,6 +271,8 @@ export class NovaComandaDrawerComponent implements OnInit {
       });
     }
 
+    soltas.sort((a, b) => (a.linha_id ?? 0) - (b.linha_id ?? 0));
+
     for (const l of soltas) {
       const tp = String(l.tipo ?? '').trim().toLowerCase();
       const tipo: LinhaResumoComanda['tipo'] =
@@ -273,7 +283,16 @@ export class NovaComandaDrawerComponent implements OnInit {
             : tp === 'cabelo'
               ? 'Cabelo'
               : 'Outro';
-      const titulo = linhaResumoAtendimentoLista(l) || l.descricao || '—';
+      /** Produto: só o nome de catálogo; `descricao` agrega pacote/etapa e não deve ir ao título. */
+      let titulo =
+        tipo === 'Produto'
+          ? tituloProdutoLeituraSemQtd(
+              String(l.produtoNome ?? '').trim() ||
+                linhaResumoAtendimentoLista(l) ||
+                String(l.descricao ?? '').trim() ||
+                '—',
+            )
+          : linhaResumoAtendimentoLista(l) || l.descricao || '—';
       const profissional = String(l.profissional ?? '').trim();
       const subParts: string[] = [];
       if (profissional) subParts.push(`Profissional: ${profissional}`);
@@ -288,6 +307,12 @@ export class NovaComandaDrawerComponent implements OnInit {
       });
     }
 
+    /** Ordem de criação na BD (`atendimentos.id`): o último item gravado fica por baixo. */
+    out.sort((a, b) => {
+      const ida = a.linha.linha_id ?? 0;
+      const idb = b.linha.linha_id ?? 0;
+      return ida - idb;
+    });
     return out;
   }
 
@@ -362,7 +387,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   /**
-   * Faixa monetária do cartão inteiro (não Mega/Pacote quando etapas já mostram valores).
+   * Faixa monetária do cartão. Mega/Pacote: sempre na linha principal (etapas só texto);
+   * se a cabeça não tiver totais, usa a primeira etapa com valores.
    */
   faixaPrecoBloc(bloco: LinhaResumoComanda): {
     mostrarQtd: boolean;
@@ -371,14 +397,15 @@ export class NovaComandaDrawerComponent implements OnInit {
     desconto: string;
     total: string;
   } | null {
-    const tpMega =
-      bloco.tipo === 'Mega' || bloco.tipo === 'Pacote';
-    if (
-      tpMega &&
-      bloco.etapas.some(
-        (e) => e.linhaEtapa != null && this.faixaPrecoLinha(e.linhaEtapa) != null,
-      )
-    ) {
+    const tpMega = bloco.tipo === 'Mega' || bloco.tipo === 'Pacote';
+    if (tpMega) {
+      const head = this.faixaPrecoLinha(bloco.linha);
+      if (head != null) return head;
+      for (const e of bloco.etapas) {
+        const s =
+          e.linhaEtapa != null ? this.faixaPrecoLinha(e.linhaEtapa) : null;
+        if (s != null) return s;
+      }
       return null;
     }
     return this.faixaPrecoLinha(bloco.linha);
@@ -389,10 +416,23 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (id != null) {
       const qKnown = this.quantidadePorLinhaId.get(id);
       if (qKnown != null && qKnown > 0) return qKnown;
+      const hit = this.pivotCatalogoPorLinhaId.get(id);
+      const qPivot = Number(hit?.quantidade);
+      if (Number.isFinite(qPivot) && qPivot > 0) return qPivot;
     }
     const itens = l.itens_catalogo ?? l.itens;
     if (!itens || itens.length === 0) return null;
+    const tipoL = String(l.tipo ?? '').trim().toLowerCase();
+    const pivotTipo =
+      tipoL === 'serviço' || tipoL === 'servico'
+        ? 'servico'
+        : tipoL === 'produto'
+          ? 'produto'
+          : tipoL === 'cabelo'
+            ? 'cabelo'
+            : null;
     const principal =
+      (pivotTipo ? itens.find((it) => it.tipo === pivotTipo) : null) ??
       itens.find((it) => it.tipo === 'servico') ??
       itens.find((it) => it.tipo === 'produto') ??
       itens[0];
@@ -441,33 +481,90 @@ export class NovaComandaDrawerComponent implements OnInit {
     const itensAny = rows.find((r) => (r.itens_catalogo?.length ?? 0) > 0 || (r.itens?.length ?? 0) > 0);
     const catalogo = (itensAny?.itens_catalogo ?? itensAny?.itens ?? []).slice();
     if (!catalogo.length) return;
-    const filaServicoProduto = catalogo.filter(
-      (it) => it.tipo === 'servico' || it.tipo === 'produto',
-    );
-    const filaMegaPacote = catalogo.filter(
-      (it) => it.tipo === 'mega' || it.tipo === 'pacote',
-    );
-    const filaCabelo = catalogo.filter((it) => it.tipo === 'cabelo');
 
-    for (const row of rows) {
+    const tipoLinhaParaPivot = (
+      tipo: string,
+    ): AtendimentoItemCatalogo['tipo'] | null => {
+      const t = tipo.trim().toLowerCase();
+      if (t === 'serviço' || t === 'servico') return 'servico';
+      if (t === 'produto') return 'produto';
+      if (t === 'mega') return 'mega';
+      if (t === 'pacote') return 'pacote';
+      if (t === 'cabelo') return 'cabelo';
+      return null;
+    };
+
+    const pivotJaUsado = new Set<AtendimentoItemCatalogo>();
+
+    const escolherPivotParaLinha = (
+      row: AtendimentoListaItem,
+    ): AtendimentoItemCatalogo | undefined => {
+      const pivotTipo = tipoLinhaParaPivot(String(row.tipo ?? ''));
+      if (!pivotTipo) return undefined;
+      const candidatos = catalogo.filter(
+        (it) => it.tipo === pivotTipo && !pivotJaUsado.has(it),
+      );
+      if (!candidatos.length) return undefined;
+
+      if (pivotTipo === 'servico' && candidatos.length > 1) {
+        const tam = String(row.tamanho ?? '').trim();
+        const pid = row.profissional_id;
+        const porTamProf = candidatos.find(
+          (it) =>
+            (!tam || String(it.tamanho ?? '').trim() === tam) &&
+            (pid == null ||
+              it.profissional_id == null ||
+              it.profissional_id === pid),
+        );
+        const hit = porTamProf ?? candidatos[0];
+        pivotJaUsado.add(hit);
+        return hit;
+      }
+
+      if (pivotTipo === 'produto' && candidatos.length > 1) {
+        const nome = String(row.produtoNome ?? '').trim().toLowerCase();
+        if (nome) {
+          const porValor = candidatos.find((it) => {
+            const vu = valorMonetarioParaNumero(it.valor_unitario);
+            const rowV = valorMonetarioParaNumero(row.valor);
+            if (vu == null || rowV == null) return false;
+            return Math.abs(vu - rowV) < 0.02;
+          });
+          const hit = porValor ?? candidatos[0];
+          pivotJaUsado.add(hit);
+          return hit;
+        }
+      }
+
+      if (pivotTipo === 'mega' || pivotTipo === 'pacote') {
+        const pac = String(row.pacote ?? '').trim();
+        const et = String(row.etapa ?? '').trim();
+        const filtro = candidatos.filter((it) => {
+          const ip = String(it.pacote ?? '').trim();
+          if (pac && ip && ip !== pac) return false;
+          const ie = String(it.etapa ?? '').trim();
+          return ie === et;
+        });
+        const hit = filtro[0] ?? candidatos[0];
+        pivotJaUsado.add(hit);
+        return hit;
+      }
+
+      const hit = candidatos[0];
+      pivotJaUsado.add(hit);
+      return hit;
+    };
+
+    const ordenados = [...rows].sort(
+      (a, b) => (a.linha_id ?? 0) - (b.linha_id ?? 0),
+    );
+    for (const row of ordenados) {
       if (row.linha_id == null) continue;
-      const tipo = String(row.tipo ?? '').trim().toLowerCase();
-      let q: number | null = null;
-      let hit: AtendimentoItemCatalogo | undefined;
-      if (tipo === 'serviço' || tipo === 'servico' || tipo === 'produto') {
-        hit = filaServicoProduto.shift();
-        q = Number(hit?.quantidade ?? 0);
-      } else if (tipo === 'mega' || tipo === 'pacote') {
-        hit = filaMegaPacote.shift();
-        q = Number(hit?.quantidade ?? 0);
-      } else if (tipo === 'cabelo') {
-        hit = filaCabelo.shift();
-        q = Number(hit?.quantidade ?? 0);
-      }
-      if (hit != null) {
-        this.pivotCatalogoPorLinhaId.set(row.linha_id, hit);
-      }
-      if (q != null && Number.isFinite(q) && q > 0) {
+      const hit = escolherPivotParaLinha(row);
+      if (hit == null) continue;
+      this.pivotCatalogoPorLinhaId.set(row.linha_id, hit);
+      const q = Number(hit.quantidade ?? 0);
+      if (Number.isFinite(q) && q > 0) {
         this.quantidadePorLinhaId.set(row.linha_id, q);
       }
     }
@@ -475,23 +572,33 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   // ----- Resumo / status ----------------------------------------------------
 
-  /** Texto pt-BR do status para badge. */
+  /**
+   * Rótulos alinhados à lista de comandas (`rotuloStatus` em `comandas.component.ts`).
+   */
   rotuloStatus(): string {
     switch (this.resumoPagamentos.status) {
       case 'pago':
-        return 'Quitada';
+        return 'Pago';
       case 'parcial':
-        return 'Parcialmente paga';
+        return 'Parcial';
       case 'pendente':
-        return 'Pagamento pendente';
+        return 'Pendente';
       default:
         return 'Em aberto';
     }
   }
 
-  /** Slug do status para CSS modifier. */
-  classeStatus(): string {
-    return `nc-status--${this.resumoPagamentos.status}`;
+  /** Mesma lógica de cor que `classeBadgeStatus` na lista de comandas. */
+  classeBadgeComanda():
+    | 'badge--ok'
+    | 'badge--warn'
+    | 'badge--info'
+    | 'badge--aviso' {
+    const s = this.resumoPagamentos.status;
+    if (s === 'pago') return 'badge--ok';
+    if (s === 'parcial') return 'badge--warn';
+    if (s === 'pendente') return 'badge--info';
+    return 'badge--aviso';
   }
 
   // ----- Ações --------------------------------------------------------------
@@ -626,7 +733,7 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (!idAt) return 'Nova comanda';
     const n = this.contexto()?.numeroComandaTitulo;
     const num = typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 1;
-    return `Editando comanda #${num}`;
+    return `Visualizando comanda #${num}`;
   }
 
   brl(n: number): string {
