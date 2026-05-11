@@ -107,6 +107,55 @@ export function linhaSortPriorityAtendimento(l: AtendimentoListaItem): number {
   return 2;
 }
 
+/** Normaliza nome de etapa para comparação (minúsculas, sem acentos). */
+function chaveEtapaFluxoNorm(nome: string): string {
+  return nome
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Ordem fixa das etapas Mega/Pacote (Regras Mega); outras etapas vão depois, A–Z. */
+const ORDEM_FLUXO_ETAPAS_MEGA_PACOTE = [
+  'retirada',
+  'preparo',
+  'escova',
+  'colocacao',
+] as const;
+
+/** Índice 0–3 nas etapas canónicas; 100+ para etapas fora do fluxo (desempate por locale). */
+export function prioridadeEtapaFluxoMegaPacote(nome: string): number {
+  const k = chaveEtapaFluxoNorm(nome);
+  const ix = ORDEM_FLUXO_ETAPAS_MEGA_PACOTE.findIndex((e) => e === k);
+  return ix >= 0 ? ix : 100;
+}
+
+export function compararEtapasMegaPacoteFluxo(a: string, b: string): number {
+  const ea = (a || '').trim();
+  const eb = (b || '').trim();
+  const pa = prioridadeEtapaFluxoMegaPacote(ea);
+  const pb = prioridadeEtapaFluxoMegaPacote(eb);
+  if (pa !== pb) return pa - pb;
+  return ea.localeCompare(eb, 'pt-BR');
+}
+
+/** Lista de nomes de etapa (select, pivots): canónicas na ordem do fluxo; restantes A–Z. */
+export function ordenarNomesEtapasMegaPacote(nomes: string[]): string[] {
+  const visto = new Set<string>();
+  const acc: string[] = [];
+  for (const raw of nomes) {
+    const t = raw.trim();
+    if (!t) continue;
+    const kn = chaveEtapaFluxoNorm(t);
+    if (visto.has(kn)) continue;
+    visto.add(kn);
+    acc.push(t);
+  }
+  acc.sort((x, y) => compararEtapasMegaPacoteFluxo(x, y));
+  return acc;
+}
+
 /**
  * Ordena linhas do mesmo atendimento in-place (cabeça Pacote/Mega sem etapa primeiro, etc.).
  * Usado nos cards e ao pré-preencher edição em Novo atendimento.
@@ -120,7 +169,16 @@ export function ordenarLinhasAtendimentoInPlace(
     if (px !== py) return px - py;
     const ex = (x.etapa || '').trim();
     const ey = (y.etapa || '').trim();
-    if (ex && ey) return ex.localeCompare(ey, 'pt-BR');
+    if (ex && ey) {
+      const tx = (x.tipo || '').trim().toLowerCase();
+      const ty = (y.tipo || '').trim().toLowerCase();
+      const mx = tx === 'mega' || tx === 'pacote';
+      const my = ty === 'mega' || ty === 'pacote';
+      if (mx && my) {
+        return compararEtapasMegaPacoteFluxo(ex, ey);
+      }
+      return ex.localeCompare(ey, 'pt-BR');
+    }
     return (x.descricao || '').localeCompare(y.descricao || '', 'pt-BR');
   });
 }

@@ -98,10 +98,12 @@ import {
   TipoLinhaAtendimento,
 } from '../../core/models/api.models';
 import {
+  compararEtapasMegaPacoteFluxo,
   dataDdMmAaaa,
   dataDdMmBarraAaaa,
   horaInicialMenorDasLinhasAtendimento,
   ordenarLinhasAtendimentoInPlace,
+  ordenarNomesEtapasMegaPacote,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
 import {
@@ -183,41 +185,6 @@ function parseQuantidadeFromDescricao(s: string): number {
   const t = m[1].replace(',', '.');
   const n = parseFloat(t);
   return Number.isNaN(n) ? 0 : n;
-}
-
-/** Ordem do fluxo nas etapas Mega/Pacote (Regras Mega); outras etapas vão ao fim, A–Z. */
-const ORDEM_ETAPAS_FLUXO = [
-  'Retirada',
-  'Preparo',
-  'Escova',
-  'Colocação',
-] as const;
-
-function chaveEtapa(s: string): string {
-  return s.trim().toLowerCase();
-}
-
-function ordenarEtapasParaSelect(nomes: string[]): string[] {
-  const ordem = new Map(
-    ORDEM_ETAPAS_FLUXO.map((e, i) => [chaveEtapa(e), i]),
-  );
-  const visto = new Set<string>();
-  const prioridade: { raw: string; idx: number }[] = [];
-  const resto: string[] = [];
-  for (const raw of nomes) {
-    const t = raw.trim();
-    if (!t || visto.has(t)) continue;
-    visto.add(t);
-    const i = ordem.get(chaveEtapa(t));
-    if (i !== undefined) {
-      prioridade.push({ raw: t, idx: i });
-    } else {
-      resto.push(t);
-    }
-  }
-  prioridade.sort((a, b) => a.idx - b.idx);
-  resto.sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  return [...prioridade.map((x) => x.raw), ...resto];
 }
 
 @Component({
@@ -1686,6 +1653,30 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return g?.get('etapas') as FormArray<FormGroup>;
   }
 
+  /** Retirada → Preparo → Escova → Colocação; outras etapas a seguir (A–Z). */
+  private ordenarSubFormEtapasMegaPacote(g: FormGroup): void {
+    const itemTipo = String(g.get('itemTipo')?.value ?? '');
+    if (itemTipo !== 'Mega' && itemTipo !== 'Pacote') return;
+    const etapas = g.get('etapas') as FormArray<FormGroup>;
+    if (!etapas?.length) return;
+    const pairs = etapas.controls.map((c) => ({
+      c,
+      nome: String(c.get('etapa')?.value ?? '').trim(),
+    }));
+    pairs.sort((a, b) =>
+      compararEtapasMegaPacoteFluxo(a.nome, b.nome),
+    );
+    while (etapas.length) etapas.removeAt(0);
+    for (const { c } of pairs) etapas.push(c);
+  }
+
+  private ordenarTodasEtapasMegaPacoteNoForm(): void {
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      if (g) this.ordenarSubFormEtapasMegaPacote(g);
+    }
+  }
+
   /** Pacote escolhido na linha `i` (Mega / Pacote). */
   pacoteDaLinha(i: number): string {
     const g = this.linhasItensArray.at(i);
@@ -1804,7 +1795,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         .map((r) => r.etapa.trim())
         .filter(Boolean),
     );
-    return ordenarEtapasParaSelect([...set]);
+    return ordenarNomesEtapasMegaPacote([...set]);
   }
 
   /** Etapas para o select da linha `i` (Mega / Pacote). */
@@ -1818,7 +1809,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       const all = new Set(
         this.regrasMega.map((r) => r.etapa.trim()).filter(Boolean),
       );
-      return ordenarEtapasParaSelect([...all]);
+      return ordenarNomesEtapasMegaPacote([...all]);
     }
     return [];
   }
@@ -2068,6 +2059,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.validarLinhas(raw)) {
       return;
     }
+
+    this.ordenarTodasEtapasMegaPacoteNoForm();
 
     const dataBase = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataBase) {
@@ -2748,6 +2741,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           et.removeAt(0);
         }
         const comEtapa = blockRows.filter((r) => (r.etapa || '').trim());
+        comEtapa.sort((a, b) =>
+          compararEtapasMegaPacoteFluxo(
+            String(a.etapa ?? ''),
+            String(b.etapa ?? ''),
+          ),
+        );
         for (const row of comEtapa) {
           et.push(
             this.fb.group({
@@ -3816,9 +3815,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (tipo === 'Mega') {
         const pacote = String(g.get('pacote')?.value ?? '').trim();
         if (!pacote) continue;
-        const etapas = (
+        const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
+        const etapas = [...etapasRaw].sort((a, b) =>
+          compararEtapasMegaPacoteFluxo(
+            String(a.etapa ?? ''),
+            String(b.etapa ?? ''),
+          ),
+        );
         const dPrimeira = this.duracaoMinutosRegraMega(
           pacote,
           String(etapas[0]?.etapa ?? '').trim(),
@@ -3850,9 +3855,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (tipo === 'Pacote') {
         const pacote = String(g.get('pacote')?.value ?? '').trim();
         if (!pacote) continue;
-        const etapas = (
+        const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
+        const etapas = [...etapasRaw].sort((a, b) =>
+          compararEtapasMegaPacoteFluxo(
+            String(a.etapa ?? ''),
+            String(b.etapa ?? ''),
+          ),
+        );
         const dPrimeira = this.duracaoMinutosRegraMega(
           pacote,
           String(etapas[0]?.etapa ?? '').trim(),
