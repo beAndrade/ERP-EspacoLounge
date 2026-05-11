@@ -342,15 +342,6 @@
                   </button>
                   <button
                     type="button"
-                    class="btn small"
-                    (click)="adicionarLinhaItens()"
-                    aria-label="Adicionar outra linha ao pedido (ex.: Serviço ou Produto)"
-                    title="Outra linha no mesmo pedido"
-                  >
-                    + Linha
-                  </button>
-                  <button
-                    type="button"
                     class="btn btn--icon-danger"
                     [disabled]="linhasItensArray.length < 2"
                     (click)="removerLinhaItens(i)"

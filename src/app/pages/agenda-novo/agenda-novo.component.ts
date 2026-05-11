@@ -745,7 +745,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return reps;
   }
 
-  /** `#N` no drawer: posição entre abertas ou próximo número ao criar. */
+  /** `#N` no drawer: `numero_comanda` da API (global) ou estimativa ao criar. */
   private numeroComandaParaTituloModal(
     items: AtendimentoListaItem[],
     ymd: string,
@@ -757,12 +757,26 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (acessarExistente) {
       const id = String(idAtendimentoFoco ?? '').trim();
       if (id) {
+        const hit = reps.find((r) => String(r.id) === id);
+        const nApi = hit?.numeroComanda;
+        if (typeof nApi === 'number' && Number.isFinite(nApi) && nApi > 0) {
+          return nApi;
+        }
         const idx = reps.findIndex((r) => String(r.id) === id);
         if (idx >= 0) return idx + 1;
       }
       return 1;
     }
-    return Math.max(1, reps.length + 1);
+    return Math.max(1, this.maiorNumeroComandaNosItens(items) + 1);
+  }
+
+  private maiorNumeroComandaNosItens(items: AtendimentoListaItem[]): number {
+    let m = 0;
+    for (const it of items) {
+      const n = it.numeroComanda;
+      if (typeof n === 'number' && Number.isFinite(n) && n > m) m = n;
+    }
+    return m;
   }
 
   private aplicarDetecaoComandaAberta(
@@ -1027,7 +1041,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       const cur = ctxCh.currentValue as Ctx;
       const prevId = prev?.id_atendimento?.trim() ?? '';
       const curId = cur?.id_atendimento?.trim() ?? '';
-      if (curId && curId !== prevId) {
+      /** Mesmo `id_atendimento` com novo objeto (ex.: reabrir edição) deve voltar a ler a API. */
+      const mesmoIdNovoContexto =
+        curId &&
+        prevId === curId &&
+        prev != null &&
+        cur !== prev;
+      if (curId && (curId !== prevId || mesmoIdNovoContexto)) {
         this.carregarEdicaoPorIdParaModal(curId);
       } else if (!curId && prevId) {
         this.idAtendimentoEmEdicao = null;
@@ -3136,7 +3156,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.erro = '';
     this.idAtendimentoEmEdicao = trimmed;
     this.api
-      .listAgendamentos(undefined, undefined, trimmed)
+      .listAgendamentosPorIdParaEdicao(trimmed)
       .pipe(take(1), takeUntil(this.destroy$))
       .subscribe({
         next: (items) => {

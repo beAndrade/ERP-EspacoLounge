@@ -214,6 +214,26 @@ export class SheetsApiService {
       );
   }
 
+  /**
+   * Lista só o pedido por `id_atendimento`, com parâmetro extra para evitar
+   * resposta em cache do browser após excluir/recriar o mesmo ID na edição.
+   */
+  listAgendamentosPorIdParaEdicao(idAtendimento: string): Observable<AtendimentoListaItem[]> {
+    const id = idAtendimento.trim();
+    const params = new HttpParams()
+      .set('idAtendimento', id)
+      .set('_cb', String(Date.now()));
+    return this.http
+      .get<ApiResponse<{ items: Record<string, unknown>[] }>>(
+        this.url('/api/atendimentos'),
+        { params },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items.map((row) => this.normalizeAtendimento(row))),
+      );
+  }
+
   listCategoriasFinanceiras(): Observable<CategoriaFinanceiraItem[]> {
     return this.http
       .get<ApiResponse<{ items: CategoriaFinanceiraItem[] }>>(
