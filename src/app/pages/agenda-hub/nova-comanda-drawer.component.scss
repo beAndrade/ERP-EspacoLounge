@@ -737,15 +737,14 @@
 }
 
 /**
- * Observações: fora da área com scroll (`nc-drawer__flow`), junto ao rodapé de ações
- * (`nc-footer` no `:host`).
+ * Observações: dentro de `.nc-main--comanda-scroll` (após itens), rola com o fluxo.
  */
 .nc-drawer__obs {
   flex: 0 0 auto;
   min-width: 0;
-  padding: 0.55rem 0 1.35rem;
-  margin-top: 0;
-  margin-bottom: 0.85rem;
+  padding: 1rem 0 1.5rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0;
   border-top: none;
   background: #fff;
 }
