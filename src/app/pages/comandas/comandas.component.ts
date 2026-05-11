@@ -5,6 +5,7 @@ import {
   LOCALE_ID,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
@@ -13,14 +14,16 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, finalize } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { AtendimentoListaItem, Cliente } from '../../core/models/api.models';
+import type { ComandaResumoPagamentos } from '../../core/models/api.models';
 import { NovaComandaDrawerComponent } from '../agenda-hub/nova-comanda-drawer.component';
+import { FaturarDrawerComponent } from '../agenda-hub/faturar-drawer.component';
 import type { ComandaDrawerContextoAgenda } from '../agenda-hub/comanda-drawer.types';
+import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 import {
   dataDdMmBarraAaaa,
   parseFiltroDataDdMm,
   toYmd,
-  toDdMmYyyy,
   ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
@@ -38,6 +41,7 @@ interface ComandaGrupo {
   valorTotal: number | null;
 }
 
+type StatusCobrancaDerivado = 'aberto' | 'pendente' | 'parcial' | 'pago';
 
 
 /** Payload em JSON na coluna `observacoes` (extras da UI não mapeadas no core da API). */
@@ -60,10 +64,25 @@ interface ClienteObsExtras {
 
 const DRAWER_ANIM_MS = 430;
 
+function formataMoeda(n: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(n) ? n : 0);
+}
+
 @Component({
   selector: 'app-comandas',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, NovaComandaDrawerComponent],
+  imports: [
+    FormsModule,
+    CurrencyPipe,
+    NovaComandaDrawerComponent,
+    FaturarDrawerComponent,
+    AgendaNovoComponent,
+  ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './comandas.component.html',
   styleUrl: './comandas.component.scss',
@@ -97,14 +116,17 @@ export class ComandasComponent implements OnInit, OnDestroy {
   /** Select nativo não estiliza o painel; menu custom igual ao layout de referência. */
   perPageMenuAberto = false;
 
-  /** Chips do painel lateral (UI Belasis; ligação a filtros reais a definir). */
-  readonly etiquetasPagamentoStub = [
-    'Bloqueado',
-    'Disponível',
-    'Em aberto',
-    'Atrasado',
-    'Pago',
+  /** Filtro funcional de status derivado de pagamento da comanda. */
+  readonly filtrosStatusPagamento: Array<{
+    id: StatusCobrancaDerivado;
+    label: string;
+  }> = [
+    { id: 'aberto', label: 'Em aberto' },
+    { id: 'pendente', label: 'Pendente' },
+    { id: 'parcial', label: 'Parcial' },
+    { id: 'pago', label: 'Pago' },
   ];
+  statusPagamentoSelecionados = new Set<StatusCobrancaDerivado>();
 
   readonly formasPagamentoStub = [
     'Boleto',
@@ -118,10 +140,45 @@ export class ComandasComponent implements OnInit, OnDestroy {
   selecionados = new Set<string>();
   menuAbertoParaId: string | null = null;
   excluindoIdAt: string | null = null;
+  excluirMassaModalAberto = false;
+  excluindoEmMassa = false;
+  get mostrarAcoesEmMassa(): boolean {
+    return this.selecionados.size > 0;
+  }
+  get quantidadeSelecionadaExclusao(): number {
+    return this.idsAtSelecionadosParaExclusao().length;
+  }
 
   comandaPainelAberto = false;
   comandaDrawerPanelOpen = false;
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
+
+  /** Drawer de edição do agendamento (aberto a partir do botão Editar na comanda). */
+  editAgendamentoAberto = false;
+  editAgendamentoPanelOpen = false;
+  editAgendamentoCtx: {
+    data: string;
+    profissional_id: number;
+    hora?: string;
+    id_atendimento?: string;
+  } | null = null;
+  /** Após salvar/excluir no drawer de edição, recarregar lista + resumo. */
+  private editReloadKey = 0;
+  /** ViewChild do drawer de comanda para chamar `recarregarAposFaturar`. */
+  @ViewChild(NovaComandaDrawerComponent)
+  comandaDrawerRef?: NovaComandaDrawerComponent;
+
+  @ViewChild(AgendaNovoComponent)
+  private agendaEditComandaRef?: AgendaNovoComponent;
+
+  /** Sub-drawer Faturar (pagamentos da comanda). */
+  faturarDrawerAberto = false;
+  faturarDrawerPanelOpen = false;
+  faturarCtx: {
+    idAtendimento: string;
+    resumo: ComandaResumoPagamentos;
+    nomeCliente: string;
+  } | null = null;
 
   clienteDrawerAberto = false;
   clienteDrawerPanelOpen = false;
@@ -169,18 +226,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private clienteDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private editAgendamentoCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
   private clientesCatalogo: Cliente[] = [];
 
   ngOnInit(): void {
-    const hoje = new Date();
-    const inicio = new Date(hoje);
-    inicio.setDate(hoje.getDate() - 90);
-    this.dataInicio = toDdMmYyyy(inicio);
-    this.dataFim = toDdMmYyyy(hoje);
     forkJoin({
-      ags: this.api.listAgendamentos(toYmd(inicio), toYmd(hoje)),
+      ags: this.api.listAgendamentos(),
       clientes: this.api.listClientes(),
     }).subscribe({
       next: ({ ags, clientes }) => {
@@ -206,6 +260,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.clienteDrawerCloseTimer != null) {
       clearTimeout(this.clienteDrawerCloseTimer);
       this.clienteDrawerCloseTimer = null;
+    }
+    if (this.editAgendamentoCloseTimer != null) {
+      clearTimeout(this.editAgendamentoCloseTimer);
+      this.editAgendamentoCloseTimer = null;
+    }
+    if (this.faturarDrawerCloseTimer != null) {
+      clearTimeout(this.faturarDrawerCloseTimer);
+      this.faturarDrawerCloseTimer = null;
     }
     this.desbloquearScrollPagina();
   }
@@ -313,20 +375,27 @@ export class ComandasComponent implements OnInit, OnDestroy {
   carregar(): void {
     this.carregando = true;
     this.erro = '';
-    const di = parseFiltroDataDdMm(this.dataInicio);
-    const df = parseFiltroDataDdMm(this.dataFim);
-    if (!di || !df) {
+    const diTxt = this.dataInicio.trim();
+    const dfTxt = this.dataFim.trim();
+    const semFiltroData = !diTxt && !dfTxt;
+    const di = diTxt ? parseFiltroDataDdMm(diTxt) : null;
+    const df = dfTxt ? parseFiltroDataDdMm(dfTxt) : null;
+    if (!semFiltroData && (!diTxt || !dfTxt)) {
       this.carregando = false;
-      this.erro =
-        'Use o formato dia-mês-ano nas duas datas (ex.: 09-04-2026). Também aceita barras.';
+      this.erro = 'Preencha as duas datas ou deixe ambas vazias.';
       return;
     }
-    if (di > df) {
+    if (!semFiltroData && (!di || !df)) {
+      this.carregando = false;
+      this.erro = 'Use o formato dia-mês-ano nas duas datas (ex.: 09-04-2026). Também aceita barras.';
+      return;
+    }
+    if (!semFiltroData && di != null && df != null && di > df) {
       this.carregando = false;
       this.erro = 'A data “De” não pode ser depois da data “Até”.';
       return;
     }
-    this.api.listAgendamentos(di, df).subscribe({
+    this.api.listAgendamentos(di ?? undefined, df ?? undefined).subscribe({
       next: (items) => {
         this.grupos = this.agruparPorIdAtendimento(items);
         this.selecionados.clear();
@@ -345,6 +414,49 @@ export class ComandasComponent implements OnInit, OnDestroy {
   toggleFiltros(): void {
     this.dispararPulsoToolbar('filtro');
     this.filtrosAbertos = !this.filtrosAbertos;
+  }
+
+  onAcoesEmMassaClick(): void {
+    if (this.quantidadeSelecionadaExclusao <= 0 || this.excluindoEmMassa) return;
+    this.excluirMassaModalAberto = true;
+  }
+
+  fecharModalExcluirEmMassa(): void {
+    if (this.excluindoEmMassa) return;
+    this.excluirMassaModalAberto = false;
+  }
+
+  confirmarExcluirEmMassa(): void {
+    const ids = this.idsAtSelecionadosParaExclusao();
+    if (!ids.length || this.excluindoEmMassa) {
+      this.excluirMassaModalAberto = false;
+      return;
+    }
+    this.excluindoEmMassa = true;
+    this.erro = '';
+    forkJoin(ids.map((id) => this.api.excluirAtendimento(id))).subscribe({
+      next: () => {
+        this.excluindoEmMassa = false;
+        this.excluirMassaModalAberto = false;
+        this.selecionados.clear();
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.excluindoEmMassa = false;
+        this.erro = e.message || 'Não foi possível excluir as comandas selecionadas.';
+      },
+    });
+  }
+
+  private idsAtSelecionadosParaExclusao(): string[] {
+    const ids: string[] = [];
+    for (const g of this.grupos) {
+      if (!this.selecionados.has(g.id)) continue;
+      const idAt = this.idAtendimento(g);
+      if (!idAt) continue;
+      ids.push(idAt);
+    }
+    return ids;
   }
 
   /** Abre o drawer «Nova comanda» reutilizando o fluxo da comanda. */
@@ -623,9 +735,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   private atualizarGruposECatalogo(): void {
-    const di = parseFiltroDataDdMm(this.dataInicio);
-    const df = parseFiltroDataDdMm(this.dataFim);
-    if (!di || !df || di > df) {
+    const diTxt = this.dataInicio.trim();
+    const dfTxt = this.dataFim.trim();
+    const semFiltroData = !diTxt && !dfTxt;
+    const di = diTxt ? parseFiltroDataDdMm(diTxt) : null;
+    const df = dfTxt ? parseFiltroDataDdMm(dfTxt) : null;
+    if (
+      (!semFiltroData && (!diTxt || !dfTxt || !di || !df)) ||
+      (!semFiltroData && di != null && df != null && di > df)
+    ) {
       this.carregar();
       this.api.listClientes().subscribe({
         next: (items) => {
@@ -636,7 +754,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       return;
     }
     forkJoin({
-      ags: this.api.listAgendamentos(di, df),
+      ags: this.api.listAgendamentos(di ?? undefined, df ?? undefined),
       clientes: this.api.listClientes(),
     }).subscribe({
       next: ({ ags, clientes }) => {
@@ -744,11 +862,17 @@ export class ComandasComponent implements OnInit, OnDestroy {
         );
       });
     }
+    if (this.statusPagamentoSelecionados.size > 0) {
+      list = list.filter((g) =>
+        this.statusPagamentoSelecionados.has(this.statusCobrancaDerivado(g)),
+      );
+    }
     return list.slice().sort((a, b) => {
-      const c = b.data.localeCompare(a.data);
-      return c !== 0
-        ? c
-        : a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
+      const pa = this.prioridadeOrdenacaoStatus(a);
+      const pb = this.prioridadeOrdenacaoStatus(b);
+      if (pa !== pb) return pa - pb;
+      const c = a.data.localeCompare(b.data);
+      return c !== 0 ? c : a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
     });
   }
 
@@ -792,24 +916,79 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.pagina < this.totalPaginas()) this.pagina++;
   }
 
-  cobrancaFinalizada(g: ComandaGrupo): boolean {
-    return g.linhas[0]?.cobrancaStatus === 'finalizada';
+  statusCobrancaDerivado(g: ComandaGrupo): StatusCobrancaDerivado {
+    const s = g.linhas[0]?.status_cobranca;
+    if (s === 'aberto' || s === 'pendente' || s === 'parcial' || s === 'pago') {
+      return s;
+    }
+    return 'aberto';
   }
 
-  pagamentoConfirmado(g: ComandaGrupo): boolean {
-    return (g.linhas[0]?.pagamentoStatus ?? '') === 'confirmado';
+  private prioridadeOrdenacaoStatus(g: ComandaGrupo): number {
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'parcial') return 0;
+    if (s === 'pendente') return 1;
+    if (s === 'aberto') return 2;
+    return 3;
   }
 
   rotuloStatus(g: ComandaGrupo): string {
-    if (!this.cobrancaFinalizada(g)) return 'Pendente';
-    if (!this.pagamentoConfirmado(g)) return 'Pendente';
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'aberto') return 'Em aberto';
+    if (s === 'pendente') return 'Pendente';
+    if (s === 'parcial') return 'Parcial';
     return 'Pago';
   }
 
   rotuloPagamento(g: ComandaGrupo): string {
-    if (!this.cobrancaFinalizada(g)) return 'Em aberto';
-    if (this.pagamentoConfirmado(g)) return 'Pago';
-    return 'Em aberto';
+    return this.rotuloStatus(g);
+  }
+
+  classeBadgeStatus(g: ComandaGrupo): string {
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'pago') return 'badge--ok';
+    if (s === 'parcial') return 'badge--warn';
+    if (s === 'pendente') return 'badge--info';
+    return 'badge--aviso';
+  }
+
+  resumoParcial(g: ComandaGrupo): string {
+    const l0 = g.linhas[0];
+    const pago = Number(l0?.total_pago ?? 0) || 0;
+    const total = Number(l0?.total ?? g.valorTotal ?? 0) || 0;
+    if (this.statusCobrancaDerivado(g) !== 'parcial') return '';
+    return `${formataMoeda(pago)} de ${formataMoeda(total)}`;
+  }
+
+  saldoAtrasadoMaisDe7Dias(g: ComandaGrupo): boolean {
+    const s = this.statusCobrancaDerivado(g);
+    if (s === 'pago') return false;
+    const saldo = Number(g.linhas[0]?.saldo ?? 0) || 0;
+    if (saldo <= 0) return false;
+    const dt = new Date(`${g.data}T00:00:00`);
+    if (Number.isNaN(dt.getTime())) return false;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const diffDias = Math.floor((hoje.getTime() - dt.getTime()) / 86_400_000);
+    return diffDias > 7;
+  }
+
+  toggleFiltroStatusPagamento(id: StatusCobrancaDerivado): void {
+    if (this.statusPagamentoSelecionados.has(id)) {
+      this.statusPagamentoSelecionados.delete(id);
+    } else {
+      this.statusPagamentoSelecionados.add(id);
+    }
+    this.pagina = 1;
+  }
+
+  filtroStatusAtivo(id: StatusCobrancaDerivado): boolean {
+    return this.statusPagamentoSelecionados.has(id);
+  }
+
+  limparFiltrosStatusPagamento(): void {
+    this.statusPagamentoSelecionados.clear();
+    this.pagina = 1;
   }
 
   valorExibicao(g: ComandaGrupo): number | null {
@@ -847,6 +1026,8 @@ export class ComandasComponent implements OnInit, OnDestroy {
   abrirDrawerComanda(g: ComandaGrupo, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
+    this.menuAbertoParaId = null;
+    this.fecharPainelBusca();
     const idAt = this.idAtendimento(g);
     const cid = this.idCliente(g) ?? '';
     if (!idAt || !cid) return;
@@ -862,13 +1043,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
       dataYmd: g.data,
       linhasSnapshot: [],
     };
-    this.comandaPainelAberto = true;
-    this.comandaDrawerPanelOpen = false;
-    this.bloquearScrollPagina();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        this.comandaDrawerPanelOpen = true;
-      });
+    this.abrirDrawerComAnimacao(() => {
+      this.comandaPainelAberto = true;
+    }, (open) => {
+      this.comandaDrawerPanelOpen = open;
     });
   }
 
@@ -938,6 +1116,117 @@ export class ComandasComponent implements OnInit, OnDestroy {
   onComandaExcluida(): void {
     this.fecharComandaDrawer();
     this.carregar();
+  }
+
+  // ----- Drawer de edição do agendamento (a partir do botão Editar) ---------
+
+  /**
+   * Abre o drawer já existente `app-agenda-novo` em modo modal/edição com o
+   * `id_atendimento` da comanda actual. Mantém a comanda aberta por baixo;
+   * ao salvar/cancelar volta ao drawer da comanda recarregada.
+   */
+  /**
+   * Rodapé «Salvar»: com o overlay do editor aberto não dá para premir este botão —
+   * dispara `salvar()` no `app-agenda-novo` quando o editor já está por cima da comanda.
+   */
+  onSalvarDesdeDrawerComanda(): void {
+    if (this.editAgendamentoAberto && this.agendaEditComandaRef) {
+      this.agendaEditComandaRef.salvar();
+      return;
+    }
+    this.onEditarAgendamentoDesdeComanda();
+  }
+
+  onEditarAgendamentoDesdeComanda(): void {
+    const ctx = this.comandaDrawerContexto;
+    const idAt = ctx?.idAtendimento?.trim();
+    const ymd = (ctx?.dataYmd ?? '').trim();
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.editAgendamentoCtx = {
+      data: ymd,
+      profissional_id: 0,
+      id_atendimento: idAt,
+    };
+    this.abrirDrawerComAnimacao(
+      () => {
+        this.editAgendamentoAberto = true;
+      },
+      (open) => {
+        this.editAgendamentoPanelOpen = open;
+      },
+    );
+  }
+
+  fecharEditAgendamento(): void {
+    if (!this.editAgendamentoAberto) return;
+    this.editAgendamentoPanelOpen = false;
+    if (this.editAgendamentoCloseTimer != null) {
+      clearTimeout(this.editAgendamentoCloseTimer);
+    }
+    this.editAgendamentoCloseTimer = setTimeout(() => {
+      this.editAgendamentoCloseTimer = null;
+      this.editAgendamentoAberto = false;
+      this.editAgendamentoCtx = null;
+    }, DRAWER_ANIM_MS);
+  }
+
+  /** Após salvar agendamento: fecha drawer de edição e recarrega a lista + drawer da comanda. */
+  onSalvoEditAgendamento(): void {
+    this.fecharEditAgendamento();
+    this.editReloadKey++;
+    this.carregar();
+    /** Re-abre o contexto da comanda forçando refresh dos dados. */
+    if (this.comandaPainelAberto && this.comandaDrawerContexto) {
+      const ctx = { ...this.comandaDrawerContexto };
+      this.comandaDrawerContexto = null;
+      queueMicrotask(() => {
+        this.comandaDrawerContexto = ctx;
+        /**
+         * Em alguns ambientes o save do agendamento e a leitura da comanda
+         * podem competir por timing; forçamos refresh logo após reabrir.
+         */
+        setTimeout(() => this.comandaDrawerRef?.recarregarDadosComanda(), 220);
+        setTimeout(() => this.comandaDrawerRef?.recarregarDadosComanda(), 700);
+      });
+    }
+  }
+
+  // ----- Sub-drawer Faturar -------------------------------------------------
+
+  onAbrirFaturarComanda(ev: {
+    idAtendimento: string;
+    resumo: ComandaResumoPagamentos;
+  }): void {
+    const ctx = this.comandaDrawerContexto;
+    const nomeCliente = ctx?.cliente?.nome ?? '';
+    this.faturarCtx = {
+      idAtendimento: ev.idAtendimento,
+      resumo: ev.resumo,
+      nomeCliente,
+    };
+    this.abrirDrawerComAnimacao(
+      () => {
+        this.faturarDrawerAberto = true;
+      },
+      (open) => {
+        this.faturarDrawerPanelOpen = open;
+      },
+    );
+  }
+
+  fecharFaturarDrawer(): void {
+    if (!this.faturarDrawerAberto) return;
+    this.faturarDrawerPanelOpen = false;
+    if (this.faturarDrawerCloseTimer != null) {
+      clearTimeout(this.faturarDrawerCloseTimer);
+    }
+    this.faturarDrawerCloseTimer = setTimeout(() => {
+      this.faturarDrawerCloseTimer = null;
+      this.faturarDrawerAberto = false;
+      this.faturarCtx = null;
+      this.comandaDrawerRef?.recarregarAposFaturar();
+      this.carregar();
+    }, DRAWER_ANIM_MS);
   }
 
   fecharClienteDrawer(): void {
@@ -1087,9 +1376,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       const ymd = (a.data || '').slice(0, 10);
       const idAt = String(a.id || '').trim();
       const nome = (a.nomeCliente || '').trim().toLowerCase();
-      const key = idAt
-        ? `${ymd}\u0001${idAt}`
-        : `${ymd}\u0001legacy:${nome}:${legacyIdx++}`;
+      const key = idAt ? `id:${idAt}` : `${ymd}\u0001legacy:${nome}:${legacyIdx++}`;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(a);
     }

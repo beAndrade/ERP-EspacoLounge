@@ -10,6 +10,9 @@ import {
   CabeloCatalogoItem,
   CaixaDiaResumo,
   CategoriaFinanceiraItem,
+  ComandaPagamentoItem,
+  ComandaResumoPagamentos,
+  CriarComandaPagamentoPayload,
   FolhaListaItem,
   RecalcularFolhaComissoesResposta,
   Cliente,
@@ -425,6 +428,67 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  /** Lista os pagamentos da comanda + resumo financeiro derivado. */
+  listComandaPagamentos(
+    idAtendimento: string,
+  ): Observable<{
+    items: ComandaPagamentoItem[];
+    resumo: ComandaResumoPagamentos;
+  }> {
+    return this.http
+      .get<
+        ApiResponse<{
+          items: ComandaPagamentoItem[];
+          resumo: ComandaResumoPagamentos;
+        }>
+      >(
+        this.url(
+          `/api/comandas/${encodeURIComponent(idAtendimento)}/pagamentos`,
+        ),
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  /**
+   * Cria 1 pagamento (parcial ou total) na comanda. A API gera a movimentação
+   * financeira correspondente e devolve o resumo atualizado.
+   */
+  criarComandaPagamento(
+    idAtendimento: string,
+    payload: CriarComandaPagamentoPayload,
+  ): Observable<{
+    pagamento: ComandaPagamentoItem;
+    resumo: ComandaResumoPagamentos;
+  }> {
+    return this.http
+      .post<
+        ApiResponse<{
+          pagamento: ComandaPagamentoItem;
+          resumo: ComandaResumoPagamentos;
+        }>
+      >(
+        this.url(
+          `/api/comandas/${encodeURIComponent(idAtendimento)}/pagamentos`,
+        ),
+        payload,
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  /** Remove 1 pagamento + sua movimentação. Devolve o resumo atualizado. */
+  excluirComandaPagamento(
+    idAtendimento: string,
+    pagamentoId: number,
+  ): Observable<{ resumo: ComandaResumoPagamentos }> {
+    return this.http
+      .delete<ApiResponse<{ resumo: ComandaResumoPagamentos }>>(
+        this.url(
+          `/api/comandas/${encodeURIComponent(idAtendimento)}/pagamentos/${pagamentoId}`,
+        ),
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
   private normalizeAtendimento(raw: Record<string, unknown>): AtendimentoListaItem {
     const descricaoApi = String(raw['Descrição'] ?? raw['Descricao'] ?? '').trim();
     const descManual = String(
@@ -535,6 +599,20 @@ export class SheetsApiService {
             o['pacote_id'] != null && Number.isFinite(Number(o['pacote_id']))
               ? Number(o['pacote_id'])
               : null;
+          const valor_unitario =
+            o['valor_unitario'] != null && String(o['valor_unitario']).trim()
+              ? String(o['valor_unitario']).trim()
+              : null;
+          const descontoItem =
+            o['desconto'] != null && String(o['desconto']).trim()
+              ? String(o['desconto']).trim()
+              : null;
+          const totalLinhaRaw = o['total_linha'];
+          const total_linha =
+            totalLinhaRaw != null &&
+            Number.isFinite(Number(totalLinhaRaw))
+              ? Number(totalLinhaRaw)
+              : null;
           return {
             ...base,
             pacote,
@@ -542,6 +620,9 @@ export class SheetsApiService {
             detalhes,
             regra_mega_id,
             pacote_id,
+            valor_unitario,
+            desconto: descontoItem,
+            total_linha,
           } as AtendimentoItemCatalogo;
         })
         .filter(Boolean) as AtendimentoItemCatalogo[];
@@ -563,6 +644,23 @@ export class SheetsApiService {
       fimRaw != null && String(fimRaw).trim()
         ? String(fimRaw).trim()
         : null;
+
+    /** Campos derivados pela API (resumo de pagamentos parciais). */
+    const totalBruto = this.parseNumberOrUndef(raw['total_bruto']);
+    const total = this.parseNumberOrUndef(raw['total']);
+    const descontoNum = this.parseNumberOrUndef(raw['desconto_num']);
+    const totalPago = this.parseNumberOrUndef(raw['total_pago']);
+    const saldo = this.parseNumberOrUndef(raw['saldo']);
+    const statusCobrancaRaw = String(raw['status_cobranca'] ?? '')
+      .trim()
+      .toLowerCase();
+    const statusCobranca: AtendimentoListaItem['status_cobranca'] | undefined =
+      statusCobrancaRaw === 'aberto' ||
+      statusCobrancaRaw === 'pendente' ||
+      statusCobrancaRaw === 'parcial' ||
+      statusCobrancaRaw === 'pago'
+        ? statusCobrancaRaw
+        : undefined;
 
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
@@ -590,7 +688,19 @@ export class SheetsApiService {
       pagamentoMetodo,
       agenda_status,
       agenda_cor,
+      total_bruto: totalBruto,
+      total,
+      desconto_num: descontoNum,
+      total_pago: totalPago,
+      saldo,
+      status_cobranca: statusCobranca,
     };
+  }
+
+  private parseNumberOrUndef(v: unknown): number | undefined {
+    if (v == null || v === '') return undefined;
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : undefined;
   }
 
   /** Lê método de pagamento gravado na linha (várias chaves possíveis na API / planilha). */

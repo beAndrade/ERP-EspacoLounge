@@ -141,6 +141,27 @@
       "when": 1775697931000,
       "tag": "0019_atendimentos_agenda_status_cor",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1775697932000,
+      "tag": "0020_comanda_pagamentos",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1775697933000,
+      "tag": "0021_atendimentos_pedido_recorrencia",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1775697934000,
+      "tag": "0022_atendimento_itens_valor_desconto",
+      "breakpoints": true
     }
   ]
 }

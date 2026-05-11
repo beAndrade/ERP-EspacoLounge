@@ -1,7 +1,7 @@
 /**
  * Regras alinhadas a apps-script/Code.gs (createAtendimento_ e auxiliares).
  */
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { descricaoParaListaLinha } from '../lib/descricao-lista';
 import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
@@ -34,10 +34,23 @@ import {
   toNumberPt,
   totalLiquidoConfirmacao,
 } from './finance-domain';
+import { getResumosPorAtendimento } from './comanda-pagamentos-domain';
+import { criarPagamentoComanda, getResumoComanda } from './comanda-pagamentos-domain';
 import { resolverPrecoUnitarioProduto } from './produtos-preco';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 
-export type CreateAtendimentoPayload =
+type RecorrenciaCriacaoOpcional = {
+  id_recorrencia?: string;
+  ordem_recorrencia?: number;
+};
+type AtendimentoIdCriacaoOpcional = {
+  id_atendimento?: string;
+};
+type DescontoCriacaoOpcional = {
+  desconto?: string;
+};
+
+export type CreateAtendimentoPayload = (
   | {
       tipo: 'Serviço';
       cliente_id: string;
@@ -47,12 +60,20 @@ export type CreateAtendimentoPayload =
       servico_id: string;
       tamanho?: string;
       observacao?: string;
+      /** Override do valor unitário (R$). Quando ausente, usa o catálogo. */
+      valor_unitario?: number | string | null;
+      /** Desconto aplicado ao item (R$). */
+      desconto_item?: number | string | null;
       /** Vários serviços no mesmo pedido (`id_atendimento`); cada entrada gera linha em `atendimentos` + item na pivot. */
       itens_servicos?: {
         servico_id: string;
         quantidade: number;
         profissional_id?: number | null;
         tamanho?: string;
+        /** Override do valor unitário (R$). Quando ausente, usa o catálogo. */
+        valor_unitario?: number | string | null;
+        /** Desconto aplicado ao item (R$). */
+        desconto?: number | string | null;
       }[];
     }
   | {
@@ -83,11 +104,17 @@ export type CreateAtendimentoPayload =
       observacao?: string;
       /** Quando `produtos.preco` está vazio no catálogo (obrigatório nesse caso). */
       preco_unitario?: number;
+      /** Override do valor unitário do produto (R$). */
+      valor_unitario?: number | string | null;
+      /** Desconto aplicado ao item (R$). */
+      desconto_item?: number | string | null;
       /** Vários produtos no mesmo pedido; cada entrada gera linha em `atendimentos` + item na pivot. */
       itens_produtos?: {
         produto_id: number;
         quantidade: number;
         profissional_id?: number | null;
+        valor_unitario?: number | string | null;
+        desconto?: number | string | null;
       }[];
     }
   | {
@@ -98,6 +125,8 @@ export type CreateAtendimentoPayload =
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;
+      /** Desconto aplicado ao item Cabelo (R$). */
+      desconto_item?: number | string | null;
     }
   | {
       servico_id: string;
@@ -106,10 +135,46 @@ export type CreateAtendimentoPayload =
       profissional_id?: number | null;
       tamanho?: string;
       observacao?: string;
-    };
+    }
+) &
+  RecorrenciaCriacaoOpcional &
+  AtendimentoIdCriacaoOpcional &
+  DescontoCriacaoOpcional;
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n);
+}
+
+/**
+ * Converte um valor monetário (número, string `"40,00"` ou `"40.00"`) em texto numérico
+ * adequado para colunas `numeric(14,2)` no Drizzle, ou `null` quando vazio/inválido.
+ * Valores negativos/NaN são tratados como `null`.
+ */
+function numericOrNull(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v) || v < 0) return null;
+    return v.toFixed(2);
+  }
+  let s = String(v).trim();
+  /** Texto monetário opcional vindos do cliente (ex.: "R$ 10,50"). */
+  s = s.replace(/^\s*R\$\s*/i, '').trim();
+  if (!s) return null;
+  const n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+  if (Number.isNaN(n) || n < 0) {
+    const direto = parseFloat(s);
+    if (Number.isNaN(direto) || direto < 0) return null;
+    return direto.toFixed(2);
+  }
+  return n.toFixed(2);
+}
+
+/** Mesma lógica de `numericOrNull`, devolvendo número (ou null). */
+function parseMonetarioParaNumero(v: unknown): number | null {
+  const txt = numericOrNull(v);
+  if (txt === null) return null;
+  const n = Number(txt);
+  return Number.isFinite(n) ? n : null;
 }
 
 export function ymdCompactFromDataStr(dataStr: string): string {
@@ -136,6 +201,126 @@ export function ymdCompactFromDataStr(dataStr: string): string {
 
 export function makeIdAtendimento(dataStr: string, clienteId: string): string {
   return `${ymdCompactFromDataStr(dataStr)}-${String(clienteId).trim()}`;
+}
+
+/**
+ * ID alternativo quando já existe comanda **encerrada** com o id canónico
+ * `data+cliente` no mesmo dia (evita colidir com o Caso B do plano).
+ */
+function makeIdAtendimentoOcorrencia(dataStr: string, clienteId: string): string {
+  const ymd = ymdCompactFromDataStr(dataStr);
+  const cli = String(clienteId || '')
+    .trim()
+    .replace(/\s+/g, '');
+  const stamp = Date.now().toString(36);
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `${ymd}-${cli}-${stamp}${rand}`;
+}
+
+/**
+ * Comparar `atendimentos.data` (date) com `YYYY-MM-DD` sem ambiguidades de driver.
+ */
+function sqlDataAtendimentoIgual(dataSql: string) {
+  return sql`(${atendimentos.data})::text = ${dataSql}`;
+}
+
+/**
+ * Comanda ainda agregável no mesmo dia: igual ao critério da agenda no front
+ * (`cobrancaEstaFinalizada`) — só exclui quando a cobrança já foi `finalizada`.
+ */
+function sqlComandaAbertaParaReusoAgenda() {
+  return sql`lower(trim(coalesce(${atendimentos.cobrancaStatus}, ''))) <> 'finalizada'`;
+}
+
+/**
+ * Se existir linha de atendimento do mesmo cliente na mesma data com comanda
+ * ainda aberta, reutiliza esse `id_atendimento` para novos itens no mesmo dia.
+ */
+async function findIdAtendimentoAbertoMesmoDiaCliente(
+  db: Db,
+  dataStr: string,
+  clienteId: string,
+): Promise<string | null> {
+  const cid = String(clienteId ?? '').trim();
+  if (!cid) return null;
+  const dataSql = parseDataSql(dataStr);
+
+  const [row] = await db
+    .select({ idAtendimento: atendimentos.idAtendimento })
+    .from(atendimentos)
+    .where(
+      and(
+        eq(atendimentos.idCliente, cid),
+        sqlDataAtendimentoIgual(dataSql),
+        sqlComandaAbertaParaReusoAgenda(),
+      ),
+    )
+    .limit(1);
+
+  const id = String(row?.idAtendimento ?? '').trim();
+  return id || null;
+}
+
+/**
+ * Novo id sem sufixo aleatório: `YYYYMMDD-idCliente` (ex.: `20260514-CL0005`).
+ * Só gera sufixo se esse id canónico já existir no dia para o cliente (comanda
+ * anterior já encerrada — ver {@link makeIdAtendimentoOcorrencia}).
+ */
+async function novoIdAtendimentoFallbackSemSufixoDesnecessario(
+  db: Db,
+  dataStr: string,
+  clienteId: string,
+): Promise<string> {
+  const cid = String(clienteId ?? '').trim();
+  if (!cid) {
+    return makeIdAtendimentoOcorrencia(dataStr, clienteId);
+  }
+  const baseId = makeIdAtendimento(dataStr, cid);
+  const dataSql = parseDataSql(dataStr);
+
+  const [row] = await db
+    .select({ one: atendimentos.id })
+    .from(atendimentos)
+    .where(
+      and(
+        eq(atendimentos.idCliente, cid),
+        sqlDataAtendimentoIgual(dataSql),
+        eq(atendimentos.idAtendimento, baseId),
+      ),
+    )
+    .limit(1);
+
+  if (!row) return baseId;
+  return makeIdAtendimentoOcorrencia(dataStr, clienteId);
+}
+
+function readRecorrenciaMeta(
+  p: CreateAtendimentoPayload,
+): { idRecorrencia: string | null; ordemRecorrencia: number | null } {
+  const rec = p as Record<string, unknown>;
+  const idBruto = String(rec['id_recorrencia'] ?? '').trim();
+  const ordemRaw = Number(rec['ordem_recorrencia']);
+  const ordem =
+    Number.isFinite(ordemRaw) && ordemRaw >= 1
+      ? Math.trunc(ordemRaw)
+      : null;
+  return {
+    idRecorrencia: idBruto || null,
+    ordemRecorrencia: ordem,
+  };
+}
+
+async function resolveIdAtendimentoCriacao(
+  db: Db,
+  p: CreateAtendimentoPayload,
+  dataStr: string,
+  clienteId: string,
+): Promise<string> {
+  const idExpl = String((p as Record<string, unknown>)['id_atendimento'] ?? '').trim();
+  if (idExpl) return idExpl;
+  const existente = await findIdAtendimentoAbertoMesmoDiaCliente(db, dataStr, clienteId);
+  if (existente) return existente;
+  return novoIdAtendimentoFallbackSemSufixoDesnecessario(db, dataStr, clienteId);
 }
 
 function parseDataSql(dataStr: string): string {
@@ -410,12 +595,15 @@ async function ensurePedidoHeader(
   db: Db,
   idAtendimento: string,
   idCliente: string,
+  meta?: { idRecorrencia: string | null; ordemRecorrencia: number | null },
 ): Promise<void> {
   await db
     .insert(atendimentosPedido)
     .values({
       idAtendimento,
       idCliente: idCliente.trim(),
+      idRecorrencia: meta?.idRecorrencia ?? null,
+      ordemRecorrencia: meta?.ordemRecorrencia ?? null,
     })
     .onConflictDoNothing();
 }
@@ -428,6 +616,8 @@ async function insertPivotServico(
     quantidade: number;
     profissionalId: number | null;
     tamanho: string | null;
+    valorUnitario?: number | null;
+    desconto?: number | null;
   },
 ): Promise<void> {
   const tam = o.tamanho && o.tamanho.trim() ? o.tamanho.trim() : null;
@@ -442,6 +632,8 @@ async function insertPivotServico(
     pacote: null,
     etapa: null,
     detalhes: null,
+    valorUnitario: numericOrNull(o.valorUnitario),
+    desconto: numericOrNull(o.desconto),
   });
 }
 
@@ -452,6 +644,8 @@ async function insertPivotProduto(
     produtoId: number;
     quantidade: number;
     profissionalId: number | null;
+    valorUnitario?: number | null;
+    desconto?: number | null;
   },
 ): Promise<void> {
   await db.insert(atendimentoItens).values({
@@ -465,6 +659,8 @@ async function insertPivotProduto(
     pacote: null,
     etapa: null,
     detalhes: null,
+    valorUnitario: numericOrNull(o.valorUnitario),
+    desconto: numericOrNull(o.desconto),
   });
 }
 
@@ -535,6 +731,8 @@ async function insertPivotCabelo(
     idAtendimento: string;
     detalhes: string | null;
     profissionalId: number | null;
+    valorUnitario?: number | null;
+    desconto?: number | null;
   },
 ): Promise<void> {
   const d = (o.detalhes || '').trim();
@@ -549,6 +747,8 @@ async function insertPivotCabelo(
     pacote: null,
     etapa: null,
     detalhes: d.length > 0 ? d : null,
+    valorUnitario: numericOrNull(o.valorUnitario),
+    desconto: numericOrNull(o.desconto),
   });
 }
 
@@ -583,6 +783,8 @@ function mergeItensServicoNorm(
     quantidade: number;
     profissional_id?: unknown;
     tamanho?: string;
+    valorUnitario: number | null;
+    desconto: number | null;
   }[],
 ): typeof itens {
   const map = new Map<
@@ -592,6 +794,8 @@ function mergeItensServicoNorm(
       quantidade: number;
       profissional_id?: unknown;
       tamanho?: string;
+      valorUnitario: number | null;
+      desconto: number | null;
     }
   >();
   for (const it of itens) {
@@ -604,6 +808,8 @@ function mergeItensServicoNorm(
         quantidade: it.quantidade,
         profissional_id: it.profissional_id,
         tamanho: tam || undefined,
+        valorUnitario: it.valorUnitario ?? null,
+        desconto: it.desconto ?? null,
       });
     } else {
       cur.quantidade += it.quantidade;
@@ -613,6 +819,14 @@ function mergeItensServicoNorm(
         it.profissional_id !== ''
       ) {
         cur.profissional_id = it.profissional_id;
+      }
+      if ((cur.valorUnitario == null) && it.valorUnitario != null) {
+        cur.valorUnitario = it.valorUnitario;
+      }
+      if (cur.desconto == null && it.desconto != null) {
+        cur.desconto = it.desconto;
+      } else if (cur.desconto != null && it.desconto != null) {
+        cur.desconto = cur.desconto + it.desconto;
       }
     }
   }
@@ -624,6 +838,8 @@ function mergeItensProdutoNorm(
     produtoId: number;
     quantidade: number;
     profissional_id?: unknown;
+    valorUnitario: number | null;
+    desconto: number | null;
   }[],
 ): typeof itens {
   const map = new Map<number, (typeof itens)[0]>();
@@ -639,6 +855,14 @@ function mergeItensProdutoNorm(
         it.profissional_id !== ''
       ) {
         cur.profissional_id = it.profissional_id;
+      }
+      if (cur.valorUnitario == null && it.valorUnitario != null) {
+        cur.valorUnitario = it.valorUnitario;
+      }
+      if (cur.desconto == null && it.desconto != null) {
+        cur.desconto = it.desconto;
+      } else if (cur.desconto != null && it.desconto != null) {
+        cur.desconto = cur.desconto + it.desconto;
       }
     }
   }
@@ -766,6 +990,41 @@ function readAgendaCartaoMeta(p: unknown): {
   return { agendaStatus, agendaCor };
 }
 
+function descontoCriacaoParaBD(v: unknown): string {
+  const bruto = String(v ?? '').trim();
+  if (!bruto) return '';
+  const n = toNumberPt(bruto);
+  if (n == null || n <= 0) return '';
+  return formatMoedaReciboPt(n);
+}
+
+/**
+ * Cliente Angular envia sobretudo `desconto_item` (número); `desconto` em texto é opcional.
+ * A coluna planilha `atendimentos.desconto` deve refletir qualquer dos dois quando > 0.
+ */
+function descontoNumericoCabecaPayload(rec: Record<string, unknown>): number | null {
+  const di = parseMonetarioParaNumero(rec['desconto_item']);
+  if (di != null && di > 0) return di;
+  const ds = parseMonetarioParaNumero(rec['desconto']);
+  if (ds != null && ds > 0) return ds;
+  return null;
+}
+
+function textoDescontoColunaAtendimento(
+  itemDescontoNum: number | null,
+  rec: Record<string, unknown>,
+  fromArr: boolean,
+): string {
+  if (itemDescontoNum != null && itemDescontoNum > 0) {
+    return formatMoedaReciboPt(itemDescontoNum);
+  }
+  if (!fromArr) {
+    const cab = descontoNumericoCabecaPayload(rec);
+    if (cab != null && cab > 0) return formatMoedaReciboPt(cab);
+  }
+  return '';
+}
+
 async function appendAtendimentoLinha(
   db: Db,
   o: {
@@ -790,6 +1049,7 @@ async function appendAtendimentoLinha(
     fim?: string | null;
     agendaStatus?: string | null;
     agendaCor?: string | null;
+    desconto?: string;
   },
 ): Promise<void> {
   const dataSql = parseDataSql(o.dataStr);
@@ -810,7 +1070,7 @@ async function appendAtendimentoLinha(
     valor: o.valor,
     valorManual: o.valorManual ?? '',
     comissao: normalizeComissaoParaBD(o.comissao),
-    desconto: '',
+    desconto: descontoCriacaoParaBD(o.desconto),
     descricao: o.descricao,
     descricaoManual: o.descricaoManual ?? '',
     custo: '',
@@ -873,7 +1133,8 @@ async function createAtendimentoServico(
   }
   const rec = p as Record<string, unknown>;
   const nomeCliente = await findClienteNome(db, clienteId);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
+  const idAt = await resolveIdAtendimentoCriacao(db, p, dataStr, clienteId);
+  const recorrenciaMeta = readRecorrenciaMeta(p);
   const obs = String('observacao' in p ? p.observacao || '' : '').trim();
 
   type ItemRec = {
@@ -881,6 +1142,8 @@ async function createAtendimentoServico(
     quantidade?: unknown;
     profissional_id?: unknown;
     tamanho?: unknown;
+    valor_unitario?: unknown;
+    desconto?: unknown;
   };
 
   const rawItens = rec['itens_servicos'];
@@ -891,6 +1154,8 @@ async function createAtendimentoServico(
     quantidade: number;
     profissional_id?: unknown;
     tamanho?: string;
+    valorUnitario: number | null;
+    desconto: number | null;
   }[] = [];
 
   if (fromArray) {
@@ -907,6 +1172,8 @@ async function createAtendimentoServico(
         quantidade: Math.trunc(q),
         profissional_id: it.profissional_id,
         tamanho: it.tamanho != null ? String(it.tamanho) : undefined,
+        valorUnitario: parseMonetarioParaNumero(it.valor_unitario),
+        desconto: parseMonetarioParaNumero(it.desconto),
       });
     }
     const merged = mergeItensServicoNorm(itensNorm);
@@ -924,6 +1191,10 @@ async function createAtendimentoServico(
       quantidade: 1,
       profissional_id: rec['profissional_id'],
       tamanho: 'tamanho' in p ? String(p.tamanho || '') : undefined,
+      valorUnitario: parseMonetarioParaNumero(rec['valor_unitario']),
+      desconto:
+        parseMonetarioParaNumero(rec['desconto_item']) ??
+        parseMonetarioParaNumero(rec['desconto']),
     });
   }
 
@@ -939,7 +1210,7 @@ async function createAtendimentoServico(
     throw new Error('Profissional é obrigatório (profissional_id)');
   }
 
-  await ensurePedidoHeader(db, idAt, clienteId);
+  await ensurePedidoHeader(db, idAt, clienteId, recorrenciaMeta);
 
   const agCartao = readAgendaCartaoMeta(p);
 
@@ -1013,6 +1284,12 @@ async function createAtendimentoServico(
       }
     }
 
+    const textoDescontoAtendimento = textoDescontoColunaAtendimento(
+      it.desconto,
+      rec,
+      fromArray,
+    );
+
     await appendAtendimentoLinha(db, {
       idAt,
       dataStr,
@@ -1027,18 +1304,38 @@ async function createAtendimentoServico(
       profissionalId,
       valor: valorLinha,
       comissao: comissaoLinha,
+      desconto: textoDescontoAtendimento,
       descricao: obs,
       inicio: inicioLinha,
       fim: fimLinha,
       ...agCartao,
     });
 
+    /**
+     * Quando o utilizador deixa o V.Unit em branco, persistimos o preço-base do
+     * catálogo para esta linha (preserva a fonte exibida na comanda quando o
+     * catálogo muda mais tarde).
+     */
+    const valorUnitarioParaPivot =
+      it.valorUnitario != null
+        ? it.valorUnitario
+        : vNum != null
+          ? vNum
+          : null;
+    const descontoPivotNum =
+      it.desconto != null && it.desconto > 0
+        ? it.desconto
+        : !fromArray
+          ? descontoNumericoCabecaPayload(rec)
+          : null;
     await insertPivotServico(db, {
       idAtendimento: idAt,
       servicoId: srv.id,
       quantidade: qtd,
       profissionalId,
       tamanho: vc.tamanhoParaPlanilha || null,
+      valorUnitario: valorUnitarioParaPivot,
+      desconto: descontoPivotNum,
     });
 
     linhas += 1;
@@ -1075,8 +1372,11 @@ async function createAtendimentoMega(
     throw new Error('Inclua ao menos uma etapa para Mega');
   }
   const nomeCliente = await findClienteNome(db, clienteId);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
-  await ensurePedidoHeader(db, idAt, clienteId);
+  const idAt = await resolveIdAtendimentoCriacao(db, p, dataStr, clienteId);
+  const recorrenciaMeta = readRecorrenciaMeta(p);
+  /** Mega: sem desconto por linha (apenas Serviço/Produto; desconto global na finalização da comanda). */
+  const descontoLinha = '';
+  await ensurePedidoHeader(db, idAt, clienteId, recorrenciaMeta);
   const obs = String(p.observacao || '').trim();
   const agCartao = readAgendaCartaoMeta(p);
   const pacoteCatalogoId = await findPacoteIdPorNome(db, pacote);
@@ -1143,6 +1443,7 @@ async function createAtendimentoMega(
       profissionalId: profId,
       valor: regra.valor,
       comissao: regra.comissao,
+      desconto: descontoLinha,
       descricao: obs,
       descricaoManual: obs,
       inicio: iniLine,
@@ -1200,8 +1501,11 @@ async function createAtendimentoPacote(
     throw new Error(`Pacote não encontrado na aba Pacotes: "${pacote}"`);
   }
   const nomeCliente = await findClienteNome(db, clienteId);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
-  await ensurePedidoHeader(db, idAt, clienteId);
+  const idAt = await resolveIdAtendimentoCriacao(db, p, dataStr, clienteId);
+  const recorrenciaMeta = readRecorrenciaMeta(p);
+  /** Pacote: sem desconto por linha (igual Mega). */
+  const descontoLinha = '';
+  await ensurePedidoHeader(db, idAt, clienteId, recorrenciaMeta);
   const obs = String(p.observacao || '').trim();
   const agCartao = readAgendaCartaoMeta(p);
   const pRec = p as Record<string, unknown>;
@@ -1223,6 +1527,7 @@ async function createAtendimentoPacote(
     profissionalId: profCob,
     valor: cat.preco,
     comissao: '',
+    desconto: descontoLinha,
     descricao: obs,
     descricaoManual: obs,
     inicio: null,
@@ -1292,6 +1597,7 @@ async function createAtendimentoPacote(
       profissionalId: profId,
       valor: '0',
       comissao: regra.comissao,
+      desconto: descontoLinha,
       descricao: obs,
       descricaoManual: obs,
       inicio: iniLine,
@@ -1330,7 +1636,8 @@ async function createAtendimentoProduto(
   const dataStr = String(p.data || '').trim();
   const rec = p as Record<string, unknown>;
   const nomeCliente = await findClienteNome(db, clienteId);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
+  const idAt = await resolveIdAtendimentoCriacao(db, p, dataStr, clienteId);
+  const recorrenciaMeta = readRecorrenciaMeta(p);
   const slot = parseInicioFimOpcional(rec['inicio'], rec['fim']);
   const baseObs = String(p.observacao || '').trim();
 
@@ -1338,13 +1645,21 @@ async function createAtendimentoProduto(
     produtoId: number;
     quantidade: number;
     profissional_id?: unknown;
+    valorUnitario: number | null;
+    desconto: number | null;
   };
   const rawProd = rec['itens_produtos'];
   const fromArray = Array.isArray(rawProd) && rawProd.length > 0;
   const itensNorm: ProdItem[] = [];
 
   if (fromArray) {
-    for (const it of rawProd as { produto_id?: unknown; quantidade?: unknown; profissional_id?: unknown }[]) {
+    for (const it of rawProd as {
+      produto_id?: unknown;
+      quantidade?: unknown;
+      profissional_id?: unknown;
+      valor_unitario?: unknown;
+      desconto?: unknown;
+    }[]) {
       const pid = parseInt(String(it.produto_id ?? ''), 10);
       const q = Number(it.quantidade);
       if (!pid || Number.isNaN(q) || q <= 0) {
@@ -1356,6 +1671,8 @@ async function createAtendimentoProduto(
         produtoId: pid,
         quantidade: Math.trunc(q),
         profissional_id: it.profissional_id,
+        valorUnitario: parseMonetarioParaNumero(it.valor_unitario),
+        desconto: parseMonetarioParaNumero(it.desconto),
       });
     }
     const merged = mergeItensProdutoNorm(itensNorm);
@@ -1375,6 +1692,12 @@ async function createAtendimentoProduto(
       produtoId,
       quantidade: q,
       profissional_id: rec['profissional_id'],
+      valorUnitario:
+        parseMonetarioParaNumero(rec['valor_unitario']) ??
+        parseMonetarioParaNumero(rec['preco_unitario']),
+      desconto:
+        parseMonetarioParaNumero(rec['desconto_item']) ??
+        parseMonetarioParaNumero(rec['desconto']),
     });
   }
 
@@ -1391,7 +1714,7 @@ async function createAtendimentoProduto(
     false,
   );
 
-  await ensurePedidoHeader(db, idAt, clienteId);
+  await ensurePedidoHeader(db, idAt, clienteId, recorrenciaMeta);
 
   const agCartao = readAgendaCartaoMeta(p);
 
@@ -1400,10 +1723,14 @@ async function createAtendimentoProduto(
   for (const it of itensNorm) {
     const rowP = await readProdutoRowPorId(db, it.produtoId);
     const nomeProd = String(rowP.produto || '').trim();
-    const unitNum = resolverPrecoUnitarioProduto(
-      rowP.preco,
-      rec['preco_unitario'],
-    );
+    /**
+     * Override por linha tem prioridade; senão fallback ao `preco_unitario` global
+     * (compat. com criações antigas) ou ao catálogo (`produtos.preco`).
+     */
+    const unitNum =
+      it.valorUnitario != null
+        ? it.valorUnitario
+        : resolverPrecoUnitarioProduto(rowP.preco, rec['preco_unitario']);
     if (unitNum === null || unitNum < 0) {
       throw new Error(
         `Preço não disponível para o produto "${nomeProd}". Cadastre o preço na aba Produtos ou informe o preço unitário no agendamento.`,
@@ -1424,6 +1751,11 @@ async function createAtendimentoProduto(
     obsParts.push(`Qtd: ${String(qtd).replace('.', ',')}`);
     const obs = obsParts.join(' — ');
 
+    const textoDescontoProd = textoDescontoColunaAtendimento(
+      it.desconto,
+      rec,
+      fromArray,
+    );
     await appendAtendimentoLinha(db, {
       idAt,
       dataStr,
@@ -1438,16 +1770,25 @@ async function createAtendimentoProduto(
       profissionalId,
       valor: String(valorTotal),
       comissao: '',
+      desconto: textoDescontoProd,
       descricao: obs,
       inicio: primeira ? slot.inicio : null,
       fim: primeira ? slot.fim : null,
       ...agCartao,
     });
+    const descontoPivotProd =
+      it.desconto != null && it.desconto > 0
+        ? it.desconto
+        : !fromArray
+          ? descontoNumericoCabecaPayload(rec)
+          : null;
     await insertPivotProduto(db, {
       idAtendimento: idAt,
       produtoId: it.produtoId,
       quantidade: qtd,
       profissionalId,
+      valorUnitario: unitNum,
+      desconto: descontoPivotProd,
     });
     linhas += 1;
     primeira = false;
@@ -1491,8 +1832,15 @@ async function createAtendimentoCabelo(
     throw new Error('valor é obrigatório e deve ser numérico para Cabelo');
   }
   const nomeCliente = await findClienteNome(db, clienteId);
-  const idAt = makeIdAtendimento(dataStr, clienteId);
-  await ensurePedidoHeader(db, idAt, clienteId);
+  const idAt = await resolveIdAtendimentoCriacao(db, p, dataStr, clienteId);
+  const recorrenciaMeta = readRecorrenciaMeta(p);
+  const recP = p as Record<string, unknown>;
+  const descontoCabeloNum = descontoNumericoCabecaPayload(recP);
+  const descontoLinha =
+    descontoCabeloNum != null && descontoCabeloNum > 0
+      ? formatMoedaReciboPt(descontoCabeloNum)
+      : '';
+  await ensurePedidoHeader(db, idAt, clienteId, recorrenciaMeta);
   const det = String(p.detalhes_cabelo || '').trim();
   const baseObs = String(p.observacao || '').trim();
   const obsParts: string[] = [];
@@ -1518,6 +1866,7 @@ async function createAtendimentoCabelo(
     profissionalId,
     valor: String(valorNum),
     comissao: '',
+    desconto: descontoLinha,
     descricao: obs,
     inicio: slot.inicio,
     fim: slot.fim,
@@ -1527,6 +1876,8 @@ async function createAtendimentoCabelo(
     idAtendimento: idAt,
     detalhes: obs,
     profissionalId,
+    valorUnitario: valorNum,
+    desconto: descontoCabeloNum,
   });
   return {
     id: idAt,
@@ -1620,6 +1971,20 @@ export async function listAtendimentosRaw(
     for (const row of itensRows) {
       const k = String(row.idAtendimento || '').trim();
       const arr = itensPorPedido.get(k) ?? [];
+      const valorUnitarioStr =
+        row.valorUnitario != null ? String(row.valorUnitario) : null;
+      const descontoStr = row.desconto != null ? String(row.desconto) : null;
+      const valorUnitarioNum =
+        valorUnitarioStr != null ? Number(valorUnitarioStr) : null;
+      const descontoNum = descontoStr != null ? Number(descontoStr) : 0;
+      const qtd = Number(row.quantidade ?? 0);
+      const totalLinha =
+        valorUnitarioNum != null && Number.isFinite(valorUnitarioNum)
+          ? Math.max(
+              0,
+              Math.round((qtd * valorUnitarioNum - descontoNum) * 100) / 100,
+            )
+          : null;
       arr.push({
         tipo: row.tipo,
         servico_id: row.servicoId,
@@ -1632,12 +1997,16 @@ export async function listAtendimentosRaw(
         detalhes: row.detalhes ?? null,
         regra_mega_id: row.regraMegaId ?? null,
         pacote_id: row.pacoteId ?? null,
+        valor_unitario: valorUnitarioStr,
+        desconto: descontoStr,
+        total_linha: totalLinha,
       });
       itensPorPedido.set(k, arr);
     }
   }
 
-  const primeiroRegistoPorIdAt = new Set<string>();
+  /** Resumo financeiro consolidado (total / total_pago / saldo / status) por pedido. */
+  const resumosPorId = await getResumosPorAtendimento(db, idsAt);
 
   return filtered.map((a) => {
     const dataStr = ymdFromAtendimentoDate(a.data as string | Date | null);
@@ -1647,11 +2016,8 @@ export async function listAtendimentosRaw(
         : null;
     const profNome = pid != null ? nomePorProfId.get(pid) ?? '' : '';
     const idAtKey = String(a.idAtendimento || '').trim();
-    const catalogo =
-      idAtKey && !primeiroRegistoPorIdAt.has(idAtKey)
-        ? (primeiroRegistoPorIdAt.add(idAtKey),
-          itensPorPedido.get(idAtKey) ?? [])
-        : undefined;
+    /** Catálogo completo em todas as linhas do mesmo pedido (a UI relaciona valores por linha). */
+    const catalogoLista = idAtKey ? (itensPorPedido.get(idAtKey) ?? []) : [];
     return {
       linha_id: a.id,
       'ID Atendimento': a.idAtendimento,
@@ -1684,10 +2050,24 @@ export async function listAtendimentosRaw(
       agenda_status: a.agendaStatus ?? null,
       agenda_cor: a.agendaCor ?? null,
       id: a.idAtendimento,
-      ...(catalogo !== undefined
+      ...(idAtKey
+        ? (() => {
+            const r = resumosPorId.get(idAtKey);
+            if (!r) return {};
+            return {
+              total_bruto: r.total_bruto,
+              total: r.total,
+              desconto_num: r.desconto,
+              total_pago: r.total_pago,
+              saldo: r.saldo,
+              status_cobranca: r.status,
+            };
+          })()
+        : {}),
+      ...(catalogoLista.length > 0
         ? {
-            itens_catalogo: catalogo,
-            itens: catalogo,
+            itens_catalogo: catalogoLista,
+            itens: catalogoLista,
           }
         : {}),
     };
@@ -1725,6 +2105,7 @@ export async function finalizarCobrancaPorIdAtendimento(
     }
   }
 
+  const resumoAntes = await getResumoComanda(db, id);
   let atualizadas = 0;
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
@@ -1735,7 +2116,7 @@ export async function finalizarCobrancaPorIdAtendimento(
       descricao?: string;
     } = {
       cobrancaStatus: 'finalizada',
-      pagamentoStatus: 'pendente',
+      pagamentoStatus: resumoAntes.total_pago > 0 ? 'parcial' : 'pendente',
       desconto: descontoStr,
     };
 
@@ -1805,74 +2186,58 @@ export async function confirmarPagamentoPorIdAtendimento(
     throw new Error('Método de pagamento inválido. Use Dinheiro, Pix ou Cartão.');
   }
 
-  const result = await db.transaction(async (tx) => {
-    const candidatas = await tx
-      .select()
-      .from(atendimentos)
-      .where(
-        and(
-          eq(atendimentos.idAtendimento, id),
-          eq(atendimentos.cobrancaStatus, 'finalizada'),
-        ),
-      )
-      .orderBy(asc(atendimentos.id));
+  const candidatas = await db
+    .select()
+    .from(atendimentos)
+    .where(
+      and(
+        eq(atendimentos.idAtendimento, id),
+        eq(atendimentos.cobrancaStatus, 'finalizada'),
+      ),
+    )
+    .orderBy(asc(atendimentos.id));
+  if (candidatas.length === 0) {
+    return { linhasAtualizadas: 0, movimentacaoId: null };
+  }
 
-    if (candidatas.length === 0) {
-      return { linhasAtualizadas: 0, movimentacaoId: null };
-    }
-
-    await darBaixaEstoqueProdutosDoPedido(tx as unknown as Db, id);
-
-    const updated = await tx
-      .update(atendimentos)
-      .set({
-        pagamentoStatus: 'confirmado',
-        pagamentoMetodo: metodo,
-      })
-      .where(
-        and(
-          eq(atendimentos.idAtendimento, id),
-          eq(atendimentos.cobrancaStatus, 'finalizada'),
-        ),
-      )
-      .returning({ id: atendimentos.id });
-
-    let dataMov = ymdFromAtendimentoDate(
+  await darBaixaEstoqueProdutosDoPedido(db, id);
+  const total = totalLiquidoConfirmacao(candidatas);
+  if (total <= 0) {
+    return { linhasAtualizadas: 0, movimentacaoId: null };
+  }
+  const metodoComanda =
+    metodo === 'Dinheiro'
+      ? 'dinheiro'
+      : metodo === 'Pix'
+        ? 'pix'
+        : 'cartao_credito';
+  const criado = await criarPagamentoComanda(db, id, {
+    valor: total,
+    metodo: metodoComanda,
+    parcelas: metodoComanda === 'cartao_credito' ? 1 : 1,
+    data_pagamento: ymdFromAtendimentoDate(
       candidatas[0]!.data as string | Date | null,
-    );
-    if (!dataMov) {
-      const n = new Date();
-      dataMov = `${n.getFullYear()}-${pad2(n.getMonth() + 1)}-${pad2(n.getDate())}`;
-    }
-
-    const total = totalLiquidoConfirmacao(candidatas);
-    const slug = slugCategoriaReceitaPredominante(candidatas);
-    const nomeCliente = String(candidatas[0]?.nomeCliente || '').trim();
-    /** Texto do lançamento: prefixo fixo, separador e nome da cliente quando existir. */
-    const descricao = nomeCliente
-      ? `Confirmação pagamento — ${nomeCliente}`
-      : 'Confirmação pagamento';
-
-    let movimentacaoId: number | null = null;
-    if (updated.length > 0 && total > 0) {
-      movimentacaoId = await inserirReceitaConfirmacaoPagamento(
-        tx as unknown as Db,
-        {
-          idAtendimento: id,
-          dataMov,
-          valorTotal: total,
-          categoriaSlug: slug,
-          metodoPagamento: metodo,
-          descricao,
-        },
-      );
-    }
-
-    return {
-      linhasAtualizadas: updated.length,
-      movimentacaoId,
-    };
+    ) || undefined,
+    observacao: 'Confirmação via fluxo legado',
   });
+  const movId = criado.pagamento.movimentacao_id ?? null;
+  const updated = await db
+    .update(atendimentos)
+    .set({
+      pagamentoMetodo: metodo,
+    })
+    .where(
+      and(
+        eq(atendimentos.idAtendimento, id),
+        eq(atendimentos.cobrancaStatus, 'finalizada'),
+      ),
+    )
+    .returning({ id: atendimentos.id });
+
+  const result = {
+    linhasAtualizadas: updated.length,
+    movimentacaoId: movId,
+  };
 
   if (result.linhasAtualizadas > 0) {
     await recalcularFolhaAposMudancaAtendimento(db, id);

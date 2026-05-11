@@ -35,21 +35,31 @@
       </header>
 
       <div class="nc-drawer__flow">
-        <main class="nc-main">
+        <main class="nc-main nc-main--comanda-scroll">
           <div class="nc-main__top">
-            <label class="nc-field">
+            <label class="nc-field nc-field--cliente">
               <span class="nc-field__label">Cliente</span>
-              <div class="nc-field__fake">
-                {{ contexto()?.cliente?.nome?.trim() || 'Busque por um cliente' }}
-              </div>
+              <input
+                type="text"
+                class="nc-field__input"
+                [formControl]="clienteNomeCtrl"
+                aria-label="Cliente da comanda"
+                placeholder="Busque por um cliente"
+              />
             </label>
-            <label class="nc-field">
+            <label class="nc-field nc-field--data">
               <span class="nc-field__label">Data</span>
-              <div class="nc-field__fake">{{ dataComandaExibicao() }}</div>
+              <input
+                type="text"
+                class="nc-field__input"
+                [formControl]="dataComandaCtrl"
+                aria-label="Data da comanda"
+                placeholder="DD/MM/AAAA"
+              />
             </label>
-            <label class="nc-field">
+            <label class="nc-field nc-field--numero">
               <span class="nc-field__label">Número da comanda</span>
-              <div class="nc-field__fake">
+              <div class="nc-field__fake nc-field__fake--locked" aria-readonly="true">
                 {{ contexto()?.idAtendimento?.trim() ? ('#' + (contexto()?.numeroComandaTitulo ?? 1)) : 'Número da comanda' }}
               </div>
             </label>
@@ -61,25 +71,13 @@
           >
             <div class="nc-itens__title-row">
               <h2 class="nc-itens__title">Itens da comanda</h2>
-              <button
-                type="button"
-                class="nc-itens__info"
-                aria-label="Informação sobre itens"
-                title="A comanda copia o pedido do agendamento; pode acrescentar serviços extra aqui antes de faturar. Quantidade, valores e totais por linha."
+              <span
+                class="nc-itens__status"
+                [class]="classeStatus()"
+                aria-live="polite"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4M12 8h.01" stroke-linecap="round" />
-                </svg>
-              </button>
+                {{ rotuloStatus() }}
+              </span>
             </div>
 
             <div class="nc-itens__body">
@@ -91,240 +89,156 @@
                 }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
-                    Com um atendimento aberto, a comanda preenche com os itens agendados; pode acrescentar
-                    serviços extra na hora. Sem atendimento, preencha as linhas à mão.
+                    A comanda exibe os itens do agendamento. Use «Editar» para abrir o agendamento e adicionar/alterar itens.
                   </p>
                 }
 
-                <form
-                  class="nc-comanda-servicos-form"
-                  [formGroup]="itensComandaForm"
-                  (ngSubmit)="$event.preventDefault()"
-                >
-                  <div class="nc-comanda-servicos" formArrayName="linhas">
-                    @for (ctrl of linhasComandaArray.controls; track $index; let i = $index) {
-                      <div
-                        class="servico-row servico-row--drawer servico-row--comanda"
-                        [formGroupName]="i"
-                      >
-                        <div class="servico-row__field servico-row__field--tipo-linha">
-                          <span>Tipo de linha</span>
-                          <app-saas-select
-                            [showFilter]="false"
-                            formControlName="itemTipo"
-                            [options]="opcoesTiposLinha()"
-                            placeholder="Tipo…"
-                            aria-label="Tipo de linha"
-                            (picked)="onItemTipoChange(i)"
-                          />
-                        </div>
-
-                        @if (ctrl.get('itemTipo')?.value === 'Serviço') {
-                          <div class="servico-row__field servico-row__field--descricao">
-                            <span>Descrição</span>
-                            <app-saas-select
-                              [showFilter]="false"
-                              formControlName="servico_id"
-                              [options]="opcoesServicosCatalogo()"
-                              placeholder="Selecionar serviço"
-                              aria-label="Serviço"
-                              (picked)="onServicoOuTamanhoComandaChange(i)"
-                            />
-                          </div>
-                          @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
-                            <div class="servico-row__field servico-row__field--tamanho">
-                              <span>Tamanho (preço)</span>
-                              <app-saas-select
-                                [showFilter]="false"
-                                formControlName="tamanho"
-                                [options]="opcoesTamanhosSelect()"
-                                placeholder="Tamanho…"
-                                aria-label="Tamanho (preço)"
-                                (picked)="onServicoOuTamanhoComandaChange(i)"
-                              />
-                            </div>
+                <ul class="nc-leitura" role="list">
+                  @for (b of blocosLeitura(); track $index; let i = $index) {
+                    @let blocStripe = faixaPrecoBloc(b);
+                    <li class="nc-leitura__item">
+                      <div class="nc-leitura__row">
+                        <span class="nc-leitura__tag" [attr.data-tipo]="b.tipo">
+                          {{ b.tipo }}
+                        </span>
+                        <div class="nc-leitura__info">
+                          <span class="nc-leitura__titulo">{{ b.titulo }}</span>
+                          @if (b.subtitulo) {
+                            <span class="nc-leitura__sub">{{ b.subtitulo }}</span>
                           }
-                          <div class="servico-row__field servico-row__field--pro">
-                            <span>Profissional</span>
-                            <app-saas-select
-                              [showFilter]="false"
-                              formControlName="profissional"
-                              [options]="opcoesProfissionaisSelect()"
-                              [useNumericOutput]="true"
-                              placeholder="Selecione…"
-                              aria-label="Profissional"
-                            />
-                          </div>
-                        } @else {
-                          <div class="servico-row__field servico-row__field--descricao">
-                            <span>Descrição</span>
-                            <input
-                              type="text"
-                              class="nc-comanda-iten__text"
-                              formControlName="resumoNaoServico"
-                              placeholder="Descrição do item"
-                            />
-                          </div>
-                          <div class="servico-row__field servico-row__field--pro">
-                            <span>Profissional</span>
-                            <app-saas-select
-                              [showFilter]="false"
-                              formControlName="profissional"
-                              [options]="opcoesProfissionaisSelect()"
-                              [useNumericOutput]="true"
-                              placeholder="Selecione…"
-                              aria-label="Profissional"
-                            />
+                        </div>
+                        @if (blocStripe) {
+                          <div
+                            class="nc-leitura__money nc-leitura__money--end"
+                            aria-label="Valores do item"
+                          >
+                            @if (blocStripe.mostrarQtd) {
+                              <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-qtd">
+                                <span class="nc-leitura__money-lbl">Qtd.</span>
+                                <span class="nc-leitura__money-val">{{ blocStripe.textoQtd }}</span>
+                              </div>
+                            }
+                            <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-unit">
+                              <span class="nc-leitura__money-lbl">V.&nbsp;unit.</span>
+                              <span class="nc-leitura__money-val">{{ blocStripe.unitario }}</span>
+                            </div>
+                            <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-desc">
+                              <span class="nc-leitura__money-lbl">Desc.</span>
+                              <span class="nc-leitura__money-val">{{ blocStripe.desconto }}</span>
+                            </div>
+                            <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-total">
+                              <span class="nc-leitura__money-lbl">Total</span>
+                              <span class="nc-leitura__money-val">{{ blocStripe.total }}</span>
+                            </div>
                           </div>
                         }
-
-                        <div class="servico-row__field servico-row__field--comanda-qtd">
-                          <span>Qtde.</span>
-                          <input
-                            type="number"
-                            class="nc-comanda-iten__text"
-                            formControlName="quantidade"
-                            min="0.01"
-                            step="any"
-                            [attr.aria-label]="'Quantidade linha ' + (i + 1)"
-                          />
-                        </div>
-                        <div class="servico-row__field servico-row__field--comanda-valor">
-                          <span>Valor unitário</span>
-                          <input
-                            type="text"
-                            class="nc-comanda-iten__text"
-                            formControlName="valorUnitStr"
-                            inputmode="decimal"
-                            [attr.aria-label]="'Valor unitário linha ' + (i + 1)"
-                          />
-                        </div>
-                        <div class="servico-row__field servico-row__field--comanda-desconto">
-                          <span>Desconto</span>
-                          <div class="nc-comanda-iten__desconto">
-                            <span class="nc-comanda-iten__rs" aria-hidden="true">R$</span>
-                            <input
-                              type="text"
-                              class="nc-comanda-iten__text nc-comanda-iten__text--desconto"
-                              formControlName="descontoStr"
-                              inputmode="decimal"
-                              [attr.aria-label]="'Desconto linha ' + (i + 1)"
-                            />
-                          </div>
-                        </div>
-                        <div class="servico-row__field servico-row__field--comanda-total">
-                          <span>Total</span>
-                          <div
-                            class="nc-comanda-iten__total"
-                            [attr.aria-label]="'Total linha ' + (i + 1)"
-                          >
-                            {{ totalLinhaForm(i) }}
-                          </div>
-                        </div>
-
-                        <div
-                          class="servico-row__actions servico-row__actions--drawer servico-row__actions--comanda"
-                        >
-                          <button
-                            type="button"
-                            class="btn btn--icon-line-add"
-                            (click)="adicionarLinhaComanda()"
-                            aria-label="Adicionar linha"
-                            title="Adicionar linha"
-                          >
-                            +
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn--icon-danger"
-                            [disabled]="linhasComandaArray.length < 2"
-                            (click)="removerLinhaComanda(i)"
-                            [attr.aria-label]="'Remover linha ' + (i + 1)"
-                            [title]="
-                              linhasComandaArray.length > 1
-                                ? 'Remover linha'
-                                : 'Só é possível remover com mais do que uma linha'
-                            "
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              aria-hidden="true"
-                            >
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                              <path d="M3 6h18" />
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                          </button>
-                        </div>
                       </div>
+                      @if (b.etapas.length > 0) {
+                        <ul class="nc-leitura__etapas" role="list">
+                          @for (e of b.etapas; track $index) {
+                            @let etStripe = faixaPrecoLinha(e.linhaEtapa);
+                            <li class="nc-leitura__etapa nc-leitura__etapa--money">
+                              <div class="nc-leitura__etapa-row">
+                                <div class="nc-leitura__etapa-text">
+                                  <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
+                                  @if (e.subtitulo) {
+                                    <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                  }
+                                </div>
+                                @if (etStripe) {
+                                  <div
+                                    class="nc-leitura__money nc-leitura__money--inline nc-leitura__money--end"
+                                    aria-label="Valores da etapa"
+                                  >
+                                    @if (etStripe.mostrarQtd) {
+                                      <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-qtd">
+                                        <span class="nc-leitura__money-lbl">Qtd.</span>
+                                        <span class="nc-leitura__money-val">{{ etStripe.textoQtd }}</span>
+                                      </div>
+                                    }
+                                    <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-unit">
+                                      <span class="nc-leitura__money-lbl">V.&nbsp;unit.</span>
+                                      <span class="nc-leitura__money-val">{{ etStripe.unitario }}</span>
+                                    </div>
+                                    <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-desc">
+                                      <span class="nc-leitura__money-lbl">Desc.</span>
+                                      <span class="nc-leitura__money-val">{{ etStripe.desconto }}</span>
+                                    </div>
+                                    <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-total">
+                                      <span class="nc-leitura__money-lbl">Total</span>
+                                      <span class="nc-leitura__money-val">{{ etStripe.total }}</span>
+                                    </div>
+                                  </div>
+                                }
+                              </div>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </li>
+                  } @empty {
+                    @if (!carregandoItens) {
+                      <li class="nc-leitura__vazio">Nenhum item neste atendimento.</li>
                     }
-                  </div>
-                </form>
+                  }
+                </ul>
+
+                <div class="nc-leitura__actions">
+                  <button
+                    type="button"
+                    class="btn btn--editar-agendamento"
+                    [disabled]="!podeEditar()"
+                    (click)="abrirEditarAgendamento()"
+                  >
+                    Editar
+                  </button>
+                </div>
               }
             </div>
 
             <div class="nc-itens-summary" aria-label="Resumo da comanda">
               <div class="nc-itens-summary__row">
-                <span class="nc-itens-summary__label">Desconto</span>
-                <input
-                  class="nc-itens-summary__input"
-                  type="text"
-                  readonly
-                  [value]="brl(resumoComandaTotais().desconto)"
-                  aria-label="Soma de descontos"
-                />
-              </div>
-              <div class="nc-itens-summary__row">
-                <span class="nc-itens-summary__label">Crédito</span>
-                <input
-                  class="nc-itens-summary__input"
-                  type="text"
-                  readonly
-                  [value]="brl(resumoComandaTotais().credito)"
-                  aria-label="Crédito"
-                />
-              </div>
-              <div class="nc-itens-summary__row">
-                <span class="nc-itens-summary__label">Cashback</span>
+                <span class="nc-itens-summary__label">Subtotal</span>
                 <div
                   class="nc-itens-summary__input nc-itens-summary__input--readonly"
-                  [attr.aria-label]="'Cashback: ' + brl(resumoComandaTotais().cashback)"
+                  [attr.aria-label]="'Subtotal: ' + brl(resumoPagamentos.total_bruto)"
                 >
-                  {{ brl(resumoComandaTotais().cashback) }}
+                  {{ brl(resumoPagamentos.total_bruto) }}
+                </div>
+              </div>
+              <div class="nc-itens-summary__row">
+                <span class="nc-itens-summary__label">Desconto</span>
+                <div
+                  class="nc-itens-summary__input nc-itens-summary__input--readonly"
+                  [attr.aria-label]="'Desconto: ' + brl(resumoPagamentos.desconto)"
+                >
+                  {{ brl(resumoPagamentos.desconto) }}
                 </div>
               </div>
               <div class="nc-itens-summary__row nc-itens-summary__row--total">
                 <span class="nc-itens-summary__label">Total</span>
                 <div
                   class="nc-itens-summary__input nc-itens-summary__input--readonly nc-itens-summary__input--total"
-                  [attr.aria-label]="'Total: ' + brl(resumoComandaTotais().total)"
+                  [attr.aria-label]="'Total: ' + brl(resumoPagamentos.total)"
                 >
-                  {{ brl(resumoComandaTotais().total) }}
+                  {{ brl(resumoPagamentos.total) }}
                 </div>
               </div>
             </div>
           </section>
-
-          <div class="nc-drawer__obs">
-            <label class="nc-field nc-field--obs">
-              <span class="nc-field__label">Observações</span>
-              <textarea
-                class="nc-obs-textarea"
-                rows="3"
-                placeholder="Escreva aqui"
-                aria-label="Observações da comanda"
-              ></textarea>
-            </label>
-          </div>
         </main>
+      </div>
+
+      <div class="nc-drawer__obs">
+        <label class="nc-field nc-field--obs">
+          <span class="nc-field__label">Observações</span>
+          <textarea
+            class="nc-obs-textarea"
+            rows="3"
+            placeholder="Escreva aqui"
+            aria-label="Observações da comanda"
+          ></textarea>
+        </label>
       </div>
     </div>
   </div>
@@ -409,7 +323,6 @@
         <button type="button" class="btn btn-footer btn-footer--ghost" (click)="fechar.emit()">
           Cancelar
         </button>
-        <button type="button" class="btn btn-footer btn-footer--faturar">Faturar</button>
         @if (podeExcluirComanda()) {
           <button
             type="button"
@@ -422,7 +335,22 @@
             <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
           </button>
         }
-        <button type="button" class="btn btn-footer btn-footer--primary-nc">Salvar</button>
+        <button
+          type="button"
+          class="btn btn-footer btn-footer--primary-nc"
+          [disabled]="!podeSalvarComandaRodape()"
+          (click)="gravarRodape()"
+        >
+          Salvar
+        </button>
+        <button
+          type="button"
+          class="btn btn-footer btn-footer--faturar"
+          [disabled]="!podeFaturar()"
+          (click)="abrirFaturar()"
+        >
+          Faturar
+        </button>
       </div>
     </div>
   </footer>

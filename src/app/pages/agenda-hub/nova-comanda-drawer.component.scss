@@ -16,6 +16,16 @@
   --drawer-stroke: #ececec;
   --touch-min: 40px;
   --radius: 14px;
+  --drawer-field-h: 38px;
+  --drawer-field-stroke: #f1f1f1;
+  --drawer-field-stroke-hover: #7a88ff;
+  --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+  --comanda-col-tipo: 120px;
+  --comanda-col-pro: clamp(6.1rem, 9.2vw, 7.35rem);
+  --comanda-col-qtd: 58.06px;
+  --comanda-col-money: 110px;
+  /** Largura da coluna da faixa monetária (igual em todas as linhas do mesmo painel). */
+  --nc-leitura-money-col: minmax(17.5rem, 48%);
   padding-inline: 0;
 }
 
@@ -169,11 +179,16 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+
+  /** Conteúdo rolável já está em `.nc-drawer__flow`; manter esta coluna compatível com flex shrink. */
+  &--comanda-scroll {
+    min-height: 0;
+  }
 }
 
 .nc-main__top {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.75rem 1rem;
 }
 
@@ -191,6 +206,15 @@
 
   &--full {
     grid-column: 1 / -1;
+  }
+
+  &--cliente {
+    grid-column: span 1;
+  }
+
+  &--data,
+  &--numero {
+    grid-column: span 1;
   }
 }
 
@@ -213,6 +237,45 @@
   &--area {
     min-height: 4.5rem;
     align-content: start;
+  }
+
+  &--locked {
+    cursor: not-allowed;
+  }
+}
+
+.nc-field__input {
+  box-sizing: border-box;
+  min-height: var(--touch-min);
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--drawer-field-stroke);
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  color: #292524;
+
+  &::placeholder {
+    color: rgba(0, 0, 0, 0.38);
+  }
+
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear,
+    background-color 0.2s linear;
+
+  &:hover {
+    border-color: var(--drawer-field-stroke-hover);
+    outline: 0;
+    background-color: #ffffff;
+  }
+
+  &:focus {
+    outline: 0;
+    border-color: var(--drawer-field-stroke-hover);
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+    background-color: #ffffff;
   }
 }
 
@@ -556,40 +619,71 @@
   flex: 0 0 8.5rem;
   width: 8.5rem;
   max-width: 100%;
-  min-height: 38px;
+  min-height: var(--drawer-field-h);
   padding: 0.35rem 0.55rem;
-  border: 1px solid var(--drawer-stroke, #ececec);
+  border: 1px solid var(--drawer-field-stroke);
   border-radius: 10px;
   background: #fff;
   font: inherit;
   font-size: 14px;
-  color: #292524;
-  text-align: right;
+  color: #0000008c;
+  text-align: left;
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear,
+    background-color 0.2s linear;
 
   &:where(input) {
     cursor: default;
+
+    &:hover {
+      border-color: var(--drawer-field-stroke-hover);
+      outline: 0;
+      background-color: #ffffff;
+    }
+
+    &:focus {
+      border-color: var(--drawer-field-stroke-hover);
+      box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+      outline: 0;
+      background-color: #ffffff;
+    }
+  }
+
+  &:where(input:not([readonly])) {
+    cursor: text;
   }
 
   &--readonly {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     background: #f5f5f4;
     border-color: #e7e5e4;
-    color: #44403c;
+    color: #0000008c;
+    cursor: not-allowed;
+
+    &:hover {
+      border-color: var(--drawer-field-stroke-hover);
+      background: #f5f5f5;
+    }
   }
 
   &--total {
-    font-weight: 700;
+    font-weight: 400;
   }
 }
 
-/** Observações: no fluxo do scroll (abaixo do resumo), sem traço superior. */
+/**
+ * Observações: fora da área com scroll (`nc-drawer__flow`), junto ao rodapé de ações
+ * (`nc-footer` no `:host`).
+ */
 .nc-drawer__obs {
   flex: 0 0 auto;
-  padding: 0.75rem 0 0;
+  padding: 0.55rem 0 0;
   margin-top: 0;
-  border-top: none;
+  border-top: 1px solid var(--drawer-stroke, #ececec);
+  background: #fff;
 }
 
 .nc-field--obs {
@@ -602,22 +696,33 @@
   width: 100%;
   min-height: 4.5rem;
   padding: 0.55rem 0.75rem;
-  border: 1px solid var(--drawer-stroke, #ececec);
+  border: 1px solid var(--drawer-field-stroke);
   border-radius: var(--radius);
   background: #fff;
   font: inherit;
   font-size: 15px;
   color: #292524;
   resize: vertical;
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear,
+    background-color 0.2s linear;
 
   &::placeholder {
     color: rgba(0, 0, 0, 0.38);
   }
 
+  &:hover {
+    border-color: var(--drawer-field-stroke-hover);
+    outline: 0;
+    background-color: #ffffff;
+  }
+
   &:focus {
-    outline: 2px solid rgba(80, 90, 251, 0.35);
-    outline-offset: 0;
-    border-color: #505afb;
+    outline: 0;
+    border-color: var(--drawer-field-stroke-hover);
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+    background-color: #ffffff;
   }
 }
 
@@ -1014,46 +1119,56 @@
 .servico-row--comanda.servico-row--drawer {
   flex-wrap: wrap;
 
+  /*
+   * MEDIDAS CONTRATUAIS DO DRAWER (NAO ALTERAR SEM PEDIDO EXPLICITO DO USUARIO):
+   * - Todos os campos dos itens com altura 38px.
+   * - Qtde = 58.06px.
+   * - Tipo de linha = 120px.
+   * - Tamanho = 100px.
+   * - Valor unitario / Desconto / Total = 110px em telas grandes.
+   */
   .servico-row__field--tipo-linha {
-    flex: 0 0 var(--drawer-tipo-linha-col);
-    width: var(--drawer-tipo-linha-col);
-    min-width: var(--drawer-tipo-linha-col);
-    max-width: var(--drawer-tipo-linha-col);
+    flex: 0 0 var(--comanda-col-tipo);
+    width: var(--comanda-col-tipo);
+    min-width: var(--comanda-col-tipo);
+    max-width: var(--comanda-col-tipo);
     box-sizing: border-box;
+    padding-left: 2px;
   }
 
   .servico-row__field--descricao {
-    flex: 2.2 1 6rem;
-    min-width: 6rem;
+    flex: 2.45 1 9.5rem;
+    min-width: 9.5rem;
   }
 
   .servico-row__field--tamanho {
-    flex: 0 0 clamp(7.25rem, 10%, 8.5rem);
+    flex: 0 0 100px;
+    min-width: 100px;
   }
 
   .servico-row__field--pro {
-    flex: 1.15 1 5.25rem;
-    min-width: 5.25rem;
+    flex: 0 0 var(--comanda-col-pro);
+    min-width: var(--comanda-col-pro);
   }
 
   .servico-row__field--comanda-qtd {
-    flex: 0 0 3.35rem;
-    min-width: 2.8rem;
+    flex: 0 0 var(--comanda-col-qtd);
+    min-width: var(--comanda-col-qtd);
   }
 
   .servico-row__field--comanda-valor {
-    flex: 0 0 5.5rem;
-    min-width: 4.5rem;
+    flex: 0 0 var(--comanda-col-money);
+    min-width: var(--comanda-col-money);
   }
 
   .servico-row__field--comanda-desconto {
-    flex: 0 0 6.25rem;
-    min-width: 5.25rem;
+    flex: 0 0 var(--comanda-col-money);
+    min-width: var(--comanda-col-money);
   }
 
   .servico-row__field--comanda-total {
-    flex: 0 0 5.25rem;
-    min-width: 4.5rem;
+    flex: 0 0 var(--comanda-col-money);
+    min-width: var(--comanda-col-money);
   }
 
   .servico-row__actions--comanda {
@@ -1064,14 +1179,32 @@
 .nc-comanda-iten__text {
   box-sizing: border-box;
   width: 100%;
-  min-height: 40px;
+  height: var(--drawer-field-h);
+  min-height: var(--drawer-field-h);
   padding: 0.5rem 0.65rem;
-  border: 1px solid var(--drawer-stroke, #ececec);
+  border: 1px solid var(--drawer-field-stroke);
   border-radius: 14px;
   background: #fff;
   font: inherit;
   font-size: 15px;
   color: #000000;
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear,
+    background-color 0.2s linear;
+
+  &:hover {
+    border-color: var(--drawer-field-stroke-hover);
+    outline: 0;
+    background-color: #ffffff;
+  }
+
+  &:focus {
+    border-color: var(--drawer-field-stroke-hover);
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+    outline: 0;
+    background-color: #ffffff;
+  }
 }
 
 .nc-comanda-iten__desconto {
@@ -1095,15 +1228,29 @@
 
 .nc-comanda-iten__total {
   box-sizing: border-box;
-  min-height: 40px;
+  height: var(--drawer-field-h);
+  min-height: var(--drawer-field-h);
   padding: 0.5rem 0.65rem;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--drawer-field-stroke);
   border-radius: 14px;
-  background: #f5f5f4;
+  background: #f5f5f5;
   font-size: 15px;
-  font-weight: 600;
-  color: #44403c;
+  font-weight: 400;
+  color: #0000008c;
   font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear,
+    background-color 0.2s linear;
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: var(--drawer-field-stroke-hover);
+    outline: 0;
+    background-color: #f5f5f5;
+  }
 }
 
 .servico-row--comanda {
@@ -1111,7 +1258,7 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    min-height: 40px;
+    min-height: var(--drawer-field-h);
     padding-bottom: 0.12rem;
   }
 }
@@ -1195,4 +1342,520 @@
     min-width: 0;
     width: 100%;
   }
+
+  ::ng-deep .saas-select {
+    min-height: var(--drawer-field-h);
+    height: var(--drawer-field-h);
+    border-color: var(--drawer-field-stroke);
+  }
+
+  ::ng-deep .saas-select__trigger {
+    border-color: var(--drawer-field-stroke);
+    transition:
+      border-color 0.2s linear,
+      box-shadow 0.2s linear,
+      background-color 0.2s linear;
+
+    &:hover {
+      border-color: var(--drawer-field-stroke-hover);
+      outline: 0;
+      background-color: #ffffff;
+    }
+
+    &:focus,
+    &:focus-visible {
+      border-color: var(--drawer-field-stroke-hover);
+      box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+      outline: 0;
+      background-color: #ffffff;
+    }
+  }
+
+  /* Mantém o estado azul enquanto o select estiver aberto/focado, sem depender de hover. */
+  ::ng-deep .saas-select.saas-select--open .saas-select__trigger,
+  ::ng-deep .saas-select:focus-within .saas-select__trigger {
+    border-color: var(--drawer-field-stroke-hover);
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+    background-color: #ffffff;
+  }
+}
+
+@media (max-width: 1480px) {
+  :host {
+    --comanda-col-tipo: 120px;
+    --comanda-col-money: 110px;
+  }
+}
+
+@media (max-width: 1280px) {
+  :host {
+    --comanda-col-tipo: 112px;
+    --comanda-col-pro: 6.6rem;
+    --comanda-col-money: 102px;
+  }
+}
+
+@media (max-width: 1120px) {
+  :host {
+    --comanda-col-qtd: 52px;
+    --comanda-col-tipo: 104px;
+    --comanda-col-money: 94px;
+  }
+
+  .servico-row--comanda.servico-row--drawer .servico-row__field--tamanho {
+    flex-basis: 94px;
+    min-width: 94px;
+  }
+}
+
+/* ====================================================================
+   Comanda em modo leitura: lista de itens + status + ação Editar.
+   Os itens não são editáveis aqui — Mega/Pacote/Cabelo dependem de
+   várias etapas e ficam sob a responsabilidade do drawer de agendamento.
+   ==================================================================== */
+
+.nc-itens__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.nc-itens__status {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+
+  &.nc-status--aberto {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #e2e8f0;
+  }
+
+  &.nc-status--pendente {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+  }
+
+  &.nc-status--parcial {
+    background: #ffedd5;
+    color: #9a3412;
+    border-color: #fed7aa;
+  }
+
+  &.nc-status--pago {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+}
+
+.nc-leitura {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.nc-leitura__item {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.45rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  /** Divider discreto entre itens — linha não encosta ao conteúdo vizinho pelo respiro vertical. */
+  & + & {
+    margin-top: 0.4rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.07);
+  }
+}
+
+.nc-leitura__row {
+  align-items: center;
+  min-width: 0;
+  column-gap: 0.35rem;
+  row-gap: 0.35rem;
+
+  /** Sem faixa de valores: layout flex legado. */
+  &:not(:has(.nc-leitura__money--end)) {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  /**
+   * Com faixa: grelha — coluna monetária com largura fixa em % do painel,
+   * igual em todos os itens (não depende do tamanho do título).
+   */
+  &:has(.nc-leitura__money--end) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) var(--nc-leitura-money-col);
+  }
+}
+
+.nc-leitura__tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  height: 22px;
+  padding: 0 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #4338ca;
+  flex-shrink: 0;
+
+  &[data-tipo='Serviço'] {
+    background: #eef2ff;
+    color: #4338ca;
+  }
+
+  &[data-tipo='Produto'] {
+    background: #ecfeff;
+    color: #155e75;
+  }
+
+  &[data-tipo='Mega'] {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &[data-tipo='Pacote'] {
+    background: #fce7f3;
+    color: #9d174d;
+  }
+
+  &[data-tipo='Cabelo'] {
+    background: #ede9fe;
+    color: #5b21b6;
+  }
+
+  &[data-tipo='Outro'] {
+    background: #f1f5f9;
+    color: #475569;
+  }
+}
+
+.nc-leitura__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  /** Largura conforme o texto — o espaço livre vai para `.nc-leitura__money--end`. */
+  flex: 0 1 auto;
+}
+
+.nc-leitura__titulo {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.nc-leitura__sub {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.nc-leitura__money {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+
+  &--inline {
+    flex: 0 1 auto;
+    margin-left: auto;
+    min-width: 0;
+    max-width: min(100%, 20rem);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /**
+   * Depois de `--inline`: nas etapas o elemento tem `inline` + `end`;
+   * grelha interna para colunas (Qtd / V.unit / Desc / Total) com a mesma largura.
+   */
+  &--end {
+    display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    max-width: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    align-items: center;
+    justify-items: stretch;
+    gap: 0.55rem;
+    min-height: var(--drawer-field-h);
+    padding-block: 0.2rem;
+    padding-inline: 0.55rem;
+    border: 1px solid var(--drawer-field-stroke, #ececec);
+    border-radius: 8px;
+    background: transparent;
+
+    &:has(.nc-leitura__money-qtd) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    &:not(:has(.nc-leitura__money-qtd)) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    > .nc-leitura__money-cell {
+      min-width: 0;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    > .nc-leitura__money-cell--compact {
+      justify-content: center;
+      flex-shrink: 1;
+    }
+  }
+}
+
+/** Separadores entre colunas só onde não há repartição igual (ex.: drawer etapas). */
+.nc-leitura__money--inline:not(.nc-leitura__money--end)
+  > .nc-leitura__money-cell
+  + .nc-leitura__money-cell {
+  padding-left: 0.4rem;
+  margin-left: 0.35rem;
+  border-left: 1px solid #e7e5e4;
+}
+
+.nc-leitura__money-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+
+  &--compact {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.2rem;
+    flex-shrink: 0;
+
+    .nc-leitura__money-lbl {
+      font-size: 0.62rem;
+    }
+
+    .nc-leitura__money-val {
+      font-size: 0.78rem;
+    }
+  }
+}
+
+.nc-leitura__money-lbl {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.nc-leitura__money-val {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nc-leitura__money-total .nc-leitura__money-val {
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.nc-leitura__etapas {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 calc(70px + 0.45rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nc-leitura__etapa {
+  font-size: 0.85rem;
+  color: #334155;
+
+  /** Bullets passam para `.nc-leitura__etapa-text`. */
+  &::before {
+    content: none;
+  }
+
+  &--money {
+    display: block;
+  }
+}
+
+.nc-leitura__etapa-row {
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  column-gap: 0.35rem;
+  row-gap: 0.35rem;
+
+  &:not(:has(.nc-leitura__money--end)) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.35rem 0.6rem;
+  }
+
+  /** Mesma lógica de coluna monetária fixa que na linha principal. */
+  &:has(.nc-leitura__money--end) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--nc-leitura-money-col);
+  }
+}
+
+.nc-leitura__etapa-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1 1 12rem;
+
+  &::before {
+    content: '•';
+    color: #94a3b8;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+}
+
+.nc-leitura__etapa-titulo {
+  font-weight: 500;
+}
+
+.nc-leitura__etapa-sub {
+  color: #64748b;
+}
+
+.nc-leitura__vazio {
+  color: #6b7280;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.2rem;
+}
+
+/** Em painéis estreitos, empilhar tag / info / faixa (largura total da faixa). */
+@media (max-width: 540px) {
+  .nc-leitura__row:has(.nc-leitura__money--end) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nc-leitura__row .nc-leitura__money--end {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 0;
+  }
+
+  .nc-leitura__etapa-row:has(.nc-leitura__money--end) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .nc-leitura__etapa-row .nc-leitura__money--inline {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+  }
+}
+
+.nc-leitura__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.65rem;
+}
+
+.btn.btn--editar-agendamento {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 1.05rem;
+  border-radius: 10px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring, rgba(5, 55, 255, 0.06));
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+  }
+}
+
+/* Saldo destacado no resumo (em vermelho quando aberto). */
+.nc-itens-summary__row--saldo .nc-itens-summary__input--saldo {
+  font-weight: 700;
+}
+
+:host:has(.nc-status--parcial) .nc-itens-summary__input--saldo,
+:host:has(.nc-status--pendente) .nc-itens-summary__input--saldo {
+  color: #b91c1c;
+}
+
+:host:has(.nc-status--pago) .nc-itens-summary__input--saldo {
+  color: #166534;
+}
+
+.btn-footer.btn-footer--faturar:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }

@@ -78,6 +78,72 @@ export interface AtendimentoListaItem {
   agenda_status?: string | null;
   /** Cor de fundo do cartão no hub (hex). */
   agenda_cor?: string | null;
+  /** Soma bruta dos valores das linhas (antes do desconto), em reais. */
+  total_bruto?: number;
+  /** Total a pagar = total_bruto − desconto (mín. 0), em reais. */
+  total?: number;
+  /** Desconto aplicado em reais (espelha `Desconto` em formato numérico). */
+  desconto_num?: number;
+  /** Soma de `comanda_pagamentos.valor` para este atendimento. */
+  total_pago?: number;
+  /** total − total_pago (mín. 0). */
+  saldo?: number;
+  /**
+   * Estado consolidado da cobrança derivado pela API:
+   * - `aberto`     — `cobranca_status` ainda não é `finalizada` e não há pagamentos.
+   * - `pendente`   — finalizada e total_pago = 0.
+   * - `parcial`    — finalizada e 0 < total_pago < total.
+   * - `pago`       — finalizada e total_pago ≥ total.
+   */
+  status_cobranca?: 'aberto' | 'pendente' | 'parcial' | 'pago';
+}
+
+/** Métodos aceites no sub-drawer Faturar. */
+export type MetodoPagamentoComanda =
+  | 'dinheiro'
+  | 'cartao_credito'
+  | 'cartao_debito'
+  | 'pix'
+  | 'transferencia'
+  | 'outros';
+
+/** Linha de `comanda_pagamentos` (1 evento de pagamento parcial ou total). */
+export interface ComandaPagamentoItem {
+  id: number;
+  id_atendimento: string;
+  data_pagamento: string;
+  /** String numérica em pt-en (ex.: '50.00'); converter com `parseFloat`. */
+  valor: string;
+  metodo: MetodoPagamentoComanda;
+  /** Texto amigável já localizado em pt-BR (ex.: "Cartão de crédito"). */
+  metodo_rotulo: string;
+  parcelas: number;
+  troco: string | null;
+  observacao: string | null;
+  movimentacao_id: number | null;
+  created_at: string;
+}
+
+/** Resumo financeiro consolidado de uma comanda. */
+export interface ComandaResumoPagamentos {
+  total_bruto: number;
+  desconto: number;
+  total: number;
+  total_pago: number;
+  saldo: number;
+  status: 'aberto' | 'pendente' | 'parcial' | 'pago';
+  cobranca_status: string | null;
+}
+
+/** Payload para criar 1 pagamento na comanda. */
+export interface CriarComandaPagamentoPayload {
+  /** `YYYY-MM-DD`; default = hoje. */
+  data_pagamento?: string;
+  valor: number;
+  metodo: MetodoPagamentoComanda;
+  parcelas?: number;
+  troco?: number | null;
+  observacao?: string | null;
 }
 
 export interface AtendimentoCriadoResumo {
@@ -122,6 +188,12 @@ export interface AtendimentoItemCatalogo {
   regra_mega_id?: number | null;
   /** FK opcional a `pacotes` (cabeça Pacote ou referência ao pacote comercial). */
   pacote_id?: number | null;
+  /** Valor unitário gravado no carrinho (Servico/Produto/Cabelo). String numérica ou null. */
+  valor_unitario?: string | null;
+  /** Desconto aplicado ao item (R$). String numérica ou null. */
+  desconto?: string | null;
+  /** Total da linha calculado pelo backend: max(0, qtde × valor_unitario − desconto). */
+  total_linha?: number | null;
 }
 
 export interface ProdutoCatalogoItem {
@@ -239,6 +311,22 @@ export type AgendaCartaoCriacaoOpcional = {
   agenda_cor?: string;
 };
 
+/** Metadados opcionais para ocorrências de uma mesma série de repetição. */
+export type RecorrenciaCriacaoOpcional = {
+  id_recorrencia?: string;
+  ordem_recorrencia?: number;
+};
+
+/** Força reutilizar um id de atendimento existente em fluxo de edição. */
+export type AtendimentoIdCriacaoOpcional = {
+  id_atendimento?: string;
+};
+
+/** Desconto por linha (R$) na criação/edição do atendimento. */
+export type DescontoCriacaoOpcional = {
+  desconto?: string;
+};
+
 /** União de payloads para createAgendamento / createAtendimento. */
 export type CreateAtendimentoPayload = (
   | {
@@ -249,15 +337,21 @@ export type CreateAtendimentoPayload = (
       servico_id: string;
       tamanho?: string;
       observacao?: string;
+      /** Override do valor unitário (R$); ausente = preço do catálogo. */
+      valor_unitario?: number | string | null;
+      /** Desconto aplicado ao item (R$). */
+      desconto_item?: number | string | null;
       /** Vários serviços no mesmo pedido; cada entrada → linha em `atendimentos` + `atendimento_itens`. */
       itens_servicos?: {
         servico_id: string;
         quantidade: number;
         profissional_id?: number | null;
         tamanho?: string;
+        valor_unitario?: number | string | null;
+        desconto?: number | string | null;
       }[];
     }
-  | {
+    | {
       tipo: 'Mega';
       cliente_id: string;
       data: string;
@@ -285,11 +379,17 @@ export type CreateAtendimentoPayload = (
       observacao?: string;
       /** Se o catálogo não tiver `preco` preenchido. */
       preco_unitario?: number;
+      /** Override do valor unitário (R$). Tem prioridade sobre `preco_unitario` e catálogo. */
+      valor_unitario?: number | string | null;
+      /** Desconto aplicado ao item (R$). */
+      desconto_item?: number | string | null;
       /** Vários produtos no mesmo pedido (`produto_id` = `produtos.id`). */
       itens_produtos?: {
         produto_id: number;
         quantidade: number;
         profissional_id?: number | null;
+        valor_unitario?: number | string | null;
+        desconto?: number | string | null;
       }[];
     }
   | {
@@ -300,7 +400,12 @@ export type CreateAtendimentoPayload = (
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;
+      /** Desconto aplicado ao item Cabelo (R$). */
+      desconto_item?: number | string | null;
     }
 ) &
   AgendaSlotCriacaoOpcional &
-  AgendaCartaoCriacaoOpcional;
+  AgendaCartaoCriacaoOpcional &
+  RecorrenciaCriacaoOpcional &
+  AtendimentoIdCriacaoOpcional &
+  DescontoCriacaoOpcional;

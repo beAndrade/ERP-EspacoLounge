@@ -397,6 +397,7 @@
                   [options]="opcoesServicosCatalogo()"
                   [placeholder]="modoModal ? 'Selecionar serviço' : 'Selecione…'"
                   aria-label="Serviço"
+                  (picked)="atualizarValorUnitarioServicoSeIntacto(i)"
                 />
               </div>
               @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
@@ -408,6 +409,7 @@
                     [options]="opcoesTamanhosSelect()"
                     placeholder="Tamanho…"
                     aria-label="Tamanho (preço)"
+                    (picked)="atualizarValorUnitarioServicoSeIntacto(i)"
                   />
                 </div>
               }
@@ -425,14 +427,44 @@
                   aria-label="Profissional"
                 />
               </div>
+              <div class="servico-row__field servico-row__field--money">
+                <span>Valor unitário</span>
+                <input
+                  type="text"
+                  formControlName="valor_unitario"
+                  inputmode="decimal"
+                  placeholder="R$ 0,00"
+                  autocomplete="off"
+                  aria-label="Valor unitário (R$)"
+                  (input)="onMoedaInput(i, 'valor_unitario')"
+                  (blur)="onValorUnitarioBlur(i)"
+                />
+              </div>
+              <div class="servico-row__field servico-row__field--money">
+                <span>Desconto</span>
+                <input
+                  type="text"
+                  formControlName="desconto"
+                  inputmode="decimal"
+                  placeholder="R$ 0,00"
+                  autocomplete="off"
+                  aria-label="Desconto (R$)"
+                  (input)="onMoedaInput(i, 'desconto')"
+                  (blur)="onDescontoLinhaMoedaBlur(i)"
+                />
+              </div>
               @if (modoModal) {
-                <div class="servico-row__field servico-row__field--duracao">
-                  <span>Duração</span>
+                <div
+                  class="servico-row__field servico-row__field--produto-total-estimado"
+                >
+                  <span>Total</span>
                   <div
-                    class="servico-row__duracao"
-                    [attr.aria-label]="'Duração: ' + duracaoServicoLinhaExibicao(i)"
+                    class="servico-row__total-estimado"
+                    [attr.aria-label]="
+                      'Total da linha: ' + totalEstimadoServicoLinhaBrl(i)
+                    "
                   >
-                    {{ duracaoServicoLinhaExibicao(i) }}
+                    {{ totalEstimadoServicoLinhaBrl(i) }}
                   </div>
                 </div>
               }
@@ -450,13 +482,14 @@
                   [options]="opcoesProdutosSelect()"
                   placeholder="Selecione…"
                   aria-label="Produto"
+                  (picked)="aoEscolherProdutoNaLinha(i)"
                 />
               </div>
               <div
                 class="servico-row__field servico-row__field--tamanho"
                 [class.servico-row__field--produto-qtd-drawer]="modoModal"
               >
-                <span>Quantidade</span>
+                <span>Qtde.</span>
                 <input
                   type="number"
                   formControlName="quantidade"
@@ -465,17 +498,47 @@
                   aria-label="Quantidade"
                 />
               </div>
-              @if (!modoModal) {
-                <div class="servico-row__field">
-                  <span>Preço unitário (R$)</span>
-                  <input
-                    type="text"
-                    formControlName="preco_unitario"
-                    inputmode="decimal"
-                    placeholder="Só se o produto não tiver preço no catálogo"
-                    autocomplete="off"
-                    aria-label="Preço unitário (R$)"
-                  />
+              <div
+                class="servico-row__field servico-row__field--preco-unit-prod"
+                [class.servico-row__field--modal-prod-money]="modoModal"
+              >
+                <span>Valor unitário</span>
+                <input
+                  type="text"
+                  formControlName="preco_unitario"
+                  inputmode="decimal"
+                  placeholder="R$ 0,00"
+                  autocomplete="off"
+                  aria-label="Valor unitário (R$)"
+                  (input)="onMoedaInput(i, 'preco_unitario')"
+                />
+              </div>
+              <div class="servico-row__field servico-row__field--money">
+                <span>Desconto</span>
+                <input
+                  type="text"
+                  formControlName="desconto"
+                  inputmode="decimal"
+                  placeholder="R$ 0,00"
+                  autocomplete="off"
+                  aria-label="Desconto (R$)"
+                  (input)="onMoedaInput(i, 'desconto')"
+                  (blur)="onDescontoLinhaMoedaBlur(i)"
+                />
+              </div>
+              @if (modoModal) {
+                <div
+                  class="servico-row__field servico-row__field--produto-total-estimado"
+                >
+                  <span>Total</span>
+                  <div
+                    class="servico-row__total-estimado"
+                    [attr.aria-label]="
+                      'Total da linha: ' + totalEstimadoProdutoLinhaBrl(i)
+                    "
+                  >
+                    {{ totalEstimadoProdutoLinhaBrl(i) }}
+                  </div>
                 </div>
               }
               @if (!modoModal) {
@@ -500,6 +563,9 @@
                     Cadastre linhas em <strong>Regras Mega</strong> (Pacote + Etapa).
                   </p>
                 }
+                <p class="hint">
+                  Desconto por linha só em <strong>Serviço</strong>/<strong>Produto</strong>; desconto da comanda ao fechar a cobrança.
+                </p>
                 <div class="servico-row__etapas-wrap servico-row__etapas-wrap--modal-cabecalho">
                   <div
                     class="etapas-block etapas-block--nested etapas-block--etapas-modal"
@@ -612,6 +678,7 @@
                 <p class="hint">
                   No <strong>Mega</strong> cada linha gravada é uma <strong>etapa</strong> com
                   valor próprio; escolha o profissional em cada etapa (comissão por etapa).
+                  Desconto por item aplica-se só a <strong>Serviço</strong> e <strong>Produto</strong>; desconto na comanda inteira faz-se ao fechar a cobrança.
                 </p>
                 <div class="etapas-block etapas-block--nested" formArrayName="etapas">
                   <div class="etapas-header">
@@ -669,6 +736,9 @@
                     Cadastre pacotes na aba <strong>Pacotes</strong>.
                   </p>
                 }
+                <p class="hint">
+                  Desconto por linha só em <strong>Serviço</strong>/<strong>Produto</strong>; desconto da comanda ao fechar a cobrança.
+                </p>
                 <div
                   class="servico-row__etapas-wrap servico-row__etapas-wrap--modal-cabecalho"
                 >
@@ -786,6 +856,7 @@
                   O pacote define o <strong>valor cobrado</strong> na primeira linha.
                   A comissão é por <strong>etapa</strong> — preencha o
                   profissional em cada etapa abaixo.
+                  Desconto por item aplica-se só a <strong>Serviço</strong> e <strong>Produto</strong>; desconto na comanda inteira faz-se ao fechar a cobrança.
                 </p>
                 <div class="etapas-block etapas-block--nested" formArrayName="etapas">
                   <div class="etapas-header">
@@ -948,18 +1019,31 @@
                       aria-label="Detalhes (cabelo)"
                     ></textarea>
                   </div>
-                  <div
-                    class="servico-row__field servico-row__field--pro-cabelo-modal"
-                  >
-                    <span>Profissional</span>
-                    <app-saas-select
-                      [showFilter]="!modoModal"
-                      formControlName="profissional_cabelo"
-                      [options]="opcoesProfissionaisSelect()"
-                      [useNumericOutput]="true"
-                      placeholder="Selecione…"
-                      aria-label="Profissional (cabelo)"
+                  <div class="servico-row__field servico-row__field--money">
+                    <span>Desconto</span>
+                    <input
+                      type="text"
+                      formControlName="desconto"
+                      inputmode="decimal"
+                      placeholder="R$ 0,00"
+                      autocomplete="off"
+                      aria-label="Desconto (R$)"
+                      (input)="onMoedaInput(i, 'desconto')"
+                      (blur)="onDescontoLinhaMoedaBlur(i)"
                     />
+                  </div>
+                  <div
+                    class="servico-row__field servico-row__field--produto-total-estimado"
+                  >
+                    <span>Total</span>
+                    <div
+                      class="servico-row__total-estimado"
+                      [attr.aria-label]="
+                        'Total da linha: ' + totalEstimadoCabeloLinhaBrl(i)
+                      "
+                    >
+                      {{ totalEstimadoCabeloLinhaBrl(i) }}
+                    </div>
                   </div>
                   <div
                     class="servico-row__actions servico-row__actions--drawer servico-row__actions--cabelo-rodape"
@@ -1049,6 +1133,19 @@
                     [useNumericOutput]="true"
                     placeholder="Selecione…"
                     aria-label="Profissional (cabelo)"
+                  />
+                </div>
+                <div class="servico-row__field">
+                  <span>Desconto</span>
+                  <input
+                    type="text"
+                    formControlName="desconto"
+                    inputmode="decimal"
+                    placeholder="R$ 0,00"
+                    autocomplete="off"
+                    aria-label="Desconto (R$)"
+                    (input)="onMoedaInput(i, 'desconto')"
+                    (blur)="onDescontoLinhaMoedaBlur(i)"
                   />
                 </div>
               }

@@ -10,4 +10,6 @@ export type ComandaLinhaInicial = {
   quantidade: number;
   valorUnitStr: string;
   descontoStr: string;
+  /** Total da linha (qtd × V. unit. − desc., formato pt-BR) para espelhar a comanda. */
+  totalLinhaStr?: string;
 };
