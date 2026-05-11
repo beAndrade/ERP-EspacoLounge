@@ -108,7 +108,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin: 0 0 1rem;
+  margin: 0;
   padding: 0;
 }
 
@@ -221,10 +221,9 @@
 }
 
 :host.agenda-novo--drawer .agenda-modal__header {
-  position: relative;
   align-items: flex-start;
   justify-content: flex-start;
-  margin: 0 0 0.65rem;
+  margin: 0;
   padding: 0;
   gap: 0;
 }
@@ -308,6 +307,21 @@
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     gap: 1.25rem;
+
+    /** Título «Novo/Editando agendamento» fixo ao rolar o conteúdo do modal/drawer. */
+    > .agenda-modal__header {
+      position: sticky;
+      top: 0;
+      z-index: 12;
+      flex-shrink: 0;
+      align-self: stretch;
+      margin-top: -0.15rem;
+      margin-bottom: 0.5rem;
+      padding-top: 0.25rem;
+      padding-bottom: 0.45rem;
+      background: #fff;
+      box-shadow: 0 1px 0 0 #ececec;
+    }
     /** Scroller da coluna principal: alarga o clip (sombra do `app-saas-select`). */
     overflow-clip-margin: 20px 16px 24px 32px;
     @supports (overflow: clip) {
@@ -2211,6 +2225,43 @@ textarea {
     min-width: 0;
     box-sizing: border-box;
     gap: 0.4rem 0.55rem;
+  }
+
+  /**
+   * Cabelo + calculadora: a caixa da calculadora não pode partilhar a mesma linha flex
+   * que Valor/Detalhes — empilha calculadora e rodapé a 100% da largura.
+   */
+  .servico-row--drawer:has(.cabelo-calc--nested) {
+    flex-wrap: wrap;
+    align-items: flex-start;
+
+    > .servico-row__field--tipo-linha {
+      flex: 0 0 var(--drawer-tipo-linha-col);
+      width: var(--drawer-tipo-linha-col);
+      min-width: var(--drawer-tipo-linha-col);
+      max-width: var(--drawer-tipo-linha-col);
+      box-sizing: border-box;
+    }
+
+    > .hint {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+    }
+
+    > .cabelo-calc.cabelo-calc--nested {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    > .servico-row__cabelo-rodape--drawer {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+    }
   }
 
   /**

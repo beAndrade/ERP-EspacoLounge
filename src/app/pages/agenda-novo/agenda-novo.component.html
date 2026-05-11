@@ -60,37 +60,37 @@
         class="form-shell__main"
         [class.form-shell__main--modal]="modoModal"
       >
-        @if (modoModal) {
-          <div class="agenda-modal__header">
-            <h1 class="agenda-modal__title">{{ tituloModal() }}</h1>
-            <button
-              type="button"
-              class="agenda-modal__close"
-              (click)="onCancelarModalClique()"
-              aria-label="Fechar"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="22"
-                height="22"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  d="M6 6l12 12M18 6L6 18"
-                />
-              </svg>
-            </button>
-          </div>
-        }
         <div
           class="form-shell__flow"
           [class.form-shell__flow--modal]="modoModal"
         >
+          @if (modoModal) {
+            <div class="agenda-modal__header">
+              <h1 class="agenda-modal__title">{{ tituloModal() }}</h1>
+              <button
+                type="button"
+                class="agenda-modal__close"
+                (click)="onCancelarModalClique()"
+                aria-label="Fechar"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    d="M6 6l12 12M18 6L6 18"
+                  />
+                </svg>
+              </button>
+            </div>
+          }
           <div
             class="block-context"
             [class.block-context--modal]="modoModal"
@@ -334,9 +334,17 @@
                   <button
                     type="button"
                     class="btn btn--icon-line-add"
-                    (click)="adicionarEtapaNaLinha(i)"
-                    aria-label="Adicionar etapa"
-                    title="Adicionar etapa"
+                    (click)="adicionarLinhaItensDoTipo(ctrl.get('itemTipo')?.value === 'Pacote' ? 'Pacote' : 'Mega', i)"
+                    [attr.aria-label]="
+                      ctrl.get('itemTipo')?.value === 'Pacote'
+                        ? 'Adicionar linha Pacote'
+                        : 'Adicionar linha Mega'
+                    "
+                    [attr.title]="
+                      ctrl.get('itemTipo')?.value === 'Pacote'
+                        ? 'Adicionar linha Pacote'
+                        : 'Adicionar linha Mega'
+                    "
                   >
                     +
                   </button>
@@ -402,13 +410,13 @@
               </div>
               @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
                 <div class="servico-row__field servico-row__field--tamanho">
-                  <span>Tamanho (preço)</span>
+                  <span>Tamanho</span>
                   <app-saas-select
                     [showFilter]="!modoModal"
                     formControlName="tamanho"
                     [options]="opcoesTamanhosSelect()"
                     placeholder="Tamanho…"
-                    aria-label="Tamanho (preço)"
+                    aria-label="Tamanho"
                     (picked)="atualizarValorUnitarioServicoSeIntacto(i)"
                   />
                 </div>
