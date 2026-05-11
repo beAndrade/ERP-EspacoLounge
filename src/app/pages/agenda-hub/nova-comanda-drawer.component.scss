@@ -74,8 +74,8 @@
   min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
-  /** `visible` evita cortar o `.nc-modal-close` quando compensa o padding do `.app-drawer`. */
-  overflow-x: visible;
+  /** Fechar sticky fica dentro do scroller com `margin-right` negativo — não precisamos de overflow-x visível. */
+  overflow-x: hidden;
   overflow-y: hidden;
   overflow-clip-margin: 16px 12px 20px 28px;
 }
@@ -92,11 +92,23 @@
   padding: 0;
 }
 
-/** Cabeçalho fixo no topo da coluna: não rola com os itens (`overflow-y` no `main`). */
-.nc-modal-header--drawer-top {
+/**
+ * Cabeçalho dentro do `.nc-main--comanda-scroll`: o título rola com o fluxo;
+ * só o `.nc-modal-close` usa `position: sticky` (referência Ant Design).
+ */
+.nc-modal-header--drawer-scroll {
   flex-shrink: 0;
   z-index: 8;
   background: #fff;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.nc-modal-header--drawer-scroll .nc-modal-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 0.35rem;
 }
 
 /** = `agenda-modal__title` (drawer). */
@@ -107,15 +119,10 @@
   font-weight: 700;
   color: #404040;
   padding: 20px 0;
-  padding-right: calc(60px + 0.75rem);
 }
 
-/** = `agenda-modal__close` (drawer). */
+/** = `agenda-modal__close` (drawer). Posicionamento sticky no cabeçalho rolável — ver `.nc-modal-header--drawer-scroll`. */
 .nc-modal-close {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 2;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -151,9 +158,14 @@
   }
 }
 
-/** Compensa o `padding-inline` do `.app-drawer` — fecha encostado à direita do painel. */
-.nc-modal-header--drawer-top .nc-modal-close {
-  right: calc(-1 * var(--drawer-pad-x, 15px));
+.nc-modal-header--drawer-scroll .nc-modal-close {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-right: calc(-1 * var(--drawer-pad-x, 15px));
+  background: #fff;
 }
 
 /** = `form-shell__flow--modal` (coluna direita; scroll fica em `.nc-main--comanda-scroll`). */
@@ -194,7 +206,7 @@
   flex-direction: column;
   gap: 1.25rem;
 
-  /** Scroll da comanda: mantém o título fora da área rolável. */
+  /** Scroll da coluna da comanda (título + formulário + itens). */
   &--comanda-scroll {
     flex: 1 1 auto;
     min-height: 0;
@@ -407,9 +419,8 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  overflow-x: visible;
+  overflow-x: hidden;
   padding-bottom: 0.15rem;
-  /** Evita recorte horizontal do conteúdo (lista de leitura / faixa monetária). */
   margin: 0;
 }
 
@@ -731,6 +742,7 @@
  */
 .nc-drawer__obs {
   flex: 0 0 auto;
+  min-width: 0;
   padding: 0.55rem 0 1.35rem;
   margin-top: 0;
   margin-bottom: 0.85rem;
@@ -1681,8 +1693,7 @@
     min-width: 0;
     margin-left: 0;
     margin-inline: 0;
-    /** Em viewport larga não rolar: evita “corte” visual na primeira coluna. */
-    overflow-x: visible;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     align-items: stretch;

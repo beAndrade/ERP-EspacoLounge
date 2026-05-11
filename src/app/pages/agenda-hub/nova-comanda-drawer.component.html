@@ -11,16 +11,13 @@
     </div>
 
     <div class="nc-drawer__main">
-      <header class="nc-modal-header nc-modal-header--drawer-top">
-        <h1 class="nc-modal-title">{{ tituloComandaDrawer() }}</h1>
-      </header>
-
       <div class="nc-drawer__flow">
         <main class="nc-main nc-main--comanda-scroll">
-          <div class="nc-main__close-bar">
+          <header class="nc-modal-header nc-modal-header--drawer-scroll">
+            <h1 class="nc-modal-title">{{ tituloComandaDrawer() }}</h1>
             <button
               type="button"
-              class="nc-modal-close nc-modal-close--scroll"
+              class="nc-modal-close"
               (click)="fechar.emit()"
               aria-label="Fechar"
             >
@@ -37,7 +34,8 @@
                 <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
               </svg>
             </button>
-          </div>
+          </header>
+
           <div class="nc-main__top">
             <label class="nc-field nc-field--cliente">
               <span class="nc-field__label">Cliente</span>
