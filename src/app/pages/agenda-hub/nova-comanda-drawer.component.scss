@@ -108,17 +108,17 @@
 .nc-modal-header--drawer-scroll .nc-modal-title {
   flex: 1 1 auto;
   min-width: 0;
-  padding-right: 0.35rem;
+  padding: 30px 0.35rem 10px 0;
 }
 
-/** = `agenda-modal__title` (drawer). */
+/** = `agenda-modal__title` (drawer): alinhado ao agendamento / Faturar. */
 .nc-modal-title {
   margin: 0;
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.25;
   font-weight: 700;
   color: #404040;
-  padding: 20px 0;
+  padding: 30px 0 10px;
 }
 
 /** = `agenda-modal__close` (drawer). Posicionamento sticky no cabeçalho rolável — ver `.nc-modal-header--drawer-scroll`. */

@@ -32,18 +32,19 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 1rem 0 0.75rem;
+  padding: 0 0 0.35rem;
   flex: 0 0 auto;
 }
 
 .fat-title {
   margin: 0;
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.25;
   font-weight: 700;
   color: #1f2937;
   flex: 1 1 auto;
   min-width: 0;
+  padding: 30px 0 10px;
 }
 
 .fat-close {

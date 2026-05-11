@@ -1569,7 +1569,7 @@ thead th.col-check {
   flex: 0 0 auto;
   min-height: 90px;
   border-bottom: none;
-  padding: 30px 50px 20px 30px;
+  padding: 0 50px 10px 30px;
   display: flex;
   align-items: flex-start;
 }
@@ -1617,13 +1617,14 @@ thead th.col-check {
 
 .cliente-head__title {
   margin: 0;
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
   color: #000000bf;
   letter-spacing: -0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 30px 0 10px;
 }
 
 .cliente-head__close {
