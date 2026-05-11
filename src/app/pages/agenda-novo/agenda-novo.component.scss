@@ -112,11 +112,6 @@
   padding: 0;
 }
 
-.agenda-modal__header-title {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
 .agenda-modal__title {
   margin: 0;
   font-size: 1.25rem;
@@ -186,12 +181,6 @@
 }
 
 :host.agenda-novo--drawer .form-shell.form-shell--modal {
-  /** Permite o hover do fechar e compensação do padding sem recorte horizontal. */
-  .form-shell__main--modal {
-    overflow-x: visible;
-    overflow-y: hidden;
-  }
-
   /** Inset horizontal: só `.app-drawer`; evita somar padding em duplicado. */
   padding-inline: 0;
   --drawer-bleed-l: calc(
@@ -241,14 +230,20 @@
   overflow: visible;
 }
 
+:host.agenda-novo--drawer .agenda-modal__header .agenda-modal__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /**
- * Drawer: o título fica `sticky` ao rolar o fluxo; o fechar não (sobe com o conteúdo).
- * `z-index` acima do título para o hover do X não ficar por baixo do bloco seguinte.
+ * Só o fechar fica colado ao topo ao rolar o fluxo; o título acompanha o scroll.
  */
 :host.agenda-novo--drawer .agenda-modal__header .agenda-modal__close {
-  position: relative;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
   flex-shrink: 0;
-  z-index: 24;
+  z-index: 30;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -262,7 +257,7 @@
   padding: 0;
   border: 0;
   border-radius: 6px;
-  background: transparent;
+  background: #fff;
   color: rgba(0, 0, 0, 0.45);
   font: inherit;
   font-weight: 600;
@@ -320,20 +315,6 @@
     -webkit-overflow-scrolling: touch;
     gap: 1.25rem;
 
-    /** Só o título fica colado ao topo ao rolar; o fechar acompanha o scroll. */
-    > .agenda-modal__header .agenda-modal__title {
-      position: sticky;
-      top: 0;
-      z-index: 12;
-      flex-shrink: 0;
-      margin-top: -0.15rem;
-      margin-bottom: 0.5rem;
-      padding-top: 0.25rem;
-      padding-bottom: 0.45rem;
-      padding-right: 0;
-      background: #fff;
-      box-shadow: 0 1px 0 0 #ececec;
-    }
     /** Scroller da coluna principal: alarga o clip (sombra do `app-saas-select`). */
     overflow-clip-margin: 20px 16px 24px 32px;
 

@@ -681,9 +681,20 @@ export class SheetsApiService {
       statusCobrancaRaw === 'pago'
         ? statusCobrancaRaw
         : undefined;
+    const numeroComandaRaw =
+      raw['numero_comanda'] ?? raw['numeroComanda'] ?? raw['Numero Comanda'];
+    const numeroComandaParsed =
+      numeroComandaRaw != null && numeroComandaRaw !== ''
+        ? Number(numeroComandaRaw)
+        : NaN;
+    const numeroComanda =
+      Number.isFinite(numeroComandaParsed) && numeroComandaParsed > 0
+        ? Math.trunc(numeroComandaParsed)
+        : null;
 
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
+      numeroComanda,
       linha_id:
         linha_id != null && Number.isFinite(linha_id) ? linha_id : undefined,
       data: this.formatDataCell(raw['Data'] ?? raw['data']),
@@ -701,6 +712,8 @@ export class SheetsApiService {
       pacote: pacote || null,
       etapa: etapa || null,
       descricao,
+      descricaoManual:
+        descManual !== '' ? descManual : null,
       valor: raw['Valor'],
       desconto: String(raw['Desconto'] ?? '').trim() || null,
       cobrancaStatus,

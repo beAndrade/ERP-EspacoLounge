@@ -176,10 +176,6 @@ function mapTipoFromApi(t: string): TipoAtendimento {
   return 'Serviço';
 }
 
-function stripQtdSuffixObservacao(s: string): string {
-  return s.replace(/\s*—\s*Qtd:\s*[^]*$/i, '').trim();
-}
-
 function parseQuantidadeFromDescricao(s: string): number {
   const m = /\bQtd:\s*([0-9]+(?:[.,][0-9]+)?)/i.exec(s);
   if (!m) return 0;
@@ -2013,6 +2009,30 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.aplicarValidadoresLinhas();
   }
 
+  /**
+   * Adiciona uma nova linha já no tipo pedido (usado no drawer para Mega/Pacote).
+   * Quando há linha de origem, replica o pacote para agilizar o preenchimento.
+   */
+  adicionarLinhaItensDoTipo(
+    tipo: TipoLinhaAtendimento,
+    linhaOrigemIndex?: number,
+  ): void {
+    const tipoNorm: TipoLinhaAtendimento =
+      tipo === 'Mega' || tipo === 'Pacote' ? tipo : 'Serviço';
+    const g = this.novoGrupoLinhaItem(tipoNorm);
+    if (linhaOrigemIndex != null && linhaOrigemIndex >= 0) {
+      const origem = this.linhasItensArray.at(linhaOrigemIndex);
+      if (origem && (tipoNorm === 'Mega' || tipoNorm === 'Pacote')) {
+        const pacote = String(origem.get('pacote')?.value ?? '').trim();
+        if (pacote) {
+          g.patchValue({ pacote }, { emitEvent: false });
+        }
+      }
+    }
+    this.linhasItensArray.push(g);
+    this.aplicarValidadoresLinhas();
+  }
+
   removerLinhaItens(i: number): void {
     if (this.linhasItensArray.length <= 1) return;
     this.linhasItensArray.removeAt(i);
@@ -2651,6 +2671,61 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return out;
   }
 
+  /**
+   * Consolida segmentos de Mega/Pacote com o mesmo nome numa única linha do formulário.
+   * Evita quebra em várias linhas quando o backend devolve o mesmo bloco em partes.
+   */
+  private consolidarSegmentosMegaPacoteEdicao(
+    segs: Array<
+      | { k: 'servico'; row: AtendimentoListaItem }
+      | { k: 'produto'; row: AtendimentoListaItem }
+      | { k: 'cabelo'; row: AtendimentoListaItem }
+      | { k: 'mega'; rows: AtendimentoListaItem[] }
+      | { k: 'pacote'; rows: AtendimentoListaItem[] }
+    >,
+  ): Array<
+    | { k: 'servico'; row: AtendimentoListaItem }
+    | { k: 'produto'; row: AtendimentoListaItem }
+    | { k: 'cabelo'; row: AtendimentoListaItem }
+    | { k: 'mega'; rows: AtendimentoListaItem[] }
+    | { k: 'pacote'; rows: AtendimentoListaItem[] }
+  > {
+    const out: Array<
+      | { k: 'servico'; row: AtendimentoListaItem }
+      | { k: 'produto'; row: AtendimentoListaItem }
+      | { k: 'cabelo'; row: AtendimentoListaItem }
+      | { k: 'mega'; rows: AtendimentoListaItem[] }
+      | { k: 'pacote'; rows: AtendimentoListaItem[] }
+    > = [];
+    const idxPorBloco = new Map<string, number>();
+    for (const seg of segs) {
+      if (seg.k !== 'pacote' && seg.k !== 'mega') {
+        out.push(seg);
+        continue;
+      }
+      const pacoteKey = String(seg.rows[0]?.pacote ?? '').trim().toLowerCase();
+      const blocoKey = `${seg.k}::${pacoteKey}`;
+      if (!pacoteKey) {
+        out.push(seg);
+        continue;
+      }
+      const idx = idxPorBloco.get(blocoKey);
+      if (idx == null) {
+        idxPorBloco.set(blocoKey, out.length);
+        out.push({
+          k: seg.k,
+          rows: [...seg.rows],
+        });
+        continue;
+      }
+      const dst = out[idx];
+      if (dst?.k === seg.k) {
+        dst.rows.push(...seg.rows);
+      }
+    }
+    return out;
+  }
+
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
     const sorted = [...items];
@@ -2677,7 +2752,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       this.linhasItensArray.removeAt(0);
     }
 
-    const segs = this.segmentarLinhasPedidoEdicao(sorted);
+    const segs = this.consolidarSegmentosMegaPacoteEdicao(
+      this.segmentarLinhasPedidoEdicao(sorted),
+    );
 
     for (const seg of segs) {
       if (seg.k === 'servico') {
@@ -2807,19 +2884,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const soApenasServico =
       segs.length > 0 && segs.every((s) => s.k === 'servico');
 
+    /** Só notas gravadas em `descricao_manual` — nunca a `descricao` sintética dos itens. */
     let observacao = '';
-    const firstMp = sorted.find((r) => {
-      const t = mapTipoFromApi(r.tipo || '');
-      return t === 'Mega' || t === 'Pacote';
-    });
-    if (firstMp) {
-      observacao = stripQtdSuffixObservacao(firstMp.descricao || '');
-    } else if (segs.length === 1 && segs[0].k === 'produto') {
-      observacao = stripQtdSuffixObservacao(segs[0].row.descricao || '');
-    } else if (soServicoEProduto) {
-      observacao = '';
-    } else if (mapTipoFromApi(l0.tipo || '') === 'Produto') {
-      observacao = stripQtdSuffixObservacao(l0.descricao || '');
+    for (const r of sorted) {
+      const dm = String(r.descricaoManual ?? '').trim();
+      if (dm) {
+        observacao = dm;
+        break;
+      }
     }
 
     let horaInicial = '';

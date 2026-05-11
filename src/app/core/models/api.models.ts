@@ -29,6 +29,11 @@ export interface Servico {
 /** Item da lista Agenda (aba Atendimentos), normalizado para a UI. */
 export interface AtendimentoListaItem {
   id: string;
+  /**
+   * Número global da comanda (#1, #2, …) em `atendimentos_pedido.numero_comanda`;
+   * estável enquanto o pedido existir.
+   */
+  numeroComanda?: number | null;
   /** PK da linha em `atendimentos` (única por registo). */
   linha_id?: number;
   /** Sempre `AAAA-MM-DD` (para ordenar); na tela usa-se formato dia-mês-ano. */
@@ -65,6 +70,8 @@ export interface AtendimentoListaItem {
   etapa?: string | null;
   /** Texto exibido (API já enriquece Pacote, colunas P/Q, etc.). */
   descricao: string;
+  /** «Descrição Manual» na BD — notas do utilizador (observações), distinto de `descricao`. */
+  descricaoManual?: string | null;
   valor: unknown;
   /** Coluna Desconto (ex.: após finalizar cobrança). */
   desconto?: string | null;
