@@ -2375,6 +2375,14 @@ textarea {
 
   .cabelo-calc--nested .cabelo-calc__field {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    input[type='text'] {
+      width: 100%;
+      box-sizing: border-box;
+    }
   }
 
   .cabelo-calc--nested .cabelo-calc__field--gramas {
@@ -2537,6 +2545,19 @@ textarea {
   .itens-atendimento--modal .saas-select__trigger {
     min-height: var(--touch-min, 38px);
     height: var(--touch-min, 38px);
+  }
+
+  .cabelo-calc--nested .cabelo-calc__field app-saas-select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .cabelo-calc--nested .cabelo-calc__field .saas-select,
+  .cabelo-calc--nested .cabelo-calc__field .saas-select__trigger {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .cabelo-calc--nested .saas-select__list {
@@ -2789,6 +2810,18 @@ textarea {
     height: var(--touch-min, 38px);
   }
 
+  .servico-row--drawer .servico-row__field--modal-prod-money input {
+    width: 140px;
+    max-width: 100%;
+    min-width: 0;
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    box-sizing: border-box;
+    line-height: 1.25;
+    padding-block: 0;
+  }
+
   .servico-row__cabelo-rodape--drawer
     .servico-row__field--valor-cabelo-modal
     input,
@@ -2808,10 +2841,14 @@ textarea {
 
   .cabelo-calc--nested > .btn.small {
     border-color: var(--drawer-field-border, #e7e5e4);
-    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 400;
+    transition:
+      border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:hover:not(:disabled) {
       border-color: var(--el-drawer-field-border-hover);
+      color: var(--el-drawer-field-border-hover);
       cursor: pointer;
     }
   }
