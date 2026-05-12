@@ -60,7 +60,7 @@
             <label class="nc-field nc-field--numero">
               <span class="nc-field__label">Número da comanda</span>
               <div class="nc-field__fake nc-field__fake--locked" aria-readonly="true">
-                {{ contexto()?.idAtendimento?.trim() ? ('#' + (contexto()?.numeroComandaTitulo ?? 1)) : 'Número da comanda' }}
+                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'Número da comanda' }}
               </div>
             </label>
           </div>
@@ -137,10 +137,20 @@
                               <li class="nc-leitura__etapa">
                                 <div class="nc-leitura__etapa-row">
                                   <div class="nc-leitura__etapa-text">
-                                    <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
-                                    @if (e.subtitulo) {
-                                      <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
-                                      <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                    @if (b.tipo === 'Mega' && e.valorEtapaBrl) {
+                                      <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
+                                      <span class="nc-leitura__etapa-join" aria-hidden="true"> — </span>
+                                      <span class="nc-leitura__etapa-valor">{{ e.valorEtapaBrl }}</span>
+                                      @if (e.subtitulo) {
+                                        <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
+                                        <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                      }
+                                    } @else {
+                                      <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
+                                      @if (e.subtitulo) {
+                                        <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
+                                        <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                      }
                                     }
                                   </div>
                                 </div>
@@ -180,10 +190,20 @@
                             <li class="nc-leitura__etapa">
                               <div class="nc-leitura__etapa-row">
                                 <div class="nc-leitura__etapa-text">
-                                  <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
-                                  @if (e.subtitulo) {
-                                    <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
-                                    <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                  @if (b.tipo === 'Mega' && e.valorEtapaBrl) {
+                                    <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
+                                    <span class="nc-leitura__etapa-join" aria-hidden="true"> — </span>
+                                    <span class="nc-leitura__etapa-valor">{{ e.valorEtapaBrl }}</span>
+                                    @if (e.subtitulo) {
+                                      <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
+                                      <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                    }
+                                  } @else {
+                                    <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
+                                    @if (e.subtitulo) {
+                                      <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
+                                      <span class="nc-leitura__etapa-sub">{{ e.subtitulo }}</span>
+                                    }
                                   }
                                 </div>
                               </div>

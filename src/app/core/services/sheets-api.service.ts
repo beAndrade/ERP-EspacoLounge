@@ -437,12 +437,22 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
-  excluirAtendimento(idAtendimento: string): Observable<{ removidas: number }> {
+  excluirAtendimento(
+    idAtendimento: string,
+    opts?: { manterCabecalhoPedido?: boolean },
+  ): Observable<{ removidas: number }> {
     const params = new HttpParams().set('acao', 'excluir');
+    const body: Record<string, unknown> = {
+      id_atendimento: idAtendimento,
+      acao: 'excluir',
+    };
+    if (opts?.manterCabecalhoPedido) {
+      body['manter_cabecalho_pedido'] = true;
+    }
     return this.http
       .post<ApiResponse<{ removidas: number }>>(
         this.url('/api/atendimentos'),
-        { id_atendimento: idAtendimento, acao: 'excluir' },
+        body,
         { params },
       )
       .pipe(map((raw) => this.unwrap(raw)));

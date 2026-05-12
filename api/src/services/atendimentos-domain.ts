@@ -605,7 +605,8 @@ async function ensurePedidoHeader(
       idRecorrencia: meta?.idRecorrencia ?? null,
       ordemRecorrencia: meta?.ordemRecorrencia ?? null,
     })
-    .onConflictDoNothing();
+    /** PK `id_atendimento`: sem `target` o Postgres pode não inferir o conflito e falhar ou duplicar pedido. */
+    .onConflictDoNothing({ target: atendimentosPedido.idAtendimento });
 }
 
 async function insertPivotServico(
@@ -2159,13 +2160,21 @@ export async function finalizarCobrancaPorIdAtendimento(
   return atualizadas;
 }
 
-/** Remove todas as linhas com o mesmo `ID Atendimento`. */
+/**
+ * Remove todas as linhas com o mesmo `ID Atendimento`.
+ *
+ * @param opts.manterCabecalhoPedido — Quando `true`, não apaga `atendimentos_pedido`
+ * (mantém `numero_comanda`). Usado no fluxo «excluir + recriar» do editor de agendamento,
+ * para não consumir um novo número da sequência a cada gravação.
+ */
 export async function excluirAtendimentoPorIdAtendimento(
   db: Db,
   idAtendimento: string,
+  opts?: { manterCabecalhoPedido?: boolean },
 ): Promise<number> {
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
+  const manterPedido = Boolean(opts?.manterCabecalhoPedido);
   return await db.transaction(async (tx) => {
     await tx
       .delete(atendimentoItens)
@@ -2174,9 +2183,11 @@ export async function excluirAtendimentoPorIdAtendimento(
       .delete(atendimentos)
       .where(eq(atendimentos.idAtendimento, id))
       .returning({ id: atendimentos.id });
-    await tx
-      .delete(atendimentosPedido)
-      .where(eq(atendimentosPedido.idAtendimento, id));
+    if (!manterPedido) {
+      await tx
+        .delete(atendimentosPedido)
+        .where(eq(atendimentosPedido.idAtendimento, id));
+    }
     return rows.length;
   });
 }

@@ -162,6 +162,13 @@
       "when": 1775697934000,
       "tag": "0022_atendimento_itens_valor_desconto",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1775697935000,
+      "tag": "0023_atendimentos_pedido_numero_comanda",
+      "breakpoints": true
     }
   ]
 }

@@ -79,6 +79,8 @@ export interface LinhaResumoComanda {
     titulo: string;
     subtitulo: string;
     linhaEtapa: AtendimentoListaItem | null;
+    /** Só Mega: valor da etapa (ex.: ao lado do nome «Retirada — R$ …»). */
+    valorEtapaBrl?: string | null;
   }[];
   /** Tipo do bloco (`Serviço`/`Produto`/`Mega`/`Pacote`/`Cabelo`). */
   tipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Cabelo' | 'Outro';
@@ -300,10 +302,18 @@ export class NovaComandaDrawerComponent implements OnInit {
         const et = String(l.etapa ?? '').trim();
         if (!et) continue;
         const prof = String(l.profissional ?? '').trim();
+        let valorEtapaBrl: string | null = null;
+        if (tipo === 'Mega') {
+          const v = valorMonetarioParaNumero(l.valor);
+          if (v != null && v >= 0) {
+            valorEtapaBrl = formataMoedaBrl(v);
+          }
+        }
         etapas.push({
           titulo: et,
           subtitulo: prof ? `Profissional: ${prof}` : '',
           linhaEtapa: l,
+          valorEtapaBrl,
         });
       }
       out.push({
@@ -508,12 +518,11 @@ export class NovaComandaDrawerComponent implements OnInit {
         }
         return null;
       }
-      /** V. unitário = soma das etapas (referência única para o bloco). */
-      const unitMega = qEff > 0 ? totalMega / qEff : totalMega;
+      /** Mega: total na coluna Total; V. unit. fica «—» (valor por etapa ao lado do nome). */
       return {
         mostrarQtd,
         textoQtd,
-        unitario: formataMoedaBrl(unitMega),
+        unitario: '—',
         desconto: '—',
         total: formataMoedaBrl(totalMega),
       };
@@ -856,9 +865,30 @@ export class NovaComandaDrawerComponent implements OnInit {
   tituloComandaDrawer(): string {
     const idAt = this.contexto()?.idAtendimento?.trim();
     if (!idAt) return 'Nova comanda';
-    const n = this.contexto()?.numeroComandaTitulo;
-    const num = typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 1;
+    const num = this.numeroComandaExibicao();
     return `Visualizando comanda #${num}`;
+  }
+
+  /**
+   * `#N` na UI: prioriza `numero_comanda` vindo da API nas linhas carregadas
+   * (canónico após gravar); senão usa o contexto do pai.
+   */
+  numeroComandaExibicao(): number {
+    const fromApi = this.numeroComandaDasLinhasCarregadas();
+    if (fromApi != null) return fromApi;
+    const n = this.contexto()?.numeroComandaTitulo;
+    return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 1;
+  }
+
+  private numeroComandaDasLinhasCarregadas(): number | null {
+    let best: number | null = null;
+    for (const r of this.linhasAtendimentoApi) {
+      const n = r.numeroComanda;
+      if (typeof n === 'number' && Number.isFinite(n) && n > 0) {
+        best = best == null ? n : Math.max(best, n);
+      }
+    }
+    return best;
   }
 
   brl(n: number): string {

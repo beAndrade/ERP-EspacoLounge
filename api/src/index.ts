@@ -120,12 +120,23 @@ async function execConfirmarPagamento(body: {
   }
 }
 
-async function execExcluirAtendimento(body: { id_atendimento?: string }) {
+async function execExcluirAtendimento(body: {
+  id_atendimento?: string;
+  manter_cabecalho_pedido?: boolean;
+}) {
   try {
     const id = String(body.id_atendimento || '').trim();
     if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
-    const n = await excluirAtendimentoPorIdAtendimento(db, id);
-    if (!n) {
+    const rawM = (body as Record<string, unknown>)['manter_cabecalho_pedido'];
+    const manterCab =
+      rawM === true ||
+      rawM === 1 ||
+      (typeof rawM === 'string' &&
+        ['1', 'true', 'yes', 'sim'].includes(rawM.trim().toLowerCase()));
+    const n = await excluirAtendimentoPorIdAtendimento(db, id, {
+      manterCabecalhoPedido: manterCab,
+    });
+    if (!n && !manterCab) {
       return fail('NOT_FOUND', 'Nenhuma linha encontrada para excluir');
     }
     return ok({ removidas: n });
@@ -626,7 +637,16 @@ const app = new Elysia({ adapter: node() })
       const idAt = String(
         b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
       ).trim();
-      return execExcluirAtendimento({ id_atendimento: idAt });
+      const rawM = (b as Record<string, unknown>)['manter_cabecalho_pedido'];
+      const manterCab =
+        rawM === true ||
+        rawM === 1 ||
+        (typeof rawM === 'string' &&
+          ['1', 'true', 'yes', 'sim'].includes(rawM.trim().toLowerCase()));
+      return execExcluirAtendimento({
+        id_atendimento: idAt,
+        manter_cabecalho_pedido: manterCab,
+      });
     }
     try {
       const result = await createAtendimento(

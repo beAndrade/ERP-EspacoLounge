@@ -84,6 +84,13 @@ async function truncateAll() {
       clientes
     RESTART IDENTITY CASCADE
   `));
+  await db.execute(sql.raw(`
+    SELECT setval(
+      'atendimentos_pedido_numero_comanda_seq',
+      1,
+      false
+    )
+  `));
 }
 
 export async function seedFromXlsx(options?: { truncate?: boolean }) {

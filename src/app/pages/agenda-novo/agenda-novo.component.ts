@@ -2244,7 +2244,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                   const idEx = String(idVelho ?? '').trim();
                   const excluirAntes =
                     idEx.length > 0
-                      ? this.api.excluirAtendimento(idEx)
+                      ? this.api.excluirAtendimento(idEx, {
+                          manterCabecalhoPedido: true,
+                        })
                       : of({ removidas: 0 });
                   const pl = plBase.map((payload) =>
                     idEx.length > 0
@@ -2264,7 +2266,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             }),
           )
         : editId
-          ? this.api.excluirAtendimento(editId).pipe(switchMap(() => criar$))
+          ? this.api
+              .excluirAtendimento(editId, { manterCabecalhoPedido: true })
+              .pipe(switchMap(() => criar$))
           : criar$;
 
     this.salvando = true;

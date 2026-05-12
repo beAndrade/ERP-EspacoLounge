@@ -36,6 +36,8 @@ interface ComandaGrupo {
   data: string;
   nomeCliente: string;
   linhas: AtendimentoListaItem[];
+  /** Número global da comanda (#N), espelho de `atendimentos_pedido.numero_comanda`. */
+  numeroComanda: number | null;
   valorSubtotal: number | null;
   descontoValor: number | null;
   valorTotal: number | null;
@@ -142,6 +144,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
   excluindoIdAt: string | null = null;
   excluirMassaModalAberto = false;
   excluindoEmMassa = false;
+  excluirItemModalAberto = false;
+  excluindoItemModal = false;
+  grupoPendenteExclusao: ComandaGrupo | null = null;
   get mostrarAcoesEmMassa(): boolean {
     return this.selecionados.size > 0;
   }
@@ -485,7 +490,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.comandaDrawerContexto = {
       acessar: false,
       idAtendimento: null,
-      numeroComandaTitulo: 1,
+      numeroComandaTitulo: Math.max(
+        1,
+        this.maiorNumeroComandaNosGruposCarregados() + 1,
+      ),
       clienteId: '',
       cliente: null,
       opcoesClientes: this.opcoesClientes(),
@@ -1006,16 +1014,25 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   rotuloTicket(g: ComandaGrupo): string {
-    /** Número do ticket = id do atendimento (estável). Não usar `linha_id` da 1.ª linha — muda com a ordenação/itens. */
-    const idAt = this.idAtendimento(g);
-    if (idAt) {
-      const raw = idAt.replace(/\D/g, '');
-      const tail = raw.replace(/^0+/, '') || raw;
-      return tail ? `#${tail}` : '#—';
+    const n = g.numeroComanda;
+    if (typeof n === 'number' && Number.isFinite(n) && n > 0) {
+      return `#${n}`;
     }
-    const lid = g.linhas[0]?.linha_id;
-    if (lid != null && Number.isFinite(lid)) return `#${lid}`;
-    return '#—';
+    /**
+     * Fallback visual: sequência local da listagem (nunca mostrar o id textual bruto).
+     * O valor canónico vem de `numero_comanda` da API.
+     */
+    const idx = this.grupos.findIndex((x) => x.id === g.id);
+    return idx >= 0 ? `#${idx + 1}` : '#—';
+  }
+
+  private maiorNumeroComandaNosGruposCarregados(): number {
+    let m = 0;
+    for (const g of this.grupos) {
+      const n = g.numeroComanda;
+      if (typeof n === 'number' && Number.isFinite(n) && n > m) m = n;
+    }
+    return m;
   }
 
   idCliente(g: ComandaGrupo): string | null {
@@ -1047,7 +1064,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
     const cid = this.idCliente(g) ?? '';
     if (!idAt || !cid) return;
     const cliente = this.clientesCatalogo.find((c) => c.id === cid) ?? null;
-    const numero = Number(this.rotuloTicket(g).replace(/\D/g, '')) || 1;
+    const nPed = g.linhas[0]?.numeroComanda;
+    const numero =
+      typeof nPed === 'number' && Number.isFinite(nPed) && nPed > 0
+        ? nPed
+        : Number(this.rotuloTicket(g).replace(/\D/g, '')) || 1;
     this.comandaDrawerContexto = {
       acessar: true,
       idAtendimento: idAt,
@@ -1185,25 +1206,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }, DRAWER_ANIM_MS);
   }
 
-  /** Após salvar agendamento: fecha drawer de edição e recarrega a lista + drawer da comanda. */
+  /** Após salvar agendamento: fecha edição e o drawer da comanda; volta à lista de comandas. */
   onSalvoEditAgendamento(): void {
     this.fecharEditAgendamento();
     this.editReloadKey++;
-    this.carregar();
-    /** Re-abre o contexto da comanda forçando refresh dos dados. */
-    if (this.comandaPainelAberto && this.comandaDrawerContexto) {
-      const ctx = { ...this.comandaDrawerContexto };
-      this.comandaDrawerContexto = null;
-      queueMicrotask(() => {
-        this.comandaDrawerContexto = ctx;
-        /**
-         * Em alguns ambientes o save do agendamento e a leitura da comanda
-         * podem competir por timing; forçamos refresh logo após reabrir.
-         */
-        setTimeout(() => this.comandaDrawerRef?.recarregarDadosComanda(), 220);
-        setTimeout(() => this.comandaDrawerRef?.recarregarDadosComanda(), 700);
-      });
+    if (this.comandaPainelAberto) {
+      this.fecharComandaDrawer();
     }
+    this.carregar();
   }
 
   // ----- Sub-drawer Faturar -------------------------------------------------
@@ -1324,25 +1334,39 @@ export class ComandasComponent implements OnInit, OnDestroy {
   excluir(g: ComandaGrupo, ev: Event): void {
     ev.stopPropagation();
     this.menuAbertoParaId = null;
-    const idAt = this.idAtendimento(g);
-    if (!idAt) return;
-    const nome = g.nomeCliente?.trim() || 'este cliente';
-    const dataTxt = dataDdMmBarraAaaa(g.data);
-    const msg =
-      `Deseja confirmar a exclusão do atendimento?\n\n` +
-      `Cliente: ${nome}\n` +
-      `Data: ${dataTxt}\n\n` +
-      `Todas as linhas deste atendimento serão apagadas. Esta ação não pode ser desfeita.`;
-    if (!window.confirm(msg)) return;
+    if (!this.idAtendimento(g) || this.excluindoItemModal) return;
+    this.grupoPendenteExclusao = g;
+    this.excluirItemModalAberto = true;
+  }
+
+  fecharModalExcluirItem(): void {
+    if (this.excluindoItemModal) return;
+    this.excluirItemModalAberto = false;
+    this.grupoPendenteExclusao = null;
+  }
+
+  confirmarExcluirItem(): void {
+    const g = this.grupoPendenteExclusao;
+    const idAt = g ? this.idAtendimento(g) : null;
+    if (!idAt || this.excluindoItemModal) {
+      this.excluirItemModalAberto = false;
+      this.grupoPendenteExclusao = null;
+      return;
+    }
     this.excluindoIdAt = idAt;
+    this.excluindoItemModal = true;
     this.erro = '';
     this.api.excluirAtendimento(idAt).subscribe({
       next: () => {
         this.excluindoIdAt = null;
+        this.excluindoItemModal = false;
+        this.excluirItemModalAberto = false;
+        this.grupoPendenteExclusao = null;
         this.carregar();
       },
       error: (e: Error) => {
         this.excluindoIdAt = null;
+        this.excluindoItemModal = false;
         this.erro =
           e.message || 'Não foi possível excluir. Tente novamente.';
       },
@@ -1430,11 +1454,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
           Math.round((subtotal - descontoValor) * 100) / 100,
         );
       }
+      const n0 = linhas[0]?.numeroComanda;
+      const numeroComanda =
+        typeof n0 === 'number' && Number.isFinite(n0) && n0 > 0 ? n0 : null;
       grupos.push({
         id: key,
         data,
         nomeCliente,
         linhas,
+        numeroComanda,
         valorSubtotal: subtotal,
         descontoValor,
         valorTotal,

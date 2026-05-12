@@ -213,6 +213,8 @@
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    /** Último bloco (resumo / total) não cola ao fundo do viewport do scroll — evita corte visual. */
+    padding-bottom: 1.25rem;
   }
 }
 
@@ -642,6 +644,7 @@
   gap: 0.45rem;
   margin-top: 0.35rem;
   padding-top: 0.45rem;
+  padding-bottom: 0.35rem;
 }
 
 .nc-itens-summary__row {
@@ -721,6 +724,20 @@
     &:hover {
       border-color: var(--drawer-field-stroke-hover);
       background: #f5f5f5;
+    }
+  }
+
+  /** Total só leitura (div): entrelinha e padding vertical evitam cortar vírgula / descendentes do «R$». */
+  &--readonly#{&}--total {
+    line-height: 1.45;
+    min-height: 2.5rem;
+    padding-block: 0.45rem;
+    box-sizing: border-box;
+
+    &:hover {
+      border-color: #e7e5e4;
+      background: #f5f5f4;
+      box-shadow: none;
     }
   }
 
@@ -1846,6 +1863,18 @@
 
 .nc-leitura__etapa-titulo {
   font-weight: 500;
+}
+
+/** Mega: traço horizontal entre nome da etapa e o valor (não usar .nc-leitura__etapa-sep aqui). */
+.nc-leitura__etapa-join {
+  color: #94a3b8;
+  font-weight: 400;
+  white-space: pre;
+}
+
+.nc-leitura__etapa-valor {
+  font-weight: 600;
+  color: #334155;
 }
 
 .nc-leitura__etapa-sep {

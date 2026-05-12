@@ -602,6 +602,41 @@
     </div>
   }
 
+  @if (excluirItemModalAberto && grupoPendenteExclusao; as gExcluir) {
+    <div
+      class="comandas-modal-overlay"
+      aria-hidden="true"
+      (click)="fecharModalExcluirItem()"
+    ></div>
+    <div class="comandas-modal" role="dialog" aria-modal="true" aria-label="Confirmação de exclusão">
+      <div class="comandas-modal__icon-wrap" aria-hidden="true">
+        <span class="comandas-modal__icon">!</span>
+      </div>
+      <h3 class="comandas-modal__title">Atenção</h3>
+      <p class="comandas-modal__text">
+        Tem certeza que deseja excluir a comanda {{ rotuloTicket(gExcluir) }}?
+      </p>
+      <div class="comandas-modal__actions">
+        <button
+          type="button"
+          class="comandas-modal__btn comandas-modal__btn--cancel"
+          [disabled]="excluindoItemModal"
+          (click)="fecharModalExcluirItem()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="comandas-modal__btn comandas-modal__btn--confirm"
+          [disabled]="excluindoItemModal"
+          (click)="confirmarExcluirItem()"
+        >
+          {{ excluindoItemModal ? 'Excluindo…' : 'Sim, excluir' }}
+        </button>
+      </div>
+    </div>
+  }
+
   @if (comandaPainelAberto && comandaDrawerContexto) {
     <div
       class="overlay"

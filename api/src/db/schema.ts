@@ -170,6 +170,15 @@ export const atendimentosPedido = pgTable('atendimentos_pedido', {
   idRecorrencia: text('id_recorrencia'),
   /** Posição da ocorrência dentro da série (1, 2, 3...). */
   ordemRecorrencia: integer('ordem_recorrencia'),
+  /**
+   * Número de comanda global (#1, #2, …) atribuído na criação do pedido;
+   * não muda ao editar linhas do mesmo `id_atendimento`.
+   */
+  numeroComanda: integer('numero_comanda')
+    .notNull()
+    .default(
+      sql`nextval('atendimentos_pedido_numero_comanda_seq'::regclass)`,
+    ),
 });
 
 export const atendimentoItens = pgTable(

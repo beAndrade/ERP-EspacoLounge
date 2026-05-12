@@ -43,6 +43,11 @@ export const postAtendimentoMutationBody = t.Object(
     preco_unitario: t.Optional(
       t.Union([t.Number(), t.String(), t.Null()]),
     ),
+    /**
+     * Só com `acao: excluir`: apaga linhas mas mantém `atendimentos_pedido`
+     * (preserva `numero_comanda` antes de recriar o mesmo `id_atendimento`).
+     */
+    manter_cabecalho_pedido: t.Optional(t.Boolean()),
   },
   { additionalProperties: true },
 );

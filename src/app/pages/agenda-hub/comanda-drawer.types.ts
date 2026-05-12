@@ -12,8 +12,8 @@ export type ComandaDrawerContextoAgenda = {
    */
   linhasSnapshot?: ComandaLinhaInicial[];
   /**
-   * Índice exibido no título «Editando comanda #N»: entre comandas abertas do cliente no dia,
-   * ou `abertas + 1` ao criar nova.
+   * Número global da comanda (`atendimentos_pedido.numero_comanda`) para o título «Visualizando comanda #N»;
+   * ao criar no hub, estimativa `max + 1` sobre os itens já carregados até a API devolver o definitivo.
    */
   numeroComandaTitulo: number;
   clienteId: string;
