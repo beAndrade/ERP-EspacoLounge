@@ -275,6 +275,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   salvando = false;
   excluindo = false;
   erro = '';
+  /**
+   * Aviso de negócio: produto ou serviço+tamanho repetido em mais do que uma linha
+   * (alinhado aos índices únicos `atendimento_itens_uq_*` na API).
+   */
+  avisoItensDuplicados = '';
 
   /** Apenas UI — não entram no `FormGroup` nem no payload. */
   enviarLembreteUi = false;
@@ -1380,6 +1385,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
     if (!sid) {
       g.get('valor_unitario')?.setValue('', { emitEvent: false });
+      this.atualizarAvisoItensDuplicados();
       return;
     }
     const svc = this.servicoPorIdQualquerComanda(sid);
@@ -1387,6 +1393,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     g.get('valor_unitario')?.setValue(formataMoedaBrl(Math.max(0, preco)), {
       emitEvent: false,
     });
+    this.atualizarAvisoItensDuplicados();
   }
 
   /**
@@ -1421,14 +1428,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const nome = String(g.get('produto')?.value ?? '').trim();
     if (!nome) {
       c.setValue('', { emitEvent: false });
+      this.atualizarAvisoItensDuplicados();
       return;
     }
     const preco = this.precoCatalogoProduto(nome);
     if (preco == null || preco < 0) {
       c.setValue('', { emitEvent: false });
+      this.atualizarAvisoItensDuplicados();
       return;
     }
     c.setValue(formataMoedaBrl(preco), { emitEvent: false });
+    this.atualizarAvisoItensDuplicados();
   }
 
   /** Marca o `valor_unitario` como tocado e normaliza ao perder o foco. */
@@ -2101,6 +2111,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
+    if (this.avisoItensDuplicados.trim()) {
+      return;
+    }
+
     this.ordenarTodasEtapasMegaPacoteNoForm();
 
     const dataBase = normalizarDataIso(String(raw['data'] ?? ''));
@@ -2290,6 +2304,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         }
       },
       error: (e: Error) => {
+        this.avisoItensDuplicados = '';
         this.erro =
           e.message ||
           'Não foi possível salvar. Verifique a internet e tente de novo.';
@@ -3089,6 +3104,65 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         ep?.updateValueAndValidity({ emitEvent: false });
       }
     }
+    this.atualizarAvisoItensDuplicados();
+  }
+
+  /** Chave alinhada a `atendimento_itens_uq_produto` (nome no formulário). */
+  private chaveUnicaProdutoLinha(g: FormGroup): string | null {
+    if (g.get('itemTipo')?.value !== 'Produto') return null;
+    const nome = String(g.get('produto')?.value ?? '').trim();
+    return nome.length > 0 ? nome : null;
+  }
+
+  /** Chave alinhada a `atendimento_itens_uq_servico` (`servico_id` + tamanho coalescido). */
+  private chaveUnicaServicoLinha(g: FormGroup): string | null {
+    if (g.get('itemTipo')?.value !== 'Serviço') return null;
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    if (!sid) return null;
+    const precisaTam = this.precisaTamanhoServicoId(sid);
+    const tam = precisaTam
+      ? String(g.get('tamanho')?.value ?? '').trim()
+      : '';
+    return JSON.stringify({ sid, tam });
+  }
+
+  private atualizarAvisoItensDuplicados(): void {
+    const prodMap = new Map<string, number[]>();
+    const svcMap = new Map<string, number[]>();
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      if (!g) continue;
+      const pk = this.chaveUnicaProdutoLinha(g);
+      if (pk) {
+        const arr = prodMap.get(pk) ?? [];
+        arr.push(i);
+        prodMap.set(pk, arr);
+      }
+      const sk = this.chaveUnicaServicoLinha(g);
+      if (sk) {
+        const arr = svcMap.get(sk) ?? [];
+        arr.push(i);
+        svcMap.set(sk, arr);
+      }
+    }
+    const dupProd = [...prodMap.entries()].find(([, idx]) => idx.length > 1);
+    if (dupProd) {
+      const nome = dupProd[0];
+      this.avisoItensDuplicados =
+        `O produto «${nome}» está em mais do que uma linha. Só é permitido um registo por produto neste pedido — apague a linha duplicada ou ajuste a quantidade numa única linha.`;
+      return;
+    }
+    const dupSvc = [...svcMap.entries()].find(([, idx]) => idx.length > 1);
+    if (dupSvc) {
+      const { sid, tam } = JSON.parse(dupSvc[0]) as { sid: string; tam: string };
+      const svc = this.servicoPorIdQualquerComanda(sid);
+      const rotulo = svc ? this.rotuloServico(svc) : sid;
+      const tamTxt = tam ? ` com tamanho «${tam}»` : '';
+      this.avisoItensDuplicados =
+        `O serviço «${rotulo}»${tamTxt} está repetido em mais do que uma linha. Apague a duplicata ou use uma única linha com quantidade ajustada.`;
+      return;
+    }
+    this.avisoItensDuplicados = '';
   }
 
   private validarLinhas(raw: Record<string, unknown>): boolean {

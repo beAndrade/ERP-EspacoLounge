@@ -233,6 +233,10 @@
           }
         </div>
 
+    @if (avisoItensDuplicados) {
+      <p class="alert" role="alert">{{ avisoItensDuplicados }}</p>
+    }
+
     <section
       class="itens-atendimento block-itens"
       [class.itens-atendimento--modal]="modoModal"
