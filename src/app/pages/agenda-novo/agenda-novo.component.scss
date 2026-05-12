@@ -2788,6 +2788,33 @@ textarea {
     min-height: var(--touch-min, 38px);
     height: var(--touch-min, 38px);
   }
+
+  .servico-row__cabelo-rodape--drawer
+    .servico-row__field--valor-cabelo-modal
+    input,
+  .servico-row__cabelo-rodape--drawer .servico-row__field--money input,
+  .servico-row__cabelo-rodape--drawer .servico-row__total-estimado {
+    width: 140px;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-height: 38px;
+    height: 38px;
+  }
+
+  .cabelo-calc--nested .cabelo-calc__grid {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .cabelo-calc--nested > .btn.small {
+    border-color: var(--drawer-field-border, #e7e5e4);
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover:not(:disabled) {
+      border-color: var(--el-drawer-field-border-hover);
+      cursor: pointer;
+    }
+  }
 }
 
 /** Diálogo “Conflito de horários” (encaixe) no modal. */

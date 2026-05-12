@@ -1742,7 +1742,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     for (let i = 0; i < this.linhasItensArray.length; i++) {
       const g = this.linhasItensArray.at(i);
       const it = String(g.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
-      if (it === 'Serviço' || it === 'Cabelo') return true;
+      if (it === 'Serviço') return true;
       if (it === 'Mega' || it === 'Pacote') {
         const et = this.etapasArrayDaLinha(i);
         if (et.length > 0) return true;
@@ -3077,7 +3077,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       } else if (tipo === 'Mega' || tipo === 'Pacote') {
         pac?.setValidators([Validators.required]);
       } else if (tipo === 'Cabelo') {
-        profC?.setValidators([Validators.required]);
+        profC?.clearValidators();
         valC?.setValidators([Validators.required, valorCabeloPtValidator]);
       }
 
@@ -3251,8 +3251,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       );
     }
     if (tipo === 'Cabelo') {
-      const pid = g.get('profissional_cabelo')?.value;
-      if (pid == null || pid === '' || !(Number(pid) > 0)) return false;
       const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
       return v != null && v > 0;
     }
@@ -4072,9 +4070,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
       if (tipo === 'Cabelo') {
         const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
-        if (v == null) continue;
+        if (v == null || v <= 0) continue;
         const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
-        const pid = Number(g.get('profissional_cabelo')?.value);
+        const pidC = g.get('profissional_cabelo')?.value;
+        const pidF = g.get('profissional')?.value;
+        const pidRaw = pidC ?? pidF;
+        const pid =
+          pidRaw != null &&
+          pidRaw !== '' &&
+          Number.isFinite(Number(pidRaw)) &&
+          Number(pidRaw) > 0
+            ? Number(pidRaw)
+            : null;
         const desconto = this.normalizarDescontoLinhaStr(
           String(g.get('desconto')?.value ?? ''),
         );
@@ -4086,7 +4093,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           (descontoItemNum != null && descontoItemNum > 0
             ? formataMoedaBrl(descontoItemNum)
             : undefined);
-        if (!(pid > 0)) continue;
         out.push(
           this.mergeSlotOuHoraInicial(
             {

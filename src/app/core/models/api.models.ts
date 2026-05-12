@@ -403,7 +403,8 @@ export type CreateAtendimentoPayload = (
       tipo: 'Cabelo';
       cliente_id: string;
       data: string;
-      profissional_id: number;
+      /** Opcional: comissão/agenda sem profissional associado à linha. */
+      profissional_id?: number | null;
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;

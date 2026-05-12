@@ -121,7 +121,7 @@ export type CreateAtendimentoPayload = (
       tipo: 'Cabelo';
       cliente_id: string;
       data: string;
-      profissional_id: number;
+      profissional_id?: number | null;
       valor: number;
       observacao?: string;
       detalhes_cabelo?: string;
@@ -1822,9 +1822,8 @@ async function createAtendimentoCabelo(
       profissional_id: p.profissional_id,
       profissional: (p as Record<string, unknown>)['profissional'],
     },
-    true,
+    false,
   );
-  if (profissionalId == null) throw new Error('Profissional é obrigatório');
   if (!clienteId || !dataStr) {
     throw new Error('cliente_id e data são obrigatórios para Cabelo');
   }
