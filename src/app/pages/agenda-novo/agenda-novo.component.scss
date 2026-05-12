@@ -1442,7 +1442,7 @@ textarea {
   align-self: flex-end;
 }
 
-/** Cabelo (modal): Valor (estreito) | Detalhes (largo) | Prof | +/lixeira. */
+/** Cabelo (modal): Detalhes (flex) | Valor unit. | Desconto | Total | +/lixeira. */
 .servico-row__cabelo-rodape--drawer {
   display: grid;
   width: 100%;
@@ -1452,10 +1452,10 @@ textarea {
   row-gap: 0.4rem;
   column-gap: 0.55rem;
   grid-template-columns:
-    minmax(0, 0.62fr)
-    minmax(0, 1.55fr)
-    minmax(0, 0.78fr)
-    minmax(0, 0.78fr)
+    minmax(0, 1fr)
+    minmax(0, var(--drawer-money-col, 140px))
+    minmax(0, var(--drawer-money-col, 140px))
+    minmax(0, var(--drawer-money-col, 140px))
     auto;
 
   @media (max-width: 900px) {
@@ -1473,7 +1473,7 @@ textarea {
 }
 
 .servico-row__field--valor-cabelo-modal {
-  max-width: clamp(7rem, 16vw, 9.75rem);
+  max-width: none;
 }
 
 .servico-row__field--detalhes-cabelo-modal {
@@ -1487,7 +1487,8 @@ textarea {
     padding: 0.5rem 0.75rem;
     line-height: 1.35;
     resize: none;
-    overflow-y: auto;
+    overflow-y: hidden;
+    overflow-x: hidden;
   }
 }
 
@@ -1934,6 +1935,11 @@ textarea {
     color: #404040;
   }
 
+  /** Mais altura útil no scroll interno do drawer (menos scroll em listas longas). */
+  .form-shell__main--modal .form-shell__flow--modal {
+    min-height: min(90dvh, 980px);
+  }
+
   /**
    * Labels: tudo padronizado e englobado no escopo do drawer.
    * Qualquer ajuste futuro deve ser feito pelos tokens acima.
@@ -2219,8 +2225,9 @@ textarea {
   /**
    * Cabelo + calculadora: a caixa da calculadora não pode partilhar a mesma linha flex
    * que Valor/Detalhes — empilha calculadora e rodapé a 100% da largura.
+   * Linhas com `.servico-row--cabelo-drawer` usam grelha (tipo + rodapé na 1.ª fila).
    */
-  .servico-row--drawer:has(.cabelo-calc--nested) {
+  .servico-row--drawer:has(.cabelo-calc--nested):not(.servico-row--cabelo-drawer) {
     flex-wrap: wrap;
     align-items: flex-start;
 
@@ -2251,6 +2258,48 @@ textarea {
       flex: 1 1 100%;
       width: 100%;
       min-width: 0;
+    }
+  }
+
+  /**
+   * Cabelo no drawer: «Tipo de linha» à esquerda; rodapé (Detalhes…Total) à direita;
+   * calculadora (ou hint) em baixo a largura total.
+   */
+  .servico-row--drawer.servico-row--cabelo-drawer {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    align-items: start;
+    grid-template-columns: var(--drawer-tipo-linha-col) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 0.55rem;
+    row-gap: 0.55rem;
+
+    > .servico-row__field--tipo-linha {
+      grid-column: 1;
+      grid-row: 1;
+      width: var(--drawer-tipo-linha-col);
+      min-width: var(--drawer-tipo-linha-col);
+      max-width: var(--drawer-tipo-linha-col);
+      box-sizing: border-box;
+    }
+
+    > .servico-row__cabelo-rodape--drawer {
+      grid-column: 2;
+      grid-row: 1;
+      width: 100%;
+      min-width: 0;
+      align-self: start;
+    }
+
+    > .cabelo-calc.cabelo-calc--nested,
+    > .hint {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
     }
   }
 
@@ -2352,6 +2401,18 @@ textarea {
       min-width: 0;
       max-width: none;
     }
+  }
+
+  /**
+   * Mega/Pacote (modal): bloco de etapas mais estreito (50%) e centrado no espaço
+   * antes do rail de alinhamento com as ações da linha.
+   */
+  .servico-row__etapas-wrap--modal-cabecalho .etapas-block--etapas-modal {
+    flex: 0 1 50%;
+    width: 50%;
+    max-width: min(50%, 100%);
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .servico-row--drawer .servico-row__field--modal-prod-money {
@@ -2476,6 +2537,14 @@ textarea {
   .itens-atendimento--modal .saas-select__trigger {
     min-height: var(--touch-min, 38px);
     height: var(--touch-min, 38px);
+  }
+
+  .cabelo-calc--nested .saas-select__list {
+    max-height: min(52vh, 30rem);
+  }
+
+  .cabelo-calc--nested .saas-select__list--com-criar {
+    max-height: min(48vh, 28rem);
   }
 
   app-agenda-horario-slots {
