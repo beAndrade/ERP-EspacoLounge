@@ -2242,7 +2242,8 @@ textarea {
       flex: 1 1 100%;
       width: 100%;
       min-width: 0;
-      max-width: 100%;
+      max-width: none;
+      align-self: stretch;
       box-sizing: border-box;
     }
 
@@ -2267,10 +2268,12 @@ textarea {
   }
 
   /**
-   * Linha “Serviço” no modal: uma linha, campos a crescer até preencher o drawer
-   * (somatório flex + mínimos; sem max-width que corte a descrição).
+   * Linha “Serviço” / «Produto» no modal: uma linha, campos a crescer até preencher o drawer.
+   * Excluir linhas «Cabelo»: o total estimado fica dentro de `.servico-row__cabelo-rodape--drawer`
+   * e o `:has(.servico-row__total-estimado)` aplicava-se por engano, forçando `nowrap` e a
+   * calculadora a partilhar a linha com «Tipo de linha» (largura ~metade do drawer).
    */
-  .servico-row--drawer:has(.servico-row__total-estimado) {
+  .servico-row--drawer:has(.servico-row__total-estimado):not(:has(.cabelo-calc--nested)) {
     width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
@@ -2313,6 +2316,20 @@ textarea {
       flex: 0 0 calc(2.5rem * 2 + 0.4rem);
       margin-left: auto;
     }
+  }
+
+  /** Calculadora «Cabelo» no drawer: Cor, Tamanho, Método e Gramas numa única linha. */
+  .cabelo-calc--nested .cabelo-calc__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem 0.55rem;
+  }
+
+  .cabelo-calc--nested .cabelo-calc__field {
+    min-width: 0;
+  }
+
+  .cabelo-calc--nested .cabelo-calc__field--gramas {
+    grid-column: auto;
   }
 
   /** Linha «Produto» no drawer: mesma coluna «Tipo de linha» que a linha Serviço. */
