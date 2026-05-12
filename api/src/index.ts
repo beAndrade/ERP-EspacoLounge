@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { db, ensureSchemaPatches } from './db';
 import { clientes } from './db/schema';
 import { fail, ok } from './lib/envelope';
+import { mapPostgresUniqueViolationToPtBr } from './lib/pg-error-message';
 import { instantEmDateParaSqlLocalBrasil } from './lib/sql-local-datetime';
 import {
   confirmarPagamentoPorIdAtendimento,
@@ -655,6 +656,8 @@ const app = new Elysia({ adapter: node() })
       );
       return ok(result);
     } catch (e) {
+      const dup = mapPostgresUniqueViolationToPtBr(e);
+      if (dup) return fail('CONFLICT', dup);
       const msg = e instanceof Error ? e.message : String(e);
       return fail('SERVER', msg);
     }
