@@ -10,6 +10,8 @@
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+  color: var(--fat-fg);
+  --fat-fg: #000000bf;
   --drawer-field-h: 38px;
   --drawer-field-stroke: #f1f1f1;
   --drawer-field-stroke-hover: #7a88ff;
@@ -23,6 +25,7 @@
   min-height: 0;
   min-width: 0;
   overflow-x: hidden;
+  color: var(--fat-fg);
 }
 
 /* Cabeçalho (dentro do scroller `.fat-body`: título rola, fechar sticky). */
@@ -41,7 +44,7 @@
   font-size: 24px;
   line-height: 1.25;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--fat-fg);
   flex: 1 1 auto;
   min-width: 0;
   padding: 30px 0 10px;
@@ -92,66 +95,6 @@
   min-width: 0;
 }
 
-.fat-cliente {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.fat-cliente__label {
-  font-size: 0.78rem;
-  color: #64748b;
-}
-
-.fat-cliente__nome {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.fat-status {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 0.6rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-
-  &.nc-status--aberto {
-    background: #f1f5f9;
-    color: #475569;
-    border-color: #e2e8f0;
-  }
-
-  &.nc-status--pendente {
-    background: #fef3c7;
-    color: #92400e;
-    border-color: #fde68a;
-  }
-
-  &.nc-status--parcial {
-    background: #ffedd5;
-    color: #9a3412;
-    border-color: #fed7aa;
-  }
-
-  &.nc-status--pago {
-    background: #dcfce7;
-    color: #166534;
-    border-color: #bbf7d0;
-  }
-}
-
 .fat-alert {
   margin: 0;
   padding: 0.55rem 0.75rem;
@@ -177,7 +120,7 @@
 
 .fat-field__label {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--fat-fg);
   letter-spacing: 0.01em;
 }
 
@@ -185,31 +128,46 @@
 .fat-field__textarea {
   height: var(--drawer-field-h);
   width: 100%;
-  padding: 0 0.7rem;
+  padding: 0 15px;
   font-size: 0.92rem;
-  color: #1f2937;
-  background: #fff;
-  border: 1px solid var(--drawer-field-stroke);
-  border-radius: 10px;
+  color: var(--fat-fg);
+  text-align: start;
+  background-color: transparent;
+  border: 0;
+  border-radius: 12px;
   outline: 0;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.2s linear;
+  appearance: textfield;
   box-sizing: border-box;
+  box-shadow: inset 0 0 0 1px #f1f1f1;
 
   &:hover {
-    border-color: var(--drawer-field-stroke-hover);
+    box-shadow: inset 0 0 0 1px #7a88ff;
   }
 
   &:focus,
   &:focus-visible {
-    border-color: var(--drawer-field-stroke-hover);
-    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+    box-shadow:
+      inset 0 0 0 1px #7a88ff,
+      0 0 0 2px var(--drawer-field-focus-ring);
+  }
+}
+
+input[type='number'].fat-field__input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
 
 .fat-field__textarea {
   height: auto;
   min-height: 64px;
-  padding: 0.55rem 0.7rem;
+  padding: 0.55rem 15px;
   resize: vertical;
   font-family: inherit;
 }
@@ -218,36 +176,50 @@
   margin-top: 0.25rem;
 }
 
-/* Métodos de pagamento */
+/* Métodos de pagamento — grelha 2×2 */
 .fat-metodos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   margin-top: 0.25rem;
+  justify-items: stretch;
 }
 
 .fat-metodo-btn {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 42px;
-  padding: 0 0.85rem;
+  width: 100%;
+  max-width: 216px;
+  min-height: 60px;
+  height: 60px;
+  margin: 0 auto;
+  padding: 0 15px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #ffffff;
-  background: #4f46e5;
-  border: 0;
+  color: var(--fat-fg);
+  background: #ffffff;
+  border: 1px solid #f1f1f1;
   border-radius: 10px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.05s ease, opacity 0.15s ease;
+  transition:
+    color 0.2s linear,
+    border-color 0.2s linear,
+    background 0.2s linear,
+    box-shadow 0.2s linear,
+    opacity 0.15s ease;
 
   svg {
     flex-shrink: 0;
   }
 
   &:hover:not(:disabled) {
-    background: #4338ca;
+    color: #7a88ff;
+    border-color: #7a88ff;
+    background: #ffffff;
   }
 
   &:active:not(:disabled) {
@@ -257,14 +229,6 @@
   &:disabled {
     cursor: not-allowed;
     opacity: 0.55;
-  }
-
-  &.fat-metodo-btn--outros {
-    background: #6b7280;
-
-    &:hover:not(:disabled) {
-      background: #4b5563;
-    }
   }
 }
 
@@ -279,12 +243,12 @@
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--fat-fg);
 }
 
 .fat-hint {
   margin: 0;
-  color: #6b7280;
+  color: var(--fat-fg);
   font-size: 0.85rem;
 }
 
@@ -292,7 +256,7 @@
   margin: 0;
   padding: 0.85rem 0.75rem;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--fat-fg);
   background: #f9fafb;
   border: 1px dashed #e5e7eb;
   border-radius: 10px;
@@ -326,28 +290,30 @@
   flex: 1 1 auto;
   min-width: 0;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--fat-fg);
 }
 
 .fat-pag-data {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--fat-fg);
 }
 
 .fat-pag-metodo {
-  color: #4338ca;
+  color: var(--fat-fg);
   font-weight: 500;
 }
 
 .fat-pag-parcelas {
-  color: #6b7280;
+  color: var(--fat-fg);
   font-size: 0.78rem;
+  opacity: 0.85;
 }
 
 .fat-pag-obs {
   width: 100%;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--fat-fg);
+  opacity: 0.85;
 }
 
 .fat-pag-actions {
@@ -398,11 +364,11 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--fat-fg);
 
   &.fat-resumo__row--strong {
     font-weight: 600;
-    color: #1f2937;
+    color: var(--fat-fg);
   }
 
   &.fat-resumo__row--saldo {
@@ -442,12 +408,12 @@
 
   &.fat-btn--ghost {
     background: #ffffff;
-    color: #374151;
+    color: var(--fat-fg);
     border-color: #e5e7eb;
 
     &:hover:not(:disabled) {
       background: #f9fafb;
-      color: #111827;
+      color: var(--fat-fg);
     }
   }
 
@@ -510,19 +476,20 @@
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  color: var(--fat-fg);
 }
 
 .fat-modal__title {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--fat-fg);
 }
 
 .fat-modal__text {
   margin: 0;
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--fat-fg);
   line-height: 1.4;
 }
 
@@ -546,7 +513,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   background: #f9fafb;
-  color: #1f2937;
+  color: var(--fat-fg);
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   cursor: pointer;

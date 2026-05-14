@@ -76,15 +76,15 @@ function ddMmYyyyToYmd(s: string): string | null {
 interface MetodoOpcao {
   value: MetodoPagamentoComanda;
   rotulo: string;
-  /** Mostrado no botão visível (Dinheiro, Cartão, Outros). */
-  grupo: 'dinheiro' | 'cartao' | 'outros';
+  /** Ícone / agrupamento na grelha principal ou no modal. */
+  grupo: 'dinheiro' | 'cartao' | 'pix' | 'outros';
 }
 
 const METODOS: MetodoOpcao[] = [
   { value: 'dinheiro', rotulo: 'Dinheiro', grupo: 'dinheiro' },
   { value: 'cartao_credito', rotulo: 'Cartão de crédito', grupo: 'cartao' },
-  { value: 'cartao_debito', rotulo: 'Cartão de débito', grupo: 'cartao' },
-  { value: 'pix', rotulo: 'Pix', grupo: 'outros' },
+  { value: 'cartao_debito', rotulo: 'Cartão de débito', grupo: 'outros' },
+  { value: 'pix', rotulo: 'Pix', grupo: 'pix' },
   { value: 'transferencia', rotulo: 'Transferência', grupo: 'outros' },
   { value: 'outros', rotulo: 'Outros', grupo: 'outros' },
 ];
@@ -105,7 +105,6 @@ export class FaturarDrawerComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly idAtendimento = input.required<string>();
-  readonly nomeCliente = input<string>('');
   /** Resumo enviado pelo pai ao abrir; é refrescado pela API ao montar. */
   readonly resumoInicial = input<ComandaResumoPagamentos | null>(null);
 
@@ -200,11 +199,21 @@ export class FaturarDrawerComponent implements OnInit {
   // ----- Métodos / botões --------------------------------------------------
 
   metodoBotoesPrincipais(): MetodoOpcao[] {
-    return METODOS.filter((m) => m.grupo === 'dinheiro' || m.grupo === 'cartao');
+    return METODOS.filter(
+      (m) =>
+        m.value === 'dinheiro' ||
+        m.value === 'cartao_credito' ||
+        m.value === 'pix',
+    );
   }
 
   metodoBotoesOutros(): MetodoOpcao[] {
-    return METODOS.filter((m) => m.grupo === 'outros');
+    return METODOS.filter(
+      (m) =>
+        m.value === 'cartao_debito' ||
+        m.value === 'transferencia' ||
+        m.value === 'outros',
+    );
   }
 
   abrirOutros(): void {
@@ -351,21 +360,6 @@ export class FaturarDrawerComponent implements OnInit {
     const ymd = ddMmYyyyToYmd(this.dataCtrl.value);
     if (ymd) {
       this.dataCtrl.setValue(ymdToDdMmYyyy(ymd), { emitEvent: false });
-    }
-  }
-
-  // ----- Acesso aos rótulos de status -------------------------------------
-
-  rotuloStatus(): string {
-    switch (this.resumo.status) {
-      case 'pago':
-        return 'Quitada';
-      case 'parcial':
-        return 'Parcialmente paga';
-      case 'pendente':
-        return 'Pagamento pendente';
-      default:
-        return 'Em aberto';
     }
   }
 
