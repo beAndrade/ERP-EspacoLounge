@@ -132,7 +132,6 @@ export class FaturarDrawerComponent implements OnInit {
   readonly dataCtrl = new FormControl(ymdToDdMmYyyy(ymdHoje()), {
     nonNullable: true,
   });
-  readonly observacaoCtrl = new FormControl('', { nonNullable: true });
 
   /** Sheet «Outros» (lista expandida de métodos). */
   outrosAberto = false;
@@ -241,14 +240,13 @@ export class FaturarDrawerComponent implements OnInit {
     const dataYmd =
       ddMmYyyyToYmd(this.dataCtrl.value) ?? ymdHoje();
     const parcelas = Math.max(1, Math.floor(this.parcelasCtrl.value || 1));
-    const observacao = this.observacaoCtrl.value.trim() || null;
 
     const payload: CriarComandaPagamentoPayload = {
       data_pagamento: dataYmd,
       valor,
       metodo,
       parcelas,
-      observacao,
+      observacao: null,
     };
 
     this.salvando = true;
@@ -260,7 +258,6 @@ export class FaturarDrawerComponent implements OnInit {
         next: (r) => {
           this.salvando = false;
           this.outrosAberto = false;
-          this.observacaoCtrl.setValue('');
           this.parcelasCtrl.setValue(1);
           this.resumo = r.resumo;
           this.pagamentos = [...this.pagamentos, r.pagamento];
