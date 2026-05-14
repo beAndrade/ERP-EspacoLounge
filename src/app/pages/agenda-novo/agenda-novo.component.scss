@@ -2367,15 +2367,6 @@ textarea {
     }
   }
 
-  /** Calculadora Cabelo no drawer: 60% da largura útil, centrada. */
-  .cabelo-calc.cabelo-calc--nested {
-    width: 60%;
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    box-sizing: border-box;
-  }
-
   /** Calculadora «Cabelo» no drawer: Cor, Tamanho, Método e Gramas numa única linha. */
   .cabelo-calc--nested .cabelo-calc__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
