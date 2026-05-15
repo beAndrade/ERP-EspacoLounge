@@ -214,6 +214,7 @@
         <app-faturar-drawer
           [idAtendimento]="faturarCtx.idAtendimento"
           [resumoInicial]="faturarCtx.resumo"
+          (faturado)="onFaturaComandaSucesso()"
           (fechar)="fecharFaturarDrawer()"
         />
       </div>

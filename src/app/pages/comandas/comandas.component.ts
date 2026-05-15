@@ -1286,6 +1286,12 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }, DRAWER_ANIM_MS);
   }
 
+  /** Após «Faturar» gravar com sucesso: fecha o sub-drawer e o da comanda; a lista já é actualizada em `fecharFaturarDrawer`. */
+  onFaturaComandaSucesso(): void {
+    this.fecharFaturarDrawer();
+    this.fecharComandaDrawer();
+  }
+
   fecharClienteDrawer(): void {
     if (!this.clienteDrawerAberto) return;
     this.clienteDrawerPanelOpen = false;

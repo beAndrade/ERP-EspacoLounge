@@ -15,8 +15,6 @@ import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 import { eq } from 'drizzle-orm';
 import { atendimentos } from '../db/schema';
 
-const EPS = 0.02;
-
 function somaValoresPagamentos(list: CriarPagamentoComandaInput[]): number {
   let s = 0;
   for (const p of list) {
@@ -40,7 +38,8 @@ export interface FaturarComandaComRascunhoInput {
 /**
  * Grava N pagamentos da comanda numa transação, finaliza a cobrança se necessário
  * e sincroniza `pagamento_status` (inclui regra «há linha pendente»).
- * Opcionalmente aplica `credito_excesso` na mesma transação (comanda já quitada).
+ * Opcionalmente aplica `credito_excesso` na mesma transação (excesso pode ir a crédito
+ * no mesmo lote que liquida a comanda, sem exigir quitação prévia no servidor).
  */
 export async function faturarComandaComRascunho(
   db: Db,
@@ -55,17 +54,10 @@ export async function faturarComandaComRascunho(
     throw new Error('Informe pelo menos um pagamento ou crédito de cliente para faturar.');
   }
 
-  const resumoAntes = await getResumoComanda(db, id);
-  const sumComanda = somaValoresPagamentos(list);
-  const totalPagoAposComanda =
-    Math.round((resumoAntes.total_pago + sumComanda) * 100) / 100;
-
+  if (list.length > 0) {
+    somaValoresPagamentos(list);
+  }
   if (creditos.length > 0) {
-    if (totalPagoAposComanda + EPS < resumoAntes.total) {
-      throw new Error(
-        'Para registar crédito de cliente, a comanda deve estar quitada (total pago ≥ total).',
-      );
-    }
     somaValoresPagamentos(creditos);
   }
 

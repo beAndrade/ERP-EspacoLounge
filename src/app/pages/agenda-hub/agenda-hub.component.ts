@@ -623,6 +623,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }, DRAWER_ANIM_MS);
   }
 
+  /** Após «Faturar» gravar com sucesso: fecha drawers e leva à lista de comandas (coluna de pagamentos). */
+  onFaturaComandaSucesso(): void {
+    this.fecharFaturarDrawer();
+    this.fecharComandaDrawer();
+    void this.router.navigate(['/comandas']);
+  }
+
   eventosNaColuna(profId: number): AtendimentoListaItem[] {
     const rows = this.linhasDia.filter(
       (a) => Number(a.profissional_id) === profId,

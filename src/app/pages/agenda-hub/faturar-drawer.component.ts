@@ -143,6 +143,8 @@ export class FaturarDrawerComponent implements OnInit {
   readonly resumoInicial = input<ComandaResumoPagamentos | null>(null);
 
   readonly fechar = output<void>();
+  /** Após gravar com sucesso na API (pai fecha drawers e actualiza a lista). */
+  readonly faturado = output<void>();
 
   resumo: ComandaResumoPagamentos = {
     total_bruto: 0,
@@ -425,35 +427,65 @@ export class FaturarDrawerComponent implements OnInit {
       this.erro = 'Informe um valor maior que zero.';
       return;
     }
+    const valorArred = Math.round(valor * 100) / 100;
     const saldoAntes = this.saldoRestante();
-    if (saldoAntes > 0.001) {
-      if (valor > saldoAntes + 0.005) {
-        this.erro = `O valor não pode exceder o saldo restante (${formatarInputPt(saldoAntes)}).`;
-        return;
-      }
-    } else {
-      if (metodo === 'pendente') {
+
+    if (metodo === 'pendente') {
+      if (saldoAntes <= 0.001) {
         this.erro =
           '«Pendente» só se aplica ao valor em falta da comanda, não ao crédito de cliente.';
         return;
       }
+      if (valorArred > saldoAntes + 0.005) {
+        this.erro = `Com «Pendente», o valor não pode exceder o saldo restante (${formatarInputPt(saldoAntes)}).`;
+        return;
+      }
     }
+
     const dataYmd = ddMmYyyyToYmd(this.dataCtrl.value) ?? ymdHoje();
     const parcelas = Math.max(1, Math.floor(this.parcelasCtrl.value || 1));
     this.erro = '';
-    const destino: 'comanda' | 'credito' =
-      saldoAntes > 0.001 ? 'comanda' : 'credito';
-    this.rascunho = [
-      ...this.rascunho,
-      {
+
+    const novas: RascunhoPagamento[] = [];
+
+    if (saldoAntes > 0.001 && metodo !== 'pendente') {
+      const partC = Math.min(valorArred, saldoAntes);
+      const partCArred = Math.round(partC * 100) / 100;
+      const partCr = Math.round((valorArred - partCArred) * 100) / 100;
+      if (partCArred > 0.001) {
+        novas.push({
+          idLocal: `d-${Date.now()}-c-${Math.random().toString(36).slice(2, 9)}`,
+          data_pagamento: dataYmd,
+          metodo,
+          valor: partCArred,
+          parcelas,
+          destino: 'comanda',
+        });
+      }
+      if (partCr > 0.001) {
+        novas.push({
+          idLocal: `d-${Date.now()}-r-${Math.random().toString(36).slice(2, 9)}`,
+          data_pagamento: dataYmd,
+          metodo,
+          valor: partCr,
+          parcelas: 1,
+          destino: 'credito',
+        });
+      }
+    } else {
+      const destino: 'comanda' | 'credito' =
+        saldoAntes > 0.001 ? 'comanda' : 'credito';
+      novas.push({
         idLocal: `d-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         data_pagamento: dataYmd,
         metodo,
-        valor: Math.round(valor * 100) / 100,
+        valor: valorArred,
         parcelas,
         destino,
-      },
-    ];
+      });
+    }
+
+    this.rascunho = [...this.rascunho, ...novas];
     this.parcelasCtrl.setValue(1);
     const rest = this.saldoRestante();
     if (rest > 0.001) {
@@ -509,7 +541,7 @@ export class FaturarDrawerComponent implements OnInit {
           this.rascunho = [];
           this.pagamentos = r.items ?? [];
           this.resumo = this.mesclarResumoComInicial(r.resumo);
-          this.fechar.emit();
+          this.faturado.emit();
         },
         error: (e: Error) => {
           this.salvando = false;
