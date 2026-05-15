@@ -195,6 +195,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           this.descontoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
+          this.descontoResumoCtrl.markAsPristine();
           this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
@@ -207,6 +208,10 @@ export class NovaComandaDrawerComponent implements OnInit {
           this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
+          this.descontoResumoCtrl.setValue(formataMoedaBrl(0), {
+            emitEvent: false,
+          });
+          this.descontoResumoCtrl.markAsPristine();
         }
         this.carregandoItens = true;
         this.erroItens = '';
@@ -243,10 +248,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           if (this.contexto()?.idAtendimento?.trim() !== id) return;
           this.pagamentos = r.items ?? [];
           this.resumoPagamentos = r.resumo ?? RESUMO_VAZIO;
-          this.descontoResumoCtrl.setValue(
-            formataMoedaBrl(this.resumoPagamentos.desconto ?? 0),
-            { emitEvent: false },
-          );
+          this.sincronizarDescontoResumoDoBackendELeitura(true);
           this.carregandoPagamentos = false;
         },
       });
@@ -590,8 +592,25 @@ export class NovaComandaDrawerComponent implements OnInit {
       }),
       )
       .subscribe({
-        next: () => {},
+        next: () => {
+          this.sincronizarDescontoResumoDoBackendELeitura(false);
+        },
       });
+  }
+
+  /**
+   * Mantém o input «Desconto» alinhado ao resumo da API e aos descontos por linha
+   * mostrados na tabela (evita total certo com campo a R$ 0,00).
+   */
+  private sincronizarDescontoResumoDoBackendELeitura(forcar: boolean): void {
+    if (!forcar && !this.descontoResumoCtrl.pristine) return;
+    const implicit = this.somaDescontosExibidosPorItensComanda();
+    const api = this.resumoPagamentos?.desconto ?? 0;
+    const v = Math.round(Math.max(api, implicit) * 100) / 100;
+    this.descontoResumoCtrl.setValue(formataMoedaBrl(v), {
+      emitEvent: false,
+    });
+    this.descontoResumoCtrl.markAsPristine();
   }
 
   private reconstruirMapaQuantidade(rows: AtendimentoListaItem[]): void {
@@ -752,7 +771,7 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (!id || !this.podeFaturar()) return;
     this.fecharOutrosMenu();
     const r = this.resumoPagamentos;
-    const bruto = this.somaTotaisItensComanda();
+    const bruto = this.subtotalBrutoAntesDescontoResumo();
     const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
     const total = this.totalComandaResumoCalculado();
     const totalPago = r.total_pago ?? 0;
@@ -907,6 +926,34 @@ export class NovaComandaDrawerComponent implements OnInit {
     return Math.round(sum * 100) / 100;
   }
 
+  /** Soma das colunas «Desc.» por linha (Mega/Pacote costumam vir «—»; aí prevalece o desconto da API). */
+  private somaDescontosExibidosPorItensComanda(): number {
+    let sum = 0;
+    for (const b of this.blocosLeitura()) {
+      const stripe = this.faixaPrecoBloc(b);
+      if (!stripe) continue;
+      const raw = String(stripe.desconto ?? '').trim();
+      if (!raw || raw === '—') continue;
+      const n = valorMonetarioParaNumero(raw);
+      if (n != null && Number.isFinite(n) && n > 0) sum += n;
+    }
+    return Math.round(sum * 100) / 100;
+  }
+
+  /**
+   * Subtotal «bruto» antes do campo resumo: totais já líquidos na tabela + descontos
+   * mostrados por linha, para não duplicar a subtracção no total.
+   */
+  private subtotalBrutoAntesDescontoResumo(): number {
+    return (
+      Math.round(
+        (this.somaTotaisItensComanda() +
+          this.somaDescontosExibidosPorItensComanda()) *
+          100,
+      ) / 100
+    );
+  }
+
   valorMonetarioCampoResumo(s: string): number {
     const n = valorMonetarioParaNumero(s);
     return n != null && Number.isFinite(n) ? Math.max(0, n) : 0;
@@ -918,7 +965,7 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   totalComandaResumoCalculado(): number {
-    const bruto = this.somaTotaisItensComanda();
+    const bruto = this.subtotalBrutoAntesDescontoResumo();
     const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
     const cred = this.valorMonetarioCampoResumo(this.creditoResumoCtrl.value);
     const cash = this.cashbackComandaReais();
