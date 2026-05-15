@@ -29,6 +29,79 @@ import {
   tap,
 } from 'rxjs';
 
+const MESES_PT = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const;
+
+/** Campo `aniversario` dentro do JSON `_elCli` em `Cliente.observacoes`. */
+function aniversarioBrutoDasObservacoes(obs: string | null | undefined): string {
+  const s = String(obs ?? '').trim();
+  if (!s) return '';
+  try {
+    const o = JSON.parse(s) as unknown;
+    if (
+      o &&
+      typeof o === 'object' &&
+      o !== null &&
+      '_elCli' in o &&
+      (o as { _elCli?: unknown })._elCli === 1 &&
+      'aniversario' in o &&
+      typeof (o as { aniversario?: unknown }).aniversario === 'string'
+    ) {
+      return String((o as { aniversario: string }).aniversario).trim();
+    }
+  } catch {
+    /* texto livre legado */
+  }
+  return '';
+}
+
+/** «Aniversário em d, mês» a partir de texto tipo DD/MM/AAAA ou DD/MM. */
+function linhaAniversarioFormatada(aniversarioRaw: string): string | null {
+  const raw = aniversarioRaw.trim();
+  if (!raw) return null;
+  const partes = raw
+    .split(/[/.\-]/)
+    .map((p) => p.replace(/\D/g, ''))
+    .filter((p) => p.length > 0);
+  let dStr = '';
+  let mStr = '';
+  if (partes.length >= 2) {
+    dStr = partes[0];
+    mStr = partes[1];
+  } else {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length >= 4) {
+      dStr = digits.slice(0, 2);
+      mStr = digits.slice(2, 4);
+    }
+  }
+  const dia = parseInt(dStr, 10);
+  const mes = parseInt(mStr, 10);
+  if (
+    !Number.isFinite(dia) ||
+    !Number.isFinite(mes) ||
+    mes < 1 ||
+    mes > 12 ||
+    dia < 1 ||
+    dia > 31
+  ) {
+    return `Aniversário: ${raw}`;
+  }
+  return `Aniversário em ${dia}, ${MESES_PT[mes - 1]}`;
+}
+
 @Component({
   selector: 'app-agenda-novo-client-sidebar',
   standalone: true,
@@ -42,7 +115,7 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   @Input() cliente: Cliente | null = null;
 
   /**
-   * Ex.: campo «Aniversário» na secção Informações — abrir cadastro do cliente (drawer / lista).
+   * Ex.: linhas da secção «Informações» — o ecrã de comandas abre o drawer da ficha (`abrirCadastroCliente`).
    */
   readonly abrirCadastroCliente = output<void>();
 
@@ -176,9 +249,19 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
     );
   }
 
-  clicouAbrirCadastroAniversario(): void {
+  /** Qualquer linha da secção «Informações» abre a ficha/cadastro do cliente (pai mostra overlay + drawer). */
+  clicouAbrirCadastroCliente(): void {
     if (!this.temClienteSelecionado) return;
     this.abrirCadastroCliente.emit();
+  }
+
+  linhaAniversarioExibicao(): string {
+    const bruto = aniversarioBrutoDasObservacoes(this.cliente?.observacoes ?? null);
+    return linhaAniversarioFormatada(bruto) ?? 'Aniversário não definido';
+  }
+
+  ariaLabelBotaoAniversario(): string {
+    return `${this.linhaAniversarioExibicao()}. Abrir ficha do cliente.`;
   }
 
   linhaCreditoClienteExibicao(): string {

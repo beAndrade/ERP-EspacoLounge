@@ -329,6 +329,23 @@ export class NovaComandaDrawerComponent implements OnInit {
     }
   }
 
+  /**
+   * Após gravar a ficha no drawer de cliente (comandas): repõe `observacoes`
+   * e restantes campos para a sidebar — o effect não volta a disparar GET sozinho.
+   */
+  recarregarClienteAposSalvarFicha(clienteId: string): void {
+    const cid = (clienteId || '').trim();
+    if (!cid) return;
+    this.api
+      .getCliente(cid)
+      .pipe(take(1), catchError(() => of(null)))
+      .subscribe((row) => {
+        if (!row || (this.contexto()?.clienteId ?? '').trim() !== cid) return;
+        this.clienteApi = row;
+        this.aplicarCreditoAutomaticoSeElegivel();
+      });
+  }
+
   /** Recarrega itens + resumo com o contexto actual (usado após salvar edição). */
   recarregarDadosComanda(): void {
     const ctx = this.contexto();

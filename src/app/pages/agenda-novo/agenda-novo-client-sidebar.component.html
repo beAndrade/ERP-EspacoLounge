@@ -78,8 +78,8 @@
           <button
             type="button"
             class="sidebar-block__linklike"
-            (click)="clicouAbrirCadastroAniversario()"
-            aria-label="Abrir cadastro do cliente para editar data de aniversário"
+            (click)="clicouAbrirCadastroCliente()"
+            [attr.aria-label]="ariaLabelBotaoAniversario()"
           >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
@@ -89,11 +89,15 @@
                 <rect x="3" y="7" width="18" height="4" rx="1"/>
               </svg>
             </span>
-            <span class="sidebar-block__link-txt">Aniversário não definido</span>
+            <span class="sidebar-block__link-txt">{{ linhaAniversarioExibicao() }}</span>
           </button>
         </li>
         <li>
-          <button type="button" class="sidebar-block__linklike">
+          <button
+            type="button"
+            class="sidebar-block__linklike"
+            (click)="clicouAbrirCadastroCliente()"
+          >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
                 <path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5"/>
@@ -108,7 +112,11 @@
           </button>
         </li>
         <li>
-          <button type="button" class="sidebar-block__linklike">
+          <button
+            type="button"
+            class="sidebar-block__linklike"
+            (click)="clicouAbrirCadastroCliente()"
+          >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
                 <circle cx="12" cy="12" r="10"/>
@@ -124,6 +132,7 @@
             type="button"
             class="sidebar-block__linklike"
             [class.sidebar-block__linklike--alert]="destacarComandasEmAberto()"
+            (click)="clicouAbrirCadastroCliente()"
           >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg
@@ -159,6 +168,7 @@
             type="button"
             class="sidebar-block__linklike"
             [class.sidebar-block__linklike--alert]="destacarPagamentosEmAberto()"
+            (click)="clicouAbrirCadastroCliente()"
           >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">

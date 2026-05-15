@@ -616,6 +616,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
     const onOk = (): void => {
       this.atualizarGruposECatalogo();
+      const cidSalvo = (this.clienteDrawerClienteId ?? '').trim();
+      if (cidSalvo) {
+        this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cidSalvo);
+      }
       this.fecharClienteDrawer();
     };
 
