@@ -13,6 +13,7 @@ import {
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
   CriarComandaPagamentoPayload,
+  FaturarComandaPayload,
   FolhaListaItem,
   RecalcularFolhaComissoesResposta,
   Cliente,
@@ -499,6 +500,32 @@ export class SheetsApiService {
       >(
         this.url(
           `/api/comandas/${encodeURIComponent(idAtendimento)}/pagamentos`,
+        ),
+        payload,
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  /**
+   * Grava vários pagamentos da comanda, finaliza cobrança se necessário
+   * e devolve lista + resumo atualizados.
+   */
+  faturarComanda(
+    idAtendimento: string,
+    payload: FaturarComandaPayload,
+  ): Observable<{
+    items: ComandaPagamentoItem[];
+    resumo: ComandaResumoPagamentos;
+  }> {
+    return this.http
+      .post<
+        ApiResponse<{
+          items: ComandaPagamentoItem[];
+          resumo: ComandaResumoPagamentos;
+        }>
+      >(
+        this.url(
+          `/api/comandas/${encodeURIComponent(idAtendimento)}/faturar`,
         ),
         payload,
       )

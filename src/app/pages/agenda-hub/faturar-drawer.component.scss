@@ -322,6 +322,25 @@ input[type='number'].fat-field__input {
   }
 }
 
+.fat-outros-link {
+  display: block;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #7a88ff;
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+
+  &:hover {
+    color: #5c6ae0;
+  }
+}
+
 /* Separador / títulos */
 .fat-sep {
   border: 0;
@@ -413,10 +432,40 @@ input[type='number'].fat-field__input {
   flex-shrink: 0;
 }
 
+.fat-pag-valor-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
 .fat-pag-valor {
   font-size: 0.95rem;
   font-weight: 700;
   color: #166534;
+}
+
+.fat-pag-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  &.fat-pag-badge--pago {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+
+  &.fat-pag-badge--pendente {
+    background: #ffedd5;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+  }
 }
 
 .fat-pag-del {
@@ -508,6 +557,20 @@ input[type='number'].fat-field__input {
     }
 
     margin-left: auto;
+  }
+
+  &.fat-btn--faturar {
+    margin-left: auto;
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+    min-height: 44px;
+    padding: 0 1.25rem;
+
+    &:hover:not(:disabled) {
+      background: #15803d;
+      border-color: #15803d;
+    }
   }
 
   &.fat-btn--danger {

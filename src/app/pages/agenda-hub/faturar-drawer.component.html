@@ -121,7 +121,7 @@
                     class="fat-cartao-dropdown__btn"
                     role="menuitem"
                     [disabled]="!podeRegistrar()"
-                    (click)="registrarPagamento(opt.value)"
+                    (click)="adicionarAoRascunho(opt.value)"
                   >
                     <span>{{ opt.rotulo }}</span>
                     <svg
@@ -147,7 +147,7 @@
             type="button"
             class="fat-metodo-btn"
             [disabled]="!podeRegistrar()"
-            (click)="registrarPagamento(slot.opcao.value)"
+            (click)="adicionarAoRascunho(slot.opcao.value)"
           >
             @if (slot.opcao.grupo === 'dinheiro') {
               <svg
@@ -192,59 +192,106 @@
         type="button"
         class="fat-metodo-btn"
         [disabled]="!podeRegistrar()"
-        (click)="abrirOutros()"
+        (click)="adicionarAoRascunho('pendente')"
       >
         Pendente
       </button>
     </div>
+    <button type="button" class="fat-outros-link" (click)="abrirOutros()">
+      Outros métodos
+    </button>
 
     <hr class="fat-sep" />
 
     <h2 class="fat-h2">Pagamentos</h2>
     @if (carregando) {
       <p class="fat-hint">Carregando…</p>
-    } @else if (pagamentos.length === 0) {
+    } @else if (pagamentos.length === 0 && rascunho.length === 0) {
       <p class="fat-empty">Nenhum pagamento adicionado</p>
     } @else {
       <ul class="fat-pag-list" role="list">
-        @for (p of pagamentos; track p.id) {
+        @for (l of pagamentoLinhasUi(); track trackPagamentoLinha($index, l)) {
           <li class="fat-pag-item">
             <div class="fat-pag-info">
-              <span class="fat-pag-data">{{ dataExibicao(p) }}</span>
-              <span class="fat-pag-metodo">{{ rotuloMetodoPagamento(p) }}</span>
-              @if (p.parcelas > 1) {
-                <span class="fat-pag-parcelas">{{ p.parcelas }}x</span>
+              <span class="fat-pag-data">{{ dataExibicaoLinha(l) }}</span>
+              <span class="fat-pag-metodo">{{ rotuloMetodoLinha(l) }}</span>
+              @if (l.kind === 'api' && l.row.parcelas > 1) {
+                <span class="fat-pag-parcelas">{{ l.row.parcelas }}x</span>
               }
-              @if (p.observacao) {
-                <span class="fat-pag-obs">{{ p.observacao }}</span>
+              @if (l.kind === 'rasc' && l.row.parcelas > 1) {
+                <span class="fat-pag-parcelas">{{ l.row.parcelas }}x</span>
+              }
+              @if (l.kind === 'api' && l.row.observacao) {
+                <span class="fat-pag-obs">{{ l.row.observacao }}</span>
               }
             </div>
             <div class="fat-pag-actions">
-              <span class="fat-pag-valor">{{ brl(p.valor) }}</span>
-              <button
-                type="button"
-                class="fat-pag-del"
-                aria-label="Remover pagamento"
-                [disabled]="excluindoPagamentoId === p.id"
-                (click)="pedirExcluir(p)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
+              <div class="fat-pag-valor-wrap">
+                <span class="fat-pag-valor">{{ brl(valorLinhaNum(l)) }}</span>
+                <span
+                  class="fat-pag-badge"
+                  [class.fat-pag-badge--pago]="badgePagamentoLinha(l) === 'pago'"
+                  [class.fat-pag-badge--pendente]="
+                    badgePagamentoLinha(l) === 'pendente'
+                  "
                 >
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                  <path d="M3 6h18" />
-                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-              </button>
+                  @if (badgePagamentoLinha(l) === 'pendente') {
+                    Pendente
+                  } @else {
+                    Pago
+                  }
+                </span>
+              </div>
+              @if (l.kind === 'api') {
+                <button
+                  type="button"
+                  class="fat-pag-del"
+                  aria-label="Remover pagamento"
+                  [disabled]="excluindoPagamentoId === l.row.id"
+                  (click)="pedirExcluir(l.row)"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="fat-pag-del"
+                  aria-label="Remover da lista"
+                  (click)="removerRascunho(l.row.idLocal)"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              }
             </div>
           </li>
         }
@@ -265,7 +312,11 @@
       </div>
       <div class="fat-resumo__row fat-resumo__row--strong">
         <span>Total pago</span>
-        <span>{{ brl(resumo.total_pago) }}</span>
+        <span>{{ brl(totalAlocado()) }}</span>
+      </div>
+      <div class="fat-resumo__row">
+        <span>Saldo</span>
+        <span>{{ brl(saldoRestante()) }}</span>
       </div>
     </div>
   </div>
@@ -293,13 +344,24 @@
       </svg>
       Calcular troco
     </button>
-    <button
-      type="button"
-      class="fat-btn fat-btn--primary"
-      (click)="fechar.emit()"
-    >
-      Voltar
-    </button>
+    @if (podeMostrarFaturar()) {
+      <button
+        type="button"
+        class="fat-btn fat-btn--faturar"
+        [disabled]="salvando"
+        (click)="confirmarFaturamento()"
+      >
+        {{ salvando ? 'A faturar…' : 'Faturar' }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="fat-btn fat-btn--primary"
+        (click)="fechar.emit()"
+      >
+        Voltar
+      </button>
+    }
   </footer>
 </div>
 
@@ -315,7 +377,7 @@
               type="button"
               class="fat-modal__btn"
               [disabled]="!podeRegistrar()"
-              (click)="registrarPagamento(m.value)"
+              (click)="adicionarAoRascunho(m.value); fecharOutros()"
             >
               {{ m.rotulo }}
             </button>

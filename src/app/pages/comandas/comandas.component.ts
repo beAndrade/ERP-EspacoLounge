@@ -951,6 +951,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   rotuloStatus(g: ComandaGrupo): string {
+    const l0 = g.linhas[0];
+    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
+    if (cs === 'finalizada') {
+      return 'Finalizado';
+    }
     const s = this.statusCobrancaDerivado(g);
     if (s === 'aberto') return 'Em aberto';
     if (s === 'pendente') return 'Pendente';
@@ -959,15 +964,42 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   rotuloPagamento(g: ComandaGrupo): string {
-    return this.rotuloStatus(g);
+    const l0 = g.linhas[0];
+    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
+    if (cs !== 'finalizada') {
+      return '—';
+    }
+    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
+    if (ps === 'confirmado') return 'Pago';
+    if (ps === 'pendente') return 'Pendente';
+    if (ps === 'parcial') return 'Parcial';
+    return 'Pendente';
   }
 
   classeBadgeStatus(g: ComandaGrupo): string {
+    const l0 = g.linhas[0];
+    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
+    if (cs === 'finalizada') {
+      return 'badge--ok';
+    }
     const s = this.statusCobrancaDerivado(g);
     if (s === 'pago') return 'badge--ok';
     if (s === 'parcial') return 'badge--warn';
     if (s === 'pendente') return 'badge--info';
     return 'badge--aviso';
+  }
+
+  classeBadgePagamento(g: ComandaGrupo): string {
+    const l0 = g.linhas[0];
+    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
+    if (cs !== 'finalizada') {
+      return 'badge--aviso';
+    }
+    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
+    if (ps === 'confirmado') return 'badge--ok';
+    if (ps === 'parcial') return 'badge--warn';
+    if (ps === 'pendente') return 'badge--warn';
+    return 'badge--info';
   }
 
   resumoParcial(g: ComandaGrupo): string {

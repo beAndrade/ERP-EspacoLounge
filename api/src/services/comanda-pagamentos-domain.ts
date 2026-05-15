@@ -3,8 +3,8 @@
  *
  * Modelo:
  * - 1 linha em `comanda_pagamentos` por evento de pagamento (parcial ou total).
- * - 1 movimentação financeira (`receita`) ligada por FK para garantir que o
- *   razão financeiro espelha cada parcial.
+ * - 1 movimentação financeira (`receita`) ligada por FK para cada pagamento **com caixa**
+ *   (método diferente de `pendente`).
  * - Status da comanda derivado por SUM(valor): pago / parcial / pendente.
  *
  * NÃO usa o índice único `movimentacoes_confirm_receita_id_at_idx` (que
@@ -12,6 +12,7 @@
  * Origem nova: `comanda_pagamento`.
  */
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { db } from '../db';
 import type { Db } from '../db';
 import {
   atendimentoItens,
@@ -34,7 +35,8 @@ export type MetodoPagamentoComanda =
   | 'cartao_debito'
   | 'pix'
   | 'transferencia'
-  | 'outros';
+  | 'outros'
+  | 'pendente';
 
 const METODOS: ReadonlySet<MetodoPagamentoComanda> = new Set<
   MetodoPagamentoComanda
@@ -45,6 +47,7 @@ const METODOS: ReadonlySet<MetodoPagamentoComanda> = new Set<
   'pix',
   'transferencia',
   'outros',
+  'pendente',
 ]);
 
 const ROTULOS_METODO: Record<MetodoPagamentoComanda, string> = {
@@ -54,6 +57,7 @@ const ROTULOS_METODO: Record<MetodoPagamentoComanda, string> = {
   pix: 'Pix',
   transferencia: 'Transferência',
   outros: 'Outros',
+  pendente: 'Pendente',
 };
 
 export function rotuloMetodoComanda(m: MetodoPagamentoComanda): string {
@@ -456,25 +460,21 @@ function normalizarYmd(s: unknown): string | null {
   return t;
 }
 
-/**
- * Cria 1 pagamento da comanda + a movimentação financeira correspondente.
- * Recalcula folha caso o status do atendimento mude para `pago`.
- */
-export async function criarPagamentoComanda(
-  db: Db,
-  idAtendimento: string,
+function prepararInputPagamentoComanda(
   input: CriarPagamentoComandaInput,
-): Promise<{
-  pagamento: PagamentoComandaDTO;
-  resumo: ResumoComanda;
-}> {
-  const id = String(idAtendimento || '').trim();
-  if (!id) throw new Error('id_atendimento é obrigatório');
-
+): {
+  metodo: MetodoPagamentoComanda;
+  valor: number;
+  valorStr: string;
+  parcelas: number;
+  trocoStr: string | null;
+  dataPagamento: string;
+  observacao: string | null;
+} {
   const metodoRaw = String(input.metodo ?? '').trim().toLowerCase();
   if (!METODOS.has(metodoRaw as MetodoPagamentoComanda)) {
     throw new Error(
-      'Método inválido. Use dinheiro, cartao_credito, cartao_debito, pix, transferencia ou outros.',
+      'Método inválido. Use dinheiro, cartao_credito, cartao_debito, pix, transferencia, outros ou pendente.',
     );
   }
   const metodo = metodoRaw as MetodoPagamentoComanda;
@@ -506,16 +506,56 @@ export async function criarPagamentoComanda(
       ? String(input.observacao).trim()
       : null;
 
-  const result = await db.transaction(async (tx) => {
-    const linhas = await tx
-      .select()
-      .from(atendimentos)
-      .where(eq(atendimentos.idAtendimento, id))
-      .orderBy(asc(atendimentos.id));
-    if (linhas.length === 0) {
-      throw new Error('Atendimento não encontrado para este id.');
-    }
+  return {
+    metodo,
+    valor,
+    valorStr,
+    parcelas,
+    trocoStr,
+    dataPagamento,
+    observacao,
+  };
+}
 
+type DbLike = Pick<
+  typeof db,
+  'select' | 'insert' | 'delete' | 'update' | 'transaction'
+>;
+
+/**
+ * Insere uma linha em `comanda_pagamentos` (e receita em `movimentacoes`, exceto método `pendente`).
+ * Usado dentro de `db.transaction`.
+ */
+export async function inserirPagamentoComandaEmTx(
+  tx: DbLike,
+  idAtendimento: string,
+  input: CriarPagamentoComandaInput,
+): Promise<(typeof comandaPagamentos.$inferSelect)> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+
+  const prep = prepararInputPagamentoComanda(input);
+  const {
+    metodo,
+    valorStr,
+    parcelas,
+    trocoStr,
+    dataPagamento,
+    observacao,
+  } = prep;
+
+  const linhas = await tx
+    .select()
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, id))
+    .orderBy(asc(atendimentos.id));
+  if (linhas.length === 0) {
+    throw new Error('Atendimento não encontrado para este id.');
+  }
+
+  let movimentacaoId: number | null = null;
+
+  if (metodo !== 'pendente') {
     const slug = slugCategoriaReceitaPredominante(linhas);
     const categoriaId = await getCategoriaIdPorSlug(
       tx as unknown as Db,
@@ -539,45 +579,103 @@ export async function criarPagamentoComanda(
         origem: ORIGEM_COMANDA_PAGAMENTO,
       })
       .returning({ id: movimentacoes.id });
-    const movimentacaoId = movIns?.id ?? null;
+    movimentacaoId = movIns?.id ?? null;
+  }
 
-    const [pagIns] = await tx
-      .insert(comandaPagamentos)
-      .values({
-        idAtendimento: id,
-        dataPagamento,
-        valor: valorStr,
-        metodo,
-        parcelas,
-        troco: trocoStr,
-        observacao,
-        movimentacaoId,
-      })
-      .returning();
-    if (!pagIns) throw new Error('Falha ao gravar pagamento da comanda.');
+  const [pagIns] = await tx
+    .insert(comandaPagamentos)
+    .values({
+      idAtendimento: id,
+      dataPagamento,
+      valor: valorStr,
+      metodo,
+      parcelas,
+      troco: trocoStr,
+      observacao,
+      movimentacaoId,
+    })
+    .returning();
+  if (!pagIns) throw new Error('Falha ao gravar pagamento da comanda.');
+  return pagIns;
+}
 
-    return { pagamentoRow: pagIns };
-  });
+/**
+ * Alinha `atendimentos.pagamento_status` com o resumo e com linhas `pendente` (dívida).
+ */
+export async function sincronizarPagamentoStatusAtendimento(
+  db: Db,
+  idAtendimento: string,
+): Promise<void> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) return;
+
+  const [pendRow] = await db
+    .select({ id: comandaPagamentos.id })
+    .from(comandaPagamentos)
+    .where(
+      and(
+        eq(comandaPagamentos.idAtendimento, id),
+        eq(comandaPagamentos.metodo, 'pendente'),
+      ),
+    )
+    .limit(1);
+  const hasPendente = pendRow != null;
 
   const resumo = await getResumoComanda(db, id);
 
-  if (resumo.status === 'pago') {
-    await db
-      .update(atendimentos)
-      .set({ pagamentoStatus: 'confirmado' })
-      .where(
-        and(
-          eq(atendimentos.idAtendimento, id),
-          eq(atendimentos.cobrancaStatus, 'finalizada'),
-        ),
-      );
+  const [linha] = await db
+    .select({ cobrancaStatus: atendimentos.cobrancaStatus })
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, id))
+    .limit(1);
+  const finalizada =
+    String(linha?.cobrancaStatus ?? '').trim().toLowerCase() === 'finalizada';
+  if (!finalizada) return;
+
+  let pagamentoStatus: string;
+  if (hasPendente) {
+    pagamentoStatus = 'pendente';
+  } else if (resumo.status === 'pago') {
+    pagamentoStatus = 'confirmado';
   } else if (resumo.total_pago > 0) {
-    await db
-      .update(atendimentos)
-      .set({ pagamentoStatus: 'parcial' })
-      .where(eq(atendimentos.idAtendimento, id));
+    pagamentoStatus = 'parcial';
+  } else {
+    pagamentoStatus = 'pendente';
   }
 
+  await db
+    .update(atendimentos)
+    .set({ pagamentoStatus })
+    .where(
+      and(
+        eq(atendimentos.idAtendimento, id),
+        eq(atendimentos.cobrancaStatus, 'finalizada'),
+      ),
+    );
+}
+
+/**
+ * Cria 1 pagamento da comanda + a movimentação financeira correspondente
+ * (exceto método `pendente`, sem movimentação).
+ */
+export async function criarPagamentoComanda(
+  db: Db,
+  idAtendimento: string,
+  input: CriarPagamentoComandaInput,
+): Promise<{
+  pagamento: PagamentoComandaDTO;
+  resumo: ResumoComanda;
+}> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+
+  const result = await db.transaction(async (tx) => {
+    const pagamentoRow = await inserirPagamentoComandaEmTx(tx, id, input);
+    return { pagamentoRow };
+  });
+
+  const resumo = await getResumoComanda(db, id);
+  await sincronizarPagamentoStatusAtendimento(db, id);
   await recalcularFolhaAposMudancaAtendimento(db, id).catch(() => {});
 
   return {
@@ -618,33 +716,7 @@ export async function excluirPagamentoComanda(
   });
 
   if (idAtendimento) {
-    const resumo = await getResumoComanda(db, idAtendimento);
-    if (resumo.status === 'pago') {
-      await db
-        .update(atendimentos)
-        .set({ pagamentoStatus: 'confirmado' })
-        .where(
-          and(
-            eq(atendimentos.idAtendimento, idAtendimento),
-            eq(atendimentos.cobrancaStatus, 'finalizada'),
-          ),
-        );
-    } else if (resumo.total_pago > 0) {
-      await db
-        .update(atendimentos)
-        .set({ pagamentoStatus: 'parcial' })
-        .where(eq(atendimentos.idAtendimento, idAtendimento));
-    } else {
-      await db
-        .update(atendimentos)
-        .set({ pagamentoStatus: 'pendente' })
-        .where(
-          and(
-            eq(atendimentos.idAtendimento, idAtendimento),
-            eq(atendimentos.cobrancaStatus, 'finalizada'),
-          ),
-        );
-    }
+    await sincronizarPagamentoStatusAtendimento(db, idAtendimento);
     await recalcularFolhaAposMudancaAtendimento(db, idAtendimento).catch(() => {});
   }
 

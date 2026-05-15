@@ -377,10 +377,10 @@
                       <td class="col-pagamento">
                         <span
                           class="badge"
-                          [class.badge--aviso]="classeBadgeStatus(g) === 'badge--aviso'"
-                          [class.badge--info]="classeBadgeStatus(g) === 'badge--info'"
-                          [class.badge--warn]="classeBadgeStatus(g) === 'badge--warn'"
-                          [class.badge--ok]="classeBadgeStatus(g) === 'badge--ok'"
+                          [class.badge--aviso]="classeBadgePagamento(g) === 'badge--aviso'"
+                          [class.badge--info]="classeBadgePagamento(g) === 'badge--info'"
+                          [class.badge--warn]="classeBadgePagamento(g) === 'badge--warn'"
+                          [class.badge--ok]="classeBadgePagamento(g) === 'badge--ok'"
                           >{{ rotuloPagamento(g) }}</span
                         >
                         @if (resumoParcial(g)) {

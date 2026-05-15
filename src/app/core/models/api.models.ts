@@ -112,7 +112,8 @@ export type MetodoPagamentoComanda =
   | 'cartao_debito'
   | 'pix'
   | 'transferencia'
-  | 'outros';
+  | 'outros'
+  | 'pendente';
 
 /** Linha de `comanda_pagamentos` (1 evento de pagamento parcial ou total). */
 export interface ComandaPagamentoItem {
@@ -151,6 +152,12 @@ export interface CriarComandaPagamentoPayload {
   parcelas?: number;
   troco?: number | null;
   observacao?: string | null;
+}
+
+/** Payload para gravar N pagamentos + finalizar cobrança (transação na API). */
+export interface FaturarComandaPayload {
+  pagamentos: CriarComandaPagamentoPayload[];
+  desconto?: string;
 }
 
 export interface AtendimentoCriadoResumo {

@@ -18,6 +18,7 @@ import type {
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
   CriarComandaPagamentoPayload,
+  FaturarComandaPayload,
   MetodoPagamentoComanda,
 } from '../../core/models/api.models';
 
@@ -92,9 +93,32 @@ const METODOS: MetodoOpcao[] = [
   { value: 'cartao_credito', rotulo: 'Cartão de crédito', grupo: 'cartao' },
   { value: 'cartao_debito', rotulo: 'Cartão de débito', grupo: 'outros' },
   { value: 'pix', rotulo: 'Pix', grupo: 'pix' },
+  { value: 'pendente', rotulo: 'Pendente', grupo: 'outros' },
   { value: 'transferencia', rotulo: 'Transferência', grupo: 'outros' },
   { value: 'outros', rotulo: 'Outros', grupo: 'outros' },
 ];
+
+const ROTULO_METODO_UI: Record<MetodoPagamentoComanda, string> = {
+  dinheiro: 'Dinheiro',
+  cartao_credito: 'Cartão de crédito',
+  cartao_debito: 'Cartão de débito',
+  pix: 'Pix',
+  pendente: 'Pendente',
+  transferencia: 'Transferência',
+  outros: 'Outros',
+};
+
+export interface RascunhoPagamento {
+  idLocal: string;
+  data_pagamento: string;
+  metodo: MetodoPagamentoComanda;
+  valor: number;
+  parcelas: number;
+}
+
+export type PagamentoLinhaUi =
+  | { kind: 'api'; row: ComandaPagamentoItem }
+  | { kind: 'rasc'; row: RascunhoPagamento };
 
 /**
  * Sub-drawer Faturar — abre por cima do drawer de Comanda.
@@ -127,6 +151,8 @@ export class FaturarDrawerComponent implements OnInit {
     cobranca_status: null,
   };
   pagamentos: ComandaPagamentoItem[] = [];
+  /** Alocações ainda não gravadas até «Faturar». */
+  rascunho: RascunhoPagamento[] = [];
   carregando = false;
   salvando = false;
   erro = '';
@@ -222,6 +248,7 @@ export class FaturarDrawerComponent implements OnInit {
           this.carregando = false;
           if (!r) return;
           this.pagamentos = r.items ?? [];
+          this.rascunho = [];
           this.resumo = this.mesclarResumoComInicial(r.resumo);
           if (this.resumo.saldo > 0 && !this.valorCtrl.value.trim()) {
             this.valorCtrl.setValue(formatarInputPt(this.resumo.saldo), {
@@ -303,12 +330,70 @@ export class FaturarDrawerComponent implements OnInit {
 
   podeRegistrar(): boolean {
     if (this.salvando) return false;
-    if (this.resumo.saldo <= 0) return false;
+    if (this.saldoRestante() <= 0.001) return false;
     const v = parsePtDecimal(this.valorCtrl.value);
     return v > 0;
   }
 
-  registrarPagamento(metodo: MetodoPagamentoComanda): void {
+  private somaRascunho(): number {
+    return this.rascunho.reduce((s, x) => s + x.valor, 0);
+  }
+
+  /** `total_pago` da API + linhas do rascunho. */
+  totalAlocado(): number {
+    return (
+      Math.round((this.resumo.total_pago + this.somaRascunho()) * 100) / 100
+    );
+  }
+
+  /** Quanto falta alocar para fechar o total da comanda. */
+  saldoRestante(): number {
+    return Math.max(
+      0,
+      Math.round((this.resumo.total - this.totalAlocado()) * 100) / 100,
+    );
+  }
+
+  pagamentoLinhasUi(): PagamentoLinhaUi[] {
+    const api = this.pagamentos.map((p) => ({ kind: 'api' as const, row: p }));
+    const rasc = this.rascunho.map((row) => ({ kind: 'rasc' as const, row }));
+    return [...api, ...rasc];
+  }
+
+  trackPagamentoLinha(_i: number, l: PagamentoLinhaUi): string {
+    return l.kind === 'api' ? `a-${l.row.id}` : `r-${l.row.idLocal}`;
+  }
+
+  rotuloMetodoLinha(l: PagamentoLinhaUi): string {
+    return l.kind === 'api'
+      ? l.row.metodo_rotulo
+      : ROTULO_METODO_UI[l.row.metodo] ?? l.row.metodo;
+  }
+
+  dataExibicaoLinha(l: PagamentoLinhaUi): string {
+    return l.kind === 'api'
+      ? this.dataExibicao(l.row)
+      : ymdToDdMmYyyy(l.row.data_pagamento);
+  }
+
+  valorLinhaNum(l: PagamentoLinhaUi): number {
+    return l.kind === 'api' ? parseFloat(l.row.valor) || 0 : l.row.valor;
+  }
+
+  badgePagamentoLinha(l: PagamentoLinhaUi): 'pago' | 'pendente' {
+    const metodo = l.kind === 'api' ? l.row.metodo : l.row.metodo;
+    return metodo === 'pendente' ? 'pendente' : 'pago';
+  }
+
+  podeMostrarFaturar(): boolean {
+    return (
+      !this.salvando &&
+      this.rascunho.length > 0 &&
+      this.saldoRestante() <= 0.001
+    );
+  }
+
+  adicionarAoRascunho(metodo: MetodoPagamentoComanda): void {
     this.fecharCartaoDropdown();
     if (this.salvando) return;
     const valor = parsePtDecimal(this.valorCtrl.value);
@@ -316,44 +401,73 @@ export class FaturarDrawerComponent implements OnInit {
       this.erro = 'Informe um valor maior que zero.';
       return;
     }
-    const dataYmd =
-      ddMmYyyyToYmd(this.dataCtrl.value) ?? ymdHoje();
+    const max = this.saldoRestante();
+    if (valor > max + 0.005) {
+      this.erro = `O valor não pode exceder o saldo restante (${formatarInputPt(max)}).`;
+      return;
+    }
+    const dataYmd = ddMmYyyyToYmd(this.dataCtrl.value) ?? ymdHoje();
     const parcelas = Math.max(1, Math.floor(this.parcelasCtrl.value || 1));
+    this.erro = '';
+    this.rascunho = [
+      ...this.rascunho,
+      {
+        idLocal: `d-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        data_pagamento: dataYmd,
+        metodo,
+        valor: Math.round(valor * 100) / 100,
+        parcelas,
+      },
+    ];
+    this.outrosAberto = false;
+    this.parcelasCtrl.setValue(1);
+    const rest = this.saldoRestante();
+    if (rest > 0.001) {
+      this.valorCtrl.setValue(formatarInputPt(rest), { emitEvent: false });
+    } else {
+      this.valorCtrl.setValue('', { emitEvent: false });
+    }
+  }
 
-    const payload: CriarComandaPagamentoPayload = {
-      data_pagamento: dataYmd,
-      valor,
-      metodo,
-      parcelas,
-      observacao: null,
+  removerRascunho(idLocal: string): void {
+    this.rascunho = this.rascunho.filter((x) => x.idLocal !== idLocal);
+    const rest = this.saldoRestante();
+    if (rest > 0.001 && !this.valorCtrl.value.trim()) {
+      this.valorCtrl.setValue(formatarInputPt(rest), { emitEvent: false });
+    }
+  }
+
+  confirmarFaturamento(): void {
+    if (this.salvando || this.rascunho.length === 0) return;
+    const payload: FaturarComandaPayload = {
+      pagamentos: this.rascunho.map(
+        (r): CriarComandaPagamentoPayload => ({
+          data_pagamento: r.data_pagamento,
+          valor: r.valor,
+          metodo: r.metodo,
+          parcelas: r.parcelas,
+          observacao: null,
+        }),
+      ),
     };
-
     this.salvando = true;
     this.erro = '';
     this.api
-      .criarComandaPagamento(this.idAtendimento(), payload)
+      .faturarComanda(this.idAtendimento(), payload)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (r) => {
           this.salvando = false;
-          this.outrosAberto = false;
-          this.cartaoDropdownAberto = false;
-          this.parcelasCtrl.setValue(1);
+          this.rascunho = [];
+          this.pagamentos = r.items ?? [];
           this.resumo = this.mesclarResumoComInicial(r.resumo);
-          this.pagamentos = [...this.pagamentos, r.pagamento];
-          if (this.resumo.saldo > 0) {
-            this.valorCtrl.setValue(formatarInputPt(this.resumo.saldo), {
-              emitEvent: false,
-            });
-          } else {
-            this.valorCtrl.setValue('', { emitEvent: false });
-          }
+          this.fechar.emit();
         },
         error: (e: Error) => {
           this.salvando = false;
           this.erro =
             e.message ||
-            'Não foi possível gravar o pagamento. Tente novamente.';
+            'Não foi possível faturar a comanda. Tente novamente.';
         },
       });
   }

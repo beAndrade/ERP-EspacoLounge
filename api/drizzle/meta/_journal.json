@@ -169,6 +169,13 @@
       "when": 1775697935000,
       "tag": "0023_atendimentos_pedido_numero_comanda",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1775697936000,
+      "tag": "0024_metodo_pagamento_comanda_pendente",
+      "breakpoints": true
     }
   ]
 }

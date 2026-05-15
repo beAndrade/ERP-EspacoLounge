@@ -17,6 +17,7 @@ import {
 } from './services/atendimentos-domain';
 import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
+import { faturarComandaComRascunho } from './services/comanda-faturar-batch';
 import {
   criarPagamentoComanda,
   excluirPagamentoComanda,
@@ -778,6 +779,64 @@ const app = new Elysia({ adapter: node() })
         parcelas: t.Optional(t.Number()),
         troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
         observacao: t.Optional(t.Union([t.String(), t.Null()])),
+      }),
+    },
+  )
+  .post(
+    '/api/comandas/:idAtendimento/faturar',
+    async ({ params, body }) => {
+      try {
+        const id = String(params.idAtendimento || '').trim();
+        if (!id) return fail('VALIDATION', 'idAtendimento é obrigatório');
+        const b = body as Record<string, unknown>;
+        const rawList = b.pagamentos;
+        if (!Array.isArray(rawList) || rawList.length === 0) {
+          return fail('VALIDATION', 'Lista de pagamentos é obrigatória.');
+        }
+        const pagamentos = rawList.map((item) => {
+          const p = item as Record<string, unknown>;
+          return {
+            data_pagamento:
+              p.data_pagamento != null ? String(p.data_pagamento) : undefined,
+            valor: (p.valor as number | string) ?? 0,
+            metodo: String(p.metodo ?? '').trim(),
+            parcelas:
+              p.parcelas != null && Number.isFinite(Number(p.parcelas))
+                ? Number(p.parcelas)
+                : 1,
+            troco:
+              p.troco != null ? (p.troco as number | string) : null,
+            observacao:
+              p.observacao != null ? String(p.observacao) : null,
+          };
+        });
+        const r = await faturarComandaComRascunho(db, id, {
+          pagamentos,
+          desconto: b.desconto,
+        });
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|inválido|maior que zero|encontrado|Informe/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ idAtendimento: t.String() }),
+      body: t.Object({
+        pagamentos: t.Array(
+          t.Object({
+            valor: t.Union([t.Number(), t.String()]),
+            metodo: t.String(),
+            data_pagamento: t.Optional(t.String()),
+            parcelas: t.Optional(t.Number()),
+            troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
+            observacao: t.Optional(t.Union([t.String(), t.Null()])),
+          }),
+        ),
+        desconto: t.Optional(t.String()),
       }),
     },
   )
