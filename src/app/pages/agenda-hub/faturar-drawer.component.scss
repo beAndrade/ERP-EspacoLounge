@@ -448,6 +448,12 @@ input[type='number'].fat-field__input {
     border: 1px solid #fed7aa;
   }
 
+  &.fat-pag-badge--atraso {
+    color: #cf1322;
+    background: #fff1f0;
+    border: 1px solid #ffa39e;
+  }
+
   &.fat-pag-badge--credito {
     background: #e0e7ff;
     color: #3730a3;

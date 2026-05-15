@@ -141,6 +141,11 @@ export class FaturarDrawerComponent implements OnInit {
   readonly idAtendimento = input.required<string>();
   /** Resumo enviado pelo pai ao abrir; é refrescado pela API ao montar. */
   readonly resumoInicial = input<ComandaResumoPagamentos | null>(null);
+  /**
+   * Data da comanda (`AAAA-MM-DD`) alinhada ao campo do drawer da comanda;
+   * sincroniza «Data do pagamento» e o rótulo «Atrasado» em linhas «Pendente».
+   */
+  readonly dataComanda = input<string | null>(null);
 
   readonly fechar = output<void>();
   /** Após gravar com sucesso na API (pai fecha drawers e actualiza a lista). */
@@ -196,6 +201,11 @@ export class FaturarDrawerComponent implements OnInit {
           });
         }
       }
+    });
+    effect(() => {
+      const y = (this.dataComanda() ?? '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return;
+      this.dataCtrl.setValue(ymdToDdMmYyyy(y), { emitEvent: false });
     });
   }
 
@@ -401,10 +411,20 @@ export class FaturarDrawerComponent implements OnInit {
     return l.kind === 'api' ? parseFloat(l.row.valor) || 0 : l.row.valor;
   }
 
-  badgePagamentoLinha(l: PagamentoLinhaUi): 'pago' | 'pendente' | 'credito' {
+  badgePagamentoLinha(l: PagamentoLinhaUi): 'pago' | 'pendente' | 'credito' | 'atrasado' {
     if (l.kind === 'rasc' && l.row.destino === 'credito') return 'credito';
     const metodo = l.kind === 'api' ? l.row.metodo : l.row.metodo;
+    if (metodo === 'pendente' && this.comandaPendenteEmAtrasoNaReferencia()) {
+      return 'atrasado';
+    }
     return metodo === 'pendente' ? 'pendente' : 'pago';
+  }
+
+  /** Data da comanda anterior a hoje → linhas «Pendente» no rascunho mostram «Atrasado». */
+  private comandaPendenteEmAtrasoNaReferencia(): boolean {
+    const y = (this.dataComanda() ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return false;
+    return y < ymdHoje();
   }
 
   podeMostrarFaturar(): boolean {

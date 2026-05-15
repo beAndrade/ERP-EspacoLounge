@@ -231,11 +231,16 @@
                   [class.fat-pag-badge--pendente]="
                     badgePagamentoLinha(l) === 'pendente'
                   "
+                  [class.fat-pag-badge--atraso]="
+                    badgePagamentoLinha(l) === 'atrasado'
+                  "
                   [class.fat-pag-badge--credito]="
                     badgePagamentoLinha(l) === 'credito'
                   "
                 >
-                  @if (badgePagamentoLinha(l) === 'pendente') {
+                  @if (badgePagamentoLinha(l) === 'atrasado') {
+                    Atrasado
+                  } @else if (badgePagamentoLinha(l) === 'pendente') {
                     Pendente
                   } @else if (badgePagamentoLinha(l) === 'credito') {
                     Crédito

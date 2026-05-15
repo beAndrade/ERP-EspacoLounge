@@ -134,6 +134,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     resumo: ComandaResumoPagamentos;
     nomeCliente: string;
   } | null = null;
+  /** Data da comanda (`AAAA-MM-DD`) — alinha «Data do pagamento» / «Atrasado» no Faturar. */
+  comandaDataYmdParaFaturar: string | null = null;
 
   @ViewChild(NovaComandaDrawerComponent)
   private comandaDrawerRef?: NovaComandaDrawerComponent;
@@ -490,6 +492,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   abrirComandaDesdeAgenda(payload: ComandaDrawerContextoAgenda): void {
     if (!this.modalAberto) return;
     this.comandaDrawerContexto = payload;
+    const y = (payload.dataYmd ?? '').trim();
+    this.comandaDataYmdParaFaturar =
+      /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null;
     this.comandaPainelAberto = true;
     this.comandaDrawerPanelOpen = false;
     queueMicrotask(() => {
@@ -506,6 +511,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (!this.comandaDrawerPanelOpen) {
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
+      this.comandaDataYmdParaFaturar = null;
       return;
     }
     this.comandaDrawerPanelOpen = false;
@@ -516,6 +522,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.comandaDrawerCloseTimer = null;
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
+      this.comandaDataYmdParaFaturar = null;
     }, DRAWER_ANIM_MS);
   }
 
@@ -523,6 +530,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaPainelAberto = false;
     this.comandaDrawerPanelOpen = false;
     this.comandaDrawerContexto = null;
+    this.comandaDataYmdParaFaturar = null;
     if (this.comandaDrawerCloseTimer != null) {
       clearTimeout(this.comandaDrawerCloseTimer);
       this.comandaDrawerCloseTimer = null;
@@ -583,14 +591,21 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.agendaDrawerRef?.salvar();
   }
 
+  onComandaDataYmdAlterada(ymd: string | null): void {
+    this.comandaDataYmdParaFaturar = ymd;
+  }
+
   // ----- Sub-drawer Faturar -------------------------------------------------
 
   onAbrirFaturarComanda(ev: {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    dataComandaYmd?: string | null;
   }): void {
     const nomeCliente =
       this.comandaDrawerContexto?.cliente?.nome?.trim() ?? '';
+    this.comandaDataYmdParaFaturar =
+      ev.dataComandaYmd ?? this.comandaDataYmdParaFaturar;
     this.faturarCtx = {
       idAtendimento: ev.idAtendimento,
       resumo: ev.resumo,

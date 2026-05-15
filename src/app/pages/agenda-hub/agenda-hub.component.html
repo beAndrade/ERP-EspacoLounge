@@ -190,6 +190,7 @@
         [contexto]="comandaDrawerContexto"
         (fechar)="fecharComandaDrawer()"
         (comandaExcluida)="onComandaExcluida()"
+        (comandaDataYmd)="onComandaDataYmdAlterada($event)"
         (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
         (salvarComanda)="onSalvarAgendamentoDesdeDrawerComanda()"
         (faturarComanda)="onAbrirFaturarComanda($event)"
@@ -214,6 +215,7 @@
         <app-faturar-drawer
           [idAtendimento]="faturarCtx.idAtendimento"
           [resumoInicial]="faturarCtx.resumo"
+          [dataComanda]="comandaDataYmdParaFaturar"
           (faturado)="onFaturaComandaSucesso()"
           (fechar)="fecharFaturarDrawer()"
         />

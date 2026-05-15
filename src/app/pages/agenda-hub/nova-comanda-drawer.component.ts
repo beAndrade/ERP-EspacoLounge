@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { catchError, map, of, take } from 'rxjs';
+import { catchError, map, of, take, startWith, distinctUntilChanged } from 'rxjs';
 import { AgendaNovoClientSidebarComponent } from '../agenda-novo/agenda-novo-client-sidebar.component';
 import type {
   AtendimentoItemCatalogo,
@@ -23,6 +23,7 @@ import { SheetsApiService } from '../../core/services/sheets-api.service';
 import {
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
+  parseFiltroDataDdMm,
   totalLinhaPreferencialAtendimento,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
@@ -126,7 +127,11 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly faturarComanda = output<{
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    /** Data da comanda (`AAAA-MM-DD`) para alinhar «Data do pagamento» / «Atrasado». */
+    dataComandaYmd?: string | null;
   }>();
+  /** Data da comanda (campo editável) — o hub/comandas ligam ao Faturar em tempo real. */
+  readonly comandaDataYmd = output<string | null>();
   /** Pede gravar o agendamento (hub: formulário atrás da comanda; comandas: editor em modo modal). */
   readonly salvarComanda = output<void>();
 
@@ -235,7 +240,15 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    /** Sem fetch de catálogos: o drawer não edita itens; só apresenta. */
+    this.dataComandaCtrl.valueChanges
+      .pipe(
+        startWith(this.dataComandaCtrl.value),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        this.comandaDataYmd.emit(this.dataComandaYmdParaFaturar());
+      });
   }
 
   /** Re-busca pagamentos + resumo da comanda actual. */
@@ -804,6 +817,7 @@ export class NovaComandaDrawerComponent implements OnInit {
     );
     this.faturarComanda.emit({
       idAtendimento: id,
+      dataComandaYmd: this.dataComandaYmdParaFaturar(),
       resumo: {
         ...r,
         total_bruto: bruto,
@@ -923,6 +937,14 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '—';
     const p = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd);
     return p ? `${p[3]}/${p[2]}/${p[1]}` : ymd;
+  }
+
+  /** Data canónica da comanda para o sub-drawer Faturar (campo da UI ou contexto). */
+  private dataComandaYmdParaFaturar(): string | null {
+    const fromCtrl = parseFiltroDataDdMm(this.dataComandaCtrl.value);
+    if (fromCtrl) return fromCtrl;
+    const y = (this.contexto()?.dataYmd ?? '').trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null;
   }
 
   tituloComandaDrawer(): string {

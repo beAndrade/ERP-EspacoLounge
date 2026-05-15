@@ -184,6 +184,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     resumo: ComandaResumoPagamentos;
     nomeCliente: string;
   } | null = null;
+  comandaDataYmdParaFaturar: string | null = null;
 
   clienteDrawerAberto = false;
   clienteDrawerPanelOpen = false;
@@ -988,7 +989,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Dívida «Pendente» e data da comanda anterior ao dia corrente → exibir «Em atraso»
+   * Dívida «Pendente» e data da comanda anterior ao dia corrente → exibir «Atrasado»
    * (no dia da abertura permanece «Em aberto»).
    */
   comandaPendenteEmAtraso(g: ComandaGrupo): boolean {
@@ -1033,7 +1034,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }
     const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
     if (ps === 'pendente') {
-      if (this.comandaPendenteEmAtraso(g)) return 'Em atraso';
+      if (this.comandaPendenteEmAtraso(g)) return 'Atrasado';
       return 'Em aberto';
     }
     if (this.comandaQuitadaNasCifras(g)) {
@@ -1197,6 +1198,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
       dataYmd: g.data,
       linhasSnapshot: [],
     };
+    const y = (g.data || '').slice(0, 10);
+    this.comandaDataYmdParaFaturar =
+      /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null;
     this.abrirDrawerComAnimacao(() => {
       this.comandaPainelAberto = true;
     }, (open) => {
@@ -1211,6 +1215,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.comandaPainelAberto = false;
       this.comandaDrawerPanelOpen = false;
       this.comandaDrawerContexto = null;
+      this.comandaDataYmdParaFaturar = null;
       if (this.comandaDrawerCloseTimer != null) {
         clearTimeout(this.comandaDrawerCloseTimer);
         this.comandaDrawerCloseTimer = null;
@@ -1263,6 +1268,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.comandaDrawerCloseTimer = null;
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
+      this.comandaDataYmdParaFaturar = null;
       this.desbloquearScrollPagina();
     }, DRAWER_ANIM_MS);
   }
@@ -1334,14 +1340,21 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.carregar();
   }
 
+  onComandaDataYmdAlterada(ymd: string | null): void {
+    this.comandaDataYmdParaFaturar = ymd;
+  }
+
   // ----- Sub-drawer Faturar -------------------------------------------------
 
   onAbrirFaturarComanda(ev: {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    dataComandaYmd?: string | null;
   }): void {
     const ctx = this.comandaDrawerContexto;
     const nomeCliente = ctx?.cliente?.nome ?? '';
+    this.comandaDataYmdParaFaturar =
+      ev.dataComandaYmd ?? this.comandaDataYmdParaFaturar;
     this.faturarCtx = {
       idAtendimento: ev.idAtendimento,
       resumo: ev.resumo,
