@@ -1,4 +1,4 @@
-<div class="nc-drawer">
+<div class="nc-drawer" [class.nc-drawer--finalizada]="comandaFinalizada()">
   <!-- Mesma geometria que `form-shell--modal` + `form-shell__main--modal` no agendamento. -->
   <div class="nc-drawer__shell">
     <div class="nc-drawer__client agenda-novo--drawer" aria-label="Cliente">
@@ -43,6 +43,7 @@
                 type="text"
                 class="nc-field__input"
                 [formControl]="clienteNomeCtrl"
+                [readonly]="comandaFinalizada()"
                 aria-label="Cliente da comanda"
                 placeholder="Busque por um cliente"
               />
@@ -53,6 +54,7 @@
                 type="text"
                 class="nc-field__input"
                 [formControl]="dataComandaCtrl"
+                [readonly]="comandaFinalizada()"
                 aria-label="Data da comanda"
                 placeholder="DD/MM/AAAA"
               />
@@ -76,7 +78,7 @@
                 <span
                   class="badge nc-itens__status-badge"
                   [class.badge--aviso]="classeBadgeComanda() === 'badge--aviso'"
-                  [class.badge--info]="classeBadgeComanda() === 'badge--info'"
+                  [class.badge--pendente]="classeBadgeComanda() === 'badge--pendente'"
                   [class.badge--warn]="classeBadgeComanda() === 'badge--warn'"
                   [class.badge--ok]="classeBadgeComanda() === 'badge--ok'"
                   aria-live="polite"
@@ -84,14 +86,16 @@
                   {{ rotuloStatus() }}
                 </span>
               </div>
-              <button
-                type="button"
-                class="btn btn--editar-agendamento nc-itens__btn-editar"
-                [disabled]="!podeEditar()"
-                (click)="abrirEditarAgendamento()"
-              >
-                Editar
-              </button>
+              @if (!comandaFinalizada()) {
+                <button
+                  type="button"
+                  class="btn btn--editar-agendamento nc-itens__btn-editar"
+                  [disabled]="!podeEditar()"
+                  (click)="abrirEditarAgendamento()"
+                >
+                  Editar
+                </button>
+              }
             </div>
 
             <div class="nc-itens__body">
@@ -227,10 +231,12 @@
                 <input
                   type="text"
                   class="nc-itens-summary__input"
+                  [class.nc-itens-summary__input--readonly]="comandaFinalizada()"
                   inputmode="numeric"
                   autocomplete="off"
                   [attr.placeholder]="placeholderMoedaResumo"
                   [formControl]="descontoResumoCtrl"
+                  [readonly]="comandaFinalizada()"
                   (input)="onResumoMoedaInput(descontoResumoCtrl, $event)"
                   (blur)="normalizarCampoMoedaResumo(descontoResumoCtrl)"
                   [attr.aria-label]="'Desconto: ' + descontoResumoCtrl.value"
@@ -238,12 +244,19 @@
               </div>
               <div class="nc-itens-summary__row">
                 <span class="nc-itens-summary__label">Crédito</span>
-                <div
-                  class="nc-itens-summary__input nc-itens-summary__input--readonly"
-                  [attr.aria-label]="'Crédito: ' + creditoClienteResumoBrl()"
-                >
-                  {{ creditoClienteResumoBrl() }}
-                </div>
+                <input
+                  type="text"
+                  class="nc-itens-summary__input"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  [attr.placeholder]="placeholderMoedaResumo"
+                  [formControl]="creditoResumoCtrl"
+                  (input)="onCreditoResumoMoedaInput($event)"
+                  (blur)="normalizarCampoMoedaResumo(creditoResumoCtrl)"
+                  [attr.aria-label]="
+                    'Crédito a usar: ' + creditoResumoCtrl.value
+                  "
+                />
               </div>
               <div class="nc-itens-summary__row">
                 <span class="nc-itens-summary__label">Cashback</span>
@@ -271,8 +284,10 @@
               <span class="nc-field__label">Observações</span>
               <textarea
                 class="nc-obs-textarea"
+                [class.nc-obs-textarea--readonly]="comandaFinalizada()"
                 rows="3"
                 placeholder="Escreva aqui"
+                [readonly]="comandaFinalizada()"
                 aria-label="Observações da comanda"
               ></textarea>
             </label>
@@ -371,24 +386,25 @@
             aria-label="Excluir comanda"
           >
             {{ excluindo ? 'Excluindo…' : 'Excluir' }}
-            <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
           </button>
         }
-        <button
-          type="button"
-          class="btn btn-footer btn-footer--primary-nc"
-          [disabled]="!podeSalvarComandaRodape()"
-          (click)="gravarRodape()"
-        >
-          Salvar
-        </button>
+        @if (!comandaFinalizada()) {
+          <button
+            type="button"
+            class="btn btn-footer btn-footer--primary-nc"
+            [disabled]="!podeSalvarComandaRodape()"
+            (click)="gravarRodape()"
+          >
+            Salvar
+          </button>
+        }
         <button
           type="button"
           class="btn btn-footer btn-footer--faturar"
           [disabled]="!podeFaturar()"
           (click)="abrirFaturar()"
         >
-          Faturar
+          {{ comandaFinalizada() ? 'Ver pagamentos' : 'Faturar' }}
         </button>
       </div>
     </div>

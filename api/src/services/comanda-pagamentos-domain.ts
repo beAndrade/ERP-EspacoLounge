@@ -179,6 +179,46 @@ function statusDerivado(
 }
 
 /**
+ * Pagamento com método `pendente` entra no SUM de `total_pago`, mas não é receita;
+ * o status derivado não pode ser `pago` quando ainda há dívida pendente.
+ */
+function statusComOverridePendente(
+  status: StatusCobrancaDerivado,
+  cobrancaStatus: string | null,
+  hasPendente: boolean,
+): StatusCobrancaDerivado {
+  const cs = String(cobrancaStatus ?? '').trim().toLowerCase();
+  if (hasPendente && cs === 'finalizada') return 'pendente';
+  return status;
+}
+
+async function idsComPagamentoPendente(
+  db: Db,
+  ids: string[],
+): Promise<Set<string>> {
+  const lista = Array.from(
+    new Set(ids.map((s) => String(s || '').trim()).filter((s) => s.length > 0)),
+  );
+  const out = new Set<string>();
+  if (lista.length === 0) return out;
+  const rows = await db
+    .select({ idAtendimento: comandaPagamentos.idAtendimento })
+    .from(comandaPagamentos)
+    .where(
+      and(
+        inArray(comandaPagamentos.idAtendimento, lista),
+        eq(comandaPagamentos.metodo, 'pendente'),
+      ),
+    )
+    .groupBy(comandaPagamentos.idAtendimento);
+  for (const r of rows) {
+    const k = String(r.idAtendimento || '').trim();
+    if (k) out.add(k);
+  }
+  return out;
+}
+
+/**
  * A pivot `atendimento_itens` pode cobrir só parte do que está em `atendimentos`
  * (ex.: Mega/Pacote sem `valor_unitario`, linhas antigas, ajustes só na planilha).
  * Nesse caso o total pela pivot fica **abaixo** do somatório real das linhas — a UI
@@ -205,12 +245,24 @@ function mesclarTotaisPivotELegado(
     return legacy;
   }
   /**
-   * Totais pela pivot ignoram o desconto global gravado só em `atendimentos.desconto`
-   * (primeira linha do pedido). Sem somar `legacy.desconto`, o total a pagar fica inflado
-   * e pagamentos correctos aparecem como «Parcial».
+   * `atendimentos.desconto` (1.ª linha) pode espelhar o mesmo valor já somado na pivot,
+   * ou ser desconto «Na comanda» extra / total do pedido. Não somar cegamente pivot+legacy.
    */
-  const descontoMerged =
-    Math.round((totaisItens.desconto + legacy.desconto) * 100) / 100;
+  const p = totaisItens.desconto;
+  const l = legacy.desconto;
+  let descontoMerged: number;
+  if (p <= 0.005) {
+    descontoMerged = l;
+  } else if (l <= 0.005) {
+    descontoMerged = p;
+  } else if (Math.abs(l - p) <= 0.005) {
+    descontoMerged = p;
+  } else if (l > p) {
+    descontoMerged = l;
+  } else {
+    descontoMerged = p + l;
+  }
+  descontoMerged = Math.round(descontoMerged * 100) / 100;
   const totalMerged = Math.max(
     0,
     Math.round((totaisItens.total_bruto - descontoMerged) * 100) / 100,
@@ -280,7 +332,12 @@ export async function getResumoComanda(
     (parseFloat(String(agg?.total_pago ?? '0')) || 0) * 100,
   ) / 100;
   const saldo = Math.max(0, Math.round((total - totalPago) * 100) / 100);
-  const status = statusDerivado(total, totalPago, cobranca_status);
+  const pendenteIds = await idsComPagamentoPendente(db, [id]);
+  const status = statusComOverridePendente(
+    statusDerivado(total, totalPago, cobranca_status),
+    cobranca_status,
+    pendenteIds.has(id),
+  );
 
   return {
     total_bruto,
@@ -371,6 +428,8 @@ export async function getResumosPorAtendimento(
     );
   }
 
+  const pendenteIds = await idsComPagamentoPendente(db, lista);
+
   for (const id of lista) {
     const rows = linhasPorId.get(id) ?? [];
     const itens = itensPorId.get(id) ?? [];
@@ -386,7 +445,11 @@ export async function getResumosPorAtendimento(
       total,
       total_pago: totalPago,
       saldo,
-      status: statusDerivado(total, totalPago, cobranca_status),
+      status: statusComOverridePendente(
+        statusDerivado(total, totalPago, cobranca_status),
+        cobranca_status,
+        pendenteIds.has(id),
+      ),
       cobranca_status,
     });
   }
@@ -611,6 +674,61 @@ export async function inserirPagamentoComandaEmTx(
     .returning();
   if (!pagIns) throw new Error('Falha ao gravar pagamento da comanda.');
   return pagIns;
+}
+
+/**
+ * Abate `clientes.credito_saldo` e regista pagamento na comanda (método `outros`).
+ */
+export async function usarCreditoClienteNaComandaEmTx(
+  tx: DbLike,
+  idAtendimento: string,
+  idCliente: string,
+  valor: number,
+): Promise<void> {
+  const idAt = String(idAtendimento || '').trim();
+  const cid = String(idCliente || '').trim();
+  if (!idAt || !cid) {
+    throw new Error('id_atendimento e id_cliente são obrigatórios.');
+  }
+  const v = Math.round(Number(valor) * 100) / 100;
+  if (!Number.isFinite(v) || v <= 0) {
+    throw new Error('Valor de crédito a usar deve ser maior que zero.');
+  }
+
+  const [cli] = await tx
+    .select({ saldo: clientes.creditoSaldo })
+    .from(clientes)
+    .where(eq(clientes.idCliente, cid))
+    .limit(1);
+  const saldoAtual =
+    Math.round((parseFloat(String(cli?.saldo ?? '0')) || 0) * 100) / 100;
+  if (saldoAtual + 0.0001 < v) {
+    throw new Error(
+      `Saldo de crédito insuficiente (disponível ${saldoAtual.toFixed(2)}).`,
+    );
+  }
+
+  const resumo = await getResumoComanda(tx as unknown as Db, idAt);
+  if (v - 0.0001 > resumo.saldo) {
+    throw new Error(
+      'O crédito a usar não pode ser maior que o saldo em aberto da comanda.',
+    );
+  }
+
+  await inserirPagamentoComandaEmTx(tx, idAt, {
+    valor: v,
+    metodo: 'outros',
+    parcelas: 1,
+    observacao: 'Crédito do cliente',
+    data_pagamento: ymdHoje(),
+  });
+
+  await tx
+    .update(clientes)
+    .set({
+      creditoSaldo: sql`GREATEST(0::numeric, ${clientes.creditoSaldo}::numeric - ${v.toFixed(2)}::numeric)`,
+    })
+    .where(eq(clientes.idCliente, cid));
 }
 
 /**

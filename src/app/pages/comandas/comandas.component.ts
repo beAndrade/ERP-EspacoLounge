@@ -158,6 +158,16 @@ export class ComandasComponent implements OnInit, OnDestroy {
   comandaDrawerPanelOpen = false;
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
 
+  /** Drawer «Novo agendamento» (toolbar «Novo» na lista de comandas). */
+  novoAgendamentoAberto = false;
+  novoAgendamentoPanelOpen = false;
+  novoAgendamentoCtx: {
+    data: string;
+    profissional_id: number;
+    hora?: string;
+    id_atendimento?: string;
+  } | null = null;
+
   /** Drawer de edição do agendamento (aberto a partir do botão Editar na comanda). */
   editAgendamentoAberto = false;
   editAgendamentoPanelOpen = false;
@@ -182,7 +192,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
   faturarCtx: {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    creditoAUsar?: number;
     nomeCliente: string;
+    modoVerPagamentos?: boolean;
   } | null = null;
   comandaDataYmdParaFaturar: string | null = null;
 
@@ -232,6 +244,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private clienteDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private novoAgendamentoCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private editAgendamentoCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
@@ -342,6 +355,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.comandaPainelAberto) {
       ev.preventDefault();
       this.fecharComandaDrawer();
+      return;
+    }
+    if (this.novoAgendamentoAberto) {
+      ev.preventDefault();
+      this.fecharNovoAgendamento();
       return;
     }
     if (this.perPageMenuAberto) {
@@ -475,37 +493,72 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return ids;
   }
 
-  /** Abre o drawer «Nova comanda» reutilizando o fluxo da comanda. */
-  abrirNovaComandaDrawer(): void {
+  /** Toolbar «Novo»: abre o drawer de novo agendamento (mesmo fluxo da agenda). */
+  abrirNovoAgendamentoDrawer(): void {
     this.menuAbertoParaId = null;
     this.fecharPainelBusca();
     if (this.clienteDrawerAberto) {
-      this.clienteDrawerAberto = false;
-      this.clienteDrawerPanelOpen = false;
-      if (this.clienteDrawerCloseTimer != null) {
-        clearTimeout(this.clienteDrawerCloseTimer);
-        this.clienteDrawerCloseTimer = null;
-      }
-      this.descontoDropdownAberto = false;
+      this.fecharClienteDrawer();
     }
-    this.comandaDrawerContexto = {
-      acessar: false,
-      idAtendimento: null,
-      numeroComandaTitulo: Math.max(
-        1,
-        this.maiorNumeroComandaNosGruposCarregados() + 1,
-      ),
-      clienteId: '',
-      cliente: null,
-      opcoesClientes: this.opcoesClientes(),
-      dataYmd: toYmd(new Date()),
-      linhasSnapshot: [],
+    this.novoAgendamentoCtx = {
+      data: toYmd(new Date()),
+      profissional_id: 0,
+      hora: '',
+      id_atendimento: undefined,
     };
+    this.abrirDrawerComAnimacao(
+      () => {
+        this.novoAgendamentoAberto = true;
+      },
+      (open) => {
+        this.novoAgendamentoPanelOpen = open;
+      },
+    );
+  }
+
+  fecharNovoAgendamento(): void {
+    if (!this.novoAgendamentoAberto) return;
+    this.novoAgendamentoPanelOpen = false;
+    if (this.novoAgendamentoCloseTimer != null) {
+      clearTimeout(this.novoAgendamentoCloseTimer);
+    }
+    this.novoAgendamentoCloseTimer = setTimeout(() => {
+      this.novoAgendamentoCloseTimer = null;
+      this.novoAgendamentoAberto = false;
+      this.novoAgendamentoCtx = null;
+      this.desbloquearScrollSeNenhumDrawerAberto();
+    }, DRAWER_ANIM_MS);
+  }
+
+  onSalvoNovoAgendamento(): void {
+    this.fecharNovoAgendamento();
+    this.carregar();
+  }
+
+  /** «Criar comanda» no rodapé do agendamento: abre o drawer da comanda por cima. */
+  abrirComandaDesdeAgendamento(payload: ComandaDrawerContextoAgenda): void {
+    this.comandaDrawerContexto = payload;
+    const y = (payload.dataYmd ?? '').trim();
+    this.comandaDataYmdParaFaturar =
+      /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null;
     this.abrirDrawerComAnimacao(() => {
       this.comandaPainelAberto = true;
     }, (open) => {
       this.comandaDrawerPanelOpen = open;
     });
+  }
+
+  private desbloquearScrollSeNenhumDrawerAberto(): void {
+    if (
+      this.comandaPainelAberto ||
+      this.clienteDrawerAberto ||
+      this.faturarDrawerAberto ||
+      this.editAgendamentoAberto ||
+      this.novoAgendamentoAberto
+    ) {
+      return;
+    }
+    this.desbloquearScrollPagina();
   }
 
   tituloCabecalhoClienteDrawer(): string {
@@ -962,15 +1015,50 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   private readonly epsMoeda = 0.005;
 
+  /**
+   * Total a pagar (com desconto). Prefere `total` da API; se vier bruto sem desconto,
+   * usa `valorTotal` calculado na lista.
+   */
+  private totalDevidoComanda(g: ComandaGrupo): number {
+    const l0 = g.linhas[0];
+    const apiTotal = Number(l0?.total);
+    const calculado = g.valorTotal;
+    if (Number.isFinite(apiTotal) && apiTotal >= 0) {
+      if (
+        calculado != null &&
+        Number.isFinite(calculado) &&
+        calculado >= 0
+      ) {
+        return Math.min(apiTotal, calculado);
+      }
+      return apiTotal;
+    }
+    if (calculado != null && Number.isFinite(calculado) && calculado >= 0) {
+      return calculado;
+    }
+    const bruto = Number(l0?.total_bruto);
+    if (Number.isFinite(bruto) && bruto > 0) {
+      const desc =
+        g.descontoValor ??
+        valorMonetarioParaNumero(l0?.desconto) ??
+        Number(l0?.desconto_num) ??
+        0;
+      return Math.max(0, Math.round((bruto - desc) * 100) / 100);
+    }
+    return g.valorSubtotal ?? 0;
+  }
+
   /** Quitada em caixa (sem linha «pendente» em dívida). */
   comandaQuitadaNasCifras(g: ComandaGrupo): boolean {
     if (this.comandaPagamentoPendenteDivida(g)) return false;
     const l0 = g.linhas[0];
     if (l0?.status_cobranca === 'pago') return true;
+    const pago = Number(l0?.total_pago ?? 0);
     const saldo = Number(l0?.saldo);
-    if (Number.isFinite(saldo) && saldo <= this.epsMoeda) return true;
-    const total = Number(l0?.total);
-    const pago = Number(l0?.total_pago);
+    if (Number.isFinite(saldo) && saldo <= this.epsMoeda && pago > this.epsMoeda) {
+      return true;
+    }
+    const total = this.totalDevidoComanda(g);
     if (
       Number.isFinite(total) &&
       total > 0 &&
@@ -979,6 +1067,19 @@ export class ComandasComponent implements OnInit, OnDestroy {
     ) {
       return true;
     }
+    const bruto = Number(l0?.total_bruto);
+    const desc = this.valorDescontoComandaParaTooltip(g);
+    if (
+      Number.isFinite(bruto) &&
+      bruto > this.epsMoeda &&
+      desc != null &&
+      desc > this.epsMoeda &&
+      Number.isFinite(pago) &&
+      pago + this.epsMoeda >= bruto - desc
+    ) {
+      return true;
+    }
+    if (Number.isFinite(saldo) && saldo <= this.epsMoeda) return true;
     return false;
   }
 
@@ -1006,7 +1107,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (cs === 'finalizada') {
       return 'Finalizado';
     }
-    const s = this.statusCobrancaDerivado(g);
+    const s = this.statusCobrancaEfetivo(g);
     if (s === 'aberto') return 'Em aberto';
     if (s === 'pendente') return 'Pendente';
     if (s === 'parcial') return 'Parcial';
@@ -1019,7 +1120,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (cs === 'finalizada') {
       return 'badge--finalizado';
     }
-    const s = this.statusCobrancaDerivado(g);
+    const s = this.statusCobrancaEfetivo(g);
     if (s === 'pago') return 'badge--ok';
     if (s === 'parcial') return 'badge--warn';
     if (s === 'pendente') return 'badge--info';
@@ -1040,6 +1141,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.comandaQuitadaNasCifras(g)) {
       return 'Pago';
     }
+    if (l0?.status_cobranca === 'pago') return 'Pago';
     if (ps === 'confirmado') return 'Pago';
     if (ps === 'parcial') return 'Parcial';
     return 'Pendente';
@@ -1059,19 +1161,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.comandaQuitadaNasCifras(g)) {
       return 'badge--ok';
     }
+    if (l0?.status_cobranca === 'pago') return 'badge--ok';
     if (ps === 'confirmado') return 'badge--ok';
     if (ps === 'parcial') return 'badge--warn';
     return 'badge--info';
-  }
-
-  resumoParcial(g: ComandaGrupo): string {
-    if (this.comandaPagamentoPendenteDivida(g)) return '';
-    if (this.comandaQuitadaNasCifras(g)) return '';
-    const l0 = g.linhas[0];
-    const pago = Number(l0?.total_pago ?? 0) || 0;
-    const total = Number(l0?.total ?? g.valorTotal ?? 0) || 0;
-    if (this.statusCobrancaDerivado(g) !== 'parcial') return '';
-    return `${formataMoeda(pago)} de ${formataMoeda(total)}`;
   }
 
   saldoAtrasadoMaisDe7Dias(g: ComandaGrupo): boolean {
@@ -1106,6 +1199,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   valorExibicao(g: ComandaGrupo): number | null {
+    if (this.mostrarIconeDescontoComanda(g)) {
+      const bruto = Number(g.linhas[0]?.total_bruto);
+      if (Number.isFinite(bruto) && bruto > 0) return bruto;
+      if (g.valorSubtotal != null) return g.valorSubtotal;
+    }
+    const apiTotal = Number(g.linhas[0]?.total);
+    if (Number.isFinite(apiTotal) && apiTotal >= 0) return apiTotal;
     return g.valorTotal;
   }
 
@@ -1122,7 +1222,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  /** Ícone de desconto só após faturar (`cobranca_status` = finalizada). */
   mostrarIconeDescontoComanda(g: ComandaGrupo): boolean {
+    const cs = String(g.linhas[0]?.cobrancaStatus ?? '').trim().toLowerCase();
+    if (cs !== 'finalizada') return false;
     return this.valorDescontoComandaParaTooltip(g) != null;
   }
 
@@ -1261,15 +1364,35 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   fecharComandaDrawer(): void {
+    this.fecharComandaDrawerSemRecarregar();
+  }
+
+  private fecharComandaDrawerSemRecarregar(): void {
     if (!this.comandaPainelAberto) return;
     this.comandaDrawerPanelOpen = false;
-    if (this.comandaDrawerCloseTimer != null) clearTimeout(this.comandaDrawerCloseTimer);
+    if (this.faturarDrawerAberto) {
+      this.fecharFaturarDrawerSemRecarregar();
+    }
+    if (this.editAgendamentoAberto) {
+      this.editAgendamentoPanelOpen = false;
+      if (this.editAgendamentoCloseTimer != null) {
+        clearTimeout(this.editAgendamentoCloseTimer);
+      }
+      this.editAgendamentoCloseTimer = setTimeout(() => {
+        this.editAgendamentoCloseTimer = null;
+        this.editAgendamentoAberto = false;
+        this.editAgendamentoCtx = null;
+      }, DRAWER_ANIM_MS);
+    }
+    if (this.comandaDrawerCloseTimer != null) {
+      clearTimeout(this.comandaDrawerCloseTimer);
+    }
     this.comandaDrawerCloseTimer = setTimeout(() => {
       this.comandaDrawerCloseTimer = null;
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
       this.comandaDataYmdParaFaturar = null;
-      this.desbloquearScrollPagina();
+      this.desbloquearScrollSeNenhumDrawerAberto();
     }, DRAWER_ANIM_MS);
   }
 
@@ -1286,15 +1409,19 @@ export class ComandasComponent implements OnInit, OnDestroy {
    * ao salvar/cancelar volta ao drawer da comanda recarregada.
    */
   /**
-   * Rodapé «Salvar»: com o overlay do editor aberto não dá para premir este botão —
-   * dispara `salvar()` no `app-agenda-novo` quando o editor já está por cima da comanda.
+   * Rodapé «Salvar» no drawer da comanda: com o editor de agendamento aberto,
+   * grava o formulário; caso contrário fecha o drawer e volta à lista de comandas.
    */
   onSalvarDesdeDrawerComanda(): void {
     if (this.editAgendamentoAberto && this.agendaEditComandaRef) {
       this.agendaEditComandaRef.salvar();
       return;
     }
-    this.onEditarAgendamentoDesdeComanda();
+    if (this.novoAgendamentoAberto) {
+      this.fecharNovoAgendamento();
+    }
+    this.fecharComandaDrawer();
+    void this.router.navigate(['/comandas']).then(() => this.carregar());
   }
 
   onEditarAgendamentoDesdeComanda(): void {
@@ -1302,6 +1429,12 @@ export class ComandasComponent implements OnInit, OnDestroy {
     const idAt = ctx?.idAtendimento?.trim();
     const ymd = (ctx?.dataYmd ?? '').trim();
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+
+    /** Evita dois `app-agenda-novo` empilhados (Novo + Editar) e libera o z-index. */
+    if (this.novoAgendamentoAberto) {
+      this.fecharNovoAgendamento();
+    }
+
     this.editAgendamentoCtx = {
       data: ymd,
       profissional_id: 0,
@@ -1349,7 +1482,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
   onAbrirFaturarComanda(ev: {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    creditoAUsar?: number;
     dataComandaYmd?: string | null;
+    modoVerPagamentos?: boolean;
   }): void {
     const ctx = this.comandaDrawerContexto;
     const nomeCliente = ctx?.cliente?.nome ?? '';
@@ -1358,7 +1493,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.faturarCtx = {
       idAtendimento: ev.idAtendimento,
       resumo: ev.resumo,
+      creditoAUsar: ev.creditoAUsar,
       nomeCliente,
+      modoVerPagamentos: ev.modoVerPagamentos ?? false,
     };
     this.abrirDrawerComAnimacao(
       () => {
@@ -1371,6 +1508,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   fecharFaturarDrawer(): void {
+    this.fecharFaturarDrawerSemRecarregar(() => {
+      this.comandaDrawerRef?.recarregarAposFaturar();
+      this.carregar();
+    });
+  }
+
+  private fecharFaturarDrawerSemRecarregar(aposAnimacao?: () => void): void {
     if (!this.faturarDrawerAberto) return;
     this.faturarDrawerPanelOpen = false;
     if (this.faturarDrawerCloseTimer != null) {
@@ -1380,15 +1524,28 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.faturarDrawerCloseTimer = null;
       this.faturarDrawerAberto = false;
       this.faturarCtx = null;
-      this.comandaDrawerRef?.recarregarAposFaturar();
-      this.carregar();
+      this.desbloquearScrollSeNenhumDrawerAberto();
+      aposAnimacao?.();
     }, DRAWER_ANIM_MS);
   }
 
-  /** Após «Faturar» gravar com sucesso: fecha o sub-drawer e o da comanda; a lista já é actualizada em `fecharFaturarDrawer`. */
+  /** Após «Faturar»: fecha drawers, volta à lista e actualiza badges (Status / Pagamento). */
   onFaturaComandaSucesso(): void {
-    this.fecharFaturarDrawer();
-    this.fecharComandaDrawer();
+    const modoVer = this.faturarCtx?.modoVerPagamentos ?? false;
+    this.fecharFaturarDrawerSemRecarregar(() => {
+      if (modoVer) {
+        this.comandaDrawerRef?.recarregarAposFaturar();
+        this.carregar();
+      }
+    });
+    if (modoVer) {
+      return;
+    }
+    if (this.novoAgendamentoAberto) {
+      this.fecharNovoAgendamento();
+    }
+    this.fecharComandaDrawerSemRecarregar();
+    void this.router.navigate(['/comandas']).then(() => this.carregar());
   }
 
   fecharClienteDrawer(): void {
@@ -1404,7 +1561,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.clienteSaveErro = '';
       this.cadastroSalvando = false;
       this.notificacoesToggleLiqArmed = false;
-      this.desbloquearScrollPagina();
+      this.desbloquearScrollSeNenhumDrawerAberto();
     }, DRAWER_ANIM_MS);
   }
 
@@ -1581,11 +1738,18 @@ export class ComandasComponent implements OnInit, OnDestroy {
         }
       }
       const subtotal = temValor ? sum : null;
+      const dn = linhas[0]?.desconto_num;
+      const descontoApi =
+        typeof dn === 'number' && Number.isFinite(dn) && dn > 0 ? dn : null;
       const descontoN = valorMonetarioParaNumero(linhas[0]?.desconto);
       const descontoValor =
-        descontoN !== null && descontoN > 0 ? descontoN : null;
+        descontoApi ??
+        (descontoN !== null && descontoN > 0 ? descontoN : null);
+      const apiTotal = Number(linhas[0]?.total);
       let valorTotal = subtotal;
-      if (subtotal !== null && descontoValor !== null) {
+      if (Number.isFinite(apiTotal) && apiTotal >= 0) {
+        valorTotal = apiTotal;
+      } else if (subtotal !== null && descontoValor !== null) {
         valorTotal = Math.max(
           0,
           Math.round((subtotal - descontoValor) * 100) / 100,

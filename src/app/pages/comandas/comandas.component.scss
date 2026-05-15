@@ -633,7 +633,7 @@ input.comandas-head__busca-input[type='search']::-webkit-search-cancel-button {
 }
 
 col.comandas-table__col-check {
-  width: 4rem;
+  width: 2.75rem;
 }
 
 col.comandas-table__col-ticket {
@@ -645,19 +645,19 @@ col.comandas-table__col-data {
 }
 
 col.comandas-table__col-cliente {
-  width: 31%;
+  width: 38.5%;
 }
 
 col.comandas-table__col-status {
-  width: 10%;
+  width: 8%;
 }
 
 col.comandas-table__col-valor {
-  width: 14.5%;
+  width: 12%;
 }
 
 col.comandas-table__col-pagamento {
-  width: 14%;
+  width: 11%;
 }
 
 col.comandas-table__col-menu {
@@ -766,56 +766,58 @@ thead th.col-ticket {
   }
 
   &__disc-icon {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
     color: #389e0d;
-    border-radius: 50%;
-    background: #f6ffed;
-    border: 1px solid #b7eb8f;
+    line-height: 0;
 
     svg {
-      width: 14px;
-      height: 14px;
+      display: block;
+      width: 16px;
+      height: 16px;
     }
   }
 
   &__disc:focus-visible &__disc-icon {
-    box-shadow: 0 0 0 2px rgba(56, 158, 13, 0.4);
+    outline: 2px solid rgba(183, 235, 143, 0.65);
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
   &__disc-tip {
     position: absolute;
-    right: 0;
-    bottom: calc(100% + 8px);
+    left: 50%;
+    right: auto;
+    bottom: calc(100% + 10px);
     z-index: 40;
     min-width: max-content;
-    max-width: 240px;
-    padding: 0.4rem 0.55rem;
-    font-size: 12px;
+    max-width: 280px;
+    padding: 0.6rem 0.85rem;
+    font-size: 14px;
     font-weight: 500;
     line-height: 1.35;
     color: #fff;
     text-align: center;
     background: rgba(0, 0, 0, 0.82);
-    border-radius: 6px;
+    border-radius: 10px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
     opacity: 0;
-    transform: translate3d(0, 6px, 0);
+    transform: translate(-50%, 6px);
     pointer-events: none;
     transition:
       opacity 0.22s ease,
       transform 0.22s ease;
-    white-space: normal;
+    white-space: nowrap;
 
     &::after {
       content: '';
       position: absolute;
       top: 100%;
-      right: 10px;
-      border: 6px solid transparent;
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
+      border: 7px solid transparent;
       border-top-color: rgba(0, 0, 0, 0.82);
     }
   }
@@ -823,7 +825,7 @@ thead th.col-ticket {
   &__disc:hover &__disc-tip,
   &__disc:focus-within &__disc-tip {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: translate(-50%, 0);
   }
 }
 
@@ -947,12 +949,12 @@ thead th.col-menu {
 }
 
 .col-check {
-  width: 4rem;
-  min-width: 4rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
   box-sizing: border-box;
   text-align: center;
   vertical-align: middle;
-  padding: 12px 8px;
+  padding: 12px 4px;
 
   input[type='checkbox'] {
     display: inline-block;
@@ -968,8 +970,8 @@ thead th.col-menu {
 }
 
 thead th.col-check {
-  width: 4rem;
-  min-width: 4rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
   text-align: center;
 }
 
@@ -1003,9 +1005,9 @@ thead th.col-check {
   white-space: nowrap;
 
   &--aviso {
-    color: #d46b08;
-    background: #fff7e6;
-    border-color: #ffd591;
+    color: var(--drawer-badge-pendente-fg, #d46b08);
+    background: var(--drawer-badge-pendente-bg, #fff7e6);
+    border-color: var(--drawer-badge-pendente-border, #ffd591);
   }
 
   &--info {
@@ -1022,9 +1024,9 @@ thead th.col-check {
   }
 
   &--ok {
-    color: #389e0d;
-    background: #f6ffed;
-    border-color: #b7eb8f;
+    color: var(--drawer-badge-ok-fg, #389e0d);
+    background: var(--drawer-badge-ok-bg, #f6ffed);
+    border-color: var(--drawer-badge-ok-border, #b7eb8f);
   }
 
   &--warn {
@@ -1035,9 +1037,9 @@ thead th.col-check {
 
   /** «Em atraso» na coluna Pagamento (dívida pendente após o dia da comanda). */
   &--atraso {
-    color: #cf1322;
-    background: #fff1f0;
-    border-color: #ffa39e;
+    color: var(--drawer-badge-atraso-fg, #cf1322);
+    background: var(--drawer-badge-atraso-bg, #fff1f0);
+    border-color: var(--drawer-badge-atraso-border, #ffa39e);
   }
 
   &--critical {
@@ -1052,9 +1054,9 @@ thead th.col-check {
 
   &--sub {
     margin-top: 4px;
-    color: #9a3412;
-    background: #ffedd5;
-    border-color: #fed7aa;
+    color: var(--drawer-badge-pendente-fg, #d46b08);
+    background: var(--drawer-badge-pendente-bg, #fff7e6);
+    border-color: var(--drawer-badge-pendente-border, #ffd591);
     line-height: 18px;
     font-size: 11px;
     display: inline-block;
@@ -1464,25 +1466,34 @@ thead th.col-check {
     min-height: 0;
   }
 
-  /** Drawer de edição de agendamento — abre por cima da comanda. */
-  &--edit-agendamento {
-    z-index: 1002;
+  /** Comanda por cima do drawer de novo agendamento. */
+  &--comanda {
+    z-index: 1003;
   }
 
-  /** Sub-drawer Faturar — camada acima da comanda. */
+  /** Edição do agendamento — por cima da comanda. */
+  &--edit-agendamento {
+    z-index: 1005;
+  }
+
+  /** Sub-drawer Faturar — camada acima da edição. */
   &--faturar {
-    z-index: 1004;
+    z-index: 1006;
     background: #ffffff;
     --drawer-inset-x: 0;
   }
 }
 
+.overlay--comanda {
+  z-index: 1002;
+}
+
 .overlay--edit-agendamento {
-  z-index: 1001;
+  z-index: 1004;
 }
 
 .overlay--faturar {
-  z-index: 1003;
+  z-index: 1005;
 }
 
 @media (min-width: 1024px) {
@@ -1522,7 +1533,7 @@ thead th.col-check {
   }
 
   col.comandas-table__col-check {
-    width: 3rem;
+    width: 2.5rem;
   }
 
   col.comandas-table__col-ticket {
@@ -1534,15 +1545,19 @@ thead th.col-check {
   }
 
   col.comandas-table__col-cliente {
-    width: 26%;
+    width: 30%;
   }
 
   col.comandas-table__col-status {
-    width: 12%;
+    width: 10%;
+  }
+
+  col.comandas-table__col-valor {
+    width: 11%;
   }
 
   col.comandas-table__col-pagamento {
-    width: 13%;
+    width: 11%;
   }
 
   col.comandas-table__col-menu {
@@ -1589,7 +1604,7 @@ thead th.col-check {
   }
 
   col.comandas-table__col-check {
-    width: 2.5rem;
+    width: 2.25rem;
   }
 
   col.comandas-table__col-ticket {
@@ -1601,15 +1616,19 @@ thead th.col-check {
   }
 
   col.comandas-table__col-cliente {
-    width: 24%;
+    width: 28%;
   }
 
   col.comandas-table__col-status {
-    width: 12%;
+    width: 10%;
+  }
+
+  col.comandas-table__col-valor {
+    width: 10%;
   }
 
   col.comandas-table__col-pagamento {
-    width: 12%;
+    width: 10%;
   }
 
   col.comandas-table__col-menu {

@@ -216,7 +216,7 @@
               }
               <button
                 type="button"
-                (click)="abrirNovaComandaDrawer()"
+                (click)="abrirNovoAgendamentoDrawer()"
                 class="comandas-head__toolbar-btn comandas-head__toolbar-btn--link"
               >
                 <svg
@@ -377,12 +377,12 @@
                               <span class="col-valor__disc-icon" aria-hidden="true">
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
-                                  width="18"
-                                  height="18"
+                                  width="16"
+                                  height="16"
                                   viewBox="0 0 24 24"
                                   fill="none"
                                   stroke="currentColor"
-                                  stroke-width="2"
+                                  stroke-width="1.5"
                                   stroke-linecap="round"
                                   stroke-linejoin="round"
                                 >
@@ -417,9 +417,6 @@
                           [class.badge--atraso]="classeBadgePagamento(g) === 'badge--atraso'"
                           >{{ rotuloPagamento(g) }}</span
                         >
-                        @if (resumoParcial(g)) {
-                          <div class="badge badge--sub">{{ resumoParcial(g) }}</div>
-                        }
                       </td>
                       <td class="col-menu">
                         <div class="comandas-row-menu">
@@ -671,15 +668,42 @@
     </div>
   }
 
+  @if (novoAgendamentoAberto && novoAgendamentoCtx) {
+    <div
+      class="overlay"
+      [class.overlay--open]="novoAgendamentoPanelOpen"
+      aria-hidden="true"
+      (click)="fecharNovoAgendamento()"
+    ></div>
+    <div
+      class="app-drawer"
+      [class.app-drawer--open]="novoAgendamentoPanelOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Novo agendamento"
+      (click)="$event.stopPropagation()"
+    >
+      <app-agenda-novo
+        [modoModal]="true"
+        [contextoSlot]="novoAgendamentoCtx"
+        (salvoComSucesso)="onSalvoNovoAgendamento()"
+        (cancelarModal)="fecharNovoAgendamento()"
+        (abrirComanda)="abrirComandaDesdeAgendamento($event)"
+      />
+    </div>
+  }
+
   @if (comandaPainelAberto && comandaDrawerContexto) {
     <div
       class="overlay"
+      [class.overlay--comanda]="novoAgendamentoAberto"
       [class.overlay--open]="comandaDrawerPanelOpen"
       aria-hidden="true"
       (click)="fecharComandaDrawer()"
     ></div>
     <div
       class="app-drawer"
+      [class.app-drawer--comanda]="novoAgendamentoAberto"
       [class.app-drawer--open]="comandaDrawerPanelOpen"
       role="dialog"
       aria-modal="true"
@@ -739,7 +763,9 @@
         <app-faturar-drawer
           [idAtendimento]="faturarCtx.idAtendimento"
           [resumoInicial]="faturarCtx.resumo"
+          [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
           [dataComanda]="comandaDataYmdParaFaturar"
+          [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
           (faturado)="onFaturaComandaSucesso()"
           (fechar)="fecharFaturarDrawer()"
         />

@@ -6,6 +6,7 @@ import {
   inserirPagamentoComandaEmTx,
   listarPagamentosPorAtendimento,
   sincronizarPagamentoStatusAtendimento,
+  usarCreditoClienteNaComandaEmTx,
   type CriarPagamentoComandaInput,
   type PagamentoComandaDTO,
   type ResumoComanda,
@@ -31,6 +32,8 @@ export interface FaturarComandaComRascunhoInput {
   pagamentos: CriarPagamentoComandaInput[];
   /** Valores pagos a mais que viram saldo em `clientes.credito_saldo` (sem `comanda_pagamentos`). */
   credito_excesso?: CriarPagamentoComandaInput[];
+  /** Abate do saldo pré-pago do cliente (campo Crédito no drawer da comanda). */
+  credito_cliente_usado?: number;
   /** Passado a `finalizarCobrancaPorIdAtendimento` quando a cobrança ainda não está finalizada. */
   desconto?: unknown;
 }
@@ -50,7 +53,12 @@ export async function faturarComandaComRascunho(
   if (!id) throw new Error('id_atendimento é obrigatório');
   const list = input.pagamentos ?? [];
   const creditos = input.credito_excesso ?? [];
-  if (list.length === 0 && creditos.length === 0) {
+  const credUsado = toNumberPt(input.credito_cliente_usado);
+  const valorCreditoUsado =
+    credUsado != null && Number.isFinite(credUsado) && credUsado > 0
+      ? Math.round(credUsado * 100) / 100
+      : 0;
+  if (list.length === 0 && creditos.length === 0 && valorCreditoUsado <= 0) {
     throw new Error('Informe pelo menos um pagamento ou crédito de cliente para faturar.');
   }
 
@@ -72,6 +80,14 @@ export async function faturarComandaComRascunho(
   }
 
   await db.transaction(async (tx) => {
+    if (valorCreditoUsado > 0) {
+      await usarCreditoClienteNaComandaEmTx(
+        tx,
+        id,
+        idCliente,
+        valorCreditoUsado,
+      );
+    }
     for (const p of list) {
       await inserirPagamentoComandaEmTx(tx, id, p);
     }

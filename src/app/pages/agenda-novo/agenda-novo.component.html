@@ -26,14 +26,14 @@
   </div>
 }
 
-@if (erro && !carregandoListas) {
+@if (erro && !carregandoListas && !modoModal) {
   <p class="alert" role="alert">{{ erro }}</p>
 }
 @if (carregandoListas) {
   <p class="hint">Carregando dados…</p>
 }
 
-@if (!carregandoListas && !erro) {
+@if (!carregandoListas && (!erro || modoModal)) {
   @if (clientes.length === 0) {
     <p class="hint">
       Nenhum cliente com nome preenchido.
@@ -46,6 +46,7 @@
     (ngSubmit)="salvar()"
     class="form"
     [class.form--modal]="modoModal"
+    [class.form--validation-visible]="validacaoFormularioVisivel"
   >
     <div class="form-shell" [class.form-shell--modal]="modoModal">
       @if (modoModal) {
@@ -90,6 +91,9 @@
                 </svg>
               </button>
             </div>
+            @if (erro) {
+              <p class="alert alert--modal-validacao" role="alert">{{ erro }}</p>
+            }
           }
           <div
             class="block-context"
@@ -1492,17 +1496,14 @@
               type="button"
               class="btn btn-footer btn-footer--comanda"
               (click)="onAbrirComandaClick($event)"
-              [disabled]="salvando || excluindo || !podeUsarAcaoComanda()"
-              [attr.title]="
-                !podeUsarAcaoComanda()
-                  ? 'Selecione cliente e data para usar a comanda'
-                  : ''
-              "
+              [disabled]="salvando || excluindo"
             >
               {{
-                comandaAbertaParaClienteNoDia
-                  ? 'Acessar comanda'
-                  : 'Criar comanda'
+                salvando
+                  ? 'Salvando…'
+                  : comandaAbertaParaClienteNoDia
+                    ? 'Acessar comanda'
+                    : 'Criar comanda'
               }}
             </button>
           </footer>

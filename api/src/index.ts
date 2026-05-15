@@ -835,12 +835,26 @@ const app = new Elysia({ adapter: node() })
               };
             })
           : undefined;
-        if (list.length === 0 && (!credito_excesso || credito_excesso.length === 0)) {
+        const rawCredUsado = b.credito_cliente_usado;
+        const credUsadoNum =
+          rawCredUsado != null && rawCredUsado !== ''
+            ? Number(rawCredUsado)
+            : 0;
+        const credito_cliente_usado =
+          Number.isFinite(credUsadoNum) && credUsadoNum > 0
+            ? credUsadoNum
+            : undefined;
+        if (
+          list.length === 0 &&
+          (!credito_excesso || credito_excesso.length === 0) &&
+          credito_cliente_usado == null
+        ) {
           return fail('VALIDATION', 'Lista de pagamentos ou crédito de excesso é obrigatória.');
         }
         const r = await faturarComandaComRascunho(db, id, {
           pagamentos: list,
           credito_excesso,
+          credito_cliente_usado,
           desconto: b.desconto,
         });
         return ok(r);
@@ -878,6 +892,7 @@ const app = new Elysia({ adapter: node() })
           ),
         ),
         desconto: t.Optional(t.String()),
+        credito_cliente_usado: t.Optional(t.Union([t.Number(), t.String()])),
       }),
     },
   )

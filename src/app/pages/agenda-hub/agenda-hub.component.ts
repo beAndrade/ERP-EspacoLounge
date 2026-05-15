@@ -132,7 +132,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   faturarCtx: {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    creditoAUsar?: number;
     nomeCliente: string;
+    modoVerPagamentos?: boolean;
   } | null = null;
   /** Data da comanda (`AAAA-MM-DD`) — alinha «Data do pagamento» / «Atrasado» no Faturar. */
   comandaDataYmdParaFaturar: string | null = null;
@@ -600,7 +602,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   onAbrirFaturarComanda(ev: {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    creditoAUsar?: number;
     dataComandaYmd?: string | null;
+    modoVerPagamentos?: boolean;
   }): void {
     const nomeCliente =
       this.comandaDrawerContexto?.cliente?.nome?.trim() ?? '';
@@ -609,7 +613,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.faturarCtx = {
       idAtendimento: ev.idAtendimento,
       resumo: ev.resumo,
+      creditoAUsar: ev.creditoAUsar,
       nomeCliente,
+      modoVerPagamentos: ev.modoVerPagamentos ?? false,
     };
     this.faturarDrawerAberto = true;
     this.faturarDrawerPanelOpen = false;
@@ -638,9 +644,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }, DRAWER_ANIM_MS);
   }
 
-  /** Após «Faturar» gravar com sucesso: fecha drawers e leva à lista de comandas (coluna de pagamentos). */
+  /** Após gravar pagamentos: em «Ver pagamentos» mantém o drawer da comanda aberto. */
   onFaturaComandaSucesso(): void {
+    const modoVer = this.faturarCtx?.modoVerPagamentos ?? false;
     this.fecharFaturarDrawer();
+    if (modoVer) return;
     this.fecharComandaDrawer();
     void this.router.navigate(['/comandas']);
   }

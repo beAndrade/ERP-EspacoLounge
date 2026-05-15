@@ -16,6 +16,9 @@
   --drawer-field-stroke: #f1f1f1;
   --drawer-field-stroke-hover: #7a88ff;
   --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+  --fat-field-focus-shadow:
+    inset 0 0 0 1px #7a88ff,
+    0 0 0 2px var(--drawer-field-focus-ring);
 }
 
 .fat-drawer {
@@ -41,7 +44,7 @@
 
 .fat-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.25;
   font-weight: 700;
   color: var(--fat-fg);
@@ -108,7 +111,7 @@
 /* Form fields */
 .fat-form-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.65rem;
 }
 
@@ -119,9 +122,11 @@
 }
 
 .fat-field__label {
-  font-size: 0.78rem;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--fat-fg);
   letter-spacing: 0.01em;
+  cursor: default;
 }
 
 .fat-field__input,
@@ -129,8 +134,10 @@
   height: var(--drawer-field-h);
   width: 100%;
   padding: 0 15px;
-  font-size: 0.92rem;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--fat-fg);
+  -webkit-text-fill-color: var(--fat-fg);
   text-align: start;
   background-color: transparent;
   border: 0;
@@ -141,15 +148,20 @@
   box-sizing: border-box;
   box-shadow: inset 0 0 0 1px #f1f1f1;
 
+  &::placeholder {
+    color: #000000bf;
+    -webkit-text-fill-color: #000000bf;
+    opacity: 1;
+    font-weight: 400;
+  }
+
   &:hover {
     box-shadow: inset 0 0 0 1px #7a88ff;
   }
 
   &:focus,
   &:focus-visible {
-    box-shadow:
-      inset 0 0 0 1px #7a88ff,
-      0 0 0 2px var(--drawer-field-focus-ring);
+    box-shadow: var(--fat-field-focus-shadow);
   }
 }
 
@@ -170,6 +182,188 @@ input[type='number'].fat-field__input {
   padding: 0.55rem 15px;
   resize: vertical;
   font-family: inherit;
+}
+
+/* Parcelas — setas no wrap; hover no bloco inteiro (evita flicker ao ir para os botões) */
+.fat-field--parcelas {
+  .fat-field__spin-wrap {
+    position: relative;
+    display: block;
+    border: 1px solid #f1f1f1;
+    border-radius: 12px;
+    transition:
+      border-color 0.2s linear,
+      box-shadow 0.2s linear;
+
+    &:hover {
+      border-color: #7a88ff;
+    }
+
+    &:focus-within,
+    &:has(.fat-field__input--parcelas:focus-visible) {
+      border-color: #7a88ff;
+      box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+    }
+  }
+
+  .fat-field__input--parcelas {
+    position: relative;
+    z-index: 1;
+    border-radius: 12px;
+    padding-right: 2.15rem;
+    background: linear-gradient(
+      to right,
+      #fff 0,
+      #fff calc(100% - 27px),
+      transparent calc(100% - 27px)
+    );
+    box-shadow: none;
+
+    &:hover,
+    &:focus,
+    &:focus-visible {
+      box-shadow: none;
+    }
+  }
+
+  .fat-field__spin {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    width: 26px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: stretch;
+    opacity: 0;
+    transform: translateX(10px);
+    pointer-events: none;
+    border: 0;
+    border-left: 1px solid var(--drawer-field-stroke);
+    background: #fff;
+    border-radius: 0 12px 12px 0;
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s ease;
+  }
+
+  .fat-field__spin-wrap:hover .fat-field__spin,
+  .fat-field__spin-wrap:focus-within .fat-field__spin {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .fat-field__spin-btn {
+    flex: 1 1 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+
+    &::after {
+      content: '';
+      display: block;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+    }
+
+    &--up::after {
+      border-bottom: 5px solid currentColor;
+    }
+
+    &--down::after {
+      border-top: 5px solid currentColor;
+    }
+  }
+
+  .fat-field__spin-btn--up {
+    border-bottom: 1px solid var(--drawer-field-stroke);
+  }
+}
+
+/* Data do pagamento — calendário reutilizado do agendamento */
+.fat-field--data {
+  .fat-data-field__wrap {
+    position: relative;
+    display: block;
+    min-height: var(--drawer-field-h);
+    cursor: pointer;
+    outline: 0;
+  }
+
+  .fat-data-field__display {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    min-height: var(--drawer-field-h);
+    padding: 0 15px;
+    padding-right: 2.5rem;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--fat-fg);
+    -webkit-text-fill-color: var(--fat-fg);
+    background-color: transparent;
+    border: 0;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px #f1f1f1;
+    transition: all 0.2s linear;
+  }
+
+  .fat-data-field__display:hover {
+    box-shadow: inset 0 0 0 1px #7a88ff;
+  }
+
+  .fat-data-field__wrap:focus-within .fat-data-field__display {
+    box-shadow: var(--fat-field-focus-shadow);
+  }
+
+  .fat-data-field__value-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fat-data-field__display--placeholder .fat-data-field__value-text {
+    opacity: 0.55;
+  }
+
+  .fat-data-field__cal {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    line-height: 0;
+    color: #9ca3af;
+    pointer-events: none;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.5;
+    }
+  }
+
+  .fat-data-field__calendar-pop {
+    position: absolute;
+    z-index: 50;
+    left: 0;
+    top: calc(100% + 6px);
+    max-width: calc(100vw - 1.5rem);
+  }
 }
 
 /* Métodos de pagamento — grelha 2×2 */
@@ -271,7 +465,7 @@ input[type='number'].fat-field__input {
   height: 60px;
   margin: 0 auto;
   padding: 0 15px;
-  font-size: 0.9rem;
+  font-size: 16px;
   font-weight: 600;
   color: var(--fat-fg);
   background: #ffffff;
@@ -286,11 +480,6 @@ input[type='number'].fat-field__input {
     box-shadow 0.2s linear,
     opacity 0.15s ease;
 
-  &--cartao {
-    gap: 0.45rem;
-    padding: 0 12px;
-  }
-
   &__label {
     flex: 0 1 auto;
     min-width: 0;
@@ -298,12 +487,15 @@ input[type='number'].fat-field__input {
 
   &__chev {
     flex-shrink: 0;
-    margin-left: 0.1rem;
+    margin-left: 0;
     opacity: 0.55;
   }
 
-  svg {
+  > svg:not(.fat-metodo-btn__chev) {
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
+    display: block;
   }
 
   &:hover:not(:disabled) {
@@ -331,8 +523,8 @@ input[type='number'].fat-field__input {
 
 .fat-h2 {
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 400;
   color: var(--fat-fg);
 }
 
@@ -367,30 +559,98 @@ input[type='number'].fat-field__input {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--drawer-field-stroke);
-  border-radius: 10px;
-  background: #ffffff;
+  margin: 0;
+  padding: 0.55rem 0.7rem 0.55rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .fat-pag-info {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.6rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
   flex: 1 1 auto;
   min-width: 0;
+  margin: 0;
+  padding: 0;
   font-size: 0.85rem;
   color: var(--fat-fg);
 }
 
 .fat-pag-data {
-  font-weight: 600;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--fat-fg);
+  opacity: 0.85;
+}
+
+/** Método + excluir: hover na linha (`li`); ícone alinhado à data; texto desloca com transform. */
+.fat-pag-metodo {
+  display: inline-block;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 1.5rem;
   color: var(--fat-fg);
 }
 
-.fat-pag-metodo {
-  color: var(--fat-fg);
-  font-weight: 500;
+.fat-pag-info .fat-pag-del {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 0;
+  background: transparent;
+  color: #e57373;
+  transition: opacity 0.1s ease;
+
+  svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+}
+
+.fat-pag-metodo__label {
+  display: inline-block;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.25;
+  white-space: nowrap;
+  transition: transform 0.2s ease;
+}
+
+.fat-pag-metodo__parcela {
+  margin-left: 0.2em;
+  font-weight: 400;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.fat-pag-item:hover .fat-pag-info .fat-pag-del,
+.fat-pag-item:focus-within .fat-pag-info .fat-pag-del {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.16s ease;
+}
+
+.fat-pag-item:hover .fat-pag-metodo__label,
+.fat-pag-item:focus-within .fat-pag-metodo__label {
+  transform: translateX(24px);
 }
 
 .fat-pag-parcelas {
@@ -413,51 +673,71 @@ input[type='number'].fat-field__input {
   flex-shrink: 0;
 }
 
+/* Valor em cima; badge abaixo, centrada na horizontal em relação ao valor */
 .fat-pag-valor-wrap {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 46px;
 }
 
 .fat-pag-valor {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #166534;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fat-fg);
+  line-height: 1.25;
+}
+
+.fat-pag-valor-wrap .fat-pag-badge {
+  align-self: center;
 }
 
 .fat-pag-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.12rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
+  gap: 0.2rem;
+  box-sizing: border-box;
+  height: 22px;
+  min-height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
   letter-spacing: 0.02em;
 
   &.fat-pag-badge--pago {
-    background: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
+    color: #389e0d;
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+
+    .fat-pag-badge__ico {
+      display: block;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
   }
 
   &.fat-pag-badge--pendente {
-    background: #ffedd5;
-    color: #9a3412;
-    border: 1px solid #fed7aa;
+    color: var(--drawer-badge-pendente-fg, #d46b08);
+    background: var(--drawer-badge-pendente-bg, #fff7e6);
+    border: 1px solid var(--drawer-badge-pendente-border, #ffd591);
   }
 
   &.fat-pag-badge--atraso {
-    color: #cf1322;
-    background: #fff1f0;
-    border: 1px solid #ffa39e;
+    color: var(--drawer-badge-atraso-fg, #cf1322);
+    background: var(--drawer-badge-atraso-bg, #fff1f0);
+    border: 1px solid var(--drawer-badge-atraso-border, #ffa39e);
   }
 
   &.fat-pag-badge--credito {
-    background: #e0e7ff;
-    color: #3730a3;
-    border: 1px solid #c7d2fe;
+    color: var(--drawer-badge-credito-fg, #3730a3);
+    background: var(--drawer-badge-credito-bg, #e0e7ff);
+    border: 1px solid var(--drawer-badge-credito-border, #c7d2fe);
   }
 }
 
@@ -465,18 +745,21 @@ input[type='number'].fat-field__input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
   background: transparent;
-  color: #b91c1c;
+  color: #e57373;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
+
+  svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+  }
 
   &:hover:not(:disabled) {
-    background: #fee2e2;
+    color: #ef9a9a;
   }
 
   &:disabled {
@@ -495,23 +778,44 @@ input[type='number'].fat-field__input {
 .fat-resumo__row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  align-items: baseline;
+  font-size: 18px;
+  font-weight: 400;
   color: var(--fat-fg);
 
+  span {
+    font-size: 18px;
+    font-weight: 400;
+  }
+
   &.fat-resumo__row--strong {
-    font-weight: 600;
     color: var(--fat-fg);
+
+    span:first-child {
+      font-weight: 700;
+    }
+
+    span:last-child {
+      font-weight: 700;
+    }
   }
 }
 
 /* Footer */
 .fat-footer {
   display: flex;
-  gap: 0.6rem;
-  padding: 0.85rem 1.25rem;
+  gap: 0.5rem;
+  padding: 0.85rem var(--fat-body-pad-x, 30px);
   border-top: 1px solid #e5e7eb;
   background: #ffffff;
   flex: 0 0 auto;
+
+  .fat-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    margin-left: 0;
+  }
 }
 
 .fat-btn {
@@ -529,24 +833,26 @@ input[type='number'].fat-field__input {
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 
   &.fat-btn--ghost {
+    font-weight: 400;
+    color: var(--drawer-btn-ghost-fg, #000000bf);
     background: #ffffff;
-    color: var(--fat-fg);
-    border-color: #e5e7eb;
+    border-color: var(--drawer-btn-ghost-border, #e7e5e4);
 
     &:hover:not(:disabled) {
-      background: #f9fafb;
-      color: var(--fat-fg);
+      color: var(--drawer-btn-ghost-hover-fg, #7a88ff);
+      border-color: var(--drawer-btn-ghost-hover-border, #7a88ff);
+      background: var(--drawer-btn-ghost-hover-bg, #ffffff);
     }
   }
 
   &.fat-btn--primary {
-    background: #4f46e5;
-    color: #ffffff;
-    border-color: #4f46e5;
+    background: var(--drawer-btn-primary-bg, #505afb);
+    color: var(--drawer-btn-primary-fg, #ffffff);
+    border-color: var(--drawer-btn-primary-border, #505afb);
 
     &:hover:not(:disabled) {
-      background: #4338ca;
-      border-color: #4338ca;
+      background: var(--drawer-btn-primary-hover-bg, #7b82fc);
+      border-color: var(--drawer-btn-primary-hover-border, #7b82fc);
     }
 
     margin-left: auto;
@@ -554,15 +860,15 @@ input[type='number'].fat-field__input {
 
   &.fat-btn--faturar {
     margin-left: auto;
-    background: #16a34a;
-    color: #ffffff;
-    border-color: #16a34a;
+    background: var(--drawer-btn-faturar-bg, #70c040);
+    color: var(--drawer-btn-faturar-fg, #ffffff);
+    border-color: var(--drawer-btn-faturar-border, #70c040);
     min-height: 44px;
     padding: 0 1.25rem;
 
     &:hover:not(:disabled) {
-      background: #15803d;
-      border-color: #15803d;
+      background: var(--drawer-btn-faturar-hover-bg, #85c94f);
+      border-color: var(--drawer-btn-faturar-hover-border, #85c94f);
     }
   }
 

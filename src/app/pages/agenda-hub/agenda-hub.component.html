@@ -215,7 +215,9 @@
         <app-faturar-drawer
           [idAtendimento]="faturarCtx.idAtendimento"
           [resumoInicial]="faturarCtx.resumo"
+          [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
           [dataComanda]="comandaDataYmdParaFaturar"
+          [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
           (faturado)="onFaturaComandaSucesso()"
           (fechar)="fecharFaturarDrawer()"
         />

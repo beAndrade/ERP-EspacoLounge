@@ -221,6 +221,11 @@
   }
 }
 
+.alert--modal-validacao {
+  margin: 0 var(--drawer-pad-x, 1.25rem) 0.75rem;
+  flex-shrink: 0;
+}
+
 :host.agenda-novo--drawer .agenda-modal__header {
   align-items: flex-start;
   justify-content: space-between;
@@ -1141,26 +1146,26 @@ textarea {
 
 .agenda-modal__footer .btn.btn-footer--ghost {
   font-weight: 400;
-  color: #000000bf;
+  color: var(--drawer-btn-ghost-fg, #000000bf);
   background: transparent;
-  border-color: #e7e5e4;
+  border-color: var(--drawer-btn-ghost-border, #e7e5e4);
 
   &:hover:not(:disabled) {
-    color: #7a88ff;
-    border-color: #7a88ff;
-    background: #ffffff;
+    color: var(--drawer-btn-ghost-hover-fg, #7a88ff);
+    border-color: var(--drawer-btn-ghost-hover-border, #7a88ff);
+    background: var(--drawer-btn-ghost-hover-bg, #ffffff);
   }
 }
 
 .agenda-modal__footer .btn.btn-footer--comanda {
-  background: #70c040;
-  border-color: #70c040;
-  color: #fff;
+  background: var(--drawer-btn-faturar-bg, #70c040);
+  border-color: var(--drawer-btn-faturar-border, #70c040);
+  color: var(--drawer-btn-faturar-fg, #fff);
 
   /** Mesmo padrão que `--danger`: só fundo + borda mais claros, sem scale/filter. */
   &:hover:not(:disabled) {
-    background: #85c94f;
-    border-color: #85c94f;
+    background: var(--drawer-btn-faturar-hover-bg, #85c94f);
+    border-color: var(--drawer-btn-faturar-hover-border, #85c94f);
   }
 
   &:disabled {
@@ -1182,14 +1187,14 @@ textarea {
 
 .agenda-modal__footer .btn.btn-footer.primary,
 .agenda-modal__footer .agenda-modal__footer-salvar.btn {
-  background: #505afb;
-  border-color: #505afb;
-  color: #fff;
+  background: var(--drawer-btn-primary-bg, #505afb);
+  border-color: var(--drawer-btn-primary-border, #505afb);
+  color: var(--drawer-btn-primary-fg, #fff);
 
   /** Mesmo padrão que `--danger`: só fundo + borda mais claros, sem scale/filter. */
   &:hover:not(:disabled) {
-    background: #7b82fc;
-    border-color: #7b82fc;
+    background: var(--drawer-btn-primary-hover-bg, #7b82fc);
+    border-color: var(--drawer-btn-primary-hover-border, #7b82fc);
   }
 }
 
@@ -2479,6 +2484,26 @@ textarea {
   .btn.btn--icon-line-add {
     flex-shrink: 0;
     border-color: var(--drawer-stroke);
+  }
+}
+
+:host.agenda-novo--drawer .form.form--modal.form--validation-visible ::ng-deep {
+  app-saas-select.ng-invalid.ng-touched .saas-select__trigger,
+  app-agenda-horario-slots.ng-invalid.ng-touched .ahs__trigger {
+    border-color: #cf1322 !important;
+    box-shadow: 0 0 0 1px rgba(207, 19, 34, 0.22);
+  }
+
+  .data-field:has(input.ng-invalid.ng-touched) .data-field__display {
+    border-color: #cf1322 !important;
+    box-shadow: 0 0 0 1px rgba(207, 19, 34, 0.22);
+  }
+
+  input.ng-invalid.ng-touched:not([type='checkbox']):not([type='radio']),
+  textarea.ng-invalid.ng-touched,
+  select.ng-invalid.ng-touched {
+    border-color: #cf1322 !important;
+    box-shadow: 0 0 0 1px rgba(207, 19, 34, 0.22);
   }
 }
 

@@ -50,7 +50,9 @@ import {
   forkJoin,
   from,
   map,
+  Observable,
   of,
+  throwError,
   skip,
   Subject,
   Subscription,
@@ -280,6 +282,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    * (alinhado aos índices únicos `atendimento_itens_uq_*` na API).
    */
   avisoItensDuplicados = '';
+
+  /** Destaca campos obrigatórios inválidos (borda vermelha) após Salvar / Criar comanda. */
+  validacaoFormularioVisivel = false;
 
   /** Apenas UI — não entram no `FormGroup` nem no payload. */
   enviarLembreteUi = false;
@@ -962,6 +967,48 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   onAbrirComandaClick(ev: MouseEvent): void {
     ev.stopPropagation();
+    if (this.salvando || this.excluindo) return;
+
+    const editId = this.idAtendimentoEmEdicao?.trim();
+    const idAberto = this.idComandaPedidoAberto?.trim();
+    const podeAbrirSemSalvar =
+      Boolean(editId && !this.form.dirty) ||
+      Boolean(
+        this.comandaAbertaParaClienteNoDia && idAberto && !this.form.dirty,
+      );
+
+    if (podeAbrirSemSalvar) {
+      if (!this.podeUsarAcaoComanda()) {
+        this.registrarFalhaValidacao();
+        return;
+      }
+      this.emitirAbrirComanda();
+      return;
+    }
+
+    const prep = this.prepararSalvamentoFormulario();
+    if (!prep) return;
+
+    this.salvando = true;
+    this.salvarParaComanda(prep).subscribe({
+      next: (id) => {
+        this.salvando = false;
+        this.idAtendimentoEmEdicao = id;
+        this.form.markAsPristine();
+        this.atualizarOcupacaoDia(prep.dataBase);
+        this.emitirAbrirComanda();
+      },
+      error: (e: Error) => {
+        this.avisoItensDuplicados = '';
+        this.erro =
+          e.message ||
+          'Não foi possível salvar o agendamento antes de abrir a comanda.';
+        this.salvando = false;
+      },
+    });
+  }
+
+  private emitirAbrirComanda(): void {
     const ymd =
       normalizarDataIso(String(this.form.get('data')?.value ?? '')) ?? '';
     const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
@@ -986,7 +1033,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       cliente: this.clienteSelecionado(),
       opcoesClientes: this.opcoesClientesNomes(),
       dataYmd: ymd || null,
-      linhasSnapshot: this.montarLinhasSnapshotParaComanda(),
+      linhasSnapshot: idAtendimento
+        ? undefined
+        : this.montarLinhasSnapshotParaComanda(),
     });
   }
 
@@ -2097,31 +2146,140 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       .filter((d) => d >= dataBase);
   }
 
-  salvar(): void {
+  /**
+   * Valida o formulário antes de gravar (Salvar ou Criar comanda).
+   * Devolve `null` se inválido (mensagem em `this.erro` ou campos tocados).
+   */
+  private prepararSalvamentoFormulario(): {
+    raw: Record<string, unknown>;
+    dataBase: string;
+  } | null {
     this.erro = '';
-    this.form.markAllAsTouched();
     this.aplicarValidadoresLinhas();
 
     if (!this.form.valid) {
-      return;
+      return this.registrarFalhaValidacao();
     }
 
     const raw = this.form.getRawValue() as Record<string, unknown>;
     if (!this.validarLinhas(raw)) {
-      return;
+      return this.registrarFalhaValidacao();
     }
 
     if (this.avisoItensDuplicados.trim()) {
-      return;
+      return this.registrarFalhaValidacao(this.avisoItensDuplicados);
     }
 
     this.ordenarTodasEtapasMegaPacoteNoForm();
 
     const dataBase = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataBase) {
-      this.erro = 'Informe uma data válida.';
-      return;
+      return this.registrarFalhaValidacao();
     }
+
+    this.validacaoFormularioVisivel = false;
+    return { raw, dataBase };
+  }
+
+  private static readonly MSG_CAMPOS_OBRIGATORIOS =
+    'Preencha os campos obrigatórios destacados em vermelho.';
+
+  /** Marca campos, mostra alerta e destaca obrigatórios em vermelho. */
+  private registrarFalhaValidacao(mensagem?: string): null {
+    this.marcarValidacaoVisivelETocados();
+    this.erro =
+      mensagem?.trim() || AgendaNovoComponent.MSG_CAMPOS_OBRIGATORIOS;
+    this.focarPrimeiroCampoInvalido();
+    return null;
+  }
+
+  private marcarValidacaoVisivelETocados(): void {
+    this.validacaoFormularioVisivel = true;
+    this.form.markAllAsTouched();
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      g.markAllAsTouched();
+      const etapas = g.get('etapas') as FormArray<FormGroup> | null;
+      if (etapas) {
+        for (let j = 0; j < etapas.length; j++) {
+          etapas.at(j).markAllAsTouched();
+        }
+      }
+    }
+    this.aplicarValidadoresLinhas();
+  }
+
+  private focarPrimeiroCampoInvalido(): void {
+    queueMicrotask(() => {
+      const root = document.querySelector(
+        '.form--modal.form--validation-visible',
+      );
+      const alvo =
+        root?.querySelector<HTMLElement>(
+          'app-saas-select.ng-invalid.ng-touched .saas-select__trigger, ' +
+            'app-agenda-horario-slots.ng-invalid.ng-touched .ahs__trigger, ' +
+            'input.ng-invalid.ng-touched, textarea.ng-invalid.ng-touched, select.ng-invalid.ng-touched',
+        ) ?? null;
+      if (!alvo) return;
+      alvo.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      alvo.focus();
+    });
+  }
+
+  /** Grava só o dia do formulário e devolve o `id_atendimento` do pedido. */
+  private salvarParaComanda(prep: {
+    raw: Record<string, unknown>;
+    dataBase: string;
+  }): Observable<string> {
+    const { raw, dataBase } = prep;
+    const editId = this.idAtendimentoEmEdicao?.trim();
+    const slotBak = this.slotAgenda;
+    const r = { ...raw, data: dataBase } as Record<string, unknown>;
+    let pl = this.montarPayloadsDasLinhas(r);
+    this.slotAgenda = slotBak;
+    if (pl.length === 0) {
+      this.erro =
+        'Confira os campos obrigatórios (data válida, cliente, serviços, etc.).';
+      return throwError(() => new Error(this.erro));
+    }
+    if (editId) {
+      pl = pl.map((payload) => ({ ...payload, id_atendimento: editId }));
+    }
+
+    const gravar$ = editId
+      ? this.api
+          .excluirAtendimento(editId, { manterCabecalhoPedido: true })
+          .pipe(
+            switchMap(() =>
+              from(pl).pipe(
+                concatMap((p) => this.api.createAgendamento(p)),
+                toArray(),
+              ),
+            ),
+          )
+      : from(pl).pipe(
+          concatMap((p) => this.api.createAgendamento(p)),
+          toArray(),
+        );
+
+    return gravar$.pipe(
+      map((arr) => {
+        const id = String(arr[arr.length - 1]?.id ?? editId ?? '').trim();
+        if (!id) {
+          throw new Error(
+            'Não foi possível obter o identificador do atendimento.',
+          );
+        }
+        return id;
+      }),
+    );
+  }
+
+  salvar(): void {
+    const prep = this.prepararSalvamentoFormulario();
+    if (!prep) return;
+
+    const { raw, dataBase } = prep;
 
     const editId = this.idAtendimentoEmEdicao?.trim();
     const togglePropagar =

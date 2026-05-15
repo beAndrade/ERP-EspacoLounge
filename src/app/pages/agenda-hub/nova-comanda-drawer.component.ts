@@ -127,8 +127,12 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly faturarComanda = output<{
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
+    /** Crédito do cliente indicado no resumo da comanda (só aplica ao clicar «Faturar»). */
+    creditoAUsar?: number;
     /** Data da comanda (`AAAA-MM-DD`) para alinhar «Data do pagamento» / «Atrasado». */
     dataComandaYmd?: string | null;
+    /** Comanda já finalizada: abre drawer de pagamentos em modo consulta/edição. */
+    modoVerPagamentos?: boolean;
   }>();
   /** Data da comanda (campo editável) — o hub/comandas ligam ao Faturar em tempo real. */
   readonly comandaDataYmd = output<string | null>();
@@ -140,6 +144,10 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly dataComandaCtrl = new FormControl('', { nonNullable: true });
   /** Resumo manual: desconto (moeda em texto pt-BR). */
   readonly descontoResumoCtrl = new FormControl(formataMoedaBrl(0), {
+    nonNullable: true,
+  });
+  /** Valor de crédito do cliente a aplicar nesta comanda (≤ total e ≤ saldo). */
+  readonly creditoResumoCtrl = new FormControl(formataMoedaBrl(0), {
     nonNullable: true,
   });
   readonly placeholderMoedaResumo = PLACEHOLDER_MOEDA_RESUMO;
@@ -204,6 +212,10 @@ export class NovaComandaDrawerComponent implements OnInit {
             emitEvent: false,
           });
           this.descontoResumoCtrl.markAsPristine();
+          this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
+            emitEvent: false,
+          });
+          this.creditoResumoCtrl.markAsPristine();
           this.carregandoItens = false;
           this.erroItens = '';
           return;
@@ -220,6 +232,7 @@ export class NovaComandaDrawerComponent implements OnInit {
                 (this.contexto()?.clienteId ?? '').trim() === cid
               ) {
                 this.clienteApi = row;
+                this.aplicarCreditoAutomaticoSeElegivel();
               }
             });
         }
@@ -229,6 +242,10 @@ export class NovaComandaDrawerComponent implements OnInit {
             emitEvent: false,
           });
           this.descontoResumoCtrl.markAsPristine();
+          this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
+            emitEvent: false,
+          });
+          this.creditoResumoCtrl.markAsPristine();
         }
         this.carregandoItens = true;
         this.erroItens = '';
@@ -249,6 +266,12 @@ export class NovaComandaDrawerComponent implements OnInit {
       .subscribe(() => {
         this.comandaDataYmd.emit(this.dataComandaYmdParaFaturar());
       });
+    this.descontoResumoCtrl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.clampCreditoResumoAoMaximo());
+    this.creditoResumoCtrl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.clampCreditoResumoAoMaximo());
   }
 
   /** Re-busca pagamentos + resumo da comanda actual. */
@@ -281,8 +304,7 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   /** Chamado pelo pai depois de fechar o sub-drawer Faturar (para refrescar resumo). */
   recarregarAposFaturar(): void {
-    const id = this.contexto()?.idAtendimento?.trim();
-    if (id) this.recarregarResumoPagamentos(id);
+    this.recarregarDadosComanda();
     const cid = this.contexto()?.clienteId?.trim();
     if (cid) {
       this.api
@@ -291,6 +313,11 @@ export class NovaComandaDrawerComponent implements OnInit {
         .subscribe((row) => {
           if (row && (this.contexto()?.clienteId ?? '').trim() === cid) {
             this.clienteApi = row;
+            this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
+              emitEvent: false,
+            });
+            this.creditoResumoCtrl.markAsPristine();
+            this.aplicarCreditoAutomaticoSeElegivel();
           }
         });
     }
@@ -630,19 +657,39 @@ export class NovaComandaDrawerComponent implements OnInit {
       .subscribe({
         next: () => {
           this.sincronizarDescontoResumoDoBackendELeitura(false);
+          this.aplicarCreditoAutomaticoSeElegivel();
+          this.aplicarEstadoCamposComandaFinalizada();
         },
       });
   }
 
+  /** Comanda finalizada: desabilita campos editáveis (só leitura + cursor bloqueado na UI). */
+  private aplicarEstadoCamposComandaFinalizada(): void {
+    const fin = this.comandaFinalizada();
+    const ctrls = [
+      this.clienteNomeCtrl,
+      this.dataComandaCtrl,
+      this.descontoResumoCtrl,
+      this.clienteComandaCtrl,
+    ];
+    for (const c of ctrls) {
+      if (fin) {
+        c.disable({ emitEvent: false });
+      } else if (c.disabled) {
+        c.enable({ emitEvent: false });
+      }
+    }
+  }
+
   /**
-   * Mantém o input «Desconto» alinhado ao resumo da API e aos descontos por linha
-   * mostrados na tabela (evita total certo com campo a R$ 0,00).
+   * Mantém o input «Desconto» alinhado ao resumo da API; se a API vier sem desconto,
+   * usa a soma das colunas «Desc.» (Mega/Pacote só na cabeça).
    */
   private sincronizarDescontoResumoDoBackendELeitura(forcar: boolean): void {
     if (!forcar && !this.descontoResumoCtrl.pristine) return;
     const implicit = this.somaDescontosExibidosPorItensComanda();
     const api = this.resumoPagamentos?.desconto ?? 0;
-    const v = Math.round(Math.max(api, implicit) * 100) / 100;
+    const v = Math.round((api > 0 ? api : implicit) * 100) / 100;
     this.descontoResumoCtrl.setValue(formataMoedaBrl(v), {
       emitEvent: false,
     });
@@ -746,10 +793,29 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   // ----- Resumo / status ----------------------------------------------------
 
+  comandaFinalizada(): boolean {
+    return (
+      String(this.linhasAtendimentoApi[0]?.cobrancaStatus ?? '')
+        .trim()
+        .toLowerCase() === 'finalizada'
+    );
+  }
+
+  /** Dívida com método «Pendente» (API + linhas + pagamentos carregados). */
+  pagamentoPendenteNaComanda(): boolean {
+    const ps = String(this.linhasAtendimentoApi[0]?.pagamentoStatus ?? '')
+      .trim()
+      .toLowerCase();
+    if (ps === 'pendente') return true;
+    if (this.resumoPagamentos.status === 'pendente') return true;
+    return this.pagamentos.some((p) => p.metodo === 'pendente');
+  }
+
   /**
    * Rótulos alinhados à lista de comandas (`rotuloStatus` em `comandas.component.ts`).
    */
   rotuloStatus(): string {
+    if (this.pagamentoPendenteNaComanda()) return 'Pendente';
     switch (this.resumoPagamentos.status) {
       case 'pago':
         return 'Pago';
@@ -766,12 +832,13 @@ export class NovaComandaDrawerComponent implements OnInit {
   classeBadgeComanda():
     | 'badge--ok'
     | 'badge--warn'
-    | 'badge--info'
+    | 'badge--pendente'
     | 'badge--aviso' {
+    if (this.pagamentoPendenteNaComanda()) return 'badge--pendente';
     const s = this.resumoPagamentos.status;
     if (s === 'pago') return 'badge--ok';
     if (s === 'parcial') return 'badge--warn';
-    if (s === 'pendente') return 'badge--info';
+    if (s === 'pendente') return 'badge--pendente';
     return 'badge--aviso';
   }
 
@@ -785,7 +852,10 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   podeEditar(): boolean {
-    return Boolean(this.contexto()?.idAtendimento?.trim());
+    return (
+      Boolean(this.contexto()?.idAtendimento?.trim()) &&
+      !this.comandaFinalizada()
+    );
   }
 
   podeSalvarComandaRodape(): boolean {
@@ -809,6 +879,9 @@ export class NovaComandaDrawerComponent implements OnInit {
     const r = this.resumoPagamentos;
     const bruto = this.subtotalBrutoAntesDescontoResumo();
     const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
+    const creditoAUsar = this.valorMonetarioCampoResumo(
+      this.creditoResumoCtrl.value,
+    );
     const total = this.totalComandaResumoCalculado();
     const totalPago = r.total_pago ?? 0;
     const saldo = Math.max(
@@ -817,7 +890,9 @@ export class NovaComandaDrawerComponent implements OnInit {
     );
     this.faturarComanda.emit({
       idAtendimento: id,
+      creditoAUsar: creditoAUsar > 0.005 ? creditoAUsar : undefined,
       dataComandaYmd: this.dataComandaYmdParaFaturar(),
+      modoVerPagamentos: this.comandaFinalizada(),
       resumo: {
         ...r,
         total_bruto: bruto,
@@ -909,8 +984,8 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.modalOutrosOpcao = null;
   }
 
-  /** Cliente para a sidebar: funde contexto com último GET (ex.: `creditoSaldo`). */
-  clienteParaSidebar(): Cliente | null {
+  /** Cliente fundido (contexto + GET) com saldo bruto, sem descontar uso na comanda. */
+  private clienteMergedBruto(): Cliente | null {
     const ctx = this.contexto();
     if (!ctx) return null;
     const base = ctx.cliente;
@@ -925,9 +1000,65 @@ export class NovaComandaDrawerComponent implements OnInit {
     return api ?? base ?? null;
   }
 
-  /** Saldo de crédito do cliente (só leitura no resumo). */
-  creditoClienteResumoBrl(): string {
-    return formataMoedaBrl(this.clienteParaSidebar()?.creditoSaldo ?? 0);
+  /** Cliente para a sidebar (saldo bruto da API; só muda após «Faturar» + refresh). */
+  clienteParaSidebar(): Cliente | null {
+    return this.clienteMergedBruto();
+  }
+
+  creditoDisponivelCliente(): number {
+    const n = Number(this.clienteMergedBruto()?.creditoSaldo ?? 0);
+    return Number.isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : 0;
+  }
+
+  /** Total antes de abater crédito (bruto − desconto − cashback). */
+  totalAntesAplicarCredito(): number {
+    const cash = this.cashbackComandaReais();
+    const apiTotal = this.resumoPagamentos?.total;
+    if (
+      this.descontoResumoCtrl.pristine &&
+      this.creditoResumoCtrl.pristine &&
+      apiTotal != null &&
+      Number.isFinite(apiTotal)
+    ) {
+      return Math.max(0, Math.round((apiTotal - cash) * 100) / 100);
+    }
+    const bruto = this.subtotalBrutoAntesDescontoResumo();
+    const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
+    return Math.max(
+      0,
+      Math.round((bruto - desc - cash) * 100) / 100,
+    );
+  }
+
+  creditoMaximoUsavel(): number {
+    return Math.max(
+      0,
+      Math.round(
+        Math.min(
+          this.creditoDisponivelCliente(),
+          this.totalAntesAplicarCredito(),
+        ) * 100,
+      ) / 100,
+    );
+  }
+
+  private aplicarCreditoAutomaticoSeElegivel(): void {
+    const max = this.creditoMaximoUsavel();
+    if (!this.creditoResumoCtrl.pristine) {
+      this.clampCreditoResumoAoMaximo();
+      return;
+    }
+    this.creditoResumoCtrl.setValue(formataMoedaBrl(max), { emitEvent: false });
+  }
+
+  private clampCreditoResumoAoMaximo(): void {
+    const max = this.creditoMaximoUsavel();
+    const cur = this.valorMonetarioCampoResumo(this.creditoResumoCtrl.value);
+    if (cur > max + 0.0001) {
+      this.creditoResumoCtrl.setValue(formataMoedaBrl(max), {
+        emitEvent: false,
+      });
+    }
   }
 
   // ----- Helpers ------------------------------------------------------------
@@ -1031,13 +1162,9 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   totalComandaResumoCalculado(): number {
-    const bruto = this.subtotalBrutoAntesDescontoResumo();
-    const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
-    const cash = this.cashbackComandaReais();
-    return Math.max(
-      0,
-      Math.round((bruto - desc - cash) * 100) / 100,
-    );
+    const cred = this.valorMonetarioCampoResumo(this.creditoResumoCtrl.value);
+    const antes = this.totalAntesAplicarCredito();
+    return Math.max(0, Math.round((antes - cred) * 100) / 100);
   }
 
   normalizarCampoMoedaResumo(c: FormControl<string>): void {
@@ -1049,6 +1176,11 @@ export class NovaComandaDrawerComponent implements OnInit {
    * Reformata a cada tecla: interpreta os dígitos como centavos em cadeia
    * e posiciona o cursor no fim (caixa / TEF).
    */
+  onCreditoResumoMoedaInput(ev: Event): void {
+    this.creditoResumoCtrl.markAsDirty();
+    this.onResumoMoedaInput(this.creditoResumoCtrl, ev);
+  }
+
   onResumoMoedaInput(c: FormControl<string>, ev: Event): void {
     const el = ev.target as HTMLInputElement | null;
     if (!el) return;

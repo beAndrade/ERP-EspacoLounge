@@ -161,6 +161,8 @@ export interface FaturarComandaPayload {
   pagamentos: CriarComandaPagamentoPayload[];
   /** Excesso pago após quitar o total → `clientes.credito_saldo` (sem linha em `comanda_pagamentos`). */
   credito_excesso?: CriarComandaPagamentoPayload[];
+  /** Abate do saldo pré-pago do cliente e regista pagamento na comanda. */
+  credito_cliente_usado?: number;
   desconto?: string;
 }
 

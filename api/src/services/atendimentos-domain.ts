@@ -2183,15 +2183,16 @@ export async function finalizarCobrancaPorIdAtendimento(
     const patch: {
       cobrancaStatus: string;
       pagamentoStatus: string;
-      desconto: string;
+      desconto?: string;
       descricao?: string;
     } = {
       cobrancaStatus: 'finalizada',
       pagamentoStatus: resumoAntes.total_pago > 0 ? 'parcial' : 'pendente',
-      desconto: descontoStr,
     };
 
+    /** Desconto global só na 1.ª linha; não apagar descontos por item nas restantes. */
     if (descontoStr && i === 0) {
+      patch.desconto = descontoStr;
       const baseDesc = String(r.descricao ?? '').trim();
       const suffix = `Desconto: ${descontoStr}`;
       if (!baseDesc.includes('Desconto:')) {

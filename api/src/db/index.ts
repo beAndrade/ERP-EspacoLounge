@@ -15,7 +15,7 @@ export type Db = typeof db;
 
 /**
  * Garante colunas esperadas quando a migração Drizzle ainda não correu.
- * Usa `information_schema` em vez de `ADD COLUMN IF NOT EXISTS` para evitar NOTICE 42701
+ * Usa `information_schema` / `pg_indexes` em vez de `IF NOT EXISTS` para evitar NOTICE
  * no arranque (o driver imprime avisos do Postgres).
  */
 export async function ensureSchemaPatches(): Promise<void> {
@@ -256,18 +256,27 @@ EXCEPTION
 END $$;
 `));
   await db.execute(sql.raw(`
-CREATE TABLE IF NOT EXISTS "comanda_pagamentos" (
-  "id" serial PRIMARY KEY,
-  "id_atendimento" text NOT NULL,
-  "data_pagamento" date NOT NULL,
-  "valor" numeric(14, 2) NOT NULL,
-  "metodo" "metodo_pagamento_comanda" NOT NULL,
-  "parcelas" integer DEFAULT 1 NOT NULL,
-  "troco" numeric(14, 2),
-  "observacao" text,
-  "movimentacao_id" integer,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables t
+    WHERE t.table_schema = current_schema()
+      AND t.table_name = 'comanda_pagamentos'
+  ) THEN
+    CREATE TABLE "comanda_pagamentos" (
+      "id" serial PRIMARY KEY,
+      "id_atendimento" text NOT NULL,
+      "data_pagamento" date NOT NULL,
+      "valor" numeric(14, 2) NOT NULL,
+      "metodo" "metodo_pagamento_comanda" NOT NULL,
+      "parcelas" integer DEFAULT 1 NOT NULL,
+      "troco" numeric(14, 2),
+      "observacao" text,
+      "movimentacao_id" integer,
+      "created_at" timestamp with time zone DEFAULT now() NOT NULL
+    );
+  END IF;
+END $$;
 `));
   await db.execute(sql.raw(`
 DO $$
@@ -300,12 +309,32 @@ BEGIN
 END $$;
 `));
   await db.execute(sql.raw(`
-CREATE INDEX IF NOT EXISTS "comanda_pagamentos_id_atendimento_idx"
-  ON "comanda_pagamentos" ("id_atendimento");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'comanda_pagamentos'
+      AND i.indexname = 'comanda_pagamentos_id_atendimento_idx'
+  ) THEN
+    CREATE INDEX "comanda_pagamentos_id_atendimento_idx"
+      ON "comanda_pagamentos" ("id_atendimento");
+  END IF;
+END $$;
 `));
   await db.execute(sql.raw(`
-CREATE INDEX IF NOT EXISTS "comanda_pagamentos_data_idx"
-  ON "comanda_pagamentos" ("data_pagamento");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'comanda_pagamentos'
+      AND i.indexname = 'comanda_pagamentos_data_idx'
+  ) THEN
+    CREATE INDEX "comanda_pagamentos_data_idx"
+      ON "comanda_pagamentos" ("data_pagamento");
+  END IF;
+END $$;
 `));
   await db.execute(sql.raw(`
 DO $$
@@ -332,8 +361,18 @@ BEGIN
 END $$;
 `));
   await db.execute(sql.raw(`
-CREATE INDEX IF NOT EXISTS "atendimentos_pedido_id_recorrencia_idx"
-  ON "atendimentos_pedido" ("id_recorrencia");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'atendimentos_pedido'
+      AND i.indexname = 'atendimentos_pedido_id_recorrencia_idx'
+  ) THEN
+    CREATE INDEX "atendimentos_pedido_id_recorrencia_idx"
+      ON "atendimentos_pedido" ("id_recorrencia");
+  END IF;
+END $$;
 `));
   await db.execute(sql.raw(`
 DO $$
