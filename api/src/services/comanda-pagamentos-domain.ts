@@ -174,6 +174,38 @@ function statusDerivado(
 }
 
 /**
+ * A pivot `atendimento_itens` pode cobrir só parte do que está em `atendimentos`
+ * (ex.: Mega/Pacote sem `valor_unitario`, linhas antigas, ajustes só na planilha).
+ * Nesse caso o total pela pivot fica **abaixo** do somatório real das linhas — a UI
+ * da comanda usa as linhas (`faixaPrecoBloc`); alinhamos ao legado quando for maior.
+ */
+function mesclarTotaisPivotELegado(
+  totaisItens: { total_bruto: number; desconto: number; total: number } | null,
+  legacy: {
+    total_bruto: number;
+    desconto: number;
+    total: number;
+    cobranca_status: string | null;
+  },
+): {
+  total_bruto: number;
+  desconto: number;
+  total: number;
+  cobranca_status: string | null;
+} {
+  if (!totaisItens) {
+    return legacy;
+  }
+  if (legacy.total > totaisItens.total + 0.005) {
+    return legacy;
+  }
+  return {
+    ...totaisItens,
+    cobranca_status: legacy.cobranca_status,
+  };
+}
+
+/**
  * Resumo financeiro consolidado de UMA comanda (`id_atendimento`).
  * Quando o atendimento não existe, devolve totais zerados e status `aberto`.
  */
@@ -216,9 +248,8 @@ export async function getResumoComanda(
 
   const totaisItens = calcularTotaisDeItens(itens as ItemLinhaResumo[]);
   const legacy = calcularTotaisDeLinhas(linhas as AtendLinhaResumo[]);
-  const { total_bruto, desconto, total, cobranca_status } = totaisItens
-    ? { ...totaisItens, cobranca_status: legacy.cobranca_status }
-    : legacy;
+  const { total_bruto, desconto, total, cobranca_status } =
+    mesclarTotaisPivotELegado(totaisItens, legacy);
 
   const [agg] = await db
     .select({
@@ -327,9 +358,8 @@ export async function getResumosPorAtendimento(
     const itens = itensPorId.get(id) ?? [];
     const totaisItens = calcularTotaisDeItens(itens);
     const legacy = calcularTotaisDeLinhas(rows);
-    const { total_bruto, desconto, total, cobranca_status } = totaisItens
-      ? { ...totaisItens, cobranca_status: legacy.cobranca_status }
-      : legacy;
+    const { total_bruto, desconto, total, cobranca_status } =
+      mesclarTotaisPivotELegado(totaisItens, legacy);
     const totalPago = pagosMap.get(id) ?? 0;
     const saldo = Math.max(0, Math.round((total - totalPago) * 100) / 100);
     out.set(id, {
