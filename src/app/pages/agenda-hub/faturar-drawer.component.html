@@ -75,6 +75,7 @@
             <button
               type="button"
               class="fat-metodo-btn fat-metodo-btn--cartao"
+              #cartaoBtn
               [disabled]="!podeRegistrar()"
               (click)="toggleCartaoDropdown($event)"
               aria-haspopup="menu"

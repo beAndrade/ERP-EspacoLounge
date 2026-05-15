@@ -148,6 +148,7 @@ export class FaturarDrawerComponent implements OnInit {
   cartaoDropPos: { top: number; left: number; width: number } | null = null;
 
   readonly cartaoWrap = viewChild<ElementRef<HTMLElement>>('cartaoWrap');
+  readonly cartaoBtn = viewChild<ElementRef<HTMLElement>>('cartaoBtn');
 
   /** Modal local de calcular troco. */
   trocoAberto = false;
@@ -265,11 +266,11 @@ export class FaturarDrawerComponent implements OnInit {
   }
 
   private syncCartaoDropdownPosition(): void {
-    const el = this.cartaoWrap()?.nativeElement;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
+    const btn = this.cartaoBtn()?.nativeElement;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
     this.cartaoDropPos = {
-      top: r.bottom + 6,
+      top: r.bottom + 4,
       left: r.left,
       width: r.width,
     };
