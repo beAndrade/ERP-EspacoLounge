@@ -155,7 +155,7 @@ export interface RascunhoPagamento {
   /** Sempre 1 por linha após split; gravado na API por parcela. */
   parcelas: number;
   destino: 'comanda' | 'credito';
-  /** Método escolhido no botão (rótulo «Dinheiro 2/2»). */
+  /** Método do botão (ex. «Pix» na linha 2/2 agendada como `pendente`). */
   metodoRotulo?: MetodoPagamentoComanda;
   parcelaNumero?: number;
   parcelasTotal?: number;
@@ -581,12 +581,16 @@ export class FaturarDrawerComponent implements OnInit {
     );
   }
 
-  /** Ex.: `1/2` ao lado de «Dinheiro» (só rascunho parcelado). */
+  /** Ex.: `1/2` ao lado do método (rascunho ou linhas gravadas parceladas). */
   parcelaRotuloSufixo(l: PagamentoLinhaUi): string | null {
-    if (l.kind !== 'rasc') return null;
-    const total = l.row.parcelasTotal ?? 0;
-    if (total <= 1 || l.row.parcelaNumero == null) return null;
-    return `${l.row.parcelaNumero}/${total}`;
+    if (l.kind === 'rasc') {
+      const total = l.row.parcelasTotal ?? 0;
+      if (total <= 1 || l.row.parcelaNumero == null) return null;
+      return `${l.row.parcelaNumero}/${total}`;
+    }
+    const total = l.row.parcelas_total ?? 0;
+    if (total <= 1 || l.row.parcela_numero == null) return null;
+    return `${l.row.parcela_numero}/${total}`;
   }
 
   dataExibicaoLinha(l: PagamentoLinhaUi): string {
@@ -742,16 +746,24 @@ export class FaturarDrawerComponent implements OnInit {
     const descResumo = this.resumo.desconto;
     const payload: FaturarComandaPayload = {
       pagamentos: comanda.map((r): CriarComandaPagamentoPayload => {
-        const obs =
-          r.parcelasTotal != null && r.parcelasTotal > 1 && r.parcelaNumero
-            ? `${ROTULO_METODO_UI[r.metodoRotulo ?? r.metodo] ?? r.metodo} ${r.parcelaNumero}/${r.parcelasTotal}`
-            : null;
+        const parcelado =
+          r.parcelasTotal != null &&
+          r.parcelasTotal > 1 &&
+          r.parcelaNumero != null;
         return {
           data_pagamento: r.data_pagamento,
           valor: r.valor,
           metodo: r.metodo,
           parcelas: r.parcelas,
-          observacao: obs,
+          ...(parcelado
+            ? {
+                parcela_numero: r.parcelaNumero,
+                parcelas_total: r.parcelasTotal,
+                metodo_rotulo:
+                  ROTULO_METODO_UI[r.metodoRotulo ?? r.metodo] ?? r.metodo,
+              }
+            : {}),
+          observacao: null,
         };
       }),
       credito_excesso:

@@ -105,6 +105,13 @@ export interface AtendimentoListaItem {
    * - `pago`       — finalizada e total_pago ≥ total.
    */
   status_cobranca?: 'aberto' | 'pendente' | 'parcial' | 'pago';
+  /**
+   * Existe prestação em `comanda_pagamentos` com `metodo = pendente` e `data_pagamento` < hoje
+   * (ex.: 2.ª parcela de cartão vencida). Só é fiável com listagem `/api/atendimentos` actualizada.
+   */
+  pagamento_prestacao_pendente_atrasada?: boolean;
+  /** Menor `data_pagamento` entre linhas ainda `pendente` (YYYY-MM-DD), se houver. */
+  pagamento_prestacao_menor_data?: string | null;
 }
 
 /** Métodos aceites no sub-drawer Faturar. */
@@ -128,6 +135,8 @@ export interface ComandaPagamentoItem {
   /** Texto amigável já localizado em pt-BR (ex.: "Cartão de crédito"). */
   metodo_rotulo: string;
   parcelas: number;
+  parcela_numero: number | null;
+  parcelas_total: number | null;
   troco: string | null;
   observacao: string | null;
   movimentacao_id: number | null;
@@ -152,6 +161,9 @@ export interface CriarComandaPagamentoPayload {
   valor: number;
   metodo: MetodoPagamentoComanda;
   parcelas?: number;
+  parcela_numero?: number | null;
+  parcelas_total?: number | null;
+  metodo_rotulo?: string | null;
   troco?: number | null;
   observacao?: string | null;
 }

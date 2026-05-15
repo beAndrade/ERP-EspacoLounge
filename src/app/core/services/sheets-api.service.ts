@@ -764,6 +764,15 @@ export class SheetsApiService {
       total_pago: totalPago,
       saldo,
       status_cobranca: statusCobranca,
+      pagamento_prestacao_pendente_atrasada:
+        raw['pagamento_prestacao_pendente_atrasada'] === true ||
+        String(raw['pagamento_prestacao_pendente_atrasada'] ?? '').toLowerCase() ===
+          'true',
+      pagamento_prestacao_menor_data: (() => {
+        const v = raw['pagamento_prestacao_menor_data'];
+        const s = v != null ? String(v).trim().slice(0, 10) : '';
+        return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+      })(),
     };
   }
 

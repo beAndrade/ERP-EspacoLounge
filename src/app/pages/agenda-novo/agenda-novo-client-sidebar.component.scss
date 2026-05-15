@@ -467,19 +467,33 @@
   text-align: left;
 }
 
-.sidebar-block__linklike:hover,
-.sidebar-block__linklike:focus-visible {
+/** Comandas / pagamentos em aberto (contagem > 0): tom coral, bold; hover não volta ao roxo. */
+.sidebar-block__linklike--alert,
+.sidebar-block__linklike--alert .sidebar-block__link-ico,
+.sidebar-block__link-txt--alert {
+  color: rgb(255, 120, 117);
+  font-weight: 800;
+}
+
+.sidebar-block__linklike:not(.sidebar-block__linklike--alert):hover,
+.sidebar-block__linklike:not(.sidebar-block__linklike--alert):focus-visible {
   text-decoration: none;
   color: #4f46e5;
 }
 
-.sidebar-block__linklike:hover .sidebar-block__link-ico,
-.sidebar-block__linklike:focus-visible .sidebar-block__link-ico {
+.sidebar-block__linklike:not(.sidebar-block__linklike--alert):hover .sidebar-block__link-ico,
+.sidebar-block__linklike:not(.sidebar-block__linklike--alert):focus-visible
+  .sidebar-block__link-ico {
   color: #4f46e5;
 }
 
 .sidebar-block__linklike:focus-visible {
   outline: 2px solid color-mix(in srgb, #4f46e5 40%, transparent);
+  outline-offset: 1px;
+}
+
+.sidebar-block__linklike--alert:focus-visible {
+  outline: 2px solid rgba(255, 120, 117, 0.45);
   outline-offset: 1px;
 }
 

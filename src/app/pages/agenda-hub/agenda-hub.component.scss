@@ -446,7 +446,7 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   height: 100%;
   z-index: 999;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.3);
+  background: #00000073;
   opacity: 0;
   transition: opacity var(--drawer-slide-duration, 0.43s)
     cubic-bezier(0.22, 1, 0.36, 1);

@@ -5,7 +5,8 @@
  * - 1 linha em `comanda_pagamentos` por evento de pagamento (parcial ou total).
  * - 1 movimentação financeira (`receita`) ligada por FK para cada pagamento **com caixa**
  *   (método diferente de `pendente`).
- * - Status da comanda derivado por SUM(valor): pago / parcial / pendente.
+ * - Status da comanda derivado por SUM(valor recebido): pago / parcial / pendente.
+ * - Parcelas futuras: 1 linha com `metodo` = pendente; não entram em `total_pago`.
  *
  * NÃO usa o índice único `movimentacoes_confirm_receita_id_at_idx` (que
  * limita 1 receita por `id_atendimento` com origem `atendimento_confirmacao`).
@@ -74,7 +75,7 @@ export interface ResumoComanda {
   desconto: number;
   /** Total a pagar = total_bruto − desconto (mín. 0). */
   total: number;
-  /** Soma de `comanda_pagamentos.valor` para o pedido. */
+  /** Soma de valores já recebidos (exclui linhas com método `pendente`). */
   total_pago: number;
   /** total − total_pago (mín. 0). */
   saldo: number;
@@ -178,9 +179,15 @@ function statusDerivado(
   return 'pago';
 }
 
+/** Soma só pagamentos com caixa (exclui parcelas agendadas `pendente`). */
+const sqlTotalPagoRecebido = sql<string>`coalesce(sum(
+  case when ${comandaPagamentos.metodo}::text <> 'pendente'
+  then ${comandaPagamentos.valor}::numeric else 0 end
+), 0)`;
+
 /**
- * Pagamento com método `pendente` entra no SUM de `total_pago`, mas não é receita;
- * o status derivado não pode ser `pago` quando ainda há dívida pendente.
+ * Quando existe linha `pendente` (parcela futura ou dívida), a comanda finalizada
+ * mantém status `pendente` até liquidar todas as prestações.
  */
 function statusComOverridePendente(
   status: StatusCobrancaDerivado,
@@ -323,7 +330,7 @@ export async function getResumoComanda(
 
   const [agg] = await db
     .select({
-      total_pago: sql<string>`coalesce(sum(${comandaPagamentos.valor}::numeric), 0)`,
+      total_pago: sqlTotalPagoRecebido,
     })
     .from(comandaPagamentos)
     .where(eq(comandaPagamentos.idAtendimento, id));
@@ -414,7 +421,7 @@ export async function getResumosPorAtendimento(
   const pagosRows = await db
     .select({
       idAtendimento: comandaPagamentos.idAtendimento,
-      total_pago: sql<string>`coalesce(sum(${comandaPagamentos.valor}::numeric), 0)`,
+      total_pago: sqlTotalPagoRecebido,
     })
     .from(comandaPagamentos)
     .where(inArray(comandaPagamentos.idAtendimento, lista))
@@ -465,32 +472,59 @@ export interface PagamentoComandaDTO {
   metodo: MetodoPagamentoComanda;
   metodo_rotulo: string;
   parcelas: number;
+  parcela_numero: number | null;
+  parcelas_total: number | null;
   troco: string | null;
   observacao: string | null;
   movimentacao_id: number | null;
   created_at: string;
 }
 
-function rowParaDto(row: {
-  id: number;
-  idAtendimento: string;
-  dataPagamento: string;
-  valor: string;
-  metodo: MetodoPagamentoComanda;
-  parcelas: number;
-  troco: string | null;
-  observacao: string | null;
-  movimentacaoId: number | null;
-  createdAt: Date | string;
-}): PagamentoComandaDTO {
+/** Legado: `observacao` «Pix 1/2», «Cartão de crédito 2/2», etc. (qualquer método). */
+function extrairParcelaLegadoDeObservacao(obs: string | null): {
+  metodo_rotulo: string | null;
+  parcela_numero: number | null;
+  parcelas_total: number | null;
+} {
+  const t = String(obs ?? '').trim();
+  const m = t.match(/^(.+?)\s+(\d+)\/(\d+)$/);
+  if (!m) {
+    return { metodo_rotulo: null, parcela_numero: null, parcelas_total: null };
+  }
+  const parcela_numero = Number.parseInt(m[2], 10);
+  const parcelas_total = Number.parseInt(m[3], 10);
+  if (
+    !Number.isFinite(parcela_numero) ||
+    !Number.isFinite(parcelas_total) ||
+    parcela_numero < 1 ||
+    parcelas_total < 1
+  ) {
+    return { metodo_rotulo: null, parcela_numero: null, parcelas_total: null };
+  }
+  return {
+    metodo_rotulo: m[1].trim(),
+    parcela_numero,
+    parcelas_total,
+  };
+}
+
+function rowParaDto(
+  row: typeof comandaPagamentos.$inferSelect,
+): PagamentoComandaDTO {
+  const metodo = row.metodo as MetodoPagamentoComanda;
+  const legado = extrairParcelaLegadoDeObservacao(row.observacao);
+  const rotuloCol =
+    String(row.metodoRotulo ?? '').trim() || legado.metodo_rotulo || '';
   return {
     id: row.id,
     id_atendimento: row.idAtendimento,
     data_pagamento: String(row.dataPagamento ?? '').slice(0, 10),
     valor: String(row.valor ?? '0'),
-    metodo: row.metodo,
-    metodo_rotulo: rotuloMetodoComanda(row.metodo),
+    metodo,
+    metodo_rotulo: rotuloCol || rotuloMetodoComanda(metodo),
     parcelas: Number(row.parcelas ?? 1),
+    parcela_numero: row.parcelaNumero ?? legado.parcela_numero,
+    parcelas_total: row.parcelasTotal ?? legado.parcelas_total,
     troco: row.troco != null ? String(row.troco) : null,
     observacao: row.observacao ?? null,
     movimentacao_id: row.movimentacaoId ?? null,
@@ -520,6 +554,9 @@ export interface CriarPagamentoComandaInput {
   valor: number | string;
   metodo: string;
   parcelas?: number;
+  parcela_numero?: number | null;
+  parcelas_total?: number | null;
+  metodo_rotulo?: string | null;
   troco?: number | string | null;
   observacao?: string | null;
 }
@@ -544,6 +581,9 @@ function prepararInputPagamentoComanda(
   valor: number;
   valorStr: string;
   parcelas: number;
+  parcelaNumero: number | null;
+  parcelasTotal: number | null;
+  metodoRotulo: string;
   trocoStr: string | null;
   dataPagamento: string;
   observacao: string | null;
@@ -583,11 +623,35 @@ function prepararInputPagamentoComanda(
       ? String(input.observacao).trim()
       : null;
 
+  const parcelaNumeroRaw = input.parcela_numero;
+  const parcelaNumero =
+    parcelaNumeroRaw != null &&
+    Number.isFinite(Number(parcelaNumeroRaw)) &&
+    Number(parcelaNumeroRaw) >= 1
+      ? Math.floor(Number(parcelaNumeroRaw))
+      : null;
+  const parcelasTotalRaw = input.parcelas_total;
+  const parcelasTotal =
+    parcelasTotalRaw != null &&
+    Number.isFinite(Number(parcelasTotalRaw)) &&
+    Number(parcelasTotalRaw) >= 1
+      ? Math.floor(Number(parcelasTotalRaw))
+      : null;
+
+  const rotuloIn =
+    input.metodo_rotulo != null ? String(input.metodo_rotulo).trim() : '';
+  const metodoRotulo = rotuloIn
+    ? rotuloIn.slice(0, 80)
+    : rotuloMetodoComanda(metodo);
+
   return {
     metodo,
     valor,
     valorStr,
     parcelas,
+    parcelaNumero,
+    parcelasTotal,
+    metodoRotulo,
     trocoStr,
     dataPagamento,
     observacao,
@@ -616,6 +680,9 @@ export async function inserirPagamentoComandaEmTx(
     metodo,
     valorStr,
     parcelas,
+    parcelaNumero,
+    parcelasTotal,
+    metodoRotulo,
     trocoStr,
     dataPagamento,
     observacao,
@@ -667,6 +734,9 @@ export async function inserirPagamentoComandaEmTx(
       valor: valorStr,
       metodo,
       parcelas,
+      parcelaNumero,
+      parcelasTotal,
+      metodoRotulo,
       troco: trocoStr,
       observacao,
       movimentacaoId,

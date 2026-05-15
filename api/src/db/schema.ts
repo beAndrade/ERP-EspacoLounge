@@ -330,8 +330,19 @@ export const comandaPagamentos = pgTable(
     dataPagamento: date('data_pagamento').notNull(),
     valor: numeric('valor', { precision: 14, scale: 2 }).notNull(),
     metodo: metodoPagamentoComandaEnum('metodo').notNull(),
-    /** Para cartão (1, 2, …); padrão 1. */
+    /**
+     * Legado / informativo por linha (hoje sempre `1` após split em N linhas).
+     * O parcelamento da comanda usa `parcela_numero` + `parcelas_total`.
+     */
     parcelas: integer('parcelas').default(1).notNull(),
+    /** Índice da prestação (1..N) quando a comanda foi parcelada em várias linhas. */
+    parcelaNumero: integer('parcela_numero'),
+    /** Total de prestações do mesmo lançamento parcelado. */
+    parcelasTotal: integer('parcelas_total'),
+    /**
+     * Rótulo do método para UI (ex.: «Dinheiro» na 2.ª parcela mesmo com `metodo` = pendente).
+     */
+    metodoRotulo: text('metodo_rotulo'),
     /** Em dinheiro: troco devolvido (informativo, não entra no total pago). */
     troco: numeric('troco', { precision: 14, scale: 2 }),
     observacao: text('observacao'),

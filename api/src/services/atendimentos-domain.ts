@@ -19,6 +19,7 @@ import {
   atendimentos,
   atendimentosPedido,
   clientes,
+  comandaPagamentos,
   folha,
   pacotes,
   produtos,
@@ -2022,6 +2023,45 @@ export async function listAtendimentosRaw(
   /** Resumo financeiro consolidado (total / total_pago / saldo / status) por pedido. */
   const resumosPorId = await getResumosPorAtendimento(db, idsAt);
 
+  /** Prestações `pendente` em `comanda_pagamentos` (vencimento por linha, ex. 2.ª parcela de cartão). */
+  const prestacaoPendentePorId = new Map<
+    string,
+    { atrasada: boolean; menorDataYmd: string | null }
+  >();
+  if (idsAt.length > 0) {
+    const prestRows = await db
+      .select({
+        idAtendimento: comandaPagamentos.idAtendimento,
+        temAtrasada: sql<boolean>`
+          bool_or(
+            ${comandaPagamentos.metodo} = 'pendente'
+            AND ${comandaPagamentos.dataPagamento} < CURRENT_DATE
+          )`,
+        menorData: sql<string | null>`
+          min(
+            CASE
+              WHEN ${comandaPagamentos.metodo} = 'pendente'
+              THEN ${comandaPagamentos.dataPagamento}::text
+            END
+          )
+        `,
+      })
+      .from(comandaPagamentos)
+      .where(inArray(comandaPagamentos.idAtendimento, idsAt))
+      .groupBy(comandaPagamentos.idAtendimento);
+    for (const row of prestRows) {
+      const k = String(row.idAtendimento || '').trim();
+      if (!k) continue;
+      let menor: string | null =
+        row.menorData != null ? String(row.menorData).slice(0, 10) : null;
+      if (menor && !/^\d{4}-\d{2}-\d{2}$/.test(menor)) menor = null;
+      prestacaoPendentePorId.set(k, {
+        atrasada: Boolean(row.temAtrasada),
+        menorDataYmd: menor,
+      });
+    }
+  }
+
   const numerosPorIdAt = new Map<string, number>();
   if (idsAt.length > 0) {
     const pedNum = await db
@@ -2141,6 +2181,18 @@ export async function listAtendimentosRaw(
           }
         : {}),
       numero_comanda: numerosPorIdAt.get(idAtKey) ?? null,
+      ...(idAtKey
+        ? (() => {
+            const pr = prestacaoPendentePorId.get(idAtKey);
+            return {
+              pagamento_prestacao_pendente_atrasada: pr?.atrasada ?? false,
+              pagamento_prestacao_menor_data: pr?.menorDataYmd ?? null,
+            };
+          })()
+        : {
+            pagamento_prestacao_pendente_atrasada: false,
+            pagamento_prestacao_menor_data: null,
+          }),
     };
   });
 }

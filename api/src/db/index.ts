@@ -336,6 +336,21 @@ BEGIN
   END IF;
 END $$;
 `));
+  for (const col of ['parcela_numero', 'parcelas_total', 'metodo_rotulo']) {
+    const colType = col === 'metodo_rotulo' ? 'text' : 'integer';
+    await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'comanda_pagamentos' AND c.column_name = '${col}'
+  ) THEN
+    ALTER TABLE "comanda_pagamentos" ADD COLUMN "${col}" ${colType};
+  END IF;
+END $$;
+`));
+  }
   await db.execute(sql.raw(`
 DO $$
 BEGIN

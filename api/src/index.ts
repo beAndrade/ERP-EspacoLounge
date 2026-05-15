@@ -760,6 +760,17 @@ const app = new Elysia({ adapter: node() })
             b.parcelas != null && Number.isFinite(Number(b.parcelas))
               ? Number(b.parcelas)
               : 1,
+          parcela_numero:
+            b.parcela_numero != null && Number.isFinite(Number(b.parcela_numero))
+              ? Number(b.parcela_numero)
+              : undefined,
+          parcelas_total:
+            b.parcelas_total != null &&
+            Number.isFinite(Number(b.parcelas_total))
+              ? Number(b.parcelas_total)
+              : undefined,
+          metodo_rotulo:
+            b.metodo_rotulo != null ? String(b.metodo_rotulo) : undefined,
           troco:
             b.troco != null
               ? (b.troco as number | string)
@@ -783,6 +794,9 @@ const app = new Elysia({ adapter: node() })
         metodo: t.String(),
         data_pagamento: t.Optional(t.String()),
         parcelas: t.Optional(t.Number()),
+        parcela_numero: t.Optional(t.Number()),
+        parcelas_total: t.Optional(t.Number()),
+        metodo_rotulo: t.Optional(t.String()),
         troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
         observacao: t.Optional(t.Union([t.String(), t.Null()])),
       }),
@@ -797,43 +811,39 @@ const app = new Elysia({ adapter: node() })
         const b = body as Record<string, unknown>;
         const rawList = b.pagamentos;
         const rawCred = b.credito_excesso;
+        const mapPagamentoBody = (p: Record<string, unknown>) => ({
+          data_pagamento:
+            p.data_pagamento != null ? String(p.data_pagamento) : undefined,
+          valor: (p.valor as number | string) ?? 0,
+          metodo: String(p.metodo ?? '').trim(),
+          parcelas:
+            p.parcelas != null && Number.isFinite(Number(p.parcelas))
+              ? Number(p.parcelas)
+              : 1,
+          parcela_numero:
+            p.parcela_numero != null &&
+            Number.isFinite(Number(p.parcela_numero))
+              ? Number(p.parcela_numero)
+              : undefined,
+          parcelas_total:
+            p.parcelas_total != null &&
+            Number.isFinite(Number(p.parcelas_total))
+              ? Number(p.parcelas_total)
+              : undefined,
+          metodo_rotulo:
+            p.metodo_rotulo != null ? String(p.metodo_rotulo) : undefined,
+          troco: p.troco != null ? (p.troco as number | string) : null,
+          observacao: p.observacao != null ? String(p.observacao) : null,
+        });
         const list = Array.isArray(rawList)
-          ? rawList.map((item) => {
-              const p = item as Record<string, unknown>;
-              return {
-                data_pagamento:
-                  p.data_pagamento != null ? String(p.data_pagamento) : undefined,
-                valor: (p.valor as number | string) ?? 0,
-                metodo: String(p.metodo ?? '').trim(),
-                parcelas:
-                  p.parcelas != null && Number.isFinite(Number(p.parcelas))
-                    ? Number(p.parcelas)
-                    : 1,
-                troco:
-                  p.troco != null ? (p.troco as number | string) : null,
-                observacao:
-                  p.observacao != null ? String(p.observacao) : null,
-              };
-            })
+          ? rawList.map((item) =>
+              mapPagamentoBody(item as Record<string, unknown>),
+            )
           : [];
         const credito_excesso = Array.isArray(rawCred)
-          ? rawCred.map((item) => {
-              const p = item as Record<string, unknown>;
-              return {
-                data_pagamento:
-                  p.data_pagamento != null ? String(p.data_pagamento) : undefined,
-                valor: (p.valor as number | string) ?? 0,
-                metodo: String(p.metodo ?? '').trim(),
-                parcelas:
-                  p.parcelas != null && Number.isFinite(Number(p.parcelas))
-                    ? Number(p.parcelas)
-                    : 1,
-                troco:
-                  p.troco != null ? (p.troco as number | string) : null,
-                observacao:
-                  p.observacao != null ? String(p.observacao) : null,
-              };
-            })
+          ? rawCred.map((item) =>
+              mapPagamentoBody(item as Record<string, unknown>),
+            )
           : undefined;
         const rawCredUsado = b.credito_cliente_usado;
         const credUsadoNum =
@@ -875,6 +885,9 @@ const app = new Elysia({ adapter: node() })
             metodo: t.String(),
             data_pagamento: t.Optional(t.String()),
             parcelas: t.Optional(t.Number()),
+            parcela_numero: t.Optional(t.Number()),
+            parcelas_total: t.Optional(t.Number()),
+            metodo_rotulo: t.Optional(t.String()),
             troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
             observacao: t.Optional(t.Union([t.String(), t.Null()])),
           }),
@@ -886,6 +899,9 @@ const app = new Elysia({ adapter: node() })
               metodo: t.String(),
               data_pagamento: t.Optional(t.String()),
               parcelas: t.Optional(t.Number()),
+              parcela_numero: t.Optional(t.Number()),
+              parcelas_total: t.Optional(t.Number()),
+              metodo_rotulo: t.Optional(t.String()),
               troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
               observacao: t.Optional(t.Union([t.String(), t.Null()])),
             }),
