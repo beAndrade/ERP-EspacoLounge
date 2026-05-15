@@ -80,6 +80,11 @@ interface MetodoOpcao {
   grupo: 'dinheiro' | 'cartao' | 'pix' | 'outros';
 }
 
+/** Ordem na grelha: dinheiro → cartão (picker) → pix. */
+type MetodoSlotPrincipal =
+  | { kind: 'opcao'; opcao: MetodoOpcao }
+  | { kind: 'cartao' };
+
 const METODOS: MetodoOpcao[] = [
   { value: 'dinheiro', rotulo: 'Dinheiro', grupo: 'dinheiro' },
   { value: 'cartao_credito', rotulo: 'Cartão de crédito', grupo: 'cartao' },
@@ -135,6 +140,9 @@ export class FaturarDrawerComponent implements OnInit {
 
   /** Sheet «Outros» (lista expandida de métodos). */
   outrosAberto = false;
+
+  /** Escolha crédito vs débito (modal). */
+  cartaoModalAberto = false;
 
   /** Modal local de calcular troco. */
   trocoAberto = false;
@@ -197,19 +205,31 @@ export class FaturarDrawerComponent implements OnInit {
 
   // ----- Métodos / botões --------------------------------------------------
 
-  metodoBotoesPrincipais(): MetodoOpcao[] {
-    return METODOS.filter(
-      (m) =>
-        m.value === 'dinheiro' ||
-        m.value === 'cartao_credito' ||
-        m.value === 'pix',
-    );
+  metodoSlotsPrincipais(): MetodoSlotPrincipal[] {
+    const dinheiro = METODOS.find((m) => m.value === 'dinheiro');
+    const pix = METODOS.find((m) => m.value === 'pix');
+    const slots: MetodoSlotPrincipal[] = [];
+    if (dinheiro) slots.push({ kind: 'opcao', opcao: dinheiro });
+    slots.push({ kind: 'cartao' });
+    if (pix) slots.push({ kind: 'opcao', opcao: pix });
+    return slots;
+  }
+
+  trackMetodoPrincipalSlot(slot: MetodoSlotPrincipal): string {
+    return slot.kind === 'cartao' ? 'cartao' : slot.opcao.value;
+  }
+
+  /** Opções do modal «Cartão» (rótulos com capitalização do UI). */
+  metodosCartaoModal(): Array<{ value: MetodoPagamentoComanda; rotulo: string }> {
+    return [
+      { value: 'cartao_credito', rotulo: 'Cartão de Crédito' },
+      { value: 'cartao_debito', rotulo: 'Cartão de Débito' },
+    ];
   }
 
   metodoBotoesOutros(): MetodoOpcao[] {
     return METODOS.filter(
       (m) =>
-        m.value === 'cartao_debito' ||
         m.value === 'transferencia' ||
         m.value === 'outros',
     );
@@ -221,6 +241,14 @@ export class FaturarDrawerComponent implements OnInit {
 
   fecharOutros(): void {
     this.outrosAberto = false;
+  }
+
+  abrirModalCartao(): void {
+    this.cartaoModalAberto = true;
+  }
+
+  fecharModalCartao(): void {
+    this.cartaoModalAberto = false;
   }
 
   podeRegistrar(): boolean {
@@ -258,6 +286,7 @@ export class FaturarDrawerComponent implements OnInit {
         next: (r) => {
           this.salvando = false;
           this.outrosAberto = false;
+          this.cartaoModalAberto = false;
           this.parcelasCtrl.setValue(1);
           this.resumo = r.resumo;
           this.pagamentos = [...this.pagamentos, r.pagamento];
@@ -374,6 +403,11 @@ export class FaturarDrawerComponent implements OnInit {
     if (this.pagamentoParaExcluir) {
       ev.preventDefault();
       this.cancelarExcluir();
+      return;
+    }
+    if (this.cartaoModalAberto) {
+      ev.preventDefault();
+      this.fecharModalCartao();
       return;
     }
     if (this.outrosAberto) {
