@@ -460,16 +460,6 @@ input[type='number'].fat-field__input {
     font-weight: 600;
     color: var(--fat-fg);
   }
-
-  &.fat-resumo__row--saldo {
-    font-weight: 700;
-    font-size: 1rem;
-    color: #b91c1c;
-
-    &.nc-status--pago {
-      color: #166534;
-    }
-  }
 }
 
 /* Footer */

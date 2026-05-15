@@ -413,10 +413,6 @@ export class FaturarDrawerComponent implements OnInit {
     }
   }
 
-  classeStatus(): string {
-    return `nc-status--${this.resumo.status}`;
-  }
-
   @HostListener('document:keydown.escape', ['$event'])
   onEsc(ev: KeyboardEvent): void {
     if (this.trocoAberto) {
