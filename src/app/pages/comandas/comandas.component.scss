@@ -740,6 +740,91 @@ thead th.col-ticket {
   text-align: right;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
+
+  &__inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+
+  &__amount {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /** Ícone de desconto à esquerda do valor; tooltip no hover/foco. */
+  &__disc {
+    position: relative;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    outline: none;
+  }
+
+  &__disc-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #389e0d;
+    border-radius: 50%;
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &__disc:focus-visible &__disc-icon {
+    box-shadow: 0 0 0 2px rgba(56, 158, 13, 0.4);
+  }
+
+  &__disc-tip {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    z-index: 40;
+    min-width: max-content;
+    max-width: 240px;
+    padding: 0.4rem 0.55rem;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #fff;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.82);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+    pointer-events: none;
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s ease;
+    white-space: normal;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      right: 10px;
+      border: 6px solid transparent;
+      border-top-color: rgba(0, 0, 0, 0.82);
+    }
+  }
+
+  &__disc:hover &__disc-tip,
+  &__disc:focus-within &__disc-tip {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 thead th.col-valor {
@@ -924,6 +1009,13 @@ thead th.col-check {
   }
 
   &--info {
+    background-color: rgb(119, 119, 119);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  /** «Finalizado» na coluna Status (cinza + texto branco). */
+  &--finalizado {
     background-color: rgb(119, 119, 119);
     color: #fff;
     border-color: transparent;

@@ -359,6 +359,7 @@
                           [class.badge--info]="classeBadgeStatus(g) === 'badge--info'"
                           [class.badge--warn]="classeBadgeStatus(g) === 'badge--warn'"
                           [class.badge--ok]="classeBadgeStatus(g) === 'badge--ok'"
+                          [class.badge--finalizado]="classeBadgeStatus(g) === 'badge--finalizado'"
                           >{{ rotuloStatus(g) }}</span
                         >
                         @if (saldoAtrasadoMaisDe7Dias(g)) {
@@ -366,13 +367,45 @@
                         }
                       </td>
                       <td class="col-valor">
-                        @if (valorExibicao(g) !== null) {
-                          {{
-                            valorExibicao(g)! | currency: 'BRL' : 'symbol' : '1.2-2'
-                          }}
-                        } @else {
-                          —
-                        }
+                        <div class="col-valor__inner">
+                          @if (mostrarIconeDescontoComanda(g)) {
+                            <span
+                              class="col-valor__disc"
+                              tabindex="0"
+                              [attr.aria-label]="textoTooltipDescontoComanda(g)"
+                            >
+                              <span class="col-valor__disc-icon" aria-hidden="true">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path
+                                    d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"
+                                  />
+                                  <path d="M12 18V6" />
+                                </svg>
+                              </span>
+                              <span class="col-valor__disc-tip" role="tooltip">{{
+                                textoTooltipDescontoComanda(g)
+                              }}</span>
+                            </span>
+                          }
+                          @if (valorExibicao(g) !== null) {
+                            <span class="col-valor__amount">{{
+                              valorExibicao(g)! | currency: 'BRL' : 'symbol' : '1.2-2'
+                            }}</span>
+                          } @else {
+                            <span class="col-valor__amount">—</span>
+                          }
+                        </div>
                       </td>
                       <td class="col-pagamento">
                         <span

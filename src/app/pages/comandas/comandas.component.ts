@@ -882,7 +882,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }
     if (this.statusPagamentoSelecionados.size > 0) {
       list = list.filter((g) =>
-        this.statusPagamentoSelecionados.has(this.statusCobrancaDerivado(g)),
+        this.statusPagamentoSelecionados.has(this.statusCobrancaEfetivo(g)),
       );
     }
     return list.slice().sort((a, b) => {
@@ -943,11 +943,41 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   private prioridadeOrdenacaoStatus(g: ComandaGrupo): number {
-    const s = this.statusCobrancaDerivado(g);
+    const s = this.statusCobrancaEfetivo(g);
     if (s === 'parcial') return 0;
     if (s === 'pendente') return 1;
     if (s === 'aberto') return 2;
     return 3;
+  }
+
+  /**
+   * Filtros / ordenação: quitada nas cifras conta como `pago` mesmo com `status_cobranca`
+   * ou `pagamento_status` legados «parcial».
+   */
+  statusCobrancaEfetivo(g: ComandaGrupo): StatusCobrancaDerivado {
+    if (this.comandaQuitadaNasCifras(g)) return 'pago';
+    return this.statusCobrancaDerivado(g);
+  }
+
+  private readonly epsMoeda = 0.005;
+
+  /** Quitada (inclui pagamento com excesso para crédito). */
+  comandaQuitadaNasCifras(g: ComandaGrupo): boolean {
+    const l0 = g.linhas[0];
+    if (l0?.status_cobranca === 'pago') return true;
+    const saldo = Number(l0?.saldo);
+    if (Number.isFinite(saldo) && saldo <= this.epsMoeda) return true;
+    const total = Number(l0?.total);
+    const pago = Number(l0?.total_pago);
+    if (
+      Number.isFinite(total) &&
+      total > 0 &&
+      Number.isFinite(pago) &&
+      pago + this.epsMoeda >= total
+    ) {
+      return true;
+    }
+    return false;
   }
 
   rotuloStatus(g: ComandaGrupo): string {
@@ -969,6 +999,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (cs !== 'finalizada') {
       return '—';
     }
+    if (this.comandaQuitadaNasCifras(g)) {
+      return 'Pago';
+    }
     const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
     if (ps === 'confirmado') return 'Pago';
     if (ps === 'pendente') return 'Pendente';
@@ -980,7 +1013,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     const l0 = g.linhas[0];
     const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
     if (cs === 'finalizada') {
-      return 'badge--ok';
+      return 'badge--finalizado';
     }
     const s = this.statusCobrancaDerivado(g);
     if (s === 'pago') return 'badge--ok';
@@ -995,6 +1028,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (cs !== 'finalizada') {
       return 'badge--aviso';
     }
+    if (this.comandaQuitadaNasCifras(g)) {
+      return 'badge--ok';
+    }
     const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
     if (ps === 'confirmado') return 'badge--ok';
     if (ps === 'parcial') return 'badge--warn';
@@ -1003,6 +1039,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   resumoParcial(g: ComandaGrupo): string {
+    if (this.comandaQuitadaNasCifras(g)) return '';
     const l0 = g.linhas[0];
     const pago = Number(l0?.total_pago ?? 0) || 0;
     const total = Number(l0?.total ?? g.valorTotal ?? 0) || 0;
@@ -1011,7 +1048,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   saldoAtrasadoMaisDe7Dias(g: ComandaGrupo): boolean {
-    const s = this.statusCobrancaDerivado(g);
+    const s = this.statusCobrancaEfetivo(g);
     if (s === 'pago') return false;
     const saldo = Number(g.linhas[0]?.saldo ?? 0) || 0;
     if (saldo <= 0) return false;
@@ -1043,6 +1080,29 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   valorExibicao(g: ComandaGrupo): number | null {
     return g.valorTotal;
+  }
+
+  /** Valor do desconto da comanda (resumo API ou soma da primeira linha). */
+  valorDescontoComandaParaTooltip(g: ComandaGrupo): number | null {
+    const l0 = g.linhas[0];
+    const dn = l0?.desconto_num;
+    if (typeof dn === 'number' && Number.isFinite(dn) && dn > this.epsMoeda) {
+      return dn;
+    }
+    if (g.descontoValor != null && g.descontoValor > this.epsMoeda) {
+      return g.descontoValor;
+    }
+    return null;
+  }
+
+  mostrarIconeDescontoComanda(g: ComandaGrupo): boolean {
+    return this.valorDescontoComandaParaTooltip(g) != null;
+  }
+
+  textoTooltipDescontoComanda(g: ComandaGrupo): string {
+    const v = this.valorDescontoComandaParaTooltip(g);
+    if (v == null) return '';
+    return `Desconto de ${formataMoeda(v)}`;
   }
 
   rotuloTicket(g: ComandaGrupo): string {
