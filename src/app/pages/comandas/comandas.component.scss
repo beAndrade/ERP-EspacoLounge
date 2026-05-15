@@ -1033,6 +1033,13 @@ thead th.col-check {
     border-color: #fdba74;
   }
 
+  /** «Em atraso» na coluna Pagamento (dívida pendente após o dia da comanda). */
+  &--atraso {
+    color: #cf1322;
+    background: #fff1f0;
+    border-color: #ffa39e;
+  }
+
   &--critical {
     margin-top: 4px;
     color: #b91c1c;

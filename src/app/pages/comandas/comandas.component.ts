@@ -961,8 +961,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   private readonly epsMoeda = 0.005;
 
-  /** Quitada (inclui pagamento com excesso para crédito). */
+  /** Quitada em caixa (sem linha «pendente» em dívida). */
   comandaQuitadaNasCifras(g: ComandaGrupo): boolean {
+    if (this.comandaPagamentoPendenteDivida(g)) return false;
     const l0 = g.linhas[0];
     if (l0?.status_cobranca === 'pago') return true;
     const saldo = Number(l0?.saldo);
@@ -980,6 +981,24 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return false;
   }
 
+  /** `pagamento_status` = pendente quando existe parcela «Pendente» na comanda (dívida). */
+  private comandaPagamentoPendenteDivida(g: ComandaGrupo): boolean {
+    const ps = String(g.linhas[0]?.pagamentoStatus ?? '').trim().toLowerCase();
+    return ps === 'pendente';
+  }
+
+  /**
+   * Dívida «Pendente» e data da comanda anterior ao dia corrente → exibir «Em atraso»
+   * (no dia da abertura permanece «Em aberto»).
+   */
+  comandaPendenteEmAtraso(g: ComandaGrupo): boolean {
+    if (!this.comandaPagamentoPendenteDivida(g)) return false;
+    const ymdComanda = (g.data || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymdComanda)) return false;
+    const hoje = toYmd(new Date());
+    return ymdComanda < hoje;
+  }
+
   rotuloStatus(g: ComandaGrupo): string {
     const l0 = g.linhas[0];
     const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
@@ -991,22 +1010,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (s === 'pendente') return 'Pendente';
     if (s === 'parcial') return 'Parcial';
     return 'Pago';
-  }
-
-  rotuloPagamento(g: ComandaGrupo): string {
-    const l0 = g.linhas[0];
-    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
-    if (cs !== 'finalizada') {
-      return '—';
-    }
-    if (this.comandaQuitadaNasCifras(g)) {
-      return 'Pago';
-    }
-    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
-    if (ps === 'confirmado') return 'Pago';
-    if (ps === 'pendente') return 'Pendente';
-    if (ps === 'parcial') return 'Parcial';
-    return 'Pendente';
   }
 
   classeBadgeStatus(g: ComandaGrupo): string {
@@ -1022,23 +1025,46 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return 'badge--aviso';
   }
 
+  rotuloPagamento(g: ComandaGrupo): string {
+    const l0 = g.linhas[0];
+    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
+    if (cs !== 'finalizada') {
+      return '—';
+    }
+    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
+    if (ps === 'pendente') {
+      if (this.comandaPendenteEmAtraso(g)) return 'Em atraso';
+      return 'Em aberto';
+    }
+    if (this.comandaQuitadaNasCifras(g)) {
+      return 'Pago';
+    }
+    if (ps === 'confirmado') return 'Pago';
+    if (ps === 'parcial') return 'Parcial';
+    return 'Pendente';
+  }
+
   classeBadgePagamento(g: ComandaGrupo): string {
     const l0 = g.linhas[0];
     const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
     if (cs !== 'finalizada') {
       return 'badge--aviso';
     }
+    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
+    if (ps === 'pendente') {
+      if (this.comandaPendenteEmAtraso(g)) return 'badge--atraso';
+      return 'badge--warn';
+    }
     if (this.comandaQuitadaNasCifras(g)) {
       return 'badge--ok';
     }
-    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
     if (ps === 'confirmado') return 'badge--ok';
     if (ps === 'parcial') return 'badge--warn';
-    if (ps === 'pendente') return 'badge--warn';
     return 'badge--info';
   }
 
   resumoParcial(g: ComandaGrupo): string {
+    if (this.comandaPagamentoPendenteDivida(g)) return '';
     if (this.comandaQuitadaNasCifras(g)) return '';
     const l0 = g.linhas[0];
     const pago = Number(l0?.total_pago ?? 0) || 0;
