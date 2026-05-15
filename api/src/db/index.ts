@@ -439,4 +439,66 @@ BEGIN
   END IF;
 END $$;
 `));
+  /** Campos estruturados do cadastro de cliente (`0028_clientes_campos_cadastro`). */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'apelido'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "apelido" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'email'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "email" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'celular'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "celular" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'telefone_fixo'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "telefone_fixo" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'aniversario'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "aniversario" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'cnpj'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "cnpj" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'cpf'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "cpf" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'rg'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "rg" text;
+  END IF;
+END $$;
+`));
 }

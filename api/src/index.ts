@@ -49,6 +49,11 @@ import {
   listRegrasMegaApi,
   listServicosForApi,
 } from './services/queries';
+import {
+  observacoesColumnFromExtras,
+  splitClienteObservacoesInput,
+  structuredDraftToColumnPatch,
+} from './services/clientes-cadastro-normalize';
 import { requireAdminPin } from './lib/admin-pin';
 import {
   listFolhaPorPeriodoApi,
@@ -179,7 +184,7 @@ const app = new Elysia({ adapter: node() })
       if (!nome) return fail('VALIDATION', 'Nome do cliente é obrigatório');
       const telefone =
         body.telefone != null ? String(body.telefone) : null;
-      const observacoes = body.notas != null ? String(body.notas) : null;
+      const split = splitClienteObservacoesInput(body.notas ?? null);
 
       for (let attempt = 0; attempt < 8; attempt++) {
         const id = await allocNextClienteClId(db);
@@ -188,15 +193,19 @@ const app = new Elysia({ adapter: node() })
             idCliente: id,
             nomeExibido: nome,
             telefone,
-            observacoes,
+            observacoes: observacoesColumnFromExtras(split.extras),
+            ...(split.fonte === 'json_elcli'
+              ? structuredDraftToColumnPatch(split.structured)
+              : {}),
           });
-          return ok({
-            id,
-            nome,
-            telefone: telefone ?? '',
-            observacoes: observacoes ?? '',
-            creditoSaldo: 0,
-          });
+          const item = await getClienteById(db, id);
+          if (!item) {
+            return fail(
+              'SERVER',
+              'Cliente criado mas não foi possível carregar o registo.',
+            );
+          }
+          return ok(item);
         } catch (e) {
           const code =
             e && typeof e === 'object' && 'code' in e
@@ -223,27 +232,34 @@ const app = new Elysia({ adapter: node() })
       const nome = String(body.nome || '').trim();
       if (!nome) return fail('VALIDATION', 'Nome exibido é obrigatório');
       const id = params.id.trim();
+      const split =
+        body.notas != null ? splitClienteObservacoesInput(body.notas) : null;
+
+      const basePatch = {
+        nomeExibido: nome,
+        telefone: body.telefone != null ? String(body.telefone) : '',
+      };
+
+      const patchPayload = split
+        ? {
+            ...basePatch,
+            observacoes: observacoesColumnFromExtras(split.extras),
+            ...(split.fonte === 'json_elcli'
+              ? structuredDraftToColumnPatch(split.structured)
+              : {}),
+          }
+        : basePatch;
+
       const updated = await db
         .update(clientes)
-        .set({
-          nomeExibido: nome,
-          telefone: body.telefone != null ? String(body.telefone) : '',
-          observacoes: body.notas != null ? String(body.notas) : '',
-        })
+        .set(patchPayload)
         .where(eq(clientes.idCliente, id))
         .returning();
       if (!updated.length) return fail('NOT_FOUND', 'Cliente não encontrado');
-      const row = updated[0];
-      const creditoSaldo =
-        Math.round((parseFloat(String(row?.creditoSaldo ?? '0')) || 0) * 100) /
-        100;
-      return ok({
-        id,
-        nome,
-        telefone: body.telefone != null ? String(body.telefone) : '',
-        observacoes: body.notas != null ? String(body.notas) : '',
-        creditoSaldo,
-      });
+
+      const item = await getClienteById(db, id);
+      if (!item) return fail('NOT_FOUND', 'Cliente não encontrado');
+      return ok(item);
     },
     {
       params: t.Object({ id: t.String() }),

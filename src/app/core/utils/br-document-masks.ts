@@ -1,8 +1,3 @@
-/** Apenas dígitos (sem limite). */
-export function soDigitos(input: string): string {
-  return String(input ?? '').replace(/\D/g, '');
-}
-
 /** Só dígitos, limitado. */
 export function digitosMax(input: string, max: number): string {
   return String(input ?? '')

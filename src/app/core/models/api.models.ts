@@ -9,7 +9,11 @@ export interface ApiResponse<T> {
   error: ApiError | null;
 }
 
-/** Normalizado a partir da aba Clientes (planilha ERP Espaço Lounge). */
+/**
+ * Cliente na API (`GET/PATCH /api/clientes`).
+ * Na BD, apelido, email, documentos e telefones extra ficam em colunas próprias;
+ * `observacoes` na resposta é sempre JSON reunificado `{ _elCli: 1, … }` para as telas (drawer Comandas, etc.).
+ */
 export interface Cliente {
   id: string;
   nome: string;

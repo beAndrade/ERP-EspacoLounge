@@ -45,11 +45,24 @@ export const clientes = pgTable('clientes', {
   idCliente: text('id_cliente').primaryKey(),
   nomeExibido: text('nome_exibido').notNull(),
   telefone: text('telefone'),
+  /**
+   * JSON `{ _elCli: 1, … }` só para extras (foto, texto livre, desconto padrão, notificações).
+   * Cadastro estruturado nas colunas abaixo; a API devolve `observacoes` já reunificado.
+   */
   observacoes: text('observacoes'),
   /** Saldo de crédito pré-pago (ex.: excesso ao faturar). */
   creditoSaldo: numeric('credito_saldo', { precision: 14, scale: 2 })
     .notNull()
     .default('0'),
+  apelido: text('apelido'),
+  email: text('email'),
+  celular: text('celular'),
+  telefoneFixo: text('telefone_fixo'),
+  /** Data de aniversário como texto DD/MM/AAAA (alinhado à UI). */
+  aniversario: text('aniversario'),
+  cnpj: text('cnpj'),
+  cpf: text('cpf'),
+  rg: text('rg'),
 });
 
 /** Pessoa estável (índice único em `lower(trim(nome))` na migração SQL). */
