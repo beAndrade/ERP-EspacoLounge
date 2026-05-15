@@ -1,5 +1,8 @@
 <div class="fat-drawer">
-  <div class="fat-body">
+  <div
+    class="fat-body"
+    (scroll)="onFatBodyScrollFecharCartao()"
+  >
     <header class="fat-head">
       <h1 class="fat-title">Pagamentos</h1>
       <button
@@ -68,47 +71,83 @@
     <div class="fat-metodos">
       @for (slot of metodoSlotsPrincipais(); track trackMetodoPrincipalSlot(slot)) {
         @if (slot.kind === 'cartao') {
-          <button
-            type="button"
-            class="fat-metodo-btn fat-metodo-btn--cartao"
-            [disabled]="!podeRegistrar()"
-            (click)="abrirModalCartao()"
-            aria-haspopup="dialog"
-            [attr.aria-expanded]="cartaoModalAberto"
-            aria-label="Cartão — escolher crédito ou débito"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+          <div class="fat-metodo-cartao-wrap" #cartaoWrap>
+            <button
+              type="button"
+              class="fat-metodo-btn fat-metodo-btn--cartao"
+              [disabled]="!podeRegistrar()"
+              (click)="toggleCartaoDropdown($event)"
+              aria-haspopup="menu"
+              [attr.aria-expanded]="cartaoDropdownAberto"
+              aria-label="Cartão — escolher crédito ou débito"
             >
-              <rect x="2" y="6" width="20" height="14" rx="2" />
-              <path d="M2 11h20" />
-            </svg>
-            <span class="fat-metodo-btn__label">Cartão</span>
-            <svg
-              class="fat-metodo-btn__chev"
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="2" y="6" width="20" height="14" rx="2" />
+                <path d="M2 11h20" />
+              </svg>
+              <span class="fat-metodo-btn__label">Cartão</span>
+              <svg
+                class="fat-metodo-btn__chev"
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            @if (cartaoDropdownAberto) {
+              <div
+                class="fat-cartao-dropdown"
+                role="menu"
+                [style.top.px]="cartaoDropPos?.top ?? 0"
+                [style.left.px]="cartaoDropPos?.left ?? 0"
+                [style.width.px]="cartaoDropPos?.width ?? 0"
+              >
+                @for (opt of metodosCartaoDropdown(); track opt.value) {
+                  <button
+                    type="button"
+                    class="fat-cartao-dropdown__btn"
+                    role="menuitem"
+                    [disabled]="!podeRegistrar()"
+                    (click)="registrarPagamento(opt.value)"
+                  >
+                    <span>{{ opt.rotulo }}</span>
+                    <svg
+                      class="fat-cartao-dropdown__star"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+                      />
+                    </svg>
+                  </button>
+                }
+              </div>
+            }
+          </div>
         } @else {
           <button
             type="button"
@@ -273,51 +312,6 @@
     </button>
   </footer>
 </div>
-
-@if (cartaoModalAberto) {
-  <div
-    class="fat-modal"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Escolha o tipo de cartão"
-  >
-    <div class="fat-modal__backdrop" (click)="fecharModalCartao()"></div>
-    <div class="fat-modal__panel fat-modal__panel--cartao-picker">
-      <ul class="fat-modal__list" role="list">
-        @for (opt of metodosCartaoModal(); track opt.value) {
-          <li>
-            <button
-              type="button"
-              class="fat-modal__btn fat-modal__btn--metodo-cartao"
-              [disabled]="!podeRegistrar()"
-              (click)="registrarPagamento(opt.value)"
-            >
-              <span>{{ opt.rotulo }}</span>
-              <svg
-                class="fat-modal__btn-star"
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
-                />
-              </svg>
-            </button>
-          </li>
-        }
-      </ul>
-      <div class="fat-modal__actions">
-        <button type="button" class="fat-btn fat-btn--ghost" (click)="fecharModalCartao()">
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </div>
-}
 
 @if (outrosAberto) {
   <div class="fat-modal" role="dialog" aria-modal="true" aria-label="Outros métodos de pagamento">

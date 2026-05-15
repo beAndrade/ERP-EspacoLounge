@@ -1,12 +1,14 @@
 import {
   Component,
   DestroyRef,
+  ElementRef,
   HostListener,
   OnInit,
   effect,
   inject,
   input,
   output,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -141,8 +143,11 @@ export class FaturarDrawerComponent implements OnInit {
   /** Sheet «Outros» (lista expandida de métodos). */
   outrosAberto = false;
 
-  /** Escolha crédito vs débito (modal). */
-  cartaoModalAberto = false;
+  /** Dropdown crédito vs débito (âncora no botão Cartão). */
+  cartaoDropdownAberto = false;
+  cartaoDropPos: { top: number; left: number; width: number } | null = null;
+
+  readonly cartaoWrap = viewChild<ElementRef<HTMLElement>>('cartaoWrap');
 
   /** Modal local de calcular troco. */
   trocoAberto = false;
@@ -219,8 +224,8 @@ export class FaturarDrawerComponent implements OnInit {
     return slot.kind === 'cartao' ? 'cartao' : slot.opcao.value;
   }
 
-  /** Opções do modal «Cartão» (rótulos com capitalização do UI). */
-  metodosCartaoModal(): Array<{ value: MetodoPagamentoComanda; rotulo: string }> {
+  /** Opções do dropdown «Cartão» (rótulos com capitalização do UI). */
+  metodosCartaoDropdown(): Array<{ value: MetodoPagamentoComanda; rotulo: string }> {
     return [
       { value: 'cartao_credito', rotulo: 'Cartão de Crédito' },
       { value: 'cartao_debito', rotulo: 'Cartão de Débito' },
@@ -243,12 +248,52 @@ export class FaturarDrawerComponent implements OnInit {
     this.outrosAberto = false;
   }
 
-  abrirModalCartao(): void {
-    this.cartaoModalAberto = true;
+  toggleCartaoDropdown(ev: MouseEvent): void {
+    ev.stopPropagation();
+    if (this.cartaoDropdownAberto) {
+      this.fecharCartaoDropdown();
+      return;
+    }
+    this.syncCartaoDropdownPosition();
+    this.cartaoDropdownAberto = true;
+    requestAnimationFrame(() => this.syncCartaoDropdownPosition());
   }
 
-  fecharModalCartao(): void {
-    this.cartaoModalAberto = false;
+  fecharCartaoDropdown(): void {
+    this.cartaoDropdownAberto = false;
+    this.cartaoDropPos = null;
+  }
+
+  private syncCartaoDropdownPosition(): void {
+    const el = this.cartaoWrap()?.nativeElement;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    this.cartaoDropPos = {
+      top: r.bottom + 6,
+      left: r.left,
+      width: r.width,
+    };
+  }
+
+  @HostListener('window:resize')
+  onWinResizeCartaoDrop(): void {
+    if (this.cartaoDropdownAberto) {
+      this.syncCartaoDropdownPosition();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClickFecharCartao(ev: MouseEvent): void {
+    if (!this.cartaoDropdownAberto) return;
+    const wrap = this.cartaoWrap()?.nativeElement;
+    if (wrap?.contains(ev.target as Node)) return;
+    this.fecharCartaoDropdown();
+  }
+
+  onFatBodyScrollFecharCartao(): void {
+    if (this.cartaoDropdownAberto) {
+      this.fecharCartaoDropdown();
+    }
   }
 
   podeRegistrar(): boolean {
@@ -259,6 +304,7 @@ export class FaturarDrawerComponent implements OnInit {
   }
 
   registrarPagamento(metodo: MetodoPagamentoComanda): void {
+    this.fecharCartaoDropdown();
     if (this.salvando) return;
     const valor = parsePtDecimal(this.valorCtrl.value);
     if (!Number.isFinite(valor) || valor <= 0) {
@@ -286,7 +332,8 @@ export class FaturarDrawerComponent implements OnInit {
         next: (r) => {
           this.salvando = false;
           this.outrosAberto = false;
-          this.cartaoModalAberto = false;
+          this.cartaoDropdownAberto = false;
+          this.cartaoDropPos = null;
           this.parcelasCtrl.setValue(1);
           this.resumo = r.resumo;
           this.pagamentos = [...this.pagamentos, r.pagamento];
@@ -405,9 +452,9 @@ export class FaturarDrawerComponent implements OnInit {
       this.cancelarExcluir();
       return;
     }
-    if (this.cartaoModalAberto) {
+    if (this.cartaoDropdownAberto) {
       ev.preventDefault();
-      this.fecharModalCartao();
+      this.fecharCartaoDropdown();
       return;
     }
     if (this.outrosAberto) {
