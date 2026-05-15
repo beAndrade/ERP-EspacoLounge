@@ -359,4 +359,17 @@ BEGIN
   END IF;
 END $$;
 `));
+  /** Alinha com `0025_clientes_credito_saldo` quando `db:migrate` ainda não correu. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'credito_saldo'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "credito_saldo" numeric(14, 2) DEFAULT 0 NOT NULL;
+  END IF;
+END $$;
+`));
 }
