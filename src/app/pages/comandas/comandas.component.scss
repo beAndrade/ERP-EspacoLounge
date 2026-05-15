@@ -2118,6 +2118,41 @@ thead th.col-check {
   }
 }
 
+.cliente-field--error .cliente-field__inner > input {
+  border-width: 1px;
+  border-style: solid;
+  border-color: #ff4d4f !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+
+  &:hover,
+  &:focus {
+    border-color: #ff4d4f !important;
+    box-shadow: none !important;
+  }
+}
+
+.cliente-field__error-msg {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #ff4d4f;
+}
+
+.cliente-phone-input.cliente-field__control--error {
+  border-width: 1px;
+  border-style: solid;
+  border-color: #ff4d4f;
+  background: #ffffff;
+  box-shadow: none;
+
+  &:focus-within {
+    border-color: #ff4d4f;
+    box-shadow: none;
+  }
+}
+
 .cliente-phone-input {
   display: flex;
   align-items: stretch;

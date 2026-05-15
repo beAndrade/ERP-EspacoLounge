@@ -21,10 +21,18 @@ import type { ComandaDrawerContextoAgenda } from '../agenda-hub/comanda-drawer.t
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 import {
+  dataDdMmYyyyValida,
+  emailBrValido,
+  formatarCnpjBr,
+  formatarCpfBr,
+  formatarDataDdMmYyyy,
+  formatarRgBr9,
+} from '../../core/utils/br-document-masks';
+import {
   dataDdMmBarraAaaa,
+  ordenarLinhasAtendimentoInPlace,
   parseFiltroDataDdMm,
   toYmd,
-  ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
 import {
@@ -35,6 +43,16 @@ import {
 } from '../../core/utils/comanda-status.util';
 
 registerLocaleData(localePt);
+
+type CadastroClienteTouchKey =
+  | 'nome'
+  | 'celular'
+  | 'telefone'
+  | 'email'
+  | 'aniversario'
+  | 'cnpj'
+  | 'cpf'
+  | 'rg';
 
 /** Um grupo por ID de atendimento (mesma lógica que `atendimentos`). */
 interface ComandaGrupo {
@@ -254,6 +272,19 @@ export class ComandasComponent implements OnInit, OnDestroy {
   clienteSaveErro = '';
   cadastroSalvando = false;
   notificacoesToggleLiqArmed = false;
+
+  /** Após tentar salvar, todos os campos podem mostrar erro; blur marca campo. */
+  cadastroSubmetidoCliente = false;
+  private cadastroTouchCliente: Record<CadastroClienteTouchKey, boolean> = {
+    nome: false,
+    celular: false,
+    telefone: false,
+    email: false,
+    aniversario: false,
+    cnpj: false,
+    cpf: false,
+    rg: false,
+  };
 
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private clienteDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -599,13 +630,109 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return ix >= 0 ? ix : 0;
   }
 
+  private resetCadastroClienteValidacao(): void {
+    this.cadastroSubmetidoCliente = false;
+    this.cadastroTouchCliente = {
+      nome: false,
+      celular: false,
+      telefone: false,
+      email: false,
+      aniversario: false,
+      cnpj: false,
+      cpf: false,
+      rg: false,
+    };
+  }
+
+  blurCadastroCliente(campo: CadastroClienteTouchKey): void {
+    this.cadastroTouchCliente[campo] = true;
+  }
+
+  private deveMostrarErroCadastroCliente(
+    campo: CadastroClienteTouchKey,
+  ): boolean {
+    return (
+      this.cadastroTouchCliente[campo] || this.cadastroSubmetidoCliente
+    );
+  }
+
+  erroClienteCampo(campo: CadastroClienteTouchKey): string | null {
+    if (!this.deveMostrarErroCadastroCliente(campo)) return null;
+    switch (campo) {
+      case 'nome':
+        return this.cadastroNome.trim() ? null : 'Campo obrigatório';
+      case 'celular': {
+        const d = ComandasComponent.apenasDigitos(this.cadastroCelular);
+        if (d.length === 0) return null;
+        return d.length === 11 ? null : 'Número inválido';
+      }
+      case 'telefone': {
+        const d = ComandasComponent.apenasDigitos(this.cadastroTelefone);
+        if (d.length === 0) return null;
+        return d.length === 10 ? null : 'Número inválido';
+      }
+      case 'email':
+        return emailBrValido(this.cadastroEmail) ? null : 'E-mail inválido';
+      case 'aniversario': {
+        const d = ComandasComponent.apenasDigitos(this.cadastroAniversario);
+        if (d.length === 0) return null;
+        if (d.length !== 8 || !dataDdMmYyyyValida(d)) return 'Data inválida';
+        return null;
+      }
+      case 'cnpj': {
+        const d = ComandasComponent.apenasDigitos(this.cadastroCnpj);
+        if (d.length === 0) return null;
+        return d.length === 14 ? null : 'CNPJ inválido';
+      }
+      case 'cpf': {
+        const d = ComandasComponent.apenasDigitos(this.cadastroCpf);
+        if (d.length === 0) return null;
+        return d.length === 11 ? null : 'CPF inválido';
+      }
+      case 'rg': {
+        const d = ComandasComponent.apenasDigitos(this.cadastroRg);
+        if (d.length === 0) return null;
+        return d.length === 9 ? null : 'RG inválido';
+      }
+      default:
+        return null;
+    }
+  }
+
+  onAniversarioCadastroChange(value: string): void {
+    this.cadastroAniversario = formatarDataDdMmYyyy(value);
+  }
+
+  onCpfCadastroChange(value: string): void {
+    this.cadastroCpf = formatarCpfBr(value);
+  }
+
+  onCnpjCadastroChange(value: string): void {
+    this.cadastroCnpj = formatarCnpjBr(value);
+  }
+
+  onRgCadastroChange(value: string): void {
+    this.cadastroRg = formatarRgBr9(value);
+  }
+
   salvarClienteDrawer(): void {
     this.clienteSaveErro = '';
-    const nome = this.cadastroNome.trim();
-    if (!nome) {
-      this.clienteSaveErro = 'O nome é obrigatório.';
+    this.cadastroSubmetidoCliente = true;
+    const campos: CadastroClienteTouchKey[] = [
+      'nome',
+      'celular',
+      'telefone',
+      'email',
+      'aniversario',
+      'cnpj',
+      'cpf',
+      'rg',
+    ];
+    if (campos.some((k) => this.erroClienteCampo(k) != null)) {
       return;
     }
+
+    const nome = this.cadastroNome.trim();
     const telefone = this.telefonePrioritarioParaApi().trim();
     const notas = this.construirObservacoesParaSalvar(this.clienteDrawerObsSnapshot);
 
@@ -767,6 +894,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.descontoPadraoModo = 'Na comanda';
     this.descontoPadraoTexto = '';
     this.notificacoesAtivo = true;
+    this.resetCadastroClienteValidacao();
   }
 
   private preencherCadastroClienteInicialDoGrupo(g: ComandaGrupo): void {
@@ -774,6 +902,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   private hidratarClienteNaForm(c: Cliente): void {
+    this.resetCadastroClienteValidacao();
     this.clienteDrawerObsSnapshot = c.observacoes ?? null;
     this.cadastroNome = String(c.nome ?? '').trim();
     this.clienteDrawerNome =
@@ -827,6 +956,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.cadastroCpf = '';
       this.cadastroRg = '';
     }
+
+    this.cadastroAniversario = formatarDataDdMmYyyy(this.cadastroAniversario);
+    this.cadastroCnpj = formatarCnpjBr(this.cadastroCnpj);
+    this.cadastroCpf = formatarCpfBr(this.cadastroCpf);
+    this.cadastroRg = formatarRgBr9(this.cadastroRg);
   }
 
   private atualizarGruposECatalogo(): void {
