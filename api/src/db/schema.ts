@@ -46,6 +46,10 @@ export const clientes = pgTable('clientes', {
   nomeExibido: text('nome_exibido').notNull(),
   telefone: text('telefone'),
   observacoes: text('observacoes'),
+  /** Saldo de crédito pré-pago (ex.: excesso ao faturar). */
+  creditoSaldo: numeric('credito_saldo', { precision: 14, scale: 2 })
+    .notNull()
+    .default('0'),
 });
 
 /** Pessoa estável (índice único em `lower(trim(nome))` na migração SQL). */

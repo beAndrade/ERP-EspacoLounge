@@ -195,6 +195,7 @@ const app = new Elysia({ adapter: node() })
             nome,
             telefone: telefone ?? '',
             observacoes: observacoes ?? '',
+            creditoSaldo: 0,
           });
         } catch (e) {
           const code =
@@ -232,11 +233,16 @@ const app = new Elysia({ adapter: node() })
         .where(eq(clientes.idCliente, id))
         .returning();
       if (!updated.length) return fail('NOT_FOUND', 'Cliente não encontrado');
+      const row = updated[0];
+      const creditoSaldo =
+        Math.round((parseFloat(String(row?.creditoSaldo ?? '0')) || 0) * 100) /
+        100;
       return ok({
         id,
         nome,
         telefone: body.telefone != null ? String(body.telefone) : '',
         observacoes: body.notas != null ? String(body.notas) : '',
+        creditoSaldo,
       });
     },
     {
@@ -790,28 +796,51 @@ const app = new Elysia({ adapter: node() })
         if (!id) return fail('VALIDATION', 'idAtendimento é obrigatório');
         const b = body as Record<string, unknown>;
         const rawList = b.pagamentos;
-        if (!Array.isArray(rawList) || rawList.length === 0) {
-          return fail('VALIDATION', 'Lista de pagamentos é obrigatória.');
+        const rawCred = b.credito_excesso;
+        const list = Array.isArray(rawList)
+          ? rawList.map((item) => {
+              const p = item as Record<string, unknown>;
+              return {
+                data_pagamento:
+                  p.data_pagamento != null ? String(p.data_pagamento) : undefined,
+                valor: (p.valor as number | string) ?? 0,
+                metodo: String(p.metodo ?? '').trim(),
+                parcelas:
+                  p.parcelas != null && Number.isFinite(Number(p.parcelas))
+                    ? Number(p.parcelas)
+                    : 1,
+                troco:
+                  p.troco != null ? (p.troco as number | string) : null,
+                observacao:
+                  p.observacao != null ? String(p.observacao) : null,
+              };
+            })
+          : [];
+        const credito_excesso = Array.isArray(rawCred)
+          ? rawCred.map((item) => {
+              const p = item as Record<string, unknown>;
+              return {
+                data_pagamento:
+                  p.data_pagamento != null ? String(p.data_pagamento) : undefined,
+                valor: (p.valor as number | string) ?? 0,
+                metodo: String(p.metodo ?? '').trim(),
+                parcelas:
+                  p.parcelas != null && Number.isFinite(Number(p.parcelas))
+                    ? Number(p.parcelas)
+                    : 1,
+                troco:
+                  p.troco != null ? (p.troco as number | string) : null,
+                observacao:
+                  p.observacao != null ? String(p.observacao) : null,
+              };
+            })
+          : undefined;
+        if (list.length === 0 && (!credito_excesso || credito_excesso.length === 0)) {
+          return fail('VALIDATION', 'Lista de pagamentos ou crédito de excesso é obrigatória.');
         }
-        const pagamentos = rawList.map((item) => {
-          const p = item as Record<string, unknown>;
-          return {
-            data_pagamento:
-              p.data_pagamento != null ? String(p.data_pagamento) : undefined,
-            valor: (p.valor as number | string) ?? 0,
-            metodo: String(p.metodo ?? '').trim(),
-            parcelas:
-              p.parcelas != null && Number.isFinite(Number(p.parcelas))
-                ? Number(p.parcelas)
-                : 1,
-            troco:
-              p.troco != null ? (p.troco as number | string) : null,
-            observacao:
-              p.observacao != null ? String(p.observacao) : null,
-          };
-        });
         const r = await faturarComandaComRascunho(db, id, {
-          pagamentos,
+          pagamentos: list,
+          credito_excesso,
           desconto: b.desconto,
         });
         return ok(r);
@@ -835,6 +864,18 @@ const app = new Elysia({ adapter: node() })
             troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
             observacao: t.Optional(t.Union([t.String(), t.Null()])),
           }),
+        ),
+        credito_excesso: t.Optional(
+          t.Array(
+            t.Object({
+              valor: t.Union([t.Number(), t.String()]),
+              metodo: t.String(),
+              data_pagamento: t.Optional(t.String()),
+              parcelas: t.Optional(t.Number()),
+              troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
+              observacao: t.Optional(t.Union([t.String(), t.Null()])),
+            }),
+          ),
         ),
         desconto: t.Optional(t.String()),
       }),

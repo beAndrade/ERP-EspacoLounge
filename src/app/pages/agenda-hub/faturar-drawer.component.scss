@@ -322,25 +322,6 @@ input[type='number'].fat-field__input {
   }
 }
 
-.fat-outros-link {
-  display: block;
-  margin: 0.35rem 0 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #7a88ff;
-  text-decoration: underline;
-  cursor: pointer;
-  text-align: center;
-  width: 100%;
-
-  &:hover {
-    color: #5c6ae0;
-  }
-}
-
 /* Separador / títulos */
 .fat-sep {
   border: 0;
@@ -465,6 +446,12 @@ input[type='number'].fat-field__input {
     background: #ffedd5;
     color: #9a3412;
     border: 1px solid #fed7aa;
+  }
+
+  &.fat-pag-badge--credito {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
   }
 }
 

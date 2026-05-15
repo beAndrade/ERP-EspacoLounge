@@ -15,6 +15,8 @@ export interface Cliente {
   nome: string;
   telefone: string | null;
   observacoes: string | null;
+  /** Saldo de crédito pré-pago (ex.: excesso ao faturar). */
+  creditoSaldo?: number;
 }
 
 /**
@@ -157,6 +159,8 @@ export interface CriarComandaPagamentoPayload {
 /** Payload para gravar N pagamentos + finalizar cobrança (transação na API). */
 export interface FaturarComandaPayload {
   pagamentos: CriarComandaPagamentoPayload[];
+  /** Excesso pago após quitar o total → `clientes.credito_saldo` (sem linha em `comanda_pagamentos`). */
+  credito_excesso?: CriarComandaPagamentoPayload[];
   desconto?: string;
 }
 

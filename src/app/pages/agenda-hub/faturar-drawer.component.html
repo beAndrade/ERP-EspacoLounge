@@ -75,7 +75,7 @@
             <button
               type="button"
               class="fat-metodo-btn fat-metodo-btn--cartao"
-              [disabled]="!podeRegistrar()"
+              [disabled]="!podeAbrirCartao()"
               (click)="toggleCartaoDropdown($event)"
               aria-haspopup="menu"
               [attr.aria-expanded]="cartaoDropdownAberto"
@@ -120,7 +120,7 @@
                     type="button"
                     class="fat-cartao-dropdown__btn"
                     role="menuitem"
-                    [disabled]="!podeRegistrar()"
+                    [disabled]="!podeRegistrarParaMetodo(opt.value)"
                     (click)="adicionarAoRascunho(opt.value)"
                   >
                     <span>{{ opt.rotulo }}</span>
@@ -146,7 +146,7 @@
           <button
             type="button"
             class="fat-metodo-btn"
-            [disabled]="!podeRegistrar()"
+            [disabled]="!podeRegistrarParaMetodo(slot.opcao.value)"
             (click)="adicionarAoRascunho(slot.opcao.value)"
           >
             @if (slot.opcao.grupo === 'dinheiro') {
@@ -191,15 +191,12 @@
       <button
         type="button"
         class="fat-metodo-btn"
-        [disabled]="!podeRegistrar()"
+        [disabled]="!podeRegistrarParaMetodo('pendente')"
         (click)="adicionarAoRascunho('pendente')"
       >
         Pendente
       </button>
     </div>
-    <button type="button" class="fat-outros-link" (click)="abrirOutros()">
-      Outros métodos
-    </button>
 
     <hr class="fat-sep" />
 
@@ -234,9 +231,14 @@
                   [class.fat-pag-badge--pendente]="
                     badgePagamentoLinha(l) === 'pendente'
                   "
+                  [class.fat-pag-badge--credito]="
+                    badgePagamentoLinha(l) === 'credito'
+                  "
                 >
                   @if (badgePagamentoLinha(l) === 'pendente') {
                     Pendente
+                  } @else if (badgePagamentoLinha(l) === 'credito') {
+                    Crédito
                   } @else {
                     Pago
                   }
@@ -364,34 +366,6 @@
     }
   </footer>
 </div>
-
-@if (outrosAberto) {
-  <div class="fat-modal" role="dialog" aria-modal="true" aria-label="Outros métodos de pagamento">
-    <div class="fat-modal__backdrop" (click)="fecharOutros()"></div>
-    <div class="fat-modal__panel">
-      <h3 class="fat-modal__title">Outros métodos de pagamento</h3>
-      <ul class="fat-modal__list" role="list">
-        @for (m of metodoBotoesOutros(); track m.value) {
-          <li>
-            <button
-              type="button"
-              class="fat-modal__btn"
-              [disabled]="!podeRegistrar()"
-              (click)="adicionarAoRascunho(m.value); fecharOutros()"
-            >
-              {{ m.rotulo }}
-            </button>
-          </li>
-        }
-      </ul>
-      <div class="fat-modal__actions">
-        <button type="button" class="fat-btn fat-btn--ghost" (click)="fecharOutros()">
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </div>
-}
 
 @if (pagamentoParaExcluir) {
   <div class="fat-modal" role="dialog" aria-modal="true" aria-label="Remover pagamento">

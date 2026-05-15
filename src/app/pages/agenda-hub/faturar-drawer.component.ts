@@ -114,11 +114,14 @@ export interface RascunhoPagamento {
   metodo: MetodoPagamentoComanda;
   valor: number;
   parcelas: number;
+  destino: 'comanda' | 'credito';
 }
 
 export type PagamentoLinhaUi =
   | { kind: 'api'; row: ComandaPagamentoItem }
   | { kind: 'rasc'; row: RascunhoPagamento };
+
+const EPS_SALDO = 0.02;
 
 /**
  * Sub-drawer Faturar — abre por cima do drawer de Comanda.
@@ -165,9 +168,6 @@ export class FaturarDrawerComponent implements OnInit {
   readonly dataCtrl = new FormControl(ymdToDdMmYyyy(ymdHoje()), {
     nonNullable: true,
   });
-
-  /** Sheet «Outros» (lista expandida de métodos). */
-  outrosAberto = false;
 
   /** Dropdown crédito vs débito (âncora no botão Cartão). */
   cartaoDropdownAberto = false;
@@ -285,20 +285,18 @@ export class FaturarDrawerComponent implements OnInit {
     ];
   }
 
-  metodoBotoesOutros(): MetodoOpcao[] {
-    return METODOS.filter(
-      (m) =>
-        m.value === 'transferencia' ||
-        m.value === 'outros',
-    );
+  /** Permite «Pendente» só enquanto a comanda ainda tem saldo a alocar. */
+  podeRegistrarParaMetodo(m: MetodoPagamentoComanda): boolean {
+    if (this.salvando) return false;
+    const v = parsePtDecimal(this.valorCtrl.value);
+    if (!Number.isFinite(v) || v <= 0) return false;
+    if (m === 'pendente') return this.saldoRestante() > 0.001;
+    return true;
   }
 
-  abrirOutros(): void {
-    this.outrosAberto = true;
-  }
-
-  fecharOutros(): void {
-    this.outrosAberto = false;
+  /** Botão «Cartão» (abrir dropdown): critério de um método não pendente. */
+  podeAbrirCartao(): boolean {
+    return this.podeRegistrarParaMetodo('dinheiro');
   }
 
   toggleCartaoDropdown(ev: MouseEvent): void {
@@ -328,21 +326,17 @@ export class FaturarDrawerComponent implements OnInit {
     }
   }
 
-  podeRegistrar(): boolean {
-    if (this.salvando) return false;
-    if (this.saldoRestante() <= 0.001) return false;
-    const v = parsePtDecimal(this.valorCtrl.value);
-    return v > 0;
+  private somaRascunhoComanda(): number {
+    return this.rascunho
+      .filter((x) => x.destino === 'comanda')
+      .reduce((s, x) => s + x.valor, 0);
   }
 
-  private somaRascunho(): number {
-    return this.rascunho.reduce((s, x) => s + x.valor, 0);
-  }
-
-  /** `total_pago` da API + linhas do rascunho. */
+  /** `total_pago` da API + linhas do rascunho que liquidam a comanda. */
   totalAlocado(): number {
     return (
-      Math.round((this.resumo.total_pago + this.somaRascunho()) * 100) / 100
+      Math.round((this.resumo.total_pago + this.somaRascunhoComanda()) * 100) /
+      100
     );
   }
 
@@ -380,17 +374,22 @@ export class FaturarDrawerComponent implements OnInit {
     return l.kind === 'api' ? parseFloat(l.row.valor) || 0 : l.row.valor;
   }
 
-  badgePagamentoLinha(l: PagamentoLinhaUi): 'pago' | 'pendente' {
+  badgePagamentoLinha(l: PagamentoLinhaUi): 'pago' | 'pendente' | 'credito' {
+    if (l.kind === 'rasc' && l.row.destino === 'credito') return 'credito';
     const metodo = l.kind === 'api' ? l.row.metodo : l.row.metodo;
     return metodo === 'pendente' ? 'pendente' : 'pago';
   }
 
   podeMostrarFaturar(): boolean {
-    return (
-      !this.salvando &&
-      this.rascunho.length > 0 &&
-      this.saldoRestante() <= 0.001
-    );
+    if (this.salvando || this.rascunho.length === 0) return false;
+    const temComanda = this.rascunho.some((r) => r.destino === 'comanda');
+    const temCred = this.rascunho.some((r) => r.destino === 'credito');
+    const quitadoComRascunho = this.saldoRestante() <= 0.001;
+    const baseQuitada =
+      this.resumo.total_pago + EPS_SALDO >= this.resumo.total;
+    if (temComanda && !quitadoComRascunho) return false;
+    if (temCred && !temComanda && !baseQuitada) return false;
+    return true;
   }
 
   adicionarAoRascunho(metodo: MetodoPagamentoComanda): void {
@@ -401,14 +400,24 @@ export class FaturarDrawerComponent implements OnInit {
       this.erro = 'Informe um valor maior que zero.';
       return;
     }
-    const max = this.saldoRestante();
-    if (valor > max + 0.005) {
-      this.erro = `O valor não pode exceder o saldo restante (${formatarInputPt(max)}).`;
-      return;
+    const saldoAntes = this.saldoRestante();
+    if (saldoAntes > 0.001) {
+      if (valor > saldoAntes + 0.005) {
+        this.erro = `O valor não pode exceder o saldo restante (${formatarInputPt(saldoAntes)}).`;
+        return;
+      }
+    } else {
+      if (metodo === 'pendente') {
+        this.erro =
+          '«Pendente» só se aplica ao valor em falta da comanda, não ao crédito de cliente.';
+        return;
+      }
     }
     const dataYmd = ddMmYyyyToYmd(this.dataCtrl.value) ?? ymdHoje();
     const parcelas = Math.max(1, Math.floor(this.parcelasCtrl.value || 1));
     this.erro = '';
+    const destino: 'comanda' | 'credito' =
+      saldoAntes > 0.001 ? 'comanda' : 'credito';
     this.rascunho = [
       ...this.rascunho,
       {
@@ -417,9 +426,9 @@ export class FaturarDrawerComponent implements OnInit {
         metodo,
         valor: Math.round(valor * 100) / 100,
         parcelas,
+        destino,
       },
     ];
-    this.outrosAberto = false;
     this.parcelasCtrl.setValue(1);
     const rest = this.saldoRestante();
     if (rest > 0.001) {
@@ -439,8 +448,10 @@ export class FaturarDrawerComponent implements OnInit {
 
   confirmarFaturamento(): void {
     if (this.salvando || this.rascunho.length === 0) return;
+    const comanda = this.rascunho.filter((r) => r.destino === 'comanda');
+    const credito = this.rascunho.filter((r) => r.destino === 'credito');
     const payload: FaturarComandaPayload = {
-      pagamentos: this.rascunho.map(
+      pagamentos: comanda.map(
         (r): CriarComandaPagamentoPayload => ({
           data_pagamento: r.data_pagamento,
           valor: r.valor,
@@ -449,6 +460,18 @@ export class FaturarDrawerComponent implements OnInit {
           observacao: null,
         }),
       ),
+      credito_excesso:
+        credito.length > 0
+          ? credito.map(
+              (r): CriarComandaPagamentoPayload => ({
+                data_pagamento: r.data_pagamento,
+                valor: r.valor,
+                metodo: r.metodo,
+                parcelas: r.parcelas,
+                observacao: null,
+              }),
+            )
+          : undefined,
     };
     this.salvando = true;
     this.erro = '';
@@ -569,11 +592,6 @@ export class FaturarDrawerComponent implements OnInit {
     if (this.cartaoDropdownAberto) {
       ev.preventDefault();
       this.fecharCartaoDropdown();
-      return;
-    }
-    if (this.outrosAberto) {
-      ev.preventDefault();
-      this.fecharOutros();
       return;
     }
   }

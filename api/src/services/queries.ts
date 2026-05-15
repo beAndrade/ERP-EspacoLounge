@@ -12,6 +12,11 @@ import {
   servicos,
 } from '../db/schema';
 
+function creditoSaldoNum(v: unknown): number {
+  const n = parseFloat(String(v ?? '0'));
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+
 export async function listClientesNormalized(db: Db) {
   const rows = await db.select().from(clientes).orderBy(asc(clientes.nomeExibido));
   return rows
@@ -24,6 +29,7 @@ export async function listClientesNormalized(db: Db) {
         r.observacoes != null && r.observacoes !== ''
           ? String(r.observacoes)
           : null,
+      creditoSaldo: creditoSaldoNum(r.creditoSaldo),
     }))
     .filter((x) => x.nome.trim() && x.id.trim());
 }
@@ -44,6 +50,7 @@ export async function getClienteById(db: Db, id: string) {
       r.observacoes != null && r.observacoes !== ''
         ? String(r.observacoes)
         : null,
+    creditoSaldo: creditoSaldoNum(r.creditoSaldo),
   };
 }
 

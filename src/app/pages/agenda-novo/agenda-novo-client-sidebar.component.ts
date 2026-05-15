@@ -107,4 +107,16 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
       String(this.clienteIdControl?.value ?? '').trim() !== ''
     );
   }
+
+  linhaCreditoClienteExibicao(): string {
+    const n = Number(this.cliente?.creditoSaldo ?? 0);
+    const x = Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+    const brl = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(x);
+    return `${brl} em crédito`;
+  }
 }

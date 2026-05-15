@@ -17,6 +17,7 @@ import type { Db } from '../db';
 import {
   atendimentoItens,
   atendimentos,
+  clientes,
   comandaPagamentos,
   movimentacoes,
 } from '../db/schema';
@@ -597,6 +598,67 @@ export async function inserirPagamentoComandaEmTx(
     .returning();
   if (!pagIns) throw new Error('Falha ao gravar pagamento da comanda.');
   return pagIns;
+}
+
+/**
+ * Receita sem linha em `comanda_pagamentos`; incrementa `clientes.credito_saldo`.
+ * Não aceita método `pendente`.
+ */
+export async function aplicarCreditoClientePorExcessoEmTx(
+  tx: DbLike,
+  idAtendimento: string,
+  idCliente: string,
+  input: CriarPagamentoComandaInput,
+): Promise<void> {
+  const idAt = String(idAtendimento || '').trim();
+  const cid = String(idCliente || '').trim();
+  if (!idAt || !cid) {
+    throw new Error('id_atendimento e id_cliente são obrigatórios.');
+  }
+
+  const prep = prepararInputPagamentoComanda(input);
+  if (prep.metodo === 'pendente') {
+    throw new Error(
+      'O método «pendente» não pode ser usado para crédito de cliente.',
+    );
+  }
+
+  const linhas = await tx
+    .select()
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, idAt))
+    .orderBy(asc(atendimentos.id));
+  if (linhas.length === 0) {
+    throw new Error('Atendimento não encontrado para este id.');
+  }
+
+  const slug = slugCategoriaReceitaPredominante(linhas);
+  const categoriaId = await getCategoriaIdPorSlug(
+    tx as unknown as Db,
+    slug,
+  );
+  const nomeCliente = String(linhas[0]?.nomeCliente ?? '').trim();
+  const descricaoMov = nomeCliente
+    ? `Crédito cliente (excesso de pagamento) — ${nomeCliente}`
+    : 'Crédito cliente (excesso de pagamento)';
+
+  await tx.insert(movimentacoes).values({
+    dataMov: prep.dataPagamento,
+    natureza: 'receita',
+    valor: prep.valorStr,
+    categoriaId,
+    descricao: descricaoMov,
+    idAtendimento: idAt,
+    metodoPagamento: rotuloMetodoComanda(prep.metodo),
+    origem: ORIGEM_COMANDA_PAGAMENTO,
+  });
+
+  await tx
+    .update(clientes)
+    .set({
+      creditoSaldo: sql`${clientes.creditoSaldo}::numeric + ${prep.valor}::numeric`,
+    })
+    .where(eq(clientes.idCliente, cid));
 }
 
 /**

@@ -10,11 +10,12 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { catchError, map, of } from 'rxjs';
+import { catchError, map, of, take } from 'rxjs';
 import { AgendaNovoClientSidebarComponent } from '../agenda-novo/agenda-novo-client-sidebar.component';
 import type {
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
+  Cliente,
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
 } from '../../core/models/api.models';
@@ -132,11 +133,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly clienteComandaCtrl = new FormControl('', { nonNullable: true });
   readonly clienteNomeCtrl = new FormControl('', { nonNullable: true });
   readonly dataComandaCtrl = new FormControl('', { nonNullable: true });
-  /** Resumo manual: desconto e crédito (moeda em texto pt-BR). */
+  /** Resumo manual: desconto (moeda em texto pt-BR). */
   readonly descontoResumoCtrl = new FormControl(formataMoedaBrl(0), {
-    nonNullable: true,
-  });
-  readonly creditoResumoCtrl = new FormControl(formataMoedaBrl(0), {
     nonNullable: true,
   });
   readonly placeholderMoedaResumo = PLACEHOLDER_MOEDA_RESUMO;
@@ -160,6 +158,9 @@ export class NovaComandaDrawerComponent implements OnInit {
   modalOutrosOpcao: 'imprimir' | 'historico' | null = null;
   excluindo = false;
   erroExcluir = '';
+  /** Último GET `/api/clientes/:id` para `creditoSaldo` e sidebar. */
+  private clienteApi: Cliente | null = null;
+  private lastClienteFetchId = '';
   /** Evita repor crédito ao reexecutar o effect com o mesmo `id_atendimento`. */
   private lastIdAtParaCamposResumo = '';
 
@@ -192,22 +193,33 @@ export class NovaComandaDrawerComponent implements OnInit {
         this.pagamentos = [];
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
           this.lastIdAtParaCamposResumo = '';
+          this.lastClienteFetchId = '';
+          this.clienteApi = null;
           this.descontoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
           this.descontoResumoCtrl.markAsPristine();
-          this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
-            emitEvent: false,
-          });
           this.carregandoItens = false;
           this.erroItens = '';
           return;
         }
+        const cid = (ctx?.clienteId ?? '').trim();
+        if (cid && cid !== this.lastClienteFetchId) {
+          this.lastClienteFetchId = cid;
+          this.api
+            .getCliente(cid)
+            .pipe(take(1), catchError(() => of(null)))
+            .subscribe((row) => {
+              if (
+                row &&
+                (this.contexto()?.clienteId ?? '').trim() === cid
+              ) {
+                this.clienteApi = row;
+              }
+            });
+        }
         if (idAt !== this.lastIdAtParaCamposResumo) {
           this.lastIdAtParaCamposResumo = idAt;
-          this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
-            emitEvent: false,
-          });
           this.descontoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
@@ -258,6 +270,17 @@ export class NovaComandaDrawerComponent implements OnInit {
   recarregarAposFaturar(): void {
     const id = this.contexto()?.idAtendimento?.trim();
     if (id) this.recarregarResumoPagamentos(id);
+    const cid = this.contexto()?.clienteId?.trim();
+    if (cid) {
+      this.api
+        .getCliente(cid)
+        .pipe(take(1), catchError(() => of(null)))
+        .subscribe((row) => {
+          if (row && (this.contexto()?.clienteId ?? '').trim() === cid) {
+            this.clienteApi = row;
+          }
+        });
+    }
   }
 
   /** Recarrega itens + resumo com o contexto actual (usado após salvar edição). */
@@ -872,6 +895,27 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.modalOutrosOpcao = null;
   }
 
+  /** Cliente para a sidebar: funde contexto com último GET (ex.: `creditoSaldo`). */
+  clienteParaSidebar(): Cliente | null {
+    const ctx = this.contexto();
+    if (!ctx) return null;
+    const base = ctx.cliente;
+    const api = this.clienteApi;
+    if (api && base && api.id === base.id) {
+      return {
+        ...base,
+        ...api,
+        creditoSaldo: api.creditoSaldo ?? base.creditoSaldo ?? 0,
+      };
+    }
+    return api ?? base ?? null;
+  }
+
+  /** Saldo de crédito do cliente (só leitura no resumo). */
+  creditoClienteResumoBrl(): string {
+    return formataMoedaBrl(this.clienteParaSidebar()?.creditoSaldo ?? 0);
+  }
+
   // ----- Helpers ------------------------------------------------------------
 
   dataComandaExibicao(): string {
@@ -967,11 +1011,10 @@ export class NovaComandaDrawerComponent implements OnInit {
   totalComandaResumoCalculado(): number {
     const bruto = this.subtotalBrutoAntesDescontoResumo();
     const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
-    const cred = this.valorMonetarioCampoResumo(this.creditoResumoCtrl.value);
     const cash = this.cashbackComandaReais();
     return Math.max(
       0,
-      Math.round((bruto - desc - cred - cash) * 100) / 100,
+      Math.round((bruto - desc - cash) * 100) / 100,
     );
   }
 
