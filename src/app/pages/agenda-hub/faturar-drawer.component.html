@@ -314,12 +314,14 @@
       </div>
       <div class="fat-resumo__row fat-resumo__row--strong">
         <span>Total pago</span>
-        <span>{{ brl(totalAlocado()) }}</span>
+        <span>{{ brl(totalPagoResumoExibicao()) }}</span>
       </div>
-      <div class="fat-resumo__row">
-        <span>Saldo</span>
-        <span>{{ brl(saldoRestante()) }}</span>
-      </div>
+      @if (mostrarLinhaCreditoClienteResumo()) {
+        <div class="fat-resumo__row">
+          <span>Crédito para o cliente</span>
+          <span>{{ brl(valorCreditoClienteResumo()) }}</span>
+        </div>
+      }
     </div>
   </div>
 

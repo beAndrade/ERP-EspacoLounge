@@ -332,6 +332,31 @@ export class FaturarDrawerComponent implements OnInit {
       .reduce((s, x) => s + x.valor, 0);
   }
 
+  private somaRascunhoCredito(): number {
+    return this.rascunho
+      .filter((x) => x.destino === 'credito')
+      .reduce((s, x) => s + x.valor, 0);
+  }
+
+  /** Total pago exibido: comanda (API + rascunho) + valores a crédito no rascunho. */
+  totalPagoResumoExibicao(): number {
+    return (
+      Math.round(
+        (this.totalAlocado() + this.somaRascunhoCredito()) * 100,
+      ) / 100
+    );
+  }
+
+  /** Linha «Crédito para o cliente» no resumo: só quando há excesso no rascunho. */
+  mostrarLinhaCreditoClienteResumo(): boolean {
+    return this.somaRascunhoCredito() > 0.001;
+  }
+
+  /** Valor do excesso (rascunho) mostrado na linha de crédito. */
+  valorCreditoClienteResumo(): number {
+    return Math.round(this.somaRascunhoCredito() * 100) / 100;
+  }
+
   /** `total_pago` da API + linhas do rascunho que liquidam a comanda. */
   totalAlocado(): number {
     return (
