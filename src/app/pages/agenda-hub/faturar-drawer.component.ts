@@ -177,6 +177,33 @@ export class FaturarDrawerComponent implements OnInit {
 
   // ----- Data -------------------------------------------------------------
 
+  /**
+   * O resumo da API pode vir com `desconto` 0 quando o desconto ainda só existe
+   * nos campos do drawer da comanda (`descontoResumoCtrl`). Ao abrir Faturar,
+   * o pai envia `resumoInicial` alinhado a essa UI — mantemos desconto e totais
+   * da comanda a partir dali e só `total_pago` / `status` vindos da API.
+   */
+  private mesclarResumoComInicial(api: ComandaResumoPagamentos): ComandaResumoPagamentos {
+    const ini = this.resumoInicial();
+    if (!ini) {
+      return api;
+    }
+    const totalPago = api.total_pago;
+    const total = ini.total;
+    const totalBruto = ini.total_bruto;
+    const desconto = ini.desconto;
+    const saldo = Math.max(0, Math.round((total - totalPago) * 100) / 100);
+    return {
+      ...api,
+      total_bruto: totalBruto,
+      desconto,
+      total,
+      saldo,
+      status: api.status,
+      cobranca_status: api.cobranca_status ?? ini.cobranca_status,
+    };
+  }
+
   private recarregar(): void {
     const id = this.idAtendimento();
     if (!id) return;
@@ -195,7 +222,7 @@ export class FaturarDrawerComponent implements OnInit {
           this.carregando = false;
           if (!r) return;
           this.pagamentos = r.items ?? [];
-          this.resumo = r.resumo;
+          this.resumo = this.mesclarResumoComInicial(r.resumo);
           if (this.resumo.saldo > 0 && !this.valorCtrl.value.trim()) {
             this.valorCtrl.setValue(formatarInputPt(this.resumo.saldo), {
               emitEvent: false,
@@ -312,7 +339,7 @@ export class FaturarDrawerComponent implements OnInit {
           this.outrosAberto = false;
           this.cartaoDropdownAberto = false;
           this.parcelasCtrl.setValue(1);
-          this.resumo = r.resumo;
+          this.resumo = this.mesclarResumoComInicial(r.resumo);
           this.pagamentos = [...this.pagamentos, r.pagamento];
           if (this.resumo.saldo > 0) {
             this.valorCtrl.setValue(formatarInputPt(this.resumo.saldo), {
@@ -353,7 +380,7 @@ export class FaturarDrawerComponent implements OnInit {
           this.excluindoPagamentoId = null;
           this.pagamentoParaExcluir = null;
           this.pagamentos = this.pagamentos.filter((x) => x.id !== p.id);
-          this.resumo = r.resumo;
+          this.resumo = this.mesclarResumoComInicial(r.resumo);
           if (this.resumo.saldo > 0) {
             this.valorCtrl.setValue(formatarInputPt(this.resumo.saldo), {
               emitEvent: false,
