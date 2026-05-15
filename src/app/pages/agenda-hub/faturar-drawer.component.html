@@ -75,7 +75,6 @@
             <button
               type="button"
               class="fat-metodo-btn fat-metodo-btn--cartao"
-              #cartaoBtn
               [disabled]="!podeRegistrar()"
               (click)="toggleCartaoDropdown($event)"
               aria-haspopup="menu"
@@ -115,13 +114,7 @@
               </svg>
             </button>
             @if (cartaoDropdownAberto) {
-              <div
-                class="fat-cartao-dropdown"
-                role="menu"
-                [style.top.px]="cartaoDropPos?.top ?? 0"
-                [style.left.px]="cartaoDropPos?.left ?? 0"
-                [style.width.px]="cartaoDropPos?.width ?? 0"
-              >
+              <div class="fat-cartao-dropdown" role="menu">
                 @for (opt of metodosCartaoDropdown(); track opt.value) {
                   <button
                     type="button"

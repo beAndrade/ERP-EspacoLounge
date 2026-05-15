@@ -145,10 +145,8 @@ export class FaturarDrawerComponent implements OnInit {
 
   /** Dropdown crédito vs débito (âncora no botão Cartão). */
   cartaoDropdownAberto = false;
-  cartaoDropPos: { top: number; left: number; width: number } | null = null;
 
   readonly cartaoWrap = viewChild<ElementRef<HTMLElement>>('cartaoWrap');
-  readonly cartaoBtn = viewChild<ElementRef<HTMLElement>>('cartaoBtn');
 
   /** Modal local de calcular troco. */
   trocoAberto = false;
@@ -255,32 +253,11 @@ export class FaturarDrawerComponent implements OnInit {
       this.fecharCartaoDropdown();
       return;
     }
-    this.syncCartaoDropdownPosition();
     this.cartaoDropdownAberto = true;
-    requestAnimationFrame(() => this.syncCartaoDropdownPosition());
   }
 
   fecharCartaoDropdown(): void {
     this.cartaoDropdownAberto = false;
-    this.cartaoDropPos = null;
-  }
-
-  private syncCartaoDropdownPosition(): void {
-    const btn = this.cartaoBtn()?.nativeElement;
-    if (!btn) return;
-    const r = btn.getBoundingClientRect();
-    this.cartaoDropPos = {
-      top: r.bottom + 4,
-      left: r.left,
-      width: r.width,
-    };
-  }
-
-  @HostListener('window:resize')
-  onWinResizeCartaoDrop(): void {
-    if (this.cartaoDropdownAberto) {
-      this.syncCartaoDropdownPosition();
-    }
   }
 
   @HostListener('document:click', ['$event'])
@@ -334,7 +311,6 @@ export class FaturarDrawerComponent implements OnInit {
           this.salvando = false;
           this.outrosAberto = false;
           this.cartaoDropdownAberto = false;
-          this.cartaoDropPos = null;
           this.parcelasCtrl.setValue(1);
           this.resumo = r.resumo;
           this.pagamentos = [...this.pagamentos, r.pagamento];

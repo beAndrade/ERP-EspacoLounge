@@ -187,11 +187,26 @@ input[type='number'].fat-field__input {
   min-width: 0;
   width: 100%;
   max-width: 216px;
-  margin: 0 auto;
+  margin-inline: auto;
 }
 
+/** Mesma «caixa» que os outros `.fat-metodo-btn` na grelha (evita largura da célula inteira). */
+.fat-metodo-cartao-wrap .fat-metodo-btn--cartao {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+/**
+ * `position: fixed` + getBoundingClientRect falha quando um ancestral do drawer
+ * usa `transform` (containing block diferente do viewport) — desloca o painel
+ * e pode gerar scroll horizontal. Absoluto em relação ao wrap mantém alinhamento.
+ */
 .fat-cartao-dropdown {
-  position: fixed;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
   z-index: 1200;
   box-sizing: border-box;
   padding: 0.35rem;
