@@ -51,14 +51,14 @@
           </div>
 
           <div class="comandas-filtros-block">
-            <h3 class="comandas-filtros-block__title">Status de pagamento</h3>
+            <h3 class="comandas-filtros-block__title">Status</h3>
             <div class="comandas-filtros-block__body comandas-filtros-chips">
-              @for (st of filtrosStatusPagamento; track st.id) {
+              @for (st of filtrosStatusComanda; track st.id) {
                 <button
                   type="button"
                   class="comandas-filtros-chip comandas-filtros-chip--outline"
-                  [class.comandas-filtros-chip--accent]="filtroStatusAtivo(st.id)"
-                  (click)="toggleFiltroStatusPagamento(st.id)"
+                  [class.comandas-filtros-chip--accent]="filtroStatusComandaAtivo(st.id)"
+                  (click)="toggleFiltroStatusComanda(st.id)"
                 >
                   {{ st.label }}
                 </button>
@@ -68,15 +68,17 @@
 
           <div class="comandas-filtros-block">
             <h3 class="comandas-filtros-block__title">Pagamento</h3>
-            <div class="comandas-filtros-block__body">
-              <button type="button" class="comandas-filtros-link-mute" disabled>Selecionar tudo</button>
-              <div class="comandas-filtros-chip-row">
-                @for (etiqueta of filtrosStatusPagamento; track etiqueta.id) {
-                  <span class="comandas-filtros-chip comandas-filtros-chip--outline">{{
-                    etiqueta.label
-                  }}</span>
-                }
-              </div>
+            <div class="comandas-filtros-block__body comandas-filtros-chips">
+              @for (fp of filtrosPagamentoColuna; track fp.id) {
+                <button
+                  type="button"
+                  class="comandas-filtros-chip comandas-filtros-chip--outline"
+                  [class.comandas-filtros-chip--accent]="filtroPagamentoColunaAtivo(fp.id)"
+                  (click)="toggleFiltroPagamentoColuna(fp.id)"
+                >
+                  {{ fp.label }}
+                </button>
+              }
             </div>
           </div>
 
@@ -93,7 +95,7 @@
 
           <div class="comandas-filtros-drawer__footer">
             <button type="button" class="btn btn--ghost" (click)="limparFiltrosStatusPagamento()">
-              Limpar status
+              Limpar filtros
             </button>
             <button type="button" class="btn" (click)="carregar()">Aplicar</button>
           </div>
@@ -718,6 +720,7 @@
         (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
         (salvarComanda)="onSalvarDesdeDrawerComanda()"
         (faturarComanda)="onAbrirFaturarComanda($event)"
+        (abrirCadastroCliente)="onAbrirCadastroClienteDaComandaSidebar()"
       />
     </div>
 

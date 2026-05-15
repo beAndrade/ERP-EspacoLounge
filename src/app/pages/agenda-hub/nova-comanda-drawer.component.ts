@@ -7,6 +7,7 @@ import {
   input,
   OnInit,
   output,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -113,6 +114,8 @@ const RESUMO_VAZIO: ComandaResumoPagamentos = {
   styleUrl: './nova-comanda-drawer.component.scss',
 })
 export class NovaComandaDrawerComponent implements OnInit {
+  private readonly clientSidebarRef =
+    viewChild(AgendaNovoClientSidebarComponent);
   private readonly api = inject(SheetsApiService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -138,6 +141,9 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly comandaDataYmd = output<string | null>();
   /** Pede gravar o agendamento (hub: formulário atrás da comanda; comandas: editor em modo modal). */
   readonly salvarComanda = output<void>();
+
+  /** Abrir edição cadastral do cliente (sidebar: ex. aniversário). */
+  readonly abrirCadastroCliente = output<void>();
 
   readonly clienteComandaCtrl = new FormControl('', { nonNullable: true });
   readonly clienteNomeCtrl = new FormControl('', { nonNullable: true });
@@ -331,6 +337,11 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
     this.carregarLinhasAtendimento(ymd, idAt);
     this.recarregarResumoPagamentos(idAt);
+    this.notificarSidebarContagens();
+  }
+
+  private notificarSidebarContagens(): void {
+    this.clientSidebarRef()?.refreshContagens();
   }
 
   // ----- Itens (leitura) ----------------------------------------------------
@@ -801,45 +812,15 @@ export class NovaComandaDrawerComponent implements OnInit {
     );
   }
 
-  /** Dívida com método «Pendente» (API + linhas + pagamentos carregados). */
-  pagamentoPendenteNaComanda(): boolean {
-    const ps = String(this.linhasAtendimentoApi[0]?.pagamentoStatus ?? '')
-      .trim()
-      .toLowerCase();
-    if (ps === 'pendente') return true;
-    if (this.resumoPagamentos.status === 'pendente') return true;
-    return this.pagamentos.some((p) => p.metodo === 'pendente');
-  }
-
   /**
-   * Rótulos alinhados à lista de comandas (`rotuloStatus` em `comandas.component.ts`).
+   * Coluna Status alinhada à lista de comandas: Pendente (não faturada) | Finalizado.
    */
   rotuloStatus(): string {
-    if (this.pagamentoPendenteNaComanda()) return 'Pendente';
-    switch (this.resumoPagamentos.status) {
-      case 'pago':
-        return 'Pago';
-      case 'parcial':
-        return 'Parcial';
-      case 'pendente':
-        return 'Pendente';
-      default:
-        return 'Em aberto';
-    }
+    return this.comandaFinalizada() ? 'Finalizado' : 'Pendente';
   }
 
-  /** Mesma lógica de cor que `classeBadgeStatus` na lista de comandas. */
-  classeBadgeComanda():
-    | 'badge--ok'
-    | 'badge--warn'
-    | 'badge--pendente'
-    | 'badge--aviso' {
-    if (this.pagamentoPendenteNaComanda()) return 'badge--pendente';
-    const s = this.resumoPagamentos.status;
-    if (s === 'pago') return 'badge--ok';
-    if (s === 'parcial') return 'badge--warn';
-    if (s === 'pendente') return 'badge--pendente';
-    return 'badge--aviso';
+  classeBadgeComanda(): 'badge--finalizado' | 'badge--warn' {
+    return this.comandaFinalizada() ? 'badge--finalizado' : 'badge--warn';
   }
 
   // ----- Ações --------------------------------------------------------------

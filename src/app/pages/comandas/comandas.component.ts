@@ -27,6 +27,12 @@ import {
   ordenarLinhasAtendimentoInPlace,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
+import {
+  pagamentoColunaFromItem,
+  statusComandaColunaFromItem,
+  type PagamentoColuna,
+  type StatusComandaColuna,
+} from '../../core/utils/comanda-status.util';
 
 registerLocaleData(localePt);
 
@@ -43,7 +49,8 @@ interface ComandaGrupo {
   valorTotal: number | null;
 }
 
-type StatusCobrancaDerivado = 'aberto' | 'pendente' | 'parcial' | 'pago';
+type FiltroStatusComandaId = StatusComandaColuna;
+type FiltroPagamentoColunaId = PagamentoColuna;
 
 
 /** Payload em JSON na coluna `observacoes` (extras da UI não mapeadas no core da API). */
@@ -118,17 +125,23 @@ export class ComandasComponent implements OnInit, OnDestroy {
   /** Select nativo não estiliza o painel; menu custom igual ao layout de referência. */
   perPageMenuAberto = false;
 
-  /** Filtro funcional de status derivado de pagamento da comanda. */
-  readonly filtrosStatusPagamento: Array<{
-    id: StatusCobrancaDerivado;
+  readonly filtrosStatusComanda: Array<{
+    id: FiltroStatusComandaId;
     label: string;
   }> = [
-    { id: 'aberto', label: 'Em aberto' },
     { id: 'pendente', label: 'Pendente' },
-    { id: 'parcial', label: 'Parcial' },
-    { id: 'pago', label: 'Pago' },
+    { id: 'finalizado', label: 'Finalizado' },
   ];
-  statusPagamentoSelecionados = new Set<StatusCobrancaDerivado>();
+  readonly filtrosPagamentoColuna: Array<{
+    id: FiltroPagamentoColunaId;
+    label: string;
+  }> = [
+    { id: 'pago', label: 'Pago' },
+    { id: 'em_aberto', label: 'Em aberto' },
+    { id: 'atrasado', label: 'Atrasado' },
+  ];
+  filtroStatusComandaSelecionados = new Set<FiltroStatusComandaId>();
+  filtroPagamentoColunaSelecionados = new Set<FiltroPagamentoColunaId>();
 
   readonly formasPagamentoStub = [
     'Boleto',
@@ -731,9 +744,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return (s ?? '').replace(/\D/g, '');
   }
 
-  private preencherCadastroClienteInicialDoGrupo(g: ComandaGrupo): void {
+  private preencherCadastroClienteFormularioVazio(
+    nomeTituloListaOuVazio: string,
+  ): void {
     this.clienteDrawerObsSnapshot = null;
-    const nomeLista = g.nomeCliente?.trim() || '';
+    const nomeLista = nomeTituloListaOuVazio.trim();
     this.clienteDrawerNome = nomeLista || 'Cliente';
     this.cadastroNome = nomeLista;
     this.cadastroApelido = '';
@@ -748,6 +763,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.descontoPadraoModo = 'Na comanda';
     this.descontoPadraoTexto = '';
     this.notificacoesAtivo = true;
+  }
+
+  private preencherCadastroClienteInicialDoGrupo(g: ComandaGrupo): void {
+    this.preencherCadastroClienteFormularioVazio(g.nomeCliente?.trim() ?? '');
   }
 
   private hidratarClienteNaForm(c: Cliente): void {
@@ -934,10 +953,23 @@ export class ComandasComponent implements OnInit, OnDestroy {
         );
       });
     }
-    if (this.statusPagamentoSelecionados.size > 0) {
+    if (this.filtroStatusComandaSelecionados.size > 0) {
       list = list.filter((g) =>
-        this.statusPagamentoSelecionados.has(this.statusCobrancaEfetivo(g)),
+        this.filtroStatusComandaSelecionados.has(
+          statusComandaColunaFromItem(g.linhas[0]),
+        ),
       );
+    }
+    if (this.filtroPagamentoColunaSelecionados.size > 0) {
+      list = list.filter((g) => {
+        const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
+          jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
+        });
+        return (
+          pc != null &&
+          this.filtroPagamentoColunaSelecionados.has(pc)
+        );
+      });
     }
     return list.slice().sort((a, b) => {
       const pa = this.prioridadeOrdenacaoStatus(a);
@@ -988,29 +1020,16 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (this.pagina < this.totalPaginas()) this.pagina++;
   }
 
-  statusCobrancaDerivado(g: ComandaGrupo): StatusCobrancaDerivado {
-    const s = g.linhas[0]?.status_cobranca;
-    if (s === 'aberto' || s === 'pendente' || s === 'parcial' || s === 'pago') {
-      return s;
-    }
-    return 'aberto';
-  }
-
   private prioridadeOrdenacaoStatus(g: ComandaGrupo): number {
-    const s = this.statusCobrancaEfetivo(g);
-    if (s === 'parcial') return 0;
-    if (s === 'pendente') return 1;
-    if (s === 'aberto') return 2;
-    return 3;
-  }
-
-  /**
-   * Filtros / ordenação: quitada nas cifras conta como `pago` mesmo com `status_cobranca`
-   * ou `pagamento_status` legados «parcial».
-   */
-  statusCobrancaEfetivo(g: ComandaGrupo): StatusCobrancaDerivado {
-    if (this.comandaQuitadaNasCifras(g)) return 'pago';
-    return this.statusCobrancaDerivado(g);
+    const st = statusComandaColunaFromItem(g.linhas[0]);
+    if (st === 'pendente') return 0;
+    const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
+      jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
+    });
+    if (pc === 'atrasado') return 1;
+    if (pc === 'em_aberto') return 2;
+    if (pc === 'pago') return 3;
+    return 4;
   }
 
   private readonly epsMoeda = 0.005;
@@ -1089,87 +1108,40 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return ps === 'pendente';
   }
 
-  /**
-   * Dívida «Pendente» e data da comanda anterior ao dia corrente → exibir «Atrasado»
-   * (no dia da abertura permanece «Em aberto»).
-   */
-  comandaPendenteEmAtraso(g: ComandaGrupo): boolean {
-    if (!this.comandaPagamentoPendenteDivida(g)) return false;
-    const ymdComanda = (g.data || '').slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymdComanda)) return false;
-    const hoje = toYmd(new Date());
-    return ymdComanda < hoje;
-  }
-
   rotuloStatus(g: ComandaGrupo): string {
-    const l0 = g.linhas[0];
-    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
-    if (cs === 'finalizada') {
-      return 'Finalizado';
-    }
-    const s = this.statusCobrancaEfetivo(g);
-    if (s === 'aberto') return 'Em aberto';
-    if (s === 'pendente') return 'Pendente';
-    if (s === 'parcial') return 'Parcial';
-    return 'Pago';
+    return statusComandaColunaFromItem(g.linhas[0]) === 'finalizado'
+      ? 'Finalizado'
+      : 'Pendente';
   }
 
   classeBadgeStatus(g: ComandaGrupo): string {
-    const l0 = g.linhas[0];
-    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
-    if (cs === 'finalizada') {
-      return 'badge--finalizado';
-    }
-    const s = this.statusCobrancaEfetivo(g);
-    if (s === 'pago') return 'badge--ok';
-    if (s === 'parcial') return 'badge--warn';
-    if (s === 'pendente') return 'badge--info';
-    return 'badge--aviso';
+    return statusComandaColunaFromItem(g.linhas[0]) === 'finalizado'
+      ? 'badge--finalizado'
+      : 'badge--warn';
   }
 
   rotuloPagamento(g: ComandaGrupo): string {
-    const l0 = g.linhas[0];
-    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
-    if (cs !== 'finalizada') {
-      return '—';
-    }
-    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
-    if (ps === 'pendente') {
-      if (this.comandaPendenteEmAtraso(g)) return 'Atrasado';
-      return 'Em aberto';
-    }
-    if (this.comandaQuitadaNasCifras(g)) {
-      return 'Pago';
-    }
-    if (l0?.status_cobranca === 'pago') return 'Pago';
-    if (ps === 'confirmado') return 'Pago';
-    if (ps === 'parcial') return 'Parcial';
-    return 'Pendente';
+    const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
+      jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
+    });
+    if (pc == null) return '—';
+    if (pc === 'pago') return 'Pago';
+    if (pc === 'em_aberto') return 'Em aberto';
+    return 'Atrasado';
   }
 
   classeBadgePagamento(g: ComandaGrupo): string {
-    const l0 = g.linhas[0];
-    const cs = String(l0?.cobrancaStatus ?? '').trim().toLowerCase();
-    if (cs !== 'finalizada') {
-      return 'badge--aviso';
-    }
-    const ps = String(l0?.pagamentoStatus ?? '').trim().toLowerCase();
-    if (ps === 'pendente') {
-      if (this.comandaPendenteEmAtraso(g)) return 'badge--atraso';
-      return 'badge--warn';
-    }
-    if (this.comandaQuitadaNasCifras(g)) {
-      return 'badge--ok';
-    }
-    if (l0?.status_cobranca === 'pago') return 'badge--ok';
-    if (ps === 'confirmado') return 'badge--ok';
-    if (ps === 'parcial') return 'badge--warn';
-    return 'badge--info';
+    const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
+      jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
+    });
+    if (pc == null) return 'badge--aviso';
+    if (pc === 'pago') return 'badge--ok';
+    if (pc === 'em_aberto') return 'badge--warn';
+    return 'badge--atraso';
   }
 
   saldoAtrasadoMaisDe7Dias(g: ComandaGrupo): boolean {
-    const s = this.statusCobrancaEfetivo(g);
-    if (s === 'pago') return false;
+    if (this.comandaQuitadaNasCifras(g)) return false;
     const saldo = Number(g.linhas[0]?.saldo ?? 0) || 0;
     if (saldo <= 0) return false;
     const dt = new Date(`${g.data}T00:00:00`);
@@ -1180,21 +1152,35 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return diffDias > 7;
   }
 
-  toggleFiltroStatusPagamento(id: StatusCobrancaDerivado): void {
-    if (this.statusPagamentoSelecionados.has(id)) {
-      this.statusPagamentoSelecionados.delete(id);
+  toggleFiltroStatusComanda(id: FiltroStatusComandaId): void {
+    if (this.filtroStatusComandaSelecionados.has(id)) {
+      this.filtroStatusComandaSelecionados.delete(id);
     } else {
-      this.statusPagamentoSelecionados.add(id);
+      this.filtroStatusComandaSelecionados.add(id);
     }
     this.pagina = 1;
   }
 
-  filtroStatusAtivo(id: StatusCobrancaDerivado): boolean {
-    return this.statusPagamentoSelecionados.has(id);
+  toggleFiltroPagamentoColuna(id: FiltroPagamentoColunaId): void {
+    if (this.filtroPagamentoColunaSelecionados.has(id)) {
+      this.filtroPagamentoColunaSelecionados.delete(id);
+    } else {
+      this.filtroPagamentoColunaSelecionados.add(id);
+    }
+    this.pagina = 1;
+  }
+
+  filtroStatusComandaAtivo(id: FiltroStatusComandaId): boolean {
+    return this.filtroStatusComandaSelecionados.has(id);
+  }
+
+  filtroPagamentoColunaAtivo(id: FiltroPagamentoColunaId): boolean {
+    return this.filtroPagamentoColunaSelecionados.has(id);
   }
 
   limparFiltrosStatusPagamento(): void {
-    this.statusPagamentoSelecionados.clear();
+    this.filtroStatusComandaSelecionados.clear();
+    this.filtroPagamentoColunaSelecionados.clear();
     this.pagina = 1;
   }
 
@@ -1334,20 +1320,66 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.abrirPainelClienteDrawer();
 
     const cid = this.clienteDrawerClienteId;
-    if (cid) {
-      this.api.getCliente(cid).subscribe({
-        next: (c) => {
-          if (this.clienteDrawerClienteId !== cid) return;
-          this.hidratarClienteNaForm(c);
-        },
-        error: () => {
-          if (this.clienteDrawerClienteId === cid) {
-            this.clienteSaveErro =
-              'Não foi possível carregar os dados do cliente.';
-          }
-        },
-      });
-    }
+    if (cid) this.carregarClienteNoDrawer(cid);
+  }
+
+  /**
+   * Drawer da comanda: botão «Aniversário não definido» (sidebar) —
+   * abre o mesmo cadastro de cliente **sem** fechar a comanda.
+   */
+  onAbrirCadastroClienteDaComandaSidebar(): void {
+    const ctx = this.comandaDrawerContexto;
+    const cid = ctx?.clienteId?.trim();
+    if (!cid) return;
+
+    this.clienteSaveErro = '';
+    this.cadastroSalvando = false;
+    this.notificacoesToggleLiqArmed = false;
+    this.clienteDrawerModo = 'perfil';
+    this.clienteDrawerClienteId = cid;
+
+    const nomeLista = String(ctx?.cliente?.nome ?? '').trim();
+    this.preencherCadastroClienteFormularioVazio(nomeLista);
+
+    this.clienteAbaAtiva = 'Cadastro';
+    this.abrirPainelClienteDrawer();
+    this.carregarClienteNoDrawer(cid);
+  }
+
+  private carregarClienteNoDrawer(cid: string): void {
+    this.api.getCliente(cid).subscribe({
+      next: (c) => {
+        if (this.clienteDrawerClienteId !== cid) return;
+        this.hidratarClienteNaForm(c);
+
+        /** Mantém objeto do contexto da comanda alinhado ao catálogo após próximo refresh. */
+        const ctxId = this.comandaDrawerContexto?.clienteId?.trim();
+        if (
+          ctxId === cid &&
+          this.comandaDrawerContexto != null &&
+          this.comandaDrawerContexto.clienteId === cid
+        ) {
+          this.comandaDrawerContexto = {
+            ...this.comandaDrawerContexto,
+            cliente: c,
+          };
+        }
+
+        /** Atualiza cópia no catálogo em memória (nome / telefone no drawer da comanda). */
+        const ix = this.clientesCatalogo.findIndex((cl) => cl.id === cid);
+        if (ix >= 0) {
+          const next = [...this.clientesCatalogo];
+          next[ix] = c;
+          this.clientesCatalogo = next;
+        }
+      },
+      error: () => {
+        if (this.clienteDrawerClienteId === cid) {
+          this.clienteSaveErro =
+            'Não foi possível carregar os dados do cliente.';
+        }
+      },
+    });
   }
 
   private abrirPainelClienteDrawer(): void {

@@ -1,21 +1,30 @@
-import { Component, DestroyRef, Input, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  Input,
+  OnInit,
+  inject,
+  output,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
-import { Cliente } from '../../core/models/api.models';
+import { AtendimentoListaItem, Cliente } from '../../core/models/api.models';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { contagensSidebarParaCliente } from '../../core/utils/comanda-status.util';
 import {
   SaasSelectComponent,
   type SaasSelectOption,
 } from './saas-select.component';
 import {
   Observable,
+  Subject,
   catchError,
-  defer,
   distinctUntilChanged,
   map,
   merge,
   of,
   shareReplay,
+  startWith,
   switchMap,
   tap,
 } from 'rxjs';
@@ -32,36 +41,59 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   @Input() opcoesClientes: SaasSelectOption[] = [];
   @Input() cliente: Cliente | null = null;
 
+  /**
+   * Ex.: campo «Aniversário» na secção Informações — abrir cadastro do cliente (drawer / lista).
+   */
+  readonly abrirCadastroCliente = output<void>();
+
   private readonly api = inject(SheetsApiService);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** IDs de clientes com pelo menos um registo em Atendimentos (comanda/agendamento gravado). */
-  private readonly clientesComHistorico$: Observable<ReadonlySet<string>> =
-    defer(() =>
-      this.api.listAgendamentos().pipe(
-        catchError(() => of([])),
-        map((rows) => {
-          const set = new Set<string>();
-          for (const r of rows) {
-            const id = String(r.idCliente ?? '').trim();
-            if (id) set.add(id);
-          }
-          return set;
-        }),
+  /** Força novo GET `/api/atendimentos` para contagens e badge «cliente novo». */
+  private readonly contagensRefresh$ = new Subject<void>();
+
+  private readonly listaAgendamentosAtual$: Observable<AtendimentoListaItem[]> =
+    this.contagensRefresh$.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.api.listAgendamentos().pipe(catchError(() => of([]))),
       ),
-    ).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+  private readonly clientesComHistorico$: Observable<ReadonlySet<string>> =
+    this.listaAgendamentosAtual$.pipe(
+      map((rows) => {
+        const set = new Set<string>();
+        for (const r of rows) {
+          const id = String(r.idCliente ?? '').trim();
+          if (id) set.add(id);
+        }
+        return set;
+      }),
+    );
 
   mostrarBadgeClienteNovo = false;
+  comandasPendenteCount = 0;
+  pagamentosAtrasadosCount = 0;
+
+  /**
+   * Chamar após gravar/faturar comanda para actualizar «comandas / pagamentos em aberto».
+   */
+  refreshContagens(): void {
+    this.contagensRefresh$.next();
+  }
 
   ngOnInit(): void {
-    merge(
+    const clienteId$ = merge(
       of(String(this.clienteIdControl.value ?? '').trim()),
       this.clienteIdControl.valueChanges.pipe(
         map((v) => String(v ?? '').trim()),
       ),
-    )
+    ).pipe(distinctUntilChanged());
+
+    clienteId$
       .pipe(
-        distinctUntilChanged(),
         tap((cid) => {
           if (!cid) this.mostrarBadgeClienteNovo = false;
         }),
@@ -76,6 +108,42 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
       .subscribe((mostrar) => {
         this.mostrarBadgeClienteNovo = mostrar;
       });
+
+    clienteId$
+      .pipe(
+        switchMap((cid) =>
+          this.listaAgendamentosAtual$.pipe(
+            map((items) => contagensSidebarParaCliente(cid, items)),
+          ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(({ comandasPendente, pagamentosAtrasados }) => {
+        this.comandasPendenteCount = comandasPendente;
+        this.pagamentosAtrasadosCount = pagamentosAtrasados;
+      });
+  }
+
+  textoComandasEmAberto(): string {
+    const n = this.comandasPendenteCount;
+    return n === 1
+      ? '1 comanda em aberto'
+      : `${n} comandas em aberto`;
+  }
+
+  textoPagamentosEmAberto(): string {
+    const n = this.pagamentosAtrasadosCount;
+    return n === 1
+      ? '1 pagamento em aberto'
+      : `${n} pagamentos em aberto`;
+  }
+
+  destacarComandasEmAberto(): boolean {
+    return this.comandasPendenteCount > 0;
+  }
+
+  destacarPagamentosEmAberto(): boolean {
+    return this.pagamentosAtrasadosCount > 0;
   }
 
   private clienteTemHistoricoAtendimentos$(clienteId: string): Observable<boolean> {
@@ -106,6 +174,11 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
       this.cliente != null &&
       String(this.clienteIdControl?.value ?? '').trim() !== ''
     );
+  }
+
+  clicouAbrirCadastroAniversario(): void {
+    if (!this.temClienteSelecionado) return;
+    this.abrirCadastroCliente.emit();
   }
 
   linhaCreditoClienteExibicao(): string {

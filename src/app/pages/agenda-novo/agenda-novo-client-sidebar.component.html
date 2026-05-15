@@ -73,9 +73,14 @@
       <h3 class="sidebar-block__titulo sidebar-block__titulo--info" id="sidebar-info-titulo">
         Informações
       </h3>
-      <ul class="sidebar-block__link-list" aria-label="Resumo do cliente (links em breve)">
+      <ul class="sidebar-block__link-list" aria-label="Informações rápidas do cliente">
         <li>
-          <button type="button" class="sidebar-block__linklike">
+          <button
+            type="button"
+            class="sidebar-block__linklike"
+            (click)="clicouAbrirCadastroAniversario()"
+            aria-label="Abrir cadastro do cliente para editar data de aniversário"
+          >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
                 <path d="M12 7v14"/>
@@ -115,7 +120,11 @@
           </button>
         </li>
         <li>
-          <button type="button" class="sidebar-block__linklike">
+          <button
+            type="button"
+            class="sidebar-block__linklike"
+            [class.sidebar-block__linklike--alert]="destacarComandasEmAberto()"
+          >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -138,11 +147,19 @@
                 <path d="M8 18h5" />
               </svg>
             </span>
-            <span class="sidebar-block__link-txt">0 comandas em aberto</span>
+            <span
+              class="sidebar-block__link-txt"
+              [class.sidebar-block__link-txt--alert]="destacarComandasEmAberto()"
+              >{{ textoComandasEmAberto() }}</span
+            >
           </button>
         </li>
         <li>
-          <button type="button" class="sidebar-block__linklike">
+          <button
+            type="button"
+            class="sidebar-block__linklike"
+            [class.sidebar-block__linklike--alert]="destacarPagamentosEmAberto()"
+          >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
@@ -150,7 +167,11 @@
                 <path d="M12 17h.01"/>
               </svg>
             </span>
-            <span class="sidebar-block__link-txt">0 pagamentos em aberto</span>
+            <span
+              class="sidebar-block__link-txt"
+              [class.sidebar-block__link-txt--alert]="destacarPagamentosEmAberto()"
+              >{{ textoPagamentosEmAberto() }}</span
+            >
           </button>
         </li>
       </ul>

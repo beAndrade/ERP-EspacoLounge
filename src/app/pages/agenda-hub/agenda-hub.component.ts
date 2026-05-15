@@ -597,6 +597,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDataYmdParaFaturar = ymd;
   }
 
+  /** Drawer da comanda: link «Aniversário» na sidebar → edição cadastral (nova aba). */
+  onAbrirCadastroClienteSidebarHub(): void {
+    const cid = this.comandaDrawerContexto?.clienteId?.trim();
+    if (!cid) return;
+    const tree = this.router.createUrlTree(['/clientes', cid, 'editar']);
+    const url = this.router.serializeUrl(tree);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   // ----- Sub-drawer Faturar -------------------------------------------------
 
   onAbrirFaturarComanda(ev: {

@@ -7,6 +7,7 @@
         [clienteIdControl]="clienteComandaCtrl"
         [opcoesClientes]="contexto()?.opcoesClientes ?? []"
         [cliente]="clienteParaSidebar()"
+        (abrirCadastroCliente)="abrirCadastroCliente.emit()"
       />
     </div>
 
@@ -77,10 +78,8 @@
                 <h2 class="nc-itens__title">Itens da comanda</h2>
                 <span
                   class="badge nc-itens__status-badge"
-                  [class.badge--aviso]="classeBadgeComanda() === 'badge--aviso'"
-                  [class.badge--pendente]="classeBadgeComanda() === 'badge--pendente'"
                   [class.badge--warn]="classeBadgeComanda() === 'badge--warn'"
-                  [class.badge--ok]="classeBadgeComanda() === 'badge--ok'"
+                  [class.badge--finalizado]="classeBadgeComanda() === 'badge--finalizado'"
                   aria-live="polite"
                 >
                   {{ rotuloStatus() }}
