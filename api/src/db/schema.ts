@@ -247,6 +247,8 @@ export const atendimentos = pgTable(
     valor: text('valor'),
     valorManual: text('valor_manual'),
     comissao: text('comissao'),
+    /** Quantidade da linha (espelha `atendimento_itens.quantidade` quando existe pivot). */
+    quantidade: integer('quantidade').notNull().default(1),
     desconto: text('desconto'),
     descricao: text('descricao'),
     descricaoManual: text('descricao_manual'),

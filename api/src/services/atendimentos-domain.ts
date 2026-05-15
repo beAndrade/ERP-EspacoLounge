@@ -34,8 +34,12 @@ import {
   toNumberPt,
   totalLiquidoConfirmacao,
 } from './finance-domain';
-import { getResumosPorAtendimento } from './comanda-pagamentos-domain';
-import { criarPagamentoComanda, getResumoComanda } from './comanda-pagamentos-domain';
+import {
+  criarPagamentoComanda,
+  getResumoComanda,
+  getResumosPorAtendimento,
+  sincronizarPagamentoStatusAtendimento,
+} from './comanda-pagamentos-domain';
 import { resolverPrecoUnitarioProduto } from './produtos-preco';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 
@@ -1043,6 +1047,8 @@ async function appendAtendimentoLinha(
     valor: string;
     valorManual?: string;
     comissao: string;
+    /** Quantidade da linha (produto/serviço); omissão = 1. */
+    quantidade?: number;
     descricao: string;
     /** Espelha texto em **Descrição Manual** (planilha) quando distinto de `descricao`. */
     descricaoManual?: string;
@@ -1054,6 +1060,10 @@ async function appendAtendimentoLinha(
   },
 ): Promise<void> {
   const dataSql = parseDataSql(o.dataStr);
+  const qtdLinha =
+    o.quantidade != null && Number.isFinite(o.quantidade) && o.quantidade > 0
+      ? Math.trunc(o.quantidade)
+      : 1;
   await db.insert(atendimentos).values({
     idAtendimento: o.idAt,
     data: dataSql,
@@ -1071,6 +1081,7 @@ async function appendAtendimentoLinha(
     valor: o.valor,
     valorManual: o.valorManual ?? '',
     comissao: normalizeComissaoParaBD(o.comissao),
+    quantidade: qtdLinha,
     desconto: descontoCriacaoParaBD(o.desconto),
     descricao: o.descricao,
     descricaoManual: o.descricaoManual ?? '',
@@ -1285,33 +1296,6 @@ async function createAtendimentoServico(
       }
     }
 
-    const textoDescontoAtendimento = textoDescontoColunaAtendimento(
-      it.desconto,
-      rec,
-      fromArray,
-    );
-
-    await appendAtendimentoLinha(db, {
-      idAt,
-      dataStr,
-      clienteId,
-      nomeCliente,
-      tipo: 'Serviço',
-      pacote: '',
-      etapa: '',
-      produto: '',
-      servicos: nomeServico,
-      tamanho: vc.tamanhoParaPlanilha,
-      profissionalId,
-      valor: valorLinha,
-      comissao: comissaoLinha,
-      desconto: textoDescontoAtendimento,
-      descricao: obs,
-      inicio: inicioLinha,
-      fim: fimLinha,
-      ...agCartao,
-    });
-
     /**
      * Quando o utilizador deixa o V.Unit em branco, persistimos o preço-base do
      * catálogo para esta linha (preserva a fonte exibida na comanda quando o
@@ -1329,6 +1313,33 @@ async function createAtendimentoServico(
         : !fromArray
           ? descontoNumericoCabecaPayload(rec)
           : null;
+    const textoDescontoAtendimento =
+      descontoPivotNum != null && descontoPivotNum > 0
+        ? formatMoedaReciboPt(descontoPivotNum)
+        : textoDescontoColunaAtendimento(it.desconto, rec, fromArray);
+
+    await appendAtendimentoLinha(db, {
+      idAt,
+      dataStr,
+      clienteId,
+      nomeCliente,
+      tipo: 'Serviço',
+      pacote: '',
+      etapa: '',
+      produto: '',
+      servicos: nomeServico,
+      tamanho: vc.tamanhoParaPlanilha,
+      profissionalId,
+      valor: valorLinha,
+      comissao: comissaoLinha,
+      quantidade: qtd,
+      desconto: textoDescontoAtendimento,
+      descricao: obs,
+      inicio: inicioLinha,
+      fim: fimLinha,
+      ...agCartao,
+    });
+
     await insertPivotServico(db, {
       idAtendimento: idAt,
       servicoId: srv.id,
@@ -1444,6 +1455,7 @@ async function createAtendimentoMega(
       profissionalId: profId,
       valor: regra.valor,
       comissao: regra.comissao,
+      quantidade: 1,
       desconto: descontoLinha,
       descricao: obs,
       descricaoManual: obs,
@@ -1528,6 +1540,7 @@ async function createAtendimentoPacote(
     profissionalId: profCob,
     valor: cat.preco,
     comissao: '',
+    quantidade: 1,
     desconto: descontoLinha,
     descricao: obs,
     descricaoManual: obs,
@@ -1598,6 +1611,7 @@ async function createAtendimentoPacote(
       profissionalId: profId,
       valor: '0',
       comissao: regra.comissao,
+      quantidade: 1,
       desconto: descontoLinha,
       descricao: obs,
       descricaoManual: obs,
@@ -1747,16 +1761,19 @@ async function createAtendimentoProduto(
     );
     const profissionalId = itemProf ?? bodyProf;
 
-    const obsParts: string[] = [];
-    if (baseObs) obsParts.push(baseObs);
-    obsParts.push(`Qtd: ${String(qtd).replace('.', ',')}`);
-    const obs = obsParts.join(' — ');
+    const descontoPivotProd =
+      it.desconto != null && it.desconto > 0
+        ? it.desconto
+        : !fromArray
+          ? descontoNumericoCabecaPayload(rec)
+          : null;
+    const textoDescontoProd =
+      descontoPivotProd != null && descontoPivotProd > 0
+        ? formatMoedaReciboPt(descontoPivotProd)
+        : textoDescontoColunaAtendimento(it.desconto, rec, fromArray);
 
-    const textoDescontoProd = textoDescontoColunaAtendimento(
-      it.desconto,
-      rec,
-      fromArray,
-    );
+    const obs = baseObs;
+
     await appendAtendimentoLinha(db, {
       idAt,
       dataStr,
@@ -1771,18 +1788,13 @@ async function createAtendimentoProduto(
       profissionalId,
       valor: String(valorTotal),
       comissao: '',
+      quantidade: qtd,
       desconto: textoDescontoProd,
       descricao: obs,
       inicio: primeira ? slot.inicio : null,
       fim: primeira ? slot.fim : null,
       ...agCartao,
     });
-    const descontoPivotProd =
-      it.desconto != null && it.desconto > 0
-        ? it.desconto
-        : !fromArray
-          ? descontoNumericoCabecaPayload(rec)
-          : null;
     await insertPivotProduto(db, {
       idAtendimento: idAt,
       produtoId: it.produtoId,
@@ -1866,6 +1878,7 @@ async function createAtendimentoCabelo(
     profissionalId,
     valor: String(valorNum),
     comissao: '',
+    quantidade: 1,
     desconto: descontoLinha,
     descricao: obs,
     inicio: slot.inicio,
@@ -2027,6 +2040,43 @@ export async function listAtendimentosRaw(
     }
   }
 
+  /**
+   * Corrige `pagamento_status` persistido como «parcial» quando o resumo já
+   * indica «pago» (ex.: desconto global não entrava no total da pivot antes do fix).
+   */
+  for (const id of idsAt) {
+    const r = resumosPorId.get(id);
+    if (!r || r.status !== 'pago') continue;
+    const linha = filtered.find(
+      (x) =>
+        String(x.idAtendimento || '').trim() === id &&
+        String(x.cobrancaStatus || '').trim().toLowerCase() === 'finalizada',
+    );
+    if (!linha) continue;
+    const ps = String(linha.pagamentoStatus ?? '').trim().toLowerCase();
+    if (ps === 'confirmado') continue;
+    await sincronizarPagamentoStatusAtendimento(db, id).catch(() => {});
+    const [ref] = await db
+      .select({ ps: atendimentos.pagamentoStatus })
+      .from(atendimentos)
+      .where(
+        and(
+          eq(atendimentos.idAtendimento, id),
+          eq(atendimentos.cobrancaStatus, 'finalizada'),
+        ),
+      )
+      .limit(1);
+    const novoPs = ref?.ps ?? linha.pagamentoStatus;
+    for (const row of filtered) {
+      if (String(row.idAtendimento || '').trim() !== id) continue;
+      if (
+        String(row.cobrancaStatus || '').trim().toLowerCase() === 'finalizada'
+      ) {
+        row.pagamentoStatus = novoPs;
+      }
+    }
+  }
+
   return filtered.map((a) => {
     const dataStr = ymdFromAtendimentoDate(a.data as string | Date | null);
     const pid =
@@ -2056,6 +2106,7 @@ export async function listAtendimentosRaw(
       Valor: a.valor,
       'Valor Manual': a.valorManual,
       Comissão: a.comissao,
+      Quantidade: a.quantidade ?? 1,
       Desconto: a.desconto,
       Descrição: descricaoParaListaLinha(a),
       'Descrição Manual': a.descricaoManual,

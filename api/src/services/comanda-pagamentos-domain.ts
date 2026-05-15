@@ -204,8 +204,21 @@ function mesclarTotaisPivotELegado(
   if (legacy.total > totaisItens.total + 0.005) {
     return legacy;
   }
+  /**
+   * Totais pela pivot ignoram o desconto global gravado só em `atendimentos.desconto`
+   * (primeira linha do pedido). Sem somar `legacy.desconto`, o total a pagar fica inflado
+   * e pagamentos correctos aparecem como «Parcial».
+   */
+  const descontoMerged =
+    Math.round((totaisItens.desconto + legacy.desconto) * 100) / 100;
+  const totalMerged = Math.max(
+    0,
+    Math.round((totaisItens.total_bruto - descontoMerged) * 100) / 100,
+  );
   return {
-    ...totaisItens,
+    total_bruto: totaisItens.total_bruto,
+    desconto: descontoMerged,
+    total: totalMerged,
     cobranca_status: legacy.cobranca_status,
   };
 }

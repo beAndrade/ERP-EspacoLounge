@@ -372,4 +372,17 @@ BEGIN
   END IF;
 END $$;
 `));
+  /** Alinha com `0026_atendimentos_quantidade` quando `db:migrate` ainda não correu. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos' AND c.column_name = 'quantidade'
+  ) THEN
+    ALTER TABLE "atendimentos" ADD COLUMN "quantidade" integer DEFAULT 1 NOT NULL;
+  END IF;
+END $$;
+`));
 }

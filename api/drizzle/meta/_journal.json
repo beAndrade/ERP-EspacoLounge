@@ -183,6 +183,13 @@
       "when": 1775697937000,
       "tag": "0025_clientes_credito_saldo",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1775697938000,
+      "tag": "0026_atendimentos_quantidade",
+      "breakpoints": true
     }
   ]
 }
