@@ -17,6 +17,7 @@ import {
   FolhaListaItem,
   RecalcularFolhaComissoesResposta,
   Cliente,
+  ClienteCadastroPayload,
   CreateAtendimentoPayload,
   MovimentacaoListaItem,
   PacoteCatalogoItem,
@@ -355,30 +356,22 @@ export class SheetsApiService {
       .pipe(map((r) => this.unwrap(r)));
   }
 
-  createCliente(payload: {
-    nome: string;
-    telefone?: string;
-    notas?: string;
-  }): Observable<Cliente> {
+  createCliente(
+    payload: ClienteCadastroPayload,
+  ): Observable<Cliente> {
     return this.http
       .post<ApiResponse<Cliente>>(this.url('/api/clientes'), payload)
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
-  updateCliente(payload: {
-    cliente_id: string;
-    nome: string;
-    telefone?: string;
-    notas?: string;
-  }): Observable<Cliente> {
+  updateCliente(
+    payload: ClienteCadastroPayload & { cliente_id: string },
+  ): Observable<Cliente> {
+    const { cliente_id, ...body } = payload;
     return this.http
       .patch<ApiResponse<Cliente>>(
-        this.url(`/api/clientes/${encodeURIComponent(payload.cliente_id)}`),
-        {
-          nome: payload.nome,
-          telefone: payload.telefone,
-          notas: payload.notas,
-        },
+        this.url(`/api/clientes/${encodeURIComponent(cliente_id)}`),
+        body,
       )
       .pipe(map((raw) => this.unwrap(raw)));
   }

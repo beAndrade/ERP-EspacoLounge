@@ -44,29 +44,6 @@ const MESES_PT = [
   'dezembro',
 ] as const;
 
-/** Campo `aniversario` dentro do JSON `_elCli` em `Cliente.observacoes`. */
-function aniversarioBrutoDasObservacoes(obs: string | null | undefined): string {
-  const s = String(obs ?? '').trim();
-  if (!s) return '';
-  try {
-    const o = JSON.parse(s) as unknown;
-    if (
-      o &&
-      typeof o === 'object' &&
-      o !== null &&
-      '_elCli' in o &&
-      (o as { _elCli?: unknown })._elCli === 1 &&
-      'aniversario' in o &&
-      typeof (o as { aniversario?: unknown }).aniversario === 'string'
-    ) {
-      return String((o as { aniversario: string }).aniversario).trim();
-    }
-  } catch {
-    /* texto livre legado */
-  }
-  return '';
-}
-
 /** «Aniversário em d, mês» a partir de texto tipo DD/MM/AAAA ou DD/MM. */
 function linhaAniversarioFormatada(aniversarioRaw: string): string | null {
   const raw = aniversarioRaw.trim();
@@ -256,7 +233,7 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   }
 
   linhaAniversarioExibicao(): string {
-    const bruto = aniversarioBrutoDasObservacoes(this.cliente?.observacoes ?? null);
+    const bruto = String(this.cliente?.aniversario ?? '').trim();
     return linhaAniversarioFormatada(bruto) ?? 'Aniversário não definido';
   }
 

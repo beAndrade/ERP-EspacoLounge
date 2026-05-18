@@ -24,6 +24,31 @@ export function formatarTelefoneBrDeValor(valor: string | null | undefined): str
   return formatarTelefoneBr(String(valor ?? ''));
 }
 
+/** Celular: DDD (2) + 9 — `(00) 00000-0000`, máx. 11 dígitos. */
+export function formatarCelularBr(valor: string | null | undefined): string {
+  const d = telefoneBrDigitos(valor).slice(0, 11);
+  if (!d) return '';
+  if (d.length <= 2) return `(${d}`;
+  const dd = d.slice(0, 2);
+  const loc = d.slice(2);
+  if (d.length < 11) {
+    if (loc.length <= 4) return `(${dd}) ${loc}`;
+    return `(${dd}) ${loc.slice(0, 4)}-${loc.slice(4)}`;
+  }
+  return `(${dd}) ${loc.slice(0, 5)}-${loc.slice(5)}`;
+}
+
+/** Fixo: DDD (2) + 8 — `(00) 0000-0000`, máx. 10 dígitos. */
+export function formatarTelefoneFixoBr(valor: string | null | undefined): string {
+  const d = telefoneBrDigitos(valor).slice(0, 10);
+  if (!d) return '';
+  if (d.length <= 2) return `(${d}`;
+  const dd = d.slice(0, 2);
+  const loc = d.slice(2);
+  if (loc.length <= 4) return `(${dd}) ${loc}`;
+  return `(${dd}) ${loc.slice(0, 4)}-${loc.slice(4)}`;
+}
+
 /** Só dígitos (para validar comprimento). */
 export function telefoneBrDigitos(valor: string | null | undefined): string {
   return String(valor ?? '').replace(/\D/g, '');

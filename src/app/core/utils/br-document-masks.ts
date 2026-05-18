@@ -5,6 +5,13 @@ export function digitosMax(input: string, max: number): string {
     .slice(0, max);
 }
 
+/** CEP: 00000-000 (8 dígitos). */
+export function formatarCepBr(input: string): string {
+  const d = digitosMax(input, 8);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
 /** DD/MM/AAAA enquanto digita (8 dígitos). */
 export function formatarDataDdMmYyyy(input: string): string {
   const d = digitosMax(input, 8);

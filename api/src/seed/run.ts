@@ -118,7 +118,6 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
         idCliente: id.trim(),
         nomeExibido: nome.trim(),
         telefone: pick(row, ['Telefone']) || null,
-        observacoes: pick(row, ['Observações', 'Observacoes']) || null,
       });
     }
   }

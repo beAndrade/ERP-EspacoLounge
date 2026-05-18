@@ -1,7 +1,8 @@
+@use './app/styles/table-card-shell';
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 :root {
-  --color-bg: #f6f4f1;
+  --color-bg: #f8f8f8;
   --color-surface: #ffffff;
   --color-text: #1c1917;
   --color-muted: #57534e;

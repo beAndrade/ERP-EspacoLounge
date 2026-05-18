@@ -13,7 +13,11 @@ import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, finalize } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { AtendimentoListaItem, Cliente } from '../../core/models/api.models';
+import {
+  AtendimentoListaItem,
+  Cliente,
+  ClienteCadastroPayload,
+} from '../../core/models/api.models';
 import type { ComandaResumoPagamentos } from '../../core/models/api.models';
 import { NovaComandaDrawerComponent } from '../agenda-hub/nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from '../agenda-hub/faturar-drawer.component';
@@ -23,6 +27,7 @@ import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 import {
   dataDdMmYyyyValida,
   emailBrValido,
+  formatarCepBr,
   formatarCnpjBr,
   formatarCpfBr,
   formatarDataDdMmYyyy,
@@ -35,6 +40,11 @@ import {
   toYmd,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
+import {
+  formatarCelularBr,
+  formatarTelefoneFixoBr,
+  telefoneBrDigitos,
+} from '../../core/utils/telefone-br';
 import {
   pagamentoColunaFromItem,
   statusComandaColunaFromItem,
@@ -71,25 +81,8 @@ type FiltroStatusComandaId = StatusComandaColuna;
 type FiltroPagamentoColunaId = PagamentoColuna;
 
 
-/** Payload em JSON na coluna `observacoes` (extras da UI não mapeadas no core da API). */
-interface ClienteObsExtras {
-  _elCli: 1;
-  textoLivre?: string;
-  apelido?: string;
-  email?: string;
-  celular?: string;
-  telefoneFixo?: string;
-  aniversario?: string;
-  cnpj?: string;
-  cpf?: string;
-  rg?: string;
-  fotoUrl?: string;
-  notificacoesAtivo?: boolean;
-  descontoPadraoTexto?: string;
-  descontoPadraoModo?: string;
-}
-
 const DRAWER_ANIM_MS = 430;
+const CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS = 200;
 
 function formataMoeda(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -231,8 +224,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   clienteDrawerAberto = false;
   clienteDrawerPanelOpen = false;
-  /** Modo atual do drawer de cliente (perfil do cliente clicado). */
-  clienteDrawerModo: 'perfil' = 'perfil';
+  /** Tooltip das abas bloqueadas — fora do drawer (evita corte por overflow/transform). */
+  clienteNavLockTooltipVisible = false;
+  clienteNavLockTooltipX = 0;
+  clienteNavLockTooltipY = 0;
+  private clienteNavLockTooltipTimer: ReturnType<typeof setTimeout> | null = null;
+  /** `novo` = cadastro vazio (ex.: a partir do select de cliente no agendamento). */
+  clienteDrawerModo: 'perfil' | 'novo' = 'perfil';
   clienteDrawerNome = '';
   clienteAbaAtiva = 'Cadastro';
   abasCliente = [
@@ -257,6 +255,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
   cadastroCpf = '';
   cadastroRg = '';
   cadastroFotoUrl = '';
+  cadastroCep = '';
+  cadastroLogradouro = '';
+  cadastroEnderecoNumero = '';
+  cadastroComplemento = '';
+  cadastroBairro = '';
+  cadastroEstado = '';
+  cadastroCidade = '';
+  cadastroInstagram = '';
+  cadastroFacebook = '';
   secaoEnderecoAberta = false;
   secaoRedesAberta = false;
   secaoConfiguracoesAberta = true;
@@ -268,7 +275,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   clienteDrawerClienteId: string | null = null;
   /** Snapshot das observações ao hidratar (merge seguro ao salvar). */
-  private clienteDrawerObsSnapshot: string | null = null;
   clienteSaveErro = '';
   cadastroSalvando = false;
   notificacoesToggleLiqArmed = false;
@@ -332,6 +338,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       clearTimeout(this.faturarDrawerCloseTimer);
       this.faturarDrawerCloseTimer = null;
     }
+    this.limparClienteNavLockTooltipTimer();
     this.desbloquearScrollPagina();
   }
 
@@ -367,7 +374,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.descontoDropdownAberto = false;
     }
 
-    if (this.buscaAberta && !t?.closest?.('.comandas-head__busca-wrap')) {
+    if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.fecharPainelBusca();
     }
 
@@ -606,11 +613,59 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   tituloCabecalhoClienteDrawer(): string {
+    if (this.clienteDrawerModo === 'novo') return 'Novo cliente';
     return this.clienteDrawerNome.trim() || 'Cliente';
   }
 
   ariaLabelClienteDrawer(): string {
-    return 'Perfil do cliente';
+    return this.clienteDrawerModo === 'novo'
+      ? 'Novo cliente'
+      : 'Perfil do cliente';
+  }
+
+  abaClienteDesabilitada(aba: string): boolean {
+    return this.clienteDrawerModo === 'novo' && aba !== 'Cadastro';
+  }
+
+  onClienteNavTooltipEnter(event: Event, aba: string, imediato = false): void {
+    if (!this.abaClienteDesabilitada(aba)) return;
+    const btn = event.currentTarget as HTMLElement;
+    this.limparClienteNavLockTooltipTimer();
+    const mostrar = (): void => this.posicionarClienteNavLockTooltip(btn);
+    if (imediato) {
+      mostrar();
+      return;
+    }
+    this.clienteNavLockTooltipTimer = setTimeout(
+      mostrar,
+      CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS,
+    );
+  }
+
+  onClienteNavTooltipLeave(aba: string): void {
+    if (!this.abaClienteDesabilitada(aba)) return;
+    this.ocultarClienteNavLockTooltip();
+  }
+
+  ocultarClienteNavLockTooltip(): void {
+    this.limparClienteNavLockTooltipTimer();
+    this.clienteNavLockTooltipVisible = false;
+  }
+
+  private posicionarClienteNavLockTooltip(btn: HTMLElement): void {
+    const label = btn.querySelector<HTMLElement>('.cliente-nav__label');
+    if (!label) return;
+    const r = label.getBoundingClientRect();
+    this.clienteNavLockTooltipX = r.left + r.width / 2;
+    this.clienteNavLockTooltipY = r.top;
+    this.clienteNavLockTooltipVisible = true;
+  }
+
+  private limparClienteNavLockTooltipTimer(): void {
+    if (this.clienteNavLockTooltipTimer != null) {
+      clearTimeout(this.clienteNavLockTooltipTimer);
+      this.clienteNavLockTooltipTimer = null;
+    }
   }
 
   ariaLabelComandaDrawer(): string {
@@ -620,7 +675,21 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   selecionarAbaCliente(aba: string): void {
+    if (this.abaClienteDesabilitada(aba)) return;
     this.clienteAbaAtiva = aba;
+  }
+
+  /** Abre o drawer de cadastro vazio (botão «Criar cliente» no agendamento). */
+  abrirClienteDrawerNovo(): void {
+    this.clienteSaveErro = '';
+    this.cadastroSalvando = false;
+    this.notificacoesToggleLiqArmed = false;
+    this.clienteDrawerModo = 'novo';
+    this.clienteDrawerClienteId = null;
+    this.clienteDrawerNome = 'Novo cliente';
+    this.preencherCadastroClienteFormularioVazio('');
+    this.clienteAbaAtiva = 'Cadastro';
+    this.abrirPainelClienteDrawer();
   }
 
   /** Índice da aba ativa para animar a barra direita na `.cliente-nav` (desktop). */
@@ -662,14 +731,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
       case 'nome':
         return this.cadastroNome.trim() ? null : 'Campo obrigatório';
       case 'celular': {
-        const d = ComandasComponent.apenasDigitos(this.cadastroCelular);
+        const d = telefoneBrDigitos(this.cadastroCelular);
         if (d.length === 0) return null;
-        return d.length === 11 ? null : 'Número inválido';
+        return d.length === 11 ? null : 'Celular deve ter 11 dígitos';
       }
       case 'telefone': {
-        const d = ComandasComponent.apenasDigitos(this.cadastroTelefone);
+        const d = telefoneBrDigitos(this.cadastroTelefone);
         if (d.length === 0) return null;
-        return d.length === 10 ? null : 'Número inválido';
+        return d.length === 10 ? null : 'Telefone deve ter 10 dígitos';
       }
       case 'email':
         return emailBrValido(this.cadastroEmail) ? null : 'E-mail inválido';
@@ -734,16 +803,30 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
     const nome = this.cadastroNome.trim();
     const telefone = this.telefonePrioritarioParaApi().trim();
-    const notas = this.construirObservacoesParaSalvar(this.clienteDrawerObsSnapshot);
+    const cadastro = this.montarPayloadCadastroCliente(nome, telefone);
+    if (!cadastro) return;
 
     this.cadastroSalvando = true;
     const finalizeFn = (): void => {
       this.cadastroSalvando = false;
     };
 
-    const onOk = (): void => {
+    const onOk = (salvo?: Cliente): void => {
       this.atualizarGruposECatalogo();
-      const cidSalvo = (this.clienteDrawerClienteId ?? '').trim();
+      const cidSalvo = (salvo?.id ?? this.clienteDrawerClienteId ?? '').trim();
+      if (salvo?.id) {
+        const ix = this.clientesCatalogo.findIndex((c) => c.id === salvo.id);
+        if (ix >= 0) {
+          const next = [...this.clientesCatalogo];
+          next[ix] = salvo;
+          this.clientesCatalogo = next;
+        } else if (this.clienteDrawerModo === 'novo') {
+          this.clientesCatalogo = [...this.clientesCatalogo, salvo];
+        }
+      }
+      if (this.clienteDrawerModo === 'novo' && salvo) {
+        this.agendaEditComandaRef?.aplicarClienteAposCriacao(salvo);
+      }
       if (cidSalvo) {
         this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cidSalvo);
       }
@@ -762,24 +845,16 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.api
         .updateCliente({
           cliente_id: this.clienteDrawerClienteId,
-          nome,
-          telefone: telefone || undefined,
-          notas,
+          ...cadastro,
         })
         .pipe(finalize(finalizeFn))
-        .subscribe({ next: () => onOk(), error: onErr });
+        .subscribe({ next: (atualizado) => onOk(atualizado), error: onErr });
     } else {
       this.api
-        .createCliente({
-          nome,
-          telefone: telefone || undefined,
-          notas,
-        })
+        .createCliente(cadastro)
         .pipe(finalize(finalizeFn))
         .subscribe({
-          next: () => {
-            onOk();
-          },
+          next: (criado) => onOk(criado),
           error: onErr,
         });
     }
@@ -814,53 +889,68 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.notificacoesToggleLiqArmed = true;
   }
 
-  private lerExtrasObservacoes(obs: string | null | undefined): ClienteObsExtras | null {
-    if (obs == null || !String(obs).trim()) return null;
-    const s = String(obs).trim();
-    try {
-      const o = JSON.parse(s) as unknown;
-      if (o != null && typeof o === 'object' && '_elCli' in o) {
-        const rec = o as { _elCli?: unknown };
-        if (rec._elCli === 1) return o as ClienteObsExtras;
+  /** Limite conservador para `data:` em `foto_url` (text no Postgres). */
+  private static readonly FOTO_URL_MAX_CHARS = 520_000;
+
+  private montarPayloadCadastroCliente(
+    nome: string,
+    telefone: string,
+  ): ClienteCadastroPayload | null {
+    const rawFoto = (this.cadastroFotoUrl ?? '').trim();
+    let fotoUrl: string | null = null;
+    if (rawFoto) {
+      const okHttp =
+        rawFoto.startsWith('http://') || rawFoto.startsWith('https://');
+      const okData = rawFoto.startsWith('data:image/');
+      if (
+        (okHttp || okData) &&
+        rawFoto.length <= ComandasComponent.FOTO_URL_MAX_CHARS
+      ) {
+        fotoUrl = rawFoto;
+      } else {
+        this.clienteSaveErro =
+          'A foto não pôde ser incluída (arquivo grande demais). Tente outra imagem.';
+        return null;
       }
-    } catch {
-      /* legado não-JSON */
     }
-    return { _elCli: 1, textoLivre: s };
+    return {
+      nome,
+      telefone: telefone || undefined,
+      apelido: this.cadastroApelido.trim() || undefined,
+      email: this.cadastroEmail.trim() || undefined,
+      celular: this.cadastroCelular.trim() || undefined,
+      telefoneFixo: this.cadastroTelefone.trim() || undefined,
+      aniversario: this.cadastroAniversario.trim() || undefined,
+      cnpj: this.cadastroCnpj.trim() || undefined,
+      cpf: this.cadastroCpf.trim() || undefined,
+      rg: this.cadastroRg.trim() || undefined,
+      notificacoesAtivo: this.notificacoesAtivo,
+      descontoPadraoTexto: this.descontoPadraoTexto.trim() || undefined,
+      descontoPadraoModo: this.descontoPadraoModo || undefined,
+      fotoUrl,
+      cep: this.cadastroCep.trim() || undefined,
+      logradouro: this.cadastroLogradouro.trim() || undefined,
+      enderecoNumero: this.cadastroEnderecoNumero.trim() || undefined,
+      complemento: this.cadastroComplemento.trim() || undefined,
+      bairro: this.cadastroBairro.trim() || undefined,
+      estado: this.cadastroEstado.trim() || undefined,
+      cidade: this.cadastroCidade.trim() || undefined,
+      instagram:
+        ComandasComponent.normalizarHandleRede(this.cadastroInstagram) ||
+        undefined,
+      facebook:
+        ComandasComponent.normalizarHandleRede(this.cadastroFacebook) ||
+        undefined,
+    };
   }
 
-  private construirObservacoesParaSalvar(obsSnapshot: string | null): string {
-    const prev = this.lerExtrasObservacoes(obsSnapshot);
-    const textoLivre =
-      prev?.textoLivre != null && String(prev.textoLivre).trim().length > 0
-        ? String(prev.textoLivre).trim()
-        : undefined;
-    let fotoUrl: string | undefined;
-    const rawFoto = (this.cadastroFotoUrl ?? '').trim();
-    if (
-      rawFoto.startsWith('http://') ||
-      rawFoto.startsWith('https://') ||
-      (rawFoto.length > 0 && rawFoto.length <= 80_000)
-    ) {
-      fotoUrl = rawFoto;
-    }
-    const payload: ClienteObsExtras = {
-      _elCli: 1,
-      apelido: this.cadastroApelido.trim(),
-      email: this.cadastroEmail.trim(),
-      celular: this.cadastroCelular.trim(),
-      telefoneFixo: this.cadastroTelefone.trim(),
-      aniversario: this.cadastroAniversario.trim(),
-      cnpj: this.cadastroCnpj.trim(),
-      cpf: this.cadastroCpf.trim(),
-      rg: this.cadastroRg.trim(),
-      notificacoesAtivo: this.notificacoesAtivo,
-      descontoPadraoTexto: this.descontoPadraoTexto.trim(),
-      descontoPadraoModo: this.descontoPadraoModo,
-    };
-    if (typeof textoLivre === 'string') payload.textoLivre = textoLivre;
-    if (fotoUrl) payload.fotoUrl = fotoUrl;
-    return JSON.stringify(payload);
+  private static normalizarHandleRede(value: string): string {
+    let s = String(value ?? '').trim();
+    if (!s) return '';
+    s = s.replace(/^https?:\/\//i, '');
+    s = s.replace(/^(www\.)?instagram\.com\//i, '');
+    s = s.replace(/^(www\.)?facebook\.com\//i, '');
+    return s.replace(/^\/+/, '').replace(/\/+$/, '');
   }
 
   private telefonePrioritarioParaApi(): string {
@@ -878,7 +968,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private preencherCadastroClienteFormularioVazio(
     nomeTituloListaOuVazio: string,
   ): void {
-    this.clienteDrawerObsSnapshot = null;
     const nomeLista = nomeTituloListaOuVazio.trim();
     this.clienteDrawerNome = nomeLista || 'Cliente';
     this.cadastroNome = nomeLista;
@@ -891,6 +980,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.cadastroCpf = '';
     this.cadastroRg = '';
     this.cadastroFotoUrl = '';
+    this.cadastroCep = '';
+    this.cadastroLogradouro = '';
+    this.cadastroEnderecoNumero = '';
+    this.cadastroComplemento = '';
+    this.cadastroBairro = '';
+    this.cadastroEstado = '';
+    this.cadastroCidade = '';
+    this.cadastroInstagram = '';
+    this.cadastroFacebook = '';
     this.descontoPadraoModo = 'Na comanda';
     this.descontoPadraoTexto = '';
     this.notificacoesAtivo = true;
@@ -903,59 +1001,50 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   private hidratarClienteNaForm(c: Cliente): void {
     this.resetCadastroClienteValidacao();
-    this.clienteDrawerObsSnapshot = c.observacoes ?? null;
     this.cadastroNome = String(c.nome ?? '').trim();
     this.clienteDrawerNome =
       this.cadastroNome || this.clienteDrawerNome || 'Cliente';
-    const ex = this.lerExtrasObservacoes(c.observacoes ?? null);
 
-    const celStored = String(ex?.celular ?? '').trim();
-    const telStored = String(ex?.telefoneFixo ?? '').trim();
+    const celStored = String(c.celular ?? '').trim();
+    const telStored = String(c.telefoneFixo ?? '').trim();
     const apiTel = String(c.telefone ?? '').trim();
 
     if (celStored.length > 0) {
-      this.cadastroCelular = this.formatarTelefone(celStored, true);
+      this.cadastroCelular = formatarCelularBr(celStored);
     } else if (apiTel.length > 0) {
-      this.cadastroCelular = this.formatarTelefone(apiTel, true);
+      this.cadastroCelular = formatarCelularBr(apiTel);
     } else {
       this.cadastroCelular = '';
     }
 
-    if (telStored.length > 0) {
-      this.cadastroTelefone = this.formatarTelefone(telStored, false);
-    } else {
-      this.cadastroTelefone = '';
-    }
+    this.cadastroTelefone =
+      telStored.length > 0 ? formatarTelefoneFixoBr(telStored) : '';
 
-    if (ex) {
-      this.cadastroApelido = ex.apelido ?? '';
-      this.cadastroEmail = ex.email ?? '';
-      this.cadastroAniversario = ex.aniversario ?? '';
-      this.cadastroCnpj = ex.cnpj ?? '';
-      this.cadastroCpf = ex.cpf ?? '';
-      this.cadastroRg = ex.rg ?? '';
-      if (typeof ex.descontoPadraoModo === 'string' && ex.descontoPadraoModo.trim()) {
-        this.descontoPadraoModo = ex.descontoPadraoModo;
-      }
-      if (
-        typeof ex.descontoPadraoTexto === 'string' &&
-        ex.descontoPadraoTexto.length > 0
-      ) {
-        this.descontoPadraoTexto = ex.descontoPadraoTexto;
-      }
-      if (typeof ex.notificacoesAtivo === 'boolean') {
-        this.notificacoesAtivo = ex.notificacoesAtivo;
-      }
-      const foto = typeof ex.fotoUrl === 'string' ? ex.fotoUrl.trim() : '';
-      this.cadastroFotoUrl = foto;
-    } else {
-      this.cadastroApelido = '';
-      this.cadastroEmail = '';
-      this.cadastroAniversario = '';
-      this.cadastroCnpj = '';
-      this.cadastroCpf = '';
-      this.cadastroRg = '';
+    this.cadastroApelido = c.apelido ?? '';
+    this.cadastroEmail = c.email ?? '';
+    this.cadastroAniversario = c.aniversario ?? '';
+    this.cadastroCnpj = c.cnpj ?? '';
+    this.cadastroCpf = c.cpf ?? '';
+    this.cadastroRg = c.rg ?? '';
+    if (c.descontoPadraoModo?.trim()) {
+      this.descontoPadraoModo = c.descontoPadraoModo;
     }
+    if (c.descontoPadraoTexto?.trim()) {
+      this.descontoPadraoTexto = c.descontoPadraoTexto;
+    }
+    if (typeof c.notificacoesAtivo === 'boolean') {
+      this.notificacoesAtivo = c.notificacoesAtivo;
+    }
+    this.cadastroFotoUrl = c.fotoUrl?.trim() ?? '';
+    this.cadastroCep = formatarCepBr(c.cep ?? '');
+    this.cadastroLogradouro = c.logradouro ?? '';
+    this.cadastroEnderecoNumero = c.enderecoNumero ?? '';
+    this.cadastroComplemento = c.complemento ?? '';
+    this.cadastroBairro = c.bairro ?? '';
+    this.cadastroEstado = c.estado ?? '';
+    this.cadastroCidade = c.cidade ?? '';
+    this.cadastroInstagram = c.instagram ?? '';
+    this.cadastroFacebook = c.facebook ?? '';
 
     this.cadastroAniversario = formatarDataDdMmYyyy(this.cadastroAniversario);
     this.cadastroCnpj = formatarCnpjBr(this.cadastroCnpj);
@@ -1099,15 +1188,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
       );
     }
     if (this.filtroPagamentoColunaSelecionados.size > 0) {
-      list = list.filter((g) => {
-        const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
-          jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
-        });
-        return (
-          pc != null &&
-          this.filtroPagamentoColunaSelecionados.has(pc)
-        );
-      });
+      list = list.filter((g) =>
+        this.filtroPagamentoColunaSelecionados.has(
+          this.pagamentoColunaGrupo(g),
+        ),
+      );
     }
     return list.slice().sort((a, b) => {
       const pa = this.prioridadeOrdenacaoStatus(a);
@@ -1161,13 +1246,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private prioridadeOrdenacaoStatus(g: ComandaGrupo): number {
     const st = statusComandaColunaFromItem(g.linhas[0]);
     if (st === 'pendente') return 0;
-    const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
-      jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
-    });
+    const pc = this.pagamentoColunaGrupo(g);
     if (pc === 'atrasado') return 1;
     if (pc === 'em_aberto') return 2;
-    if (pc === 'pago') return 3;
-    return 4;
+    return 3;
   }
 
   private readonly epsMoeda = 0.005;
@@ -1258,21 +1340,24 @@ export class ComandasComponent implements OnInit, OnDestroy {
       : 'badge--warn';
   }
 
+  /** Sem faturamento ou sem pagamento registado → «Em aberto». */
+  private pagamentoColunaGrupo(g: ComandaGrupo): PagamentoColuna {
+    return (
+      pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
+        jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
+      }) ?? 'em_aberto'
+    );
+  }
+
   rotuloPagamento(g: ComandaGrupo): string {
-    const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
-      jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
-    });
-    if (pc == null) return '—';
+    const pc = this.pagamentoColunaGrupo(g);
     if (pc === 'pago') return 'Pago';
     if (pc === 'em_aberto') return 'Em aberto';
     return 'Atrasado';
   }
 
   classeBadgePagamento(g: ComandaGrupo): string {
-    const pc = pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
-      jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
-    });
-    if (pc == null) return 'badge--aviso';
+    const pc = this.pagamentoColunaGrupo(g);
     if (pc === 'pago') return 'badge--ok';
     if (pc === 'em_aberto') return 'badge--warn';
     return 'badge--atraso';
@@ -1391,14 +1476,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return id || null;
   }
 
-  editar(g: ComandaGrupo, ev: Event): void {
+  /** Menu da linha: abre o drawer de edição do agendamento desta comanda. */
+  editarAgendamento(g: ComandaGrupo, ev: Event): void {
     ev.stopPropagation();
     this.menuAbertoParaId = null;
     const idAt = this.idAtendimento(g);
-    if (!idAt) return;
-    void this.router.navigate(['/agenda/novo'], {
-      queryParams: { atendimento: idAt },
-    });
+    const ymd = (g.data || '').slice(0, 10);
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.abrirDrawerEditAgendamento(idAt, ymd);
   }
 
   abrirDrawerComanda(g: ComandaGrupo, ev: Event): void {
@@ -1599,12 +1684,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
     const idAt = ctx?.idAtendimento?.trim();
     const ymd = (ctx?.dataYmd ?? '').trim();
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.abrirDrawerEditAgendamento(idAt, ymd);
+  }
 
-    /** Evita dois `app-agenda-novo` empilhados (Novo + Editar) e libera o z-index. */
+  private abrirDrawerEditAgendamento(idAt: string, ymd: string): void {
     if (this.novoAgendamentoAberto) {
       this.fecharNovoAgendamento();
     }
-
     this.editAgendamentoCtx = {
       data: ymd,
       profissional_id: 0,
@@ -1720,14 +1806,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   fecharClienteDrawer(): void {
     if (!this.clienteDrawerAberto) return;
+    this.ocultarClienteNavLockTooltip();
     this.clienteDrawerPanelOpen = false;
     if (this.clienteDrawerCloseTimer != null) clearTimeout(this.clienteDrawerCloseTimer);
     this.clienteDrawerCloseTimer = setTimeout(() => {
       this.clienteDrawerCloseTimer = null;
       this.clienteDrawerAberto = false;
       this.descontoDropdownAberto = false;
+      this.clienteDrawerModo = 'perfil';
       this.clienteDrawerClienteId = null;
-      this.clienteDrawerObsSnapshot = null;
       this.clienteSaveErro = '';
       this.cadastroSalvando = false;
       this.notificacoesToggleLiqArmed = false;
@@ -1745,25 +1832,16 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.descontoDropdownAberto = false;
   }
 
+  onCepCadastroChange(value: string): void {
+    this.cadastroCep = formatarCepBr(value);
+  }
+
   onCelularChange(value: string): void {
-    this.cadastroCelular = this.formatarTelefone(value, true);
+    this.cadastroCelular = formatarCelularBr(value);
   }
 
   onTelefoneChange(value: string): void {
-    this.cadastroTelefone = this.formatarTelefone(value, false);
-  }
-
-  private formatarTelefone(value: string, celular: boolean): string {
-    const digits = (value ?? '').replace(/\D/g, '').slice(0, celular ? 11 : 10);
-    if (digits.length <= 2) return digits ? `(${digits}` : '';
-    const ddd = digits.slice(0, 2);
-    const corpo = digits.slice(2);
-    if (celular) {
-      if (corpo.length <= 5) return `(${ddd}) ${corpo}`;
-      return `(${ddd}) ${corpo.slice(0, 5)}-${corpo.slice(5)}`;
-    }
-    if (corpo.length <= 4) return `(${ddd}) ${corpo}`;
-    return `(${ddd}) ${corpo.slice(0, 4)}-${corpo.slice(4)}`;
+    this.cadastroTelefone = formatarTelefoneFixoBr(value);
   }
 
   onFotoSelecionada(ev: Event): void {
@@ -1773,15 +1851,64 @@ export class ComandasComponent implements OnInit, OnDestroy {
       if (input) input.value = '';
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.cadastroFotoUrl = typeof reader.result === 'string' ? reader.result : '';
-      if (input) input.value = '';
-    };
-    reader.onerror = () => {
-      if (input) input.value = '';
-    };
-    reader.readAsDataURL(file);
+    void this.comprimirFotoCliente(file)
+      .then((dataUrl) => {
+        this.cadastroFotoUrl = dataUrl;
+        this.clienteSaveErro = '';
+      })
+      .catch(() => {
+        this.clienteSaveErro =
+          'Não foi possível processar a imagem. Tente outro arquivo.';
+      })
+      .finally(() => {
+        if (input) input.value = '';
+      });
+  }
+
+  /** Reduz foto para caber em `foto_url` e exibir no drawer sem travar o save. */
+  private comprimirFotoCliente(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const maxSide = 480;
+        let { width, height } = img;
+        if (width > maxSide || height > maxSide) {
+          const ratio = Math.min(maxSide / width, maxSide / height);
+          width = Math.max(1, Math.round(width * ratio));
+          height = Math.max(1, Math.round(height * ratio));
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('canvas'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        let quality = 0.86;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        while (
+          dataUrl.length > ComandasComponent.FOTO_URL_MAX_CHARS &&
+          quality > 0.45
+        ) {
+          quality -= 0.08;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        if (dataUrl.length > ComandasComponent.FOTO_URL_MAX_CHARS) {
+          reject(new Error('too_large'));
+          return;
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('load'));
+      };
+      img.src = url;
+    });
   }
 
   removerFotoSelecionada(): void {

@@ -30,7 +30,6 @@ export class ClientesEditarComponent implements OnInit {
   readonly form = this.fb.nonNullable.group({
     nome: ['', Validators.required],
     telefone: [''],
-    notas: [''],
   });
 
   ngOnInit(): void {
@@ -44,8 +43,7 @@ export class ClientesEditarComponent implements OnInit {
       next: (c) => {
         this.form.patchValue({
           nome: c.nome,
-          telefone: formatarTelefoneBrDeValor(c.telefone),
-          notas: c.observacoes ?? '',
+          telefone: formatarTelefoneBrDeValor(c.telefone ?? c.celular),
         });
         this.carregando = false;
       },
@@ -71,7 +69,6 @@ export class ClientesEditarComponent implements OnInit {
         cliente_id: this.clienteId,
         nome: v.nome,
         telefone: v.telefone || undefined,
-        notas: v.notas || undefined,
       })
       .subscribe({
         next: () => {

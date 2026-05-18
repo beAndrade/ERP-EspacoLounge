@@ -499,6 +499,71 @@ BEGIN
   ) THEN
     ALTER TABLE "clientes" ADD COLUMN "rg" text;
   END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'foto_url'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "foto_url" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'notificacoes_ativo'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "notificacoes_ativo" boolean DEFAULT true NOT NULL;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'desconto_padrao_texto'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "desconto_padrao_texto" text;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'desconto_padrao_modo'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "desconto_padrao_modo" text;
+  END IF;
 END $$;
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = 'observacoes'
+  ) THEN
+    ALTER TABLE "clientes" DROP COLUMN "observacoes";
+  END IF;
+END $$;
+`));
+  /** Endereço e redes (`0030_clientes_endereco_redes`). */
+  for (const col of [
+    'cep',
+    'logradouro',
+    'endereco_numero',
+    'complemento',
+    'bairro',
+    'estado',
+    'cidade',
+    'instagram',
+    'facebook',
+  ]) {
+    await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'clientes' AND c.column_name = '${col}'
+  ) THEN
+    ALTER TABLE "clientes" ADD COLUMN "${col}" text;
+  END IF;
+END $$;
+`));
+  }
 }

@@ -1,4 +1,4 @@
-<div class="comandas-page">
+<div class="list-page comandas-page">
   <div
     class="comandas-layout"
     [class.comandas-layout--filtros-abertos]="filtrosAbertos"
@@ -105,19 +105,19 @@
 
     <div class="comandas-layout__main">
       <div class="comandas-page__lead">
-        <header class="comandas-head">
-          <div class="comandas-head__title-row">
-            <div class="comandas-head__left">
-              <h1 class="comandas-head__title">Comandas</h1>
+        <header class="list-head">
+          <div class="list-head__title-row">
+            <div class="list-head__left">
+              <h1 class="list-head__title">Comandas</h1>
             </div>
-            <div class="comandas-head__actions">
+            <div class="list-head__actions">
               <div
-                class="comandas-head__busca-wrap"
-                [class.comandas-head__busca-wrap--open]="buscaAberta"
+                class="list-head__busca-wrap"
+                [class.list-head__busca-wrap--open]="buscaAberta"
                 role="search"
                 (click)="onBuscaWrapClick()"
               >
-                <span class="comandas-head__busca-icon" aria-hidden="true">
+                <span class="list-head__busca-icon" aria-hidden="true">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
@@ -135,8 +135,8 @@
                   </svg>
                 </span>
                 <span
-                  class="comandas-head__busca-label"
-                  [class.comandas-head__busca-label--hidden]="buscaAberta"
+                  class="list-head__busca-label"
+                  [class.list-head__busca-label--hidden]="buscaAberta"
                   aria-hidden="true"
                   >Buscar</span
                 >
@@ -144,12 +144,12 @@
                 <input
                   id="comandas-busca-input"
                   type="text"
-                  class="comandas-head__busca-input"
+                  class="list-head__busca-input"
                   [(ngModel)]="busca"
                   name="buscaComandas"
                   [placeholder]="buscaPlaceholder"
-                  [class.comandas-head__busca-input--search-open]="buscaAberta"
-                  [class.comandas-head__busca-input--pulse-once-busca]="
+                  [class.list-head__busca-input--search-open]="buscaAberta"
+                  [class.list-head__busca-input--pulse-once-busca]="
                     pulsoToolbarBusca
                   "
                   autocomplete="off"
@@ -162,15 +162,15 @@
               </div>
               <button
                 type="button"
-                class="comandas-head__toolbar-btn"
-                [class.comandas-head__toolbar-btn--filtro-on]="filtrosAbertos"
-                [class.comandas-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+                class="list-head__toolbar-btn"
+                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+                [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
                 (click)="toggleFiltros()"
                 aria-label="Filtrar por período"
                 title="Filtrar"
               >
                 <svg
-                  class="comandas-icon-sm comandas-icon-sm--funnel"
+                  class="list-icon-sm list-icon-sm--funnel"
                   xmlns="http://www.w3.org/2000/svg"
                   width="14"
                   height="14"
@@ -186,18 +186,18 @@
                     d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
                   />
                 </svg>
-                <span class="comandas-head__toolbar-label">Filtrar</span>
+                <span class="list-head__toolbar-label">Filtrar</span>
               </button>
               @if (mostrarAcoesEmMassa) {
                 <button
                   type="button"
-                  class="comandas-head__toolbar-btn comandas-head__toolbar-btn--bulk-delete"
+                  class="list-head__toolbar-btn list-head__toolbar-btn--bulk-delete"
                   (click)="onAcoesEmMassaClick()"
                   aria-label="Excluir selecionadas"
                   title="Excluir"
                 >
                   <svg
-                    class="comandas-icon-sm"
+                    class="list-icon-sm"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
                     height="24"
@@ -213,16 +213,16 @@
                     <path d="M3 6h18" />
                     <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                   </svg>
-                  <span class="comandas-head__toolbar-label">Excluir</span>
+                  <span class="list-head__toolbar-label">Excluir</span>
                 </button>
               }
               <button
                 type="button"
                 (click)="abrirNovoAgendamentoDrawer()"
-                class="comandas-head__toolbar-btn comandas-head__toolbar-btn--link"
+                class="list-head__toolbar-btn list-head__toolbar-btn--link"
               >
                 <svg
-                  class="comandas-icon-sm"
+                  class="list-icon-sm"
                   xmlns="http://www.w3.org/2000/svg"
                   width="14"
                   height="14"
@@ -320,7 +320,9 @@
                   </tr>
                 } @else {
                   @for (g of gruposPagina(); track g.id) {
-                    <tr>
+                    <tr
+                      [class.comandas-table__row--selected]="estaSelecionado(g)"
+                    >
                       <td class="col-check">
                         <input
                           type="checkbox"
@@ -451,18 +453,66 @@
                               (click)="$event.stopPropagation()"
                             >
                               <li role="none">
-                                <button type="button" role="menuitem" (click)="editar(g, $event)">
-                                  Editar
-                                </button>
-                              </li>
-                              <li role="none">
                                 <button
                                   type="button"
                                   role="menuitem"
-                                  class="danger"
+                                  class="row-menu__item row-menu__item--editar-agendamento"
+                                  (click)="editarAgendamento(g, $event)"
+                                >
+                                  <span class="row-menu__item-ico" aria-hidden="true">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="2"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      class="lucide lucide-square-pen-icon lucide-square-pen"
+                                    >
+                                      <path
+                                        d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                                      />
+                                      <path
+                                        d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                                      />
+                                    </svg>
+                                  </span>
+                                  Editar comanda
+                                </button>
+                              </li>
+                              <li role="none" class="row-menu__li--excluir">
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  class="row-menu__item row-menu__item--excluir"
                                   [disabled]="excluindoIdAt === idAtendimento(g)"
                                   (click)="excluir(g, $event)"
                                 >
+                                  <span class="row-menu__item-ico" aria-hidden="true">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="2"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      class="lucide lucide-trash-icon lucide-trash"
+                                    >
+                                      <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+                                      />
+                                      <path d="M3 6h18" />
+                                      <path
+                                        d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                      />
+                                    </svg>
+                                  </span>
                                   {{
                                     excluindoIdAt === idAtendimento(g)
                                       ? 'A excluir…'
@@ -691,6 +741,7 @@
         (salvoComSucesso)="onSalvoNovoAgendamento()"
         (cancelarModal)="fecharNovoAgendamento()"
         (abrirComanda)="abrirComandaDesdeAgendamento($event)"
+        (abrirNovoClienteDrawer)="abrirClienteDrawerNovo()"
       />
     </div>
   }
@@ -724,30 +775,6 @@
       />
     </div>
 
-    @if (editAgendamentoAberto && editAgendamentoCtx) {
-      <div
-        class="overlay overlay--edit-agendamento"
-        [class.overlay--open]="editAgendamentoPanelOpen"
-        aria-hidden="true"
-        (click)="fecharEditAgendamento()"
-      ></div>
-      <div
-        class="app-drawer app-drawer--edit-agendamento"
-        [class.app-drawer--open]="editAgendamentoPanelOpen"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Editar agendamento"
-        (click)="$event.stopPropagation()"
-      >
-        <app-agenda-novo
-          [modoModal]="true"
-          [contextoSlot]="editAgendamentoCtx"
-          (salvoComSucesso)="onSalvoEditAgendamento()"
-          (cancelarModal)="fecharEditAgendamento()"
-        />
-      </div>
-    }
-
     @if (faturarDrawerAberto && faturarCtx) {
       <div
         class="overlay overlay--faturar"
@@ -776,6 +803,31 @@
     }
   }
 
+  @if (editAgendamentoAberto && editAgendamentoCtx) {
+    <div
+      class="overlay overlay--edit-agendamento"
+      [class.overlay--open]="editAgendamentoPanelOpen"
+      aria-hidden="true"
+      (click)="fecharEditAgendamento()"
+    ></div>
+    <div
+      class="app-drawer app-drawer--edit-agendamento"
+      [class.app-drawer--open]="editAgendamentoPanelOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Editar agendamento"
+      (click)="$event.stopPropagation()"
+    >
+      <app-agenda-novo
+        [modoModal]="true"
+        [contextoSlot]="editAgendamentoCtx"
+        (salvoComSucesso)="onSalvoEditAgendamento()"
+        (cancelarModal)="fecharEditAgendamento()"
+        (abrirNovoClienteDrawer)="abrirClienteDrawerNovo()"
+      />
+    </div>
+  }
+
   @if (clienteDrawerAberto) {
     <div
       class="overlay overlay--cliente"
@@ -795,16 +847,18 @@
         <header class="cliente-head">
           <div class="cliente-head__title-wrap">
             <div class="cliente-head__title-row">
-              <span class="cliente-head__user-icon" aria-hidden="true">
-                @if (cadastroFotoUrl) {
-                  <img [src]="cadastroFotoUrl" alt="" />
-                } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round-icon lucide-user-round">
-                    <circle cx="12" cy="8" r="5"/>
-                    <path d="M20 21a8 8 0 0 0-16 0"/>
-                  </svg>
-                }
-              </span>
+              @if (clienteDrawerModo !== 'novo') {
+                <span class="cliente-head__user-icon" aria-hidden="true">
+                  @if (cadastroFotoUrl) {
+                    <img [src]="cadastroFotoUrl" alt="" />
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round-icon lucide-user-round">
+                      <circle cx="12" cy="8" r="5"/>
+                      <path d="M20 21a8 8 0 0 0-16 0"/>
+                    </svg>
+                  }
+                </span>
+              }
               <h2 class="cliente-head__title">{{ tituloCabecalhoClienteDrawer() }}</h2>
             </div>
           </div>
@@ -828,7 +882,7 @@
             </svg>
           </button>
         </header>
-        <div class="cliente-body-scroll">
+        <div class="cliente-body-scroll" (scroll)="ocultarClienteNavLockTooltip()">
           <div class="cliente-body">
             <nav
               class="cliente-nav"
@@ -841,9 +895,20 @@
                   type="button"
                   class="cliente-nav__item"
                   [class.cliente-nav__item--active]="clienteAbaAtiva === aba"
+                  [class.cliente-nav__item--disabled]="abaClienteDesabilitada(aba)"
+                  [attr.aria-disabled]="abaClienteDesabilitada(aba) ? 'true' : null"
+                  [attr.aria-describedby]="
+                    abaClienteDesabilitada(aba) && clienteNavLockTooltipVisible
+                      ? 'cliente-nav-lock-tooltip'
+                      : null
+                  "
                   (click)="selecionarAbaCliente(aba)"
+                  (mouseenter)="onClienteNavTooltipEnter($event, aba)"
+                  (mouseleave)="onClienteNavTooltipLeave(aba)"
+                  (focusin)="onClienteNavTooltipEnter($event, aba, true)"
+                  (focusout)="onClienteNavTooltipLeave(aba)"
                 >
-                  {{ aba }}
+                  <span class="cliente-nav__label">{{ aba }}</span>
                 </button>
               }
             </nav>
@@ -896,14 +961,16 @@
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                       Alterar
                     </button>
-                    <button
-                      type="button"
-                      class="cliente-photo-btn cliente-photo-btn--danger"
-                      (click)="removerFotoSelecionada()"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                      Remover
-                    </button>
+                    @if (cadastroFotoUrl) {
+                      <button
+                        type="button"
+                        class="cliente-photo-btn cliente-photo-btn--danger"
+                        (click)="removerFotoSelecionada()"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        Remover
+                      </button>
+                    }
                   </div>
                 </div>
                 <div class="cliente-form-grid">
@@ -934,7 +1001,13 @@
                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
                         </button>
                       </span>
-                      <input type="text" [(ngModel)]="cadastroApelido" name="cc_apelido" autocomplete="nickname" />
+                      <input
+                        type="text"
+                        [(ngModel)]="cadastroApelido"
+                        name="cc_apelido"
+                        autocomplete="nickname"
+                        placeholder="Apelido"
+                      />
                     </label>
                   </div>
                   <div class="cliente-form-row cliente-form-row--pair">
@@ -950,12 +1023,13 @@
                         >
                           <input
                             type="tel"
-                            [(ngModel)]="cadastroCelular"
+                            [ngModel]="cadastroCelular"
                             (ngModelChange)="onCelularChange($event)"
                             (blur)="blurCadastroCliente('celular')"
                             name="cc_celular"
                             inputmode="numeric"
                             autocomplete="tel-national"
+                            maxlength="15"
                             placeholder="(11) 99999-9999"
                           />
                         </div>
@@ -976,12 +1050,13 @@
                         >
                           <input
                             type="tel"
-                            [(ngModel)]="cadastroTelefone"
+                            [ngModel]="cadastroTelefone"
                             (ngModelChange)="onTelefoneChange($event)"
                             (blur)="blurCadastroCliente('telefone')"
                             name="cc_telefone"
                             inputmode="numeric"
                             autocomplete="tel"
+                            maxlength="14"
                             placeholder="(11) 3333-4444"
                           />
                         </div>
@@ -1023,7 +1098,7 @@
                           (ngModelChange)="onAniversarioCadastroChange($event)"
                           (blur)="blurCadastroCliente('aniversario')"
                           name="cc_aniver"
-                          placeholder="DD/MM/AAAA"
+                          placeholder="dd/mm/aaaa"
                           inputmode="numeric"
                           maxlength="10"
                           autocomplete="bday"
@@ -1125,13 +1200,78 @@
                   [class.cliente-side-content--open]="secaoEnderecoAberta"
                   [attr.aria-hidden]="!secaoEnderecoAberta"
                 >
-                  <label><span class="cliente-field-label">CEP</span><input type="text" placeholder="CEP" /></label>
-                  <label class="full"><span class="cliente-field-label">Logradouro</span><input type="text" placeholder="Rua, Avenida, Travessa..." /></label>
-                  <label><span class="cliente-field-label">Número</span><input type="text" placeholder="Número" /></label>
-                  <label><span class="cliente-field-label">Complemento</span><input type="text" placeholder="Complemento" /></label>
-                  <label><span class="cliente-field-label">Bairro</span><input type="text" placeholder="Bairro" /></label>
-                  <label><span class="cliente-field-label">Estado</span><input type="text" placeholder="Estado" /></label>
-                  <label><span class="cliente-field-label">Cidade</span><input type="text" placeholder="Cidade" /></label>
+                  <label>
+                    <span class="cliente-field-label">CEP</span>
+                    <input
+                      type="text"
+                      [ngModel]="cadastroCep"
+                      (ngModelChange)="onCepCadastroChange($event)"
+                      name="cc_cep"
+                      inputmode="numeric"
+                      maxlength="9"
+                      autocomplete="postal-code"
+                      placeholder="00000-000"
+                    />
+                  </label>
+                  <label class="full">
+                    <span class="cliente-field-label">Logradouro</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="cadastroLogradouro"
+                      name="cc_logradouro"
+                      autocomplete="street-address"
+                      placeholder="Rua, Avenida, Travessa..."
+                    />
+                  </label>
+                  <label>
+                    <span class="cliente-field-label">Número</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="cadastroEnderecoNumero"
+                      name="cc_endereco_numero"
+                      placeholder="Número"
+                    />
+                  </label>
+                  <label>
+                    <span class="cliente-field-label">Complemento</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="cadastroComplemento"
+                      name="cc_complemento"
+                      autocomplete="address-line2"
+                      placeholder="Complemento"
+                    />
+                  </label>
+                  <label>
+                    <span class="cliente-field-label">Bairro</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="cadastroBairro"
+                      name="cc_bairro"
+                      placeholder="Bairro"
+                    />
+                  </label>
+                  <label>
+                    <span class="cliente-field-label">Estado</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="cadastroEstado"
+                      name="cc_estado"
+                      maxlength="2"
+                      autocomplete="address-level1"
+                      placeholder="UF"
+                    />
+                  </label>
+                  <label>
+                    <span class="cliente-field-label">Cidade</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="cadastroCidade"
+                      name="cc_cidade"
+                      autocomplete="address-level2"
+                      placeholder="Cidade"
+                    />
+                  </label>
                 </div>
               </div>
 
@@ -1161,7 +1301,13 @@
                         </svg>
                         instagram.com/
                       </span>
-                      <input type="text" placeholder="Instagram do cliente" />
+                      <input
+                        type="text"
+                        [(ngModel)]="cadastroInstagram"
+                        name="cc_instagram"
+                        autocomplete="off"
+                        placeholder="usuario"
+                      />
                     </div>
                   </label>
                   <label class="cliente-social-field">
@@ -1173,7 +1319,13 @@
                         </svg>
                         facebook.com/
                       </span>
-                      <input type="text" placeholder="Facebook do cliente" />
+                      <input
+                        type="text"
+                        [(ngModel)]="cadastroFacebook"
+                        name="cc_facebook"
+                        autocomplete="off"
+                        placeholder="usuario"
+                      />
                     </div>
                   </label>
                 </div>
@@ -1317,5 +1469,16 @@
         </footer>
       </div>
     </div>
+    @if (clienteNavLockTooltipVisible) {
+      <span
+        id="cliente-nav-lock-tooltip"
+        class="cliente-nav-lock-tooltip"
+        role="tooltip"
+        [style.left.px]="clienteNavLockTooltipX"
+        [style.top.px]="clienteNavLockTooltipY"
+      >
+        Disponível após a criação
+      </span>
+    }
   }
 </div>

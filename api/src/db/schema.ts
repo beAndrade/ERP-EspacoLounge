@@ -45,11 +45,6 @@ export const clientes = pgTable('clientes', {
   idCliente: text('id_cliente').primaryKey(),
   nomeExibido: text('nome_exibido').notNull(),
   telefone: text('telefone'),
-  /**
-   * JSON `{ _elCli: 1, … }` só para extras (foto, texto livre, desconto padrão, notificações).
-   * Cadastro estruturado nas colunas abaixo; a API devolve `observacoes` já reunificado.
-   */
-  observacoes: text('observacoes'),
   /** Saldo de crédito pré-pago (ex.: excesso ao faturar). */
   creditoSaldo: numeric('credito_saldo', { precision: 14, scale: 2 })
     .notNull()
@@ -63,6 +58,21 @@ export const clientes = pgTable('clientes', {
   cnpj: text('cnpj'),
   cpf: text('cpf'),
   rg: text('rg'),
+  fotoUrl: text('foto_url'),
+  notificacoesAtivo: boolean('notificacoes_ativo').notNull().default(true),
+  descontoPadraoTexto: text('desconto_padrao_texto'),
+  descontoPadraoModo: text('desconto_padrao_modo'),
+  cep: text('cep'),
+  logradouro: text('logradouro'),
+  enderecoNumero: text('endereco_numero'),
+  complemento: text('complemento'),
+  bairro: text('bairro'),
+  estado: text('estado'),
+  cidade: text('cidade'),
+  /** Handle ou path após instagram.com/ */
+  instagram: text('instagram'),
+  /** Handle ou path após facebook.com/ */
+  facebook: text('facebook'),
 });
 
 /** Pessoa estável (índice único em `lower(trim(nome))` na migração SQL). */

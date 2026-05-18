@@ -43,7 +43,6 @@ export class ClientesNovoComponent {
   readonly form = this.fb.nonNullable.group({
     nome: ['', nomeClienteValidator],
     telefone: ['', celularBrObrigatorioValidator],
-    notas: [''],
   });
 
   salvar(): void {
@@ -60,7 +59,7 @@ export class ClientesNovoComponent {
       .createCliente({
         nome,
         telefone: tel || undefined,
-        notas: v.notas || undefined,
+        celular: tel || undefined,
       })
       .subscribe({
         next: () => {

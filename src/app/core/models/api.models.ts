@@ -9,19 +9,62 @@ export interface ApiResponse<T> {
   error: ApiError | null;
 }
 
-/**
- * Cliente na API (`GET/PATCH /api/clientes`).
- * Na BD, apelido, email, documentos e telefones extra ficam em colunas próprias;
- * `observacoes` na resposta é sempre JSON reunificado `{ _elCli: 1, … }` para as telas (drawer Comandas, etc.).
- */
+/** Cliente na API (`GET/POST/PATCH /api/clientes`); campos em colunas na BD. */
 export interface Cliente {
   id: string;
   nome: string;
   telefone: string | null;
-  observacoes: string | null;
+  apelido?: string | null;
+  email?: string | null;
+  celular?: string | null;
+  telefoneFixo?: string | null;
+  aniversario?: string | null;
+  cnpj?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  fotoUrl?: string | null;
+  notificacoesAtivo?: boolean;
+  descontoPadraoTexto?: string | null;
+  descontoPadraoModo?: string | null;
+  cep?: string | null;
+  logradouro?: string | null;
+  enderecoNumero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  estado?: string | null;
+  cidade?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
   /** Saldo de crédito pré-pago (ex.: excesso ao faturar). */
   creditoSaldo?: number;
 }
+
+/** Body de `POST/PATCH /api/clientes`. */
+export type ClienteCadastroPayload = {
+  nome: string;
+  telefone?: string;
+  apelido?: string;
+  email?: string;
+  celular?: string;
+  telefoneFixo?: string;
+  aniversario?: string;
+  cnpj?: string;
+  cpf?: string;
+  rg?: string;
+  fotoUrl?: string | null;
+  notificacoesAtivo?: boolean;
+  descontoPadraoTexto?: string;
+  descontoPadraoModo?: string;
+  cep?: string;
+  logradouro?: string;
+  enderecoNumero?: string;
+  complemento?: string;
+  bairro?: string;
+  estado?: string;
+  cidade?: string;
+  instagram?: string;
+  facebook?: string;
+};
 
 /**
  * Linha da aba Serviços; `id` = PK `servicos.id` (= número da linha na planilha, primeira linha de dados = 2).

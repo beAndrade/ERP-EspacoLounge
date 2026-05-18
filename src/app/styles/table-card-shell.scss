@@ -1,0 +1,22 @@
+/**
+ * Cartão de tabela (comandas, clientes, …).
+ * O thead preenche o topo — o recorte fica em `.table-wrap`.
+ */
+.list-table-card,
+.comandas-table-card {
+  border-radius: 0;
+  border-start-start-radius: 14px;
+  border-start-end-radius: 14px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+}
+
+.list-table-card > .table-wrap,
+.comandas-table-card > .table-wrap {
+  overflow: hidden;
+  border-radius: 0;
+  border-start-start-radius: 14px;
+  border-start-end-radius: 14px;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+}

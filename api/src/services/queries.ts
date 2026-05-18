@@ -12,40 +12,7 @@ import {
   regrasMega,
   servicos,
 } from '../db/schema';
-import { mergeObservacoesRespostaApi } from './clientes-cadastro-normalize';
-
-function creditoSaldoNum(v: unknown): number {
-  const n = parseFloat(String(v ?? '0'));
-  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
-}
-
-type ClienteRowDb = InferSelectModel<typeof clientes>;
-
-/** Linha SQL → cliente na API (`observacoes` reunificado para o front). */
-function mapClienteRowToApi(r: ClienteRowDb) {
-  const observacoesMerged = mergeObservacoesRespostaApi({
-    row: {
-      observacoes: r.observacoes ?? null,
-      apelido: r.apelido ?? null,
-      email: r.email ?? null,
-      celular: r.celular ?? null,
-      telefoneFixo: r.telefoneFixo ?? null,
-      aniversario: r.aniversario ?? null,
-      cnpj: r.cnpj ?? null,
-      cpf: r.cpf ?? null,
-      rg: r.rg ?? null,
-    },
-  });
-
-  return {
-    id: String(r.idCliente || ''),
-    nome: String(r.nomeExibido || ''),
-    telefone:
-      r.telefone != null && r.telefone !== '' ? String(r.telefone) : null,
-    observacoes: observacoesMerged,
-    creditoSaldo: creditoSaldoNum(r.creditoSaldo),
-  };
-}
+import { mapClienteRowToApi } from './clientes-cadastro-normalize';
 
 export async function listClientesNormalized(db: Db) {
   const rows = await db.select().from(clientes).orderBy(asc(clientes.nomeExibido));

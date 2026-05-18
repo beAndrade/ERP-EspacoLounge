@@ -199,10 +199,13 @@
   align-items: center;
   justify-content: flex-start;
   gap: 0.5rem;
-  align-self: flex-start;
-  width: calc(100% - 4px);
+  align-self: stretch;
+  width: auto;
   min-height: var(--touch-min);
-  margin: var(--sidebar-nav-tier1-margin);
+  margin-top: 0;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  margin-left: 4px;
   padding: var(--sidebar-nav-tier1-padding);
   border: none;
   border-radius: var(--sidebar-nav-radius);
@@ -353,9 +356,12 @@
 
 /** Configurações (único link de 1.º nível no nav) — mesmo bloco do print 1 */
 .nav--sidebar > .nav-item:not(.nav-item--sub) {
-  align-self: flex-start;
-  width: calc(100% - 4px);
-  margin: var(--sidebar-nav-tier1-margin);
+  align-self: stretch;
+  width: auto;
+  margin-top: 0;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  margin-left: 4px;
   padding: var(--sidebar-nav-tier1-padding);
   background: var(--sidebar-nav-tier1-bg);
   transition: background var(--sidebar-hover-ms) var(--sidebar-nav-ease);
@@ -371,11 +377,14 @@
 
 /** Subitens: hover só altera a cor do fundo da própria área do link (sem deslocar layout). */
 .nav--sidebar .nav-item--sub {
-  align-self: flex-start;
+  align-self: stretch;
   box-sizing: border-box;
-  width: calc(100% - 4px);
-  max-width: calc(100% - 4px);
-  margin: var(--sidebar-nav-tier2-margin);
+  width: auto;
+  max-width: none;
+  margin-top: 0;
+  margin-right: 4px;
+  margin-bottom: 4px;
+  margin-left: 4px;
   padding: var(--sidebar-nav-tier2-padding);
   background: transparent;
   font-size: 0.84rem;
@@ -492,10 +501,13 @@
   align-items: center;
   justify-content: flex-start;
   gap: 0.5rem;
-  align-self: flex-start;
-  width: calc(100% - 4px);
+  align-self: stretch;
+  width: auto;
   min-height: var(--touch-min);
-  margin: var(--sidebar-nav-tier1-margin);
+  margin-top: 0;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  margin-left: 4px;
   padding: var(--sidebar-nav-tier1-padding);
   border: none;
   border-radius: var(--sidebar-nav-radius);
@@ -660,7 +672,7 @@
   overflow-x: hidden;
   margin: 0;
   box-sizing: border-box;
-  padding: 16px 16px 0 8px;
+  padding: 0 0 0 8px;
 }
 
 /* Padrão visual de inputs em todos os drawers da aplicação. */
@@ -698,7 +710,7 @@
 
 @media (max-width: 640px) {
   .main {
-    padding: 16px 16px 0 6px;
+    padding: 0 0 0 6px;
   }
 }
 

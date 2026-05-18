@@ -1,7 +1,6 @@
 import { NgClass } from '@angular/common';
-import { Component, HostListener, OnInit, inject } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -35,8 +34,8 @@ export class AppComponent implements OnInit {
   sidebarCollapsed = false;
 
   /**
-   * Secções Financeiro, Controle, etc. abertas em simultâneo
-   * (cada uma abre/fecha independentemente).
+   * Secções Financeiro, Controle, etc. abertas em simultâneo.
+   * Só mudam ao clicar no trigger — não recolhem ao trocar de rota.
    */
   navExpandOpenIds: NavSidebarDropdownId[] = [];
 
@@ -77,23 +76,6 @@ export class AppComponent implements OnInit {
       }
     } catch {
       /* ignore */
-    }
-
-    this.router.events
-      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(() => {
-        const url = this.router.url;
-        this.navExpandOpenIds = this.navExpandOpenIds.filter((id) =>
-          this.urlMatchesNavDropdownSection(url, id),
-        );
-      });
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(ev: MouseEvent): void {
-    const el = ev.target as HTMLElement | null;
-    if (!el?.closest?.('.app-sidebar')) {
-      this.navExpandOpenIds = [];
     }
   }
 
@@ -145,16 +127,6 @@ export class AppComponent implements OnInit {
 
   togglePrincipal(): void {
     this.principalExpanded = !this.principalExpanded;
-  }
-
-  private urlMatchesNavDropdownSection(
-    url: string,
-    id: NavSidebarDropdownId,
-  ): boolean {
-    const path = url.split('?')[0] ?? '';
-    return this.navDropdownPrefixes[id].some((prefix) =>
-      this.pathMatchesPrefix(path, prefix),
-    );
   }
 
   private pathMatchesPrefix(path: string, prefix: string): boolean {

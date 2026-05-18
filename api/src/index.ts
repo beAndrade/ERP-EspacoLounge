@@ -49,11 +49,34 @@ import {
   listRegrasMegaApi,
   listServicosForApi,
 } from './services/queries';
-import {
-  observacoesColumnFromExtras,
-  splitClienteObservacoesInput,
-  structuredDraftToColumnPatch,
-} from './services/clientes-cadastro-normalize';
+import { columnPatchFromClienteBody } from './services/clientes-cadastro-normalize';
+
+const clienteCadastroBodySchema = t.Object({
+  nome: t.String(),
+  telefone: t.Optional(t.String()),
+  notas: t.Optional(t.String()),
+  apelido: t.Optional(t.String()),
+  email: t.Optional(t.String()),
+  celular: t.Optional(t.String()),
+  telefoneFixo: t.Optional(t.String()),
+  aniversario: t.Optional(t.String()),
+  cnpj: t.Optional(t.String()),
+  cpf: t.Optional(t.String()),
+  rg: t.Optional(t.String()),
+  fotoUrl: t.Optional(t.String()),
+  notificacoesAtivo: t.Optional(t.Boolean()),
+  descontoPadraoTexto: t.Optional(t.String()),
+  descontoPadraoModo: t.Optional(t.String()),
+  cep: t.Optional(t.String()),
+  logradouro: t.Optional(t.String()),
+  enderecoNumero: t.Optional(t.String()),
+  complemento: t.Optional(t.String()),
+  bairro: t.Optional(t.String()),
+  estado: t.Optional(t.String()),
+  cidade: t.Optional(t.String()),
+  instagram: t.Optional(t.String()),
+  facebook: t.Optional(t.String()),
+});
 import { requireAdminPin } from './lib/admin-pin';
 import {
   listFolhaPorPeriodoApi,
@@ -183,8 +206,8 @@ const app = new Elysia({ adapter: node() })
       const nome = String(body.nome || '').trim();
       if (!nome) return fail('VALIDATION', 'Nome do cliente é obrigatório');
       const telefone =
-        body.telefone != null ? String(body.telefone) : null;
-      const split = splitClienteObservacoesInput(body.notas ?? null);
+        body.telefone != null ? String(body.telefone).trim() || null : null;
+      const cadastroPatch = columnPatchFromClienteBody(body);
 
       for (let attempt = 0; attempt < 8; attempt++) {
         const id = await allocNextClienteClId(db);
@@ -193,10 +216,7 @@ const app = new Elysia({ adapter: node() })
             idCliente: id,
             nomeExibido: nome,
             telefone,
-            observacoes: observacoesColumnFromExtras(split.extras),
-            ...(split.fonte === 'json_elcli'
-              ? structuredDraftToColumnPatch(split.structured)
-              : {}),
+            ...cadastroPatch,
           });
           const item = await getClienteById(db, id);
           if (!item) {
@@ -218,13 +238,7 @@ const app = new Elysia({ adapter: node() })
       }
       return fail('SERVER', 'Não foi possível gerar ID de cliente único.');
     },
-    {
-      body: t.Object({
-        nome: t.String(),
-        telefone: t.Optional(t.String()),
-        notas: t.Optional(t.String()),
-      }),
-    },
+    { body: clienteCadastroBodySchema },
   )
   .patch(
     '/api/clientes/:id',
@@ -232,23 +246,13 @@ const app = new Elysia({ adapter: node() })
       const nome = String(body.nome || '').trim();
       if (!nome) return fail('VALIDATION', 'Nome exibido é obrigatório');
       const id = params.id.trim();
-      const split =
-        body.notas != null ? splitClienteObservacoesInput(body.notas) : null;
 
-      const basePatch = {
+      const patchPayload = {
         nomeExibido: nome,
-        telefone: body.telefone != null ? String(body.telefone) : '',
+        telefone:
+          body.telefone != null ? String(body.telefone).trim() || null : null,
+        ...columnPatchFromClienteBody(body, { partial: true }),
       };
-
-      const patchPayload = split
-        ? {
-            ...basePatch,
-            observacoes: observacoesColumnFromExtras(split.extras),
-            ...(split.fonte === 'json_elcli'
-              ? structuredDraftToColumnPatch(split.structured)
-              : {}),
-          }
-        : basePatch;
 
       const updated = await db
         .update(clientes)
@@ -263,11 +267,7 @@ const app = new Elysia({ adapter: node() })
     },
     {
       params: t.Object({ id: t.String() }),
-      body: t.Object({
-        nome: t.String(),
-        telefone: t.Optional(t.String()),
-        notas: t.Optional(t.String()),
-      }),
+      body: clienteCadastroBodySchema,
     },
   )
   .delete(

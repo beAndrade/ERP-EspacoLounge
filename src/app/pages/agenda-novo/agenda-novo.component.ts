@@ -233,6 +233,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output() salvoComSucesso = new EventEmitter<void>();
   @Output() cancelarModal = new EventEmitter<void>();
+  /** Hub modal: abrir drawer de novo cliente (pai reutiliza a ficha de cadastro). */
+  @Output() abrirNovoClienteDrawer = new EventEmitter<void>();
   /**
    * Hub: abrir drawer de comanda. `acessar` = já existe comanda aberta para o cliente na data;
    * `idAtendimento` = pedido a focar (quando existir).
@@ -1700,7 +1702,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   irCriarCliente(): void {
-    this.router.navigate(['/clientes/novo']);
+    if (this.modoModal) {
+      this.abrirNovoClienteDrawer.emit();
+      return;
+    }
+    void this.router.navigate(['/clientes/novo']);
+  }
+
+  /** Após criar cliente no drawer do hub: selecciona no select e actualiza a lista. */
+  aplicarClienteAposCriacao(cliente: Cliente): void {
+    const id = cliente.id?.trim();
+    if (!id) return;
+    if (!this.clientes.some((c) => c.id === id)) {
+      this.clientes = [...this.clientes, cliente];
+    }
+    this.form.patchValue({ cliente_id: id });
+    this.clienteIdControl.markAsDirty();
+    this.clienteIdControl.markAsTouched();
   }
 
   /**

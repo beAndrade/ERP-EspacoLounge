@@ -204,6 +204,20 @@
       "when": 1775697940000,
       "tag": "0028_clientes_campos_cadastro",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1775697941000,
+      "tag": "0029_clientes_drop_observacoes",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1775697942000,
+      "tag": "0030_clientes_endereco_redes",
+      "breakpoints": true
     }
   ]
 }

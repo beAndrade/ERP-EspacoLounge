@@ -330,8 +330,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   /**
-   * Após gravar a ficha no drawer de cliente (comandas): repõe `observacoes`
-   * e restantes campos para a sidebar — o effect não volta a disparar GET sozinho.
+   * Após gravar a ficha no drawer de cliente (comandas): repõe dados do cliente
+   * na sidebar — o effect não volta a disparar GET sozinho.
    */
   recarregarClienteAposSalvarFicha(clienteId: string): void {
     const cid = (clienteId || '').trim();
