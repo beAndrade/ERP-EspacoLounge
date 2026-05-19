@@ -1,6 +1,6 @@
-import type { ComandaLinhaInicial } from '../../core/models/comanda-linha-inicial';
-import type { Cliente } from '../../core/models/api.models';
-import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
+import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
+import type { Cliente } from '../../../../core/models/api.models';
+import type { SaasSelectOption } from '../../../../pages/agenda-novo/saas-select.component';
 
 /** Contexto ao abrir o drawer de comanda a partir do agendamento (mesmo cliente / data). */
 export type ComandaDrawerContextoAgenda = {

@@ -18,9 +18,9 @@ import {
   Cliente,
 } from '../../core/models/api.models';
 import type { ComandaResumoPagamentos } from '../../core/models/api.models';
-import { NovaComandaDrawerComponent } from '../agenda-hub/nova-comanda-drawer.component';
-import { FaturarDrawerComponent } from '../agenda-hub/faturar-drawer.component';
-import type { ComandaDrawerContextoAgenda } from '../agenda-hub/comanda-drawer.types';
+import { NovaComandaDrawerComponent } from '../../features/agenda/pages/hub/nova-comanda-drawer.component';
+import { FaturarDrawerComponent } from '../../features/agenda/pages/hub/faturar-drawer.component';
+import type { ComandaDrawerContextoAgenda } from '../../features/agenda/pages/hub/comanda-drawer.types';
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 import {

@@ -12,22 +12,22 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { catchError, map, of, take, startWith, distinctUntilChanged } from 'rxjs';
-import { AgendaNovoClientSidebarComponent } from '../agenda-novo/agenda-novo-client-sidebar.component';
+import { AgendaNovoClientSidebarComponent } from '../../../../pages/agenda-novo/agenda-novo-client-sidebar.component';
 import type {
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
   Cliente,
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
-} from '../../core/models/api.models';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
+} from '../../../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
   parseFiltroDataDdMm,
   totalLinhaPreferencialAtendimento,
   valorMonetarioParaNumero,
-} from '../../core/utils/atendimento-display';
+} from '../../../../core/utils/atendimento-display';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 
 function formataMoedaBrl(n: number): string {

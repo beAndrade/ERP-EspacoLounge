@@ -13,15 +13,15 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
-import { AgendaModalCalendarComponent } from '../agenda-novo/agenda-modal-calendar.component';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { AgendaModalCalendarComponent } from '../../../../pages/agenda-novo/agenda-modal-calendar.component';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import type {
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
   CriarComandaPagamentoPayload,
   FaturarComandaPayload,
   MetodoPagamentoComanda,
-} from '../../core/models/api.models';
+} from '../../../../core/models/api.models';
 
 function formataMoedaBrl(n: number): string {
   return new Intl.NumberFormat('pt-BR', {

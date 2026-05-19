@@ -14,24 +14,24 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AtendimentoListaItem,
   ProfissionalListaItem,
-} from '../../core/models/api.models';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { minutosMeiaNoiteEmBrasilia } from '../../core/utils/brasilia-time';
-import { diffMinutesEntreHorarios } from '../../core/utils/sql-local-datetime';
+} from '../../../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { minutosMeiaNoiteEmBrasilia } from '../../../../core/utils/brasilia-time';
+import { diffMinutesEntreHorarios } from '../../../../core/utils/sql-local-datetime';
 import {
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
   toYmd,
-} from '../../core/utils/atendimento-display';
+} from '../../../../core/utils/atendimento-display';
 import {
   corHexAgendaPorStatus,
   normalizarAgendaStatusId,
-} from '../../core/utils/agenda-status-card';
-import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
+} from '../../../../core/utils/agenda-status-card';
+import { AgendaNovoComponent } from '../../../../pages/agenda-novo/agenda-novo.component';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import { NovaComandaDrawerComponent } from './nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from './faturar-drawer.component';
-import type { ComandaResumoPagamentos } from '../../core/models/api.models';
+import type { ComandaResumoPagamentos } from '../../../../core/models/api.models';
 
 type CelulaCalendario = { dia: number | null; ymd: string | null };
 
