@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
 import { AgendaComponent } from './pages/agenda/agenda.component';
 import { AgendaHubComponent } from './features/agenda/pages/hub/agenda-hub.component';
-import { AgendaListaComponent } from './pages/agenda-lista/agenda-lista.component';
+import { AgendaListaComponent } from './features/agenda/pages/lista/agenda-lista.component';
 import { AgendaNovoComponent } from './pages/agenda-novo/agenda-novo.component';
 import { ClientesComponent } from './pages/clientes/clientes.component';
 import { ClientesNovoComponent } from './pages/clientes-novo/clientes-novo.component';

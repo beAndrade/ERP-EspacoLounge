@@ -3,14 +3,14 @@ import { RouterLink } from '@angular/router';
 import { DecimalPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { AtendimentoListaItem } from '../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AtendimentoListaItem } from '../../../../core/models/api.models';
 import {
   dataDdMmAaaa,
   parseFiltroDataDdMm,
   toDdMmYyyy,
   valorMonetarioParaNumero,
-} from '../../core/utils/atendimento-display';
+} from '../../../../core/utils/atendimento-display';
 
 registerLocaleData(localePt);
 
