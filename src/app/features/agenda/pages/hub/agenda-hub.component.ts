@@ -27,7 +27,7 @@ import {
   corHexAgendaPorStatus,
   normalizarAgendaStatusId,
 } from '../../../../core/utils/agenda-status-card';
-import { AgendaNovoComponent } from '../../../../pages/agenda-novo/agenda-novo.component';
+import { AgendaNovoComponent } from '../novo/agenda-novo.component';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import { NovaComandaDrawerComponent } from './nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from './faturar-drawer.component';

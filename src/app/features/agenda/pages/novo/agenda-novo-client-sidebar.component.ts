@@ -8,9 +8,9 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
-import { AtendimentoListaItem, Cliente } from '../../core/models/api.models';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { contagensSidebarParaCliente } from '../../core/utils/comanda-status.util';
+import { AtendimentoListaItem, Cliente } from '../../../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { contagensSidebarParaCliente } from '../../../../core/utils/comanda-status.util';
 import {
   SaasSelectComponent,
   type SaasSelectOption,

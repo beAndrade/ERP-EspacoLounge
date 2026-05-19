@@ -2,15 +2,15 @@ import { Component, inject, LOCALE_ID, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { AtendimentoListaItem } from '../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AtendimentoListaItem } from '../../../../core/models/api.models';
 import {
   dataDdMmBarraAaaa,
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
   toYmd,
   valorMonetarioParaNumero,
-} from '../../core/utils/atendimento-display';
+} from '../../../../core/utils/atendimento-display';
 
 registerLocaleData(localePt);
 

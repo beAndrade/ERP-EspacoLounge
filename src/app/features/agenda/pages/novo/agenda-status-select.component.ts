@@ -7,7 +7,7 @@ import {
   Input,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { AGENDA_STATUS_META, type AgendaStatusId } from '../../core/utils/agenda-status-card';
+import { AGENDA_STATUS_META, type AgendaStatusId } from '../../../../core/utils/agenda-status-card';
 
 @Component({
   selector: 'app-agenda-status-select',

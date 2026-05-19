@@ -21,8 +21,8 @@ import type { ComandaResumoPagamentos } from '../../core/models/api.models';
 import { NovaComandaDrawerComponent } from '../../features/agenda/pages/hub/nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from '../../features/agenda/pages/hub/faturar-drawer.component';
 import type { ComandaDrawerContextoAgenda } from '../../features/agenda/pages/hub/comanda-drawer.types';
-import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
-import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
+import { AgendaNovoComponent } from '../../features/agenda/pages/novo/agenda-novo.component';
+import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
 import {
   dataDdMmBarraAaaa,
   ordenarLinhasAtendimentoInPlace,

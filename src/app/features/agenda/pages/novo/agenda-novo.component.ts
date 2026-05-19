@@ -17,7 +17,7 @@ import {
   minutosMeiaNoiteEmBrasilia,
   normalizarHoraHHmm,
   slotInicioFimBrasilia,
-} from '../../core/utils/brasilia-time';
+} from '../../../../core/utils/brasilia-time';
 import {
   addMinutesToParts,
   civilNaiveSalaoParaUtcMs,
@@ -25,7 +25,7 @@ import {
   pad2,
   parseSqlLocalDateTime,
   ymdOfParts,
-} from '../../core/utils/sql-local-datetime';
+} from '../../../../core/utils/sql-local-datetime';
 import {
   ActivatedRoute,
   convertToParamMap,
@@ -68,7 +68,7 @@ import {
   type IntervaloMinutosDia,
 } from './agenda-horario-slots.component';
 import { AgendaStatusSelectComponent } from './agenda-status-select.component';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   expandirDatasRepeticao,
   inferirRepeticaoDasDatasOrdenadas,
@@ -84,8 +84,8 @@ import {
   SaasSelectComponent,
   type SaasSelectOption,
 } from './saas-select.component';
-import type { ComandaLinhaInicial } from '../../core/models/comanda-linha-inicial';
-import { precoUnitarioServicoCatalogo } from '../../core/utils/servico-preco';
+import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
+import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
 import {
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
@@ -99,7 +99,7 @@ import {
   Servico,
   TipoAtendimento,
   TipoLinhaAtendimento,
-} from '../../core/models/api.models';
+} from '../../../../core/models/api.models';
 import {
   compararEtapasMegaPacoteFluxo,
   dataDdMmAaaa,
@@ -108,12 +108,12 @@ import {
   ordenarLinhasAtendimentoInPlace,
   ordenarNomesEtapasMegaPacote,
   valorMonetarioParaNumero,
-} from '../../core/utils/atendimento-display';
+} from '../../../../core/utils/atendimento-display';
 import {
   corHexAgendaPorStatus,
   inferirAgendaStatusPorCorHex,
   normalizarAgendaStatusId,
-} from '../../core/utils/agenda-status-card';
+} from '../../../../core/utils/agenda-status-card';
 
 /** Valor de `<input type="date">`: AAAA-MM-DD válido. */
 function normalizarDataIso(s: string): string | null {

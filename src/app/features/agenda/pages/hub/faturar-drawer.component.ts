@@ -13,7 +13,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
-import { AgendaModalCalendarComponent } from '../../../../pages/agenda-novo/agenda-modal-calendar.component';
+import { AgendaModalCalendarComponent } from '../novo/agenda-modal-calendar.component';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import type {
   ComandaPagamentoItem,

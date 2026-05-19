@@ -12,7 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { catchError, map, of, take, startWith, distinctUntilChanged } from 'rxjs';
-import { AgendaNovoClientSidebarComponent } from '../../../../pages/agenda-novo/agenda-novo-client-sidebar.component';
+import { AgendaNovoClientSidebarComponent } from '../novo/agenda-novo-client-sidebar.component';
 import type {
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
