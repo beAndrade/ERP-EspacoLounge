@@ -50,6 +50,7 @@ import {
   listServicosForApi,
 } from './services/queries';
 import { columnPatchFromClienteBody } from './services/clientes-cadastro-normalize';
+import { assertClienteCadastroUnico } from './services/clientes-unicidade';
 
 const clienteCadastroBodySchema = t.Object({
   nome: t.String(),
@@ -63,7 +64,7 @@ const clienteCadastroBodySchema = t.Object({
   cnpj: t.Optional(t.String()),
   cpf: t.Optional(t.String()),
   rg: t.Optional(t.String()),
-  fotoUrl: t.Optional(t.String()),
+  fotoUrl: t.Optional(t.Union([t.String(), t.Null()])),
   notificacoesAtivo: t.Optional(t.Boolean()),
   descontoPadraoTexto: t.Optional(t.String()),
   descontoPadraoModo: t.Optional(t.String()),
@@ -205,6 +206,12 @@ const app = new Elysia({ adapter: node() })
     async ({ body }) => {
       const nome = String(body.nome || '').trim();
       if (!nome) return fail('VALIDATION', 'Nome do cliente é obrigatório');
+      try {
+        await assertClienteCadastroUnico(db, { ...body, nome });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
       const telefone =
         body.telefone != null ? String(body.telefone).trim() || null : null;
       const cadastroPatch = columnPatchFromClienteBody(body);
@@ -246,6 +253,14 @@ const app = new Elysia({ adapter: node() })
       const nome = String(body.nome || '').trim();
       if (!nome) return fail('VALIDATION', 'Nome exibido é obrigatório');
       const id = params.id.trim();
+      try {
+        await assertClienteCadastroUnico(db, { ...body, nome }, {
+          excludeClienteId: id,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
 
       const patchPayload = {
         nomeExibido: nome,

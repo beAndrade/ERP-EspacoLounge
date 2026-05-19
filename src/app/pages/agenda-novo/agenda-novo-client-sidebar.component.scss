@@ -85,17 +85,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
+  background: transparent;
   color: #7c6d8c;
   flex-shrink: 0;
-  box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.08),
-    0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 .client-sidebar-drawer__avatar--empty {
   color: #a8a0b0;
-  background: #fafafa;
+  background: transparent;
 }
 
 .client-sidebar-drawer__iniciais {

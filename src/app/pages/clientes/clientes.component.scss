@@ -251,11 +251,28 @@
   padding: 0;
 }
 
+.clientes-page .list-table-card {
+  position: relative;
+  overflow: visible;
+  box-shadow: none;
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+  }
+}
+
+.clientes-page .list-table-card > .table-wrap {
+  overflow: visible;
+}
+
 .clientes-th-sort-wrap {
   position: relative;
+  overflow: visible;
 }
 
 .clientes-th-sort {
+  anchor-name: --clientes-sort-nome;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -285,30 +302,42 @@
   min-width: 0;
 }
 
-.clientes-th-sort__chevrons {
+.clientes-th-sort__icons {
   flex: 0 0 auto;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   line-height: 0;
 }
 
-.clientes-th-sort__chev {
+.clientes-th-sort__tri {
   display: block;
   color: #d4d4d8;
+  opacity: 0.4;
+  transform: scale(0.92);
+  transform-origin: center;
+  transition:
+    color 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
   &--on {
     color: var(--color-primary, #505afb);
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
-.clientes-th-sort__tip {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  z-index: 40;
+/** Fora de `.table-wrap` para não ser cortada por `overflow: hidden`. */
+.clientes-page .list-table-card > .clientes-th-sort__tip {
+  position: fixed;
+  z-index: 200;
+  position-anchor: --clientes-sort-nome;
+  left: anchor(center);
+  bottom: anchor(top);
+  margin-bottom: 8px;
   min-width: max-content;
   max-width: 280px;
   padding: 0.6rem 0.85rem;
@@ -321,11 +350,11 @@
   border-radius: 10px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
   opacity: 0;
-  transform: translate(-50%, 6px);
+  translate: -50% 6px;
   pointer-events: none;
   transition:
     opacity 0.22s ease,
-    transform 0.22s ease;
+    translate 0.22s ease;
   white-space: nowrap;
 
   &::after {
@@ -333,16 +362,15 @@
     position: absolute;
     top: 100%;
     left: 50%;
-    transform: translateX(-50%);
+    translate: -50% 0;
     border: 7px solid transparent;
     border-top-color: rgba(0, 0, 0, 0.82);
   }
 }
 
-.clientes-th-sort-wrap:hover .clientes-th-sort__tip,
-.clientes-th-sort-wrap:focus-within .clientes-th-sort__tip {
+.clientes-page .list-table-card > .clientes-th-sort__tip--visible {
   opacity: 1;
-  transform: translate(-50%, 0);
+  translate: -50% 0;
 }
 
 .clientes-table tbody td {
@@ -354,6 +382,33 @@
 
 .clientes-table tbody td.col-nome {
   background: #fafafa;
+}
+
+.clientes-table .col-nome__link {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0 0 5px !important;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: inherit;
+  font-weight: normal;
+  line-height: inherit;
+  color: rgb(80, 90, 251);
+  cursor: pointer;
+  text-decoration: none;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: none;
+    color: rgb(80, 90, 251);
+  }
 }
 
 .clientes-table tbody tr:hover > td:not(.table-body__busy):not(.table-body__empty) {
@@ -370,6 +425,8 @@
 
 .clientes-page .list-footer {
   border-top: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: border-color 0.3s ease;
 }
 
 .clientes-table__col-nome {

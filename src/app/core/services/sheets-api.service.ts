@@ -27,6 +27,7 @@ import {
   Servico,
 } from '../models/api.models';
 import { enriquecerRotuloPacote } from '../utils/pacote-descricao';
+import { extractApiErrorMessage } from '../utils/api-error-message';
 
 @Injectable({ providedIn: 'root' })
 export class SheetsApiService {
@@ -360,8 +361,14 @@ export class SheetsApiService {
     payload: ClienteCadastroPayload,
   ): Observable<Cliente> {
     return this.http
-      .post<ApiResponse<Cliente>>(this.url('/api/clientes'), payload)
-      .pipe(map((raw) => this.unwrap(raw)));
+      .post<ApiResponse<Cliente | { item: Cliente }>>(
+        this.url('/api/clientes'),
+        payload,
+      )
+      .pipe(
+        map((raw) => this.unwrap(raw)),
+        map((d) => this.normalizarClienteResposta(d)),
+      );
   }
 
   updateCliente(
@@ -369,11 +376,25 @@ export class SheetsApiService {
   ): Observable<Cliente> {
     const { cliente_id, ...body } = payload;
     return this.http
-      .patch<ApiResponse<Cliente>>(
+      .patch<ApiResponse<Cliente | { item: Cliente }>>(
         this.url(`/api/clientes/${encodeURIComponent(cliente_id)}`),
         body,
       )
-      .pipe(map((raw) => this.unwrap(raw)));
+      .pipe(
+        map((raw) => this.unwrap(raw)),
+        map((d) => this.normalizarClienteResposta(d)),
+      );
+  }
+
+  /** POST/PATCH devolvem cliente plano; GET usa `{ item }`. */
+  private normalizarClienteResposta(d: Cliente | { item: Cliente }): Cliente {
+    if (d && typeof d === 'object' && 'item' in d) {
+      const wrapped = (d as { item: Cliente }).item;
+      if (wrapped?.id?.trim()) return wrapped;
+    }
+    const flat = d as Cliente;
+    if (flat?.id?.trim()) return flat;
+    throw new Error('Resposta do servidor sem dados do cliente.');
   }
 
   deleteCliente(clienteId: string): Observable<void> {
@@ -843,7 +864,9 @@ export class SheetsApiService {
 
   private unwrap<T>(r: ApiResponse<T>): T {
     if (!r.ok || r.data === null || r.data === undefined) {
-      const msg = r.error?.message ?? 'Resposta inválida do servidor';
+      const msg =
+        r.error?.message?.trim() ||
+        extractApiErrorMessage(r, 'Resposta inválida do servidor');
       throw new Error(msg);
     }
     return r.data;

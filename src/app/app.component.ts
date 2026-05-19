@@ -1,6 +1,8 @@
 import { NgClass } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AppToastComponent } from './shared/app-toast/app-toast.component';
+import { ClienteCadastroDrawerHostComponent } from './shared/cliente-cadastro-drawer/cliente-cadastro-drawer-host.component';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -19,6 +21,8 @@ export type NavSidebarDropdownId =
     RouterLink,
     RouterLinkActive,
     NgClass,
+    ClienteCadastroDrawerHostComponent,
+    AppToastComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',

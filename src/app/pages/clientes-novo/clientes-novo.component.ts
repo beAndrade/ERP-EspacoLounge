@@ -6,9 +6,11 @@ import {
   ReactiveFormsModule,
   ValidationErrors,
 } from '@angular/forms';
+import { switchMap } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { TelefoneBrMaskDirective } from '../../core/directives/telefone-br-mask.directive';
 import { isCelularBr11Digitos } from '../../core/utils/telefone-br';
+import { findClienteCadastroDuplicado } from '../../core/utils/clientes-unicidade';
 
 /** Nome com pelo menos 2 caracteres úteis (após trim). */
 function nomeClienteValidator(control: AbstractControl): ValidationErrors | null {
@@ -46,6 +48,7 @@ export class ClientesNovoComponent {
   });
 
   salvar(): void {
+    if (this.salvando) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -53,14 +56,26 @@ export class ClientesNovoComponent {
     const v = this.form.getRawValue();
     const nome = v.nome.trim();
     const tel = v.telefone.trim();
+    const payload = {
+      nome,
+      telefone: tel || undefined,
+      celular: tel || undefined,
+    };
+
     this.salvando = true;
     this.erro = '';
+
     this.api
-      .createCliente({
-        nome,
-        telefone: tel || undefined,
-        celular: tel || undefined,
-      })
+      .listClientes()
+      .pipe(
+        switchMap((items) => {
+          const dup = findClienteCadastroDuplicado(items ?? [], payload);
+          if (dup) {
+            throw new Error(dup.message);
+          }
+          return this.api.createCliente(payload);
+        }),
+      )
       .subscribe({
         next: () => {
           this.salvando = false;

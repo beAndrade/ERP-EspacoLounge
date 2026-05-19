@@ -3,12 +3,19 @@ import {
   HostListener,
   inject,
   LOCALE_ID,
+  OnDestroy,
   OnInit,
 } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { Cliente } from '../../core/models/api.models';
+import {
+  ClientePerfilAba,
+  ClientePerfilDrawerComponent,
+} from '../../shared/cliente-perfil-drawer/cliente-perfil-drawer.component';
+import { AppToastService } from '../../shared/app-toast/app-toast.service';
+import { ClienteCadastroDrawerService } from '../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
   formatarCpfBr,
   formatarDataDdMmYyyy,
@@ -17,16 +24,20 @@ import { parseFiltroDataDdMm } from '../../core/utils/atendimento-display';
 
 type OrdenacaoNome = 'asc' | 'desc';
 
+const DRAWER_ANIM_MS = 430;
+
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe],
+  imports: [FormsModule, CurrencyPipe, ClientePerfilDrawerComponent],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
 })
-export class ClientesComponent implements OnInit {
+export class ClientesComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
+  private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  private readonly toast = inject(AppToastService);
 
   carregando = false;
   erro = '';
@@ -59,11 +70,32 @@ export class ClientesComponent implements OnInit {
   perPageMenuAberto = false;
 
   ordenacaoNome: OrdenacaoNome = 'asc';
+  /** Tooltip do cabeçalho Nome (só hover; suprimida após clique até sair da célula). */
+  nomeSortTipVisivel = false;
+  private nomeSortTipSuprimida = false;
+  perfilDrawerAberto = false;
+  perfilDrawerPanelOpen = false;
+  perfilDrawerCliente: Cliente | null = null;
+  perfilDrawerAba: ClientePerfilAba = 'Painel';
+  perfilDrawerCarregando = false;
+  private perfilDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private bodyScrollPreDrawer = 0;
+  private pageScrollLockAtivo = false;
   selecionados = new Set<string>();
   excluindoId: string | null = null;
+  excluirModalAberto = false;
+  clientePendenteExclusao: Cliente | null = null;
+  excluindoClienteModal = false;
 
   ngOnInit(): void {
     this.carregar();
+  }
+
+  ngOnDestroy(): void {
+    if (this.perfilDrawerCloseTimer != null) {
+      clearTimeout(this.perfilDrawerCloseTimer);
+    }
+    this.desbloquearScrollPagina();
   }
 
   carregar(): void {
@@ -197,20 +229,190 @@ export class ClientesComponent implements OnInit {
   }
 
   onNovoCliente(): void {
-    /* a definir */
+    this.cadastroDrawer.abrirNovo('', {
+      onSalvo: () => this.carregar(),
+    });
   }
 
-  onEditarCliente(_c: Cliente): void {
-    /* a definir */
+  onEditarCliente(c: Cliente): void {
+    this.abrirPerfilCliente(c);
   }
 
-  onExcluirCliente(_c: Cliente): void {
-    /* a definir */
+  onExcluirCliente(c: Cliente): void {
+    const id = c.id?.trim();
+    if (!id || this.excluindoClienteModal) return;
+    this.clientePendenteExclusao = c;
+    this.excluirModalAberto = true;
   }
 
-  toggleOrdenarNome(): void {
+  fecharModalExcluirCliente(): void {
+    if (this.excluindoClienteModal) return;
+    this.excluirModalAberto = false;
+    this.clientePendenteExclusao = null;
+  }
+
+  confirmarExcluirCliente(): void {
+    const c = this.clientePendenteExclusao;
+    const id = c?.id?.trim();
+    if (!id || this.excluindoClienteModal) {
+      this.fecharModalExcluirCliente();
+      return;
+    }
+    this.excluindoId = id;
+    this.excluindoClienteModal = true;
+    this.erro = '';
+    this.api.deleteCliente(id).subscribe({
+      next: () => {
+        this.excluindoId = null;
+        this.excluindoClienteModal = false;
+        this.excluirModalAberto = false;
+        this.clientePendenteExclusao = null;
+        this.selecionados.delete(id);
+        if (this.perfilDrawerCliente?.id === id) {
+          this.fecharPerfilCliente();
+        }
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.excluindoId = null;
+        this.excluindoClienteModal = false;
+        this.erro =
+          e.message || 'Não foi possível excluir o cliente. Tente novamente.';
+      },
+    });
+  }
+
+  abrirPerfilCliente(cliente: Cliente, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    const id = cliente.id?.trim();
+    if (!id) return;
+
+    this.perfilDrawerCliente = cliente;
+    this.perfilDrawerAba = 'Painel';
+    this.perfilDrawerCarregando = true;
+    this.abrirPerfilDrawerAnimacao();
+
+    this.api.getCliente(id).subscribe({
+      next: (c) => {
+        if (this.perfilDrawerCliente?.id !== id) return;
+        this.perfilDrawerCliente = c;
+        this.perfilDrawerCarregando = false;
+        const ix = this.itens.findIndex((item) => item.id === id);
+        if (ix >= 0) {
+          const next = [...this.itens];
+          next[ix] = c;
+          this.itens = next;
+        }
+      },
+      error: () => {
+        if (this.perfilDrawerCliente?.id === id) {
+          this.perfilDrawerCarregando = false;
+        }
+      },
+    });
+  }
+
+  fecharPerfilCliente(): void {
+    if (!this.perfilDrawerAberto) return;
+    if (this.cadastroDrawer.embutidoAtivo) {
+      this.cadastroDrawer.desanexarEmbutido();
+    }
+    this.perfilDrawerPanelOpen = false;
+    if (this.perfilDrawerCloseTimer != null) {
+      clearTimeout(this.perfilDrawerCloseTimer);
+      this.perfilDrawerCloseTimer = null;
+    }
+    this.perfilDrawerCloseTimer = setTimeout(() => {
+      this.perfilDrawerCloseTimer = null;
+      this.perfilDrawerAberto = false;
+      this.perfilDrawerCliente = null;
+      this.perfilDrawerCarregando = false;
+      this.perfilDrawerAba = 'Painel';
+      this.desbloquearScrollPagina();
+    }, DRAWER_ANIM_MS);
+  }
+
+  onPerfilDrawerAbaChange(aba: ClientePerfilAba): void {
+    this.perfilDrawerAba = aba;
+  }
+
+  onPerfilClienteAtualizado(c: Cliente): void {
+    this.perfilDrawerCliente = c;
+    const id = c.id?.trim();
+    if (!id) return;
+    const ix = this.itens.findIndex((item) => item.id === id);
+    if (ix >= 0) {
+      const next = [...this.itens];
+      next[ix] = c;
+      this.itens = next;
+    }
+  }
+
+  onPerfilClienteSalvoComSucesso(): void {
+    this.fecharPerfilCliente();
+    this.toast.show('Cliente salvo com sucesso!');
+  }
+
+  private abrirPerfilDrawerAnimacao(): void {
+    this.perfilDrawerAberto = true;
+    this.bloquearScrollPagina();
+    this.perfilDrawerPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.perfilDrawerPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  private bloquearScrollPagina(): void {
+    if (this.pageScrollLockAtivo) return;
+    this.bodyScrollPreDrawer = window.scrollY || 0;
+    const gutter = window.innerWidth - document.documentElement.clientWidth;
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top = `-${this.bodyScrollPreDrawer}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    if (gutter > 0) {
+      body.style.paddingRight = `${gutter}px`;
+    }
+    this.pageScrollLockAtivo = true;
+  }
+
+  private desbloquearScrollPagina(): void {
+    if (!this.pageScrollLockAtivo) return;
+    const body = document.body;
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    body.style.width = '';
+    body.style.paddingRight = '';
+    window.scrollTo(0, this.bodyScrollPreDrawer);
+    this.pageScrollLockAtivo = false;
+  }
+
+  onSortNomeMouseEnter(): void {
+    if (!this.nomeSortTipSuprimida) {
+      this.nomeSortTipVisivel = true;
+    }
+  }
+
+  onSortNomeMouseLeave(): void {
+    this.nomeSortTipVisivel = false;
+    this.nomeSortTipSuprimida = false;
+  }
+
+  onOrdenarNomeClick(event: MouseEvent): void {
     this.ordenacaoNome = this.ordenacaoNome === 'asc' ? 'desc' : 'asc';
     this.pagina = 1;
+    this.nomeSortTipVisivel = false;
+    this.nomeSortTipSuprimida = true;
+    (event.currentTarget as HTMLButtonElement | null)?.blur();
   }
 
   /** Tooltip do cabeçalho Nome (próximo clique alterna a direção). */
@@ -410,6 +612,41 @@ export class ClientesComponent implements OnInit {
 
   creditoPositivo(c: Cliente): boolean {
     return (c.creditoSaldo ?? 0) > 0;
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(ev: KeyboardEvent): void {
+    if (this.excluirModalAberto) {
+      ev.preventDefault();
+      if (!this.excluindoClienteModal) {
+        this.fecharModalExcluirCliente();
+      }
+      return;
+    }
+    if (this.cadastroDrawer.isAberto) {
+      ev.preventDefault();
+      this.cadastroDrawer.fechar();
+      return;
+    }
+    if (this.perfilDrawerAberto) {
+      ev.preventDefault();
+      this.fecharPerfilCliente();
+      return;
+    }
+    if (this.filtrosAbertos) {
+      ev.preventDefault();
+      this.filtrosAbertos = false;
+      return;
+    }
+    if (this.perPageMenuAberto) {
+      ev.preventDefault();
+      this.perPageMenuAberto = false;
+      return;
+    }
+    if (this.buscaAberta) {
+      ev.preventDefault();
+      this.fecharPainelBusca();
+    }
   }
 
   @HostListener('document:click', ['$event'])

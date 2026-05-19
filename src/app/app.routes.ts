@@ -14,6 +14,7 @@ import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 import { EstoqueComponent } from './pages/estoque/estoque.component';
 import { ProfissionaisComponent } from './pages/profissionais/profissionais.component';
+import { FornecedoresComponent } from './pages/fornecedores/fornecedores.component';
 import { ComandasComponent } from './pages/comandas/comandas.component';
 
 export const routes: Routes = [
@@ -96,7 +97,7 @@ export const routes: Routes = [
   },
   {
     path: 'fornecedores',
-    component: EmBreveComponent,
+    component: FornecedoresComponent,
     data: { titulo: 'Fornecedores' },
   },
   {

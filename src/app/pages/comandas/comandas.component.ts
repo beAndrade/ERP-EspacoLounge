@@ -11,12 +11,11 @@ import { Router } from '@angular/router';
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, finalize } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import {
   AtendimentoListaItem,
   Cliente,
-  ClienteCadastroPayload,
 } from '../../core/models/api.models';
 import type { ComandaResumoPagamentos } from '../../core/models/api.models';
 import { NovaComandaDrawerComponent } from '../agenda-hub/nova-comanda-drawer.component';
@@ -25,26 +24,13 @@ import type { ComandaDrawerContextoAgenda } from '../agenda-hub/comanda-drawer.t
 import { AgendaNovoComponent } from '../agenda-novo/agenda-novo.component';
 import type { SaasSelectOption } from '../agenda-novo/saas-select.component';
 import {
-  dataDdMmYyyyValida,
-  emailBrValido,
-  formatarCepBr,
-  formatarCnpjBr,
-  formatarCpfBr,
-  formatarDataDdMmYyyy,
-  formatarRgBr9,
-} from '../../core/utils/br-document-masks';
-import {
   dataDdMmBarraAaaa,
   ordenarLinhasAtendimentoInPlace,
   parseFiltroDataDdMm,
   toYmd,
   valorMonetarioParaNumero,
 } from '../../core/utils/atendimento-display';
-import {
-  formatarCelularBr,
-  formatarTelefoneFixoBr,
-  telefoneBrDigitos,
-} from '../../core/utils/telefone-br';
+import { ClienteCadastroDrawerService } from '../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
   pagamentoColunaFromItem,
   statusComandaColunaFromItem,
@@ -53,16 +39,6 @@ import {
 } from '../../core/utils/comanda-status.util';
 
 registerLocaleData(localePt);
-
-type CadastroClienteTouchKey =
-  | 'nome'
-  | 'celular'
-  | 'telefone'
-  | 'email'
-  | 'aniversario'
-  | 'cnpj'
-  | 'cpf'
-  | 'rg';
 
 /** Um grupo por ID de atendimento (mesma lógica que `atendimentos`). */
 interface ComandaGrupo {
@@ -82,7 +58,6 @@ type FiltroPagamentoColunaId = PagamentoColuna;
 
 
 const DRAWER_ANIM_MS = 430;
-const CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS = 200;
 
 function formataMoeda(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -110,6 +85,7 @@ function formataMoeda(n: number): string {
 export class ComandasComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly router = inject(Router);
+  private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
 
   readonly dataDdMmBarraAaaa = dataDdMmBarraAaaa;
 
@@ -222,78 +198,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   } | null = null;
   comandaDataYmdParaFaturar: string | null = null;
 
-  clienteDrawerAberto = false;
-  clienteDrawerPanelOpen = false;
-  /** Tooltip das abas bloqueadas — fora do drawer (evita corte por overflow/transform). */
-  clienteNavLockTooltipVisible = false;
-  clienteNavLockTooltipX = 0;
-  clienteNavLockTooltipY = 0;
-  private clienteNavLockTooltipTimer: ReturnType<typeof setTimeout> | null = null;
-  /** `novo` = cadastro vazio (ex.: a partir do select de cliente no agendamento). */
-  clienteDrawerModo: 'perfil' | 'novo' = 'perfil';
-  clienteDrawerNome = '';
-  clienteAbaAtiva = 'Cadastro';
-  abasCliente = [
-    'Cadastro',
-    'Painel',
-    'Débitos',
-    'Créditos',
-    'Cashback',
-    'Agendamentos',
-    'Vendas',
-    'Pacotes',
-    'Mensagens',
-  ] as const;
-
-  cadastroNome = '';
-  cadastroApelido = '';
-  cadastroCelular = '';
-  cadastroTelefone = '';
-  cadastroEmail = '';
-  cadastroAniversario = '';
-  cadastroCnpj = '';
-  cadastroCpf = '';
-  cadastroRg = '';
-  cadastroFotoUrl = '';
-  cadastroCep = '';
-  cadastroLogradouro = '';
-  cadastroEnderecoNumero = '';
-  cadastroComplemento = '';
-  cadastroBairro = '';
-  cadastroEstado = '';
-  cadastroCidade = '';
-  cadastroInstagram = '';
-  cadastroFacebook = '';
-  secaoEnderecoAberta = false;
-  secaoRedesAberta = false;
-  secaoConfiguracoesAberta = true;
-  descontoDropdownAberto = false;
-  descontoPadraoModo = 'Na comanda';
-  /** Valor livre do desconto (UI «% 0,00»); persistência/API pode formatar depois. */
-  descontoPadraoTexto = '';
-  notificacoesAtivo = true;
-
-  clienteDrawerClienteId: string | null = null;
-  /** Snapshot das observações ao hidratar (merge seguro ao salvar). */
-  clienteSaveErro = '';
-  cadastroSalvando = false;
-  notificacoesToggleLiqArmed = false;
-
-  /** Após tentar salvar, todos os campos podem mostrar erro; blur marca campo. */
-  cadastroSubmetidoCliente = false;
-  private cadastroTouchCliente: Record<CadastroClienteTouchKey, boolean> = {
-    nome: false,
-    celular: false,
-    telefone: false,
-    email: false,
-    aniversario: false,
-    cnpj: false,
-    cpf: false,
-    rg: false,
-  };
-
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
-  private clienteDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private novoAgendamentoCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private editAgendamentoCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -326,10 +231,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
       clearTimeout(this.comandaDrawerCloseTimer);
       this.comandaDrawerCloseTimer = null;
     }
-    if (this.clienteDrawerCloseTimer != null) {
-      clearTimeout(this.clienteDrawerCloseTimer);
-      this.clienteDrawerCloseTimer = null;
-    }
     if (this.editAgendamentoCloseTimer != null) {
       clearTimeout(this.editAgendamentoCloseTimer);
       this.editAgendamentoCloseTimer = null;
@@ -338,7 +239,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
       clearTimeout(this.faturarDrawerCloseTimer);
       this.faturarDrawerCloseTimer = null;
     }
-    this.limparClienteNavLockTooltipTimer();
     this.desbloquearScrollPagina();
   }
 
@@ -370,10 +270,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (t?.closest?.('.comandas-row-menu')) return;
     this.menuAbertoParaId = null;
 
-    if (this.descontoDropdownAberto && !t?.closest?.('.cliente-discount')) {
-      this.descontoDropdownAberto = false;
-    }
-
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.fecharPainelBusca();
     }
@@ -388,9 +284,23 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   fecharBuscaAoEscape(ev: KeyboardEvent): void {
-    if (this.clienteDrawerAberto) {
+    if (this.excluirItemModalAberto) {
       ev.preventDefault();
-      this.fecharClienteDrawer();
+      if (!this.excluindoItemModal) {
+        this.fecharModalExcluirItem();
+      }
+      return;
+    }
+    if (this.excluirMassaModalAberto) {
+      ev.preventDefault();
+      if (!this.excluindoEmMassa) {
+        this.fecharModalExcluirEmMassa();
+      }
+      return;
+    }
+    if (this.cadastroDrawer.isAberto) {
+      ev.preventDefault();
+      this.cadastroDrawer.fechar();
       return;
     }
     if (this.faturarDrawerAberto) {
@@ -548,8 +458,8 @@ export class ComandasComponent implements OnInit, OnDestroy {
   abrirNovoAgendamentoDrawer(): void {
     this.menuAbertoParaId = null;
     this.fecharPainelBusca();
-    if (this.clienteDrawerAberto) {
-      this.fecharClienteDrawer();
+    if (this.cadastroDrawer.isAberto) {
+      this.cadastroDrawer.fechar();
     }
     this.novoAgendamentoCtx = {
       data: toYmd(new Date()),
@@ -602,7 +512,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private desbloquearScrollSeNenhumDrawerAberto(): void {
     if (
       this.comandaPainelAberto ||
-      this.clienteDrawerAberto ||
+      this.cadastroDrawer.isAberto ||
       this.faturarDrawerAberto ||
       this.editAgendamentoAberto ||
       this.novoAgendamentoAberto
@@ -612,444 +522,32 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.desbloquearScrollPagina();
   }
 
-  tituloCabecalhoClienteDrawer(): string {
-    if (this.clienteDrawerModo === 'novo') return 'Novo cliente';
-    return this.clienteDrawerNome.trim() || 'Cliente';
-  }
-
-  ariaLabelClienteDrawer(): string {
-    return this.clienteDrawerModo === 'novo'
-      ? 'Novo cliente'
-      : 'Perfil do cliente';
-  }
-
-  abaClienteDesabilitada(aba: string): boolean {
-    return this.clienteDrawerModo === 'novo' && aba !== 'Cadastro';
-  }
-
-  onClienteNavTooltipEnter(event: Event, aba: string, imediato = false): void {
-    if (!this.abaClienteDesabilitada(aba)) return;
-    const btn = event.currentTarget as HTMLElement;
-    this.limparClienteNavLockTooltipTimer();
-    const mostrar = (): void => this.posicionarClienteNavLockTooltip(btn);
-    if (imediato) {
-      mostrar();
-      return;
-    }
-    this.clienteNavLockTooltipTimer = setTimeout(
-      mostrar,
-      CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS,
-    );
-  }
-
-  onClienteNavTooltipLeave(aba: string): void {
-    if (!this.abaClienteDesabilitada(aba)) return;
-    this.ocultarClienteNavLockTooltip();
-  }
-
-  ocultarClienteNavLockTooltip(): void {
-    this.limparClienteNavLockTooltipTimer();
-    this.clienteNavLockTooltipVisible = false;
-  }
-
-  private posicionarClienteNavLockTooltip(btn: HTMLElement): void {
-    const label = btn.querySelector<HTMLElement>('.cliente-nav__label');
-    if (!label) return;
-    const r = label.getBoundingClientRect();
-    this.clienteNavLockTooltipX = r.left + r.width / 2;
-    this.clienteNavLockTooltipY = r.top;
-    this.clienteNavLockTooltipVisible = true;
-  }
-
-  private limparClienteNavLockTooltipTimer(): void {
-    if (this.clienteNavLockTooltipTimer != null) {
-      clearTimeout(this.clienteNavLockTooltipTimer);
-      this.clienteNavLockTooltipTimer = null;
-    }
-  }
-
   ariaLabelComandaDrawer(): string {
     return this.comandaDrawerContexto?.idAtendimento?.trim()
       ? 'Editando comanda'
       : 'Nova comanda';
   }
 
-  selecionarAbaCliente(aba: string): void {
-    if (this.abaClienteDesabilitada(aba)) return;
-    this.clienteAbaAtiva = aba;
-  }
-
   /** Abre o drawer de cadastro vazio (botão «Criar cliente» no agendamento). */
   abrirClienteDrawerNovo(): void {
-    this.clienteSaveErro = '';
-    this.cadastroSalvando = false;
-    this.notificacoesToggleLiqArmed = false;
-    this.clienteDrawerModo = 'novo';
-    this.clienteDrawerClienteId = null;
-    this.clienteDrawerNome = 'Novo cliente';
-    this.preencherCadastroClienteFormularioVazio('');
-    this.clienteAbaAtiva = 'Cadastro';
-    this.abrirPainelClienteDrawer();
-  }
-
-  /** Índice da aba ativa para animar a barra direita na `.cliente-nav` (desktop). */
-  abaAtivaClienteIndex(): number {
-    const lista = this.abasCliente as readonly string[];
-    const ix = lista.indexOf(this.clienteAbaAtiva);
-    return ix >= 0 ? ix : 0;
-  }
-
-  private resetCadastroClienteValidacao(): void {
-    this.cadastroSubmetidoCliente = false;
-    this.cadastroTouchCliente = {
-      nome: false,
-      celular: false,
-      telefone: false,
-      email: false,
-      aniversario: false,
-      cnpj: false,
-      cpf: false,
-      rg: false,
-    };
-  }
-
-  blurCadastroCliente(campo: CadastroClienteTouchKey): void {
-    this.cadastroTouchCliente[campo] = true;
-  }
-
-  private deveMostrarErroCadastroCliente(
-    campo: CadastroClienteTouchKey,
-  ): boolean {
-    return (
-      this.cadastroTouchCliente[campo] || this.cadastroSubmetidoCliente
-    );
-  }
-
-  erroClienteCampo(campo: CadastroClienteTouchKey): string | null {
-    if (!this.deveMostrarErroCadastroCliente(campo)) return null;
-    switch (campo) {
-      case 'nome':
-        return this.cadastroNome.trim() ? null : 'Campo obrigatório';
-      case 'celular': {
-        const d = telefoneBrDigitos(this.cadastroCelular);
-        if (d.length === 0) return null;
-        return d.length === 11 ? null : 'Celular deve ter 11 dígitos';
-      }
-      case 'telefone': {
-        const d = telefoneBrDigitos(this.cadastroTelefone);
-        if (d.length === 0) return null;
-        return d.length === 10 ? null : 'Telefone deve ter 10 dígitos';
-      }
-      case 'email':
-        return emailBrValido(this.cadastroEmail) ? null : 'E-mail inválido';
-      case 'aniversario': {
-        const d = ComandasComponent.apenasDigitos(this.cadastroAniversario);
-        if (d.length === 0) return null;
-        if (d.length !== 8 || !dataDdMmYyyyValida(d)) return 'Data inválida';
-        return null;
-      }
-      case 'cnpj': {
-        const d = ComandasComponent.apenasDigitos(this.cadastroCnpj);
-        if (d.length === 0) return null;
-        return d.length === 14 ? null : 'CNPJ inválido';
-      }
-      case 'cpf': {
-        const d = ComandasComponent.apenasDigitos(this.cadastroCpf);
-        if (d.length === 0) return null;
-        return d.length === 11 ? null : 'CPF inválido';
-      }
-      case 'rg': {
-        const d = ComandasComponent.apenasDigitos(this.cadastroRg);
-        if (d.length === 0) return null;
-        return d.length === 9 ? null : 'RG inválido';
-      }
-      default:
-        return null;
-    }
-  }
-
-  onAniversarioCadastroChange(value: string): void {
-    this.cadastroAniversario = formatarDataDdMmYyyy(value);
-  }
-
-  onCpfCadastroChange(value: string): void {
-    this.cadastroCpf = formatarCpfBr(value);
-  }
-
-  onCnpjCadastroChange(value: string): void {
-    this.cadastroCnpj = formatarCnpjBr(value);
-  }
-
-  onRgCadastroChange(value: string): void {
-    this.cadastroRg = formatarRgBr9(value);
-  }
-
-  salvarClienteDrawer(): void {
-    this.clienteSaveErro = '';
-    this.cadastroSubmetidoCliente = true;
-    const campos: CadastroClienteTouchKey[] = [
-      'nome',
-      'celular',
-      'telefone',
-      'email',
-      'aniversario',
-      'cnpj',
-      'cpf',
-      'rg',
-    ];
-    if (campos.some((k) => this.erroClienteCampo(k) != null)) {
-      return;
-    }
-
-    const nome = this.cadastroNome.trim();
-    const telefone = this.telefonePrioritarioParaApi().trim();
-    const cadastro = this.montarPayloadCadastroCliente(nome, telefone);
-    if (!cadastro) return;
-
-    this.cadastroSalvando = true;
-    const finalizeFn = (): void => {
-      this.cadastroSalvando = false;
-    };
-
-    const onOk = (salvo?: Cliente): void => {
-      this.atualizarGruposECatalogo();
-      const cidSalvo = (salvo?.id ?? this.clienteDrawerClienteId ?? '').trim();
-      if (salvo?.id) {
-        const ix = this.clientesCatalogo.findIndex((c) => c.id === salvo.id);
-        if (ix >= 0) {
-          const next = [...this.clientesCatalogo];
-          next[ix] = salvo;
-          this.clientesCatalogo = next;
-        } else if (this.clienteDrawerModo === 'novo') {
-          this.clientesCatalogo = [...this.clientesCatalogo, salvo];
+    this.cadastroDrawer.abrirNovo('', {
+      onSalvo: (salvo) => {
+        this.atualizarGruposECatalogo();
+        const cid = (salvo.id ?? '').trim();
+        if (cid) {
+          const ix = this.clientesCatalogo.findIndex((c) => c.id === cid);
+          if (ix >= 0) {
+            const next = [...this.clientesCatalogo];
+            next[ix] = salvo;
+            this.clientesCatalogo = next;
+          } else {
+            this.clientesCatalogo = [...this.clientesCatalogo, salvo];
+          }
+          this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cid);
         }
-      }
-      if (this.clienteDrawerModo === 'novo' && salvo) {
         this.agendaEditComandaRef?.aplicarClienteAposCriacao(salvo);
-      }
-      if (cidSalvo) {
-        this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cidSalvo);
-      }
-      this.fecharClienteDrawer();
-    };
-
-    const onErr = (e: unknown): void => {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : 'Não foi possível salvar o cliente. Tente novamente.';
-      this.clienteSaveErro = msg;
-    };
-
-    if (this.clienteDrawerClienteId) {
-      this.api
-        .updateCliente({
-          cliente_id: this.clienteDrawerClienteId,
-          ...cadastro,
-        })
-        .pipe(finalize(finalizeFn))
-        .subscribe({ next: (atualizado) => onOk(atualizado), error: onErr });
-    } else {
-      this.api
-        .createCliente(cadastro)
-        .pipe(finalize(finalizeFn))
-        .subscribe({
-          next: (criado) => onOk(criado),
-          error: onErr,
-        });
-    }
-  }
-
-  private pulseClienteToggleVisual(ev: Event): void {
-    ev.stopPropagation();
-    const el = ev.currentTarget;
-    if (!(el instanceof HTMLElement)) return;
-    el.classList.remove('toggle--pulse');
-    void el.offsetWidth;
-    el.classList.add('toggle--pulse');
-    window.setTimeout(() => {
-      el.classList.remove('toggle--pulse');
-    }, 1500);
-  }
-
-  onNotificacoesToggleClick(ev: Event): void {
-    this.pulseClienteToggleVisual(ev);
-    this.notificacoesAtivo = !this.notificacoesAtivo;
-    this.armNotificacoesToggleLiq();
-  }
-
-  onNotificacoesToggleKeydown(ev: KeyboardEvent): void {
-    if (ev.key !== 'Enter' && ev.key !== ' ') return;
-    ev.preventDefault();
-    this.onNotificacoesToggleClick(ev);
-  }
-
-  private armNotificacoesToggleLiq(): void {
-    if (this.notificacoesToggleLiqArmed) return;
-    this.notificacoesToggleLiqArmed = true;
-  }
-
-  /** Limite conservador para `data:` em `foto_url` (text no Postgres). */
-  private static readonly FOTO_URL_MAX_CHARS = 520_000;
-
-  private montarPayloadCadastroCliente(
-    nome: string,
-    telefone: string,
-  ): ClienteCadastroPayload | null {
-    const rawFoto = (this.cadastroFotoUrl ?? '').trim();
-    let fotoUrl: string | null = null;
-    if (rawFoto) {
-      const okHttp =
-        rawFoto.startsWith('http://') || rawFoto.startsWith('https://');
-      const okData = rawFoto.startsWith('data:image/');
-      if (
-        (okHttp || okData) &&
-        rawFoto.length <= ComandasComponent.FOTO_URL_MAX_CHARS
-      ) {
-        fotoUrl = rawFoto;
-      } else {
-        this.clienteSaveErro =
-          'A foto não pôde ser incluída (arquivo grande demais). Tente outra imagem.';
-        return null;
-      }
-    }
-    return {
-      nome,
-      telefone: telefone || undefined,
-      apelido: this.cadastroApelido.trim() || undefined,
-      email: this.cadastroEmail.trim() || undefined,
-      celular: this.cadastroCelular.trim() || undefined,
-      telefoneFixo: this.cadastroTelefone.trim() || undefined,
-      aniversario: this.cadastroAniversario.trim() || undefined,
-      cnpj: this.cadastroCnpj.trim() || undefined,
-      cpf: this.cadastroCpf.trim() || undefined,
-      rg: this.cadastroRg.trim() || undefined,
-      notificacoesAtivo: this.notificacoesAtivo,
-      descontoPadraoTexto: this.descontoPadraoTexto.trim() || undefined,
-      descontoPadraoModo: this.descontoPadraoModo || undefined,
-      fotoUrl,
-      cep: this.cadastroCep.trim() || undefined,
-      logradouro: this.cadastroLogradouro.trim() || undefined,
-      enderecoNumero: this.cadastroEnderecoNumero.trim() || undefined,
-      complemento: this.cadastroComplemento.trim() || undefined,
-      bairro: this.cadastroBairro.trim() || undefined,
-      estado: this.cadastroEstado.trim() || undefined,
-      cidade: this.cadastroCidade.trim() || undefined,
-      instagram:
-        ComandasComponent.normalizarHandleRede(this.cadastroInstagram) ||
-        undefined,
-      facebook:
-        ComandasComponent.normalizarHandleRede(this.cadastroFacebook) ||
-        undefined,
-    };
-  }
-
-  private static normalizarHandleRede(value: string): string {
-    let s = String(value ?? '').trim();
-    if (!s) return '';
-    s = s.replace(/^https?:\/\//i, '');
-    s = s.replace(/^(www\.)?instagram\.com\//i, '');
-    s = s.replace(/^(www\.)?facebook\.com\//i, '');
-    return s.replace(/^\/+/, '').replace(/\/+$/, '');
-  }
-
-  private telefonePrioritarioParaApi(): string {
-    const c = ComandasComponent.apenasDigitos(this.cadastroCelular);
-    const f = ComandasComponent.apenasDigitos(this.cadastroTelefone);
-    if (c.length > 0) return this.cadastroCelular.trim();
-    if (f.length > 0) return this.cadastroTelefone.trim();
-    return '';
-  }
-
-  private static apenasDigitos(s: string): string {
-    return (s ?? '').replace(/\D/g, '');
-  }
-
-  private preencherCadastroClienteFormularioVazio(
-    nomeTituloListaOuVazio: string,
-  ): void {
-    const nomeLista = nomeTituloListaOuVazio.trim();
-    this.clienteDrawerNome = nomeLista || 'Cliente';
-    this.cadastroNome = nomeLista;
-    this.cadastroApelido = '';
-    this.cadastroCelular = '';
-    this.cadastroTelefone = '';
-    this.cadastroEmail = '';
-    this.cadastroAniversario = '';
-    this.cadastroCnpj = '';
-    this.cadastroCpf = '';
-    this.cadastroRg = '';
-    this.cadastroFotoUrl = '';
-    this.cadastroCep = '';
-    this.cadastroLogradouro = '';
-    this.cadastroEnderecoNumero = '';
-    this.cadastroComplemento = '';
-    this.cadastroBairro = '';
-    this.cadastroEstado = '';
-    this.cadastroCidade = '';
-    this.cadastroInstagram = '';
-    this.cadastroFacebook = '';
-    this.descontoPadraoModo = 'Na comanda';
-    this.descontoPadraoTexto = '';
-    this.notificacoesAtivo = true;
-    this.resetCadastroClienteValidacao();
-  }
-
-  private preencherCadastroClienteInicialDoGrupo(g: ComandaGrupo): void {
-    this.preencherCadastroClienteFormularioVazio(g.nomeCliente?.trim() ?? '');
-  }
-
-  private hidratarClienteNaForm(c: Cliente): void {
-    this.resetCadastroClienteValidacao();
-    this.cadastroNome = String(c.nome ?? '').trim();
-    this.clienteDrawerNome =
-      this.cadastroNome || this.clienteDrawerNome || 'Cliente';
-
-    const celStored = String(c.celular ?? '').trim();
-    const telStored = String(c.telefoneFixo ?? '').trim();
-    const apiTel = String(c.telefone ?? '').trim();
-
-    if (celStored.length > 0) {
-      this.cadastroCelular = formatarCelularBr(celStored);
-    } else if (apiTel.length > 0) {
-      this.cadastroCelular = formatarCelularBr(apiTel);
-    } else {
-      this.cadastroCelular = '';
-    }
-
-    this.cadastroTelefone =
-      telStored.length > 0 ? formatarTelefoneFixoBr(telStored) : '';
-
-    this.cadastroApelido = c.apelido ?? '';
-    this.cadastroEmail = c.email ?? '';
-    this.cadastroAniversario = c.aniversario ?? '';
-    this.cadastroCnpj = c.cnpj ?? '';
-    this.cadastroCpf = c.cpf ?? '';
-    this.cadastroRg = c.rg ?? '';
-    if (c.descontoPadraoModo?.trim()) {
-      this.descontoPadraoModo = c.descontoPadraoModo;
-    }
-    if (c.descontoPadraoTexto?.trim()) {
-      this.descontoPadraoTexto = c.descontoPadraoTexto;
-    }
-    if (typeof c.notificacoesAtivo === 'boolean') {
-      this.notificacoesAtivo = c.notificacoesAtivo;
-    }
-    this.cadastroFotoUrl = c.fotoUrl?.trim() ?? '';
-    this.cadastroCep = formatarCepBr(c.cep ?? '');
-    this.cadastroLogradouro = c.logradouro ?? '';
-    this.cadastroEnderecoNumero = c.enderecoNumero ?? '';
-    this.cadastroComplemento = c.complemento ?? '';
-    this.cadastroBairro = c.bairro ?? '';
-    this.cadastroEstado = c.estado ?? '';
-    this.cadastroCidade = c.cidade ?? '';
-    this.cadastroInstagram = c.instagram ?? '';
-    this.cadastroFacebook = c.facebook ?? '';
-
-    this.cadastroAniversario = formatarDataDdMmYyyy(this.cadastroAniversario);
-    this.cadastroCnpj = formatarCnpjBr(this.cadastroCnpj);
-    this.cadastroCpf = formatarCpfBr(this.cadastroCpf);
-    this.cadastroRg = formatarRgBr9(this.cadastroRg);
+      },
+    });
   }
 
   private atualizarGruposECatalogo(): void {
@@ -1533,17 +1031,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.comandaDrawerCloseTimer = null;
       }
     }
-    this.clienteSaveErro = '';
-    this.cadastroSalvando = false;
-    this.notificacoesToggleLiqArmed = false;
-    this.clienteDrawerModo = 'perfil';
-    this.clienteDrawerClienteId = this.idCliente(g);
-    this.preencherCadastroClienteInicialDoGrupo(g);
-    this.clienteAbaAtiva = 'Cadastro';
-    this.abrirPainelClienteDrawer();
-
-    const cid = this.clienteDrawerClienteId;
-    if (cid) this.carregarClienteNoDrawer(cid);
+    const cid = this.idCliente(g);
+    if (!cid) return;
+    this.cadastroDrawer.abrirEdicao(cid, {
+      nomeLista: g.nomeCliente?.trim() ?? '',
+      callbacks: {
+        onSalvo: () => this.atualizarGruposECatalogo(),
+      },
+    });
   }
 
   /**
@@ -1555,66 +1050,37 @@ export class ComandasComponent implements OnInit, OnDestroy {
     const cid = ctx?.clienteId?.trim();
     if (!cid) return;
 
-    this.clienteSaveErro = '';
-    this.cadastroSalvando = false;
-    this.notificacoesToggleLiqArmed = false;
-    this.clienteDrawerModo = 'perfil';
-    this.clienteDrawerClienteId = cid;
-
     const nomeLista = String(ctx?.cliente?.nome ?? '').trim();
-    this.preencherCadastroClienteFormularioVazio(nomeLista);
-
-    this.clienteAbaAtiva = 'Cadastro';
-    this.abrirPainelClienteDrawer();
-    this.carregarClienteNoDrawer(cid);
-  }
-
-  private carregarClienteNoDrawer(cid: string): void {
-    this.api.getCliente(cid).subscribe({
-      next: (c) => {
-        if (this.clienteDrawerClienteId !== cid) return;
-        this.hidratarClienteNaForm(c);
-
-        /** Mantém objeto do contexto da comanda alinhado ao catálogo após próximo refresh. */
-        const ctxId = this.comandaDrawerContexto?.clienteId?.trim();
-        if (
-          ctxId === cid &&
-          this.comandaDrawerContexto != null &&
-          this.comandaDrawerContexto.clienteId === cid
-        ) {
-          this.comandaDrawerContexto = {
-            ...this.comandaDrawerContexto,
-            cliente: c,
-          };
-        }
-
-        /** Atualiza cópia no catálogo em memória (nome / telefone no drawer da comanda). */
-        const ix = this.clientesCatalogo.findIndex((cl) => cl.id === cid);
-        if (ix >= 0) {
-          const next = [...this.clientesCatalogo];
-          next[ix] = c;
-          this.clientesCatalogo = next;
-        }
+    this.cadastroDrawer.abrirEdicao(cid, {
+      nomeLista,
+      callbacks: {
+        onClienteCarregado: (c) => {
+          const ctxId = this.comandaDrawerContexto?.clienteId?.trim();
+          if (
+            ctxId === cid &&
+            this.comandaDrawerContexto != null &&
+            this.comandaDrawerContexto.clienteId === cid
+          ) {
+            this.comandaDrawerContexto = {
+              ...this.comandaDrawerContexto,
+              cliente: c,
+            };
+          }
+          const ix = this.clientesCatalogo.findIndex((cl) => cl.id === cid);
+          if (ix >= 0) {
+            const next = [...this.clientesCatalogo];
+            next[ix] = c;
+            this.clientesCatalogo = next;
+          }
+        },
+        onSalvo: (salvo) => {
+          this.atualizarGruposECatalogo();
+          const cidSalvo = (salvo.id ?? cid).trim();
+          if (cidSalvo) {
+            this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cidSalvo);
+          }
+        },
       },
-      error: () => {
-        if (this.clienteDrawerClienteId === cid) {
-          this.clienteSaveErro =
-            'Não foi possível carregar os dados do cliente.';
-        }
-      },
-    });
-  }
-
-  private abrirPainelClienteDrawer(): void {
-    /** Ao reabrir o drawer, apenas «Configurações» fica expandido no aside. */
-    this.secaoEnderecoAberta = false;
-    this.secaoRedesAberta = false;
-    this.secaoConfiguracoesAberta = true;
-
-    this.abrirDrawerComAnimacao(() => {
-      this.clienteDrawerAberto = true;
-    }, (open) => {
-      this.clienteDrawerPanelOpen = open;
     });
   }
 
@@ -1802,117 +1268,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }
     this.fecharComandaDrawerSemRecarregar();
     void this.router.navigate(['/comandas']).then(() => this.carregar());
-  }
-
-  fecharClienteDrawer(): void {
-    if (!this.clienteDrawerAberto) return;
-    this.ocultarClienteNavLockTooltip();
-    this.clienteDrawerPanelOpen = false;
-    if (this.clienteDrawerCloseTimer != null) clearTimeout(this.clienteDrawerCloseTimer);
-    this.clienteDrawerCloseTimer = setTimeout(() => {
-      this.clienteDrawerCloseTimer = null;
-      this.clienteDrawerAberto = false;
-      this.descontoDropdownAberto = false;
-      this.clienteDrawerModo = 'perfil';
-      this.clienteDrawerClienteId = null;
-      this.clienteSaveErro = '';
-      this.cadastroSalvando = false;
-      this.notificacoesToggleLiqArmed = false;
-      this.desbloquearScrollSeNenhumDrawerAberto();
-    }, DRAWER_ANIM_MS);
-  }
-
-  toggleDescontoDropdown(ev: Event): void {
-    ev.stopPropagation();
-    this.descontoDropdownAberto = !this.descontoDropdownAberto;
-  }
-
-  selecionarDescontoModo(modo: string): void {
-    this.descontoPadraoModo = modo;
-    this.descontoDropdownAberto = false;
-  }
-
-  onCepCadastroChange(value: string): void {
-    this.cadastroCep = formatarCepBr(value);
-  }
-
-  onCelularChange(value: string): void {
-    this.cadastroCelular = formatarCelularBr(value);
-  }
-
-  onTelefoneChange(value: string): void {
-    this.cadastroTelefone = formatarTelefoneFixoBr(value);
-  }
-
-  onFotoSelecionada(ev: Event): void {
-    const input = ev.target as HTMLInputElement | null;
-    const file = input?.files?.[0];
-    if (!file || !file.type.startsWith('image/')) {
-      if (input) input.value = '';
-      return;
-    }
-    void this.comprimirFotoCliente(file)
-      .then((dataUrl) => {
-        this.cadastroFotoUrl = dataUrl;
-        this.clienteSaveErro = '';
-      })
-      .catch(() => {
-        this.clienteSaveErro =
-          'Não foi possível processar a imagem. Tente outro arquivo.';
-      })
-      .finally(() => {
-        if (input) input.value = '';
-      });
-  }
-
-  /** Reduz foto para caber em `foto_url` e exibir no drawer sem travar o save. */
-  private comprimirFotoCliente(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        const maxSide = 480;
-        let { width, height } = img;
-        if (width > maxSide || height > maxSide) {
-          const ratio = Math.min(maxSide / width, maxSide / height);
-          width = Math.max(1, Math.round(width * ratio));
-          height = Math.max(1, Math.round(height * ratio));
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('canvas'));
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        let quality = 0.86;
-        let dataUrl = canvas.toDataURL('image/jpeg', quality);
-        while (
-          dataUrl.length > ComandasComponent.FOTO_URL_MAX_CHARS &&
-          quality > 0.45
-        ) {
-          quality -= 0.08;
-          dataUrl = canvas.toDataURL('image/jpeg', quality);
-        }
-        if (dataUrl.length > ComandasComponent.FOTO_URL_MAX_CHARS) {
-          reject(new Error('too_large'));
-          return;
-        }
-        resolve(dataUrl);
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('load'));
-      };
-      img.src = url;
-    });
-  }
-
-  removerFotoSelecionada(): void {
-    this.cadastroFotoUrl = '';
   }
 
   private opcoesClientes(): SaasSelectOption[] {

@@ -317,50 +317,44 @@
                       title="Selecionar página"
                     />
                   </th>
-                  <th class="col-nome clientes-th-sort-wrap" scope="col">
+                  <th
+                    class="col-nome clientes-th-sort-wrap"
+                    scope="col"
+                    (mouseenter)="onSortNomeMouseEnter()"
+                    (mouseleave)="onSortNomeMouseLeave()"
+                  >
                     <button
                       type="button"
                       class="clientes-th-sort"
-                      (click)="toggleOrdenarNome()"
+                      (click)="onOrdenarNomeClick($event)"
                       [attr.aria-label]="'Ordenar por nome — ' + tooltipOrdenacaoNome()"
                     >
                       <span class="clientes-th-sort__label">Nome</span>
-                      <span class="clientes-th-sort__chevrons" aria-hidden="true">
+                      <span class="clientes-th-sort__icons" aria-hidden="true">
                         <svg
-                          class="clientes-th-sort__chev clientes-th-sort__chev--up"
-                          [class.clientes-th-sort__chev--on]="ordenacaoNome === 'asc'"
+                          class="clientes-th-sort__tri clientes-th-sort__tri--up"
+                          [class.clientes-th-sort__tri--on]="ordenacaoNome === 'asc'"
                           xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="7"
-                          viewBox="0 0 12 7"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.75"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                          aria-hidden="true"
                         >
-                          <path d="M6 1 L1.5 5.5 L10.5 5.5" />
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
                         </svg>
                         <svg
-                          class="clientes-th-sort__chev clientes-th-sort__chev--down"
-                          [class.clientes-th-sort__chev--on]="ordenacaoNome === 'desc'"
+                          class="clientes-th-sort__tri clientes-th-sort__tri--down"
+                          [class.clientes-th-sort__tri--on]="ordenacaoNome === 'desc'"
                           xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="7"
-                          viewBox="0 0 12 7"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.75"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                          aria-hidden="true"
                         >
-                          <path d="M6 6 L1.5 1.5 L10.5 1.5" />
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
                         </svg>
                       </span>
                     </button>
-                    <span class="clientes-th-sort__tip" role="tooltip">{{
-                      tooltipOrdenacaoNome()
-                    }}</span>
                   </th>
                   <th scope="col">E-mail</th>
                   <th scope="col">Celular</th>
@@ -422,23 +416,39 @@
                       </td>
                       <td class="col-nome">
                         <div class="col-nome__cell">
-                          <span class="col-nome__avatar" aria-hidden="true">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            >
-                              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                              <circle cx="12" cy="7" r="4" />
-                            </svg>
+                          <span
+                            class="col-nome__avatar"
+                            [class.col-nome__avatar--com-foto]="!!c.fotoUrl?.trim()"
+                            aria-hidden="true"
+                          >
+                            @if (c.fotoUrl?.trim(); as foto) {
+                              <img [src]="foto" alt="" />
+                            } @else {
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-user-round-icon lucide-user-round"
+                                aria-hidden="true"
+                              >
+                                <circle cx="12" cy="8" r="5" />
+                                <path d="M20 21a8 8 0 0 0-16 0" />
+                              </svg>
+                            }
                           </span>
-                          <span class="col-nome__text">{{ c.nome }}</span>
+                          <button
+                            type="button"
+                            class="col-nome__link"
+                            (click)="abrirPerfilCliente(c, $event)"
+                          >
+                            {{ c.nome }}
+                          </button>
                         </div>
                       </td>
                       <td>{{ c.email?.trim() ? c.email : '—' }}</td>
@@ -514,6 +524,12 @@
               </tbody>
             </table>
           </div>
+
+          <span
+            class="clientes-th-sort__tip"
+            [class.clientes-th-sort__tip--visible]="nomeSortTipVisivel"
+            role="tooltip"
+          >{{ tooltipOrdenacaoNome() }}</span>
 
           <footer class="list-footer">
             <div class="list-footer__toolbar">
@@ -618,4 +634,60 @@
       }
     </div>
   </div>
+
+  @if (excluirModalAberto) {
+    <div
+      class="comandas-modal-overlay"
+      aria-hidden="true"
+      (click)="fecharModalExcluirCliente()"
+    ></div>
+    <div
+      class="comandas-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="clientes-excluir-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="comandas-modal__icon-wrap" aria-hidden="true">
+        <span class="comandas-modal__icon">!</span>
+      </div>
+      <h3 id="clientes-excluir-modal-title" class="comandas-modal__title">
+        Atenção
+      </h3>
+      <p class="comandas-modal__text">
+        Tem certeza que deseja excluir esse cliente?
+      </p>
+      <div class="comandas-modal__actions">
+        <button
+          type="button"
+          class="comandas-modal__btn comandas-modal__btn--cancel"
+          [disabled]="excluindoClienteModal"
+          (click)="fecharModalExcluirCliente()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="comandas-modal__btn comandas-modal__btn--confirm"
+          [disabled]="excluindoClienteModal"
+          (click)="confirmarExcluirCliente()"
+        >
+          {{ excluindoClienteModal ? 'Excluindo…' : 'Sim, excluir' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (perfilDrawerAberto) {
+    <app-cliente-perfil-drawer
+      [panelOpen]="perfilDrawerPanelOpen"
+      [cliente]="perfilDrawerCliente"
+      [abaAtiva]="perfilDrawerAba"
+      [carregando]="perfilDrawerCarregando"
+      (fechar)="fecharPerfilCliente()"
+      (abaAtivaChange)="onPerfilDrawerAbaChange($event)"
+      (clienteAtualizado)="onPerfilClienteAtualizado($event)"
+      (salvoComSucesso)="onPerfilClienteSalvoComSucesso()"
+    />
+  }
 </div>

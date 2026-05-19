@@ -1,0 +1,201 @@
+﻿<div
+  class="overlay overlay--cliente-perfil"
+  [class.overlay--open]="panelOpen"
+  aria-hidden="true"
+  (click)="onFechar()"
+></div>
+<div
+  class="app-drawer cliente-drawer cliente-perfil-drawer"
+  [class.app-drawer--open]="panelOpen"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Ficha de ' + tituloCabecalho()"
+  (click)="$event.stopPropagation()"
+>
+  <div class="cliente-shell">
+    <header class="cliente-head">
+      <div class="cliente-head__title-wrap">
+        <div class="cliente-head__title-row">
+          <span class="cliente-head__user-icon" aria-hidden="true">
+            @if (fotoUrl(); as foto) {
+              <img [src]="foto" alt="" />
+            } @else {
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="8" r="5" />
+                <path d="M20 21a8 8 0 0 0-16 0" />
+              </svg>
+            }
+          </span>
+          <h2 class="cliente-head__title">{{ tituloCabecalho() }}</h2>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="cliente-head__close"
+        (click)="onFechar()"
+        aria-label="Fechar"
+      ></button>
+    </header>
+
+    <div class="cliente-body-scroll">
+      <div class="cliente-body">
+        <nav
+          class="cliente-nav"
+          aria-label="Secções da ficha"
+          [style.--cliente-nav-active-index]="abaAtivaIndex()"
+        >
+          <span class="cliente-nav__indicator" aria-hidden="true"></span>
+          @for (aba of abas; track aba) {
+            <button
+              type="button"
+              class="cliente-nav__item"
+              [class.cliente-nav__item--active]="abaAtiva === aba"
+              (click)="selecionarAba(aba)"
+            >
+              <span class="cliente-nav__label">{{ aba }}</span>
+            </button>
+          }
+        </nav>
+
+        <main
+          class="cliente-main"
+          [class.cliente-main--cadastro-embutido]="abaAtiva === 'Cadastro'"
+        >
+          @if (abaAtiva === 'Cadastro') {
+            <app-cliente-cadastro-form
+              [mostrarRodape]="false"
+              (voltar)="onVoltarDoCadastro()"
+            />
+          } @else if (carregando) {
+            <p class="cliente-tab-placeholder">Carregando…</p>
+          } @else if (abaAtiva === 'Painel') {
+            <div class="cliente-painel">
+              <div class="cliente-painel__hero">
+                <article class="cliente-painel-card cliente-painel-card--purple">
+                  <span class="cliente-painel-card__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-1.106-1.79l-5.894-2.895a2 2 0 0 0-1.788 0L2.106 15.38A2 2 0 0 0 1 17.172V22"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/></svg>
+                  </span>
+                  <span class="cliente-painel-card__value">0</span>
+                  <span class="cliente-painel-card__label">0 dia sem vir</span>
+                </article>
+                <article class="cliente-painel-card cliente-painel-card--blue">
+                  <span class="cliente-painel-card__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </span>
+                  <span class="cliente-painel-card__value cliente-painel-card__value--sm">Sem avaliação</span>
+                  <span class="cliente-painel-card__label">Última avaliação</span>
+                </article>
+                <article class="cliente-painel-card cliente-painel-card--green">
+                  <span class="cliente-painel-card__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </span>
+                  <span class="cliente-painel-card__value">{{ 0 | currency: 'BRL' : 'symbol' : '1.2-2' }}</span>
+                  <span class="cliente-painel-card__label">Faturamento</span>
+                </article>
+              </div>
+              <div class="cliente-painel__metrics">
+                <article class="cliente-painel-metric">
+                  <span class="cliente-painel-metric__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>
+                  </span>
+                  <span class="cliente-painel-metric__value">{{ 0 | currency: 'BRL' : 'symbol' : '1.2-2' }}</span>
+                  <span class="cliente-painel-metric__label">Débitos</span>
+                </article>
+                <article class="cliente-painel-metric">
+                  <span class="cliente-painel-metric__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                  </span>
+                  <span class="cliente-painel-metric__value">0</span>
+                  <span class="cliente-painel-metric__label">Pacotes em aberto</span>
+                </article>
+                <article class="cliente-painel-metric">
+                  <span class="cliente-painel-metric__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </span>
+                  <span class="cliente-painel-metric__value">{{ (cliente?.creditoSaldo ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' }}</span>
+                  <span class="cliente-painel-metric__label">Crédito</span>
+                </article>
+                <article class="cliente-painel-metric">
+                  <span class="cliente-painel-metric__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </span>
+                  <span class="cliente-painel-metric__value">{{ 0 | currency: 'BRL' : 'symbol' : '1.2-2' }}</span>
+                  <span class="cliente-painel-metric__label">Cashback</span>
+                </article>
+                <article class="cliente-painel-metric">
+                  <span class="cliente-painel-metric__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+                  </span>
+                  <span class="cliente-painel-metric__value">0%</span>
+                  <span class="cliente-painel-metric__label">Taxa de cancelamento</span>
+                </article>
+                <article class="cliente-painel-metric">
+                  <span class="cliente-painel-metric__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </span>
+                  <span class="cliente-painel-metric__value">0 Dias</span>
+                  <span class="cliente-painel-metric__label">Tempo como cliente</span>
+                </article>
+                <article class="cliente-painel-metric">
+                  <span class="cliente-painel-metric__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                  </span>
+                  <span class="cliente-painel-metric__value">Sem retorno</span>
+                  <span class="cliente-painel-metric__label">Taxa de retorno</span>
+                </article>
+              </div>
+              <section class="cliente-painel-servicos" aria-labelledby="cliente-painel-servicos-title">
+                <h3 id="cliente-painel-servicos-title" class="cliente-painel-servicos__title">
+                  Últimos serviços
+                </h3>
+                <div class="cliente-painel-servicos__table-wrap">
+                  <table class="cliente-painel-servicos__table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Descrição</th>
+                        <th scope="col">Profissional</th>
+                        <th scope="col">Data</th>
+                      </tr>
+                    </thead>
+                  </table>
+                  <div class="cliente-painel-servicos__empty">
+                    <span class="cliente-painel-servicos__empty-icon" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    </span>
+                    <p>Não há dados</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          } @else {
+            <p class="cliente-tab-placeholder">
+              Conteúdo de «{{ abaAtiva }}» em desenvolvimento.
+            </p>
+          }
+        </main>
+      </div>
+    </div>
+    @if (abaAtiva === 'Cadastro') {
+      <footer class="cliente-drawer-footer cliente-drawer-footer--embutido">
+        @if (cadastro.saveErro) {
+          <p class="cliente-save-hint cliente-save-hint--error" role="alert">
+            {{ cadastro.saveErro }}
+          </p>
+        }
+        <button type="button" class="cliente-footer-btn cliente-footer-btn--ghost" [disabled]="cadastro.salvando" (click)="onVoltarDoCadastro()">Voltar</button>
+        <button type="button" class="cliente-footer-btn cliente-footer-btn--primary" [disabled]="cadastro.salvando || cadastro.carregandoFormulario" (click)="cadastro.salvar()">{{ cadastro.salvando ? 'Salvando…' : 'Salvar' }}</button>
+      </footer>
+    }
+  </div>
+</div>

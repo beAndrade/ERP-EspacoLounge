@@ -64,6 +64,51 @@
   flex: 0 0 auto;
 }
 
+.list-page__tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border-bottom: 1px solid #efefef;
+}
+
+.list-page__tab {
+  position: relative;
+  margin: 0;
+  padding: 0.65rem 1rem 0.75rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #78716c;
+  cursor: pointer;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: transparent;
+    border-radius: 2px 2px 0 0;
+  }
+
+  &:hover {
+    color: #44403c;
+  }
+
+  &--active {
+    color: var(--color-primary, #505afb);
+
+    &::after {
+      background: var(--color-primary, #505afb);
+    }
+  }
+}
+
 .list-head {
   margin-bottom: 0;
 }
@@ -436,11 +481,11 @@ col.comandas-table__col-check {
   position: relative;
   box-sizing: border-box;
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   margin: 0;
   border: 1px solid #efefef;
-  border-radius: 6px;
+  border-radius: 5px;
   background-color: #fff;
   cursor: pointer;
   vertical-align: middle;
@@ -456,10 +501,10 @@ col.comandas-table__col-check {
     position: absolute;
     left: 50%;
     top: 47%;
-    width: 5px;
-    height: 10px;
+    width: 4px;
+    height: 8px;
     border: solid #fff;
-    border-width: 0 2.5px 2.5px 0;
+    border-width: 0 2px 2px 0;
     transform: translate(-50%, -50%) rotate(45deg) scale(0.35);
     transform-origin: center center;
     opacity: 0;
@@ -585,13 +630,19 @@ thead th.col-check,
 tbody td.col-check {
   text-align: center;
   padding-left: 4px;
-  padding-right: 4px;
+  padding-right: 8px;
+}
+
+/** Espaço entre a coluna de seleção e a primeira coluna de dados (Nome, Ticket, …). */
+thead th.col-check + th,
+tbody td.col-check + td {
+  padding-left: 12px;
 }
 
 .col-nome__cell {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -600,15 +651,33 @@ tbody td.col-check {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #f4f4f5;
-  color: #71717a;
+  background: transparent;
+  border: none;
+  color: #505afb;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: visible;
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+    display: block;
+    stroke-width: 1.5;
+    color: rgba(80, 90, 251, 0.5);
+  }
+
+  &--com-foto {
+    overflow: hidden;
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
   }
 }
 
@@ -652,11 +721,19 @@ tbody td.col-check {
   cursor: pointer;
 
   &--edit {
-    color: var(--color-primary, #505afb);
+    color: #505afb;
+
+    svg {
+      color: #505afb;
+    }
   }
 
   &--delete {
-    color: #dc2626;
+    color: #ff4d4f;
+
+    svg {
+      color: #ff4d4f;
+    }
   }
 
   &:hover:not(:disabled) {

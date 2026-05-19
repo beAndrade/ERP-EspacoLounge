@@ -1,0 +1,81 @@
+.cliente-cadastro-form__cols {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  gap: 0;
+  min-width: 0;
+  width: 100%;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+/* No drawer de perfil: main + aside ocupam toda a área à direita da nav. */
+.cliente-perfil-drawer .cliente-main--cadastro-embutido {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0 30px 0 0;
+  box-sizing: border-box;
+
+  .cliente-cadastro-form__cols {
+    grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  }
+
+  .cliente-main {
+    width: 100%;
+    max-width: min(100%, var(--cliente-field-input-max, 422px));
+    border-right: 1px solid hsl(220, 13%, 91%);
+    padding-left: 0;
+    padding-right: 30px;
+  }
+
+  .cliente-side {
+    min-width: 0;
+  }
+}
+
+.cliente-perfil-drawer .cliente-drawer-footer--embutido {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 12px 30px 24px;
+  border-top: 1px solid #efefef;
+}
+
+/* Bloco de foto no cadastro embutido (mesmo visual do drawer de cadastro). */
+.cliente-perfil-drawer .cliente-photo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  margin-bottom: 22px;
+  box-sizing: border-box;
+}
+
+.cliente-perfil-drawer .cliente-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f4f4f5 0%, #e4e4e7 100%);
+  border: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a8a0b0;
+  overflow: hidden;
+  cursor: pointer;
+
+  svg {
+    width: 70px;
+    height: 70px;
+    display: block;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
