@@ -15,7 +15,7 @@ import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 import { EstoqueComponent } from './features/estoque/pages/main/estoque.component';
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
 import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
-import { ComandasComponent } from './pages/comandas/comandas.component';
+import { ComandasComponent } from './features/comandas/pages/main/comandas.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },

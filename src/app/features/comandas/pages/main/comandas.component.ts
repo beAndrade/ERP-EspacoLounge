@@ -12,31 +12,31 @@ import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   AtendimentoListaItem,
   Cliente,
-} from '../../core/models/api.models';
-import type { ComandaResumoPagamentos } from '../../core/models/api.models';
-import { NovaComandaDrawerComponent } from '../../features/agenda/pages/hub/nova-comanda-drawer.component';
-import { FaturarDrawerComponent } from '../../features/agenda/pages/hub/faturar-drawer.component';
-import type { ComandaDrawerContextoAgenda } from '../../features/agenda/pages/hub/comanda-drawer.types';
-import { AgendaNovoComponent } from '../../features/agenda/pages/novo/agenda-novo.component';
-import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
+} from '../../../../core/models/api.models';
+import type { ComandaResumoPagamentos } from '../../../../core/models/api.models';
+import { NovaComandaDrawerComponent } from '../../../agenda/pages/hub/nova-comanda-drawer.component';
+import { FaturarDrawerComponent } from '../../../agenda/pages/hub/faturar-drawer.component';
+import type { ComandaDrawerContextoAgenda } from '../../../agenda/pages/hub/comanda-drawer.types';
+import { AgendaNovoComponent } from '../../../agenda/pages/novo/agenda-novo.component';
+import type { SaasSelectOption } from '../../../agenda/pages/novo/saas-select.component';
 import {
   dataDdMmBarraAaaa,
   ordenarLinhasAtendimentoInPlace,
   parseFiltroDataDdMm,
   toYmd,
   valorMonetarioParaNumero,
-} from '../../core/utils/atendimento-display';
-import { ClienteCadastroDrawerService } from '../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+} from '../../../../core/utils/atendimento-display';
+import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
   pagamentoColunaFromItem,
   statusComandaColunaFromItem,
   type PagamentoColuna,
   type StatusComandaColuna,
-} from '../../core/utils/comanda-status.util';
+} from '../../../../core/utils/comanda-status.util';
 
 registerLocaleData(localePt);
 
