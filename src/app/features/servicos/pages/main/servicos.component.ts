@@ -1,8 +1,8 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { Servico } from '../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { Servico } from '../../../../core/models/api.models';
 
 @Component({
   selector: 'app-servicos',

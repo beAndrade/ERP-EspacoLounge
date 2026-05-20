@@ -7,14 +7,14 @@ import { AgendaNovoComponent } from './features/agenda/pages/novo/agenda-novo.co
 import { ClientesComponent } from './pages/clientes/clientes.component';
 import { ClientesNovoComponent } from './pages/clientes-novo/clientes-novo.component';
 import { ClientesEditarComponent } from './pages/clientes-editar/clientes-editar.component';
-import { ServicosComponent } from './pages/servicos/servicos.component';
+import { ServicosComponent } from './features/servicos/pages/main/servicos.component';
 import { FinanceiroComissoesComponent } from './pages/financeiro-comissoes/financeiro-comissoes.component';
 import { FinanceiroShellComponent } from './pages/financeiro-shell/financeiro-shell.component';
 import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
-import { EstoqueComponent } from './pages/estoque/estoque.component';
-import { ProfissionaisComponent } from './pages/profissionais/profissionais.component';
-import { FornecedoresComponent } from './pages/fornecedores/fornecedores.component';
+import { EstoqueComponent } from './features/estoque/pages/main/estoque.component';
+import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
+import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
 import { ComandasComponent } from './pages/comandas/comandas.component';
 
 export const routes: Routes = [
