@@ -1,0 +1,439 @@
+<div class="list-page profissionais-page">
+  <div class="list-layout">
+    <div class="list-layout__main">
+      <div class="list-page__lead">
+        <header class="list-head">
+          <div class="list-head__title-row">
+            <div class="list-head__left">
+              <h1 class="list-head__title">Profissionais</h1>
+            </div>
+            <div class="list-head__actions list-head__actions--profissionais">
+              <div
+                class="list-head__busca-wrap"
+                [class.list-head__busca-wrap--open]="buscaAberta"
+                role="search"
+                (click)="onBuscaWrapClick()"
+              >
+                <span class="list-head__busca-icon" aria-hidden="true">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m21 21-4.34-4.34" />
+                    <circle cx="11" cy="11" r="8" />
+                  </svg>
+                </span>
+                <span
+                  class="list-head__busca-label"
+                  [class.list-head__busca-label--hidden]="buscaAberta"
+                  aria-hidden="true"
+                  >Buscar</span
+                >
+                <label class="sr-only" for="profissionais-busca-input">Buscar profissionais</label>
+                <input
+                  id="profissionais-busca-input"
+                  type="text"
+                  class="list-head__busca-input"
+                  [(ngModel)]="busca"
+                  name="buscaProfissionais"
+                  [placeholder]="buscaPlaceholder"
+                  [class.list-head__busca-input--search-open]="buscaAberta"
+                  [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+                  autocomplete="off"
+                  (click)="$event.stopPropagation()"
+                  (input)="onBuscaInput()"
+                  (keydown.enter)="onBuscaEnter($event)"
+                  [attr.aria-expanded]="buscaAberta"
+                  aria-label="Buscar profissionais"
+                  title="Buscar"
+                />
+              </div>
+              @if (!mostrarFormulario) {
+                <button
+                  type="button"
+                  class="list-head__toolbar-btn list-head__toolbar-btn--link"
+                  (click)="abrirNovo()"
+                >
+                  <svg
+                    class="list-icon-sm"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5v14" />
+                  </svg>
+                  <span>Novo</span>
+                </button>
+              }
+            </div>
+          </div>
+        </header>
+
+        <nav class="list-page__tabs" aria-label="Filtrar por status">
+          <button
+            type="button"
+            class="list-page__tab"
+            [class.list-page__tab--active]="aba === 'ativos'"
+            [attr.aria-current]="aba === 'ativos' ? 'page' : null"
+            (click)="definirAba('ativos')"
+          >
+            Ativos
+          </button>
+          <button
+            type="button"
+            class="list-page__tab"
+            [class.list-page__tab--active]="aba === 'inativos'"
+            [attr.aria-current]="aba === 'inativos' ? 'page' : null"
+            (click)="definirAba('inativos')"
+          >
+            Inativos
+          </button>
+        </nav>
+      </div>
+
+      @if (erro) {
+        <p class="alert" role="alert">{{ erro }}</p>
+      }
+
+      @if (mostrarFormulario) {
+        <form class="prof-form-painel" (ngSubmit)="salvar()" novalidate>
+          <h2 class="prof-form-painel__titulo">
+            {{ editandoId == null ? 'Novo profissional' : 'Editar profissional' }}
+          </h2>
+          @if (erroForm) {
+            <p class="alert" role="alert">{{ erroForm }}</p>
+          }
+          <label class="prof-form-campo">
+            <span>Nome <span class="prof-form-req">*</span></span>
+            <input
+              type="text"
+              name="nomeProf"
+              [(ngModel)]="formNome"
+              required
+              autocomplete="name"
+            />
+          </label>
+          <label class="prof-form-campo prof-form-campo--check">
+            <input type="checkbox" name="ativoProf" [(ngModel)]="formAtivo" />
+            <span>Ativo</span>
+          </label>
+          <div class="prof-form-acoes">
+            <button
+              type="submit"
+              class="btn"
+              [disabled]="salvando || !formNome.trim()"
+            >
+              {{ salvando ? 'Salvando…' : 'Salvar' }}
+            </button>
+            <button
+              type="button"
+              class="btn outline"
+              (click)="cancelarForm()"
+              [disabled]="salvando"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (!erro) {
+        <div class="list-table-card">
+          <div class="table-wrap" role="region" aria-label="Lista de profissionais">
+            <table class="list-table profissionais-table">
+              <colgroup>
+                <col class="profissionais-table__col-menu" />
+                <col class="profissionais-table__col-info" />
+                <col class="profissionais-table__col-nome" />
+                <col class="profissionais-table__col-celular" />
+                <col class="profissionais-table__col-email" />
+                <col class="profissionais-table__col-acoes" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="col-menu" scope="col" aria-hidden="true"></th>
+                  <th class="col-info" scope="col">
+                    <span class="sr-only">Informação</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                      title="Informação"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 16v-4" />
+                      <path d="M12 8h.01" />
+                    </svg>
+                  </th>
+                  <th scope="col">Nome</th>
+                  <th scope="col">Celular</th>
+                  <th scope="col">E-mail</th>
+                  <th class="col-acoes" scope="col" aria-label="Ações"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (carregando) {
+                  <tr>
+                    <td class="table-body__busy" colspan="6">
+                      <span class="table-body__busy-text">Carregando…</span>
+                    </td>
+                  </tr>
+                } @else if (totalFiltrado() === 0) {
+                  <tr>
+                    <td class="table-body__empty" colspan="6">
+                      <div class="table-empty">
+                        <span class="table-empty__icon-wrap" aria-hidden="true">
+                          <svg
+                            class="table-empty__icon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="0.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                            <path
+                              d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+                            />
+                          </svg>
+                        </span>
+                        <p class="table-empty__label">Nenhum item encontrado</p>
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                  @for (p of itensPagina(); track p.id) {
+                    <tr>
+                      <td class="col-menu">
+                        <button
+                          type="button"
+                          class="prof-row-menu"
+                          [attr.aria-label]="'Mais opções para ' + p.nome"
+                          title="Opções"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <line x1="4" x2="20" y1="12" y2="12" />
+                            <line x1="4" x2="20" y1="6" y2="6" />
+                            <line x1="4" x2="20" y1="18" y2="18" />
+                          </svg>
+                        </button>
+                      </td>
+                      <td class="col-info" aria-hidden="true"></td>
+                      <td class="col-nome">
+                        <div class="col-nome__cell">
+                          <span class="col-nome__avatar" aria-hidden="true">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <circle cx="12" cy="8" r="5" />
+                              <path d="M20 21a8 8 0 0 0-16 0" />
+                            </svg>
+                          </span>
+                          <span class="col-nome__text">{{ p.nome }}</span>
+                        </div>
+                      </td>
+                      <td>{{ exibirCelular(p) }}</td>
+                      <td>
+                        <span class="col-email__cell">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <rect width="20" height="16" x="2" y="4" rx="2" />
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                          </svg>
+                          <span class="col-email__text">{{ exibirEmail(p) }}</span>
+                        </span>
+                      </td>
+                      <td class="col-acoes">
+                        <div class="list-row-acoes">
+                          <button
+                            type="button"
+                            class="list-row-acoes__btn list-row-acoes__btn--edit"
+                            (click)="abrirEditar(p)"
+                            aria-label="Editar profissional"
+                            title="Editar"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="13.3333"
+                              height="13.3333"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="list-footer">
+            <div class="list-footer__toolbar">
+              <span>{{ carregando ? '…' : totalFiltrado() }} no total</span>
+              <div class="list-footer__pager">
+                <button
+                  type="button"
+                  class="list-footer__chev"
+                  (click)="paginaAnterior()"
+                  [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
+                  aria-label="Página anterior"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </button>
+                <span class="list-footer__page-num" aria-current="page">{{ pagina }}</span>
+                <button
+                  type="button"
+                  class="list-footer__chev"
+                  (click)="paginaSeguinte()"
+                  [disabled]="carregando || pagina >= totalPaginas() || totalFiltrado() === 0"
+                  aria-label="Página seguinte"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="list-footer__per-page">
+              <span id="profissionais-per-page-label" class="sr-only">Itens por página</span>
+              <button
+                type="button"
+                class="list-footer__per-page-trigger"
+                [disabled]="carregando"
+                [attr.aria-expanded]="perPageMenuAberto"
+                aria-haspopup="listbox"
+                aria-labelledby="profissionais-per-page-label"
+                aria-controls="profissionais-per-page-listbox"
+                (click)="togglePerPageMenu($event)"
+              >
+                <span>{{ itensPorPagina }} / página</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+              @if (perPageMenuAberto) {
+                <div
+                  id="profissionais-per-page-listbox"
+                  class="list-footer__per-page-panel"
+                  role="listbox"
+                  aria-labelledby="profissionais-per-page-label"
+                  (click)="$event.stopPropagation()"
+                >
+                  @for (n of opcoesItensPorPagina; track n) {
+                    <button
+                      type="button"
+                      class="list-footer__per-page-option"
+                      [class.list-footer__per-page-option--active]="n === itensPorPagina"
+                      role="option"
+                      [attr.aria-selected]="n === itensPorPagina"
+                      (click)="selecionarItensPorPagina(n, $event)"
+                    >
+                      {{ n }} / página
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </footer>
+        </div>
+      }
+    </div>
+  </div>
+</div>
