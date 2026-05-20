@@ -1,0 +1,376 @@
+<div class="list-page fornecedores-page">
+  <div class="list-layout" [class.list-layout--filtros-abertos]="filtrosAbertos">
+    <aside
+      class="fornecedores-filtros-drawer"
+      [class.fornecedores-filtros-drawer--open]="filtrosAbertos"
+      aria-label="Filtros de fornecedores"
+      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
+    >
+      <div class="fornecedores-filtros-drawer__inner">
+        <section>
+          <h3 class="fornecedores-filtros-card__title">Filtros</h3>
+          <p class="fornecedores-filtros-card__body">
+            Filtros avançados para fornecedores em breve.
+          </p>
+        </section>
+        <footer class="fornecedores-filtros-drawer__footer">
+          <button type="button" class="btn btn--ghost" (click)="onLimparFiltros()">
+            Limpar filtros
+          </button>
+          <button type="button" class="btn" (click)="onAplicarFiltros()">
+            Aplicar
+          </button>
+        </footer>
+      </div>
+    </aside>
+
+    <div class="list-layout__main">
+      <div class="list-page__lead">
+        <header class="list-head">
+          <div class="list-head__title-row">
+            <div class="list-head__left">
+              <h1 class="list-head__title">Fornecedores</h1>
+            </div>
+            <div class="list-head__actions list-head__actions--fornecedores">
+              <div
+                class="list-head__busca-wrap"
+                [class.list-head__busca-wrap--open]="buscaAberta"
+                role="search"
+                (click)="onBuscaWrapClick()"
+              >
+                <span class="list-head__busca-icon" aria-hidden="true">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m21 21-4.34-4.34" />
+                    <circle cx="11" cy="11" r="8" />
+                  </svg>
+                </span>
+                <span
+                  class="list-head__busca-label"
+                  [class.list-head__busca-label--hidden]="buscaAberta"
+                  aria-hidden="true"
+                  >Buscar</span
+                >
+                <label class="sr-only" for="fornecedores-busca-input">Buscar fornecedores</label>
+                <input
+                  id="fornecedores-busca-input"
+                  type="text"
+                  class="list-head__busca-input"
+                  [(ngModel)]="busca"
+                  name="buscaFornecedores"
+                  [placeholder]="buscaPlaceholder"
+                  [class.list-head__busca-input--search-open]="buscaAberta"
+                  [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+                  autocomplete="off"
+                  (click)="$event.stopPropagation()"
+                  (input)="onBuscaInput()"
+                  (keydown.enter)="onBuscaEnter($event)"
+                  [attr.aria-expanded]="buscaAberta"
+                  aria-label="Buscar fornecedores"
+                  title="Buscar"
+                />
+              </div>
+              <button
+                type="button"
+                class="list-head__toolbar-btn"
+                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+                [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+                (click)="toggleFiltros($event)"
+                aria-label="Abrir filtros"
+                title="Filtrar"
+              >
+                <svg
+                  class="list-icon-sm list-icon-sm--funnel"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+                  />
+                </svg>
+                <span class="list-head__toolbar-label">Filtrar</span>
+              </button>
+              <button
+                type="button"
+                class="list-head__toolbar-btn list-head__toolbar-btn--link"
+                (click)="onNovo()"
+              >
+                <svg
+                  class="list-icon-sm"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
+                <span>Novo</span>
+              </button>
+            </div>
+          </div>
+        </header>
+      </div>
+
+      @if (erro) {
+        <p class="alert" role="alert">{{ erro }}</p>
+      }
+
+      @if (!erro) {
+        <div class="list-table-card">
+          <div class="table-wrap" role="region" aria-label="Lista de fornecedores">
+            <table class="list-table fornecedores-table">
+              <colgroup>
+                <col class="fornecedores-table__col-check" />
+                <col class="fornecedores-table__col-nome" />
+                <col class="fornecedores-table__col-email" />
+                <col class="fornecedores-table__col-telefone" />
+                <col class="fornecedores-table__col-celular" />
+                <col class="fornecedores-table__col-cnpj" />
+                <col class="fornecedores-table__col-config" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="col-check" scope="col">
+                    <input
+                      type="checkbox"
+                      [checked]="!carregando && todosDaPaginaSelecionados()"
+                      [disabled]="carregando || totalFiltrado() === 0"
+                      (change)="toggleSelecionarTodos($event)"
+                      title="Selecionar página"
+                    />
+                  </th>
+                  <th scope="col">Nome</th>
+                  <th scope="col">E-mail</th>
+                  <th scope="col">Telefone</th>
+                  <th scope="col">Celular</th>
+                  <th scope="col">CNPJ</th>
+                  <th class="col-config" scope="col" aria-label="Configurar colunas">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+                      />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (carregando) {
+                  <tr>
+                    <td class="table-body__busy" colspan="7">
+                      <span class="table-body__busy-text">Carregando…</span>
+                    </td>
+                  </tr>
+                } @else if (totalFiltrado() === 0) {
+                  <tr>
+                    <td class="table-body__empty" colspan="7">
+                      <div class="table-empty">
+                        <span class="table-empty__icon-wrap" aria-hidden="true">
+                          <svg
+                            class="table-empty__icon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="0.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                            <path
+                              d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+                            />
+                          </svg>
+                        </span>
+                        <p class="table-empty__label">Nenhum item encontrado</p>
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                  @for (f of itensPagina(); track f.id) {
+                    <tr [class.list-table__row--selected]="estaSelecionado(f.id)">
+                      <td class="col-check">
+                        <input
+                          type="checkbox"
+                          [checked]="estaSelecionado(f.id)"
+                          (change)="toggleSelecionado(f, $event)"
+                          [attr.aria-label]="'Selecionar fornecedor ' + f.nome"
+                        />
+                      </td>
+                      <td class="col-nome">
+                        <div class="col-nome__cell">
+                          <span class="col-nome__avatar" aria-hidden="true">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                          </span>
+                          <span class="col-nome__text">{{ f.nome }}</span>
+                        </div>
+                      </td>
+                      <td>{{ exibirTexto(f.email) }}</td>
+                      <td>{{ exibirTexto(f.telefone) }}</td>
+                      <td>{{ exibirTexto(f.celular) }}</td>
+                      <td>{{ exibirTexto(f.cnpj) }}</td>
+                      <td class="col-config" aria-hidden="true"></td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="list-footer">
+            <div class="list-footer__toolbar">
+              <span>{{ carregando ? '…' : totalFiltrado() }} no total</span>
+              <div class="list-footer__pager">
+                <button
+                  type="button"
+                  class="list-footer__chev"
+                  (click)="paginaAnterior()"
+                  [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
+                  aria-label="Página anterior"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </button>
+                <span class="list-footer__page-num" aria-current="page">{{ pagina }}</span>
+                <button
+                  type="button"
+                  class="list-footer__chev"
+                  (click)="paginaSeguinte()"
+                  [disabled]="carregando || pagina >= totalPaginas() || totalFiltrado() === 0"
+                  aria-label="Página seguinte"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="list-footer__per-page">
+              <span id="fornecedores-per-page-label" class="sr-only">Itens por página</span>
+              <button
+                type="button"
+                class="list-footer__per-page-trigger"
+                [disabled]="carregando"
+                [attr.aria-expanded]="perPageMenuAberto"
+                aria-haspopup="listbox"
+                aria-labelledby="fornecedores-per-page-label"
+                aria-controls="fornecedores-per-page-listbox"
+                (click)="togglePerPageMenu($event)"
+              >
+                <span>{{ itensPorPagina }} / página</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+              @if (perPageMenuAberto) {
+                <div
+                  id="fornecedores-per-page-listbox"
+                  class="list-footer__per-page-panel"
+                  role="listbox"
+                  aria-labelledby="fornecedores-per-page-label"
+                  (click)="$event.stopPropagation()"
+                >
+                  @for (n of opcoesItensPorPagina; track n) {
+                    <button
+                      type="button"
+                      class="list-footer__per-page-option"
+                      [class.list-footer__per-page-option--active]="n === itensPorPagina"
+                      role="option"
+                      [attr.aria-selected]="n === itensPorPagina"
+                      (click)="selecionarItensPorPagina(n, $event)"
+                    >
+                      {{ n }} / página
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </footer>
+        </div>
+      }
+    </div>
+  </div>
+</div>
