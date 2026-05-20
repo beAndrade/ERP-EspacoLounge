@@ -5,16 +5,16 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { TelefoneBrMaskDirective } from '../../core/directives/telefone-br-mask.directive';
-import { formatarTelefoneBrDeValor } from '../../core/utils/telefone-br';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { TelefoneBrMaskDirective } from '../../../../core/directives/telefone-br-mask.directive';
+import { formatarTelefoneBrDeValor } from '../../../../core/utils/telefone-br';
 
 @Component({
   selector: 'app-clientes-editar',
   standalone: true,
   imports: [RouterLink, ReactiveFormsModule, TelefoneBrMaskDirective],
   templateUrl: './clientes-editar.component.html',
-  styleUrl: '../clientes-novo/clientes-novo.component.scss',
+  styleUrl: '../novo/clientes-novo.component.scss',
 })
 export class ClientesEditarComponent implements OnInit {
   private readonly api = inject(SheetsApiService);

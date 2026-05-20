@@ -7,10 +7,10 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 import { switchMap } from 'rxjs';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { TelefoneBrMaskDirective } from '../../core/directives/telefone-br-mask.directive';
-import { isCelularBr11Digitos } from '../../core/utils/telefone-br';
-import { findClienteCadastroDuplicado } from '../../core/utils/clientes-unicidade';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { TelefoneBrMaskDirective } from '../../../../core/directives/telefone-br-mask.directive';
+import { isCelularBr11Digitos } from '../../../../core/utils/telefone-br';
+import { findClienteCadastroDuplicado } from '../../../../core/utils/clientes-unicidade';
 
 /** Nome com pelo menos 2 caracteres úteis (após trim). */
 function nomeClienteValidator(control: AbstractControl): ValidationErrors | null {

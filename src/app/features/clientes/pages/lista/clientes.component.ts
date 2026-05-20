@@ -8,19 +8,19 @@ import {
 } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { Cliente } from '../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { Cliente } from '../../../../core/models/api.models';
 import {
   ClientePerfilAba,
   ClientePerfilDrawerComponent,
-} from '../../shared/cliente-perfil-drawer/cliente-perfil-drawer.component';
-import { AppToastService } from '../../shared/app-toast/app-toast.service';
-import { ClienteCadastroDrawerService } from '../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+} from '../../../../shared/cliente-perfil-drawer/cliente-perfil-drawer.component';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
   formatarCpfBr,
   formatarDataDdMmYyyy,
-} from '../../core/utils/br-document-masks';
-import { parseFiltroDataDdMm } from '../../core/utils/atendimento-display';
+} from '../../../../core/utils/br-document-masks';
+import { parseFiltroDataDdMm } from '../../../../core/utils/atendimento-display';
 
 type OrdenacaoNome = 'asc' | 'desc';
 
