@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
-import { CategoriaFinanceiraItem } from '../../core/models/api.models';
+import { CategoriaFinanceiraItem } from '../../../../core/models/api.models';
 
 function todayYmd(): string {
   const d = new Date();

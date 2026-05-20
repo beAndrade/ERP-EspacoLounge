@@ -8,9 +8,9 @@ import { ClientesComponent } from './features/clientes/pages/lista/clientes.comp
 import { ClientesNovoComponent } from './features/clientes/pages/novo/clientes-novo.component';
 import { ClientesEditarComponent } from './features/clientes/pages/editar/clientes-editar.component';
 import { ServicosComponent } from './features/servicos/pages/main/servicos.component';
-import { FinanceiroComissoesComponent } from './pages/financeiro-comissoes/financeiro-comissoes.component';
-import { FinanceiroShellComponent } from './pages/financeiro-shell/financeiro-shell.component';
-import { FinanceiroComponent } from './pages/financeiro/financeiro.component';
+import { FinanceiroComissoesComponent } from './features/financeiro/pages/comissoes/financeiro-comissoes.component';
+import { FinanceiroShellComponent } from './features/financeiro/pages/shell/financeiro-shell.component';
+import { FinanceiroComponent } from './features/financeiro/pages/painel/financeiro.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 import { EstoqueComponent } from './features/estoque/pages/main/estoque.component';
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';

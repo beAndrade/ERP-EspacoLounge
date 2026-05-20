@@ -18,9 +18,9 @@ import {
   CaixaDiaResumo,
   CategoriaFinanceiraItem,
   MovimentacaoListaItem,
-} from '../../core/models/api.models';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
-import { FinanceiroResumoUiService } from '../financeiro-shell/financeiro-resumo-ui.service';
+} from '../../../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { FinanceiroResumoUiService } from '../shell/financeiro-resumo-ui.service';
 
 registerLocaleData(localePt);
 

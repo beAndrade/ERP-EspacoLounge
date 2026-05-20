@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { FolhaListaItem } from '../../core/models/api.models';
-import { AdminPinService } from '../../core/services/admin-pin.service';
-import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { FolhaListaItem } from '../../../../core/models/api.models';
+import { AdminPinService } from '../../../../core/services/admin-pin.service';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 
 function periodoAtualYm(): string {
   const d = new Date();
