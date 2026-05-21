@@ -28,6 +28,7 @@ import {
   toNumberPt,
 } from './finance-domain';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
+import { registrarCreditoMovimentoClienteEmTx } from './clientes-credito-movimentos';
 
 export const ORIGEM_COMANDA_PAGAMENTO = 'comanda_pagamento';
 
@@ -799,6 +800,13 @@ export async function usarCreditoClienteNaComandaEmTx(
       creditoSaldo: sql`GREATEST(0::numeric, ${clientes.creditoSaldo}::numeric - ${v.toFixed(2)}::numeric)`,
     })
     .where(eq(clientes.idCliente, cid));
+
+  await registrarCreditoMovimentoClienteEmTx(tx, cid, {
+    idAtendimento: idAt,
+    dataMov: ymdHoje(),
+    valor: v,
+    tipo: 'saida',
+  });
 }
 
 /**
@@ -860,6 +868,13 @@ export async function aplicarCreditoClientePorExcessoEmTx(
       creditoSaldo: sql`${clientes.creditoSaldo}::numeric + ${prep.valor}::numeric`,
     })
     .where(eq(clientes.idCliente, cid));
+
+  await registrarCreditoMovimentoClienteEmTx(tx, cid, {
+    idAtendimento: idAt,
+    dataMov: prep.dataPagamento,
+    valor: prep.valor,
+    tipo: 'entrada',
+  });
 }
 
 /**

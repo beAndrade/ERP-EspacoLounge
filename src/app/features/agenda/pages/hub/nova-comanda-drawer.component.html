@@ -1,17 +1,16 @@
 <div class="nc-drawer" [class.nc-drawer--finalizada]="comandaFinalizada()">
-  <!-- Mesma geometria que `form-shell--modal` + `form-shell__main--modal` no agendamento. -->
-  <div class="nc-drawer__shell">
-    <div class="nc-drawer__client agenda-novo--drawer" aria-label="Cliente">
-      <app-agenda-novo-client-sidebar
-        class="form-shell__client"
-        [clienteIdControl]="clienteComandaCtrl"
-        [opcoesClientes]="contexto()?.opcoesClientes ?? []"
-        [cliente]="clienteParaSidebar()"
-        (abrirCadastroCliente)="abrirCadastroCliente.emit()"
-      />
-    </div>
+  <!-- Grelha: sidebar (altura total) | coluna principal (conteúdo + resumo + footer). -->
+  <div class="nc-drawer__client agenda-novo--drawer" aria-label="Cliente">
+    <app-agenda-novo-client-sidebar
+      class="form-shell__client"
+      [clienteIdControl]="clienteComandaCtrl"
+      [opcoesClientes]="contexto()?.opcoesClientes ?? []"
+      [cliente]="clienteParaSidebar()"
+      (abrirCadastroCliente)="abrirCadastroCliente.emit($event)"
+    />
+  </div>
 
-    <div class="nc-drawer__main">
+  <div class="nc-drawer__main">
       <div class="nc-drawer__flow">
         <main class="nc-main nc-main--comanda-scroll">
           <header class="nc-modal-header nc-modal-header--drawer-scroll">
@@ -106,14 +105,19 @@
                 }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
-                    A comanda exibe os itens do agendamento. Use «Editar» para abrir o agendamento e adicionar/alterar itens.
+                    A comanda exibe os itens do agendamento. Use «Editar» para alterar itens e valores.
                   </p>
                 }
 
                 <ul class="nc-leitura" role="list">
                   @for (b of blocosLeitura(); track $index; let i = $index) {
                     @let blocStripe = faixaPrecoBloc(b);
-                    <li class="nc-leitura__item">
+                    <li
+                      class="nc-leitura__item"
+                      [class.nc-leitura__item--mega-pacote]="
+                        b.tipo === 'Mega' || b.tipo === 'Pacote'
+                      "
+                    >
                       <div
                         class="nc-leitura__row"
                         [class.nc-leitura__row--stack-money]="blocStripe"
@@ -135,7 +139,10 @@
                           </div>
                         </div>
                         @if (blocStripe && b.etapas.length > 0) {
-                          <ul class="nc-leitura__etapas nc-leitura__etapas--antes-valores" role="list">
+                          <ul
+                            class="nc-leitura__etapas nc-leitura__etapas--antes-valores nc-leitura__etapas--compact"
+                            role="list"
+                          >
                             @for (e of b.etapas; track $index) {
                               <li class="nc-leitura__etapa">
                                 <div class="nc-leitura__etapa-row">
@@ -188,7 +195,10 @@
                         }
                       </div>
                       @if (!blocStripe && b.etapas.length > 0) {
-                        <ul class="nc-leitura__etapas" role="list">
+                        <ul
+                          class="nc-leitura__etapas nc-leitura__etapas--compact"
+                          role="list"
+                        >
                           @for (e of b.etapas; track $index) {
                             <li class="nc-leitura__etapa">
                               <div class="nc-leitura__etapa-row">
@@ -223,76 +233,21 @@
                 </ul>
               }
             </div>
-
-            <div class="nc-itens-summary" aria-label="Resumo da comanda">
-              <div class="nc-itens-summary__row">
-                <span class="nc-itens-summary__label">Desconto</span>
-                <input
-                  type="text"
-                  class="nc-itens-summary__input"
-                  [class.nc-itens-summary__input--readonly]="comandaFinalizada()"
-                  inputmode="numeric"
-                  autocomplete="off"
-                  [attr.placeholder]="placeholderMoedaResumo"
-                  [formControl]="descontoResumoCtrl"
-                  [readonly]="comandaFinalizada()"
-                  (input)="onResumoMoedaInput(descontoResumoCtrl, $event)"
-                  (blur)="normalizarCampoMoedaResumo(descontoResumoCtrl)"
-                  [attr.aria-label]="'Desconto: ' + descontoResumoCtrl.value"
-                />
-              </div>
-              <div class="nc-itens-summary__row">
-                <span class="nc-itens-summary__label">Crédito</span>
-                <input
-                  type="text"
-                  class="nc-itens-summary__input"
-                  inputmode="numeric"
-                  autocomplete="off"
-                  [attr.placeholder]="placeholderMoedaResumo"
-                  [formControl]="creditoResumoCtrl"
-                  (input)="onCreditoResumoMoedaInput($event)"
-                  (blur)="normalizarCampoMoedaResumo(creditoResumoCtrl)"
-                  [attr.aria-label]="
-                    'Crédito a usar: ' + creditoResumoCtrl.value
-                  "
-                />
-              </div>
-              <div class="nc-itens-summary__row">
-                <span class="nc-itens-summary__label">Cashback</span>
-                <div
-                  class="nc-itens-summary__input nc-itens-summary__input--readonly nc-itens-summary__input--readonly-cashback"
-                  [attr.aria-label]="'Cashback: ' + brl(cashbackComandaReais())"
-                >
-                  {{ brl(cashbackComandaReais()) }}
-                </div>
-              </div>
-              <div class="nc-itens-summary__row nc-itens-summary__row--total">
-                <span class="nc-itens-summary__label">Total</span>
-                <div
-                  class="nc-itens-summary__input nc-itens-summary__input--readonly nc-itens-summary__input--total"
-                  [attr.aria-label]="'Total: ' + brl(totalComandaResumoCalculado())"
-                >
-                  {{ brl(totalComandaResumoCalculado()) }}
-                </div>
-              </div>
-            </div>
           </section>
-
-          <div class="nc-drawer__obs">
-            <label class="nc-field nc-field--obs">
-              <span class="nc-field__label">Observações</span>
-              <textarea
-                class="nc-obs-textarea"
-                [class.nc-obs-textarea--readonly]="comandaFinalizada()"
-                rows="3"
-                placeholder="Escreva aqui"
-                [readonly]="comandaFinalizada()"
-                aria-label="Observações da comanda"
-              ></textarea>
-            </label>
-          </div>
         </main>
       </div>
+
+    <div
+      class="nc-drawer__resumo-sticky"
+      [attr.data-nc-resumo-status]="resumoPagamentos.status"
+    >
+      <app-comanda-resumo-bar
+        [descontoResumoCtrl]="descontoResumoCtrl"
+        [creditoResumoCtrl]="creditoResumoCtrl"
+        [descontoSomenteLeitura]="comandaFinalizada()"
+        [cashbackReais]="cashbackComandaReais()"
+        [totalReais]="totalComandaResumoCalculado()"
+      />
     </div>
   </div>
 

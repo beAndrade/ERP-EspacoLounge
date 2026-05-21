@@ -17,6 +17,48 @@ export interface ComandaGrupoResumo {
 
 const EPS_MOEDA = 0.005;
 
+/** Data civil de hoje no fuso local (AAAA-MM-DD). */
+export function ymdHojeCivil(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** `dataYmd` estritamente anterior ao dia de hoje. */
+export function dataYmdAnteriorAHoje(dataYmd: string): boolean {
+  const y = String(dataYmd ?? '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return false;
+  return y < ymdHojeCivil();
+}
+
+/**
+ * Comanda com parcelas em `comanda_pagamentos` ou pagamento parcial já registado.
+ * Nestes casos o vencimento segue a data da prestação, não a data da comanda.
+ */
+export function itemTemParcelasOuPagamentoParcial(
+  l: AtendimentoListaItem,
+): boolean {
+  const menor = (l.pagamento_prestacao_menor_data ?? '').trim().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(menor)) return true;
+  const ps = String(l.pagamentoStatus ?? '').trim().toLowerCase();
+  if (ps === 'parcial') return true;
+  const pago = Number(l.total_pago ?? 0);
+  if (ps === 'pendente' && Number.isFinite(pago) && pago > EPS_MOEDA) {
+    return true;
+  }
+  return false;
+}
+
+/** Prestação `pendente` com `data_pagamento` da parcela já vencida (antes de hoje). */
+export function prestacaoPendenteVencidaItem(l: AtendimentoListaItem): boolean {
+  if (l.pagamento_prestacao_pendente_atrasada === true) return true;
+  const menor = (l.pagamento_prestacao_menor_data ?? '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(menor)) return false;
+  return dataYmdAnteriorAHoje(menor);
+}
+
 export function cobrancaFinalizadaItem(l: AtendimentoListaItem): boolean {
   return String(l.cobrancaStatus ?? '').trim().toLowerCase() === 'finalizada';
 }
@@ -116,28 +158,61 @@ function itemTemDividaNaoQuitada(l: AtendimentoListaItem): boolean {
 }
 
 /**
- * Coluna Pagamento (só comanda faturada): Pago | Em aberto | Atrasado.
+ * Comanda faturada com saldo em aberto exibida como «Atrasado».
+ * Com parcelas: só se alguma prestação `pendente` tiver data de vencimento &lt; hoje.
+ * Sem parcelas: data da comanda passada e pagamento único ainda não quitado.
+ */
+export function pagamentoEmAtrasoParaExibicao(
+  l: AtendimentoListaItem,
+  dataComandaYmd: string,
+): boolean {
+  if (itemTemParcelasOuPagamentoParcial(l)) {
+    return prestacaoPendenteVencidaItem(l);
+  }
+  const dataComanda = String(dataComandaYmd ?? '').trim().slice(0, 10);
+  if (!dataYmdAnteriorAHoje(dataComanda)) return false;
+  const metodo = String(l.pagamentoMetodo ?? '').trim().toLowerCase();
+  if (!metodo) return true;
+  return metodo === 'pendente';
+}
+
+/**
+ * Coluna Pagamento: Pago | Em aberto | Atrasado.
+ * Retorna `null` se a cobrança ainda não foi finalizada (ver `pagamentoColunaFromGrupo`).
  * Pode passar `jaQuitadaNasCifras` quando a lista usa regra de quitada mais rica que a do util.
  */
 export function pagamentoColunaFromItem(
   l: AtendimentoListaItem,
   valorTotalGrupo: number | null,
-  opts?: { jaQuitadaNasCifras?: boolean },
+  opts?: { jaQuitadaNasCifras?: boolean; dataComanda?: string },
 ): PagamentoColuna | null {
   if (!cobrancaFinalizadaItem(l)) return null;
   const quitada =
     opts?.jaQuitadaNasCifras ??
     comandaQuitadaNasCifrasItem(l, valorTotalGrupo);
   if (quitada) return 'pago';
-  if (l.pagamento_prestacao_pendente_atrasada === true) return 'atrasado';
+  const dataRef = (opts?.dataComanda ?? l.data ?? '').trim().slice(0, 10);
+  if (pagamentoEmAtrasoParaExibicao(l, dataRef)) return 'atrasado';
   if (itemTemDividaNaoQuitada(l)) return 'em_aberto';
   return 'pago';
 }
 
+/** Coluna Pagamento da lista (inclui comanda ainda não faturada). */
 export function pagamentoColunaFromGrupo(
   g: ComandaGrupoResumo,
-): PagamentoColuna | null {
-  return pagamentoColunaFromItem(g.linhas[0], g.valorTotal);
+  opts?: { jaQuitadaNasCifras?: boolean },
+): PagamentoColuna {
+  const l0 = g.linhas[0];
+  const quitada =
+    opts?.jaQuitadaNasCifras ?? comandaQuitadaNasCifrasItem(l0, g.valorTotal);
+  if (quitada) return 'pago';
+  const pc = pagamentoColunaFromItem(l0, g.valorTotal, {
+    jaQuitadaNasCifras: quitada,
+    dataComanda: g.data,
+  });
+  if (pc != null) return pc;
+  if (dataYmdAnteriorAHoje(g.data)) return 'atrasado';
+  return 'em_aberto';
 }
 
 export function agruparAtendimentosEmComandas(
@@ -195,9 +270,9 @@ export function idClienteDoGrupo(g: ComandaGrupoResumo): string {
 }
 
 export interface ContagensSidebarCliente {
-  /** Comandas não faturadas (`cobranca_status` ≠ finalizada). */
+  /** Comandas com status «Pendente» (cobrança não finalizada), como na lista. */
   comandasPendente: number;
-  /** Comandas faturadas com prestação pendente vencida (critério API / BD). */
+  /** Comandas faturadas com pagamento «Atrasado» na lista. */
   pagamentosAtrasados: number;
 }
 
@@ -216,12 +291,147 @@ export function contagensSidebarParaCliente(
   let pagamentosAtrasados = 0;
   for (const g of grupos) {
     const l0 = g.linhas[0];
-    if (!cobrancaFinalizadaItem(l0)) {
+    if (statusComandaColunaFromGrupo(g) === 'pendente') {
       comandasPendente += 1;
     }
-    if (l0.pagamento_prestacao_pendente_atrasada === true) {
+    if (
+      cobrancaFinalizadaItem(l0) &&
+      !comandaQuitadaNasCifrasGrupo(g) &&
+      pagamentoEmAtrasoParaExibicao(l0, g.data)
+    ) {
       pagamentosAtrasados += 1;
     }
   }
   return { comandasPendente, pagamentosAtrasados };
+}
+
+/** Linha da secção «Débitos» na ficha do cliente (pagamentos em atraso). */
+export interface ClienteDebitoLinhaUi {
+  idAtendimento: string;
+  numeroComanda: number | null;
+  descricao: string;
+  vencimentoYmd: string;
+  valorReais: number;
+}
+
+/** Linha da secção «Comandas em aberto» na ficha do cliente. */
+export interface ClienteComandaAbertaLinhaUi {
+  idAtendimento: string;
+  numeroComanda: number | null;
+  dataYmd: string;
+  valorReais: number;
+}
+
+function valorMonetarioGrupoCliente(g: ComandaGrupoResumo): number {
+  const l0 = g.linhas[0];
+  if (statusComandaColunaFromGrupo(g) === 'pendente') {
+    const total = g.valorTotal;
+    if (total != null && Number.isFinite(total)) return total;
+    const v = valorMonetarioParaNumero(l0.valor);
+    return v != null && Number.isFinite(v) ? v : 0;
+  }
+  const saldo = Number(l0.saldo);
+  if (Number.isFinite(saldo) && saldo >= 0) return saldo;
+  const total = g.valorTotal ?? 0;
+  const pago = Number(l0.total_pago ?? 0);
+  const devido = Number.isFinite(total) ? total : 0;
+  const p = Number.isFinite(pago) ? pago : 0;
+  return Math.max(0, Math.round((devido - p) * 100) / 100);
+}
+
+function vencimentoDebitoGrupo(g: ComandaGrupoResumo): string {
+  const l0 = g.linhas[0];
+  const menor = (l0.pagamento_prestacao_menor_data ?? '').trim().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(menor)) return menor;
+  return g.data;
+}
+
+function rotuloComandaDebito(
+  numero: number | null,
+  nomeCliente: string,
+): string {
+  const nome = String(nomeCliente ?? '').trim() || 'Cliente';
+  const rotulo =
+    numero != null && numero > 0 ? `comanda #${numero}` : 'comanda';
+  return `Referente à ${rotulo} para ${nome}`;
+}
+
+/**
+ * Agrupa atendimentos do cliente em linhas para a aba «Débitos» do drawer.
+ */
+export function painelDebitosClienteFromAtendimentos(
+  clienteId: string,
+  items: AtendimentoListaItem[],
+): {
+  debitos: ClienteDebitoLinhaUi[];
+  comandasAberto: ClienteComandaAbertaLinhaUi[];
+} {
+  const cid = String(clienteId ?? '').trim();
+  if (!cid) {
+    return { debitos: [], comandasAberto: [] };
+  }
+
+  const grupos = agruparAtendimentosEmComandas(items).filter(
+    (g) => idClienteDoGrupo(g) === cid,
+  );
+
+  const debitos: ClienteDebitoLinhaUi[] = [];
+  const comandasAberto: ClienteComandaAbertaLinhaUi[] = [];
+
+  for (const g of grupos) {
+    const l0 = g.linhas[0];
+    const idAt = String(l0?.id ?? '').trim();
+    if (!idAt) continue;
+
+    const numero = l0.numeroComanda ?? null;
+    const nome = String(l0.nomeCliente ?? '').trim();
+
+    if (statusComandaColunaFromGrupo(g) === 'pendente') {
+      comandasAberto.push({
+        idAtendimento: idAt,
+        numeroComanda: numero,
+        dataYmd: g.data,
+        valorReais: valorMonetarioGrupoCliente(g),
+      });
+      continue;
+    }
+
+    if (
+      cobrancaFinalizadaItem(l0) &&
+      !comandaQuitadaNasCifrasGrupo(g) &&
+      pagamentoEmAtrasoParaExibicao(l0, g.data)
+    ) {
+      debitos.push({
+        idAtendimento: idAt,
+        numeroComanda: numero,
+        descricao: rotuloComandaDebito(numero, nome),
+        vencimentoYmd: vencimentoDebitoGrupo(g),
+        valorReais: valorMonetarioGrupoCliente(g),
+      });
+    }
+  }
+
+  const byVenc = (a: ClienteDebitoLinhaUi, b: ClienteDebitoLinhaUi) =>
+    b.vencimentoYmd.localeCompare(a.vencimentoYmd);
+  const byData = (a: ClienteComandaAbertaLinhaUi, b: ClienteComandaAbertaLinhaUi) =>
+    b.dataYmd.localeCompare(a.dataYmd);
+
+  debitos.sort(byVenc);
+  comandasAberto.sort(byData);
+
+  return { debitos, comandasAberto };
+}
+
+export function totalDebitosCliente(debitos: ClienteDebitoLinhaUi[]): number {
+  return Math.round(
+    debitos.reduce((s, d) => s + d.valorReais, 0) * 100,
+  ) / 100;
+}
+
+export function totalComandasAbertoCliente(
+  linhas: ClienteComandaAbertaLinhaUi[],
+): number {
+  return Math.round(
+    linhas.reduce((s, d) => s + d.valorReais, 0) * 100,
+  ) / 100;
 }

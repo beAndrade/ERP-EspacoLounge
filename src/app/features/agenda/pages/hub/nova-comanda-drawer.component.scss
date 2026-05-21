@@ -30,12 +30,14 @@
 }
 
 .nc-drawer {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: var(--modal-sidebar-w) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0 var(--modal-col-gap);
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  gap: 0.75rem;
+  align-items: stretch;
 }
 
 /**
@@ -80,30 +82,10 @@
     }
   }
 
-  .nc-obs-textarea--readonly,
-  .nc-obs-textarea[readonly],
-  .nc-obs-textarea:read-only {
-    border: none;
-    background: var(--nc-readonly-bg);
-    color: var(--nc-readonly-fg);
-    cursor: not-allowed;
-    resize: none;
-
-    &:hover,
-    &:focus,
-    &:focus-visible {
-      border: none;
-      background: var(--nc-readonly-bg);
-      box-shadow: none;
-      outline: none;
-      cursor: not-allowed;
-    }
-  }
-
-  .nc-itens-summary__input,
-  .nc-itens-summary__input--readonly,
-  .nc-itens-summary__input[readonly],
-  .nc-itens-summary__input:read-only {
+  .comanda-resumo-bar__input,
+  .comanda-resumo-bar__input--readonly,
+  .comanda-resumo-bar__input[readonly],
+  .comanda-resumo-bar__input:read-only {
     border: none;
     background: var(--nc-readonly-bg);
     color: var(--nc-readonly-fg);
@@ -169,43 +151,37 @@
   }
 }
 
-/** Grelha = `form-shell--modal` (320px | 1fr, gap 1.25rem). */
-.nc-drawer__shell {
-  display: grid;
-  grid-template-columns: var(--modal-sidebar-w) minmax(0, 1fr);
-  gap: 0 var(--modal-col-gap);
-  align-items: stretch;
-  flex: 1 1 auto;
-  min-height: 0;
-  min-width: 0;
-  padding-inline: 0;
-}
-
 @media (max-width: 720px) {
-  .nc-drawer__shell {
+  .nc-drawer {
     display: flex;
     flex-direction: column;
     gap: 0;
     min-height: 0;
+  }
 
-    .nc-drawer__client {
-      order: 0;
-    }
+  .nc-drawer__client {
+    order: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--drawer-stroke, #ececec);
+  }
 
-    .nc-drawer__main {
-      order: 1;
-    }
+  .nc-drawer__main {
+    order: 1;
+  }
+
+  .nc-footer {
+    order: 2;
   }
 }
 
-/** Coluna principal = `form-shell__main--modal`. */
+/** Coluna principal = `form-shell__main--modal` (não invade a sidebar). */
 .nc-drawer__main {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  flex: 1 1 auto;
-  /** Fechar sticky fica dentro do scroller com `margin-right` negativo — não precisamos de overflow-x visível. */
   overflow-x: hidden;
   overflow-y: hidden;
   overflow-clip-margin: 16px 12px 20px 28px;
@@ -313,11 +289,14 @@
  * `agenda-novo--drawer` activa `:host-context` no sidebar.
  */
 .nc-drawer__client {
+  grid-column: 1;
+  grid-row: 1 / -1;
   min-width: 0;
   min-height: 0;
   align-self: stretch;
   display: flex;
   flex-direction: column;
+  border-right: 1px solid var(--drawer-stroke, #ececec);
 
   &.agenda-novo--drawer {
     --drawer-label-size: 15px;
@@ -337,15 +316,16 @@
   flex-direction: column;
   gap: 1.25rem;
 
-  /** Scroll da coluna da comanda (título + formulário + itens). */
+  /** Coluna principal: cabeçalho fixo no fluxo; lista de itens preenche o resto. */
   &--comanda-scroll {
     flex: 1 1 auto;
     min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    /** Último bloco (resumo / total) não cola ao fundo do viewport do scroll — evita corte visual. */
-    padding-bottom: 1.25rem;
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 0;
   }
 }
 
@@ -445,9 +425,46 @@
 /** Grelha «Itens da comanda» (referência UI: selects por coluna + resumo à direita). */
 .nc-itens {
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+}
+
+/** Lista de itens: ocupa a área útil de `.nc-main--comanda-scroll` (resumo no sticky). */
+.nc-itens--panel-fixed {
+  flex: 1 1 auto;
+  min-height: 12rem;
+  max-height: none;
+  width: 100%;
+  max-width: 100%;
+
+  .nc-itens__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/** Resumo na coluna principal, acima do footer (largura = área de conteúdo, não da sidebar). */
+.nc-drawer__resumo-sticky {
+  flex: 0 0 auto;
+  z-index: 6;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 0 0.5rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--drawer-stroke, #ececec);
+  background: #fff;
+  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.04);
 }
 
 .nc-itens__title {
@@ -552,7 +569,8 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  overflow-x: hidden;
+  max-width: 100%;
+  align-self: stretch;
   padding-bottom: 0.15rem;
   margin: 0;
 }
@@ -884,91 +902,22 @@
   }
 }
 
-/**
- * Observações: dentro de `.nc-main--comanda-scroll` (após itens), rola com o fluxo.
- */
-.nc-drawer__obs {
-  flex: 0 0 auto;
-  min-width: 0;
-  padding: 1rem 0 1.5rem;
-  margin-top: 0.35rem;
-  margin-bottom: 0;
-  border-top: none;
-  background: #fff;
-}
-
-.nc-field--obs {
-  gap: 0.4rem;
-  margin: 0;
-}
-
-.nc-obs-textarea {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 4.5rem;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--drawer-field-stroke);
-  border-radius: var(--radius);
-  background: #fff;
-  font: inherit;
-  font-size: 15px;
-  color: #292524;
-  resize: vertical;
-  transition:
-    border-color 0.2s linear,
-    box-shadow 0.2s linear,
-    background-color 0.2s linear;
-
-  &::placeholder {
-    color: rgba(0, 0, 0, 0.38);
-  }
-
-  &:hover {
-    border-color: var(--drawer-field-stroke-hover);
-    outline: 0;
-    background-color: #ffffff;
-  }
-
-  &:focus {
-    outline: 0;
-    border-color: var(--drawer-field-stroke-hover);
-    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
-    background-color: #ffffff;
-  }
-}
-
-/** = `agenda-modal__footer` (drawer): traço full-bleed + padding. */
+/** Rodapé só na coluna principal (alinha com resumo). */
 .nc-footer {
+  grid-column: 2;
+  grid-row: 2;
   flex: 0 0 auto;
-  margin-top: auto;
+  margin-top: 0;
   margin-bottom: 0;
-  padding: 10px 0 10px var(--drawer-pad-x);
+  padding: 10px 0 10px var(--drawer-pad-x, 15px);
   background: #fff;
   position: relative;
   z-index: 2;
   overflow: visible;
+  border-top: 1px solid var(--drawer-stroke, #ececec);
 
   &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: calc(
-      -1 *
-        (
-          var(--modal-sidebar-w) + var(--modal-col-gap) +
-            var(--drawer-pad-x, 15px)
-        )
-    );
-    right: calc(-1 * var(--drawer-pad-x, 15px));
-    height: 1px;
-    background: var(--drawer-stroke, #ececec);
-    pointer-events: none;
-  }
-
-  @media (max-width: 720px) {
-    &::before {
-      left: calc(-1 * var(--drawer-pad-x, 15px));
-    }
+    content: none;
   }
 
   /** Igual a `.agenda-modal__footer .btn.btn-footer--danger` no agendamento. */
@@ -1679,6 +1628,9 @@
   list-style: none;
   margin: 0.5rem 0 0;
   padding: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1689,6 +1641,9 @@
   border-radius: 0;
   background: transparent;
   padding: 0.45rem 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -1701,7 +1656,10 @@
 }
 
 .nc-leitura__row {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   column-gap: 0.35rem;
   row-gap: 0.35rem;
 
@@ -1953,6 +1911,22 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+
+  &--compact {
+    gap: 0.15rem;
+    padding-left: calc(70px + 0.25rem);
+
+    .nc-leitura__etapa {
+      font-size: 0.8125rem;
+      line-height: 1.35;
+    }
+  }
+}
+
+.nc-leitura__item--mega-pacote {
+  .nc-leitura__row-head {
+    margin-bottom: 0.15rem;
+  }
 }
 
 .nc-leitura__etapas--antes-valores {

@@ -1,0 +1,50 @@
+<div class="comanda-resumo-bar" aria-label="Resumo da comanda">
+  <div class="comanda-resumo-bar__row">
+    <span class="comanda-resumo-bar__label">Desconto</span>
+    <input
+      type="text"
+      class="comanda-resumo-bar__input"
+      [class.comanda-resumo-bar__input--readonly]="descontoSomenteLeitura"
+      inputmode="numeric"
+      autocomplete="off"
+      [attr.placeholder]="placeholderMoeda"
+      [formControl]="descontoResumoCtrl"
+      [readonly]="descontoSomenteLeitura"
+      (input)="onResumoMoedaInput(descontoResumoCtrl, $event)"
+      (blur)="normalizarCampoMoedaResumo(descontoResumoCtrl)"
+      [attr.aria-label]="'Desconto: ' + descontoResumoCtrl.value"
+    />
+  </div>
+  <div class="comanda-resumo-bar__row">
+    <span class="comanda-resumo-bar__label">Crédito</span>
+    <input
+      type="text"
+      class="comanda-resumo-bar__input"
+      inputmode="numeric"
+      autocomplete="off"
+      [attr.placeholder]="placeholderMoeda"
+      [formControl]="creditoResumoCtrl"
+      (input)="onCreditoResumoMoedaInput($event)"
+      (blur)="normalizarCampoMoedaResumo(creditoResumoCtrl)"
+      [attr.aria-label]="'Crédito a usar: ' + creditoResumoCtrl.value"
+    />
+  </div>
+  <div class="comanda-resumo-bar__row">
+    <span class="comanda-resumo-bar__label">Cashback</span>
+    <div
+      class="comanda-resumo-bar__input comanda-resumo-bar__input--readonly comanda-resumo-bar__input--readonly-cashback"
+      [attr.aria-label]="'Cashback: ' + brl(cashbackReais)"
+    >
+      {{ brl(cashbackReais) }}
+    </div>
+  </div>
+  <div class="comanda-resumo-bar__row comanda-resumo-bar__row--total">
+    <span class="comanda-resumo-bar__label">Total</span>
+    <div
+      class="comanda-resumo-bar__input comanda-resumo-bar__input--readonly comanda-resumo-bar__input--total"
+      [attr.aria-label]="'Total: ' + brl(totalReais)"
+    >
+      {{ brl(totalReais) }}
+    </div>
+  </div>
+</div>

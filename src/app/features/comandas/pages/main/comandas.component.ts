@@ -7,11 +7,11 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   AtendimentoListaItem,
@@ -30,9 +30,12 @@ import {
   toYmd,
   valorMonetarioParaNumero,
 } from '../../../../core/utils/atendimento-display';
-import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
-  pagamentoColunaFromItem,
+  ClienteCadastroDrawerService,
+  type AbrirCadastroClientePayload,
+} from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import {
+  pagamentoColunaFromGrupo,
   statusComandaColunaFromItem,
   type PagamentoColuna,
   type StatusComandaColuna,
@@ -59,6 +62,16 @@ type FiltroPagamentoColunaId = PagamentoColuna;
 
 const DRAWER_ANIM_MS = 430;
 
+const RESUMO_PAGAMENTOS_VAZIO: ComandaResumoPagamentos = {
+  total_bruto: 0,
+  desconto: 0,
+  total: 0,
+  total_pago: 0,
+  saldo: 0,
+  status: 'aberto',
+  cobranca_status: null,
+};
+
 function formataMoeda(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -84,8 +97,13 @@ function formataMoeda(n: number): string {
 })
 export class ComandasComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+
+  /** `?comanda=id_atendimento` — abre o drawer após carregar a lista. */
+  private comandaQueryAbrir: string | null = null;
+  private comandaQueryEmAbertura = false;
 
   readonly dataDdMmBarraAaaa = dataDdMmBarraAaaa;
 
@@ -177,8 +195,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
     hora?: string;
     id_atendimento?: string;
   } | null = null;
-  /** Após salvar/excluir no drawer de edição, recarregar lista + resumo. */
-  private editReloadKey = 0;
   /** ViewChild do drawer de comanda para chamar `recarregarAposFaturar`. */
   @ViewChild(NovaComandaDrawerComponent)
   comandaDrawerRef?: NovaComandaDrawerComponent;
@@ -207,6 +223,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private clientesCatalogo: Cliente[] = [];
 
   ngOnInit(): void {
+    this.carregando = true;
+    this.route.queryParamMap.subscribe((params) => {
+      const id = (params.get('comanda') ?? '').trim();
+      this.comandaQueryAbrir = id || null;
+      this.tentarAbrirComandaPorQuery();
+    });
+
     forkJoin({
       ags: this.api.listAgendamentos(),
       clientes: this.api.listClientes(),
@@ -217,6 +240,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.selecionados.clear();
         this.pagina = 1;
         this.carregando = false;
+        this.tentarAbrirComandaPorQuery();
       },
       error: () => {
         this.carregar();
@@ -296,6 +320,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
       if (!this.excluindoEmMassa) {
         this.fecharModalExcluirEmMassa();
       }
+      return;
+    }
+    if (this.cadastroDrawer.tratarEscapeComandaEmpilhadaNaFicha()) {
+      ev.preventDefault();
       return;
     }
     if (this.cadastroDrawer.isAberto) {
@@ -396,6 +424,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.selecionados.clear();
         this.pagina = 1;
         this.carregando = false;
+        this.tentarAbrirComandaPorQuery();
       },
       error: (e: Error) => {
         this.erro =
@@ -494,6 +523,60 @@ export class ComandasComponent implements OnInit, OnDestroy {
   onSalvoNovoAgendamento(): void {
     this.fecharNovoAgendamento();
     this.carregar();
+  }
+
+  /** Drawer «Nova comanda»: gravou e abre Faturar por cima (sem nova-comanda intermédio). */
+  onFaturarDesdeNovoComanda(ev: {
+    idAtendimento: string;
+    dataYmd: string;
+    clienteId: string;
+    cliente: Cliente | null;
+  }): void {
+    this.abrirFaturarComResumoApi(ev.idAtendimento, ev.dataYmd, ev.cliente?.nome ?? '');
+  }
+
+  /** Edição de itens com comanda aberta por baixo. */
+  onFaturarDesdeEditComanda(ev: {
+    idAtendimento: string;
+    dataYmd: string;
+    clienteId: string;
+    cliente: Cliente | null;
+  }): void {
+    this.abrirFaturarComResumoApi(ev.idAtendimento, ev.dataYmd, ev.cliente?.nome ?? '');
+  }
+
+  private abrirFaturarComResumoApi(
+    idAtendimento: string,
+    dataYmd: string,
+    nomeCliente: string,
+  ): void {
+    const id = (idAtendimento ?? '').trim();
+    const ymd = (dataYmd ?? '').trim();
+    if (!id) return;
+    this.comandaDataYmdParaFaturar =
+      /^\d{4}-\d{2}-\d{2}$/.test(ymd) ? ymd : null;
+    this.api
+      .listComandaPagamentos(id)
+      .pipe(
+        catchError(() =>
+          of({ items: [], resumo: RESUMO_PAGAMENTOS_VAZIO }),
+        ),
+      )
+      .subscribe((r) => {
+        this.faturarCtx = {
+          idAtendimento: id,
+          resumo: r.resumo ?? RESUMO_PAGAMENTOS_VAZIO,
+          nomeCliente: nomeCliente.trim(),
+        };
+        this.abrirDrawerComAnimacao(
+          () => {
+            this.faturarDrawerAberto = true;
+          },
+          (open) => {
+            this.faturarDrawerPanelOpen = open;
+          },
+        );
+      });
   }
 
   /** «Criar comanda» no rodapé do agendamento: abre o drawer da comanda por cima. */
@@ -838,13 +921,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
       : 'badge--warn';
   }
 
-  /** Sem faturamento ou sem pagamento registado → «Em aberto». */
   private pagamentoColunaGrupo(g: ComandaGrupo): PagamentoColuna {
-    return (
-      pagamentoColunaFromItem(g.linhas[0], g.valorTotal, {
-        jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
-      }) ?? 'em_aberto'
-    );
+    return pagamentoColunaFromGrupo(g, {
+      jaQuitadaNasCifras: this.comandaQuitadaNasCifras(g),
+    });
   }
 
   rotuloPagamento(g: ComandaGrupo): string {
@@ -987,6 +1067,64 @@ export class ComandasComponent implements OnInit, OnDestroy {
   abrirDrawerComanda(g: ComandaGrupo, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
+    this.abrirDrawerComandaPorGrupo(g);
+  }
+
+  private limparQueryComanda(): void {
+    void this.router.navigate([], {
+      queryParams: { comanda: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  /** Abre comanda a partir de `?comanda=` (ex.: link «Visualizar» na ficha do cliente). */
+  private tentarAbrirComandaPorQuery(): void {
+    const idAt = this.comandaQueryAbrir?.trim();
+    if (!idAt || this.carregando || this.comandaQueryEmAbertura) return;
+
+    const local = this.grupos.find((gr) => this.idAtendimento(gr) === idAt);
+    if (local) {
+      this.comandaQueryAbrir = null;
+      this.limparQueryComanda();
+      this.abrirDrawerComandaPorGrupo(local);
+      return;
+    }
+
+    this.comandaQueryEmAbertura = true;
+    this.api.listAgendamentos(undefined, undefined, idAt).subscribe({
+      next: (items) => {
+        this.comandaQueryEmAbertura = false;
+        if (this.comandaQueryAbrir !== idAt) return;
+        const extra = this.agruparPorIdAtendimento(items);
+        const g = extra.find((gr) => this.idAtendimento(gr) === idAt);
+        if (!g) {
+          this.comandaQueryAbrir = null;
+          this.limparQueryComanda();
+          return;
+        }
+        const ix = this.grupos.findIndex((gr) => this.idAtendimento(gr) === idAt);
+        if (ix >= 0) {
+          this.grupos[ix] = g;
+        } else {
+          this.grupos = [...this.grupos, g];
+        }
+        this.comandaQueryAbrir = null;
+        this.limparQueryComanda();
+        this.abrirDrawerComandaPorGrupo(g);
+      },
+      error: () => {
+        this.comandaQueryEmAbertura = false;
+        if (this.comandaQueryAbrir === idAt) {
+          this.comandaQueryAbrir = null;
+          this.limparQueryComanda();
+        }
+      },
+    });
+  }
+
+  /** Abre o drawer «Visualizando comanda» para o grupo indicado. */
+  private abrirDrawerComandaPorGrupo(g: ComandaGrupo): void {
     this.menuAbertoParaId = null;
     this.fecharPainelBusca();
     const idAt = this.idAtendimento(g);
@@ -1042,16 +1180,45 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Drawer da comanda: botão «Aniversário não definido» (sidebar) —
-   * abre o mesmo cadastro de cliente **sem** fechar a comanda.
+   * Cliente actual para links da sidebar: comanda aberta, edição ou nova comanda.
    */
-  onAbrirCadastroClienteDaComandaSidebar(): void {
+  private clienteAlvoSidebarCadastro(): {
+    cid: string;
+    nomeLista: string;
+  } | null {
     const ctx = this.comandaDrawerContexto;
-    const cid = ctx?.clienteId?.trim();
-    if (!cid) return;
+    const cidCtx = ctx?.clienteId?.trim();
+    if (cidCtx) {
+      return {
+        cid: cidCtx,
+        nomeLista: String(ctx?.cliente?.nome ?? '').trim(),
+      };
+    }
+    const ag = this.agendaNovoDrawerAtivo();
+    const c = ag?.clienteSelecionado();
+    const cidAg = c?.id?.trim();
+    if (cidAg) {
+      return { cid: cidAg, nomeLista: String(c?.nome ?? '').trim() };
+    }
+    return null;
+  }
 
-    const nomeLista = String(ctx?.cliente?.nome ?? '').trim();
-    this.cadastroDrawer.abrirEdicao(cid, {
+  /** `app-agenda-novo` visível (nova comanda ou edição de itens). */
+  private agendaNovoDrawerAtivo(): AgendaNovoComponent | undefined {
+    if (this.editAgendamentoAberto || this.novoAgendamentoAberto) {
+      return this.agendaEditComandaRef;
+    }
+    return undefined;
+  }
+
+  onAbrirCadastroClienteDaComandaSidebar(
+    payload: AbrirCadastroClientePayload = {},
+  ): void {
+    const alvo = this.clienteAlvoSidebarCadastro();
+    if (!alvo) return;
+    const { cid, nomeLista } = alvo;
+
+    this.cadastroDrawer.abrirEdicaoPorLinkSidebar(cid, payload, {
       nomeLista,
       callbacks: {
         onClienteCarregado: (c) => {
@@ -1076,6 +1243,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
         onSalvo: (salvo) => {
           this.atualizarGruposECatalogo();
           const cidSalvo = (salvo.id ?? cid).trim();
+          if (
+            cidSalvo &&
+            this.comandaDrawerContexto?.clienteId?.trim() === cidSalvo
+          ) {
+            this.comandaDrawerContexto = {
+              ...this.comandaDrawerContexto,
+              cliente: salvo,
+            };
+          }
           if (cidSalvo) {
             this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cidSalvo);
           }
@@ -1185,14 +1361,35 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }, DRAWER_ANIM_MS);
   }
 
-  /** Após salvar agendamento: fecha edição e o drawer da comanda; volta à lista de comandas. */
+  /**
+   * Após salvar edição: fecha o editor e volta ao drawer «Visualizando comanda»
+   * (mantém ou reabre a comanda; actualiza itens e resumo).
+   */
   onSalvoEditAgendamento(): void {
+    const idAt =
+      this.editAgendamentoCtx?.id_atendimento?.trim() ??
+      this.comandaDrawerContexto?.idAtendimento?.trim() ??
+      '';
+    const comandaJaAberta =
+      this.comandaPainelAberto && this.comandaDrawerContexto != null;
+
     this.fecharEditAgendamento();
-    this.editReloadKey++;
-    if (this.comandaPainelAberto) {
-      this.fecharComandaDrawer();
-    }
     this.carregar();
+
+    if (!idAt) return;
+
+    if (comandaJaAberta) {
+      setTimeout(() => {
+        this.comandaDrawerRef?.recarregarDadosComanda();
+      }, 0);
+      return;
+    }
+
+    const g = this.grupos.find((gr) => this.idAtendimento(gr) === idAt);
+    if (!g) return;
+    setTimeout(() => {
+      this.abrirDrawerComandaPorGrupo(g);
+    }, DRAWER_ANIM_MS);
   }
 
   onComandaDataYmdAlterada(ymd: string | null): void {

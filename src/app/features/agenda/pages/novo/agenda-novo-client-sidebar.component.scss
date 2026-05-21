@@ -17,12 +17,6 @@
 
 /** No hub em modo drawer: mesma escala de tipo que o formulário (tokens no pai `agenda-novo--drawer`). */
 :host-context(.agenda-novo--drawer) {
-  .client-sidebar-drawer__iniciais {
-    font-weight: 600;
-    font-size: 1.25rem;
-    letter-spacing: 0.02em;
-  }
-
   .client-sidebar-drawer__nome-destaque {
     font-size: var(--drawer-label-size, 1rem);
     font-weight: 500;
@@ -76,44 +70,6 @@
   width: 100%;
   padding-top: 2.5rem;
   padding-bottom: 0.5rem;
-}
-
-.client-sidebar-drawer__avatar {
-  width: 118px;
-  height: 118px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: #7c6d8c;
-  flex-shrink: 0;
-  box-shadow: none;
-}
-
-.client-sidebar-drawer__avatar--empty {
-  color: #a8a0b0;
-  background: transparent;
-}
-
-.client-sidebar-drawer__iniciais {
-  font-weight: 800;
-  font-size: 1.35rem;
-  letter-spacing: 0.02em;
-  color: var(--color-text, #1c1917);
-}
-
-.client-sidebar-drawer__avatar-ico {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-}
-
-.client-sidebar-drawer__user-svg {
-  width: 4rem;
-  height: 4rem;
-  display: block;
 }
 
 .client-sidebar-drawer {

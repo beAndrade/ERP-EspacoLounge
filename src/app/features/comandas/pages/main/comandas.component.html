@@ -732,15 +732,17 @@
       [class.app-drawer--open]="novoAgendamentoPanelOpen"
       role="dialog"
       aria-modal="true"
-      aria-label="Novo agendamento"
+      aria-label="Nova comanda"
       (click)="$event.stopPropagation()"
     >
       <app-agenda-novo
         [modoModal]="true"
+        [fluxoSomenteComanda]="true"
         [contextoSlot]="novoAgendamentoCtx"
         (salvoComSucesso)="onSalvoNovoAgendamento()"
         (cancelarModal)="fecharNovoAgendamento()"
-        (abrirComanda)="abrirComandaDesdeAgendamento($event)"
+        (faturarDesdeFormulario)="onFaturarDesdeNovoComanda($event)"
+        (abrirCadastroCliente)="onAbrirCadastroClienteDaComandaSidebar($event)"
         (abrirNovoClienteDrawer)="abrirClienteDrawerNovo()"
       />
     </div>
@@ -771,36 +773,38 @@
         (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
         (salvarComanda)="onSalvarDesdeDrawerComanda()"
         (faturarComanda)="onAbrirFaturarComanda($event)"
-        (abrirCadastroCliente)="onAbrirCadastroClienteDaComandaSidebar()"
+        (abrirCadastroCliente)="onAbrirCadastroClienteDaComandaSidebar($event)"
       />
     </div>
+  }
 
-    @if (faturarDrawerAberto && faturarCtx) {
-      <div
-        class="overlay overlay--faturar"
-        [class.overlay--open]="faturarDrawerPanelOpen"
-        aria-hidden="true"
-        (click)="fecharFaturarDrawer()"
-      ></div>
-      <div
-        class="app-drawer app-drawer--faturar"
-        [class.app-drawer--open]="faturarDrawerPanelOpen"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Faturar comanda"
-        (click)="$event.stopPropagation()"
-      >
-        <app-faturar-drawer
-          [idAtendimento]="faturarCtx.idAtendimento"
-          [resumoInicial]="faturarCtx.resumo"
-          [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
-          [dataComanda]="comandaDataYmdParaFaturar"
-          [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
-          (faturado)="onFaturaComandaSucesso()"
-          (fechar)="fecharFaturarDrawer()"
-        />
-      </div>
-    }
+  @if (faturarDrawerAberto && faturarCtx) {
+    <div
+      class="overlay overlay--faturar"
+      [class.overlay--comanda]="novoAgendamentoAberto || comandaPainelAberto"
+      [class.overlay--open]="faturarDrawerPanelOpen"
+      aria-hidden="true"
+      (click)="fecharFaturarDrawer()"
+    ></div>
+    <div
+      class="app-drawer app-drawer--faturar"
+      [class.app-drawer--comanda]="novoAgendamentoAberto || comandaPainelAberto"
+      [class.app-drawer--open]="faturarDrawerPanelOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Faturar comanda"
+      (click)="$event.stopPropagation()"
+    >
+      <app-faturar-drawer
+        [idAtendimento]="faturarCtx.idAtendimento"
+        [resumoInicial]="faturarCtx.resumo"
+        [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
+        [dataComanda]="comandaDataYmdParaFaturar"
+        [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
+        (faturado)="onFaturaComandaSucesso()"
+        (fechar)="fecharFaturarDrawer()"
+      />
+    </div>
   }
 
   @if (editAgendamentoAberto && editAgendamentoCtx) {
@@ -815,14 +819,18 @@
       [class.app-drawer--open]="editAgendamentoPanelOpen"
       role="dialog"
       aria-modal="true"
-      aria-label="Editar agendamento"
+      aria-label="Editar itens da comanda"
       (click)="$event.stopPropagation()"
     >
       <app-agenda-novo
         [modoModal]="true"
+        [fluxoSomenteComanda]="true"
+        [ocultarResumoComanda]="true"
         [contextoSlot]="editAgendamentoCtx"
         (salvoComSucesso)="onSalvoEditAgendamento()"
         (cancelarModal)="fecharEditAgendamento()"
+        (faturarDesdeFormulario)="onFaturarDesdeEditComanda($event)"
+        (abrirCadastroCliente)="onAbrirCadastroClienteDaComandaSidebar($event)"
         (abrirNovoClienteDrawer)="abrirClienteDrawerNovo()"
       />
     </div>

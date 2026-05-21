@@ -2,6 +2,10 @@
   <p class="alert" role="alert">{{ erro }}</p>
 }
 
+<h1 class="hub-welcome">
+  Olá, {{ sessao.nomeExibicao() }}, seja bem-vinda!
+</h1>
+
 <div class="hub-layout">
   <aside class="hub-sidebar" aria-label="Calendário e profissionais">
     <div class="mini-cal">
@@ -169,6 +173,7 @@
       (cancelarModal)="fecharModal()"
       (navegacaoNoHub)="onNavegarAgendamentoDrawer($event)"
       (abrirComanda)="abrirComandaDesdeAgenda($event)"
+      (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
     />
   </div>
   @if (comandaPainelAberto) {
@@ -194,7 +199,7 @@
         (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
         (salvarComanda)="onSalvarAgendamentoDesdeDrawerComanda()"
         (faturarComanda)="onAbrirFaturarComanda($event)"
-        (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub()"
+        (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
       />
     </div>
 

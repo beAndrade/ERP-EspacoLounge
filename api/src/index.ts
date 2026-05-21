@@ -38,6 +38,7 @@ import {
   criarProfissional,
   listProfissionaisForApi,
 } from './services/profissionais-domain';
+import { listClienteCreditoMovimentos } from './services/clientes-credito-movimentos';
 import {
   allocNextClienteClId,
   deleteClienteById,
@@ -198,6 +199,16 @@ const app = new Elysia({ adapter: node() })
       const item = await getClienteById(db, params.id);
       if (!item) return fail('NOT_FOUND', 'Cliente não encontrado');
       return ok({ item });
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
+  .get(
+    '/api/clientes/:id/credito-movimentos',
+    async ({ params }) => {
+      const item = await getClienteById(db, params.id);
+      if (!item) return fail('NOT_FOUND', 'Cliente não encontrado');
+      const items = await listClienteCreditoMovimentos(db, params.id);
+      return ok({ items });
     },
     { params: t.Object({ id: t.String() }) },
   )

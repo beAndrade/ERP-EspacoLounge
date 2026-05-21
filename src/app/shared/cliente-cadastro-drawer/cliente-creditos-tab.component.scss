@@ -1,0 +1,139 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  grid-column: 2 / -1;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.cliente-creditos {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 16px 24px 24px;
+  border-right: 1px solid hsl(220, 13%, 91%);
+  box-sizing: border-box;
+}
+
+.cliente-creditos__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.cliente-creditos__titulo {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.cliente-creditos__saldo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.cliente-creditos__saldo-ico {
+  display: inline-flex;
+  color: #6b7280;
+}
+
+.cliente-creditos__saldo-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.cliente-creditos__saldo-valor {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.cliente-creditos__saldo-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cliente-creditos__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.cliente-creditos__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.cliente-creditos__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th,
+  td {
+    padding: 0.65rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+  }
+
+  th {
+    font-weight: 600;
+    color: #6b7280;
+    background: #fafafa;
+  }
+
+  td {
+    color: #1f2937;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.cliente-creditos__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+
+  &--entrada {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &--saida {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}

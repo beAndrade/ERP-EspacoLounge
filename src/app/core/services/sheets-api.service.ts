@@ -18,6 +18,7 @@ import {
   RecalcularFolhaComissoesResposta,
   Cliente,
   ClienteCadastroPayload,
+  ClienteCreditoMovimento,
   CreateAtendimentoPayload,
   MovimentacaoListaItem,
   PacoteCatalogoItem,
@@ -61,6 +62,21 @@ export class SheetsApiService {
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.item),
+      );
+  }
+
+  listClienteCreditoMovimentos(
+    clienteId: string,
+  ): Observable<ClienteCreditoMovimento[]> {
+    return this.http
+      .get<ApiResponse<{ items: ClienteCreditoMovimento[] }>>(
+        this.url(
+          `/api/clientes/${encodeURIComponent(clienteId)}/credito-movimentos`,
+        ),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items ?? []),
       );
   }
 

@@ -673,7 +673,7 @@ input[type='number'].fat-field__input {
   flex-shrink: 0;
 }
 
-/* Valor em cima; badge abaixo, centrada na horizontal em relação ao valor */
+/* Valor em cima; badge abaixo, alinhada à direita (fim da coluna) */
 .fat-pag-valor-wrap {
   display: inline-flex;
   flex-direction: column;
@@ -688,10 +688,6 @@ input[type='number'].fat-field__input {
   font-weight: 600;
   color: var(--fat-fg);
   line-height: 1.25;
-}
-
-.fat-pag-valor-wrap .fat-pag-badge {
-  align-self: center;
 }
 
 .fat-pag-badge {

@@ -12,6 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { catchError, map, of, take, startWith, distinctUntilChanged } from 'rxjs';
+import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
 import { AgendaNovoClientSidebarComponent } from '../novo/agenda-novo-client-sidebar.component';
 import type {
   AtendimentoItemCatalogo,
@@ -29,6 +30,7 @@ import {
   valorMonetarioParaNumero,
 } from '../../../../core/utils/atendimento-display';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
+import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 
 function formataMoedaBrl(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -109,7 +111,11 @@ const RESUMO_VAZIO: ComandaResumoPagamentos = {
 @Component({
   selector: 'app-nova-comanda-drawer',
   standalone: true,
-  imports: [AgendaNovoClientSidebarComponent, ReactiveFormsModule],
+  imports: [
+    AgendaNovoClientSidebarComponent,
+    ComandaResumoBarComponent,
+    ReactiveFormsModule,
+  ],
   templateUrl: './nova-comanda-drawer.component.html',
   styleUrl: './nova-comanda-drawer.component.scss',
 })
@@ -142,8 +148,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   /** Pede gravar o agendamento (hub: formulário atrás da comanda; comandas: editor em modo modal). */
   readonly salvarComanda = output<void>();
 
-  /** Abrir edição cadastral do cliente (sidebar: ex. aniversário). */
-  readonly abrirCadastroCliente = output<void>();
+  /** Abrir ficha do cliente (sidebar); `aba` opcional (ex.: «Cashback»). */
+  readonly abrirCadastroCliente = output<AbrirCadastroClientePayload>();
 
   readonly clienteComandaCtrl = new FormControl('', { nonNullable: true });
   readonly clienteNomeCtrl = new FormControl('', { nonNullable: true });
@@ -993,6 +999,7 @@ export class NovaComandaDrawerComponent implements OnInit {
         ...base,
         ...api,
         creditoSaldo: api.creditoSaldo ?? base.creditoSaldo ?? 0,
+        cashbackSaldo: api.cashbackSaldo ?? base.cashbackSaldo ?? 0,
       };
     }
     return api ?? base ?? null;

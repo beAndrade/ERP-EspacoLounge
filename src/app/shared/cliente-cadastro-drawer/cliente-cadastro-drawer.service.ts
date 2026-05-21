@@ -1,9 +1,10 @@
 import { ApplicationRef, Injectable, inject } from '@angular/core';
-import { Subscription, finalize, take } from 'rxjs';
+import { Subscription, catchError, finalize, forkJoin, of, take } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import {
   Cliente,
   ClienteCadastroPayload,
+  ClienteCreditoMovimento,
 } from '../../core/models/api.models';
 import {
   dataDdMmYyyyValida,
@@ -21,9 +22,25 @@ import {
 } from '../../core/utils/telefone-br';
 import { extractApiErrorMessage } from '../../core/utils/api-error-message';
 import {
+  agruparAtendimentosEmComandas,
+  type ClienteComandaAbertaLinhaUi,
+  type ClienteDebitoLinhaUi,
+  painelDebitosClienteFromAtendimentos,
+  totalComandasAbertoCliente,
+  totalDebitosCliente,
+} from '../../core/utils/comanda-status.util';
+import type { ComandaDrawerContextoAgenda } from '../../features/agenda/pages/hub/comanda-drawer.types';
+import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
+import {
   ClienteDuplicadoCampo,
   findClienteCadastroDuplicado,
 } from '../../core/utils/clientes-unicidade';
+import {
+  historicoAgendamentosClienteFromAtendimentos,
+  ymdFimFiltroAgendamentosPadrao,
+  ymdInicioFiltroAgendamentosPadrao,
+  type ClienteAgendamentoHistoricoLinha,
+} from './cliente-agendamentos.util';
 
 export const DRAWER_ANIM_MS = 430;
 export const CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS = 200;
@@ -39,6 +56,21 @@ export const CLIENTE_CADASTRO_ABAS = [
   'Pacotes',
   'Mensagens',
 ] as const;
+
+export type ClienteCadastroAba = (typeof CLIENTE_CADASTRO_ABAS)[number];
+
+export type AbrirCadastroClientePayload = {
+  aba?: ClienteCadastroAba;
+};
+
+export interface ClienteCashbackMovimento {
+  id: string;
+  /** `AAAA-MM-DD` */
+  data: string;
+  valorReais: number;
+  tipo: 'entrada' | 'saida';
+  motivo: string;
+}
 
 export type CadastroClienteTouchKey =
   | 'nome'
@@ -62,6 +94,8 @@ export interface ClienteCadastroDrawerAbrirEdicaoOptions {
   nomeLista?: string;
   /** Foto já conhecida (ex.: drawer de perfil) antes do GET completar. */
   fotoUrlInicial?: string | null;
+  /** Aba inicial (ex.: «Cashback» desde a sidebar da comanda). */
+  abaInicial?: ClienteCadastroAba;
   callbacks?: ClienteCadastroDrawerCallbacks;
 }
 
@@ -110,6 +144,28 @@ export class ClienteCadastroDrawerService {
   notificacoesAtivo = true;
 
   clienteId: string | null = null;
+  cashbackSaldo = 0;
+  cashbackMovimentos: ClienteCashbackMovimento[] = [];
+  carregandoCashbackHistorico = false;
+  creditoSaldo = 0;
+  creditoMovimentos: ClienteCreditoMovimento[] = [];
+  carregandoCreditoHistorico = false;
+  debitosLinhas: ClienteDebitoLinhaUi[] = [];
+  comandasAbertoLinhas: ClienteComandaAbertaLinhaUi[] = [];
+  debitosTotal = 0;
+  comandasAbertoTotal = 0;
+  carregandoDebitosPainel = false;
+  agendamentosLinhas: ClienteAgendamentoHistoricoLinha[] = [];
+  carregandoAgendamentosHistorico = false;
+  agendamentosFiltroInicio = ymdInicioFiltroAgendamentosPadrao();
+  agendamentosFiltroFim = ymdFimFiltroAgendamentosPadrao();
+  /** Drawer «Visualizando comanda» por cima da ficha (sem fechar nem mudar de rota). */
+  comandaEmpilhadaAberta = false;
+  comandaEmpilhadaPanelOpen = false;
+  comandaEmpilhadaContexto: ComandaDrawerContextoAgenda | null = null;
+  carregandoComandaEmpilhada = false;
+  private comandaEmpilhadaCloseTimer: ReturnType<typeof setTimeout> | null =
+    null;
   exibicao: ClienteCadastroExibicao = 'drawer';
   embutidoAtivo = false;
   carregandoFormulario = false;
@@ -186,10 +242,24 @@ export class ClienteCadastroDrawerService {
     this.modo = 'perfil';
     this.clienteId = cid;
     this.preencherFormularioVazio(options?.nomeLista ?? '');
-    this.abaAtiva = 'Cadastro';
+    this.abaAtiva = this.resolverAbaInicial(options?.abaInicial);
     this.abrirPainel();
     this.carregarCliente(cid);
     this.prefetchClientesParaUnicidade();
+  }
+
+  /**
+   * Ficha global a partir dos links «Informações» da sidebar de cliente
+   * (drawer de comanda, agendamento, edição de itens, etc.).
+   */
+  abrirEdicaoPorLinkSidebar(
+    clienteId: string,
+    payload: AbrirCadastroClientePayload = {},
+    options?: ClienteCadastroDrawerAbrirEdicaoOptions,
+  ): void {
+    const abaInicial =
+      this.resolverAbaInicial(payload.aba) ?? options?.abaInicial;
+    this.abrirEdicao(clienteId, { ...options, abaInicial });
   }
 
   /** Formulário de cadastro dentro do drawer de perfil (sem overlay). */
@@ -242,6 +312,7 @@ export class ClienteCadastroDrawerService {
       return;
     }
     if (!this.aberto) return;
+    this.fecharComandaEmpilhadaSincrono();
     this.saveSub?.unsubscribe();
     this.saveSub = null;
     this.ocultarClienteNavLockTooltip();
@@ -253,6 +324,21 @@ export class ClienteCadastroDrawerService {
       this.descontoDropdownAberto = false;
       this.modo = 'perfil';
       this.clienteId = null;
+      this.cashbackSaldo = 0;
+      this.cashbackMovimentos = [];
+      this.carregandoCashbackHistorico = false;
+      this.creditoSaldo = 0;
+      this.creditoMovimentos = [];
+      this.carregandoCreditoHistorico = false;
+      this.debitosLinhas = [];
+      this.comandasAbertoLinhas = [];
+      this.debitosTotal = 0;
+      this.comandasAbertoTotal = 0;
+      this.carregandoDebitosPainel = false;
+      this.agendamentosLinhas = [];
+      this.carregandoAgendamentosHistorico = false;
+      this.agendamentosFiltroInicio = ymdInicioFiltroAgendamentosPadrao();
+      this.agendamentosFiltroFim = ymdFimFiltroAgendamentosPadrao();
       this.saveErro = '';
       this.salvando = false;
       this.notificacoesToggleLiqArmed = false;
@@ -286,6 +372,160 @@ export class ClienteCadastroDrawerService {
   selecionarAba(aba: string): void {
     if (this.abaDesabilitada(aba)) return;
     this.abaAtiva = aba;
+    if (aba === 'Cashback' && this.clienteId) {
+      this.carregarCashbackHistorico(this.clienteId);
+    }
+    if (aba === 'Créditos' && this.clienteId) {
+      this.carregarCreditoHistorico(this.clienteId);
+    }
+    if (aba === 'Débitos' && this.clienteId) {
+      this.carregarDebitosPainel(this.clienteId);
+    }
+    if (aba === 'Agendamentos' && this.clienteId) {
+      this.carregarAgendamentosHistorico(this.clienteId);
+    }
+  }
+
+  aplicarFiltroAgendamentosHistorico(): void {
+    const cid = this.clienteId?.trim();
+    if (!cid) return;
+    this.carregarAgendamentosHistorico(cid);
+  }
+
+  /**
+   * Abre o drawer «Visualizando comanda» empilhado sobre a ficha (ex.: aba Agendamentos).
+   */
+  visualizarComandaAgendamento(idAtendimento: string): void {
+    const idAt = String(idAtendimento ?? '').trim();
+    const cid = this.clienteId?.trim();
+    if (!idAt || !cid || !this.isAberto) return;
+    if (this.comandaEmpilhadaAberta) {
+      this.fecharComandaEmpilhada(() => this.carregarEAbrirComandaEmpilhada(idAt));
+      return;
+    }
+    this.carregarEAbrirComandaEmpilhada(idAt);
+  }
+
+  fecharComandaEmpilhada(aposAnimacao?: () => void): void {
+    if (!this.comandaEmpilhadaAberta) {
+      aposAnimacao?.();
+      return;
+    }
+    this.comandaEmpilhadaPanelOpen = false;
+    if (this.comandaEmpilhadaCloseTimer != null) {
+      clearTimeout(this.comandaEmpilhadaCloseTimer);
+    }
+    this.comandaEmpilhadaCloseTimer = setTimeout(() => {
+      this.comandaEmpilhadaCloseTimer = null;
+      this.comandaEmpilhadaAberta = false;
+      this.comandaEmpilhadaContexto = null;
+      this.carregandoComandaEmpilhada = false;
+      const cid = this.clienteId?.trim();
+      if (cid && this.abaAtiva === 'Agendamentos') {
+        this.carregarAgendamentosHistorico(cid);
+      }
+      if (cid && this.abaAtiva === 'Débitos') {
+        this.carregarDebitosPainel(cid);
+      }
+      this.appRef.tick();
+      aposAnimacao?.();
+    }, DRAWER_ANIM_MS);
+  }
+
+  fecharComandaEmpilhadaSincrono(): void {
+    if (this.comandaEmpilhadaCloseTimer != null) {
+      clearTimeout(this.comandaEmpilhadaCloseTimer);
+      this.comandaEmpilhadaCloseTimer = null;
+    }
+    this.comandaEmpilhadaPanelOpen = false;
+    this.comandaEmpilhadaAberta = false;
+    this.comandaEmpilhadaContexto = null;
+    this.carregandoComandaEmpilhada = false;
+  }
+
+  /**
+   * Escape com comanda empilhada na ficha: recolhe só esse drawer (um nível acima).
+   * Páginas com listener global devem chamar isto **antes** de `fechar()` na ficha.
+   */
+  tratarEscapeComandaEmpilhadaNaFicha(): boolean {
+    if (!this.comandaEmpilhadaAberta) return false;
+    this.fecharComandaEmpilhada();
+    return true;
+  }
+
+  private carregarEAbrirComandaEmpilhada(idAtendimento: string): void {
+    const idAt = idAtendimento.trim();
+    const cid = this.clienteId?.trim();
+    if (!idAt || !cid) return;
+    this.carregandoComandaEmpilhada = true;
+    forkJoin({
+      items: this.api.listAgendamentos(undefined, undefined, idAt),
+      clientes: this.api.listClientes().pipe(catchError(() => of([] as Cliente[]))),
+    }).subscribe({
+      next: ({ items, clientes }) => {
+        if (this.clienteId !== cid) return;
+        const grupos = agruparAtendimentosEmComandas(items);
+        const g =
+          grupos.find((gr) => String(gr.linhas[0]?.id ?? '').trim() === idAt) ??
+          grupos[0];
+        const l0 = g?.linhas[0];
+        if (!g || !l0) {
+          this.carregandoComandaEmpilhada = false;
+          this.appRef.tick();
+          return;
+        }
+        const cliente =
+          clientes.find((c) => c.id === cid) ??
+          ({
+            id: cid,
+            nome: this.cadastroNome?.trim() || '—',
+          } as Cliente);
+        const n = l0.numeroComanda;
+        const numero =
+          typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 1;
+        const dataYmd = (g.data || '').slice(0, 10);
+        this.comandaEmpilhadaContexto = {
+          acessar: true,
+          idAtendimento: idAt,
+          numeroComandaTitulo: numero,
+          clienteId: cid,
+          cliente,
+          opcoesClientes: this.opcoesClientesParaComandaEmpilhada(clientes),
+          dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(dataYmd) ? dataYmd : null,
+          linhasSnapshot: [],
+        };
+        this.carregandoComandaEmpilhada = false;
+        this.abrirPainelComandaEmpilhada();
+        this.appRef.tick();
+      },
+      error: () => {
+        if (this.clienteId !== cid) return;
+        this.carregandoComandaEmpilhada = false;
+        this.appRef.tick();
+      },
+    });
+  }
+
+  private opcoesClientesParaComandaEmpilhada(
+    clientes: Cliente[],
+  ): SaasSelectOption[] {
+    return clientes.map((c) => ({
+      value: c.id,
+      label: (c.nome ?? '').trim() || '—',
+    }));
+  }
+
+  private abrirPainelComandaEmpilhada(): void {
+    this.comandaEmpilhadaAberta = true;
+    this.comandaEmpilhadaPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.comandaEmpilhadaPanelOpen = true;
+          this.appRef.tick();
+        });
+      });
+    });
   }
 
   onClienteNavTooltipEnter(event: Event, aba: string, imediato = false): void {
@@ -638,6 +878,18 @@ export class ClienteCadastroDrawerService {
           this.cadastroFotoRemovida = true;
         }
         this.carregandoFormulario = false;
+        if (this.abaAtiva === 'Cashback') {
+          this.carregarCashbackHistorico(cid);
+        }
+        if (this.abaAtiva === 'Créditos') {
+          this.carregarCreditoHistorico(cid);
+        }
+        if (this.abaAtiva === 'Débitos') {
+          this.carregarDebitosPainel(cid);
+        }
+        if (this.abaAtiva === 'Agendamentos') {
+          this.carregarAgendamentosHistorico(cid);
+        }
         this.callbacks?.onClienteCarregado?.(
           fotoRemovida ? { ...c, fotoUrl: null } : c,
         );
@@ -733,6 +985,115 @@ export class ClienteCadastroDrawerService {
     this.cadastroCnpj = formatarCnpjBr(this.cadastroCnpj);
     this.cadastroCpf = formatarCpfBr(this.cadastroCpf);
     this.cadastroRg = formatarRgBr9(this.cadastroRg);
+    this.cashbackSaldo = this.saldoMoedaNum(c.cashbackSaldo);
+    this.creditoSaldo = this.saldoMoedaNum(c.creditoSaldo);
+  }
+
+  private resolverAbaInicial(aba?: ClienteCadastroAba): ClienteCadastroAba {
+    if (aba && (this.abas as readonly string[]).includes(aba)) {
+      return aba;
+    }
+    return 'Cadastro';
+  }
+
+  private saldoMoedaNum(v: unknown): number {
+    const n = Number(v ?? 0);
+    return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+  }
+
+  /**
+   * Histórico de cashback (API dedicada quando existir).
+   * Por agora mantém saldo do GET cliente e lista vazia.
+   */
+  private carregarCashbackHistorico(clienteId: string): void {
+    const cid = clienteId.trim();
+    if (!cid || this.clienteId !== cid) return;
+    this.carregandoCashbackHistorico = true;
+    this.cashbackMovimentos = [];
+    this.carregandoCashbackHistorico = false;
+    this.appRef.tick();
+  }
+
+  private carregarDebitosPainel(clienteId: string): void {
+    const cid = clienteId.trim();
+    if (!cid || this.clienteId !== cid) return;
+    this.carregandoDebitosPainel = true;
+    this.debitosLinhas = [];
+    this.comandasAbertoLinhas = [];
+    this.debitosTotal = 0;
+    this.comandasAbertoTotal = 0;
+    this.api.listAgendamentos().subscribe({
+      next: (items) => {
+        if (this.clienteId !== cid || this.abaAtiva !== 'Débitos') return;
+        const painel = painelDebitosClienteFromAtendimentos(cid, items);
+        this.debitosLinhas = painel.debitos;
+        this.comandasAbertoLinhas = painel.comandasAberto;
+        this.debitosTotal = totalDebitosCliente(painel.debitos);
+        this.comandasAbertoTotal = totalComandasAbertoCliente(
+          painel.comandasAberto,
+        );
+        this.carregandoDebitosPainel = false;
+        this.appRef.tick();
+      },
+      error: () => {
+        if (this.clienteId !== cid) return;
+        this.debitosLinhas = [];
+        this.comandasAbertoLinhas = [];
+        this.debitosTotal = 0;
+        this.comandasAbertoTotal = 0;
+        this.carregandoDebitosPainel = false;
+        this.appRef.tick();
+      },
+    });
+  }
+
+  private carregarAgendamentosHistorico(clienteId: string): void {
+    const cid = clienteId.trim();
+    if (!cid || this.clienteId !== cid) return;
+    const ini = String(this.agendamentosFiltroInicio ?? '').trim().slice(0, 10);
+    const fim = String(this.agendamentosFiltroFim ?? '').trim().slice(0, 10);
+    this.carregandoAgendamentosHistorico = true;
+    this.agendamentosLinhas = [];
+    this.api.listAgendamentos(ini || undefined, fim || undefined).subscribe({
+      next: (items) => {
+        if (this.clienteId !== cid || this.abaAtiva !== 'Agendamentos') return;
+        this.agendamentosLinhas = historicoAgendamentosClienteFromAtendimentos(
+          cid,
+          items,
+          ini,
+          fim,
+        );
+        this.carregandoAgendamentosHistorico = false;
+        this.appRef.tick();
+      },
+      error: () => {
+        if (this.clienteId !== cid) return;
+        this.agendamentosLinhas = [];
+        this.carregandoAgendamentosHistorico = false;
+        this.appRef.tick();
+      },
+    });
+  }
+
+  private carregarCreditoHistorico(clienteId: string): void {
+    const cid = clienteId.trim();
+    if (!cid || this.clienteId !== cid) return;
+    this.carregandoCreditoHistorico = true;
+    this.creditoMovimentos = [];
+    this.api.listClienteCreditoMovimentos(cid).subscribe({
+      next: (items) => {
+        if (this.clienteId !== cid || this.abaAtiva !== 'Créditos') return;
+        this.creditoMovimentos = items;
+        this.carregandoCreditoHistorico = false;
+        this.appRef.tick();
+      },
+      error: () => {
+        if (this.clienteId !== cid) return;
+        this.creditoMovimentos = [];
+        this.carregandoCreditoHistorico = false;
+        this.appRef.tick();
+      },
+    });
   }
 
   private fotoUrlValidaParaEnvio(raw: string): boolean {

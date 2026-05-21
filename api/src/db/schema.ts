@@ -75,6 +75,33 @@ export const clientes = pgTable('clientes', {
   facebook: text('facebook'),
 });
 
+/** Extrato de crédito pré-pago do cliente (entrada/saída por comanda, etc.). */
+export const clienteCreditoMovimentos = pgTable(
+  'cliente_credito_movimentos',
+  {
+    id: serial('id').primaryKey(),
+    clienteId: text('cliente_id')
+      .notNull()
+      .references(() => clientes.idCliente, { onDelete: 'cascade' }),
+    idAtendimento: text('id_atendimento'),
+    dataMov: date('data_mov').notNull(),
+    valor: numeric('valor', { precision: 14, scale: 2 }).notNull(),
+    tipo: text('tipo').notNull(),
+    motivo: text('motivo').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('cliente_credito_movimentos_cliente_idx').on(t.clienteId),
+    index('cliente_credito_movimentos_cliente_data_idx').on(
+      t.clienteId,
+      t.dataMov,
+      t.id,
+    ),
+  ],
+);
+
 /** Pessoa estável (índice único em `lower(trim(nome))` na migração SQL). */
 export const profissionais = pgTable('profissionais', {
   id: serial('id').primaryKey(),

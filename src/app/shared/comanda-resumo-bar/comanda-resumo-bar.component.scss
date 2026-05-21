@@ -1,0 +1,111 @@
+:host {
+  display: block;
+  --drawer-field-h: 38px;
+  --drawer-field-stroke: #f1f1f1;
+  --drawer-field-stroke-hover: #7a88ff;
+  --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+}
+
+.comanda-resumo-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 22rem;
+  margin-left: auto;
+  padding: 0.35rem 0;
+}
+
+.comanda-resumo-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  width: 100%;
+  font-size: 14px;
+
+  &--total {
+    font-weight: 700;
+  }
+}
+
+.comanda-resumo-bar__label {
+  flex: 0 1 auto;
+  text-align: right;
+  color: #57534e;
+  font-weight: 500;
+}
+
+.comanda-resumo-bar__input {
+  box-sizing: border-box;
+  flex: 0 0 8.5rem;
+  width: 8.5rem;
+  max-width: 100%;
+  min-height: var(--drawer-field-h);
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--drawer-field-stroke);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  color: #0000008c;
+  text-align: left;
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear,
+    background-color 0.2s linear;
+
+  &:where(input) {
+    cursor: default;
+
+    &:hover {
+      border-color: var(--drawer-field-stroke-hover);
+      outline: 0;
+      background-color: #ffffff;
+    }
+
+    &:focus {
+      border-color: var(--drawer-field-stroke-hover);
+      box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+      outline: 0;
+      background-color: #ffffff;
+    }
+  }
+
+  &:where(input:not([readonly])) {
+    cursor: text;
+  }
+
+  &--readonly {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: #f5f5f4;
+    border-color: #e7e5e4;
+    color: #0000008c;
+    cursor: not-allowed;
+
+    &:hover {
+      border-color: #e7e5e4;
+      background: #f5f5f4;
+      box-shadow: none;
+    }
+  }
+
+  &--readonly#{&}--total {
+    line-height: 1.45;
+    min-height: 2.5rem;
+    padding-block: 0.45rem;
+    box-sizing: border-box;
+  }
+
+  &--readonly-cashback:hover {
+    border-color: #e7e5e4;
+    background: #f5f5f4;
+  }
+
+  &--total {
+    font-weight: 400;
+  }
+}

@@ -1,0 +1,106 @@
+:host.cliente-avatar-host {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.cliente-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  overflow: visible;
+  box-sizing: border-box;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &--com-foto {
+    overflow: hidden;
+  }
+}
+
+.cliente-avatar--lista {
+  width: 28px;
+  height: 28px;
+  color: #505afb;
+
+  .cliente-avatar__ico {
+    width: 14px;
+    height: 14px;
+    stroke-width: 1.5;
+    color: rgba(80, 90, 251, 0.5);
+  }
+
+  &.cliente-avatar--com-foto {
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+  }
+}
+
+.cliente-avatar--cabecalho {
+  width: 32px;
+  height: 32px;
+  color: #6b7280;
+
+  .cliente-avatar__ico {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+  }
+
+  &.cliente-avatar--com-foto {
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+  }
+}
+
+.cliente-avatar--perfil {
+  width: 38px;
+  height: 38px;
+  color: #6b7280;
+  background: linear-gradient(145deg, #f4f4f5 0%, #e4e4e7 100%);
+  border: 1px solid #e4e4e7;
+
+  .cliente-avatar__ico {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+  }
+
+  &.cliente-avatar--com-foto {
+    background: #f4f4f5;
+  }
+}
+
+.cliente-avatar--sidebar {
+  width: 118px;
+  height: 118px;
+  color: #7c6d8c;
+
+  .cliente-avatar__ico:not(.cliente-avatar__ico--sidebar-empty) {
+    width: 4rem;
+    height: 4rem;
+    stroke-width: 1.5;
+  }
+
+  &.cliente-avatar--com-foto {
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+  }
+
+  &.cliente-avatar--vazio {
+    color: #a8a0b0;
+  }
+}
+
+.cliente-avatar__ico--sidebar-empty {
+  width: 4rem;
+  height: 4rem;
+  display: block;
+}

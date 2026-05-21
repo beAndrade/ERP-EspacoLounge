@@ -1,29 +1,9 @@
 <div class="client-sidebar-drawer">
-  <div
-    class="client-sidebar-drawer__avatar"
-    [class.client-sidebar-drawer__avatar--empty]="!temClienteSelecionado"
-  >
-    @if (temClienteSelecionado) {
-      <span class="client-sidebar-drawer__iniciais">{{ iniciaisAvatar() }}</span>
-    } @else {
-      <span class="client-sidebar-drawer__avatar-ico" aria-hidden="true">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class="client-sidebar-drawer__user-svg"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-          />
-        </svg>
-      </span>
-    }
-  </div>
+  <app-cliente-avatar
+    variant="sidebar"
+    [fotoUrl]="cliente?.fotoUrl"
+    [placeholderVazio]="!temClienteSelecionado"
+  />
 
   @if (!temClienteSelecionado) {
     <app-saas-select
@@ -96,7 +76,8 @@
           <button
             type="button"
             class="sidebar-block__linklike"
-            (click)="clicouAbrirCadastroCliente()"
+            (click)="clicouAbrirCadastroCliente({ aba: 'Cashback' })"
+            [attr.aria-label]="linhaCashbackClienteExibicao() + '. Abrir histórico de cashback.'"
           >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
@@ -108,14 +89,15 @@
                 <circle cx="12" cy="12" r="2"/>
               </svg>
             </span>
-            <span class="sidebar-block__link-txt">R$ 0,00 em cashback</span>
+            <span class="sidebar-block__link-txt">{{ linhaCashbackClienteExibicao() }}</span>
           </button>
         </li>
         <li>
           <button
             type="button"
             class="sidebar-block__linklike"
-            (click)="clicouAbrirCadastroCliente()"
+            (click)="clicouAbrirCadastroCliente({ aba: 'Créditos' })"
+            [attr.aria-label]="linhaCreditoClienteExibicao() + '. Abrir histórico de crédito.'"
           >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">
@@ -132,7 +114,8 @@
             type="button"
             class="sidebar-block__linklike"
             [class.sidebar-block__linklike--alert]="destacarComandasEmAberto()"
-            (click)="clicouAbrirCadastroCliente()"
+            (click)="clicouAbrirCadastroCliente({ aba: 'Débitos' })"
+            [attr.aria-label]="textoComandasEmAberto() + '. Abrir débitos e comandas em aberto.'"
           >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg
@@ -168,7 +151,8 @@
             type="button"
             class="sidebar-block__linklike"
             [class.sidebar-block__linklike--alert]="destacarPagamentosEmAberto()"
-            (click)="clicouAbrirCadastroCliente()"
+            (click)="clicouAbrirCadastroCliente({ aba: 'Débitos' })"
+            [attr.aria-label]="textoPagamentosEmAberto() + '. Abrir débitos em atraso.'"
           >
             <span class="sidebar-block__link-ico" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sidebar-block__link-svg">

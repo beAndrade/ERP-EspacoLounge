@@ -12,6 +12,7 @@ import { CurrencyPipe } from '@angular/common';
 import { Cliente } from '../../core/models/api.models';
 import { ClienteCadastroDrawerService } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteCadastroFormComponent } from '../cliente-cadastro-drawer/cliente-cadastro-form.component';
+import { ClienteAvatarComponent } from '../cliente-avatar/cliente-avatar.component';
 
 export const CLIENTE_PERFIL_ABAS = [
   'Cadastro',
@@ -34,7 +35,7 @@ export type ClientePerfilAba = (typeof CLIENTE_PERFIL_ABAS)[number];
 @Component({
   selector: 'app-cliente-perfil-drawer',
   standalone: true,
-  imports: [CurrencyPipe, ClienteCadastroFormComponent],
+  imports: [CurrencyPipe, ClienteCadastroFormComponent, ClienteAvatarComponent],
   templateUrl: './cliente-perfil-drawer.component.html',
   styleUrl: './cliente-perfil-drawer.component.scss',
   encapsulation: ViewEncapsulation.None,

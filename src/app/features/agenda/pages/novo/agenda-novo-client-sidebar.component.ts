@@ -15,6 +15,8 @@ import {
   SaasSelectComponent,
   type SaasSelectOption,
 } from './saas-select.component';
+import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
 import {
   Observable,
   Subject,
@@ -82,7 +84,7 @@ function linhaAniversarioFormatada(aniversarioRaw: string): string | null {
 @Component({
   selector: 'app-agenda-novo-client-sidebar',
   standalone: true,
-  imports: [SaasSelectComponent],
+  imports: [SaasSelectComponent, ClienteAvatarComponent],
   templateUrl: './agenda-novo-client-sidebar.component.html',
   styleUrl: './agenda-novo-client-sidebar.component.scss',
 })
@@ -94,7 +96,7 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   /**
    * Ex.: linhas da secção «Informações» — o ecrã de comandas abre o drawer da ficha (`abrirCadastroCliente`).
    */
-  readonly abrirCadastroCliente = output<void>();
+  readonly abrirCadastroCliente = output<AbrirCadastroClientePayload>();
 
   private readonly api = inject(SheetsApiService);
   private readonly destroyRef = inject(DestroyRef);
@@ -202,18 +204,6 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
     return this.clientesComHistorico$.pipe(map((set) => set.has(cid)));
   }
 
-  iniciaisAvatar(): string {
-    const t = (this.cliente?.nome ?? '').trim();
-    if (!t) return '';
-    const parts = t.split(/\s+/).filter(Boolean);
-    if (parts.length === 1) {
-      return parts[0].slice(0, 2).toUpperCase();
-    }
-    const a = parts[0][0] ?? '';
-    const b = parts[parts.length - 1][0] ?? '';
-    return (a + b).toUpperCase() || '';
-  }
-
   telefoneExibicao(): string {
     const t = (this.cliente?.telefone ?? '').trim();
     return t || 'Sem telefone';
@@ -227,9 +217,9 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   }
 
   /** Qualquer linha da secção «Informações» abre a ficha/cadastro do cliente (pai mostra overlay + drawer). */
-  clicouAbrirCadastroCliente(): void {
+  clicouAbrirCadastroCliente(payload: AbrirCadastroClientePayload = {}): void {
     if (!this.temClienteSelecionado) return;
-    this.abrirCadastroCliente.emit();
+    this.abrirCadastroCliente.emit(payload);
   }
 
   linhaAniversarioExibicao(): string {
@@ -239,6 +229,18 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
 
   ariaLabelBotaoAniversario(): string {
     return `${this.linhaAniversarioExibicao()}. Abrir ficha do cliente.`;
+  }
+
+  linhaCashbackClienteExibicao(): string {
+    const n = Number(this.cliente?.cashbackSaldo ?? 0);
+    const x = Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+    const brl = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(x);
+    return `${brl} em cashback`;
   }
 
   linhaCreditoClienteExibicao(): string {

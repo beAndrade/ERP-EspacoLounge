@@ -16,27 +16,7 @@
     <header class="cliente-head">
       <div class="cliente-head__title-wrap">
         <div class="cliente-head__title-row">
-          <span class="cliente-head__user-icon" aria-hidden="true">
-            @if (fotoUrl(); as foto) {
-              <img [src]="foto" alt="" />
-            } @else {
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="8" r="5" />
-                <path d="M20 21a8 8 0 0 0-16 0" />
-              </svg>
-            }
-          </span>
+          <app-cliente-avatar variant="perfil" [fotoUrl]="fotoUrl()" />
           <h2 class="cliente-head__title">{{ tituloCabecalho() }}</h2>
         </div>
       </div>

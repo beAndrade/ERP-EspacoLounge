@@ -1081,6 +1081,15 @@ tbody td.col-ticket {
     flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
+    max-height: 100%;
+  }
+
+  &:has(> app-agenda-novo.agenda-novo--somente-comanda) {
+    overflow: hidden;
+
+    > app-agenda-novo {
+      max-height: 100%;
+    }
   }
 
   /** Comanda por cima do drawer de novo agendamento. */

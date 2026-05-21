@@ -218,6 +218,20 @@
       "when": 1775697942000,
       "tag": "0030_clientes_endereco_redes",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1775697943000,
+      "tag": "0031_atendimentos_agenda_status_nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1775697944000,
+      "tag": "0032_cliente_credito_movimentos",
+      "breakpoints": true
     }
   ]
 }

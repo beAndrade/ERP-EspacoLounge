@@ -1,0 +1,89 @@
+<main class="cliente-creditos" aria-labelledby="cliente-creditos-titulo">
+  <div class="cliente-creditos__top">
+    <h3 class="cliente-creditos__titulo" id="cliente-creditos-titulo">
+      Histórico de crédito
+    </h3>
+    <div class="cliente-creditos__saldo" aria-label="Saldo de crédito">
+      <span class="cliente-creditos__saldo-ico" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+          <path d="M12 18V6" />
+        </svg>
+      </span>
+      <span class="cliente-creditos__saldo-label">Saldo</span>
+      <span class="cliente-creditos__saldo-valor">{{
+        d.creditoSaldo | currency: 'BRL' : 'symbol' : '1.2-2'
+      }}</span>
+      <button
+        type="button"
+        class="cliente-creditos__saldo-edit"
+        aria-label="Ajustar saldo de crédito (em breve)"
+        disabled
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  @if (d.carregandoCreditoHistorico) {
+    <p class="cliente-creditos__hint">A carregar histórico…</p>
+  } @else if (d.creditoMovimentos.length === 0) {
+    <p class="cliente-creditos__hint">Nenhuma movimentação de crédito registada.</p>
+  } @else {
+    <div class="cliente-creditos__table-wrap">
+      <table class="cliente-creditos__table">
+        <thead>
+          <tr>
+            <th scope="col">Data</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Movimentação</th>
+            <th scope="col">Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of d.creditoMovimentos; track m.id) {
+            <tr>
+              <td>{{ formatarData(m.data) }}</td>
+              <td>{{ m.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
+              <td>
+                <span
+                  class="cliente-creditos__badge"
+                  [class.cliente-creditos__badge--entrada]="m.tipo === 'entrada'"
+                  [class.cliente-creditos__badge--saida]="m.tipo === 'saida'"
+                >
+                  {{ m.tipo === 'entrada' ? 'Entrada' : 'Saída' }}
+                </span>
+              </td>
+              <td>{{ m.motivo.trim() || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</main>

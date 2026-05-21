@@ -18,16 +18,7 @@
           <div class="cliente-head__title-wrap">
             <div class="cliente-head__title-row">
               @if (d.modo !== 'novo') {
-                <span class="cliente-head__user-icon" aria-hidden="true">
-                  @if (d.cadastroFotoUrl) {
-                    <img [src]="d.cadastroFotoUrl" alt="" />
-                  } @else {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round-icon lucide-user-round">
-                      <circle cx="12" cy="8" r="5"/>
-                      <path d="M20 21a8 8 0 0 0-16 0"/>
-                    </svg>
-                  }
-                </span>
+                <app-cliente-avatar variant="cabecalho" [fotoUrl]="d.cadastroFotoUrl" />
               }
               <h2 class="cliente-head__title">{{ d.tituloCabecalho() }}</h2>
             </div>
@@ -84,6 +75,14 @@
             </nav>
             @if (d.abaAtiva === 'Cadastro') {
               <app-cliente-cadastro-form [mostrarRodape]="false" />
+            } @else if (d.abaAtiva === 'Cashback') {
+              <app-cliente-cashback-tab />
+            } @else if (d.abaAtiva === 'Créditos') {
+              <app-cliente-creditos-tab />
+            } @else if (d.abaAtiva === 'Débitos') {
+              <app-cliente-debitos-tab />
+            } @else if (d.abaAtiva === 'Agendamentos') {
+              <app-cliente-agendamentos-tab />
             } @else {
               <main class="cliente-main">
                 <p class="cliente-tab-placeholder">
@@ -128,5 +127,90 @@
       >
         Disponível após a criação
       </span>
+    }
+
+    @if (d.comandaEmpilhadaAberta && d.comandaEmpilhadaContexto) {
+      <div
+        class="overlay overlay--cliente-comanda-empilhada"
+        [class.overlay--open]="d.comandaEmpilhadaPanelOpen"
+        aria-hidden="true"
+        (click)="fecharComandaEmpilhada()"
+      ></div>
+      <div
+        class="app-drawer cliente-comanda-empilhada app-drawer--comanda"
+        [class.app-drawer--open]="d.comandaEmpilhadaPanelOpen"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="ariaLabelComandaEmpilhada()"
+        (click)="$event.stopPropagation()"
+      >
+        <app-nova-comanda-drawer
+          [contexto]="d.comandaEmpilhadaContexto"
+          (fechar)="fecharComandaEmpilhada()"
+          (comandaExcluida)="onComandaEmpilhadaExcluida()"
+          (comandaDataYmd)="onComandaEmpilhadaDataYmd($event)"
+          (editarAgendamento)="onEditarAgendamentoDesdeComandaEmpilhada()"
+          (salvarComanda)="onSalvarComandaEmpilhada()"
+          (faturarComanda)="onAbrirFaturarComandaEmpilhada($event)"
+          (abrirCadastroCliente)="
+            onAbrirCadastroClienteDesdeComandaEmpilhada($event)
+          "
+        />
+      </div>
+
+      @if (faturarEmpilhadoAberto && faturarEmpilhadoCtx) {
+        <div
+          class="overlay overlay--cliente-faturar-empilhada"
+          [class.overlay--open]="faturarEmpilhadoPanelOpen"
+          aria-hidden="true"
+          (click)="fecharFaturarEmpilhado()"
+        ></div>
+        <div
+          class="app-drawer cliente-faturar-empilhada app-drawer--faturar"
+          [class.app-drawer--open]="faturarEmpilhadoPanelOpen"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Faturar comanda"
+          (click)="$event.stopPropagation()"
+        >
+          <app-faturar-drawer
+            [idAtendimento]="faturarEmpilhadoCtx.idAtendimento"
+            [resumoInicial]="faturarEmpilhadoCtx.resumo"
+            [creditoComandaAplicado]="faturarEmpilhadoCtx.creditoAUsar ?? 0"
+            [dataComanda]="comandaEmpilhadaDataYmd"
+            [modoVerPagamentos]="faturarEmpilhadoCtx.modoVerPagamentos ?? false"
+            (faturado)="onFaturaComandaEmpilhadaSucesso()"
+            (fechar)="fecharFaturarEmpilhado()"
+          />
+        </div>
+      }
+
+      @if (editAgendamentoEmpilhadoAberto && editAgendamentoEmpilhadoCtx) {
+        <div
+          class="overlay overlay--cliente-edit-ag-empilhada"
+          [class.overlay--open]="editAgendamentoEmpilhadoPanelOpen"
+          aria-hidden="true"
+          (click)="fecharEditAgendamentoEmpilhado()"
+        ></div>
+        <div
+          class="app-drawer cliente-edit-ag-empilhada app-drawer--edit-agendamento"
+          [class.app-drawer--open]="editAgendamentoEmpilhadoPanelOpen"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Editar agendamento"
+          (click)="$event.stopPropagation()"
+        >
+          <app-agenda-novo
+            [modoModal]="true"
+            [fluxoSomenteComanda]="true"
+            [contextoSlot]="editAgendamentoEmpilhadoCtx"
+            (salvoComSucesso)="onSalvoEditAgendamentoEmpilhado()"
+            (cancelarModal)="fecharEditAgendamentoEmpilhado()"
+            (abrirCadastroCliente)="
+              onAbrirCadastroClienteDesdeComandaEmpilhada($event)
+            "
+          />
+        </div>
+      }
     }
   }

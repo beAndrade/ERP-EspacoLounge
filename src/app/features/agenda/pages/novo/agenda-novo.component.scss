@@ -353,10 +353,19 @@
   margin-top: 0;
 }
 
+:host.agenda-novo--drawer.agenda-novo--somente-comanda .form-shell__flow--modal > .block-obs {
+  margin-top: 0;
+}
+
 .block-context {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/** Comandas walk-in: só Cliente + Data na linha de contexto. */
+:host.agenda-novo--somente-comanda .block-context--modal {
+  grid-template-columns: minmax(16.25rem, 1.78fr) minmax(9.5rem, 0.86fr);
 }
 
 /**
@@ -619,6 +628,20 @@
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-text);
+}
+
+/** Resumo walk-in: mesmo respiro que observações ↔ footer na comanda. */
+.agenda-modal__resumo-wrap {
+  flex: 0 0 auto;
+  padding: 0 0 0.35rem;
+  margin-top: 0;
+  margin-bottom: var(--nc-obs-resumo-gap, 1rem);
+  border-top: 1px solid var(--drawer-stroke, #ececec);
+  background: #fff;
+
+  :host.agenda-novo--drawer & {
+    padding-inline: 0;
+  }
 }
 
 .agenda-modal__footer {
@@ -1318,16 +1341,16 @@ textarea {
 
   &--modal-cabecalho {
     --servico-cabecalho-col-gap: 0.55rem;
+    --servico-cabecalho-actions-w: calc(2.5rem * 2 + 0.4rem);
+    /** Mesma largura que `.servico-row__field--mega-cabecalho` (Tipo de linha). */
+    --mega-etapas-col-w: calc(
+      (100% - var(--servico-cabecalho-actions-w) - 2 * var(--servico-cabecalho-col-gap)) / 2
+    );
   }
 
   &__rail {
-    flex: 0 0
-      calc(
-        var(--servico-cabecalho-col-gap) + 2.5rem + 0.4rem + 2.5rem
-      );
-    width: calc(
-      var(--servico-cabecalho-col-gap) + 2.5rem + 0.4rem + 2.5rem
-    );
+    flex: 0 0 var(--servico-cabecalho-actions-w, calc(2.5rem * 2 + 0.4rem));
+    width: var(--servico-cabecalho-actions-w, calc(2.5rem * 2 + 0.4rem));
     min-height: 0.25rem;
     box-sizing: border-box;
     flex-shrink: 0;
@@ -1761,6 +1784,8 @@ textarea {
    * `padding-inline` aqui — ver contrato em `agenda-hub.component.scss` (`.app-drawer`).
    */
   padding-inline: 0;
+  /** Mesmo respiro que `nova-comanda-drawer` (observações ↔ resumo / footer). */
+  --nc-obs-resumo-gap: 1rem;
   /** Bordas de input e traços (divisórias) do hub: mesma família de cor. */
   --drawer-stroke: #ececec;
   --el-drawer-field-border-hover: #a51851;
@@ -1940,9 +1965,9 @@ textarea {
     color: #404040;
   }
 
-  /** Mais altura útil no scroll interno do drawer (menos scroll em listas longas). */
   .form-shell__main--modal .form-shell__flow--modal {
-    min-height: min(90dvh, 980px);
+    min-height: 0;
+    flex: 1 1 auto;
   }
 
   /**
@@ -2192,10 +2217,9 @@ textarea {
     align-self: stretch;
     margin-top: auto;
     padding-top: 0.25rem;
-    /** Mesmo respiro inferior em novo e em editar (spacer vs margin-top: auto). */
-    padding-bottom: 0.3rem;
-    /** Respiro entre observações e o rodapé (textarea ↔ footer). */
-    margin-bottom: 1rem;
+    padding-bottom: 0;
+    /** Igual ao drawer de comanda: observações ↔ resumo / footer. */
+    margin-bottom: var(--nc-obs-resumo-gap, 1rem);
     background: #fff;
     position: relative;
     z-index: 1;
@@ -2206,10 +2230,11 @@ textarea {
    * Botões agrupados à direita: Cancelar fica imediatamente à esquerda de Salvar.
    */
   .agenda-modal__footer {
-    margin-top: auto;
+    margin-top: 0;
     margin-bottom: 0;
     justify-content: flex-end;
     padding: 10px 0 10px var(--drawer-pad-x);
+    border-top: 1px solid var(--drawer-stroke, #ececec);
 
     .agenda-modal__footer-salvar {
       margin-left: 0;
@@ -2394,7 +2419,7 @@ textarea {
     grid-column: auto;
   }
 
-  /** Linha «Produto» no drawer: mesma coluna «Tipo de linha» que a linha Serviço. */
+  /** Linha «Produto» / «Serviço» (sem valores) no drawer. */
   .servico-row--drawer.servico-row--layout-produto-drawer {
     width: 100%;
     min-width: 0;
@@ -2408,24 +2433,38 @@ textarea {
       box-sizing: border-box;
     }
 
-    .servico-row__field--produto-catalogo {
+    .servico-row__field--produto-catalogo,
+    .servico-row__field--descricao {
       flex: 1 1 auto;
       width: auto;
       min-width: 0;
       max-width: none;
     }
+
+    .servico-row__field--tamanho {
+      flex: 0 0 clamp(7.25rem, 10%, 8.5rem);
+    }
+
+    .servico-row__field--pro {
+      flex: 0 0 var(--drawer-pro-col);
+      width: var(--drawer-pro-col);
+      min-width: var(--drawer-pro-col);
+      max-width: var(--drawer-pro-col);
+    }
+
+    .servico-row__actions--drawer {
+      flex: 0 0 calc(2.5rem * 2 + 0.4rem);
+      margin-left: auto;
+    }
   }
 
-  /**
-   * Mega/Pacote (modal): bloco de etapas mais estreito (50%) e centrado no espaço
-   * antes do rail de alinhamento com as ações da linha.
-   */
+  /** Mega/Pacote (modal): largura = coluna «Tipo de linha» do cabeçalho. */
   .servico-row__etapas-wrap--modal-cabecalho .etapas-block--etapas-modal {
-    flex: 0 1 50%;
-    width: 50%;
-    max-width: min(50%, 100%);
-    margin-left: auto;
-    margin-right: auto;
+    flex: 0 1 var(--mega-etapas-col-w);
+    width: var(--mega-etapas-col-w);
+    max-width: var(--mega-etapas-col-w);
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .servico-row--drawer .servico-row__field--modal-prod-money {

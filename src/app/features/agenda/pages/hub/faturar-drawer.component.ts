@@ -22,6 +22,7 @@ import type {
   FaturarComandaPayload,
   MetodoPagamentoComanda,
 } from '../../../../core/models/api.models';
+import { dataYmdAnteriorAHoje } from '../../../../core/utils/comanda-status.util';
 
 function formataMoedaBrl(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -606,17 +607,19 @@ export class FaturarDrawerComponent implements OnInit {
   badgePagamentoLinha(l: PagamentoLinhaUi): 'pago' | 'pendente' | 'credito' | 'atrasado' {
     if (l.kind === 'rasc' && l.row.destino === 'credito') return 'credito';
     const metodo = l.kind === 'api' ? l.row.metodo : l.row.metodo;
-    if (metodo === 'pendente' && this.comandaPendenteEmAtrasoNaReferencia()) {
+    if (metodo === 'pendente' && this.linhaPagamentoPendenteEmAtraso(l)) {
       return 'atrasado';
     }
     return metodo === 'pendente' ? 'pendente' : 'pago';
   }
 
-  /** Data da comanda anterior a hoje → linhas «Pendente» no rascunho mostram «Atrasado». */
-  private comandaPendenteEmAtrasoNaReferencia(): boolean {
-    const y = (this.dataComanda() ?? '').trim();
+  /** Linha «Pendente» vencida: `data_pagamento` da parcela anterior a hoje. */
+  private linhaPagamentoPendenteEmAtraso(l: PagamentoLinhaUi): boolean {
+    const y = (
+      l.kind === 'api' ? l.row.data_pagamento : l.row.data_pagamento
+    ).trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return false;
-    return y < ymdHoje();
+    return dataYmdAnteriorAHoje(y);
   }
 
   podeMostrarFaturar(): boolean {

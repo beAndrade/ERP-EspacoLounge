@@ -37,6 +37,18 @@ export interface Cliente {
   facebook?: string | null;
   /** Saldo de crédito pré-pago (ex.: excesso ao faturar). */
   creditoSaldo?: number;
+  /** Saldo de cashback do cliente (quando existir na API). */
+  cashbackSaldo?: number;
+}
+
+/** Linha do extrato de crédito (`GET /api/clientes/:id/credito-movimentos`). */
+export interface ClienteCreditoMovimento {
+  id: string;
+  /** `AAAA-MM-DD` */
+  data: string;
+  valorReais: number;
+  tipo: 'entrada' | 'saida';
+  motivo: string;
 }
 
 /** Body de `POST/PATCH /api/clientes`. */

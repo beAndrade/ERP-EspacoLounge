@@ -996,6 +996,15 @@ function readAgendaCartaoMeta(p: unknown): {
   return { agendaStatus, agendaCor };
 }
 
+/**
+ * Comanda walk-in (sem cartão na agenda) pode omitir `agenda_status` no payload;
+ * a coluna na BD pode ser NOT NULL — usamos valor neutro (sem `inicio`/`fim` não aparece no hub).
+ */
+function agendaStatusParaGravacao(status: string | null | undefined): string {
+  const s = status != null ? String(status).trim() : '';
+  return s || 'confirmado';
+}
+
 function descontoCriacaoParaBD(v: unknown): string {
   const bruto = String(v ?? '').trim();
   if (!bruto) return '';
@@ -1088,8 +1097,8 @@ async function appendAtendimentoLinha(
     descricaoManual: o.descricaoManual ?? '',
     custo: '',
     lucro: '',
-    agendaStatus: o.agendaStatus ?? null,
-    agendaCor: o.agendaCor ?? null,
+    agendaStatus: agendaStatusParaGravacao(o.agendaStatus),
+    agendaCor: o.agendaCor?.trim() ? o.agendaCor.trim() : null,
   });
 }
 

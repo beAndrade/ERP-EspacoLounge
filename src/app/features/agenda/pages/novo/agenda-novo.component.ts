@@ -79,6 +79,9 @@ import {
   type ValorRepetirAgendamento,
   type FrequenciaRepetirAgendamento,
 } from './agenda-repetir-cascade.models';
+import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
+import { formataMoedaBrlResumo } from '../../../../shared/comanda-resumo-bar/comanda-resumo.utils';
+import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.component';
 import {
   SaasSelectComponent,
@@ -198,6 +201,7 @@ function parseQuantidadeFromDescricao(s: string): number {
     AgendaModalCalendarComponent,
     AgendaHorarioSlotsComponent,
     AgendaStatusSelectComponent,
+    ComandaResumoBarComponent,
   ],
   templateUrl: './agenda-novo.component.html',
   styleUrl: './agenda-novo.component.scss',
@@ -219,8 +223,47 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return this.modoModal && !!this.idAtendimentoEmEdicao?.trim();
   }
 
+  @HostBinding('class.agenda-novo--somente-comanda')
+  get hostSomenteComanda(): boolean {
+    return this.isFluxoSomenteComanda();
+  }
+
+  /** Modal da página Comandas (sem cartão no calendário). */
+  isFluxoSomenteComanda(): boolean {
+    return this.modoModal && this.fluxoSomenteComanda;
+  }
+
+  /**
+   * Colunas monetárias por linha (V.unit., desconto, total estimado).
+   * Hub: só «Cabelo» (calculadora); Comandas walk-in / edição de itens: todos os tipos.
+   */
+  exibirColunasValorLinha(itemTipo?: string | null): boolean {
+    if (!this.modoModal) return true;
+    if (this.fluxoSomenteComanda) return true;
+    return String(itemTipo ?? '').trim() === 'Cabelo';
+  }
+
   /** Quando true, esconde navegação global do formulário (uso dentro de modal). */
   @Input() modoModal = false;
+  /**
+   * Página Comandas: walk-in sem calendário — não grava `inicio`/`agenda_status`
+   * e UI sem horário, status, lembrete ou repetição.
+   */
+  @Input() fluxoSomenteComanda = false;
+  /**
+   * Drawer de edição de itens (Comandas): sem bloco Desconto/Crédito/Total
+   * — o resumo fica só no drawer de comanda por baixo.
+   */
+  @Input() ocultarResumoComanda = false;
+
+  /** Resumo financeiro (walk-in Nova comanda); não usado no drawer de edição de itens. */
+  readonly descontoResumoWalkInCtrl = new FormControl(formataMoedaBrlResumo(0), {
+    nonNullable: true,
+  });
+  readonly creditoResumoWalkInCtrl = new FormControl(formataMoedaBrlResumo(0), {
+    nonNullable: true,
+  });
+
   /** Pré-preenche data, primeira linha de serviço e slot (hora local). */
   @Input() contextoSlot: {
     data: string;
@@ -235,6 +278,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   @Output() cancelarModal = new EventEmitter<void>();
   /** Hub modal: abrir drawer de novo cliente (pai reutiliza a ficha de cadastro). */
   @Output() abrirNovoClienteDrawer = new EventEmitter<void>();
+  @Output() abrirCadastroCliente = new EventEmitter<AbrirCadastroClientePayload>();
   /**
    * Hub: abrir drawer de comanda. `acessar` = já existe comanda aberta para o cliente na data;
    * `idAtendimento` = pedido a focar (quando existir).
@@ -253,6 +297,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   readonly navegacaoNoHub = output<{
     data: string;
     id_atendimento: string;
+  }>();
+  /** Comandas: gravar (se necessário) e abrir drawer Faturar directamente. */
+  readonly faturarDesdeFormulario = output<{
+    idAtendimento: string;
+    dataYmd: string;
+    clienteId: string;
+    cliente: Cliente | null;
   }>();
 
   readonly tiposLinhaAtendimento: TipoLinhaAtendimento[] = [
@@ -536,7 +587,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         } else {
           this.atualizarOcupacaoDia(ymd);
         }
+        if (this.mostrarResumoComandaWalkIn()) {
+          this.aplicarCreditoWalkInAutomatico();
+        }
       });
+
+    if (this.mostrarResumoComandaWalkIn()) {
+      this.linhasItensArray.valueChanges
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => this.aplicarCreditoWalkInAutomatico());
+      this.descontoResumoWalkInCtrl.valueChanges
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => this.aplicarCreditoWalkInAutomatico());
+    }
   }
 
   onRepetirAgendamentoChange(valor: ValorRepetirAgendamento): void {
@@ -690,7 +753,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private atualizarOcupacaoDia(ymd: string): void {
-    if (!this.modoModal) return;
+    if (!this.modoModal || this.isFluxoSomenteComanda()) return;
     this.api
       .listAgendamentos(ymd, ymd)
       .pipe(
@@ -967,9 +1030,67 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     } as unknown as MouseEvent);
   }
 
+  onFaturarSomenteComandaClick(ev: MouseEvent): void {
+    ev.stopPropagation();
+    if (this.salvando || this.excluindo || !this.isFluxoSomenteComanda()) {
+      return;
+    }
+
+    const editId = this.idAtendimentoEmEdicao?.trim();
+    const podeAbrirSemSalvar = Boolean(editId && !this.form.dirty);
+
+    if (podeAbrirSemSalvar) {
+      if (!this.podeUsarAcaoComanda()) {
+        this.registrarFalhaValidacao();
+        return;
+      }
+      this.emitirFaturarDesdeFormulario();
+      return;
+    }
+
+    const prep = this.prepararSalvamentoFormulario();
+    if (!prep) return;
+
+    this.salvando = true;
+    this.salvarParaComanda(prep).subscribe({
+      next: (id) => {
+        this.salvando = false;
+        this.idAtendimentoEmEdicao = id;
+        this.form.markAsPristine();
+        this.emitirFaturarDesdeFormulario();
+      },
+      error: (e: Error) => {
+        this.avisoItensDuplicados = '';
+        this.erro =
+          e.message ||
+          'Não foi possível salvar a comanda antes de faturar.';
+        this.salvando = false;
+      },
+    });
+  }
+
+  private emitirFaturarDesdeFormulario(): void {
+    const ymd =
+      normalizarDataIso(String(this.form.get('data')?.value ?? '')) ?? '';
+    const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const idAtendimento =
+      this.idAtendimentoEmEdicao?.trim() ||
+      this.idComandaPedidoAberto?.trim() ||
+      '';
+    if (!idAtendimento || !ymd || !clienteId) return;
+    this.faturarDesdeFormulario.emit({
+      idAtendimento,
+      dataYmd: ymd,
+      clienteId,
+      cliente: this.clienteSelecionado(),
+    });
+  }
+
   onAbrirComandaClick(ev: MouseEvent): void {
     ev.stopPropagation();
-    if (this.salvando || this.excluindo) return;
+    if (this.salvando || this.excluindo || this.isFluxoSomenteComanda()) {
+      return;
+    }
 
     const editId = this.idAtendimentoEmEdicao?.trim();
     const idAberto = this.idComandaPedidoAberto?.trim();
@@ -1330,11 +1451,83 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /** Título no modal do hub (tom mais próximo de SaaS). */
+  /** Bloco Desconto/Crédito/Total no walk-in (print 2); oculto na edição de itens (print 3). */
+  mostrarResumoComandaWalkIn(): boolean {
+    return this.isFluxoSomenteComanda() && !this.ocultarResumoComanda;
+  }
+
+  somaSubtotalLinhasWalkInReais(): number {
+    let sum = 0;
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const n = valorMonetarioParaNumero(this.totalLinhaWalkInBrlPorIndice(i));
+      if (n != null && n >= 0) sum += n;
+    }
+    return Math.round(sum * 100) / 100;
+  }
+
+  totalWalkInResumoCalculado(): number {
+    const bruto = this.somaSubtotalLinhasWalkInReais();
+    const desc = this.valorCampoResumoWalkIn(this.descontoResumoWalkInCtrl.value);
+    const cred = this.valorCampoResumoWalkIn(this.creditoResumoWalkInCtrl.value);
+    const antes = Math.max(0, Math.round((bruto - desc) * 100) / 100);
+    return Math.max(0, Math.round((antes - cred) * 100) / 100);
+  }
+
+  creditoDisponivelWalkIn(): number {
+    const n = Number(this.clienteSelecionado()?.creditoSaldo ?? 0);
+    return Number.isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : 0;
+  }
+
+  private totalLinhaWalkInBrlPorIndice(i: number): string {
+    const g = this.linhasItensArray.at(i);
+    const tipo = String(g?.get('itemTipo')?.value ?? '');
+    if (tipo === 'Serviço') return this.totalEstimadoServicoLinhaBrl(i);
+    if (tipo === 'Produto') return this.totalEstimadoProdutoLinhaBrl(i);
+    if (tipo === 'Cabelo') return this.totalEstimadoCabeloLinhaBrl(i);
+    return '—';
+  }
+
+  private valorCampoResumoWalkIn(s: string): number {
+    const n = valorMonetarioParaNumero(s);
+    return n != null && Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+
+  private aplicarCreditoWalkInAutomatico(): void {
+    if (!this.mostrarResumoComandaWalkIn()) return;
+    const max = Math.min(
+      this.creditoDisponivelWalkIn(),
+      Math.max(
+        0,
+        Math.round(
+          (this.somaSubtotalLinhasWalkInReais() -
+            this.valorCampoResumoWalkIn(this.descontoResumoWalkInCtrl.value)) *
+            100,
+        ) / 100,
+      ),
+    );
+    if (!this.creditoResumoWalkInCtrl.dirty) {
+      this.creditoResumoWalkInCtrl.setValue(formataMoedaBrlResumo(max), {
+        emitEvent: false,
+      });
+    }
+  }
+
   tituloModal(): string {
+    if (this.isFluxoSomenteComanda()) {
+      return this.idAtendimentoEmEdicao?.trim()
+        ? 'Editando itens da comanda'
+        : 'Nova comanda';
+    }
     if (!this.idAtendimentoEmEdicao?.trim()) {
       return 'Novo agendamento';
     }
     return 'Editando agendamento';
+  }
+
+  tituloSecaoItensModal(): string {
+    return this.isFluxoSomenteComanda()
+      ? 'Itens da comanda'
+      : 'Itens do agendamento';
   }
 
   clienteSelecionado(): Cliente | null {
@@ -1952,23 +2145,141 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       { calc_tam_cm: '', calc_metodo: '', calc_gramas: '' },
       { emitEvent: false },
     );
+    this.tentarPreencherValorCabeloDaCalculadoraLinha(i);
   }
 
   onCalcCabeloTamanhoChangeLinha(i: number): void {
     this.linhasItensArray
       .at(i)
       ?.patchValue({ calc_metodo: '', calc_gramas: '' }, { emitEvent: false });
+    this.tentarPreencherValorCabeloDaCalculadoraLinha(i);
   }
 
   onCalcCabeloMetodoChangeLinha(i: number): void {
     this.linhasItensArray.at(i)?.patchValue({ calc_gramas: '' }, {
       emitEvent: false,
     });
+    this.tentarPreencherValorCabeloDaCalculadoraLinha(i);
   }
 
   onCalcCabeloGramasInputLinha(i: number, ev: Event): void {
     const v = (ev.target as HTMLInputElement).value;
     this.linhasItensArray.at(i)?.patchValue({ calc_gramas: v }, { emitEvent: false });
+    this.tentarPreencherValorCabeloDaCalculadoraLinha(i);
+  }
+
+  /**
+   * Alinha ao drawer de comanda: quando a calculadora está completa, preenche
+   * `valor_cabelo` para validação/gravação (sem obrigar «Aplicar valor calculado»).
+   */
+  private tentarPreencherValorCabeloDaCalculadoraLinha(i: number): void {
+    if (!this.exibirColunasValorLinha('Cabelo')) return;
+    const g = this.linhasItensArray.at(i);
+    if (!g || g.get('itemTipo')?.value !== 'Cabelo') return;
+    const calc = this.valorTotalCabeloCalculadoLinha(i);
+    if (calc == null || calc <= 0) return;
+    const cur = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+    if (cur != null && cur > 0) return;
+    g.patchValue({ valor_cabelo: formataMoedaBrl(calc) }, { emitEvent: false });
+    g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private sincronizarValorCabeloCalculadoNasLinhas(): void {
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      this.tentarPreencherValorCabeloDaCalculadoraLinha(i);
+    }
+  }
+
+  /** Extrai campos da calculadora a partir de `detalhes_cabelo` gravados. */
+  private parseDetalhesCabeloParaCalc(detalhes: string): {
+    calc_cor: string;
+    calc_tam_cm: string;
+    calc_metodo: string;
+    calc_gramas: string;
+  } {
+    const s = String(detalhes ?? '').trim();
+    const vazio = {
+      calc_cor: '',
+      calc_tam_cm: '',
+      calc_metodo: '',
+      calc_gramas: '',
+    };
+    if (!s) return vazio;
+    const m =
+      /^Cor:\s*([^;]+);\s*([^;]+?)\s*cm;\s*m[eé]todo:\s*([^;]+);\s*([\d.,]+)\s*g\s*$/i.exec(
+        s,
+      );
+    if (!m) return vazio;
+    return {
+      calc_cor: m[1].trim(),
+      calc_tam_cm: m[2].trim(),
+      calc_metodo: m[3].trim(),
+      calc_gramas: m[4].trim().replace(',', '.'),
+    };
+  }
+
+  private patchCalcCabeloFromDetalhes(g: FormGroup, detalhes: string): void {
+    const parsed = this.parseDetalhesCabeloParaCalc(detalhes);
+    if (!parsed.calc_cor) return;
+    const tamNorm = this.normalizarTamanhoCmCabeloCatalogo(
+      parsed.calc_cor,
+      parsed.calc_tam_cm,
+    );
+    const metNorm = this.normalizarMetodoCabeloCatalogo(
+      parsed.calc_cor,
+      tamNorm,
+      parsed.calc_metodo,
+    );
+    g.patchValue(
+      {
+        calc_cor: parsed.calc_cor,
+        calc_tam_cm: tamNorm || parsed.calc_tam_cm,
+        calc_metodo: metNorm || parsed.calc_metodo,
+        calc_gramas: parsed.calc_gramas,
+      },
+      { emitEvent: false },
+    );
+  }
+
+  private normalizarTamanhoCmCabeloCatalogo(
+    cor: string,
+    tam: string,
+  ): string {
+    const c = cor.trim();
+    const t = tam.trim();
+    if (!c || !t) return t;
+    const lista = this.cabelos
+      .filter((x) => String(x.cor ?? '').trim() === c)
+      .map((x) => String(x.tamanho_cm ?? '').trim())
+      .filter(Boolean);
+    if (lista.includes(t)) return t;
+    const soNum = t.replace(/[^\d.,]/g, '').replace(',', '.');
+    const hit = lista.find(
+      (x) => x.replace(/[^\d.,]/g, '').replace(',', '.') === soNum,
+    );
+    return hit ?? t;
+  }
+
+  private normalizarMetodoCabeloCatalogo(
+    cor: string,
+    tam: string,
+    metodo: string,
+  ): string {
+    const c = cor.trim();
+    const t = tam.trim();
+    const m = metodo.trim();
+    if (!c || !t || !m) return m;
+    const lista = this.cabelos
+      .filter(
+        (x) =>
+          String(x.cor ?? '').trim() === c &&
+          String(x.tamanho_cm ?? '').trim() === t,
+      )
+      .map((x) => String(x.metodo ?? '').trim())
+      .filter(Boolean);
+    if (lista.includes(m)) return m;
+    const low = m.toLowerCase();
+    return lista.find((x) => x.toLowerCase() === low) ?? m;
   }
 
   private parseGramasCabeloLinha(i: number): number | null {
@@ -2064,6 +2375,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     g.patchValue({ valor_cabelo: formataMoedaBrl(total) });
     g.get('valor_cabelo')?.markAsTouched();
     g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
+    this.aplicarValidadoresLinhas();
 
     const gStr = String(g.get('calc_gramas')?.value ?? '').trim();
     const cor = String(g.get('calc_cor')?.value ?? '').trim();
@@ -2073,6 +2385,46 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const atual = String(g.get('detalhes_cabelo')?.value ?? '').trim();
     if (!atual) {
       g.patchValue({ detalhes_cabelo: linha });
+    }
+  }
+
+  /** Valor gravado para Cabelo: campo manual ou total da calculadora (agendamento sem UI de valor). */
+  private valorCabeloEfetivoLinha(i: number): number | null {
+    const g = this.linhasItensArray.at(i);
+    if (!g) return null;
+    const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+    if (v != null && v > 0) return v;
+    const calc = this.valorTotalCabeloCalculadoLinha(i);
+    return calc != null && calc > 0 ? calc : null;
+  }
+
+  /**
+   * Antes de gravar agendamento (hub, sem colunas de valor): preenche preços de catálogo
+   * e valor de cabelo calculado para a API/comanda.
+   */
+  private preencherValoresCatalogoLinhasAntesPayload(): void {
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const tipo = String(g.get('itemTipo')?.value ?? '').trim();
+      if (tipo === 'Serviço') {
+        this.atualizarValorUnitarioServicoSeIntacto(i);
+      } else if (tipo === 'Produto') {
+        const nome = String(g.get('produto')?.value ?? '').trim();
+        if (!nome || g.get('preco_unitario_tocado')?.value === true) continue;
+        const preco = this.precoCatalogoProduto(nome);
+        if (preco != null && preco >= 0) {
+          g.get('preco_unitario')?.setValue(formataMoedaBrl(preco), {
+            emitEvent: false,
+          });
+        }
+      } else if (tipo === 'Cabelo') {
+        const calc = this.valorTotalCabeloCalculadoLinha(i);
+        if (calc == null || calc <= 0) continue;
+        const cur = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+        if (cur == null || cur <= 0) {
+          g.patchValue({ valor_cabelo: formataMoedaBrl(calc) }, { emitEvent: false });
+        }
+      }
     }
   }
 
@@ -2129,6 +2481,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.slotAgenda = null;
     this.aplicarValidadoresLinhas();
     if (this.modoModal && t === 'Produto') {
+      g.patchValue(
+        { profissional: null, servico_id: '' },
+        { emitEvent: false },
+      );
       const fb = this.profissionalFallbackParaProdutoNoModal(i);
       if (fb != null) {
         g.patchValue({ profissional: fb }, { emitEvent: false });
@@ -2174,6 +2530,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   } | null {
     this.erro = '';
     this.aplicarValidadoresLinhas();
+    this.sincronizarValorCabeloCalculadoNasLinhas();
 
     if (!this.form.valid) {
       return this.registrarFalhaValidacao();
@@ -2314,7 +2671,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const aplicarProx = propagarPelaRepeticaoNoForm || propagarPelaSerieGravada;
 
     let datas: string[];
-    if (propagarPelaRepeticaoNoForm) {
+    if (this.isFluxoSomenteComanda()) {
+      datas = [dataBase];
+    } else if (propagarPelaRepeticaoNoForm) {
       const rep = this.repetirAgendamento;
       if (rep.modo !== 'repetir') {
         datas = [dataBase];
@@ -3016,17 +3375,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           consumidos,
         );
         const money = this.moneyDoItem(itemPivot);
+        const detalhesCabelo = row.descricao || '';
         g.patchValue(
           {
             profissional_cabelo: this.profissionalValorForm(row),
             valor_cabelo:
               money.valor_unitario || this.valorCampoCabeloDeApi(row.valor),
-            detalhes_cabelo: row.descricao || '',
+            detalhes_cabelo: detalhesCabelo,
             desconto: money.desconto || row.desconto || '',
           },
           { emitEvent: false },
         );
+        this.patchCalcCabeloFromDetalhes(g, detalhesCabelo);
         this.linhasItensArray.push(g);
+        this.tentarPreencherValorCabeloDaCalculadoraLinha(
+          this.linhasItensArray.length - 1,
+        );
       } else if (seg.k === 'mega' || seg.k === 'pacote') {
         const blockRows = seg.rows;
         const head = blockRows[0];
@@ -3209,12 +3573,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   aplicarValidadoresLinhas(): void {
-    const precisaHora = this.linhasItensArray.length > 0;
     const horaIni = this.form.controls.hora_inicial;
-    if (precisaHora) {
-      horaIni.setValidators([Validators.required]);
-    } else {
+    if (this.isFluxoSomenteComanda()) {
       horaIni.clearValidators();
+    } else {
+      const precisaHora = this.linhasItensArray.length > 0;
+      if (precisaHora) {
+        horaIni.setValidators([Validators.required]);
+      } else {
+        horaIni.clearValidators();
+      }
     }
     horaIni.updateValueAndValidity({ emitEvent: false });
 
@@ -3254,7 +3622,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         pac?.setValidators([Validators.required]);
       } else if (tipo === 'Cabelo') {
         profC?.clearValidators();
-        valC?.setValidators([Validators.required, valorCabeloPtValidator]);
+        if (this.exibirColunasValorLinha('Cabelo')) {
+          valC?.setValidators([Validators.required, valorCabeloPtValidator]);
+        } else {
+          valC?.clearValidators();
+        }
       }
 
       sid?.updateValueAndValidity({ emitEvent: false });
@@ -3345,7 +3717,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!String(raw['cliente_id'] ?? '').trim()) return false;
     const dataYmd = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataYmd) return false;
-    if (!normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))) {
+    if (
+      !this.isFluxoSomenteComanda() &&
+      !normalizarHoraHHmm(String(raw['hora_inicial'] ?? ''))
+    ) {
       return false;
     }
     if (this.linhasItensArray.length < 1) return false;
@@ -3406,18 +3781,24 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (!String(g.get('produto')?.value ?? '').trim()) return false;
       const q = Number(g.get('quantidade')?.value);
       if (Number.isNaN(q) || q <= 0) return false;
-      const p = g.get('profissional')?.value;
-      const direct = p != null && Number(p) > 0;
-      const fb =
-        this.modoModal &&
-        (this.profissionalFallbackParaProdutoNoModal(linhaIndex) ?? 0) > 0;
-      if (!direct && !fb) return false;
+      /** Drawer / comanda walk-in: produto sem campo profissional na UI. */
+      if (!this.modoModal) {
+        const p = g.get('profissional')?.value;
+        const direct = p != null && Number(p) > 0;
+        const fb =
+          (this.profissionalFallbackParaProdutoNoModal(linhaIndex) ?? 0) > 0;
+        if (!direct && !fb) return false;
+      }
       const nome = String(g.get('produto')?.value ?? '').trim();
       const catPreco = this.precoCatalogoProduto(nome);
-      const manual = this.parseValorPt(
-        String(g.get('preco_unitario')?.value ?? '').trim(),
-      );
-      if (catPreco == null && (manual == null || manual < 0)) return false;
+      if (this.exibirColunasValorLinha('Produto')) {
+        const manual = this.parseValorPt(
+          String(g.get('preco_unitario')?.value ?? '').trim(),
+        );
+        if (catPreco == null && (manual == null || manual < 0)) return false;
+      } else if (catPreco == null) {
+        return false;
+      }
       return true;
     }
     if (tipo === 'Mega' || tipo === 'Pacote') {
@@ -3427,8 +3808,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       );
     }
     if (tipo === 'Cabelo') {
-      const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
-      return v != null && v > 0;
+      if (this.exibirColunasValorLinha('Cabelo')) {
+        const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+        if (v != null && v > 0) return true;
+        const calc = this.valorTotalCabeloCalculadoLinha(linhaIndex);
+        return calc != null && calc > 0;
+      }
+      const calc = this.valorTotalCabeloCalculadoLinha(linhaIndex);
+      if (calc != null && calc > 0) return true;
+      return String(g.get('detalhes_cabelo')?.value ?? '').trim().length > 0;
     }
     return false;
   }
@@ -3460,12 +3848,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (g0 && c.profissional_id > 0) {
       g0.patchValue({ profissional: c.profissional_id }, { emitEvent: false });
     }
-    const horaBruta = String(c.hora ?? '').trim();
-    const hn = normalizarHoraHHmm(horaBruta);
-    this.form.patchValue(
-      { hora_inicial: hn ?? '' },
-      { emitEvent: false },
-    );
+    if (!this.isFluxoSomenteComanda()) {
+      const horaBruta = String(c.hora ?? '').trim();
+      const hn = normalizarHoraHHmm(horaBruta);
+      this.form.patchValue(
+        { hora_inicial: hn ?? '' },
+        { emitEvent: false },
+      );
+    }
     this.prefillEmCurso = false;
     this.slotAgenda = null;
   }
@@ -3927,6 +4317,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     horaIni: string,
     duracaoSlotMinutos?: number,
   ): CreateAtendimentoPayload {
+    if (this.isFluxoSomenteComanda()) return p;
     if (!usarPrimeiroBloco) return p;
     if (this.slotAgenda) {
       return {
@@ -3967,17 +4358,25 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private montarPayloadsDasLinhas(
     raw: Record<string, unknown>,
   ): CreateAtendimentoPayload[] {
+    if (!this.exibirColunasValorLinha()) {
+      this.preencherValoresCatalogoLinhasAntesPayload();
+    }
     const cliente_id = String(raw['cliente_id'] ?? '').trim();
     const dataYmd = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataYmd) return [];
     const observacao = String(raw['observacao'] ?? '').trim() || undefined;
     const horaIni = String(raw['hora_inicial'] ?? '');
-    const agenda_status = normalizarAgendaStatusId(
-      String(raw['agenda_status'] ?? ''),
-    );
-    const agenda_cor =
-      corHexAgendaPorStatus(agenda_status) ?? '#32C787';
-    const agendaCartao = { agenda_status, agenda_cor };
+    const somenteComanda = this.isFluxoSomenteComanda();
+    const agendaCartao = somenteComanda
+      ? {}
+      : (() => {
+          const agenda_status = normalizarAgendaStatusId(
+            String(raw['agenda_status'] ?? ''),
+          );
+          const agenda_cor =
+            corHexAgendaPorStatus(agenda_status) ?? '#32C787';
+          return { agenda_status, agenda_cor };
+        })();
 
     type Prep = {
       servico_id: string;
@@ -4019,14 +4418,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         tamanho: String(g.get('tamanho')?.value ?? 'Curto').trim(),
       });
     }
-    const slotPairs = this.slotsSequenciaisParaPayloadServico(
-      dataYmd,
-      horaIni,
-      servicosPrep.map((p) => ({
-        servico_id: p.servico_id,
-        tamanho: p.tamanho,
-      })),
-    );
+    const slotPairs = somenteComanda
+      ? []
+      : this.slotsSequenciaisParaPayloadServico(
+          dataYmd,
+          horaIni,
+          servicosPrep.map((p) => ({
+            servico_id: p.servico_id,
+            tamanho: p.tamanho,
+          })),
+        );
     const out: CreateAtendimentoPayload[] = [];
     let servicoIdx = 0;
     let primeiroMerge = true;
@@ -4062,7 +4463,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         servicoIdx += 1;
         if (!pr) continue;
         const slotPatch =
-          sp != null ? { inicio: sp.inicio, fim: sp.fim } : {};
+          !somenteComanda && sp != null
+            ? { inicio: sp.inicio, fim: sp.fim }
+            : {};
         const moneyPatch = {
           ...(valorUnitarioNum != null && valorUnitarioNum >= 0
             ? { valor_unitario: valorUnitarioNum }
@@ -4245,7 +4648,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       if (tipo === 'Cabelo') {
-        const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+        const v = this.valorCabeloEfetivoLinha(i);
         if (v == null || v <= 0) continue;
         const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
         const pidC = g.get('profissional_cabelo')?.value;

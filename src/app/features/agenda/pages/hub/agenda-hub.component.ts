@@ -16,6 +16,7 @@ import {
   ProfissionalListaItem,
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.service';
 import { minutosMeiaNoiteEmBrasilia } from '../../../../core/utils/brasilia-time';
 import { diffMinutesEntreHorarios } from '../../../../core/utils/sql-local-datetime';
 import {
@@ -32,6 +33,10 @@ import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import { NovaComandaDrawerComponent } from './nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from './faturar-drawer.component';
 import type { ComandaResumoPagamentos } from '../../../../core/models/api.models';
+import {
+  ClienteCadastroDrawerService,
+  type AbrirCadastroClientePayload,
+} from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 
 type CelulaCalendario = { dia: number | null; ymd: string | null };
 
@@ -82,6 +87,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  readonly sessao = inject(SessaoUsuarioService);
 
   @ViewChild(AgendaNovoComponent)
   private agendaDrawerRef?: AgendaNovoComponent;
@@ -597,13 +604,70 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDataYmdParaFaturar = ymd;
   }
 
-  /** Drawer da comanda: link «Aniversário» na sidebar → edição cadastral (nova aba). */
-  onAbrirCadastroClienteSidebarHub(): void {
-    const cid = this.comandaDrawerContexto?.clienteId?.trim();
-    if (!cid) return;
-    const tree = this.router.createUrlTree(['/clientes', cid, 'editar']);
-    const url = this.router.serializeUrl(tree);
-    window.open(url, '_blank', 'noopener,noreferrer');
+  /**
+   * Links «Informações» da sidebar (cashback, crédito, débitos, aniversário, etc.)
+   * no drawer de agendamento ou de comanda.
+   */
+  onAbrirCadastroClienteSidebarHub(
+    payload: AbrirCadastroClientePayload = {},
+  ): void {
+    const alvo = this.clienteAlvoSidebarCadastroHub();
+    if (!alvo) return;
+    const { cid, nomeLista } = alvo;
+
+    this.cadastroDrawer.abrirEdicaoPorLinkSidebar(cid, payload, {
+      nomeLista,
+      callbacks: {
+        onClienteCarregado: (c) => {
+          const ctxId = this.comandaDrawerContexto?.clienteId?.trim();
+          if (
+            ctxId === cid &&
+            this.comandaDrawerContexto != null &&
+            this.comandaDrawerContexto.clienteId === cid
+          ) {
+            this.comandaDrawerContexto = {
+              ...this.comandaDrawerContexto,
+              cliente: c,
+            };
+          }
+        },
+        onSalvo: (salvo) => {
+          const cidSalvo = (salvo.id ?? cid).trim();
+          if (
+            cidSalvo &&
+            this.comandaDrawerContexto?.clienteId?.trim() === cidSalvo
+          ) {
+            this.comandaDrawerContexto = {
+              ...this.comandaDrawerContexto,
+              cliente: salvo,
+            };
+          }
+          if (cidSalvo) {
+            this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cidSalvo);
+          }
+        },
+      },
+    });
+  }
+
+  private clienteAlvoSidebarCadastroHub(): {
+    cid: string;
+    nomeLista: string;
+  } | null {
+    const ctx = this.comandaDrawerContexto;
+    const cidCtx = ctx?.clienteId?.trim();
+    if (cidCtx) {
+      return {
+        cid: cidCtx,
+        nomeLista: String(ctx?.cliente?.nome ?? '').trim(),
+      };
+    }
+    const c = this.agendaDrawerRef?.clienteSelecionado();
+    const cidAg = c?.id?.trim();
+    if (cidAg) {
+      return { cid: cidAg, nomeLista: String(c?.nome ?? '').trim() };
+    }
+    return null;
   }
 
   // ----- Sub-drawer Faturar -------------------------------------------------

@@ -231,7 +231,11 @@
   justify-content: start;
   align-items: stretch;
 
-  &:has(app-cliente-cadastro-form) {
+  &:has(app-cliente-cadastro-form),
+  &:has(app-cliente-cashback-tab),
+  &:has(app-cliente-creditos-tab),
+  &:has(app-cliente-debitos-tab),
+  &:has(app-cliente-agendamentos-tab) {
     grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
   }
 }
@@ -1625,6 +1629,13 @@
   .cliente-body {
     grid-template-columns: 140px minmax(0, max-content) minmax(220px, 300px);
   }
+
+  .cliente-body:has(app-cliente-cashback-tab),
+  .cliente-body:has(app-cliente-creditos-tab),
+  .cliente-body:has(app-cliente-debitos-tab),
+  .cliente-body:has(app-cliente-agendamentos-tab) {
+    grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 860px) {
@@ -1784,4 +1795,76 @@
 .cliente-footer-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* Drawers empilhados sobre a ficha do cliente (Visualizar comanda, etc.) */
+.overlay--cliente-comanda-empilhada {
+  z-index: 1009;
+}
+
+.overlay--cliente-faturar-empilhada {
+  z-index: 1011;
+}
+
+.overlay--cliente-edit-ag-empilhada {
+  z-index: 1013;
+}
+
+.cliente-comanda-empilhada.app-drawer {
+  z-index: 1010;
+  left: auto;
+  right: 0;
+  width: min(1400px, 100vw);
+  padding: 0 var(--drawer-inset-x, 15px);
+  --drawer-pad-x: var(--drawer-inset-x, 15px);
+
+  > app-nova-comanda-drawer {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+  }
+}
+
+.cliente-faturar-empilhada.app-drawer {
+  z-index: 1012;
+  left: auto;
+  right: 0;
+  width: min(480px, 100vw);
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+
+  > app-faturar-drawer {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+  }
+}
+
+.cliente-edit-ag-empilhada.app-drawer {
+  z-index: 1014;
+  left: auto;
+  right: 0;
+  width: min(1400px, 100vw);
+  padding: 0 var(--drawer-inset-x, 15px);
+
+  > app-agenda-novo {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+  }
+}
+
+@media (min-width: 1648px) {
+  .cliente-comanda-empilhada.app-drawer,
+  .cliente-edit-ag-empilhada.app-drawer {
+    left: max(320px, calc(100vw - 1400px));
+    width: auto;
+    right: 0;
+  }
 }

@@ -16,6 +16,7 @@ import {
 } from '../../../../shared/cliente-perfil-drawer/cliente-perfil-drawer.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
 import {
   formatarCpfBr,
   formatarDataDdMmYyyy,
@@ -29,7 +30,12 @@ const DRAWER_ANIM_MS = 430;
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, ClientePerfilDrawerComponent],
+  imports: [
+    FormsModule,
+    CurrencyPipe,
+    ClientePerfilDrawerComponent,
+    ClienteAvatarComponent,
+  ],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
@@ -621,6 +627,10 @@ export class ClientesComponent implements OnInit, OnDestroy {
       if (!this.excluindoClienteModal) {
         this.fecharModalExcluirCliente();
       }
+      return;
+    }
+    if (this.cadastroDrawer.tratarEscapeComandaEmpilhadaNaFicha()) {
+      ev.preventDefault();
       return;
     }
     if (this.cadastroDrawer.isAberto) {

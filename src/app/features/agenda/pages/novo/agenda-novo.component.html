@@ -55,6 +55,7 @@
           [clienteIdControl]="clienteIdControl"
           [opcoesClientes]="opcoesClientesNomes()"
           [cliente]="clienteSelecionado()"
+          (abrirCadastroCliente)="abrirCadastroCliente.emit($event)"
         />
       }
       <div
@@ -205,7 +206,7 @@
             }
           </div>
 
-          @if (modoModal) {
+          @if (modoModal && !fluxoSomenteComanda) {
             <div class="block-context__field block-context__field--hora-modal block-context__field--hora-slots">
               <span>Horário</span>
               <app-agenda-horario-slots
@@ -247,7 +248,11 @@
       aria-labelledby="itens-atendimento-titulo"
     >
       <h2 id="itens-atendimento-titulo" class="itens-atendimento__titulo">
-        {{ modoModal ? 'Itens do agendamento' : 'Itens do atendimento' }}
+        {{
+          modoModal
+            ? tituloSecaoItensModal()
+            : 'Itens do atendimento'
+        }}
       </h2>
 
       @if (!modoModal) {
@@ -280,7 +285,10 @@
               modoModal && ctrl.get('itemTipo')?.value === 'Cabelo'
             "
             [class.servico-row--layout-produto-drawer]="
-              modoModal && ctrl.get('itemTipo')?.value === 'Produto'
+              modoModal &&
+              (ctrl.get('itemTipo')?.value === 'Produto' ||
+                (!exibirColunasValorLinha(ctrl.get('itemTipo')?.value) &&
+                  ctrl.get('itemTipo')?.value === 'Serviço'))
             "
             [formGroupName]="i"
           >
@@ -446,46 +454,48 @@
                   aria-label="Profissional"
                 />
               </div>
-              <div class="servico-row__field servico-row__field--money">
-                <span>Valor unitário</span>
-                <input
-                  type="text"
-                  formControlName="valor_unitario"
-                  inputmode="decimal"
-                  placeholder="R$ 0,00"
-                  autocomplete="off"
-                  aria-label="Valor unitário (R$)"
-                  (input)="onMoedaInput(i, 'valor_unitario')"
-                  (blur)="onValorUnitarioBlur(i)"
-                />
-              </div>
-              <div class="servico-row__field servico-row__field--money">
-                <span>Desconto</span>
-                <input
-                  type="text"
-                  formControlName="desconto"
-                  inputmode="decimal"
-                  placeholder="R$ 0,00"
-                  autocomplete="off"
-                  aria-label="Desconto (R$)"
-                  (input)="onMoedaInput(i, 'desconto')"
-                  (blur)="onDescontoLinhaMoedaBlur(i)"
-                />
-              </div>
-              @if (modoModal) {
-                <div
-                  class="servico-row__field servico-row__field--produto-total-estimado"
-                >
-                  <span>Total</span>
-                  <div
-                    class="servico-row__total-estimado"
-                    [attr.aria-label]="
-                      'Total da linha: ' + totalEstimadoServicoLinhaBrl(i)
-                    "
-                  >
-                    {{ totalEstimadoServicoLinhaBrl(i) }}
-                  </div>
+              @if (exibirColunasValorLinha(ctrl.get('itemTipo')?.value)) {
+                <div class="servico-row__field servico-row__field--money">
+                  <span>Valor unitário</span>
+                  <input
+                    type="text"
+                    formControlName="valor_unitario"
+                    inputmode="decimal"
+                    placeholder="R$ 0,00"
+                    autocomplete="off"
+                    aria-label="Valor unitário (R$)"
+                    (input)="onMoedaInput(i, 'valor_unitario')"
+                    (blur)="onValorUnitarioBlur(i)"
+                  />
                 </div>
+                <div class="servico-row__field servico-row__field--money">
+                  <span>Desconto</span>
+                  <input
+                    type="text"
+                    formControlName="desconto"
+                    inputmode="decimal"
+                    placeholder="R$ 0,00"
+                    autocomplete="off"
+                    aria-label="Desconto (R$)"
+                    (input)="onMoedaInput(i, 'desconto')"
+                    (blur)="onDescontoLinhaMoedaBlur(i)"
+                  />
+                </div>
+                @if (modoModal) {
+                  <div
+                    class="servico-row__field servico-row__field--produto-total-estimado"
+                  >
+                    <span>Total</span>
+                    <div
+                      class="servico-row__total-estimado"
+                      [attr.aria-label]="
+                        'Total da linha: ' + totalEstimadoServicoLinhaBrl(i)
+                      "
+                    >
+                      {{ totalEstimadoServicoLinhaBrl(i) }}
+                    </div>
+                  </div>
+                }
               }
             }
 
@@ -517,48 +527,50 @@
                   aria-label="Quantidade"
                 />
               </div>
-              <div
-                class="servico-row__field servico-row__field--preco-unit-prod"
-                [class.servico-row__field--modal-prod-money]="modoModal"
-              >
-                <span>Valor unitário</span>
-                <input
-                  type="text"
-                  formControlName="preco_unitario"
-                  inputmode="decimal"
-                  placeholder="R$ 0,00"
-                  autocomplete="off"
-                  aria-label="Valor unitário (R$)"
-                  (input)="onMoedaInput(i, 'preco_unitario')"
-                />
-              </div>
-              <div class="servico-row__field servico-row__field--money">
-                <span>Desconto</span>
-                <input
-                  type="text"
-                  formControlName="desconto"
-                  inputmode="decimal"
-                  placeholder="R$ 0,00"
-                  autocomplete="off"
-                  aria-label="Desconto (R$)"
-                  (input)="onMoedaInput(i, 'desconto')"
-                  (blur)="onDescontoLinhaMoedaBlur(i)"
-                />
-              </div>
-              @if (modoModal) {
+              @if (exibirColunasValorLinha(ctrl.get('itemTipo')?.value)) {
                 <div
-                  class="servico-row__field servico-row__field--produto-total-estimado"
+                  class="servico-row__field servico-row__field--preco-unit-prod"
+                  [class.servico-row__field--modal-prod-money]="modoModal"
                 >
-                  <span>Total</span>
-                  <div
-                    class="servico-row__total-estimado"
-                    [attr.aria-label]="
-                      'Total da linha: ' + totalEstimadoProdutoLinhaBrl(i)
-                    "
-                  >
-                    {{ totalEstimadoProdutoLinhaBrl(i) }}
-                  </div>
+                  <span>Valor unitário</span>
+                  <input
+                    type="text"
+                    formControlName="preco_unitario"
+                    inputmode="decimal"
+                    placeholder="R$ 0,00"
+                    autocomplete="off"
+                    aria-label="Valor unitário (R$)"
+                    (input)="onMoedaInput(i, 'preco_unitario')"
+                  />
                 </div>
+                <div class="servico-row__field servico-row__field--money">
+                  <span>Desconto</span>
+                  <input
+                    type="text"
+                    formControlName="desconto"
+                    inputmode="decimal"
+                    placeholder="R$ 0,00"
+                    autocomplete="off"
+                    aria-label="Desconto (R$)"
+                    (input)="onMoedaInput(i, 'desconto')"
+                    (blur)="onDescontoLinhaMoedaBlur(i)"
+                  />
+                </div>
+                @if (modoModal) {
+                  <div
+                    class="servico-row__field servico-row__field--produto-total-estimado"
+                  >
+                    <span>Total</span>
+                    <div
+                      class="servico-row__total-estimado"
+                      [attr.aria-label]="
+                        'Total da linha: ' + totalEstimadoProdutoLinhaBrl(i)
+                      "
+                    >
+                      {{ totalEstimadoProdutoLinhaBrl(i) }}
+                    </div>
+                  </div>
+                }
               }
               @if (!modoModal) {
                 <div class="servico-row__field">
@@ -692,9 +704,14 @@
                   </p>
                 }
                 <p class="hint">
-                  No <strong>Mega</strong> cada linha gravada é uma <strong>etapa</strong> com
-                  valor próprio; escolha o profissional em cada etapa (comissão por etapa).
-                  Desconto por item aplica-se só a <strong>Serviço</strong> e <strong>Produto</strong>; desconto na comanda inteira faz-se ao fechar a cobrança.
+                  No <strong>Mega</strong> cada linha gravada é uma <strong>etapa</strong>;
+                  escolha o profissional em cada etapa (comissão por etapa).
+                  @if (!exibirColunasValorLinha()) {
+                    Valores e descontos definem-se ao abrir a <strong>comanda</strong>.
+                  } @else {
+                    Desconto por item aplica-se só a <strong>Serviço</strong> e
+                    <strong>Produto</strong>; desconto na comanda inteira faz-se ao fechar a cobrança.
+                  }
                 </p>
                 <div class="etapas-block etapas-block--nested" formArrayName="etapas">
                   <div class="etapas-header">
@@ -866,10 +883,16 @@
                   <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
                 }
                 <p class="hint">
-                  O pacote define o <strong>valor cobrado</strong> na primeira linha.
-                  A comissão é por <strong>etapa</strong> — preencha o
-                  profissional em cada etapa abaixo.
-                  Desconto por item aplica-se só a <strong>Serviço</strong> e <strong>Produto</strong>; desconto na comanda inteira faz-se ao fechar a cobrança.
+                  @if (!exibirColunasValorLinha()) {
+                    Valores e descontos definem-se na <strong>comanda</strong> (botão
+                    «Criar comanda»). A comissão é por <strong>etapa</strong> — preencha o
+                    profissional em cada etapa abaixo.
+                  } @else {
+                    O pacote define o <strong>valor cobrado</strong> na primeira linha.
+                    A comissão é por <strong>etapa</strong> — preencha o profissional em cada
+                    etapa abaixo. Desconto por item aplica-se só a <strong>Serviço</strong> e
+                    <strong>Produto</strong>; desconto na comanda inteira faz-se ao fechar a cobrança.
+                  }
                 </p>
                 <div class="etapas-block etapas-block--nested" formArrayName="etapas">
                   <div class="etapas-header">
@@ -974,25 +997,35 @@
                       />
                     </div>
                   </div>
-                  @if (valorCalculadoraCabeloPreviewLinha(i); as prev) {
-                    <p class="cabelo-calc__preview">Valor base (tabela): <strong>{{ prev }}</strong></p>
-                  }
-                  @if (valorCalculadoraCabeloTotalPreviewLinha(i); as tot) {
-                    <p class="cabelo-calc__preview cabelo-calc__preview--total">
-                      Total: <strong>{{ tot }}</strong>
+                  @if (exibirColunasValorLinha('Cabelo')) {
+                    @if (valorCalculadoraCabeloPreviewLinha(i); as prev) {
+                      <p class="cabelo-calc__preview">Valor base (tabela): <strong>{{ prev }}</strong></p>
+                    }
+                    @if (valorCalculadoraCabeloTotalPreviewLinha(i); as tot) {
+                      <p class="cabelo-calc__preview cabelo-calc__preview--total">
+                        Total: <strong>{{ tot }}</strong>
+                      </p>
+                    }
+                    <button
+                      type="button"
+                      class="btn small"
+                      (click)="aplicarValorCalculadoraCabeloLinha(i)"
+                    >
+                      Aplicar valor calculado
+                    </button>
+                  } @else {
+                    <p class="hint cabelo-calc__hint">
+                      O valor será calculado ao gravar e ajustado na <strong>comanda</strong>.
                     </p>
                   }
-                  <button
-                    type="button"
-                    class="btn small"
-                    (click)="aplicarValorCalculadoraCabeloLinha(i)"
-                  >
-                    Aplicar valor calculado
-                  </button>
                 </div>
               } @else {
                 <p class="hint">
-                  Não há linhas na aba <strong>Cabelos</strong> — use apenas o valor manual abaixo.
+                  @if (exibirColunasValorLinha('Cabelo')) {
+                    Não há linhas na aba <strong>Cabelos</strong> — use apenas o valor manual abaixo.
+                  } @else {
+                    Preencha os <strong>detalhes</strong> abaixo; valores na <strong>comanda</strong>.
+                  }
                 </p>
               }
               @if (modoModal) {
@@ -1010,54 +1043,56 @@
                       aria-label="Detalhes (cabelo)"
                     ></textarea>
                   </div>
-                  <div
-                    class="servico-row__field servico-row__field--valor-cabelo-modal"
-                  >
-                    <span>Valor unitário</span>
-                    <input
-                      type="text"
-                      formControlName="valor_cabelo"
-                      inputmode="decimal"
-                      placeholder="R$ 0,00"
-                      autocomplete="off"
-                      aria-label="Valor unitário (cabelo)"
-                      (blur)="onValorCabeloMoedaBlur(i)"
-                    />
-                    @if (
-                      ctrl.get('valor_cabelo')?.errors?.['valorCabeloInvalido'] &&
-                      ctrl.get('valor_cabelo')?.touched
-                    ) {
-                      <span class="field-error"
-                        >Informe um valor numérico maior que zero.</span
-                      >
-                    }
-                  </div>
-                  <div class="servico-row__field servico-row__field--money">
-                    <span>Desconto</span>
-                    <input
-                      type="text"
-                      formControlName="desconto"
-                      inputmode="decimal"
-                      placeholder="R$ 0,00"
-                      autocomplete="off"
-                      aria-label="Desconto (R$)"
-                      (input)="onMoedaInput(i, 'desconto')"
-                      (blur)="onDescontoLinhaMoedaBlur(i)"
-                    />
-                  </div>
-                  <div
-                    class="servico-row__field servico-row__field--produto-total-estimado"
-                  >
-                    <span>Total</span>
+                  @if (exibirColunasValorLinha('Cabelo')) {
                     <div
-                      class="servico-row__total-estimado"
-                      [attr.aria-label]="
-                        'Total da linha: ' + totalEstimadoCabeloLinhaBrl(i)
-                      "
+                      class="servico-row__field servico-row__field--valor-cabelo-modal"
                     >
-                      {{ totalEstimadoCabeloLinhaBrl(i) }}
+                      <span>Valor unitário</span>
+                      <input
+                        type="text"
+                        formControlName="valor_cabelo"
+                        inputmode="decimal"
+                        placeholder="R$ 0,00"
+                        autocomplete="off"
+                        aria-label="Valor unitário (cabelo)"
+                        (blur)="onValorCabeloMoedaBlur(i)"
+                      />
+                      @if (
+                        ctrl.get('valor_cabelo')?.errors?.['valorCabeloInvalido'] &&
+                        ctrl.get('valor_cabelo')?.touched
+                      ) {
+                        <span class="field-error"
+                          >Informe um valor numérico maior que zero.</span
+                        >
+                      }
                     </div>
-                  </div>
+                    <div class="servico-row__field servico-row__field--money">
+                      <span>Desconto</span>
+                      <input
+                        type="text"
+                        formControlName="desconto"
+                        inputmode="decimal"
+                        placeholder="R$ 0,00"
+                        autocomplete="off"
+                        aria-label="Desconto (R$)"
+                        (input)="onMoedaInput(i, 'desconto')"
+                        (blur)="onDescontoLinhaMoedaBlur(i)"
+                      />
+                    </div>
+                    <div
+                      class="servico-row__field servico-row__field--produto-total-estimado"
+                    >
+                      <span>Total</span>
+                      <div
+                        class="servico-row__total-estimado"
+                        [attr.aria-label]="
+                          'Total da linha: ' + totalEstimadoCabeloLinhaBrl(i)
+                        "
+                      >
+                        {{ totalEstimadoCabeloLinhaBrl(i) }}
+                      </div>
+                    </div>
+                  }
                   <div
                     class="servico-row__actions servico-row__actions--drawer servico-row__actions--cabelo-rodape"
                   >
@@ -1218,7 +1253,7 @@
             }
           </div>
         }
-        @if (modoModal) {
+        @if (modoModal && !fluxoSomenteComanda) {
           <div
             class="block-toggles block-toggles--inline"
             role="group"
@@ -1239,7 +1274,7 @@
               <span class="toggle-switch__label">Enviar lembrete</span>
             </div>
           </div>
-          @if (mostrarLinhaArpcModal()) {
+          @if (mostrarLinhaArpcModal() && !fluxoSomenteComanda) {
             <div
               class="arpc-modal-row"
               [class.arpc-modal-row--sem-cascade]="
@@ -1282,7 +1317,7 @@
               }
             </div>
           }
-          @if (mostrarSecaoProximosAgendamentosSalvos()) {
+          @if (mostrarSecaoProximosAgendamentosSalvos() && !fluxoSomenteComanda) {
             <section
               class="arpc-proximos-saved"
               aria-label="Próximos agendamentos da série gravada"
@@ -1382,8 +1417,23 @@
       }
     </div>
         </div>
+        @if (mostrarResumoComandaWalkIn()) {
+          <div class="agenda-modal__resumo-wrap">
+            <app-comanda-resumo-bar
+              [descontoResumoCtrl]="descontoResumoWalkInCtrl"
+              [creditoResumoCtrl]="creditoResumoWalkInCtrl"
+              [cashbackReais]="0"
+              [totalReais]="totalWalkInResumoCalculado()"
+            />
+          </div>
+        }
         @if (modoModal) {
-          <footer class="agenda-modal__footer" aria-label="Ações do agendamento">
+          <footer
+            class="agenda-modal__footer"
+            [attr.aria-label]="
+              fluxoSomenteComanda ? 'Ações da comanda' : 'Ações do agendamento'
+            "
+          >
             <button
               type="button"
               class="btn btn-footer btn-footer--ghost"
@@ -1438,7 +1488,11 @@
                           <path d="M3 6h18" />
                           <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                         </svg>
-                        Excluir agendamento
+                        {{
+                          fluxoSomenteComanda
+                            ? 'Excluir comanda'
+                            : 'Excluir agendamento'
+                        }}
                       </button>
                     </li>
                     @if (temAgendamentosFuturosNaSerieSalva()) {
@@ -1492,20 +1546,31 @@
             >
               {{ salvando ? 'Salvando…' : 'Salvar' }}
             </button>
-            <button
-              type="button"
-              class="btn btn-footer btn-footer--comanda"
-              (click)="onAbrirComandaClick($event)"
-              [disabled]="salvando || excluindo"
-            >
-              {{
-                salvando
-                  ? 'Salvando…'
-                  : comandaAbertaParaClienteNoDia
-                    ? 'Acessar comanda'
-                    : 'Criar comanda'
-              }}
-            </button>
+            @if (fluxoSomenteComanda) {
+              <button
+                type="button"
+                class="btn btn-footer btn-footer--comanda"
+                (click)="onFaturarSomenteComandaClick($event)"
+                [disabled]="salvando || excluindo"
+              >
+                {{ salvando ? 'Salvando…' : 'Faturar' }}
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="btn btn-footer btn-footer--comanda"
+                (click)="onAbrirComandaClick($event)"
+                [disabled]="salvando || excluindo"
+              >
+                {{
+                  salvando
+                    ? 'Salvando…'
+                    : comandaAbertaParaClienteNoDia
+                      ? 'Acessar comanda'
+                      : 'Criar comanda'
+                }}
+              </button>
+            }
           </footer>
         }
       </div>
