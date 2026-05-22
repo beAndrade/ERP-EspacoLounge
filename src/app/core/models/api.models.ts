@@ -340,6 +340,29 @@ export interface MovimentacaoListaItem {
   despesa_categoria_livre?: string | null;
 }
 
+/** Linha unificada (`GET /api/financeiro/transacoes`). */
+export interface FinTransacaoItem {
+  tipo: 'movimentacao' | 'pendencia';
+  id_ui: number;
+  data_mov: string;
+  natureza: 'receita' | 'despesa';
+  valor: string;
+  categoria_id: number;
+  categoria_nome: string;
+  descricao: string | null;
+  id_atendimento: string | null;
+  metodo_pagamento: string | null;
+  origem: string;
+  numero_comanda: number | null;
+  nome_cliente: string | null;
+  subtitulo: string;
+  origem_label: string;
+  movimentacao_id: number | null;
+  comanda_pagamento_id: number | null;
+  status: 'pago' | 'atrasado';
+  editavel: boolean;
+}
+
 /** Resumo diário (`GET /api/caixa/dia?data=`). */
 export interface CaixaDiaResumo {
   data: string;

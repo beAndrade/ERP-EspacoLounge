@@ -20,8 +20,10 @@ import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.s
 import { minutosMeiaNoiteEmBrasilia } from '../../../../core/utils/brasilia-time';
 import { diffMinutesEntreHorarios } from '../../../../core/utils/sql-local-datetime';
 import {
+  horaInicialMenorDasLinhasAtendimento,
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
+  pedidoTemPosicaoNaGrelhaAgenda,
   toYmd,
 } from '../../../../core/utils/atendimento-display';
 import {
@@ -893,9 +895,17 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const id = String(idAt || '').trim();
     if (!id) return null;
     const dia = this.diaYmd;
+    const linhasPedido = this.linhasDia.filter(
+      (r) => String(r.id || '').trim() === id,
+    );
+    const hhmm = horaInicialMenorDasLinhasAtendimento(linhasPedido, dia);
+    if (hhmm) {
+      const [hhS, mmS] = hhmm.split(':');
+      const mins = parseInt(hhS, 10) * 60 + parseInt(mmS, 10);
+      if (Number.isFinite(mins) && mins >= 0) return mins;
+    }
     let best: number | null = null;
-    for (const r of this.linhasDia) {
-      if (String(r.id || '').trim() !== id) continue;
+    for (const r of linhasPedido) {
       const t = (r.tipo || '').trim().toLowerCase();
       if (t !== 'mega' && t !== 'pacote') continue;
       if (!(r.etapa || '').trim()) continue;
@@ -906,6 +916,36 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       if (best == null || mi < best) best = mi;
     }
     return best;
+  }
+
+  /** Todas as linhas do mesmo `id_atendimento` no dia (horário pode estar noutra coluna/tipo). */
+  private linhasPedidoDoBloco(b: AgendaHubBloco): AtendimentoListaItem[] {
+    const idAt = String(b.linhas[0]?.id || '').trim();
+    if (!idAt) return b.linhas;
+    return this.linhasDia.filter((r) => String(r.id || '').trim() === idAt);
+  }
+
+  private minutosInicioPreferencialBloco(b: AgendaHubBloco): number | null {
+    const hhmm = horaInicialMenorDasLinhasAtendimento(
+      this.linhasPedidoDoBloco(b),
+      this.diaYmd,
+    );
+    if (!hhmm) return null;
+    const [hhS, mmS] = hhmm.split(':');
+    const mins = parseInt(hhS, 10) * 60 + parseInt(mmS, 10);
+    return Number.isFinite(mins) && mins >= 0 ? mins : null;
+  }
+
+  private duracaoTotalBlocoMinutos(b: AgendaHubBloco): number {
+    if (this.blocoEMegaOuPacoteComEtapas(b)) {
+      const sum = this.duracaoSomaEtapasMegaPacoteNoBloco(b);
+      if (sum > 0) return sum;
+    }
+    let sum = 0;
+    for (const l of b.linhas) {
+      sum += this.duracaoMinutosAgendamento(l);
+    }
+    return sum > 0 ? sum : AGENDA_SLOT_MIN;
   }
 
   private blocoEMegaOuPacoteComEtapas(b: AgendaHubBloco): boolean {
@@ -991,13 +1031,24 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       endMax = Math.max(endMax, endLine);
     }
     if (
-      !Number.isFinite(startMin) ||
-      !Number.isFinite(endMax) ||
-      endMax <= startMin
+      Number.isFinite(startMin) &&
+      Number.isFinite(endMax) &&
+      endMax > startMin
     ) {
+      return { start: startMin, end: endMax };
+    }
+
+    const fallbackStart = this.minutosInicioPreferencialBloco(b);
+    if (fallbackStart == null || !Number.isFinite(fallbackStart)) {
       return null;
     }
-    return { start: startMin, end: endMax };
+    const durEfetiva = Math.max(
+      AGENDA_SLOT_MIN,
+      this.duracaoTotalBlocoMinutos(b),
+    );
+    const end = Math.min(GRID_END_MIN, fallbackStart + durEfetiva);
+    if (end <= fallbackStart) return null;
+    return { start: fallbackStart, end };
   }
 
   topPctBloco(b: AgendaHubBloco): number {
@@ -1140,6 +1191,41 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   }
 
+  /**
+   * Mini-calendário: só conta pedidos que teriam cartão na grelha (com horário no dia).
+   */
+  private contagemAgendamentosVisiveisNaGrelhaPorDia(
+    items: AtendimentoListaItem[],
+  ): Map<string, number> {
+    const buckets = new Map<string, AtendimentoListaItem[]>();
+    for (const a of items) {
+      const ymd = (a.data || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) continue;
+      const idAt = String(a.id || '').trim();
+      const grupKey = idAt
+        ? `id:${idAt}`
+        : `nome:${(a.nomeCliente || '').trim().toLowerCase()}`;
+      const bucketKey = `${ymd}\u0001${grupKey}`;
+      const arr = buckets.get(bucketKey) ?? [];
+      arr.push(a);
+      buckets.set(bucketKey, arr);
+    }
+    const porDiaSets = new Map<string, Set<string>>();
+    for (const [bucketKey, linhas] of buckets) {
+      const sep = bucketKey.indexOf('\u0001');
+      const ymd = bucketKey.slice(0, sep);
+      const grupKey = bucketKey.slice(sep + 1);
+      if (!pedidoTemPosicaoNaGrelhaAgenda(linhas, ymd)) continue;
+      if (!porDiaSets.has(ymd)) porDiaSets.set(ymd, new Set());
+      porDiaSets.get(ymd)!.add(grupKey);
+    }
+    const out = new Map<string, number>();
+    for (const [ymd, set] of porDiaSets) {
+      out.set(ymd, set.size);
+    }
+    return out;
+  }
+
   private carregarMes(): void {
     this.carregandoMes = true;
     this.erro = '';
@@ -1152,22 +1238,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.api.listAgendamentos(di, df).subscribe({
       next: (items) => {
         this.itensMes = items;
-        const map = new Map<string, Set<string>>();
-        for (const a of items) {
-          const key = (a.data || '').slice(0, 10);
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
-          const idAt = String(a.id || '').trim();
-          const grupKey = idAt
-            ? `id:${idAt}`
-            : `nome:${(a.nomeCliente || '').trim().toLowerCase()}`;
-          if (!map.has(key)) map.set(key, new Set());
-          map.get(key)!.add(grupKey);
-        }
-        const out = new Map<string, number>();
-        for (const [k, set] of map) {
-          out.set(k, set.size);
-        }
-        this.porDia = out;
+        this.porDia = this.contagemAgendamentosVisiveisNaGrelhaPorDia(items);
         this.carregandoMes = false;
       },
       error: (e: Error) => {

@@ -312,7 +312,7 @@ function horaInferidaInicioPorFimMenos(
 const DUR_PADRAO_INFERIR_INICIO_POR_FIM_MIN = 30;
 
 /**
- * Menor horário (HH:mm) entre linhas — mesmo critério que edição em agenda-novo.
+ * Menor horário (HH:mm) entre linhas do pedido (Serviço, Mega, Pacote, Produto, Cabelo, etc.).
  * Usa `inicio` quando existir; se uma linha não tiver inicio utilizável, tenta `fim − 30 min`.
  */
 export function horaInicialMenorDasLinhasAtendimento(
@@ -372,6 +372,112 @@ export function horaInicialMenorDasLinhasAtendimento(
           DUR_PADRAO_INFERIR_INICIO_POR_FIM_MIN,
         ),
       );
+    }
+  }
+  return bestH;
+}
+
+/** `inicio` preenchido na BD para o dia civil do atendimento (slot agendado). */
+export function linhaTemInicioAgendadoNoDia(
+  row: AtendimentoListaItem,
+  dataYmd: string,
+): boolean {
+  const dia = dataYmd.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return false;
+  const raw = String(row.inicio ?? '').trim();
+  if (!raw) return false;
+  const p = parseSqlLocalDateTime(raw);
+  if (p && ymdOfParts(p) === dia) return true;
+  return !!horaDeInicioParaDiaAtendimento(raw, dia);
+}
+
+/** Dia civil para resolver horário (coluna Data ou `inicio`/`fim` das linhas). */
+export function diaCivilReferenciaHorarioGrupo(
+  linhas: AtendimentoListaItem[],
+  dataGrupoYmd: string,
+): string {
+  const d0 = dataGrupoYmd.trim().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d0)) return d0;
+  for (const row of linhas) {
+    const p = parseSqlLocalDateTime(String(row.inicio ?? '').trim());
+    if (p) return ymdOfParts(p);
+    const pf = parseSqlLocalDateTime(String(row.fim ?? '').trim());
+    if (pf) return ymdOfParts(pf);
+  }
+  return d0;
+}
+
+/** Pedido com pelo menos uma linha com `atendimentos.inicio` no dia (exclui comanda walk-in). */
+export function pedidoTemHorarioAgendadoNasLinhas(
+  linhas: AtendimentoListaItem[],
+  dataYmd: string,
+): boolean {
+  const dia = diaCivilReferenciaHorarioGrupo(linhas, dataYmd);
+  return linhas.some((row) => linhaTemInicioAgendadoNoDia(row, dia));
+}
+
+/**
+ * O pedido pode ocupar um cartão na grelha da agenda (hub) neste dia civil.
+ * Diferente de contar só pela coluna `Data`: exige horário resolvível (`inicio`/`fim`).
+ */
+export function pedidoTemPosicaoNaGrelhaAgenda(
+  linhas: AtendimentoListaItem[],
+  dataYmd: string,
+): boolean {
+  const dia = diaCivilReferenciaHorarioGrupo(linhas, dataYmd);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return false;
+  if (horaInicialMenorDasLinhasAtendimento(linhas, dia)) return true;
+  for (const row of linhas) {
+    if (minutosMeiaNoiteEmBrasilia(row.inicio, dia) != null) return true;
+    if (minutosMeiaNoiteEmBrasilia(row.fim, dia) != null) return true;
+  }
+  return false;
+}
+
+/**
+ * Menor HH:mm só com `inicio` explícito (sem inferir por `fim`).
+ * Usado no histórico de agendamentos do cliente.
+ */
+export function horaInicialExplicitaDasLinhasAtendimento(
+  linhas: AtendimentoListaItem[],
+  dataYmd: string,
+): string {
+  const dia = dataYmd.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return '';
+  let best: ReturnType<typeof parseSqlLocalDateTime> = null;
+  let bestMs = Infinity;
+  for (const row of linhas) {
+    const p = parseSqlLocalDateTime(String(row.inicio ?? '').trim());
+    if (!p || ymdOfParts(p) !== dia) continue;
+    const ms = civilNaiveSalaoParaUtcMs(p);
+    if (Number.isFinite(ms) && ms < bestMs) {
+      bestMs = ms;
+      best = p;
+    }
+  }
+  if (best) {
+    return normalizarHoraHHmm(`${best.hh}:${best.mm}`) ?? '';
+  }
+  let bestMin = Infinity;
+  let bestH = '';
+  for (const row of linhas) {
+    const ini = String(row.inicio ?? '').trim();
+    if (!ini) continue;
+    const p = parseSqlLocalDateTime(ini);
+    let candidato = '';
+    if (p && ymdOfParts(p) === dia) {
+      candidato = `${p.hh}:${p.mm}`;
+    } else {
+      candidato = horaDeInicioParaDiaAtendimento(ini, dia);
+    }
+    const n = normalizarHoraHHmm(candidato);
+    if (!n) continue;
+    const [hhS, mmS] = n.split(':');
+    const mins = parseInt(hhS, 10) * 60 + parseInt(mmS, 10);
+    if (!Number.isFinite(mins) || mins < 0) continue;
+    if (mins < bestMin) {
+      bestMin = mins;
+      bestH = n;
     }
   }
   return bestH;

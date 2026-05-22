@@ -1,88 +1,423 @@
-/** Evita host `inline` (elemento customizado) a interferir no layout da `<table>`. */
+@use '../../../../styles/list-page-shell';
+@use '../../../../styles/cliente-drawer-table';
+
 :host {
   display: block;
   width: 100%;
+  min-width: 0;
 }
 
-.hint {
-  color: var(--color-muted);
-  margin-bottom: 1rem;
-  line-height: 1.5;
+.fin-comissoes {
+  display: flex;
+  flex-direction: column;
+  min-height: min(100%, calc(100vh - 4rem));
+  padding: 1.25rem 1.5rem 0;
+  box-sizing: border-box;
 }
 
-.alert {
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius);
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+.fin-comissoes__head {
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
 }
 
-.table-wrap {
-  overflow-x: auto;
-  background: var(--color-surface);
-  border-radius: var(--radius);
-  border: 1px solid #e7e5e4;
+.fin-comissoes__head-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
-.tabela-folha {
-  width: 100%;
-  min-width: 42rem;
-  max-width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
+.fin-comissoes__title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-th,
-td {
-  text-align: left;
-  padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid #f5f5f4;
-  vertical-align: middle;
+.fin-comissoes__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: rgb(88, 88, 88);
 }
 
-th {
+.fin-comissoes__play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-primary, #505afb);
+  color: #fff;
+  cursor: default;
+}
+
+.fin-comissoes__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fin-comissoes__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.85;
+    cursor: default;
+  }
+
+  &--filtrar {
+    border-color: #f59e0b;
+    color: #d97706;
+  }
+
+  &--ghost:hover:not(:disabled) {
+    background: #f9fafb;
+  }
+}
+
+.fin-comissoes__tabs {
+  display: flex;
+  gap: 0;
+  margin-top: 0.5rem;
+  border-bottom: 1px solid #efefef;
+}
+
+.fin-comissoes__tab {
+  margin: 0;
+  padding: 0.65rem 1rem 0.75rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--color-muted);
-  font-size: 0.8rem;
-  text-transform: uppercase;
+  color: #78716c;
+  cursor: pointer;
+  position: relative;
+
+  &--active {
+    color: var(--color-primary, #505afb);
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: var(--color-primary, #505afb);
+    }
+  }
 }
 
-.tabela-folha__col-prof {
+.fin-comissoes__hint {
+  margin: 2rem 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.fin-comissoes__filtros-centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 420px;
+  padding: 2rem 1rem 3rem;
+  text-align: center;
+}
+
+.fin-comissoes__filtros-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.fin-comissoes__filtros-sub {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.fin-comissoes__periodo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: min(420px, 100%);
+  height: 40px;
+  margin: 0 0 1rem;
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  color: #111827;
+  cursor: default;
+
+  &--compact {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+.fin-comissoes__toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+
+  &--sidebar {
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+}
+
+.fin-comissoes__prof-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: min(420px, 100%);
+}
+
+.fin-comissoes__prof-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: #7a88ff;
+    box-shadow: 0 2px 8px rgba(80, 90, 251, 0.12);
+  }
+}
+
+.fin-comissoes__prof-avatar {
+  display: inline-flex;
+  color: #9ca3af;
+}
+
+.fin-comissoes__prof-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  strong {
+    font-size: 1rem;
+    color: #111827;
+  }
+
+  span {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+}
+
+.fin-comissoes__detalhe-layout {
+  display: flex;
+  flex: 1;
+  gap: 1rem;
+  min-height: 0;
+  padding-bottom: 5rem;
+}
+
+.fin-comissoes__sidebar {
+  flex: 0 0 min(240px, 28vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.fin-comissoes__sidebar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.fin-comissoes__sidebar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.fin-comissoes__select {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.fin-comissoes__voltar {
+  margin-top: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-primary, #505afb);
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.fin-comissoes__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.fin-comissoes-table__col-check {
+  width: 32px;
+}
+.fin-comissoes-table__col-data {
+  width: 100px;
+}
+.fin-comissoes-table__col-item {
   width: 22%;
 }
-
-.tabela-folha__col-mes {
-  width: 12%;
+.fin-comissoes-table__col-valor,
+.fin-comissoes-table__col-taxa,
+.fin-comissoes-table__col-comissao,
+.fin-comissoes-table__col-desc {
+  width: 11%;
+}
+.fin-comissoes-table__col-disp {
+  width: 10%;
+}
+.fin-comissoes-table__col-config {
+  width: 40px;
 }
 
-.tabela-folha__col-num {
-  width: 16%;
+.fin-comissoes-table {
+  thead th.col-valor,
+  thead th.col-disp,
+  tbody td.col-valor,
+  tbody td.col-disp {
+    text-align: right;
+  }
 }
 
-.tabela-folha__col-status {
-  width: 18%;
+.fin-comissoes-table__cliente {
+  display: block;
+  font-weight: 500;
+  color: var(--color-primary, #505afb);
 }
 
-.tabela-folha__prof {
-  word-break: break-word;
-  hyphens: auto;
+.fin-comissoes-table__servico {
+  display: block;
+  font-size: 13px;
+  color: #6b7280;
 }
 
-.tabela-folha :is(th, td).num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.fin-comissoes-table__disp {
+  font-weight: 600;
+  color: #22a06b;
 }
 
-.tabela-folha__th-status,
-.tabela-folha__status {
-  text-align: center;
-  white-space: nowrap;
+.fin-comissoes-table__th-taxa {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-td.mono {
-  font-size: 0.85rem;
+.fin-comissoes-table__info {
+  font-size: 12px;
+  color: #9ca3af;
+  cursor: help;
+}
+
+.fin-comissoes__bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 -1.5rem;
+  padding: 0.85rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.fin-comissoes__bar-totais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2rem;
+  font-size: 14px;
+  color: #374151;
+
+  strong {
+    margin-left: 0.35rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.fin-comissoes__bar-liquido strong {
+  color: var(--color-primary, #505afb);
+}
+
+.fin-comissoes__btn-pagar {
+  height: 40px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 10px;
+  background: #d1d5db;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: not-allowed;
+
+  &:not(:disabled) {
+    background: var(--color-primary, #505afb);
+    cursor: pointer;
+
+    &:hover {
+      filter: brightness(1.05);
+    }
+  }
 }

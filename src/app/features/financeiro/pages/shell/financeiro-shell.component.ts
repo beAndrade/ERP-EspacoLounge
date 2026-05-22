@@ -13,7 +13,7 @@ function periodoAtualYm(): string {
 @Component({
   selector: 'app-financeiro-shell',
   standalone: true,
-  imports: [FormsModule, RouterLink, RouterOutlet],
+  imports: [FormsModule, RouterOutlet],
   templateUrl: './financeiro-shell.component.html',
   styleUrl: './financeiro-shell.component.scss',
   providers: [FinanceiroResumoUiService],
@@ -24,15 +24,27 @@ export class FinanceiroShellComponent implements OnInit {
   readonly router = inject(Router);
   readonly resumoUi = inject(FinanceiroResumoUiService);
 
-  /** Mostra seta “voltar” para o resumo do dia quando estamos em Folha de pagamento. */
-  get emSubrotaFolha(): boolean {
+  /** Painel Belasis — layout próprio, sem toolbar do shell. */
+  get emPainel(): boolean {
+    const path = this.router.url.split('?')[0] ?? '';
+    return (
+      path === '/financeiro/painel' || path.endsWith('/financeiro/painel')
+    );
+  }
+
+  get emTransacoes(): boolean {
+    const path = this.router.url.split('?')[0] ?? '';
+    return path.includes('/financeiro/transacoes');
+  }
+
+  get emComissoes(): boolean {
     const path = this.router.url.split('?')[0] ?? '';
     return path.includes('/financeiro/comissoes');
   }
 
-  /** Subtítulo ao lado do título: painel vs comissões. */
-  get toolbarSubtitulo(): string {
-    return this.emSubrotaFolha ? '// Comissões' : '// Painel';
+  /** Rotas com layout Belasis próprio (sem toolbar do shell). */
+  get layoutProprio(): boolean {
+    return this.emPainel || this.emTransacoes || this.emComissoes;
   }
 
   pinDraft = '';
@@ -83,7 +95,7 @@ export class FinanceiroShellComponent implements OnInit {
     this.erroPin = '';
   }
 
-  /** Recarrega o resumo do dia (consumido por `FinanceiroComponent`). */
+  /** Recarrega o resumo do dia (legado — `FinanceiroCaixaDiaComponent`). */
   atualizarFinanceiro(): void {
     this.resumoUi.solicitarRecarregar();
   }

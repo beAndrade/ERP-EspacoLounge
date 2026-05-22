@@ -80,9 +80,12 @@
             } @else if (d.abaAtiva === 'Créditos') {
               <app-cliente-creditos-tab />
             } @else if (d.abaAtiva === 'Débitos') {
-              <app-cliente-debitos-tab />
+              <app-cliente-debitos-tab
+              />
             } @else if (d.abaAtiva === 'Agendamentos') {
               <app-cliente-agendamentos-tab />
+            } @else if (d.abaAtiva === 'Vendas') {
+              <app-cliente-vendas-tab />
             } @else {
               <main class="cliente-main">
                 <p class="cliente-tab-placeholder">

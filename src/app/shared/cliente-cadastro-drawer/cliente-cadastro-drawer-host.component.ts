@@ -7,10 +7,12 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { ComandaResumoPagamentos } from '../../core/models/api.models';
+import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { FaturarDrawerComponent } from '../../features/agenda/pages/hub/faturar-drawer.component';
 import { NovaComandaDrawerComponent } from '../../features/agenda/pages/hub/nova-comanda-drawer.component';
 import { AgendaNovoComponent } from '../../features/agenda/pages/novo/agenda-novo.component';
 import { ClienteAgendamentosTabComponent } from './cliente-agendamentos-tab.component';
+import { ClienteVendasTabComponent } from './cliente-vendas-tab.component';
 import { ClienteAvatarComponent } from '../cliente-avatar/cliente-avatar.component';
 import { ClienteCadastroFormComponent } from './cliente-cadastro-form.component';
 import {
@@ -40,6 +42,7 @@ type FaturarEmpilhadoCtx = {
     ClienteCreditosTabComponent,
     ClienteDebitosTabComponent,
     ClienteAgendamentosTabComponent,
+    ClienteVendasTabComponent,
     ClienteAvatarComponent,
     NovaComandaDrawerComponent,
     FaturarDrawerComponent,
@@ -51,6 +54,11 @@ type FaturarEmpilhadoCtx = {
 })
 export class ClienteCadastroDrawerHostComponent {
   readonly d = inject(ClienteCadastroDrawerService);
+
+  private readonly api = inject(SheetsApiService);
+
+  @ViewChild(ClienteDebitosTabComponent)
+  private debitosTabRef?: ClienteDebitosTabComponent;
 
   @ViewChild(NovaComandaDrawerComponent)
   private comandaEmpilhadaRef?: NovaComandaDrawerComponent;
@@ -176,6 +184,20 @@ export class ClienteCadastroDrawerHostComponent {
     }
   }
 
+  onFaturarDebitoPainel(idAtendimento: string): void {
+    const id = String(idAtendimento ?? '').trim();
+    if (!id) return;
+    this.api.listComandaPagamentos(id).subscribe({
+      next: ({ resumo }) => {
+        this.onAbrirFaturarComandaEmpilhada({
+          idAtendimento: id,
+          resumo,
+          modoVerPagamentos: false,
+        });
+      },
+    });
+  }
+
   onAbrirFaturarComandaEmpilhada(ev: {
     idAtendimento: string;
     resumo: ComandaResumoPagamentos;
@@ -216,6 +238,8 @@ export class ClienteCadastroDrawerHostComponent {
       if (modoVer) {
         this.comandaEmpilhadaRef?.recarregarAposFaturar();
       }
+      this.d.recarregarDebitosPainel();
+      this.debitosTabRef?.limparSelecaoDebitos();
     });
     if (modoVer) return;
     this.fecharComandaEmpilhada();

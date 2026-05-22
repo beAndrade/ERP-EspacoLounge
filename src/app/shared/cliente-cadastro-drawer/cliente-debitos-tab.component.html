@@ -1,29 +1,30 @@
 <main class="cliente-debitos" aria-labelledby="cliente-debitos-titulo">
+
   @if (d.carregandoDebitosPainel) {
+
     <p class="cliente-debitos__hint">A carregar débitos e comandas…</p>
+
   } @else {
+
     <section class="cliente-debitos__sec" aria-labelledby="cliente-debitos-sec-debitos">
+
       <header class="cliente-debitos__sec-head">
+
         <h3 class="cliente-debitos__sec-titulo" id="cliente-debitos-sec-debitos">
+
           Débitos
+
         </h3>
+
         <div class="cliente-debitos__sec-meta">
+
           <span class="cliente-debitos__sec-total">
-            Total
-            <strong>{{
-              d.debitosTotal | currency: 'BRL' : 'symbol' : '1.2-2'
-            }}</strong>
-          </span>
-          <button
-            type="button"
-            class="cliente-debitos__icon-btn"
-            aria-label="Imprimir débitos (em breve)"
-            disabled
-          >
+
             <svg
+              class="cliente-debitos__total-ico lucide lucide-circle-dollar-sign"
               xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -32,188 +33,541 @@
               stroke-linejoin="round"
               aria-hidden="true"
             >
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <circle cx="12" cy="12" r="10" />
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+              <path d="M12 18V6" />
+            </svg>
+
+            Total
+
+            <strong>{{
+
+              d.debitosTotal | currency: 'BRL' : 'symbol' : '1.2-2'
+
+            }}</strong>
+
+          </span>
+
+          <button
+            type="button"
+            class="drawer-table__icon-btn drawer-table__icon-btn--print"
+            aria-label="Imprimir débitos"
+            (click)="imprimirDebitos()"
+          >
+            <svg
+              class="lucide lucide-printer"
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+              />
               <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
               <rect x="6" y="14" width="12" height="8" rx="1" />
             </svg>
           </button>
+
         </div>
+
       </header>
+
+
 
       @if (d.debitosLinhas.length === 0) {
+
         <p class="cliente-debitos__hint">Nenhum débito em atraso.</p>
+
       } @else {
-        <div class="cliente-debitos__table-wrap">
-          <table class="cliente-debitos__table">
-            <thead>
-              <tr>
-                <th scope="col">Descrição</th>
-                <th scope="col">Vencimento</th>
-                <th scope="col">Valor</th>
-                <th scope="col">Status</th>
-                <th scope="col" class="cliente-debitos__th-acoes">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of d.debitosLinhas; track row.idAtendimento) {
+
+        <div class="drawer-table-card" role="region" aria-label="Débitos em atraso">
+
+          <div class="drawer-table-wrap">
+
+            <table class="drawer-table drawer-table--debitos">
+
+              <colgroup>
+
+                <col class="drawer-table__col-check" />
+
+                <col class="drawer-table__col-desc" />
+
+                <col class="drawer-table__col-venc" />
+
+                <col class="drawer-table__col-valor" />
+
+                <col class="drawer-table__col-status" />
+
+                <col class="drawer-table__col-pagar" />
+
+                <col class="drawer-table__col-acoes" />
+
+              </colgroup>
+
+              <thead>
+
                 <tr>
-                  <td>{{ row.descricao }}</td>
-                  <td>{{ formatarData(row.vencimentoYmd) }}</td>
-                  <td>
-                    {{ row.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}
-                  </td>
-                  <td>
-                    <span class="cliente-debitos__badge cliente-debitos__badge--atrasado">
-                      Atrasado
-                    </span>
-                  </td>
-                  <td class="cliente-debitos__acoes">
-                    <button
-                      type="button"
-                      class="cliente-debitos__icon-btn"
-                      aria-label="Enviar lembrete por WhatsApp (em breve)"
-                      disabled
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
-                        />
-                      </svg>
-                    </button>
-                    <label class="cliente-debitos__pagar">
-                      <span class="cliente-debitos__pagar-label">Pagar</span>
-                      <input type="checkbox" disabled aria-label="Marcar como pago (em breve)" />
-                    </label>
-                    <button
-                      type="button"
-                      class="cliente-debitos__icon-btn"
-                      aria-label="Ver comanda (em breve)"
-                      disabled
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    </button>
-                  </td>
+
+                  <th class="col-check" scope="col">
+
+                    <input
+
+                      type="checkbox"
+
+                      [checked]="todosDebitosSelecionados()"
+
+                      (change)="toggleSelecionarTodosDebitos($event)"
+
+                      aria-label="Selecionar todos os débitos"
+
+                    />
+
+                  </th>
+
+                  <th class="col-desc" scope="col">Descrição</th>
+
+                  <th class="col-venc" scope="col">Vencimento</th>
+
+                  <th class="col-valor" scope="col">Valor</th>
+
+                  <th class="col-status" scope="col">Status</th>
+
+                  <th class="col-pagar" scope="col">Pagar</th>
+
+                  <th class="col-acoes" scope="col">Ações</th>
+
                 </tr>
-              }
-            </tbody>
-          </table>
+
+              </thead>
+
+              <tbody>
+
+                @for (row of d.debitosLinhas; track row.idAtendimento) {
+
+                  <tr [class.drawer-table__row--selected]="debitoSelecionado(row.idAtendimento)">
+
+                    <td class="col-check">
+
+                      <input
+
+                        type="checkbox"
+
+                        [checked]="debitoSelecionado(row.idAtendimento)"
+
+                        (change)="toggleDebito(row.idAtendimento, $event)"
+
+                        [attr.aria-label]="'Selecionar débito ' + row.descricao"
+
+                      />
+
+                    </td>
+
+                    <td class="col-desc">{{ row.descricao }}</td>
+
+                    <td class="col-venc">{{ formatarData(row.vencimentoYmd) }}</td>
+
+                    <td class="col-valor">
+
+                      {{ row.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}
+
+                    </td>
+
+                    <td class="col-status">
+
+                      <div class="drawer-table__status-cell">
+
+                        <span class="badge badge--atraso">Atrasado</span>
+                        <span class="drawer-table__status-sep" aria-hidden="true"></span>
+                        <span class="drawer-table__tip-trigger">
+                          <button
+                            type="button"
+                            class="drawer-table__icon-btn drawer-table__icon-btn--whatsapp"
+                            aria-label="Enviar mensagem ao cliente"
+                            (click)="enviarWhatsappCliente()"
+                          >
+                            <svg
+                              class="bi bi-whatsapp"
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              fill="currentColor"
+                              viewBox="0 0 16 16"
+                              aria-hidden="true"
+                            >
+                              <path
+                                d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"
+                              />
+                            </svg>
+                          </button>
+                          <span class="drawer-table__tip" role="tooltip"
+                            >Enviar mensagem ao cliente</span
+                          >
+                        </span>
+
+                      </div>
+
+                    </td>
+
+                    <td class="col-pagar">
+
+                      <div class="drawer-table__cell-pagar">
+                        <span class="drawer-table__tip-trigger">
+                          <span class="drawer-table__pagar-control">
+                            <input
+                              #dataPagarDebito
+                              type="date"
+                              class="drawer-table__date-input"
+                              [value]="row.vencimentoYmd"
+                              tabindex="-1"
+                              aria-hidden="true"
+                            />
+                            <button
+                              type="button"
+                              class="drawer-switch"
+                              [attr.aria-label]="'Escolher data de pagamento de ' + row.descricao"
+                              (click)="abrirCalendarioPagar($event, dataPagarDebito)"
+                            ></button>
+                          </span>
+                          <span class="drawer-table__tip" role="tooltip"
+                            >Clique para pagar</span
+                          >
+                        </span>
+                      </div>
+
+                    </td>
+
+                    <td class="col-acoes">
+
+                      <span class="drawer-table__tip-trigger">
+                        <button
+                          type="button"
+                          class="drawer-table__icon-btn drawer-table__icon-btn--view"
+                          aria-label="Visualizar comanda"
+                          (click)="verComanda(row.idAtendimento)"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="13.3333"
+                            height="13.3333"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"
+                            />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </button>
+                        <span class="drawer-table__tip" role="tooltip">Visualizar</span>
+                      </span>
+
+                    </td>
+
+                  </tr>
+
+                }
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+          <div
+            class="drawer-table-foot"
+            [class.drawer-table-foot--selecao]="temDebitosSelecionados()"
+            [attr.aria-hidden]="temDebitosSelecionados() ? null : 'true'"
+          >
+            @if (temDebitosSelecionados()) {
+              <div class="cliente-debitos__foot-acoes">
+                <button
+                  type="button"
+                  class="cliente-debitos__btn-pagar"
+                  (click)="pagarDebitosSelecionados()"
+                >
+                  Pagar
+                  {{
+                    totalDebitosSelecionados()
+                      | currency: 'BRL' : 'symbol' : '1.2-2'
+                  }}
+                </button>
+                <button
+                  type="button"
+                  class="cliente-debitos__btn-limpar"
+                  (click)="limparSelecaoDebitos()"
+                >
+                  Limpar
+                </button>
+              </div>
+            }
+          </div>
+
         </div>
+
       }
+
     </section>
+
+
 
     <section
+
       class="cliente-debitos__sec cliente-debitos__sec--comandas"
+
       aria-labelledby="cliente-debitos-sec-comandas"
+
     >
+
       <header class="cliente-debitos__sec-head">
+
         <h3 class="cliente-debitos__sec-titulo" id="cliente-debitos-sec-comandas">
+
           Comandas em aberto
+
         </h3>
+
         <span class="cliente-debitos__sec-total">
+
+          <svg
+            class="cliente-debitos__total-ico lucide lucide-circle-dollar-sign"
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+            <path d="M12 18V6" />
+          </svg>
+
           Total
+
           <strong>{{
+
             d.comandasAbertoTotal | currency: 'BRL' : 'symbol' : '1.2-2'
+
           }}</strong>
+
         </span>
+
       </header>
 
+
+
       @if (d.comandasAbertoLinhas.length === 0) {
+
         <p class="cliente-debitos__hint">Nenhuma comanda pendente de faturação.</p>
+
       } @else {
-        <div class="cliente-debitos__table-wrap">
-          <table class="cliente-debitos__table">
-            <thead>
-              <tr>
-                <th scope="col">Comanda</th>
-                <th scope="col">Data</th>
-                <th scope="col">Valor</th>
-                <th scope="col">Status</th>
-                <th scope="col" class="cliente-debitos__th-acoes">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of d.comandasAbertoLinhas; track row.idAtendimento) {
+
+        <div class="drawer-table-card" role="region" aria-label="Comandas em aberto">
+
+          <div class="drawer-table-wrap">
+
+            <table class="drawer-table drawer-table--comandas-aberto">
+
+              <colgroup>
+
+                <col class="drawer-table__col-comanda" />
+
+                <col class="drawer-table__col-data" />
+
+                <col class="drawer-table__col-valor" />
+
+                <col class="drawer-table__col-status" />
+
+                <col class="drawer-table__col-acoes-wide" />
+
+              </colgroup>
+
+              <thead>
+
                 <tr>
-                  <td>{{ rotuloComanda(row.numeroComanda) }}</td>
-                  <td>{{ formatarData(row.dataYmd) }}</td>
-                  <td>
-                    {{ row.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}
-                  </td>
-                  <td>
-                    <span class="cliente-debitos__badge cliente-debitos__badge--pendente">
-                      Pendente
-                    </span>
-                  </td>
-                  <td class="cliente-debitos__acoes">
-                    <button
-                      type="button"
-                      class="cliente-debitos__icon-btn"
-                      aria-label="Editar comanda (em breve)"
-                      disabled
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      class="cliente-debitos__icon-btn"
-                      aria-label="Excluir comanda (em breve)"
-                      disabled
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        aria-hidden="true"
-                      >
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                      </svg>
-                    </button>
-                  </td>
+
+                  <th class="col-comanda" scope="col">Comanda</th>
+
+                  <th class="col-data" scope="col">Data</th>
+
+                  <th class="col-valor" scope="col">Valor</th>
+
+                  <th class="col-status" scope="col">Status</th>
+
+                  <th class="col-acoes" scope="col">Ações</th>
+
                 </tr>
-              }
-            </tbody>
-          </table>
+
+              </thead>
+
+              <tbody>
+
+                @for (row of d.comandasAbertoLinhas; track row.idAtendimento) {
+
+                  <tr>
+
+                    <td class="col-comanda">
+
+                      <button
+
+                        type="button"
+
+                        class="drawer-table__link-ticket"
+
+                        (click)="verComanda(row.idAtendimento)"
+
+                      >
+
+                        {{ rotuloComanda(row.numeroComanda) }}
+
+                      </button>
+
+                    </td>
+
+                    <td class="col-data">{{ formatarData(row.dataYmd) }}</td>
+
+                    <td class="col-valor">
+
+                      {{ row.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}
+
+                    </td>
+
+                    <td class="col-status">
+
+                      <span class="badge badge--aviso">Pendente</span>
+
+                    </td>
+
+                    <td class="col-acoes">
+
+                      <div class="drawer-table__acoes">
+
+                        <button
+
+                          type="button"
+
+                          class="drawer-table__icon-btn drawer-table__icon-btn--edit"
+
+                          aria-label="Editar comanda"
+
+                          (click)="verComanda(row.idAtendimento)"
+
+                        >
+
+                          <svg
+
+                            xmlns="http://www.w3.org/2000/svg"
+
+                            width="18"
+
+                            height="18"
+
+                            viewBox="0 0 24 24"
+
+                            fill="none"
+
+                            stroke="currentColor"
+
+                            stroke-width="2"
+
+                            aria-hidden="true"
+
+                          >
+
+                            <path d="M12 20h9" />
+
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+
+                          </svg>
+
+                        </button>
+
+                        <button
+
+                          type="button"
+
+                          class="drawer-table__icon-btn drawer-table__icon-btn--delete"
+
+                          aria-label="Excluir comanda (em breve)"
+
+                          disabled
+
+                        >
+
+                          <svg
+
+                            xmlns="http://www.w3.org/2000/svg"
+
+                            width="18"
+
+                            height="18"
+
+                            viewBox="0 0 24 24"
+
+                            fill="none"
+
+                            stroke="currentColor"
+
+                            stroke-width="2"
+
+                            aria-hidden="true"
+
+                          >
+
+                            <path d="M3 6h18" />
+
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+
+                          </svg>
+
+                        </button>
+
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                }
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+          <div class="drawer-table-foot" aria-hidden="true"></div>
+
         </div>
+
       }
+
     </section>
+
   }
+
 </main>
+
+<app-cliente-pagar-debitos-modal
+  [aberto]="modalPagarAberto()"
+  [salvando]="modalPagarSalvando()"
+  (fechar)="fecharModalPagar()"
+  (confirmar)="confirmarModalPagar($event)"
+/>
+

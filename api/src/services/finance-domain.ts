@@ -1,7 +1,10 @@
-import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import {
+  atendimentos,
+  atendimentosPedido,
   categoriasFinanceiras,
+  comandaPagamentos,
   despesas,
   movimentacoes,
   naturezaFinanceiraEnum,
@@ -263,6 +266,260 @@ export async function listMovimentacoesApi(
     despesa_tipo: r.despesa_tipo ?? null,
     despesa_categoria_livre: r.despesa_categoria_livre ?? null,
   }));
+}
+
+export type FinTransacaoItemTipo = 'movimentacao' | 'pendencia';
+
+/** Linha unificada para `GET /api/financeiro/transacoes`. */
+export interface FinTransacaoItemApi {
+  tipo: FinTransacaoItemTipo;
+  /** ID positivo = `movimentacoes.id`; negativo = `-comanda_pagamentos.id`. */
+  id_ui: number;
+  data_mov: string;
+  natureza: 'receita' | 'despesa';
+  valor: string;
+  categoria_id: number;
+  categoria_nome: string;
+  descricao: string | null;
+  id_atendimento: string | null;
+  metodo_pagamento: string | null;
+  origem: string;
+  numero_comanda: number | null;
+  nome_cliente: string | null;
+  subtitulo: string;
+  origem_label: string;
+  movimentacao_id: number | null;
+  comanda_pagamento_id: number | null;
+  status: 'pago' | 'atrasado';
+  editavel: boolean;
+}
+
+function validarIntervaloDatas(di: string, df: string): { di: string; df: string } {
+  const a = di.trim().slice(0, 10);
+  const b = df.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(a) || !/^\d{4}-\d{2}-\d{2}$/.test(b)) {
+    throw new Error('dataInicio e dataFim são obrigatórias (YYYY-MM-DD)');
+  }
+  if (a > b) throw new Error('dataInicio não pode ser posterior a dataFim');
+  return { di: a, df: b };
+}
+
+function rotuloOrigemApi(origem: string, numeroComanda: number | null): string {
+  if (numeroComanda != null && numeroComanda > 0) {
+    return `C#${numeroComanda}`;
+  }
+  const o = String(origem || '').trim();
+  if (o === ORIGEM_ATENDIMENTO_CONFIRMACAO) return 'Confirmação';
+  if (o === ORIGEM_MANUAL) return 'Manual';
+  if (o === ORIGEM_DESPESA_CADASTRO) return 'Despesa';
+  if (o === 'comanda_pagamento') return 'Comanda';
+  return o || '—';
+}
+
+function subtituloTransacao(
+  numeroComanda: number | null,
+  nomeCliente: string,
+  descricao: string | null,
+  tipo: FinTransacaoItemTipo,
+): string {
+  const nome = String(nomeCliente || '').trim() || 'cliente';
+  if (numeroComanda != null && numeroComanda > 0) {
+    return `Referente à comanda #${numeroComanda} para ${nome}`;
+  }
+  const d = String(descricao ?? '').trim();
+  if (d) return d;
+  return tipo === 'pendencia' ? 'Prestação pendente' : '—';
+}
+
+async function mapaNomeClientePorAtendimento(
+  db: Db,
+  ids: string[],
+): Promise<Map<string, string>> {
+  const uniq = [...new Set(ids.map((x) => String(x || '').trim()).filter(Boolean))];
+  const map = new Map<string, string>();
+  if (uniq.length === 0) return map;
+
+  const linhas = await db
+    .select({
+      idAtendimento: atendimentos.idAtendimento,
+      nomeCliente: atendimentos.nomeCliente,
+    })
+    .from(atendimentos)
+    .where(inArray(atendimentos.idAtendimento, uniq))
+    .orderBy(asc(atendimentos.id));
+
+  for (const r of linhas) {
+    const id = String(r.idAtendimento || '').trim();
+    if (!id || map.has(id)) continue;
+    map.set(id, String(r.nomeCliente ?? '').trim());
+  }
+  return map;
+}
+
+async function mapaNumeroComandaPorAtendimento(
+  db: Db,
+  ids: string[],
+): Promise<Map<string, number>> {
+  const uniq = [...new Set(ids.map((x) => String(x || '').trim()).filter(Boolean))];
+  const map = new Map<string, number>();
+  if (uniq.length === 0) return map;
+
+  const rows = await db
+    .select({
+      idAtendimento: atendimentosPedido.idAtendimento,
+      numeroComanda: atendimentosPedido.numeroComanda,
+    })
+    .from(atendimentosPedido)
+    .where(inArray(atendimentosPedido.idAtendimento, uniq));
+
+  for (const r of rows) {
+    const id = String(r.idAtendimento || '').trim();
+    if (!id) continue;
+    map.set(id, r.numeroComanda);
+  }
+  return map;
+}
+
+function movimentacaoEditavel(origem: string): boolean {
+  const o = String(origem || '').trim();
+  return o === ORIGEM_MANUAL || o === ORIGEM_DESPESA_CADASTRO;
+}
+
+/**
+ * Lista movimentações enriquecidas + prestações `pendente` de comandas no período.
+ */
+export async function listTransacoesFinanceirasApi(
+  db: Db,
+  opts: { dataInicio: string; dataFim: string },
+): Promise<FinTransacaoItemApi[]> {
+  const { di, df } = validarIntervaloDatas(opts.dataInicio, opts.dataFim);
+
+  const movRows = await db
+    .select({
+      id: movimentacoes.id,
+      data_mov: movimentacoes.dataMov,
+      natureza: movimentacoes.natureza,
+      valor: movimentacoes.valor,
+      categoria_id: movimentacoes.categoriaId,
+      categoria_nome: categoriasFinanceiras.nome,
+      descricao: movimentacoes.descricao,
+      id_atendimento: movimentacoes.idAtendimento,
+      metodo_pagamento: movimentacoes.metodoPagamento,
+      origem: movimentacoes.origem,
+    })
+    .from(movimentacoes)
+    .innerJoin(
+      categoriasFinanceiras,
+      eq(categoriasFinanceiras.id, movimentacoes.categoriaId),
+    )
+    .where(and(gte(movimentacoes.dataMov, di), lte(movimentacoes.dataMov, df)))
+    .orderBy(desc(movimentacoes.dataMov), desc(movimentacoes.id));
+
+  const catReceitaPadraoId = await getCategoriaIdPorSlug(db, 'receita_servicos');
+  const [catReceitaPadrao] = await db
+    .select({ nome: categoriasFinanceiras.nome })
+    .from(categoriasFinanceiras)
+    .where(eq(categoriasFinanceiras.id, catReceitaPadraoId))
+    .limit(1);
+  const catReceitaPadraoNome =
+    String(catReceitaPadrao?.nome ?? '').trim() || 'Serviços';
+
+  const pendRows = await db
+    .select({
+      id: comandaPagamentos.id,
+      data_pagamento: comandaPagamentos.dataPagamento,
+      valor: comandaPagamentos.valor,
+      metodo_rotulo: comandaPagamentos.metodoRotulo,
+      id_atendimento: comandaPagamentos.idAtendimento,
+    })
+    .from(comandaPagamentos)
+    .where(
+      and(
+        eq(comandaPagamentos.metodo, 'pendente'),
+        gte(comandaPagamentos.dataPagamento, di),
+        lte(comandaPagamentos.dataPagamento, df),
+      ),
+    )
+    .orderBy(
+      desc(comandaPagamentos.dataPagamento),
+      desc(comandaPagamentos.id),
+    );
+
+  const idsAt = [
+    ...movRows.map((r) => r.id_atendimento),
+    ...pendRows.map((r) => r.id_atendimento),
+  ].filter((x): x is string => x != null && String(x).trim() !== '');
+
+  const [nomes, numeros] = await Promise.all([
+    mapaNomeClientePorAtendimento(db, idsAt),
+    mapaNumeroComandaPorAtendimento(db, idsAt),
+  ]);
+
+  const items: FinTransacaoItemApi[] = [];
+
+  for (const r of movRows) {
+    const idAt = r.id_atendimento ? String(r.id_atendimento).trim() : '';
+    const numero = idAt ? (numeros.get(idAt) ?? null) : null;
+    const nomeCli = idAt ? (nomes.get(idAt) ?? null) : null;
+    const catNome = String(r.categoria_nome ?? '').trim() || '—';
+    items.push({
+      tipo: 'movimentacao',
+      id_ui: r.id,
+      data_mov: String(r.data_mov),
+      natureza: r.natureza,
+      valor: String(r.valor),
+      categoria_id: r.categoria_id,
+      categoria_nome: catNome,
+      descricao: r.descricao,
+      id_atendimento: idAt || null,
+      metodo_pagamento: r.metodo_pagamento,
+      origem: r.origem,
+      numero_comanda: numero,
+      nome_cliente: nomeCli,
+      subtitulo: subtituloTransacao(numero, nomeCli ?? '', r.descricao, 'movimentacao'),
+      origem_label: rotuloOrigemApi(r.origem, numero),
+      movimentacao_id: r.id,
+      comanda_pagamento_id: null,
+      status: 'pago',
+      editavel: movimentacaoEditavel(r.origem),
+    });
+  }
+
+  for (const r of pendRows) {
+    const idAt = String(r.id_atendimento || '').trim();
+    const numero = numeros.get(idAt) ?? null;
+    const nomeCli = nomes.get(idAt) ?? null;
+    const forma = String(r.metodo_rotulo ?? '').trim() || 'Pendente';
+    items.push({
+      tipo: 'pendencia',
+      id_ui: -r.id,
+      data_mov: String(r.data_pagamento),
+      natureza: 'receita',
+      valor: String(r.valor),
+      categoria_id: catReceitaPadraoId,
+      categoria_nome: catReceitaPadraoNome,
+      descricao: null,
+      id_atendimento: idAt || null,
+      metodo_pagamento: forma,
+      origem: 'comanda_pendente',
+      numero_comanda: numero,
+      nome_cliente: nomeCli,
+      subtitulo: subtituloTransacao(numero, nomeCli ?? '', null, 'pendencia'),
+      origem_label: rotuloOrigemApi('comanda_pagamento', numero),
+      movimentacao_id: null,
+      comanda_pagamento_id: r.id,
+      status: 'atrasado',
+      editavel: false,
+    });
+  }
+
+  items.sort((a, b) => {
+    const d = b.data_mov.localeCompare(a.data_mov);
+    if (d !== 0) return d;
+    return b.id_ui - a.id_ui;
+  });
+
+  return items;
 }
 
 export async function getCaixaDiaApi(db: Db, data: string) {

@@ -1,4 +1,5 @@
 @use '../../../../styles/list-page-shell';
+@use '../../../../styles/badge-atraso-icon' as badge-atraso;
 
 .comandas-page {
   --list-search-open-width: clamp(320px, 44vw, 420px);
@@ -694,6 +695,7 @@ tbody td.col-ticket {
 
   /** «Em atraso» na coluna Pagamento (dívida pendente após o dia da comanda). */
   &--atraso {
+    @include badge-atraso.badge-atraso-com-icone-relogio;
     color: var(--drawer-badge-atraso-fg, #cf1322);
     background: var(--drawer-badge-atraso-bg, #fff1f0);
     border-color: var(--drawer-badge-atraso-border, #ffa39e);

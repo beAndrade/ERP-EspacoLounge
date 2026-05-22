@@ -3,17 +3,25 @@
  * O thead preenche o topo — o recorte fica em `.table-wrap`.
  */
 .list-table-card,
-.comandas-table-card {
+.comandas-table-card,
+.drawer-table-card {
   border-radius: 0;
   border-start-start-radius: 14px;
   border-start-end-radius: 14px;
   border-top-left-radius: 14px;
   border-top-right-radius: 14px;
+  border-end-start-radius: 14px;
+  border-end-end-radius: 14px;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+  overflow: visible;
 }
 
 .list-table-card > .table-wrap,
-.comandas-table-card > .table-wrap {
-  overflow: hidden;
+.comandas-table-card > .table-wrap,
+.drawer-table-card > .drawer-table-wrap {
+  overflow-x: hidden;
+  overflow-y: visible;
   border-radius: 0;
   border-start-start-radius: 14px;
   border-start-end-radius: 14px;

@@ -42,15 +42,16 @@ interface MovimentacaoRascunho {
   descricao: string;
 }
 
+/** Resumo do dia / caixa (legado) — rota a ligar em Transações mais tarde. */
 @Component({
-  selector: 'app-financeiro',
+  selector: 'app-financeiro-caixa-dia',
   standalone: true,
   imports: [FormsModule, CurrencyPipe, DatePipe],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
-  templateUrl: './financeiro.component.html',
-  styleUrl: './financeiro.component.scss',
+  templateUrl: './financeiro-caixa-dia.component.html',
+  styleUrl: './financeiro-caixa-dia.component.scss',
 })
-export class FinanceiroComponent implements OnInit {
+export class FinanceiroCaixaDiaComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
   private readonly resumoUi = inject(FinanceiroResumoUiService);
   private readonly destroyRef = inject(DestroyRef);

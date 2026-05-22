@@ -5,8 +5,10 @@ import {
   type AgendaStatusId,
 } from '../../core/utils/agenda-status-card';
 import {
+  diaCivilReferenciaHorarioGrupo,
   horaInicialMenorDasLinhasAtendimento,
   linhaResumoAtendimentoLista,
+  pedidoTemHorarioAgendadoNasLinhas,
 } from '../../core/utils/atendimento-display';
 import {
   agruparAtendimentosEmComandas,
@@ -33,15 +35,22 @@ function ymdParaExibicaoDdMmYyyy(ymd: string): string {
 }
 
 function horaExibicaoGrupo(g: ComandaGrupoResumo): string {
-  const dataYmd = (g.data || '').slice(0, 10);
-  const hhmm = horaInicialMenorDasLinhasAtendimento(g.linhas, dataYmd);
+  const dia = diaCivilReferenciaHorarioGrupo(
+    g.linhas,
+    (g.data || '').slice(0, 10),
+  );
+  const hhmm = horaInicialMenorDasLinhasAtendimento(g.linhas, dia);
   if (!hhmm) return '';
   const [h, mi] = hhmm.split(':');
   return `${h}:${mi}`;
 }
 
 function dataHoraExibicaoGrupo(g: ComandaGrupoResumo): string {
-  const data = ymdParaExibicaoDdMmYyyy(g.data);
+  const dia = diaCivilReferenciaHorarioGrupo(
+    g.linhas,
+    (g.data || '').slice(0, 10),
+  );
+  const data = ymdParaExibicaoDdMmYyyy(dia || g.data);
   const hora = horaExibicaoGrupo(g);
   return hora ? `${data} às ${hora}` : data;
 }
@@ -106,6 +115,8 @@ export function historicoAgendamentosClienteFromAtendimentos(
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
     if (ini && d < ini) return false;
     if (fim && d > fim) return false;
+    /** Só agendamento com horário (`atendimentos.inicio`); comanda walk-in fica de fora. */
+    if (!pedidoTemHorarioAgendadoNasLinhas(g.linhas, d)) return false;
     return true;
   });
 

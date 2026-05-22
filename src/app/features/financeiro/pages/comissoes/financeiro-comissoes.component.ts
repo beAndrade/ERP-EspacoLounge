@@ -1,115 +1,227 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { FolhaListaItem } from '../../../../core/models/api.models';
-import { AdminPinService } from '../../../../core/services/admin-pin.service';
-import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { Component, computed, LOCALE_ID, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
 
-function periodoAtualYm(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+registerLocaleData(localePt);
+
+export type FinComissaoTab = 'detalhadas' | 'resumidas' | 'pagas' | 'configuracoes';
+
+export interface FinComissaoProfissionalUi {
+  id: number;
+  nome: string;
+  telefone: string;
 }
 
-const fmtBrl = (n: number): string =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-    n,
-  );
-
-/** API devolve snake_case; alguns proxies/clientes podem expor camelCase — normalizamos. */
-function normalizarFolhaItem(raw: unknown): FolhaListaItem {
-  const o = raw as Record<string, unknown>;
-  const pickStr = (...keys: string[]): string | null => {
-    for (const k of keys) {
-      const v = o[k];
-      if (v == null || v === '') continue;
-      const s = String(v).trim();
-      if (s !== '') return s;
-    }
-    return null;
-  };
-  /** Texto da planilha ou número vindo do JSON. */
-  const pickMoeda = (...keys: string[]): string | null => {
-    for (const k of keys) {
-      const v = o[k];
-      if (v == null || v === '') continue;
-      if (typeof v === 'number' && Number.isFinite(v)) return fmtBrl(v);
-      const s = String(v).trim();
-      if (s !== '') return s;
-    }
-    return null;
-  };
-  const pidRaw = o['profissional_id'] ?? o['profissionalId'];
-  const profissionalId =
-    pidRaw != null && pidRaw !== '' && !Number.isNaN(Number(pidRaw))
-      ? Number(pidRaw)
-      : null;
-  return {
-    id: Number(o['id']),
-    profissional_id: profissionalId,
-    profissional: pickStr('profissional'),
-    periodo_referencia: pickStr('periodo_referencia', 'periodoReferencia'),
-    mes: pickStr('mes'),
-    total_comissao: pickMoeda('total_comissao', 'totalComissao'),
-    total_pago: pickMoeda('total_pago', 'totalPago'),
-    saldo: pickMoeda('saldo'),
-    status: pickStr('status'),
-  };
+export interface FinComissaoLinhaUi {
+  id: number;
+  dataYmd: string;
+  clienteNome: string;
+  clienteNumero: number;
+  servico: string;
+  quantidade: number;
+  valor: number;
+  taxaAcumulada: string | null;
+  comissaoPct: number;
+  comissaoTipo: string;
+  descontoAuxiliares: string | null;
+  disponivel: number;
 }
+
+const PROFISSIONAIS_MOCK: FinComissaoProfissionalUi[] = [
+  { id: 1, nome: 'Bernardo', telefone: '+55 (22) 99899-5484' },
+];
+
+const LINHAS_DETALHE_MOCK: FinComissaoLinhaUi[] = [
+  {
+    id: 1,
+    dataYmd: '2026-05-14',
+    clienteNome: 'Bruna',
+    clienteNumero: 1,
+    servico: 'Corte Masculino',
+    quantidade: 1,
+    valor: 20,
+    taxaAcumulada: null,
+    comissaoPct: 50,
+    comissaoTipo: 'Normal',
+    descontoAuxiliares: null,
+    disponivel: 10,
+  },
+  {
+    id: 2,
+    dataYmd: '2026-05-14',
+    clienteNome: 'Julia',
+    clienteNumero: 2,
+    servico: 'Corte Feminino',
+    quantidade: 1,
+    valor: 35,
+    taxaAcumulada: null,
+    comissaoPct: 50,
+    comissaoTipo: 'Normal',
+    descontoAuxiliares: null,
+    disponivel: 17.5,
+  },
+  {
+    id: 3,
+    dataYmd: '2026-05-15',
+    clienteNome: 'Jessica',
+    clienteNumero: 3,
+    servico: 'Corte Masculino',
+    quantidade: 1,
+    valor: 20,
+    taxaAcumulada: null,
+    comissaoPct: 50,
+    comissaoTipo: 'Normal',
+    descontoAuxiliares: null,
+    disponivel: 10,
+  },
+  {
+    id: 4,
+    dataYmd: '2026-05-16',
+    clienteNome: 'Bruna',
+    clienteNumero: 1,
+    servico: 'Corte Feminino',
+    quantidade: 1,
+    valor: 35,
+    taxaAcumulada: null,
+    comissaoPct: 50,
+    comissaoTipo: 'Normal',
+    descontoAuxiliares: null,
+    disponivel: 17.5,
+  },
+  {
+    id: 5,
+    dataYmd: '2026-05-17',
+    clienteNome: 'Julia',
+    clienteNumero: 2,
+    servico: 'Corte Masculino',
+    quantidade: 1,
+    valor: 20,
+    taxaAcumulada: null,
+    comissaoPct: 50,
+    comissaoTipo: 'Normal',
+    descontoAuxiliares: null,
+    disponivel: 10,
+  },
+  {
+    id: 6,
+    dataYmd: '2026-05-18',
+    clienteNome: 'Jessica',
+    clienteNumero: 3,
+    servico: 'Corte Feminino',
+    quantidade: 1,
+    valor: 35,
+    taxaAcumulada: null,
+    comissaoPct: 50,
+    comissaoTipo: 'Normal',
+    descontoAuxiliares: null,
+    disponivel: 17.5,
+  },
+];
 
 @Component({
   selector: 'app-financeiro-comissoes',
   standalone: true,
-  imports: [],
+  imports: [CurrencyPipe, DecimalPipe, FormsModule],
+  providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro-comissoes.component.html',
   styleUrl: './financeiro-comissoes.component.scss',
 })
-export class FinanceiroComissoesComponent implements OnInit {
-  private readonly api = inject(SheetsApiService);
-  readonly adminPin = inject(AdminPinService);
+export class FinanceiroComissoesComponent {
+  readonly tabs: { id: FinComissaoTab; label: string }[] = [
+    { id: 'detalhadas', label: 'Detalhadas' },
+    { id: 'resumidas', label: 'Resumidas' },
+    { id: 'pagas', label: 'Pagas' },
+    { id: 'configuracoes', label: 'Configurações' },
+  ];
 
-  periodoYm = periodoAtualYm();
+  readonly profissionais = PROFISSIONAIS_MOCK;
+  readonly linhasDetalhe = LINHAS_DETALHE_MOCK;
 
-  carregando = false;
-  erro = '';
-  itens: FolhaListaItem[] = [];
+  readonly vista = signal<'filtros' | 'detalhe'>('filtros');
+  readonly tabAtiva = signal<FinComissaoTab>('detalhadas');
+  readonly profissionalSelecionado = signal<FinComissaoProfissionalUi | null>(
+    null,
+  );
 
-  ngOnInit(): void {
-    if (this.adminPin.hasPin()) {
-      this.carregar();
+  periodoInicio = '2026-04-21';
+  periodoFim = '2026-05-21';
+  mostrarAnteriores = false;
+  profissionalIdSidebar: number | null = 1;
+
+  private readonly selecionados = signal<ReadonlySet<number>>(new Set());
+
+  readonly totalComissoes = computed(() => {
+    const sel = this.selecionados();
+    let sum = 0;
+    for (const row of this.linhasDetalhe) {
+      if (!sel.has(row.id)) continue;
+      sum += row.disponivel;
     }
+    return Math.round(sum * 100) / 100;
+  });
+
+  readonly podePagar = computed(() => this.selecionados().size > 0);
+
+  periodoLabel(): string {
+    return `${this.ymdParaDdMm(this.periodoInicio)} → ${this.ymdParaDdMm(this.periodoFim)}`;
   }
 
-  /** Exibe células monetárias de forma consistente (evita colunas “vazias” por tipo inesperado). */
-  formatMoeda(v: string | null | undefined): string {
-    if (v == null || String(v).trim() === '') return '—';
-    const s = String(v).trim();
-    if (/^R\$\s/i.test(s) || /^[\d.,R$\s-]+$/.test(s)) return s;
-    return s;
+  formatarData(ymd: string): string {
+    return this.ymdParaDdMm(ymd);
   }
 
-  carregar(): void {
-    const p = String(this.periodoYm || '').trim().slice(0, 7);
-    if (!/^\d{4}-\d{2}$/.test(p)) {
-      this.erro = 'Período inválido (use AAAA-MM).';
-      return;
-    }
-    if (!this.adminPin.hasPin()) {
-      this.erro = 'Sessão sem PIN. Volte ao Financeiro e introduza o PIN.';
-      return;
-    }
-    this.periodoYm = p;
-    this.carregando = true;
-    this.erro = '';
-    this.api.listFolha(p).subscribe({
-      next: (rows) => {
-        this.itens = rows.map((r) => normalizarFolhaItem(r));
-        this.carregando = false;
-      },
-      error: (e: Error) => {
-        this.carregando = false;
-        this.itens = [];
-        this.erro =
-          e.message ||
-          'Não foi possível carregar a folha. Verifique o PIN e a API.';
-      },
+  selecionarTab(id: FinComissaoTab): void {
+    this.tabAtiva.set(id);
+  }
+
+  abrirProfissional(prof: FinComissaoProfissionalUi): void {
+    this.profissionalSelecionado.set(prof);
+    this.profissionalIdSidebar = prof.id;
+    this.selecionados.set(new Set());
+    this.vista.set('detalhe');
+  }
+
+  voltarFiltros(): void {
+    this.vista.set('filtros');
+    this.profissionalSelecionado.set(null);
+    this.selecionados.set(new Set());
+  }
+
+  linhaSelecionada(id: number): boolean {
+    return this.selecionados().has(id);
+  }
+
+  todosSelecionados(): boolean {
+    const linhas = this.linhasDetalhe;
+    return (
+      linhas.length > 0 && linhas.every((r) => this.selecionados().has(r.id))
+    );
+  }
+
+  toggleLinha(id: number, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    this.selecionados.update((atual) => {
+      const next = new Set(atual);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
     });
+  }
+
+  toggleTodos(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (checked) {
+      this.selecionados.set(new Set(this.linhasDetalhe.map((r) => r.id)));
+    } else {
+      this.selecionados.set(new Set());
+    }
+  }
+
+  private ymdParaDdMm(ymd: string): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim().slice(0, 10));
+    if (!m) return ymd;
+    return `${m[3]}/${m[2]}/${m[1]}`;
   }
 }

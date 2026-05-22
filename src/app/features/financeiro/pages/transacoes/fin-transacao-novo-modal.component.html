@@ -1,0 +1,158 @@
+@if (aberto()) {
+  <div
+    class="fin-trans-modal-overlay"
+    role="presentation"
+    (click)="onOverlayClick($event)"
+  ></div>
+
+  <div
+    class="fin-trans-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="fin-trans-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h2 id="fin-trans-modal-title" class="fin-trans-modal__title">Novo lançamento</h2>
+
+    @if (erroOpcoes()) {
+      <p class="fin-trans-modal__alert" role="alert">{{ erroOpcoes() }}</p>
+    }
+    @if (erroForm) {
+      <p class="fin-trans-modal__alert" role="alert">{{ erroForm }}</p>
+    }
+
+    <div class="fin-trans-modal__form">
+      <fieldset class="fin-trans-modal__natureza">
+        <legend class="fin-trans-modal__label">Natureza</legend>
+        <label class="fin-trans-modal__radio">
+          <input
+            type="radio"
+            name="finNat"
+            value="receita"
+            [(ngModel)]="natureza"
+            (ngModelChange)="onNaturezaChange()"
+            [disabled]="salvando() || carregandoOpcoes()"
+          />
+          Receita
+        </label>
+        <label class="fin-trans-modal__radio">
+          <input
+            type="radio"
+            name="finNat"
+            value="despesa"
+            [(ngModel)]="natureza"
+            (ngModelChange)="onNaturezaChange()"
+            [disabled]="salvando() || carregandoOpcoes()"
+          />
+          Despesa
+        </label>
+      </fieldset>
+
+      <label class="fin-trans-modal__field">
+        <span class="fin-trans-modal__label"
+          ><span class="fin-trans-modal__req" aria-hidden="true">*</span> Data</span
+        >
+        <span class="fin-trans-modal__date-wrap">
+          <button
+            type="button"
+            class="fin-trans-modal__date-btn"
+            [class.fin-trans-modal__date-btn--placeholder]="dataPlaceholder()"
+            (click)="abrirCalendarioData($event, dataInput)"
+            [disabled]="salvando() || carregandoOpcoes()"
+          >
+            <span class="fin-trans-modal__date-text">{{ rotuloData() }}</span>
+          </button>
+          <input
+            #dataInput
+            type="date"
+            class="fin-trans-modal__date-native"
+            [value]="dataYmd"
+            tabindex="-1"
+            aria-hidden="true"
+            (change)="onDataAlterada($event)"
+          />
+        </span>
+      </label>
+
+      <label class="fin-trans-modal__field">
+        <span class="fin-trans-modal__label"
+          ><span class="fin-trans-modal__req" aria-hidden="true">*</span> Valor</span
+        >
+        <input
+          type="text"
+          class="fin-trans-modal__input"
+          inputmode="numeric"
+          [value]="rotuloValor()"
+          (input)="onValorInput($event)"
+          [disabled]="salvando() || carregandoOpcoes()"
+          autocomplete="off"
+        />
+      </label>
+
+      <label class="fin-trans-modal__field">
+        <span class="fin-trans-modal__label"
+          ><span class="fin-trans-modal__req" aria-hidden="true">*</span> Categoria</span
+        >
+        <select
+          class="fin-trans-modal__select"
+          [(ngModel)]="categoriaId"
+          [disabled]="salvando() || carregandoOpcoes()"
+          required
+        >
+          <option [ngValue]="null" disabled>Selecione…</option>
+          @for (c of categoriasFiltradas; track c.id) {
+            <option [ngValue]="c.id">{{ c.nome }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="fin-trans-modal__field">
+        <span class="fin-trans-modal__label"
+          ><span class="fin-trans-modal__req" aria-hidden="true">*</span> Forma de
+          pagamento</span
+        >
+        <select
+          class="fin-trans-modal__select"
+          [(ngModel)]="metodoPagamento"
+          [disabled]="salvando() || carregandoOpcoes()"
+          required
+        >
+          <option value="" disabled>Selecione…</option>
+          @for (m of metodos; track m) {
+            <option [value]="m">{{ m }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="fin-trans-modal__field">
+        <span class="fin-trans-modal__label">Descrição</span>
+        <input
+          type="text"
+          class="fin-trans-modal__input"
+          [(ngModel)]="descricao"
+          [disabled]="salvando() || carregandoOpcoes()"
+          maxlength="500"
+        />
+      </label>
+    </div>
+
+    <footer class="fin-trans-modal__footer">
+      <button
+        type="button"
+        class="fin-trans-modal__btn fin-trans-modal__btn--ghost"
+        (click)="fechar.emit()"
+        [disabled]="salvando()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="fin-trans-modal__btn fin-trans-modal__btn--primary"
+        (click)="submit()"
+        [disabled]="salvando() || carregandoOpcoes()"
+      >
+        {{ salvando() ? 'A guardar…' : 'Guardar' }}
+      </button>
+    </footer>
+  </div>
+}

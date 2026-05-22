@@ -1,0 +1,160 @@
+<div class="periodo-filtro" #anchor>
+  @if (panelNoDom) {
+    <button
+      type="button"
+      class="periodo-filtro__backdrop"
+      [class.periodo-filtro__backdrop--open]="panelAberto"
+      aria-label="Fechar calendário"
+      (click)="fecharPainel()"
+    ></button>
+  }
+
+  <div class="periodo-filtro__bar" aria-label="Filtrar por período">
+    <div
+      class="periodo-filtro__inputs"
+      [style.--periodo-campo-index]="campoAtivoIndex"
+    >
+      <span class="periodo-filtro__underline" aria-hidden="true"></span>
+      <div class="periodo-filtro__field">
+        <input
+          type="text"
+          class="periodo-filtro__input"
+          [value]="exibicaoInicio"
+          readonly
+          tabindex="0"
+          aria-label="Data inicial do período"
+          (click)="abrirCampo('inicio', $event)"
+          (focus)="abrirCampo('inicio', $event)"
+        />
+      </div>
+      <span class="periodo-filtro__sep">até</span>
+      <div class="periodo-filtro__field">
+        <input
+          type="text"
+          class="periodo-filtro__input"
+          [value]="exibicaoFim"
+          readonly
+          tabindex="0"
+          aria-label="Data final do período"
+          (click)="abrirCampo('fim', $event)"
+          (focus)="abrirCampo('fim', $event)"
+        />
+      </div>
+    </div>
+    <button
+      type="button"
+      class="periodo-filtro__cal-btn"
+      aria-label="Abrir calendário de período"
+      (click)="togglePainel($event)"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+        <line x1="16" x2="16" y1="2" y2="6" />
+        <line x1="8" x2="8" y1="2" y2="6" />
+        <line x1="3" x2="21" y1="10" y2="10" />
+      </svg>
+    </button>
+  </div>
+
+  @if (panelNoDom) {
+    <div
+      class="periodo-filtro__panel"
+      [class.periodo-filtro__panel--open]="panelAberto"
+      [class.periodo-filtro__panel--hover-preview]="painelComPreviewHover()"
+      role="dialog"
+      aria-label="Selecionar período"
+      (click)="$event.stopPropagation()"
+      (mouseleave)="limparHoverPainel()"
+    >
+      <aside class="periodo-filtro__presets">
+        @for (p of presets; track p.id) {
+          <button
+            type="button"
+            class="periodo-filtro__preset"
+            [class.periodo-filtro__preset--hover]="presetHoverId === p.id"
+            (mouseenter)="hoverPreset(p.id)"
+            (click)="aplicarPreset(p.id)"
+          >
+            {{ p.label }}
+          </button>
+        }
+      </aside>
+
+      <div class="periodo-filtro__calendarios">
+        <div class="periodo-filtro__cal-toolbar">
+          <div class="periodo-filtro__cal-nav">
+            <button type="button" class="periodo-filtro__nav" (click)="anoAnterior()" aria-label="Ano anterior">«</button>
+            <button type="button" class="periodo-filtro__nav" (click)="mesAnterior()" aria-label="Mês anterior">‹</button>
+          </div>
+          <div class="periodo-filtro__cal-nav periodo-filtro__cal-nav--dir">
+            <button type="button" class="periodo-filtro__nav" (click)="mesSeguinte()" aria-label="Mês seguinte">›</button>
+            <button type="button" class="periodo-filtro__nav" (click)="anoSeguinte()" aria-label="Ano seguinte">»</button>
+          </div>
+        </div>
+
+        <div class="periodo-filtro__meses">
+          <div class="periodo-filtro__mes">
+            <p class="periodo-filtro__mes-titulo">{{ tituloEsquerda() }}</p>
+            <div class="periodo-filtro__weekdays">
+              @for (d of diasSemana; track $index) {
+                <span class="periodo-filtro__weekday">{{ d }}</span>
+              }
+            </div>
+            <div class="periodo-filtro__days">
+              @for (c of celulasEsquerda(); track c.ymd ?? $index) {
+                <button
+                  type="button"
+                  class="periodo-filtro__day-btn"
+                  [ngClass]="classeDia(c.ymd, c.foraMes)"
+                  [disabled]="!c.ymd"
+                  (mouseenter)="hoverDia(c.ymd)"
+                  (click)="selecionarDia(c.ymd)"
+                >
+                  @if (c.dia != null) {
+                    <span class="periodo-filtro__day-num">{{ c.dia }}</span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="periodo-filtro__mes">
+            <p class="periodo-filtro__mes-titulo">{{ tituloDireita() }}</p>
+            <div class="periodo-filtro__weekdays">
+              @for (d of diasSemana; track $index) {
+                <span class="periodo-filtro__weekday">{{ d }}</span>
+              }
+            </div>
+            <div class="periodo-filtro__days">
+              @for (c of celulasDireita(); track c.ymd ?? $index) {
+                <button
+                  type="button"
+                  class="periodo-filtro__day-btn"
+                  [ngClass]="classeDia(c.ymd, c.foraMes)"
+                  [disabled]="!c.ymd"
+                  (mouseenter)="hoverDia(c.ymd)"
+                  (click)="selecionarDia(c.ymd)"
+                >
+                  @if (c.dia != null) {
+                    <span class="periodo-filtro__day-num">{{ c.dia }}</span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

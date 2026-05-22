@@ -1,0 +1,550 @@
+<div
+  class="list-page fin-transacoes-page"
+  [class.fin-transacoes-page--filtros-abertos]="filtrosAbertos"
+>
+  <div class="fin-transacoes-layout">
+    @if (filtrosAbertos) {
+      <aside class="fin-transacoes-filtros" aria-label="Filtros de transações">
+        <div class="fin-transacoes-filtros__inner">
+          <div class="fin-transacoes-filtros-block">
+            <h3 class="fin-transacoes-filtros-block__title">Período</h3>
+            <div class="fin-transacoes-filtros-block__body fin-transacoes-filtros-periodo">
+              <label>
+                <span>Data inicial (dd-mm-aaaa)</span>
+                <input
+                  type="text"
+                  [(ngModel)]="dataInicio"
+                  name="finDi"
+                  inputmode="numeric"
+                  maxlength="10"
+                  autocomplete="off"
+                />
+              </label>
+              <label>
+                <span>Data final (dd-mm-aaaa)</span>
+                <input
+                  type="text"
+                  [(ngModel)]="dataFim"
+                  name="finDf"
+                  inputmode="numeric"
+                  maxlength="10"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="fin-transacoes-filtros-block">
+            <h3 class="fin-transacoes-filtros-block__title">Natureza</h3>
+            <div class="fin-transacoes-filtros-block__body fin-transacoes-filtros-chips">
+              <button
+                type="button"
+                class="fin-transacoes-filtros-chip"
+                [class.fin-transacoes-filtros-chip--on]="filtroNatureza === 'todos'"
+                (click)="toggleFiltroNatureza('todos')"
+              >
+                Todas
+              </button>
+              <button
+                type="button"
+                class="fin-transacoes-filtros-chip"
+                [class.fin-transacoes-filtros-chip--on]="filtroNatureza === 'receita'"
+                (click)="toggleFiltroNatureza('receita')"
+              >
+                Receitas
+              </button>
+              <button
+                type="button"
+                class="fin-transacoes-filtros-chip"
+                [class.fin-transacoes-filtros-chip--on]="filtroNatureza === 'despesa'"
+                (click)="toggleFiltroNatureza('despesa')"
+              >
+                Despesas
+              </button>
+            </div>
+          </div>
+
+          <div class="fin-transacoes-filtros__footer">
+            <button type="button" class="btn btn--ghost" (click)="limparFiltrosPeriodo()">
+              Limpar
+            </button>
+            <button type="button" class="btn" (click)="aplicarFiltros()">Aplicar</button>
+          </div>
+        </div>
+      </aside>
+    }
+
+    <div class="fin-transacoes-layout__main">
+      <div class="list-layout__main">
+        <div class="list-page__lead">
+          <header class="list-head">
+            <div class="list-head__title-row">
+              <div class="list-head__left">
+                <h1 class="list-head__title">Transações</h1>
+              </div>
+              <div class="list-head__actions">
+                <div
+                  class="list-head__busca-wrap"
+                  [class.list-head__busca-wrap--open]="buscaAberta"
+                  role="search"
+                  (click)="onBuscaWrapClick()"
+                >
+                  <span class="list-head__busca-icon" aria-hidden="true">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <path d="m21 21-4.34-4.34" />
+                      <circle cx="11" cy="11" r="8" />
+                    </svg>
+                  </span>
+                  <span
+                    class="list-head__busca-label"
+                    [class.list-head__busca-label--hidden]="buscaAberta"
+                    aria-hidden="true"
+                    >Buscar</span
+                  >
+                  <label class="sr-only" for="fin-trans-busca">Buscar transações</label>
+                  <input
+                    id="fin-trans-busca"
+                    type="search"
+                    class="list-head__busca-input"
+                    [(ngModel)]="busca"
+                    name="buscaTrans"
+                    placeholder="Buscar transações…"
+                    [class.list-head__busca-input--search-open]="buscaAberta"
+                    [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+                    autocomplete="off"
+                    (click)="$event.stopPropagation()"
+                    (keydown.enter)="onBuscaEnter($event)"
+                    (input)="pagina = 1"
+                    [attr.aria-expanded]="buscaAberta"
+                    aria-label="Buscar transações"
+                    title="Buscar"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="list-head__toolbar-btn"
+                  [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+                  [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+                  (click)="toggleFiltros()"
+                  aria-label="Filtrar"
+                  title="Filtrar"
+                >
+                  <svg
+                    class="list-icon-sm list-icon-sm--funnel"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+                    />
+                  </svg>
+                  <span class="list-head__toolbar-label">Filtrar</span>
+                </button>
+                <button
+                  type="button"
+                  class="list-head__toolbar-btn"
+                  (click)="calcularTotais()"
+                  aria-label="Calcular totais"
+                  title="Calcular totais"
+                >
+                  <svg
+                    class="list-icon-sm"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="4" y="2" width="16" height="20" rx="2" />
+                    <path d="M8 6h8M8 10h8M8 14h4" />
+                  </svg>
+                  <span class="list-head__toolbar-label">Calcular totais</span>
+                </button>
+                <button
+                  type="button"
+                  class="list-head__toolbar-btn list-head__toolbar-btn--link"
+                  (click)="novoTransacao()"
+                  aria-label="Novo lançamento"
+                  title="Novo"
+                >
+                  <svg
+                    class="list-icon-sm"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5v14" />
+                  </svg>
+                  <span>Novo</span>
+                </button>
+              </div>
+            </div>
+          </header>
+          @if (erro) {
+            <p class="fin-transacoes__erro" role="alert">{{ erro }}</p>
+          }
+          @if (mensagemAcao) {
+            <p class="fin-transacoes__acao-hint" role="status">{{ mensagemAcao }}</p>
+          }
+        </div>
+
+        <div class="list-table-card fin-transacoes__card">
+          @if (carregando) {
+            <p class="fin-transacoes__loading">A carregar transações…</p>
+          } @else {
+            <div class="table-wrap">
+              <table class="list-table fin-transacoes-table">
+                <colgroup>
+                  <col class="fin-transacoes-table__col-check" />
+                  <col class="fin-transacoes-table__col-data" />
+                  <col class="fin-transacoes-table__col-titular" />
+                  <col class="fin-transacoes-table__col-origem" />
+                  <col class="fin-transacoes-table__col-forma" />
+                  <col class="fin-transacoes-table__col-cat" />
+                  <col class="fin-transacoes-table__col-bruto" />
+                  <col class="fin-transacoes-table__col-liq" />
+                  <col class="fin-transacoes-table__col-status" />
+                  <col class="fin-transacoes-table__col-pago" />
+                  <col class="fin-transacoes-table__col-acoes" />
+                  <col class="fin-transacoes-table__col-config" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="col-check" scope="col">
+                      <input
+                        type="checkbox"
+                        [checked]="todosSelecionados()"
+                        (change)="toggleTodos($event)"
+                        aria-label="Selecionar todas"
+                      />
+                    </th>
+                    <th
+                      class="col-data fin-trans-th-sort-wrap"
+                      scope="col"
+                      (mouseenter)="onSortDataMouseEnter()"
+                      (mouseleave)="onSortDataMouseLeave()"
+                    >
+                      <button
+                        type="button"
+                        class="fin-trans-th-sort"
+                        (click)="onOrdenarDataClick($event)"
+                        [attr.aria-label]="'Ordenar por data — ' + tooltipOrdenacaoData()"
+                      >
+                        <span class="fin-trans-th-sort__label">Data</span>
+                        <span class="fin-trans-th-sort__icons" aria-hidden="true">
+                          <svg
+                            class="fin-trans-th-sort__tri fin-trans-th-sort__tri--up"
+                            [class.fin-trans-th-sort__tri--on]="ordenacaoData === 'asc'"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                            aria-hidden="true"
+                          >
+                            <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                          </svg>
+                          <svg
+                            class="fin-trans-th-sort__tri fin-trans-th-sort__tri--down"
+                            [class.fin-trans-th-sort__tri--on]="ordenacaoData === 'desc'"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                            aria-hidden="true"
+                          >
+                            <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                          </svg>
+                        </span>
+                      </button>
+                    </th>
+                    <th class="col-titular" scope="col">Titular</th>
+                    <th class="col-origem" scope="col">Origem</th>
+                    <th class="col-forma" scope="col">Forma de pagamento</th>
+                    <th class="col-cat" scope="col">Categoria</th>
+                    <th class="col-bruto" scope="col">Valor bruto</th>
+                    <th class="col-liq" scope="col">Valor líquido</th>
+                    <th class="col-status" scope="col">Status</th>
+                    <th class="col-pago" scope="col">Pago</th>
+                    <th class="col-acoes" scope="col"><span class="sr-only">Ações</span></th>
+                    <th class="col-config" scope="col">
+                      <span class="sr-only">Colunas</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (linhasPagina.length === 0) {
+                    <tr>
+                      <td colspan="12" class="fin-transacoes__empty">
+                        Nenhuma transação no período selecionado.
+                      </td>
+                    </tr>
+                  }
+                  @for (row of linhasPagina; track row.id) {
+                    <tr
+                      [class.list-table__row--selected]="linhaSelecionada(row.id)"
+                      [class.fin-transacoes__row--receita]="row.linhaReceita"
+                    >
+                      <td class="col-check">
+                        <input
+                          type="checkbox"
+                          [checked]="linhaSelecionada(row.id)"
+                          (change)="toggleLinha(row.id, $event)"
+                        />
+                      </td>
+                      <td class="col-data">{{ formatarData(row.dataYmd) }}</td>
+                      <td class="col-titular">
+                        <span class="fin-transacoes__titular">{{ row.titular }}</span>
+                        <span class="fin-transacoes__sub">{{ row.subtitulo }}</span>
+                      </td>
+                      <td class="col-origem">
+                        @if (podeVerComanda(row)) {
+                          <button
+                            type="button"
+                            class="fin-transacoes__link fin-transacoes__link--btn"
+                            (click)="verComanda(row)"
+                          >
+                            {{ row.origem }}
+                          </button>
+                        } @else {
+                          <span class="fin-transacoes__link">{{ row.origem }}</span>
+                        }
+                      </td>
+                      <td class="col-forma">{{ row.formaPagamento }}</td>
+                      <td class="col-cat">{{ row.categoria }}</td>
+                      <td class="col-bruto">
+                        <span>{{
+                          row.valorBruto | currency: 'BRL' : 'symbol' : '1.2-2'
+                        }}</span>
+                        <span class="fin-transacoes__conta">{{ row.conta }}</span>
+                      </td>
+                      <td class="col-liq">{{
+                        row.valorLiquido | currency: 'BRL' : 'symbol' : '1.2-2'
+                      }}</td>
+                      <td class="col-status">
+                        @if (row.status === 'pago') {
+                          <span class="fin-transacoes__badge fin-transacoes__badge--pago"
+                            >✓ Pago</span
+                          >
+                        } @else {
+                          <span
+                            class="fin-transacoes__badge fin-transacoes__badge--atraso"
+                            >Atrasado</span
+                          >
+                        }
+                      </td>
+                      <td class="col-pago">
+                        <button
+                          type="button"
+                          class="drawer-switch"
+                          [class.drawer-switch--on]="row.pagoToggle"
+                          [attr.aria-pressed]="row.pagoToggle"
+                          disabled
+                        ></button>
+                      </td>
+                      <td class="col-acoes">
+                        <div class="fin-transacoes__acoes">
+                          @if (podeEditarExcluir(row)) {
+                            <button
+                              type="button"
+                              class="fin-transacoes__icon-btn"
+                              disabled
+                              aria-label="Editar (em breve)"
+                              title="Editar em breve"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              class="fin-transacoes__icon-btn fin-transacoes__icon-btn--danger"
+                              (click)="excluirLinha(row)"
+                              [disabled]="excluindoId === row.movimentacaoId"
+                              aria-label="Excluir"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                aria-hidden="true"
+                              >
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          } @else if (podeVerComanda(row)) {
+                            <button
+                              type="button"
+                              class="fin-transacoes__icon-btn"
+                              (click)="verComanda(row)"
+                              aria-label="Ver comanda"
+                              title="Ver comanda"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                aria-hidden="true"
+                              >
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            </button>
+                          }
+                        </div>
+                      </td>
+                      <td class="col-config"></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <span
+              class="fin-trans-th-sort__tip"
+              [class.fin-trans-th-sort__tip--visible]="dataSortTipVisivel"
+              role="tooltip"
+              >{{ tooltipOrdenacaoData() }}</span
+            >
+
+            <footer class="list-footer fin-transacoes__footer">
+              <div class="list-footer__toolbar">
+                <span class="list-footer__total">{{ totalExibido() }} no total</span>
+                <div class="list-footer__pager">
+                  <button
+                    type="button"
+                    class="list-footer__chev"
+                    [disabled]="!podePaginaAnterior"
+                    (click)="paginaAnterior()"
+                    aria-label="Anterior"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <span class="list-footer__page-num" aria-current="page">{{
+                    pagina
+                  }}</span>
+                  <button
+                    type="button"
+                    class="list-footer__chev"
+                    [disabled]="!podePaginaSeguinte"
+                    (click)="paginaSeguinte()"
+                    aria-label="Seguinte"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="list-footer__per-page">
+                <button
+                  type="button"
+                  class="list-footer__per-page-trigger"
+                  (click)="perPageMenuAberto = !perPageMenuAberto"
+                >
+                  <div class="list-footer__per-page-trigger-box">
+                    <span class="list-footer__per-page-value"
+                      >{{ itensPorPagina }} / página</span
+                    >
+                  </div>
+                </button>
+                @if (perPageMenuAberto) {
+                  <ul class="list-footer__per-page-menu" role="listbox">
+                    @for (n of opcoesItensPorPagina; track n) {
+                      <li>
+                        <button
+                          type="button"
+                          role="option"
+                          [attr.aria-selected]="itensPorPagina === n"
+                          (click)="alterarItensPorPagina(n)"
+                        >
+                          {{ n }} / página
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            </footer>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-fin-transacao-novo-modal
+  [aberto]="modalNovoAberto()"
+  [salvando]="modalNovoSalvando()"
+  (fechar)="fecharModalNovo()"
+  (confirmar)="onConfirmarNovo($event)"
+/>

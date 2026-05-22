@@ -32,6 +32,7 @@ import {
   getCaixaDiaApi,
   listCategoriasFinanceirasApi,
   listMovimentacoesApi,
+  listTransacoesFinanceirasApi,
 } from './services/finance-domain';
 import {
   atualizarProfissional,
@@ -478,6 +479,29 @@ const app = new Elysia({ adapter: node() })
       return fail('SERVER', msg);
     }
   })
+  .get('/api/financeiro/transacoes', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const dataInicio = String(
+        q.dataInicio ?? q.data_inicio ?? '',
+      ).trim();
+      const dataFim = String(q.dataFim ?? q.data_fim ?? '').trim();
+      const items = await listTransacoesFinanceirasApi(db, {
+        dataInicio,
+        dataFim,
+      });
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (
+        msg.includes('obrigatórias') ||
+        msg.includes('não pode ser posterior')
+      ) {
+        return fail('VALIDATION', msg);
+      }
+      return fail('SERVER', msg);
+    }
+  })
   .get('/api/caixa/dia', async ({ query }) => {
     try {
       const q = query as Record<string, string | undefined>;
@@ -645,11 +669,17 @@ const app = new Elysia({ adapter: node() })
       const idAt = String(
         q.idAtendimento ?? q.id_atendimento ?? '',
       ).trim();
+      const somenteComHorario =
+        q.somenteComHorario === '1' ||
+        q.somenteComHorario === 'true' ||
+        q.somente_com_horario === '1' ||
+        q.somente_com_horario === 'true';
       const items = await listAtendimentosRaw(
         db,
         query.dataInicio,
         query.dataFim,
         idAt || undefined,
+        somenteComHorario,
       );
       return ok({ items });
     } catch (e) {

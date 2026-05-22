@@ -1,47 +1,345 @@
-@if (erro) {
-  <p class="alert" role="alert">{{ erro }}</p>
-}
-@if (carregando) {
-  <p class="hint">A carregar…</p>
-}
-
-@if (!carregando && !erro && adminPin.hasPin() && itens.length === 0) {
-  <p class="hint">Nenhuma linha de folha para este período.</p>
-}
-
-@if (itens.length > 0) {
-  <div class="table-wrap" role="region" aria-label="Folha por profissional">
-    <table class="tabela-folha">
-      <colgroup>
-        <col class="tabela-folha__col-prof" />
-        <col class="tabela-folha__col-mes" />
-        <col class="tabela-folha__col-num" />
-        <col class="tabela-folha__col-num" />
-        <col class="tabela-folha__col-num" />
-        <col class="tabela-folha__col-status" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th scope="col">Profissional</th>
-          <th scope="col">Mês (legado)</th>
-          <th scope="col" class="num">Total comissão</th>
-          <th scope="col" class="num">Total pago</th>
-          <th scope="col" class="num">Saldo</th>
-          <th scope="col" class="tabela-folha__th-status">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of itens; track row.id) {
-          <tr>
-            <td class="tabela-folha__prof">{{ row.profissional ?? '—' }}</td>
-            <td class="mono">{{ row.mes ?? '—' }}</td>
-            <td class="num">{{ formatMoeda(row.total_comissao) }}</td>
-            <td class="num">{{ formatMoeda(row.total_pago) }}</td>
-            <td class="num">{{ formatMoeda(row.saldo) }}</td>
-            <td class="tabela-folha__status">{{ row.status ?? '—' }}</td>
-          </tr>
+<div class="fin-comissoes">
+  <header class="fin-comissoes__head">
+    <div class="fin-comissoes__head-row">
+      <div class="fin-comissoes__title-wrap">
+        <h1 class="fin-comissoes__title">Comissões</h1>
+        <button
+          type="button"
+          class="fin-comissoes__play"
+          aria-label="Ajuda"
+          disabled
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+      </div>
+      <div class="fin-comissoes__head-actions">
+        @if (vista() === 'detalhe') {
+          <button
+            type="button"
+            class="fin-comissoes__btn fin-comissoes__btn--filtrar"
+            disabled
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+              />
+            </svg>
+            Filtrar
+          </button>
         }
-      </tbody>
-    </table>
-  </div>
-}
+        <button type="button" class="fin-comissoes__btn fin-comissoes__btn--ghost" disabled>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M13 2 3 14h9l-1 8 10-12h-9z" />
+          </svg>
+          Ações
+        </button>
+        @if (vista() === 'detalhe') {
+          <button type="button" class="fin-comissoes__btn fin-comissoes__btn--ghost" disabled>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.83 1.04 6.5 2.71" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            Atualizar
+          </button>
+        }
+      </div>
+    </div>
+    <nav class="fin-comissoes__tabs" aria-label="Secções de comissões">
+      @for (tab of tabs; track tab.id) {
+        <button
+          type="button"
+          class="fin-comissoes__tab"
+          [class.fin-comissoes__tab--active]="tabAtiva() === tab.id"
+          (click)="selecionarTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+  </header>
+
+  @if (tabAtiva() !== 'detalhadas') {
+    <p class="fin-comissoes__hint">Esta secção estará disponível em breve.</p>
+  } @else if (vista() === 'filtros') {
+    <section class="fin-comissoes__filtros-centro" aria-label="Filtros">
+      <h2 class="fin-comissoes__filtros-titulo">Filtros</h2>
+      <p class="fin-comissoes__filtros-sub">
+        Selecione um período e escolha o profissional
+      </p>
+      <button type="button" class="fin-comissoes__periodo" disabled>
+        <span>{{ periodoLabel() }}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      </button>
+      <label class="fin-comissoes__toggle-row">
+        <button
+          type="button"
+          class="drawer-switch"
+          [class.drawer-switch--on]="mostrarAnteriores"
+          [attr.aria-pressed]="mostrarAnteriores"
+          (click)="mostrarAnteriores = !mostrarAnteriores"
+        ></button>
+        <span>Mostrar comissões anteriores</span>
+      </label>
+      <ul class="fin-comissoes__prof-list">
+        @for (prof of profissionais; track prof.id) {
+          <li>
+            <button
+              type="button"
+              class="fin-comissoes__prof-card"
+              (click)="abrirProfissional(prof)"
+            >
+              <span class="fin-comissoes__prof-avatar" aria-hidden="true">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+              <span class="fin-comissoes__prof-text">
+                <strong>{{ prof.nome }}</strong>
+                <span>{{ prof.telefone }}</span>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+  } @else {
+    <div class="fin-comissoes__detalhe-layout">
+      <aside class="fin-comissoes__sidebar" aria-label="Filtros">
+        <div class="fin-comissoes__sidebar-card">
+          <span class="fin-comissoes__sidebar-label">Período</span>
+          <button type="button" class="fin-comissoes__periodo fin-comissoes__periodo--compact" disabled>
+            <span>{{ periodoLabel() }}</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+          </button>
+        </div>
+        <div class="fin-comissoes__sidebar-card">
+          <span class="fin-comissoes__sidebar-label">Profissional</span>
+          <select
+            class="fin-comissoes__select"
+            [(ngModel)]="profissionalIdSidebar"
+            name="profSidebar"
+          >
+            @for (prof of profissionais; track prof.id) {
+              <option [ngValue]="prof.id">{{ prof.nome }}</option>
+            }
+          </select>
+        </div>
+        <label class="fin-comissoes__toggle-row fin-comissoes__toggle-row--sidebar">
+          <button
+            type="button"
+            class="drawer-switch"
+            [class.drawer-switch--on]="mostrarAnteriores"
+            [attr.aria-pressed]="mostrarAnteriores"
+            (click)="mostrarAnteriores = !mostrarAnteriores"
+          ></button>
+          <span>Mostrar comissões anteriores</span>
+        </label>
+        <button
+          type="button"
+          class="fin-comissoes__voltar"
+          (click)="voltarFiltros()"
+        >
+          Trocar profissional
+        </button>
+      </aside>
+
+      <div class="fin-comissoes__main">
+        <div class="list-table-card fin-comissoes__table-card">
+          <div class="table-wrap">
+            <table class="list-table fin-comissoes-table">
+              <colgroup>
+                <col class="fin-comissoes-table__col-check" />
+                <col class="fin-comissoes-table__col-data" />
+                <col class="fin-comissoes-table__col-item" />
+                <col class="fin-comissoes-table__col-valor" />
+                <col class="fin-comissoes-table__col-taxa" />
+                <col class="fin-comissoes-table__col-comissao" />
+                <col class="fin-comissoes-table__col-desc" />
+                <col class="fin-comissoes-table__col-disp" />
+                <col class="fin-comissoes-table__col-config" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="col-check" scope="col">
+                    <input
+                      type="checkbox"
+                      [checked]="todosSelecionados()"
+                      (change)="toggleTodos($event)"
+                      aria-label="Selecionar todas"
+                    />
+                  </th>
+                  <th class="col-data" scope="col">Data</th>
+                  <th class="col-item" scope="col">Item</th>
+                  <th class="col-valor" scope="col">Valor</th>
+                  <th class="col-taxa" scope="col">
+                    <span class="fin-comissoes-table__th-taxa">
+                      Taxa acumulada
+                      <span
+                        class="fin-comissoes-table__info"
+                        title="Em breve"
+                        aria-label="Informação"
+                        >ⓘ</span
+                      >
+                    </span>
+                  </th>
+                  <th class="col-comissao" scope="col">Comissão</th>
+                  <th class="col-desc" scope="col">Desconto de Auxiliares</th>
+                  <th class="col-disp" scope="col">Disponível</th>
+                  <th class="col-config" scope="col">
+                    <span class="sr-only">Configurar colunas</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+                      />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of linhasDetalhe; track row.id) {
+                  <tr [class.list-table__row--selected]="linhaSelecionada(row.id)">
+                    <td class="col-check">
+                      <input
+                        type="checkbox"
+                        [checked]="linhaSelecionada(row.id)"
+                        (change)="toggleLinha(row.id, $event)"
+                        [attr.aria-label]="'Selecionar ' + row.servico"
+                      />
+                    </td>
+                    <td class="col-data">{{ formatarData(row.dataYmd) }}</td>
+                    <td class="col-item">
+                      <span class="fin-comissoes-table__cliente"
+                        >{{ row.clienteNome }} (#{{ row.clienteNumero }})</span
+                      >
+                      <span class="fin-comissoes-table__servico"
+                        >{{ row.servico }} ({{ row.quantidade }}x)</span
+                      >
+                    </td>
+                    <td class="col-valor">{{
+                      row.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                    }}</td>
+                    <td class="col-taxa">{{ row.taxaAcumulada ?? '—' }}</td>
+                    <td class="col-comissao"
+                      >% {{ row.comissaoPct | number: '1.2-2' }}
+                      {{ row.comissaoTipo }}</td
+                    >
+                    <td class="col-desc">{{ row.descontoAuxiliares ?? '—' }}</td>
+                    <td class="col-disp fin-comissoes-table__disp">{{
+                      row.disponivel | currency: 'BRL' : 'symbol' : '1.2-2'
+                    }}</td>
+                    <td class="col-config"></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="fin-comissoes__bar" aria-label="Resumo e pagamento">
+      <div class="fin-comissoes__bar-totais">
+        <span
+          >Comissões
+          <strong>{{
+            totalComissoes() | currency: 'BRL' : 'symbol' : '1.2-2'
+          }}</strong></span
+        >
+        <span>Vales <strong>R$ 0,00</strong></span>
+        <span>Bonificações <strong>R$ 0,00</strong></span>
+        <span class="fin-comissoes__bar-liquido"
+          >Líquido
+          <strong>{{
+            totalComissoes() | currency: 'BRL' : 'symbol' : '1.2-2'
+          }}</strong></span
+        >
+      </div>
+      <button
+        type="button"
+        class="fin-comissoes__btn-pagar"
+        [disabled]="!podePagar()"
+      >
+        Pagar comissões
+      </button>
+    </footer>
+  }
+</div>

@@ -1,0 +1,352 @@
+:host {
+  display: block;
+  position: relative;
+}
+
+$periodo-easing: cubic-bezier(0.22, 1, 0.36, 1);
+$periodo-anim: 0.34s $periodo-easing;
+$periodo-accent: #393ed4;
+$periodo-range-bg: #e8f0fe;
+$periodo-day-size: 1.5rem;
+$periodo-row-gap: 6px;
+
+.periodo-filtro__bar {
+  position: relative;
+  z-index: 1021;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.35rem 0.5rem 0.35rem 0.65rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.periodo-filtro__inputs {
+  --periodo-input-w: 7rem;
+  --periodo-sep-w: 2.15rem;
+  --periodo-gap: 0.35rem;
+  --periodo-campo-index: 0;
+  --periodo-underline-step: calc(
+    var(--periodo-input-w) + var(--periodo-gap) + var(--periodo-sep-w) + var(--periodo-gap)
+  );
+  --periodo-field-line: 2px;
+
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--periodo-gap);
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-bottom: var(--periodo-field-line);
+}
+
+.periodo-filtro__field {
+  flex: 0 0 var(--periodo-input-w);
+  width: var(--periodo-input-w);
+  box-sizing: border-box;
+}
+
+.periodo-filtro__underline {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--periodo-input-w);
+  height: var(--periodo-field-line);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: $periodo-accent;
+  pointer-events: none;
+  z-index: 2;
+  transform: translateX(calc(var(--periodo-campo-index) * var(--periodo-underline-step)));
+  transition: transform $periodo-anim;
+}
+
+.periodo-filtro__input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0.15rem 0.1rem 0;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  color: #374151;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.periodo-filtro__sep {
+  flex: 0 0 var(--periodo-sep-w);
+  align-self: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  user-select: none;
+}
+
+.periodo-filtro__cal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin: 0 0 0 0.1rem;
+  padding: 0.2rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.2s $periodo-easing, color 0.2s $periodo-easing;
+
+  &:hover {
+    background: #f3f4f6;
+    color: $periodo-accent;
+  }
+}
+
+.periodo-filtro__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1015;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  cursor: default;
+  transition: opacity $periodo-anim;
+
+  &--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.periodo-filtro__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1020;
+  display: flex;
+  min-width: min(640px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.14),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  transform-origin: top right;
+  pointer-events: none;
+  transition:
+    opacity $periodo-anim,
+    transform $periodo-anim;
+
+  &--open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+}
+
+.periodo-filtro__presets {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 9.5rem;
+  padding: 0.65rem 0;
+  border-right: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.periodo-filtro__preset {
+  margin: 0;
+  padding: 0.5rem 0.85rem;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: #374151;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3f4f6;
+    color: $periodo-accent;
+  }
+}
+
+.periodo-filtro__calendarios {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.65rem 0.75rem 0.75rem;
+}
+
+.periodo-filtro__cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.periodo-filtro__cal-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+
+  &--dir {
+    margin-left: auto;
+  }
+}
+
+.periodo-filtro__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3f4f6;
+    color: $periodo-accent;
+  }
+}
+
+.periodo-filtro__meses {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+}
+
+.periodo-filtro__mes-titulo {
+  margin: 0 0 0.45rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: center;
+}
+
+.periodo-filtro__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 0.25rem;
+}
+
+.periodo-filtro__weekday {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.periodo-filtro__days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: $periodo-row-gap;
+}
+
+.periodo-filtro__day-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: $periodo-day-size;
+  min-height: $periodo-day-size;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &--empty {
+    pointer-events: none;
+  }
+
+  &--fora-mes .periodo-filtro__day-num {
+    color: #d1d5db;
+  }
+
+  &--in-range {
+    background: $periodo-range-bg;
+  }
+
+  &--range-start,
+  &--range-end,
+  &--range-start:hover:not(:disabled),
+  &--range-end:hover:not(:disabled),
+  &--range-start#{&}--in-range,
+  &--range-end#{&}--in-range {
+    background: $periodo-accent;
+
+    .periodo-filtro__day-num {
+      color: #fff;
+    }
+  }
+
+  &--in-range:hover:not(:disabled):not(&--range-start):not(&--range-end) {
+    background: $periodo-range-bg;
+  }
+
+  &--hoje:not(&--range-start):not(&--range-end) .periodo-filtro__day-num {
+    box-shadow: 0 0 0 1px $periodo-accent;
+    border-radius: 50%;
+  }
+
+  &--range-start:not(&--range-end) {
+    border-radius: 6px 0 0 6px;
+  }
+
+  &--range-end:not(&--range-start) {
+    border-radius: 0 6px 6px 0;
+  }
+
+  &--range-start#{&}--range-end {
+    border-radius: 6px;
+  }
+
+  &--in-range#{&}--seg-inicio:not(&--range-start) {
+    border-radius: 6px 0 0 6px;
+  }
+
+  &--in-range#{&}--seg-fim:not(&--range-end) {
+    border-radius: 0 6px 6px 0;
+  }
+}
+
+.periodo-filtro__day-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: $periodo-day-size;
+  height: $periodo-day-size;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  color: #1f2937;
+  transition: all 0.2s;
+}

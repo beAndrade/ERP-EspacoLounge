@@ -1,0 +1,134 @@
+<main class="cliente-vendas" aria-labelledby="cliente-vendas-titulo">
+
+  <header class="cliente-vendas__head">
+
+    <h3 class="cliente-vendas__titulo" id="cliente-vendas-titulo">Vendas</h3>
+
+    <app-cliente-drawer-periodo-filtro
+
+      [(inicioYmd)]="d.vendasFiltroInicio"
+
+      [(fimYmd)]="d.vendasFiltroFim"
+
+      (periodoAlterado)="aplicarFiltroDatas()"
+
+    />
+
+  </header>
+
+
+
+  @if (d.carregandoVendasHistorico) {
+
+    <p class="cliente-vendas__hint">A carregar vendas…</p>
+
+  } @else if (d.vendasLinhas.length === 0) {
+
+    <p class="cliente-vendas__hint">Nenhuma venda neste período.</p>
+
+  } @else {
+
+    <div class="drawer-table-card" role="region" aria-label="Histórico de vendas">
+
+      <div class="drawer-table-wrap">
+
+        <table class="drawer-table drawer-table--vendas">
+
+          <colgroup>
+
+            <col class="drawer-table__col-comanda" />
+
+            <col class="drawer-table__col-data" />
+
+            <col class="drawer-table__col-desc-wide" />
+
+            <col class="drawer-table__col-valor" />
+
+            <col class="drawer-table__col-prof" />
+
+          </colgroup>
+
+          <thead>
+
+            <tr>
+
+              <th class="col-comanda" scope="col">Comanda</th>
+
+              <th class="col-data" scope="col">Data</th>
+
+              <th class="col-desc" scope="col">Descrição</th>
+
+              <th class="col-valor" scope="col">Valor</th>
+
+              <th class="col-prof" scope="col">Profissional</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            @for (row of d.vendasLinhas; track row.idAtendimento) {
+
+              <tr>
+
+                <td class="col-comanda">
+
+                  <button
+
+                    type="button"
+
+                    class="drawer-table__link-ticket"
+
+                    (click)="d.visualizarComandaAgendamento(row.idAtendimento)"
+
+                    [attr.aria-label]="
+
+                      'Visualizar comanda ' + rotuloComanda(row.numeroComanda)
+
+                    "
+
+                  >
+
+                    {{ rotuloComanda(row.numeroComanda) }}
+
+                  </button>
+
+                </td>
+
+                <td class="col-data">{{ row.dataExibicao }}</td>
+
+                <td class="col-desc">{{ row.descricao }}</td>
+
+                <td class="col-valor">
+
+                  {{
+
+                    row.valorTotal
+
+                      | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR'
+
+                  }}
+
+                </td>
+
+                <td class="col-prof">{{ row.profissional }}</td>
+
+              </tr>
+
+            }
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <div class="drawer-table-foot" aria-hidden="true"></div>
+
+    </div>
+
+  }
+
+</main>
+

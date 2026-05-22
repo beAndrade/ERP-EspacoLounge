@@ -1,3 +1,5 @@
+@use '../../styles/cliente-drawer-table';
+
 :host {
   display: block;
   width: 100%;
@@ -32,8 +34,6 @@
 .cliente-cashback__titulo {
   margin: 0;
   font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
 }
 
 .cliente-cashback__saldo {
@@ -83,37 +83,12 @@
   color: #6b7280;
 }
 
-.cliente-cashback__table-wrap {
-  width: 100%;
-  overflow-x: auto;
+col.drawer-table__col-mov {
+  width: 14%;
 }
 
-.cliente-cashback__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-
-  th,
-  td {
-    padding: 0.65rem 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #e5e7eb;
-    vertical-align: middle;
-  }
-
-  th {
-    font-weight: 600;
-    color: #6b7280;
-    background: #fafafa;
-  }
-
-  td {
-    color: #1f2937;
-  }
-
-  tbody tr:last-child td {
-    border-bottom: none;
-  }
+col.drawer-table__col-motivo {
+  width: 38%;
 }
 
 .cliente-cashback__badge {

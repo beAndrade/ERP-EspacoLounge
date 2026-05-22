@@ -522,6 +522,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   onSalvoNovoAgendamento(): void {
     this.fecharNovoAgendamento();
+    this.pagina = 1;
     this.carregar();
   }
 
@@ -775,13 +776,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
         ),
       );
     }
-    return list.slice().sort((a, b) => {
-      const pa = this.prioridadeOrdenacaoStatus(a);
-      const pb = this.prioridadeOrdenacaoStatus(b);
-      if (pa !== pb) return pa - pb;
-      const c = a.data.localeCompare(b.data);
-      return c !== 0 ? c : a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
-    });
+    return list.slice().sort((a, b) => this.compararGruposComanda(a, b));
   }
 
   totalFiltrado(): number {
@@ -831,6 +826,22 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (pc === 'atrasado') return 1;
     if (pc === 'em_aberto') return 2;
     return 3;
+  }
+
+  /**
+   * Comandas criadas mais recentemente primeiro (`numero_comanda` maior).
+   * Desempate: prioridade de status, data mais recente, nome.
+   */
+  private compararGruposComanda(a: ComandaGrupo, b: ComandaGrupo): number {
+    const na = a.numeroComanda ?? 0;
+    const nb = b.numeroComanda ?? 0;
+    if (nb !== na) return nb - na;
+    const pa = this.prioridadeOrdenacaoStatus(a);
+    const pb = this.prioridadeOrdenacaoStatus(b);
+    if (pa !== pb) return pa - pb;
+    const c = b.data.localeCompare(a.data);
+    if (c !== 0) return c;
+    return a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
   }
 
   private readonly epsMoeda = 0.005;
@@ -1107,8 +1118,12 @@ export class ComandasComponent implements OnInit, OnDestroy {
         if (ix >= 0) {
           this.grupos[ix] = g;
         } else {
-          this.grupos = [...this.grupos, g];
+          this.grupos.push(g);
         }
+        this.grupos = [...this.grupos].sort((a, b) =>
+          this.compararGruposComanda(a, b),
+        );
+        this.pagina = 1;
         this.comandaQueryAbrir = null;
         this.limparQueryComanda();
         this.abrirDrawerComandaPorGrupo(g);
@@ -1619,10 +1634,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       });
     }
 
-    return grupos.sort((a, b) => {
-      const c = a.data.localeCompare(b.data);
-      return c !== 0 ? c : a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
-    });
+    return grupos.sort((a, b) => this.compararGruposComanda(a, b));
   }
 }
 

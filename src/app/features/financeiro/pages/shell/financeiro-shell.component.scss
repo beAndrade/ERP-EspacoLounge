@@ -263,3 +263,13 @@
     filter: brightness(0.97);
   }
 }
+
+.financeiro-outlet {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  &--layout-proprio {
+    max-width: none;
+  }
+}

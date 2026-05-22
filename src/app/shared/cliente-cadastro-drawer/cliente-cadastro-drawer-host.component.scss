@@ -102,15 +102,16 @@
   flex: 0 0 auto;
   min-height: 90px;
   border-bottom: none;
-  padding: 0 50px 10px 30px;
+  padding: 30px 50px 10px 30px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .cliente-head__title-wrap {
   width: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   padding-right: 60px;
   box-sizing: border-box;
 }
@@ -150,14 +151,15 @@
 
 .cliente-head__title {
   margin: 0;
-  font-size: 24px;
+  padding: 0;
+  font-size: 20px;
   font-weight: 700;
+  line-height: 1.2;
   color: #000000bf;
   letter-spacing: -0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 30px 0 10px;
 }
 
 .cliente-head__close {
@@ -176,7 +178,7 @@
   background: transparent;
   color: #00000073;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: all 0.2s;
 
   &::before {
     content: '×';
@@ -187,12 +189,14 @@
   }
 
   &:hover {
+    border-radius: 6px;
     background: #f4f4f5;
     color: #000000a6;
   }
 
   &:focus-visible {
     outline: none;
+    border-radius: 6px;
     box-shadow: 0 0 0 2px rgba(55, 136, 216, 0.35);
   }
 }
@@ -235,8 +239,29 @@
   &:has(app-cliente-cashback-tab),
   &:has(app-cliente-creditos-tab),
   &:has(app-cliente-debitos-tab),
-  &:has(app-cliente-agendamentos-tab) {
+  &:has(app-cliente-agendamentos-tab),
+  &:has(app-cliente-vendas-tab) {
     grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
+  }
+
+  .drawer-table {
+    th,
+    td {
+      font-size: 14px;
+    }
+
+    th {
+      font-size: 14px;
+      color: #000000bf;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    td {
+      color: #000000bf;
+      font-weight: 500;
+    }
   }
 }
 
@@ -1633,7 +1658,8 @@
   .cliente-body:has(app-cliente-cashback-tab),
   .cliente-body:has(app-cliente-creditos-tab),
   .cliente-body:has(app-cliente-debitos-tab),
-  .cliente-body:has(app-cliente-agendamentos-tab) {
+  .cliente-body:has(app-cliente-agendamentos-tab),
+  .cliente-body:has(app-cliente-vendas-tab) {
     grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
   }
 }

@@ -20,6 +20,7 @@ import {
   ClienteCadastroPayload,
   ClienteCreditoMovimento,
   CreateAtendimentoPayload,
+  FinTransacaoItem,
   MovimentacaoListaItem,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
@@ -213,12 +214,17 @@ export class SheetsApiService {
     dataInicio?: string,
     dataFim?: string,
     idAtendimento?: string,
+    /** Quando true, só pedidos com `atendimentos.inicio` (agenda com horário). */
+    somenteComHorario?: boolean,
   ): Observable<AtendimentoListaItem[]> {
     let params = new HttpParams();
     if (dataInicio) params = params.set('dataInicio', dataInicio);
     if (dataFim) params = params.set('dataFim', dataFim);
     if (idAtendimento?.trim()) {
       params = params.set('idAtendimento', idAtendimento.trim());
+    }
+    if (somenteComHorario) {
+      params = params.set('somenteComHorario', '1');
     }
     return this.http
       .get<ApiResponse<{ items: Record<string, unknown>[] }>>(
@@ -262,6 +268,38 @@ export class SheetsApiService {
         map((r) => this.unwrap(r)),
         map((d) => d.items),
       );
+  }
+
+  listTransacoesFinanceiras(params: {
+    dataInicio: string;
+    dataFim: string;
+  }): Observable<FinTransacaoItem[]> {
+    const hp = new HttpParams()
+      .set('dataInicio', params.dataInicio)
+      .set('dataFim', params.dataFim);
+    return this.http
+      .get<ApiResponse<{ items: FinTransacaoItem[] }>>(
+        this.url('/api/financeiro/transacoes'),
+        { params: hp },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  createMovimentacao(payload: {
+    data_mov: string;
+    natureza: 'receita' | 'despesa';
+    valor: number;
+    categoria_id: number;
+    descricao?: string;
+    metodo_pagamento?: string;
+    id_atendimento?: string;
+  }): Observable<{ id: number }> {
+    return this.http
+      .post<ApiResponse<{ id: number }>>(this.url('/api/movimentacoes'), payload)
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   listMovimentacoes(params: {
@@ -768,7 +806,10 @@ export class SheetsApiService {
       inicio,
       fim,
       nomeCliente: String(raw['Nome Cliente'] ?? '').trim(),
-      idCliente: String(raw['ID Cliente'] ?? '').trim() || null,
+      idCliente:
+        String(
+          raw['ID Cliente'] ?? raw['id_cliente'] ?? raw['idCliente'] ?? '',
+        ).trim() || null,
       tipo: tipo ? tipo : null,
       produtoNome: produto ? produto : null,
       servicosRef: servicos || null,

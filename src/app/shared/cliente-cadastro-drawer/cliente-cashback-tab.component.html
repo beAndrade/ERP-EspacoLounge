@@ -57,35 +57,46 @@
   } @else if (d.cashbackMovimentos.length === 0) {
     <p class="cliente-cashback__hint">Nenhuma movimentação de cashback registada.</p>
   } @else {
-    <div class="cliente-cashback__table-wrap">
-      <table class="cliente-cashback__table">
-        <thead>
-          <tr>
-            <th scope="col">Data</th>
-            <th scope="col">Valor</th>
-            <th scope="col">Movimentação</th>
-            <th scope="col">Motivo</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (m of d.cashbackMovimentos; track m.id) {
+    <div class="drawer-table-card" role="region" aria-label="Histórico de cashback">
+      <div class="drawer-table-wrap">
+        <table class="drawer-table drawer-table--cashback">
+          <colgroup>
+            <col class="drawer-table__col-data" />
+            <col class="drawer-table__col-valor" />
+            <col class="drawer-table__col-mov" />
+            <col class="drawer-table__col-motivo" />
+          </colgroup>
+          <thead>
             <tr>
-              <td>{{ formatarData(m.data) }}</td>
-              <td>{{ m.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
-              <td>
-                <span
-                  class="cliente-cashback__badge"
-                  [class.cliente-cashback__badge--entrada]="m.tipo === 'entrada'"
-                  [class.cliente-cashback__badge--saida]="m.tipo === 'saida'"
-                >
-                  {{ m.tipo === 'entrada' ? 'Entrada' : 'Saída' }}
-                </span>
-              </td>
-              <td>{{ m.motivo.trim() || '—' }}</td>
+              <th class="col-data" scope="col">Data</th>
+              <th class="col-valor" scope="col">Valor</th>
+              <th class="col-mov" scope="col">Movimentação</th>
+              <th class="col-motivo" scope="col">Motivo</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (m of d.cashbackMovimentos; track m.id) {
+              <tr>
+                <td class="col-data">{{ formatarData(m.data) }}</td>
+                <td class="col-valor">
+                  {{ m.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                </td>
+                <td class="col-mov">
+                  <span
+                    class="cliente-cashback__badge"
+                    [class.cliente-cashback__badge--entrada]="m.tipo === 'entrada'"
+                    [class.cliente-cashback__badge--saida]="m.tipo === 'saida'"
+                  >
+                    {{ m.tipo === 'entrada' ? 'Entrada' : 'Saída' }}
+                  </span>
+                </td>
+                <td class="col-motivo">{{ m.motivo.trim() || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="drawer-table-foot" aria-hidden="true"></div>
     </div>
   }
 </main>

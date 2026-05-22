@@ -4305,20 +4305,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Anexa `inicio`/`fim` ao primeiro payload do pedido quando o utilizador
-   * define horário inicial (por defeito 30 min = slot do hub).
-   * Mega/Pacote: use `duracaoSlotMinutos` = duração da 1.ª etapa em Regras Mega.
+   * Anexa `inicio`/`fim` ao payload quando o utilizador define horário inicial
+   * (Serviço usa `slotsSequenciaisParaPayloadServico`; demais tipos usam isto).
+   * Mega/Pacote: `duracaoSlotMinutos` = duração da 1.ª etapa em Regras Mega.
    * `slotAgenda` legado (se algum dia for preenchido) tem prioridade.
    */
   private mergeSlotOuHoraInicial(
     p: CreateAtendimentoPayload,
-    usarPrimeiroBloco: boolean,
+    _usarPrimeiroBloco: boolean,
     dataYmd: string,
     horaIni: string,
     duracaoSlotMinutos?: number,
   ): CreateAtendimentoPayload {
     if (this.isFluxoSomenteComanda()) return p;
-    if (!usarPrimeiroBloco) return p;
     if (this.slotAgenda) {
       return {
         ...p,

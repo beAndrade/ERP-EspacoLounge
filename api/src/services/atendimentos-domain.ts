@@ -1289,21 +1289,28 @@ async function createAtendimentoServico(
     );
     let inicioLinha: string | null = null;
     let fimLinha: string | null = null;
+    const slotPedido = parseInicioFimOpcional(
+      rec['inicio'],
+      rec['fim'],
+      durForLine,
+    );
     if (primeira) {
-      const slot = parseInicioFimOpcional(
-        rec['inicio'],
-        rec['fim'],
-        durForLine,
-      );
-      inicioLinha = slot.inicio;
+      inicioLinha = slotPedido.inicio;
       if (inicioLinha) {
         const pIni = parseSqlLocalDateTime(inicioLinha);
         fimLinha = pIni
           ? formatSqlLocalDateTime(addMinutesToParts(pIni, durForLine))
-          : slot.fim;
+          : slotPedido.fim;
       } else {
-        fimLinha = slot.fim;
+        fimLinha = slotPedido.fim;
       }
+    } else if (slotPedido.inicio) {
+      /** Mesmo slot do pedido em todas as linhas Serviço (ex.: vários itens no mesmo agendamento). */
+      inicioLinha = slotPedido.inicio;
+      const pIni = parseSqlLocalDateTime(inicioLinha);
+      fimLinha = pIni
+        ? formatSqlLocalDateTime(addMinutesToParts(pIni, durForLine))
+        : slotPedido.fim;
     }
 
     /**
@@ -1744,7 +1751,6 @@ async function createAtendimentoProduto(
   const agCartao = readAgendaCartaoMeta(p);
 
   let linhas = 0;
-  let primeira = true;
   for (const it of itensNorm) {
     const rowP = await readProdutoRowPorId(db, it.produtoId);
     const nomeProd = String(rowP.produto || '').trim();
@@ -1801,8 +1807,8 @@ async function createAtendimentoProduto(
       quantidade: qtd,
       desconto: textoDescontoProd,
       descricao: obs,
-      inicio: primeira ? slot.inicio : null,
-      fim: primeira ? slot.fim : null,
+      inicio: slot.inicio,
+      fim: slot.fim,
       ...agCartao,
     });
     await insertPivotProduto(db, {
@@ -1814,7 +1820,6 @@ async function createAtendimentoProduto(
       desconto: descontoPivotProd,
     });
     linhas += 1;
-    primeira = false;
   }
 
   return {
@@ -1941,6 +1946,7 @@ export async function listAtendimentosRaw(
   dataInicio?: string,
   dataFim?: string,
   idAtendimento?: string,
+  somenteComHorario = false,
 ): Promise<Record<string, unknown>[]> {
   const rows = await db
     .select()
@@ -1949,7 +1955,7 @@ export async function listAtendimentosRaw(
 
   const idF = String(idAtendimento || '').trim();
 
-  const filtered = rows.filter((a) => {
+  let filtered = rows.filter((a) => {
     if (idF && String(a.idAtendimento).trim() !== idF) return false;
     const ymd = ymdFromAtendimentoDate(a.data as string | Date | null);
     if (idF) return true;
@@ -1959,6 +1965,19 @@ export async function listAtendimentosRaw(
     if (dataFim && ymd > dataFim) return false;
     return true;
   });
+
+  if (somenteComHorario && !idF) {
+    const idsComHorario = new Set<string>();
+    for (const a of filtered) {
+      const ini = a.inicio;
+      if (ini != null && String(ini).trim() !== '') {
+        idsComHorario.add(String(a.idAtendimento).trim());
+      }
+    }
+    filtered = filtered.filter((a) =>
+      idsComHorario.has(String(a.idAtendimento).trim()),
+    );
+  }
 
   const profIds = Array.from(
     new Set(

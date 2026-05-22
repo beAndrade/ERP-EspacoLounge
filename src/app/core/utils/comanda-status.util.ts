@@ -290,15 +290,11 @@ export function contagensSidebarParaCliente(
   let comandasPendente = 0;
   let pagamentosAtrasados = 0;
   for (const g of grupos) {
-    const l0 = g.linhas[0];
+    if (comandaQuitadaNasCifrasGrupo(g)) continue;
     if (statusComandaColunaFromGrupo(g) === 'pendente') {
       comandasPendente += 1;
     }
-    if (
-      cobrancaFinalizadaItem(l0) &&
-      !comandaQuitadaNasCifrasGrupo(g) &&
-      pagamentoEmAtrasoParaExibicao(l0, g.data)
-    ) {
+    if (pagamentoColunaFromGrupo(g) === 'atrasado') {
       pagamentosAtrasados += 1;
     }
   }
@@ -359,9 +355,25 @@ function rotuloComandaDebito(
 /**
  * Agrupa atendimentos do cliente em linhas para a aba «Débitos» do drawer.
  */
+function grupoPertenceAoCliente(
+  g: ComandaGrupoResumo,
+  clienteId: string,
+  nomeClienteRef?: string,
+): boolean {
+  const cid = String(clienteId ?? '').trim();
+  if (!cid) return false;
+  const idGrupo = idClienteDoGrupo(g);
+  if (idGrupo) return idGrupo === cid;
+  const nomeRef = String(nomeClienteRef ?? '').trim().toLowerCase();
+  if (!nomeRef) return false;
+  const nomeGrupo = String(g.linhas[0]?.nomeCliente ?? '').trim().toLowerCase();
+  return nomeGrupo.length > 0 && nomeGrupo === nomeRef;
+}
+
 export function painelDebitosClienteFromAtendimentos(
   clienteId: string,
   items: AtendimentoListaItem[],
+  opts?: { nomeCliente?: string },
 ): {
   debitos: ClienteDebitoLinhaUi[];
   comandasAberto: ClienteComandaAbertaLinhaUi[];
@@ -371,8 +383,8 @@ export function painelDebitosClienteFromAtendimentos(
     return { debitos: [], comandasAberto: [] };
   }
 
-  const grupos = agruparAtendimentosEmComandas(items).filter(
-    (g) => idClienteDoGrupo(g) === cid,
+  const grupos = agruparAtendimentosEmComandas(items).filter((g) =>
+    grupoPertenceAoCliente(g, cid, opts?.nomeCliente),
   );
 
   const debitos: ClienteDebitoLinhaUi[] = [];
@@ -386,26 +398,25 @@ export function painelDebitosClienteFromAtendimentos(
     const numero = l0.numeroComanda ?? null;
     const nome = String(l0.nomeCliente ?? '').trim();
 
-    if (statusComandaColunaFromGrupo(g) === 'pendente') {
-      comandasAberto.push({
-        idAtendimento: idAt,
-        numeroComanda: numero,
-        dataYmd: g.data,
-        valorReais: valorMonetarioGrupoCliente(g),
-      });
-      continue;
-    }
+    if (comandaQuitadaNasCifrasGrupo(g)) continue;
 
-    if (
-      cobrancaFinalizadaItem(l0) &&
-      !comandaQuitadaNasCifrasGrupo(g) &&
-      pagamentoEmAtrasoParaExibicao(l0, g.data)
-    ) {
+    /** Mesma regra da coluna Pagamento em Comandas (inclui pendente com data vencida). */
+    if (pagamentoColunaFromGrupo(g) === 'atrasado') {
       debitos.push({
         idAtendimento: idAt,
         numeroComanda: numero,
         descricao: rotuloComandaDebito(numero, nome),
         vencimentoYmd: vencimentoDebitoGrupo(g),
+        valorReais: valorMonetarioGrupoCliente(g),
+      });
+      continue;
+    }
+
+    if (statusComandaColunaFromGrupo(g) === 'pendente') {
+      comandasAberto.push({
+        idAtendimento: idAt,
+        numeroComanda: numero,
+        dataYmd: g.data,
         valorReais: valorMonetarioGrupoCliente(g),
       });
     }

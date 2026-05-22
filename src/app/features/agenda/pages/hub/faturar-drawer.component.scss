@@ -2,6 +2,8 @@
  * Sub-drawer Faturar — abre por cima do drawer de Comanda.
  * Reutiliza variáveis do drawer pai (`--drawer-field-h`, `--drawer-field-stroke`).
  */
+@use '../../../../styles/badge-atraso-icon' as badge-atraso;
+
 :host {
   display: flex;
   flex: 1 1 auto;
@@ -725,6 +727,7 @@ input[type='number'].fat-field__input {
   }
 
   &.fat-pag-badge--atraso {
+    @include badge-atraso.badge-atraso-com-icone-relogio;
     color: var(--drawer-badge-atraso-fg, #cf1322);
     background: var(--drawer-badge-atraso-bg, #fff1f0);
     border: 1px solid var(--drawer-badge-atraso-border, #ffa39e);

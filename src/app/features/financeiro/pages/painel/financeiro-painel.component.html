@@ -1,0 +1,302 @@
+<div class="fin-painel">
+  <header class="fin-painel__page-head">
+    <h1 class="fin-painel__title">Painel</h1>
+  </header>
+
+  <div class="fin-painel__layout">
+    <aside class="fin-painel__col-side" aria-label="Resumo e contas">
+      <section class="fin-painel__block" aria-labelledby="fin-painel-resumo-title">
+        <h2 id="fin-painel-resumo-title" class="fin-painel__block-title">Resumo</h2>
+        <ul class="fin-painel__resumo-list">
+          @for (card of resumoHoje; track card.id) {
+            <li>
+              <div
+                class="fin-painel__resumo-card"
+                [class.fin-painel__resumo-card--receber]="card.tema === 'receber'"
+                [class.fin-painel__resumo-card--pagar]="card.tema === 'pagar'"
+              >
+                <span class="fin-painel__card-arrow" aria-hidden="true">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </span>
+                <span class="fin-painel__card-label">{{ card.titulo }}</span>
+                <strong class="fin-painel__card-value">{{
+                  card.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}</strong>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="fin-painel__block" aria-labelledby="fin-painel-contas-title">
+        <h2 id="fin-painel-contas-title" class="fin-painel__block-title">Contas</h2>
+        <ul class="fin-painel__contas-list">
+          @for (conta of contas; track conta.id) {
+            <li>
+              <div class="fin-painel__conta-card">
+                <span class="fin-painel__card-arrow" aria-hidden="true">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </span>
+                <span class="fin-painel__card-label">{{ conta.titulo }}</span>
+                <strong class="fin-painel__card-value">{{
+                  conta.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}</strong>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+    </aside>
+
+    <div class="fin-painel__col-main">
+      <section
+        class="fin-painel__block fin-painel__block--totais"
+        aria-labelledby="fin-painel-totais-title"
+      >
+        <div class="fin-painel__block-head">
+          <h2 id="fin-painel-totais-title" class="fin-painel__block-title">Totais</h2>
+          <button
+            type="button"
+            class="fin-painel__periodo"
+            aria-label="Período dos totais"
+            disabled
+          >
+            <span class="fin-painel__periodo-text">{{
+              periodoLabel(periodoTotaisInicio(), periodoTotaisFim())
+            }}</span>
+            <span class="fin-painel__periodo-ico" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </span>
+          </button>
+        </div>
+        <ul class="fin-painel__totais-grid">
+          @for (card of totais; track card.id) {
+            <li>
+              <div
+                class="fin-painel__metric-card"
+                [class.fin-painel__metric-card--recebidos]="card.tema === 'recebidos'"
+                [class.fin-painel__metric-card--a-receber]="card.tema === 'a-receber'"
+                [class.fin-painel__metric-card--pagos]="card.tema === 'pagos'"
+                [class.fin-painel__metric-card--a-pagar]="card.tema === 'a-pagar'"
+              >
+                <span class="fin-painel__card-arrow" aria-hidden="true">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </span>
+                <span class="fin-painel__card-label">{{ card.titulo }}</span>
+                <strong class="fin-painel__card-value">{{
+                  card.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}</strong>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section
+        class="fin-painel__block fin-painel__block--chart"
+        aria-labelledby="fin-painel-fluxo-title"
+      >
+        <div class="fin-painel__block-head">
+          <h2 id="fin-painel-fluxo-title" class="fin-painel__block-title">Fluxo de caixa</h2>
+          <button
+            type="button"
+            class="fin-painel__periodo"
+            aria-label="Período do fluxo de caixa"
+            disabled
+          >
+            <span class="fin-painel__periodo-text">{{
+              periodoLabel(periodoFluxoInicio(), periodoFluxoFim())
+            }}</span>
+            <span class="fin-painel__periodo-ico" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </span>
+          </button>
+        </div>
+        <div
+          class="fin-painel__chart fin-painel__chart--fluxo"
+          role="img"
+          aria-label="Gráfico de fluxo de caixa (placeholder)"
+        >
+          <div class="fin-painel__chart-y" aria-hidden="true">
+            <span>600</span>
+            <span>450</span>
+            <span>300</span>
+            <span>150</span>
+            <span>0</span>
+          </div>
+          <div class="fin-painel__chart-plot">
+            <div class="fin-painel__chart-bars">
+              @for (bar of fluxoBarras; track bar.label) {
+                <div class="fin-painel__chart-col">
+                  <div
+                    class="fin-painel__chart-bar fin-painel__chart-bar--entrada"
+                    [style.height.%]="bar.entrada"
+                  ></div>
+                  <div
+                    class="fin-painel__chart-line-dot"
+                    [style.bottom.%]="bar.saldoPct"
+                  ></div>
+                </div>
+              }
+            </div>
+            <svg
+              class="fin-painel__chart-line"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <polyline
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                vector-effect="non-scaling-stroke"
+                points="6,62 18,48 30,52 42,58 54,70 66,74 78,78 90,82"
+              />
+            </svg>
+            <ul class="fin-painel__chart-x" aria-hidden="true">
+              @for (bar of fluxoBarras; track bar.label) {
+                <li>{{ bar.label }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+        <ul class="fin-painel__chart-legend" aria-hidden="true">
+          <li>
+            <span class="fin-painel__legend-sq fin-painel__legend-sq--entrada"></span> Entrada
+          </li>
+          <li>
+            <span class="fin-painel__legend-sq fin-painel__legend-sq--saida"></span> Saída
+          </li>
+          <li><span class="fin-painel__legend-line"></span> Saldo acumulado</li>
+        </ul>
+      </section>
+
+      <section
+        class="fin-painel__block fin-painel__block--chart"
+        aria-labelledby="fin-painel-vendas-title"
+      >
+        <div class="fin-painel__block-head">
+          <h2 id="fin-painel-vendas-title" class="fin-painel__block-title">Vendas por dia</h2>
+          <button
+            type="button"
+            class="fin-painel__periodo"
+            aria-label="Período de vendas por dia"
+            disabled
+          >
+            <span class="fin-painel__periodo-text">{{
+              periodoLabel(periodoVendasInicio(), periodoVendasFim())
+            }}</span>
+            <span class="fin-painel__periodo-ico" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </span>
+          </button>
+        </div>
+        <div
+          class="fin-painel__chart fin-painel__chart--vendas"
+          role="img"
+          aria-label="Gráfico de vendas por dia (placeholder)"
+        >
+          <div class="fin-painel__chart-y" aria-hidden="true">
+            <span>240</span>
+            <span>180</span>
+            <span>120</span>
+            <span>60</span>
+            <span>0</span>
+          </div>
+          <div class="fin-painel__chart-plot">
+            <div class="fin-painel__chart-bars fin-painel__chart-bars--vendas">
+              @for (bar of vendasBarras; track bar.label) {
+                <div class="fin-painel__chart-col">
+                  <div
+                    class="fin-painel__chart-bar fin-painel__chart-bar--vendas"
+                    [style.height.%]="(bar.entrada / 240) * 100"
+                  ></div>
+                </div>
+              }
+            </div>
+            <ul class="fin-painel__chart-x" aria-hidden="true">
+              @for (bar of vendasBarras; track bar.label) {
+                <li>{{ bar.label }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
