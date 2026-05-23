@@ -8,6 +8,8 @@ export interface FinTransacaoLinhaUi {
   origem: string;
   formaPagamento: string;
   categoria: string;
+  categoriaId?: number;
+  descricao?: string | null;
   valorBruto: number;
   valorLiquido: number;
   conta: 'Caixa' | 'Banco';
@@ -15,6 +17,9 @@ export interface FinTransacaoLinhaUi {
   pagoToggle: boolean;
   linhaReceita?: boolean;
   idAtendimento?: string | null;
+  clienteId?: string | null;
+  numeroComanda?: number | null;
+  comandaPagamentoId?: number | null;
   movimentacaoId?: number | null;
   origemApi?: string;
   editavel?: boolean;
@@ -71,6 +76,8 @@ export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLin
     origem: String(item.origem_label ?? '').trim() || '—',
     formaPagamento: forma,
     categoria: String(item.categoria_nome ?? '').trim() || '—',
+    categoriaId: item.categoria_id,
+    descricao: item.descricao,
     valorBruto: v,
     valorLiquido: v,
     conta: contaFromMetodo(item.metodo_pagamento),
@@ -78,7 +85,10 @@ export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLin
     pagoToggle: item.status === 'pago',
     linhaReceita: item.natureza === 'receita',
     idAtendimento: item.id_atendimento,
+    clienteId: item.id_cliente,
+    numeroComanda: item.numero_comanda,
     movimentacaoId: item.movimentacao_id,
+    comandaPagamentoId: item.comanda_pagamento_id,
     origemApi: item.origem,
     editavel: item.editavel,
     tipoLinha: item.tipo,

@@ -73,8 +73,20 @@
   border-radius: 6px;
   background: transparent;
   color: #6b7280;
-  cursor: not-allowed;
-  opacity: 0.55;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #7a88ff;
+    outline-offset: 2px;
+  }
 }
 
 .cliente-creditos__hint {

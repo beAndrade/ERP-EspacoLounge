@@ -20,6 +20,7 @@ import {
   atendimentosPedido,
   clientes,
   comandaPagamentos,
+  movimentacoes,
   folha,
   pacotes,
   produtos,
@@ -43,6 +44,7 @@ import {
 } from './comanda-pagamentos-domain';
 import { resolverPrecoUnitarioProduto } from './produtos-preco';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
+import { registrarCreditoMovimentoClienteEmTx } from './clientes-credito-movimentos';
 
 type RecorrenciaCriacaoOpcional = {
   id_recorrencia?: string;
@@ -2319,6 +2321,100 @@ export async function excluirAtendimentoPorIdAtendimento(
         .delete(atendimentosPedido)
         .where(eq(atendimentosPedido.idAtendimento, id));
     }
+    return rows.length;
+  });
+}
+
+export type ModoExclusaoComanda = 'somente_comanda' | 'completo';
+
+function ymdHojeLocal(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function pagamentoEhCreditoCliente(obs: string | null | undefined): boolean {
+  const o = String(obs ?? '').toLowerCase();
+  return o.includes('crédito') || o.includes('credito');
+}
+
+/**
+ * - `completo`: remove linhas de agenda, pedido e pagamentos.
+ * - `somente_comanda`: remove pedido/pagamentos/movimentações e repõe crédito usado;
+ *   mantém `atendimentos` na grelha (cobrança reposta a «sem comanda»).
+ */
+export async function excluirComandaPorIdAtendimento(
+  db: Db,
+  idAtendimento: string,
+  modo: ModoExclusaoComanda,
+): Promise<number> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+  if (modo === 'completo') {
+    return excluirAtendimentoPorIdAtendimento(db, id);
+  }
+
+  return await db.transaction(async (tx) => {
+    const [ped] = await tx
+      .select({ idCliente: atendimentosPedido.idCliente })
+      .from(atendimentosPedido)
+      .where(eq(atendimentosPedido.idAtendimento, id))
+      .limit(1);
+
+    const pagRows = await tx
+      .select({
+        valor: comandaPagamentos.valor,
+        metodo: comandaPagamentos.metodo,
+        observacao: comandaPagamentos.observacao,
+        dataPagamento: comandaPagamentos.dataPagamento,
+      })
+      .from(comandaPagamentos)
+      .where(eq(comandaPagamentos.idAtendimento, id));
+
+    const cid = String(ped?.idCliente ?? '').trim();
+    if (cid) {
+      for (const p of pagRows) {
+        if (String(p.metodo) !== 'outros') continue;
+        if (!pagamentoEhCreditoCliente(p.observacao)) continue;
+        const v =
+          Math.round((parseFloat(String(p.valor ?? '0')) || 0) * 100) / 100;
+        if (v <= 0) continue;
+        await tx
+          .update(clientes)
+          .set({
+            creditoSaldo: sql`${clientes.creditoSaldo}::numeric + ${v.toFixed(2)}::numeric`,
+          })
+          .where(eq(clientes.idCliente, cid));
+        const dataMov = String(p.dataPagamento ?? '').trim().slice(0, 10);
+        await registrarCreditoMovimentoClienteEmTx(tx, cid, {
+          idAtendimento: id,
+          dataMov: /^\d{4}-\d{2}-\d{2}$/.test(dataMov) ? dataMov : ymdHojeLocal(),
+          valor: v,
+          tipo: 'entrada',
+          motivo: 'Estorno — exclusão somente da comanda',
+        });
+      }
+    }
+
+    await tx
+      .delete(movimentacoes)
+      .where(eq(movimentacoes.idAtendimento, id));
+    await tx
+      .delete(atendimentoItens)
+      .where(eq(atendimentoItens.idAtendimento, id));
+    await tx
+      .delete(atendimentosPedido)
+      .where(eq(atendimentosPedido.idAtendimento, id));
+
+    const rows = await tx
+      .update(atendimentos)
+      .set({
+        cobrancaStatus: null,
+        pagamentoStatus: null,
+        pagamentoMetodo: null,
+        desconto: null,
+      })
+      .where(eq(atendimentos.idAtendimento, id))
+      .returning({ id: atendimentos.id });
+
     return rows.length;
   });
 }

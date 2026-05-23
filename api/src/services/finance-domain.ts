@@ -286,6 +286,7 @@ export interface FinTransacaoItemApi {
   origem: string;
   numero_comanda: number | null;
   nome_cliente: string | null;
+  id_cliente: string | null;
   subtitulo: string;
   origem_label: string;
   movimentacao_id: number | null;
@@ -329,6 +330,58 @@ function subtituloTransacao(
   const d = String(descricao ?? '').trim();
   if (d) return d;
   return tipo === 'pendencia' ? 'Prestação pendente' : '—';
+}
+
+async function mapaPagamentoIdPorMovimentacaoId(
+  db: Db,
+  movIds: number[],
+): Promise<Map<number, number>> {
+  const uniq = [...new Set(movIds.filter((id) => Number.isFinite(id) && id > 0))];
+  const map = new Map<number, number>();
+  if (uniq.length === 0) return map;
+
+  const rows = await db
+    .select({
+      movId: comandaPagamentos.movimentacaoId,
+      pagId: comandaPagamentos.id,
+    })
+    .from(comandaPagamentos)
+    .where(inArray(comandaPagamentos.movimentacaoId, uniq));
+
+  for (const r of rows) {
+    const mid = r.movId;
+    const pid = r.pagId;
+    if (mid != null && pid > 0 && !map.has(mid)) {
+      map.set(mid, pid);
+    }
+  }
+  return map;
+}
+
+async function mapaIdClientePorAtendimento(
+  db: Db,
+  ids: string[],
+): Promise<Map<string, string>> {
+  const uniq = [...new Set(ids.map((x) => String(x || '').trim()).filter(Boolean))];
+  const map = new Map<string, string>();
+  if (uniq.length === 0) return map;
+
+  const linhas = await db
+    .select({
+      idAtendimento: atendimentos.idAtendimento,
+      idCliente: atendimentos.idCliente,
+    })
+    .from(atendimentos)
+    .where(inArray(atendimentos.idAtendimento, uniq))
+    .orderBy(asc(atendimentos.id));
+
+  for (const r of linhas) {
+    const id = String(r.idAtendimento || '').trim();
+    const cid = String(r.idCliente || '').trim();
+    if (!id || !cid || map.has(id)) continue;
+    map.set(id, cid);
+  }
+  return map;
 }
 
 async function mapaNomeClientePorAtendimento(
@@ -450,9 +503,14 @@ export async function listTransacoesFinanceirasApi(
     ...pendRows.map((r) => r.id_atendimento),
   ].filter((x): x is string => x != null && String(x).trim() !== '');
 
-  const [nomes, numeros] = await Promise.all([
+  const [nomes, numeros, clientes, pagPorMov] = await Promise.all([
     mapaNomeClientePorAtendimento(db, idsAt),
     mapaNumeroComandaPorAtendimento(db, idsAt),
+    mapaIdClientePorAtendimento(db, idsAt),
+    mapaPagamentoIdPorMovimentacaoId(
+      db,
+      movRows.map((r) => r.id),
+    ),
   ]);
 
   const items: FinTransacaoItemApi[] = [];
@@ -461,6 +519,7 @@ export async function listTransacoesFinanceirasApi(
     const idAt = r.id_atendimento ? String(r.id_atendimento).trim() : '';
     const numero = idAt ? (numeros.get(idAt) ?? null) : null;
     const nomeCli = idAt ? (nomes.get(idAt) ?? null) : null;
+    const idCli = idAt ? (clientes.get(idAt) ?? null) : null;
     const catNome = String(r.categoria_nome ?? '').trim() || '—';
     items.push({
       tipo: 'movimentacao',
@@ -476,10 +535,11 @@ export async function listTransacoesFinanceirasApi(
       origem: r.origem,
       numero_comanda: numero,
       nome_cliente: nomeCli,
+      id_cliente: idCli,
       subtitulo: subtituloTransacao(numero, nomeCli ?? '', r.descricao, 'movimentacao'),
       origem_label: rotuloOrigemApi(r.origem, numero),
       movimentacao_id: r.id,
-      comanda_pagamento_id: null,
+      comanda_pagamento_id: pagPorMov.get(r.id) ?? null,
       status: 'pago',
       editavel: movimentacaoEditavel(r.origem),
     });
@@ -489,6 +549,7 @@ export async function listTransacoesFinanceirasApi(
     const idAt = String(r.id_atendimento || '').trim();
     const numero = numeros.get(idAt) ?? null;
     const nomeCli = nomes.get(idAt) ?? null;
+    const idCli = clientes.get(idAt) ?? null;
     const forma = String(r.metodo_rotulo ?? '').trim() || 'Pendente';
     items.push({
       tipo: 'pendencia',
@@ -504,6 +565,7 @@ export async function listTransacoesFinanceirasApi(
       origem: 'comanda_pendente',
       numero_comanda: numero,
       nome_cliente: nomeCli,
+      id_cliente: idCli,
       subtitulo: subtituloTransacao(numero, nomeCli ?? '', null, 'pendencia'),
       origem_label: rotuloOrigemApi('comanda_pagamento', numero),
       movimentacao_id: null,

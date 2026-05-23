@@ -51,6 +51,20 @@ export interface ClienteCreditoMovimento {
   motivo: string;
 }
 
+/** Body de `POST /api/clientes/:id/credito-movimentos`. */
+export type CriarClienteCreditoMovimentoPayload = {
+  valor: number;
+  tipo: 'entrada' | 'saida' | 'adicionar' | 'retirar';
+  motivo?: string;
+  gerar_movimentacao_financeira?: boolean;
+};
+
+/** Resposta de `POST /api/clientes/:id/credito-movimentos`. */
+export type CriarClienteCreditoMovimentoResponse = {
+  saldo: number;
+  item: ClienteCreditoMovimento;
+};
+
 /** Body de `POST/PATCH /api/clientes`. */
 export type ClienteCadastroPayload = {
   nome: string;
@@ -355,6 +369,8 @@ export interface FinTransacaoItem {
   origem: string;
   numero_comanda: number | null;
   nome_cliente: string | null;
+  /** `clientes.id_cliente` quando há `id_atendimento`. */
+  id_cliente: string | null;
   subtitulo: string;
   origem_label: string;
   movimentacao_id: number | null;

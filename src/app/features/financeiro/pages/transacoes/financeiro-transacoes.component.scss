@@ -1,6 +1,7 @@
 @use '../../../../styles/list-page-shell';
 @use '../../../../styles/cliente-drawer-table';
 @use '../../../../styles/badge-atraso-icon' as badge-atraso;
+@use '../../../../styles/drawer-stack';
 
 :host {
   display: block;
@@ -202,9 +203,14 @@
   }
 }
 
+.fin-transacoes-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
 .fin-transacoes-table thead th {
   box-sizing: border-box;
-  height: 47.56px;
+  height: 69px;
   padding-top: 0;
   padding-bottom: 0;
   color: rgba(0, 0, 0, 0.75);
@@ -218,6 +224,13 @@
 .fin-transacoes-table thead th,
 .fin-transacoes-table tbody td {
   position: relative;
+}
+
+.fin-transacoes-table tbody td {
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .fin-transacoes-table thead th + th::before {
@@ -251,7 +264,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  height: 47.56px;
+  height: 69px;
   box-sizing: border-box;
   padding: 0 8px;
   margin: 0;
@@ -287,8 +300,8 @@
 
 .fin-trans-th-sort__tri {
   display: block;
-  color: #d4d4d8;
-  opacity: 0.4;
+  color: #52525b;
+  opacity: 0.85;
   transform: scale(0.92);
   transform-origin: center;
   transition:
@@ -351,37 +364,53 @@
   }
 }
 
+/* Colunas de largura fixa (escalam com a viewport). */
 .fin-transacoes-table__col-check {
-  width: 32px;
+  width: 40px;
 }
 .fin-transacoes-table__col-data {
-  width: 96px;
-}
-.fin-transacoes-table__col-titular {
-  width: 22%;
+  width: clamp(88px, 7vw, 108px);
 }
 .fin-transacoes-table__col-origem {
-  width: 72px;
-}
-.fin-transacoes-table__col-forma,
-.fin-transacoes-table__col-cat {
-  width: 11%;
+  width: clamp(64px, 5.5vw, 92px);
 }
 .fin-transacoes-table__col-bruto,
 .fin-transacoes-table__col-liq {
-  width: 10%;
+  width: clamp(112px, 9vw, 142px);
 }
 .fin-transacoes-table__col-status {
   width: 100px;
 }
 .fin-transacoes-table__col-pago {
-  width: 56px;
+  width: clamp(48px, 4vw, 64px);
 }
 .fin-transacoes-table__col-acoes {
-  width: 72px;
+  width: clamp(72px, 6vw, 88px);
 }
-.fin-transacoes-table__col-config {
+
+/* Titular (maior) + forma/categoria (iguais entre si, flexíveis). */
+.fin-transacoes-table__col-titular {
+  width: 40%;
+}
+.fin-transacoes-table__col-forma,
+.fin-transacoes-table__col-cat {
+  width: 15%;
+}
+
+.fin-transacoes-table thead th.col-check,
+.fin-transacoes-table tbody td.col-check {
   width: 40px;
+  max-width: 40px;
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align: center;
+}
+
+.fin-transacoes-table tbody td.col-titular,
+.fin-transacoes-table tbody td.col-forma,
+.fin-transacoes-table tbody td.col-cat {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fin-transacoes-table {
@@ -404,23 +433,47 @@
   background: #fafafa;
 }
 
-.fin-transacoes__row--receita > td {
-  background: #f0f9f4;
+.fin-transacoes-table.list-table
+  tbody
+  tr.fin-transacoes__row--receita
+  > td:not(.table-body__busy):not(.table-body__empty) {
+  background: rgba(222, 243, 222, 0.6);
 }
 
-.fin-transacoes__row--receita > td.col-data {
-  background: #f0f3f0;
+.fin-transacoes-table.list-table
+  tbody
+  tr.fin-transacoes__row--receita:hover
+  > td:not(.table-body__busy):not(.table-body__empty) {
+  background: rgba(222, 243, 222, 0.6);
 }
 
-.fin-transacoes__row--receita:hover > td,
-.fin-transacoes__row--receita.list-table__row--selected > td {
-  background: #e8f5ec;
+.fin-transacoes-table.list-table
+  tbody
+  tr.fin-transacoes__row--receita.list-table__row--selected
+  > td:not(.table-body__busy):not(.table-body__empty) {
+  background: #f0f3ff;
 }
 
 .fin-transacoes__titular {
   display: block;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 13.3333px;
   color: var(--color-primary, #505afb);
+
+  &--btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    line-height: inherit;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .fin-transacoes__sub {
@@ -442,46 +495,355 @@
   margin-top: 2px;
 }
 
-.fin-transacoes__badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
+.fin-transacoes-table .badge {
+  display: inline-block;
+  margin: 0;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
+  line-height: 22px;
   white-space: nowrap;
 
-  &--pago {
-    background: #dcfce7;
-    color: #166534;
+  &--ok {
+    color: var(--drawer-badge-ok-fg, #389e0d);
+    background: var(--drawer-badge-ok-bg, #f6ffed);
+    border-color: var(--drawer-badge-ok-border, #b7eb8f);
   }
 
   &--atraso {
-    background: #ffedd5;
-    color: #c2410c;
     @include badge-atraso.badge-atraso-com-icone-relogio;
+    color: var(--drawer-badge-atraso-fg, #cf1322);
+    background: var(--drawer-badge-atraso-bg, #fff1f0);
+    border-color: var(--drawer-badge-atraso-border, #ffa39e);
   }
 }
 
-.fin-transacoes__acoes {
-  display: inline-flex;
-  gap: 0.25rem;
+.fin-transacoes-table .col-acoes {
+  text-align: right;
+  overflow: visible;
 }
 
-.fin-transacoes__icon-btn {
+.fin-transacoes-row-acoes {
+  position: relative;
+  justify-content: flex-end;
+  gap: 0;
+}
+
+.fin-transacoes-table .list-row-acoes__sep {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 14px;
+  margin: 0;
+  background: #ebebeb;
+}
+
+.fin-transacoes-row-acoes .list-row-acoes__btn {
+  &:hover:not(:disabled) {
+    background: transparent;
+  }
+}
+
+.fin-transacoes-row-acoes .list-row-acoes__btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* Tooltip inline (mesmo visual do `.fin-trans-th-sort__tip`). */
+.fin-transacoes__tip-wrap {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
+  vertical-align: middle;
+
+  &[data-tip]:hover::after,
+  &[data-tip]:focus-within::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    z-index: 40;
+    translate: -50% 0;
+    min-width: max-content;
+    max-width: 280px;
+    padding: 0.6rem 0.85rem;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    background: rgba(0, 0, 0, 0.82);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+  }
+
+  &[data-tip]:hover::before,
+  &[data-tip]:focus-within::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 1px);
+    z-index: 41;
+    translate: -50% 0;
+    border: 7px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.82);
+    pointer-events: none;
+  }
+}
+
+.fin-transacoes-row-acoes .list-row-acoes__btn--menu {
   color: #6b7280;
-  cursor: default;
+
+  svg {
+    color: #6b7280;
+  }
+}
+
+.fin-transacoes-novo-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.fin-transacoes-novo-menu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  min-width: 11.5rem;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.fin-transacoes-novo-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.9rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #f9fafb;
+  }
+
+  &--recebimento {
+    color: #16a34a;
+
+    svg {
+      color: #16a34a;
+    }
+  }
+
+  &--despesa {
+    color: #dc2626;
+
+    svg {
+      color: #dc2626;
+    }
+  }
+
+  &--vale {
+    color: #2563eb;
+
+    svg {
+      color: #2563eb;
+    }
+  }
+
+  &--transferencia {
+    color: #ea580c;
+
+    svg {
+      color: #ea580c;
+    }
+  }
+}
+
+.fin-transacoes-row-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.fin-transacoes-row-menu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 10.5rem;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+}
+
+.fin-transacoes-row-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.45rem 0.85rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: #374151;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--danger {
+    color: #ff4d4f;
+
+    svg {
+      flex-shrink: 0;
+      color: #ff4d4f;
+    }
+
+    &:hover:not(:disabled) {
+      background: #fef2f2;
+    }
+  }
 }
 
 .fin-transacoes__footer {
   border-top: 1px solid #efefef;
+}
+
+/**
+ * Drawers: overlay em `styles/drawer-stack.scss`.
+ * Ordem (igual comandas/agenda): overlay comanda < drawer comanda < overlay faturar < drawer faturar.
+ */
+:host .overlay--editar {
+  z-index: 1099;
+}
+
+:host .overlay--comanda {
+  z-index: 1100;
+}
+
+:host .overlay--faturar {
+  /* Por cima do drawer da comanda para escurecer o fundo inteiro */
+  z-index: 1104;
+}
+
+.fin-trans-drawer.app-drawer {
+  --drawer-inset-x: 15px;
+  --drawer-pad-x: var(--drawer-inset-x);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  background: #ffffff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-clip-margin: 20px 16px 24px 32px;
+  padding: 0 var(--drawer-inset-x) 0;
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+  }
+
+  & > app-nova-comanda-drawer,
+  & > app-faturar-drawer {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    max-height: 100%;
+    width: 100%;
+  }
+
+  &.app-drawer--comanda:not(.app-drawer--faturar) {
+    z-index: 1102;
+  }
+
+  /**
+   * Sub-drawer Pagamentos — painel estreito à direita (igual agenda/comandas).
+   */
+  &.app-drawer--faturar {
+    z-index: 1105;
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    background: #ffffff;
+  }
+
+  &.app-drawer--editar {
+    z-index: 1103;
+    max-width: min(520px, 100vw);
+    margin-left: auto;
+  }
+
+  &.app-drawer--editar > app-fin-transacao-editar-drawer {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .fin-trans-drawer.app-drawer.app-drawer--faturar {
+    width: min(480px, 100vw);
+    left: auto;
+    right: 0;
+  }
+}
+
+@media (min-width: 1648px) {
+  .fin-trans-drawer.app-drawer.app-drawer--comanda:not(.app-drawer--faturar) {
+    left: max(320px, calc(100vw - 1400px));
+    width: auto;
+    right: 0;
+  }
+
+  .fin-trans-drawer.app-drawer.app-drawer--faturar {
+    width: min(480px, 100vw);
+    left: auto;
+    right: 0;
+  }
 }

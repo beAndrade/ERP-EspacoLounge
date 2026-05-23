@@ -1,0 +1,34 @@
+/**
+ * Overlay escuro padrão para drawers empilhados.
+ *
+ * HTML (obrigatório em cada camada):
+ *   <div
+ *     class="overlay"
+ *     [class.overlay--open]="drawerAberto"
+ *     aria-hidden="true"
+ *     (click)="fecharDrawer()"
+ *   ></div>
+ *
+ * TypeScript (no host da página):
+ *   @HostListener('document:keydown.escape', ['$event'])
+ *   onEscape(ev: KeyboardEvent) { … fechar camada superior primeiro … }
+ *
+ * Z-index (empilhado comanda + faturar): overlay comanda < drawer comanda <
+ *   overlay faturar < drawer faturar (ver comandas/agenda-hub).
+ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1099;
+  box-sizing: border-box;
+  background: #00000073;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--drawer-slide-duration, 0.43s)
+    cubic-bezier(0.22, 1, 0.36, 1);
+
+  &--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

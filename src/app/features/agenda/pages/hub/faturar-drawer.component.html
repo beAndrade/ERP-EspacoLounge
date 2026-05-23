@@ -391,12 +391,12 @@
       @if (mostrarLinhaCreditosComandaResumo()) {
         <div class="fat-resumo__row">
           <span>Créditos</span>
-          <span>{{ brl(valorCreditosComandaResumo()) }}</span>
+          <span>- {{ brl(valorCreditosComandaResumo()) }}</span>
         </div>
       }
       <div class="fat-resumo__row">
         <span>Total</span>
-        <span>{{ brl(resumo.total) }}</span>
+        <span>{{ brl(totalLiquidoResumo()) }}</span>
       </div>
       <div class="fat-resumo__row fat-resumo__row--strong">
         <span>Total pago</span>

@@ -78,7 +78,9 @@
             } @else if (d.abaAtiva === 'Cashback') {
               <app-cliente-cashback-tab />
             } @else if (d.abaAtiva === 'Créditos') {
-              <app-cliente-creditos-tab />
+              <app-cliente-creditos-tab
+                (abrirAtualizarCredito)="onAbrirAtualizarCreditoEmpilhado()"
+              />
             } @else if (d.abaAtiva === 'Débitos') {
               <app-cliente-debitos-tab
               />
@@ -160,6 +162,29 @@
           "
         />
       </div>
+
+      @if (atualizarCreditoAberto) {
+        <div
+          class="overlay overlay--cliente-credito-empilhada"
+          [class.overlay--open]="atualizarCreditoPanelOpen"
+          aria-hidden="true"
+          (click)="fecharAtualizarCreditoEmpilhado()"
+        ></div>
+        <div
+          class="app-drawer cliente-credito-empilhada"
+          [class.app-drawer--open]="atualizarCreditoPanelOpen"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Atualizar crédito"
+          (click)="$event.stopPropagation()"
+        >
+          <app-cliente-atualizar-credito-drawer
+            [clienteId]="d.clienteId!"
+            (salvo)="onAtualizarCreditoSalvo($event)"
+            (fechar)="fecharAtualizarCreditoEmpilhado()"
+          />
+        </div>
+      }
 
       @if (faturarEmpilhadoAberto && faturarEmpilhadoCtx) {
         <div

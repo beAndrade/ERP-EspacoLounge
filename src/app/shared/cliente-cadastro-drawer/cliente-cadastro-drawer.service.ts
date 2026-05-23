@@ -1049,6 +1049,17 @@ export class ClienteCadastroDrawerService {
     this.carregarDebitosPainel(cid);
   }
 
+  recarregarCreditoPainel(): void {
+    const cid = String(this.clienteId ?? '').trim();
+    if (!cid) return;
+    this.carregarCreditoHistorico(cid);
+  }
+
+  aplicarCreditoSaldoAposAjuste(saldo: number): void {
+    this.creditoSaldo = this.saldoMoedaNum(saldo);
+    this.appRef.tick();
+  }
+
   private carregarDebitosPainel(clienteId: string): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;

@@ -1,8 +1,7 @@
+@use '../../../../styles/drawer-stack';
+
 .fin-trans-modal-overlay {
-  position: fixed;
-  inset: 0;
   z-index: 1310;
-  background: #00000073;
 }
 
 .fin-trans-modal {

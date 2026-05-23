@@ -19,6 +19,8 @@ export class ComandaResumoBarComponent {
   @Input({ required: true }) creditoResumoCtrl!: FormControl<string>;
   /** Desconto readonly (comanda finalizada). */
   @Input() descontoSomenteLeitura = false;
+  /** Crédito readonly (comanda finalizada). */
+  @Input() creditoSomenteLeitura = false;
   @Input() cashbackReais = 0;
   @Input() totalReais = 0;
 

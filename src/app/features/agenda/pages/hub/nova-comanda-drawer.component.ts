@@ -179,7 +179,10 @@ export class NovaComandaDrawerComponent implements OnInit {
   private pivotCatalogoPorLinhaId = new Map<number, AtendimentoItemCatalogo>();
 
   outrosMenuAberto = false;
+  excluirMenuAberto = false;
   modalConfirmExcluirAberto = false;
+  /** Opção escolhida no menu antes do modal de confirmação. */
+  modoExclusaoConfirmar: 'somente_comanda' | 'completo' = 'completo';
   modalOutrosOpcao: 'imprimir' | 'historico' | null = null;
   excluindo = false;
   erroExcluir = '';
@@ -309,6 +312,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           this.pagamentos = r.items ?? [];
           this.resumoPagamentos = r.resumo ?? RESUMO_VAZIO;
           this.sincronizarDescontoResumoDoBackendELeitura(true);
+          this.sincronizarCreditoUsadoDosPagamentos();
           this.carregandoPagamentos = false;
         },
       });
@@ -317,6 +321,10 @@ export class NovaComandaDrawerComponent implements OnInit {
   /** Chamado pelo pai depois de fechar o sub-drawer Faturar (para refrescar resumo). */
   recarregarAposFaturar(): void {
     this.recarregarDadosComanda();
+    const id = this.contexto()?.idAtendimento?.trim();
+    if (id) {
+      this.recarregarResumoPagamentos(id);
+    }
     const cid = this.contexto()?.clienteId?.trim();
     if (cid) {
       this.api
@@ -325,11 +333,13 @@ export class NovaComandaDrawerComponent implements OnInit {
         .subscribe((row) => {
           if (row && (this.contexto()?.clienteId ?? '').trim() === cid) {
             this.clienteApi = row;
-            this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
-              emitEvent: false,
-            });
-            this.creditoResumoCtrl.markAsPristine();
-            this.aplicarCreditoAutomaticoSeElegivel();
+            if (!this.comandaFinalizada()) {
+              this.creditoResumoCtrl.setValue(formataMoedaBrl(0), {
+                emitEvent: false,
+              });
+              this.creditoResumoCtrl.markAsPristine();
+              this.aplicarCreditoAutomaticoSeElegivel();
+            }
           }
         });
     }
@@ -693,6 +703,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           this.sincronizarDescontoResumoDoBackendELeitura(false);
           this.aplicarCreditoAutomaticoSeElegivel();
           this.aplicarEstadoCamposComandaFinalizada();
+          this.sincronizarCreditoUsadoDosPagamentos();
         },
       });
   }
@@ -704,6 +715,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       this.clienteNomeCtrl,
       this.dataComandaCtrl,
       this.descontoResumoCtrl,
+      this.creditoResumoCtrl,
       this.clienteComandaCtrl,
     ];
     for (const c of ctrls) {
@@ -728,6 +740,28 @@ export class NovaComandaDrawerComponent implements OnInit {
       emitEvent: false,
     });
     this.descontoResumoCtrl.markAsPristine();
+  }
+
+  /** Soma pagamentos `outros` gravados como uso de crédito do cliente. */
+  private somaCreditoClienteUsadoEmPagamentos(): number {
+    let s = 0;
+    for (const p of this.pagamentos) {
+      if (p.metodo !== 'outros') continue;
+      const obs = String(p.observacao ?? '').toLowerCase();
+      if (!obs.includes('crédito') && !obs.includes('credito')) continue;
+      s += parseFloat(p.valor) || 0;
+    }
+    return Math.round(s * 100) / 100;
+  }
+
+  /** Em comanda finalizada, exibe o crédito já utilizado (readonly). */
+  private sincronizarCreditoUsadoDosPagamentos(): void {
+    if (!this.comandaFinalizada()) return;
+    const usado = this.somaCreditoClienteUsadoEmPagamentos();
+    this.creditoResumoCtrl.setValue(formataMoedaBrl(usado), {
+      emitEvent: false,
+    });
+    this.creditoResumoCtrl.markAsPristine();
   }
 
   private reconstruirMapaQuantidade(rows: AtendimentoListaItem[]): void {
@@ -886,11 +920,11 @@ export class NovaComandaDrawerComponent implements OnInit {
     const creditoAUsar = this.valorMonetarioCampoResumo(
       this.creditoResumoCtrl.value,
     );
-    const total = this.totalComandaResumoCalculado();
+    const total = this.totalAntesAplicarCredito();
     const totalPago = r.total_pago ?? 0;
     const saldo = Math.max(
       0,
-      Math.round((total - totalPago) * 100) / 100,
+      Math.round((total - totalPago - creditoAUsar) * 100) / 100,
     );
     this.faturarComanda.emit({
       idAtendimento: id,
@@ -922,6 +956,9 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (el && !el.closest('.nc-outros-wrap')) {
       this.fecharOutrosMenu();
     }
+    if (el && !el.closest('.nc-excluir-wrap')) {
+      this.fecharExcluirMenu();
+    }
   }
 
   @HostListener('document:click', ['$event'])
@@ -929,6 +966,9 @@ export class NovaComandaDrawerComponent implements OnInit {
     const el = ev.target as HTMLElement | null;
     if (this.outrosMenuAberto && el && !el.closest('.nc-outros-wrap')) {
       this.fecharOutrosMenu();
+    }
+    if (this.excluirMenuAberto && el && !el.closest('.nc-excluir-wrap')) {
+      this.fecharExcluirMenu();
     }
   }
 
@@ -941,11 +981,35 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.outrosMenuAberto = false;
   }
 
-  abrirModalExcluir(): void {
+  toggleExcluirMenu(ev?: MouseEvent): void {
+    ev?.stopPropagation();
+    this.fecharOutrosMenu();
+    this.excluirMenuAberto = !this.excluirMenuAberto;
+  }
+
+  fecharExcluirMenu(): void {
+    this.excluirMenuAberto = false;
+  }
+
+  abrirModalExcluir(modo: 'somente_comanda' | 'completo'): void {
     if (!this.podeExcluirComanda() || this.excluindo) return;
     this.fecharOutrosMenu();
+    this.fecharExcluirMenu();
+    this.modoExclusaoConfirmar = modo;
     this.erroExcluir = '';
     this.modalConfirmExcluirAberto = true;
+  }
+
+  tituloModalExcluir(): string {
+    return this.modoExclusaoConfirmar === 'somente_comanda'
+      ? 'Excluir somente comanda?'
+      : 'Excluir comanda e agendamentos?';
+  }
+
+  textoModalExcluir(): string {
+    return this.modoExclusaoConfirmar === 'somente_comanda'
+      ? 'A comanda e os pagamentos serão removidos. O agendamento permanece na agenda para criar uma nova comanda.'
+      : 'A comanda, os pagamentos e o cartão do agendamento na agenda serão removidos. Esta ação não pode ser anulada.';
   }
 
   fecharModalExcluir(): void {
@@ -959,7 +1023,9 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (!id || this.excluindo) return;
     this.erroExcluir = '';
     this.excluindo = true;
-    this.api.excluirAtendimento(id).subscribe({
+    this.api
+      .excluirAtendimento(id, { modoExclusao: this.modoExclusaoConfirmar })
+      .subscribe({
       next: () => {
         this.excluindo = false;
         this.modalConfirmExcluirAberto = false;
@@ -1048,6 +1114,7 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   private aplicarCreditoAutomaticoSeElegivel(): void {
+    if (this.comandaFinalizada()) return;
     const max = this.creditoMaximoUsavel();
     if (!this.creditoResumoCtrl.pristine) {
       this.clampCreditoResumoAoMaximo();

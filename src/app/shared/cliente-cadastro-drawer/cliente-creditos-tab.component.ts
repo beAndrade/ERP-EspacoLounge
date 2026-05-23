@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service';
 
 @Component({
@@ -11,6 +11,7 @@ import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service'
 })
 export class ClienteCreditosTabComponent {
   readonly d = inject(ClienteCadastroDrawerService);
+  readonly abrirAtualizarCredito = output<void>();
 
   formatarData(data: string): string {
     const ymd = String(data ?? '').trim().slice(0, 10);

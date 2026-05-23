@@ -1,6 +1,7 @@
 @if (aberto()) {
   <div
-    class="fin-trans-modal-overlay"
+    class="overlay fin-trans-modal-overlay"
+    [class.overlay--open]="aberto()"
     role="presentation"
     (click)="onOverlayClick($event)"
   ></div>

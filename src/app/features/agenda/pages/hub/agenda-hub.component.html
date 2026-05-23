@@ -118,7 +118,9 @@
                     [style.background]="corFundoCartaoBloco(lay.bloco)"
                     [disabled]="!idAtendimentoBloco(lay.bloco)"
                     [attr.aria-label]="
-                      'Editar agendamento: ' + rotuloBloco(lay.bloco)
+                      (blocoComandaFaturada(lay.bloco)
+                        ? 'Visualizar comanda: '
+                        : 'Editar agendamento: ') + rotuloBloco(lay.bloco)
                     "
                     (click)="abrirDrawerEdicaoBloco(lay.bloco, $event)"
                   >
@@ -176,58 +178,61 @@
       (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
     />
   </div>
-  @if (comandaPainelAberto) {
+}
+
+@if (comandaPainelAberto) {
+  <div
+    class="overlay overlay--comanda"
+    [class.overlay--open]="comandaDrawerPanelOpen"
+    aria-hidden="true"
+    (click)="fecharComandaDrawer()"
+  ></div>
+  <div
+    class="app-drawer app-drawer--comanda"
+    [class.app-drawer--open]="comandaDrawerPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="
+      comandaSomenteStandalone ? 'Visualizar comanda' : 'Nova comanda'
+    "
+    (click)="$event.stopPropagation()"
+  >
+    <app-nova-comanda-drawer
+      [contexto]="comandaDrawerContexto"
+      (fechar)="fecharComandaDrawer()"
+      (comandaExcluida)="onComandaExcluida()"
+      (comandaDataYmd)="onComandaDataYmdAlterada($event)"
+      (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
+      (salvarComanda)="onSalvarAgendamentoDesdeDrawerComanda()"
+      (faturarComanda)="onAbrirFaturarComanda($event)"
+      (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
+    />
+  </div>
+
+  @if (faturarDrawerAberto && faturarCtx) {
     <div
-      class="overlay overlay--comanda"
-      [class.overlay--open]="comandaDrawerPanelOpen"
+      class="overlay overlay--faturar"
+      [class.overlay--open]="faturarDrawerPanelOpen"
       aria-hidden="true"
-      (click)="fecharComandaDrawer()"
+      (click)="fecharFaturarDrawer()"
     ></div>
     <div
-      class="app-drawer app-drawer--comanda"
-      [class.app-drawer--open]="comandaDrawerPanelOpen"
+      class="app-drawer app-drawer--faturar"
+      [class.app-drawer--open]="faturarDrawerPanelOpen"
       role="dialog"
       aria-modal="true"
-      aria-label="Nova comanda"
+      aria-label="Faturar comanda"
       (click)="$event.stopPropagation()"
     >
-      <app-nova-comanda-drawer
-        [contexto]="comandaDrawerContexto"
-        (fechar)="fecharComandaDrawer()"
-        (comandaExcluida)="onComandaExcluida()"
-        (comandaDataYmd)="onComandaDataYmdAlterada($event)"
-        (editarAgendamento)="onEditarAgendamentoDesdeComanda()"
-        (salvarComanda)="onSalvarAgendamentoDesdeDrawerComanda()"
-        (faturarComanda)="onAbrirFaturarComanda($event)"
-        (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
+      <app-faturar-drawer
+        [idAtendimento]="faturarCtx.idAtendimento"
+        [resumoInicial]="faturarCtx.resumo"
+        [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
+        [dataComanda]="comandaDataYmdParaFaturar"
+        [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
+        (faturado)="onFaturaComandaSucesso()"
+        (fechar)="fecharFaturarDrawer()"
       />
     </div>
-
-    @if (faturarDrawerAberto && faturarCtx) {
-      <div
-        class="overlay overlay--faturar"
-        [class.overlay--open]="faturarDrawerPanelOpen"
-        aria-hidden="true"
-        (click)="fecharFaturarDrawer()"
-      ></div>
-      <div
-        class="app-drawer app-drawer--faturar"
-        [class.app-drawer--open]="faturarDrawerPanelOpen"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Faturar comanda"
-        (click)="$event.stopPropagation()"
-      >
-        <app-faturar-drawer
-          [idAtendimento]="faturarCtx.idAtendimento"
-          [resumoInicial]="faturarCtx.resumo"
-          [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
-          [dataComanda]="comandaDataYmdParaFaturar"
-          [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
-          (faturado)="onFaturaComandaSucesso()"
-          (fechar)="fecharFaturarDrawer()"
-        />
-      </div>
-    }
   }
 }

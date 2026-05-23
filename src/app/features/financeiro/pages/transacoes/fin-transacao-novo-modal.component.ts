@@ -1,6 +1,7 @@
 import {
   Component,
   DestroyRef,
+  HostListener,
   effect,
   inject,
   input,
@@ -46,6 +47,7 @@ export class FinTransacaoNovoModalComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly aberto = input(false);
+  readonly naturezaInicial = input<'receita' | 'despesa' | null>(null);
   readonly salvando = input(false);
 
   readonly fechar = output<void>();
@@ -72,7 +74,8 @@ export class FinTransacaoNovoModalComponent {
       this.valorDigitos = '';
       this.metodoPagamento = '';
       this.descricao = '';
-      this.natureza = 'despesa';
+      const ini = this.naturezaInicial();
+      this.natureza = ini === 'receita' || ini === 'despesa' ? ini : 'despesa';
       this.carregarCategorias();
     });
   }
@@ -103,6 +106,13 @@ export class FinTransacaoNovoModalComponent {
     if ((ev.target as HTMLElement).classList.contains('fin-trans-modal-overlay')) {
       this.fechar.emit();
     }
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(ev: KeyboardEvent): void {
+    if (!this.aberto() || this.salvando()) return;
+    ev.preventDefault();
+    this.fechar.emit();
   }
 
   onNaturezaChange(): void {

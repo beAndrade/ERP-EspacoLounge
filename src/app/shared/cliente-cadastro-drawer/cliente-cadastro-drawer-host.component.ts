@@ -21,6 +21,7 @@ import {
   type AbrirCadastroClientePayload,
 } from './cliente-cadastro-drawer.service';
 import { ClienteCashbackTabComponent } from './cliente-cashback-tab.component';
+import { ClienteAtualizarCreditoDrawerComponent } from './cliente-atualizar-credito-drawer.component';
 import { ClienteCreditosTabComponent } from './cliente-creditos-tab.component';
 import { ClienteDebitosTabComponent } from './cliente-debitos-tab.component';
 
@@ -40,6 +41,7 @@ type FaturarEmpilhadoCtx = {
     ClienteCadastroFormComponent,
     ClienteCashbackTabComponent,
     ClienteCreditosTabComponent,
+    ClienteAtualizarCreditoDrawerComponent,
     ClienteDebitosTabComponent,
     ClienteAgendamentosTabComponent,
     ClienteVendasTabComponent,
@@ -68,6 +70,11 @@ export class ClienteCadastroDrawerHostComponent {
 
   comandaEmpilhadaDataYmd: string | null = null;
 
+  atualizarCreditoAberto = false;
+  atualizarCreditoPanelOpen = false;
+  private atualizarCreditoCloseTimer: ReturnType<typeof setTimeout> | null =
+    null;
+
   faturarEmpilhadoAberto = false;
   faturarEmpilhadoPanelOpen = false;
   faturarEmpilhadoCtx: FaturarEmpilhadoCtx | null = null;
@@ -94,6 +101,11 @@ export class ClienteCadastroDrawerHostComponent {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (this.atualizarCreditoAberto) {
+      ev.preventDefault();
+      this.fecharAtualizarCreditoEmpilhado();
+      return;
+    }
     if (this.faturarEmpilhadoAberto) {
       ev.preventDefault();
       this.fecharFaturarEmpilhado();
@@ -122,9 +134,50 @@ export class ClienteCadastroDrawerHostComponent {
   }
 
   fecharComandaEmpilhada(): void {
+    this.fecharAtualizarCreditoEmpilhadoSincrono();
     this.fecharFaturarEmpilhadoSincrono();
     this.fecharEditAgendamentoEmpilhadoSincrono();
     this.d.fecharComandaEmpilhada();
+  }
+
+  onAbrirAtualizarCreditoEmpilhado(): void {
+    const cid = String(this.d.clienteId ?? '').trim();
+    if (!cid) return;
+    this.abrirDrawerAnimado(
+      () => {
+        this.atualizarCreditoAberto = true;
+      },
+      (open) => {
+        this.atualizarCreditoPanelOpen = open;
+      },
+    );
+  }
+
+  fecharAtualizarCreditoEmpilhado(): void {
+    if (!this.atualizarCreditoAberto) return;
+    this.atualizarCreditoPanelOpen = false;
+    if (this.atualizarCreditoCloseTimer != null) {
+      clearTimeout(this.atualizarCreditoCloseTimer);
+    }
+    this.atualizarCreditoCloseTimer = setTimeout(() => {
+      this.atualizarCreditoCloseTimer = null;
+      this.atualizarCreditoAberto = false;
+    }, DRAWER_ANIM_MS);
+  }
+
+  private fecharAtualizarCreditoEmpilhadoSincrono(): void {
+    if (this.atualizarCreditoCloseTimer != null) {
+      clearTimeout(this.atualizarCreditoCloseTimer);
+      this.atualizarCreditoCloseTimer = null;
+    }
+    this.atualizarCreditoPanelOpen = false;
+    this.atualizarCreditoAberto = false;
+  }
+
+  onAtualizarCreditoSalvo(ev: { saldo: number }): void {
+    this.d.aplicarCreditoSaldoAposAjuste(ev.saldo);
+    this.fecharAtualizarCreditoEmpilhado();
+    this.d.recarregarCreditoPainel();
   }
 
   onComandaEmpilhadaExcluida(): void {

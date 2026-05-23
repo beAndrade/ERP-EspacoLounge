@@ -1,0 +1,242 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  --fin-edit-fg: #000000bf;
+  --drawer-field-h: 38px;
+  --drawer-field-stroke: #f1f1f1;
+}
+
+.fin-edit-drawer {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  color: var(--fin-edit-fg);
+}
+
+.fin-edit-body {
+  --fin-edit-pad-x: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0 var(--fin-edit-pad-x) 1rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.fin-edit-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.fin-edit-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 30px 0 10px;
+  flex: 1 1 auto;
+}
+
+.fin-edit-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  margin-right: calc(-1 * var(--fin-edit-pad-x));
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #f5f5f4;
+    color: #374151;
+  }
+}
+
+.fin-edit-alert {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.fin-edit-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  cursor: default;
+
+  &--compact {
+    padding: 0.5rem 0 0.25rem;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #34363b;
+  }
+
+  &__hint {
+    font-size: 12px;
+    color: #6b7280;
+  }
+}
+
+.fin-edit-grid {
+  display: grid;
+  gap: 0.65rem;
+
+  &--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.fin-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+
+  &__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #34363b;
+  }
+
+  &__input,
+  &__select,
+  &__textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--drawer-field-h);
+    padding: 0 12px;
+    border: 1px solid var(--drawer-field-stroke);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--fin-edit-fg);
+    background: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: #7a88ff;
+      box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+    }
+
+    &:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+  }
+
+  &__input--readonly {
+    background: #f5f5f5;
+    color: #6b7280;
+    cursor: default;
+  }
+
+  &__textarea {
+    padding: 10px 12px;
+    min-height: 72px;
+    resize: vertical;
+  }
+}
+
+.fin-edit-date-wrap {
+  position: relative;
+}
+
+.fin-edit-date-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--drawer-field-h);
+  padding: 0 12px;
+  border: 1px solid var(--drawer-field-stroke);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--fin-edit-fg);
+
+  &--placeholder {
+    color: #9ca3af;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+.fin-edit-date-native {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.fin-edit-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 30px 24px;
+  border-top: 1px solid #f1f1f1;
+  background: #fff;
+
+  &__btn--primary {
+    min-width: 120px;
+    height: 40px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-primary, #505afb);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .fin-edit-grid--3 {
+    grid-template-columns: 1fr;
+  }
+}

@@ -27,9 +27,14 @@ import {
   toYmd,
 } from '../../../../core/utils/atendimento-display';
 import {
+  AGENDA_COR_COMANDA_FATURADA,
   corHexAgendaPorStatus,
   normalizarAgendaStatusId,
 } from '../../../../core/utils/agenda-status-card';
+import {
+  cobrancaFinalizadaItem,
+  comandaQuitadaNasCifrasItem,
+} from '../../../../core/utils/comanda-status.util';
 import { AgendaNovoComponent } from '../novo/agenda-novo.component';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import { NovaComandaDrawerComponent } from './nova-comanda-drawer.component';
@@ -132,6 +137,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Segundo painel («Nova comanda») por cima do drawer de agendamento. */
   comandaPainelAberto = false;
   comandaDrawerPanelOpen = false;
+  /** Comanda aberta sem drawer de agendamento (cartão já faturado na grelha). */
+  comandaSomenteStandalone = false;
   /** Último pedido de abertura (para ligar o drawer de comanda à API depois). */
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
 
@@ -387,11 +394,23 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Comanda finalizada e quitada — cartão cinza-azulado e reabertura em modo visualização. */
+  blocoComandaFaturada(b: AgendaHubBloco): boolean {
+    const l0 = b.linhas[0];
+    if (!l0 || !cobrancaFinalizadaItem(l0)) return false;
+    if (l0.status_cobranca === 'pago') return true;
+    return comandaQuitadaNasCifrasItem(l0, null);
+  }
+
   /** Abre o drawer em modo edição (sem saltar para a receção). */
   abrirDrawerEdicaoBloco(b: AgendaHubBloco, e: Event): void {
     e.stopPropagation();
     const id = this.idAtendimentoBloco(b);
     if (!id) return;
+    if (this.blocoComandaFaturada(b)) {
+      this.abrirComandaVisualizandoBloco(b);
+      return;
+    }
     const l0 = b.linhas[0];
     const profCol = Number(l0?.profissional_id ?? 0);
     const profId =
@@ -499,9 +518,43 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     window.scrollTo(0, this.bodyScrollPreDrawer);
   }
 
+  /** Abre o drawer da comanda em modo «Visualizando» (campos só leitura + Ver pagamentos). */
+  private abrirComandaVisualizandoBloco(b: AgendaHubBloco): void {
+    const id = this.idAtendimentoBloco(b);
+    if (!id) return;
+    const l0 = b.linhas[0];
+    const dataYmd = String(l0?.data ?? this.diaYmd).trim().slice(0, 10);
+    const clienteId = String(l0?.idCliente ?? '').trim();
+    const numero =
+      l0?.numeroComanda != null && l0.numeroComanda > 0
+        ? l0.numeroComanda
+        : 0;
+    this.abrirComandaDesdeAgenda(
+      {
+        acessar: true,
+        idAtendimento: id,
+        numeroComandaTitulo: numero,
+        clienteId,
+        cliente: null,
+        opcoesClientes: [],
+        dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(dataYmd) ? dataYmd : this.diaYmd,
+      },
+      { standalone: true },
+    );
+  }
+
   /** Abre o drawer «Nova comanda» (mesma largura/animação do agendamento). */
-  abrirComandaDesdeAgenda(payload: ComandaDrawerContextoAgenda): void {
-    if (!this.modalAberto) return;
+  abrirComandaDesdeAgenda(
+    payload: ComandaDrawerContextoAgenda,
+    opts?: { standalone?: boolean },
+  ): void {
+    const standalone = opts?.standalone === true;
+    if (!standalone && !this.modalAberto) return;
+    this.comandaSomenteStandalone = standalone;
+    if (standalone) {
+      this.bloquearScrollPagina();
+      window.addEventListener('keydown', this.onDrawerKeydown);
+    }
     this.comandaDrawerContexto = payload;
     const y = (payload.dataYmd ?? '').trim();
     this.comandaDataYmdParaFaturar =
@@ -523,6 +576,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
       this.comandaDataYmdParaFaturar = null;
+      if (this.comandaSomenteStandalone) {
+        this.comandaSomenteStandalone = false;
+        if (!this.modalAberto) {
+          this.limparEfeitosDrawer();
+        }
+      }
       return;
     }
     this.comandaDrawerPanelOpen = false;
@@ -534,6 +593,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
       this.comandaDataYmdParaFaturar = null;
+      if (this.comandaSomenteStandalone) {
+        this.comandaSomenteStandalone = false;
+        if (!this.modalAberto) {
+          this.limparEfeitosDrawer();
+        }
+      }
     }, DRAWER_ANIM_MS);
   }
 
@@ -542,6 +607,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDrawerPanelOpen = false;
     this.comandaDrawerContexto = null;
     this.comandaDataYmdParaFaturar = null;
+    if (this.comandaSomenteStandalone) {
+      this.comandaSomenteStandalone = false;
+      if (!this.modalAberto) {
+        this.limparEfeitosDrawer();
+      }
+    }
     if (this.comandaDrawerCloseTimer != null) {
       clearTimeout(this.comandaDrawerCloseTimer);
       this.comandaDrawerCloseTimer = null;
@@ -703,8 +774,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     });
   }
 
-  fecharFaturarDrawer(): void {
+  fecharFaturarDrawer(opts?: { recarregarComanda?: boolean }): void {
     if (!this.faturarDrawerAberto) return;
+    const recarregarComanda = opts?.recarregarComanda !== false;
     this.faturarDrawerPanelOpen = false;
     if (this.faturarDrawerCloseTimer != null) {
       clearTimeout(this.faturarDrawerCloseTimer);
@@ -713,19 +785,21 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.faturarDrawerCloseTimer = null;
       this.faturarDrawerAberto = false;
       this.faturarCtx = null;
-      this.comandaDrawerRef?.recarregarAposFaturar();
+      if (recarregarComanda) {
+        this.comandaDrawerRef?.recarregarAposFaturar();
+      }
       this.carregarMes();
       this.carregarDia();
     }, DRAWER_ANIM_MS);
   }
 
-  /** Após gravar pagamentos: em «Ver pagamentos» mantém o drawer da comanda aberto. */
+  /** Após gravar pagamentos: fecha drawers e volta à grelha da agenda. */
   onFaturaComandaSucesso(): void {
-    const modoVer = this.faturarCtx?.modoVerPagamentos ?? false;
-    this.fecharFaturarDrawer();
-    if (modoVer) return;
+    this.fecharFaturarDrawer({ recarregarComanda: false });
     this.fecharComandaDrawer();
-    void this.router.navigate(['/comandas']);
+    if (this.modalAberto) {
+      this.fecharModal();
+    }
   }
 
   eventosNaColuna(profId: number): AtendimentoListaItem[] {
@@ -837,8 +911,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return `hsl(${hue} 55% 42%)`;
   }
 
-  /** Fundo do cartão: `agenda_cor`, depois cor por `agenda_status`, senão hash do id. */
+  /** Fundo do cartão: quitada → `#607D8B`; senão `agenda_cor` / `agenda_status` / hash. */
   corFundoCartaoBloco(b: AgendaHubBloco): string {
+    if (this.blocoComandaFaturada(b)) {
+      return AGENDA_COR_COMANDA_FATURADA;
+    }
     for (const l of b.linhas) {
       const c = String(l.agenda_cor ?? '').trim();
       if (c) return c;

@@ -20,10 +20,12 @@
     <input
       type="text"
       class="comanda-resumo-bar__input"
+      [class.comanda-resumo-bar__input--readonly]="creditoSomenteLeitura"
       inputmode="numeric"
       autocomplete="off"
       [attr.placeholder]="placeholderMoeda"
       [formControl]="creditoResumoCtrl"
+      [readonly]="creditoSomenteLeitura"
       (input)="onCreditoResumoMoedaInput($event)"
       (blur)="normalizarCampoMoedaResumo(creditoResumoCtrl)"
       [attr.aria-label]="'Crédito a usar: ' + creditoResumoCtrl.value"

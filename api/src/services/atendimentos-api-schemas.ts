@@ -46,8 +46,13 @@ export const postAtendimentoMutationBody = t.Object(
     /**
      * Só com `acao: excluir`: apaga linhas mas mantém `atendimentos_pedido`
      * (preserva `numero_comanda` antes de recriar o mesmo `id_atendimento`).
+     * @deprecated Preferir `modo_exclusao`.
      */
     manter_cabecalho_pedido: t.Optional(t.Boolean()),
+    /** `somente_comanda` | `completo` (exclusão da comanda na receção). */
+    modo_exclusao: t.Optional(
+      t.Union([t.Literal('somente_comanda'), t.Literal('completo')]),
+    ),
   },
   { additionalProperties: true },
 );

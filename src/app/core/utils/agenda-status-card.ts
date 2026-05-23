@@ -8,6 +8,9 @@ export const AGENDA_STATUS_IDS = [
 
 export type AgendaStatusId = (typeof AGENDA_STATUS_IDS)[number];
 
+/** Cartão na grelha da agenda quando a comanda está quitada (faturada). */
+export const AGENDA_COR_COMANDA_FATURADA = '#607D8B';
+
 export const AGENDA_STATUS_META: readonly {
   id: AgendaStatusId;
   label: string;

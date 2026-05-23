@@ -249,8 +249,15 @@ export class FaturarDrawerComponent implements OnInit {
       const r = this.resumoInicial();
       if (r) {
         this.resumo = r;
-        if (r.saldo > 0 && !this.valorCtrl.value.trim()) {
-          this.valorCtrl.setValue(formataMoedaBrl(r.saldo), {
+        const cred = this.creditoComandaAplicado();
+        const saldo = Math.max(
+          0,
+          Math.round(
+            (r.total - (r.total_pago ?? 0) - cred) * 100,
+          ) / 100,
+        );
+        if (saldo > 0.001 && !this.valorCtrl.dirty) {
+          this.valorCtrl.setValue(formataMoedaBrl(saldo), {
             emitEvent: false,
           });
         }
@@ -260,6 +267,21 @@ export class FaturarDrawerComponent implements OnInit {
       const y = (this.dataComanda() ?? '').trim();
       if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return;
       this.dataCtrl.setValue(ymdToDdMmYyyy(y), { emitEvent: false });
+    });
+    effect(() => {
+      const cred = this.creditoComandaAplicado();
+      const ini = this.resumoInicial();
+      if (!ini) return;
+      const total = ini.total;
+      const saldo = Math.max(
+        0,
+        Math.round(
+          (total - (ini.total_pago ?? 0) - cred) * 100,
+        ) / 100,
+      );
+      if (saldo > 0.001 && !this.valorCtrl.dirty) {
+        this.valorCtrl.setValue(formataMoedaBrl(saldo), { emitEvent: false });
+      }
     });
   }
 
@@ -284,7 +306,15 @@ export class FaturarDrawerComponent implements OnInit {
     const total = ini.total;
     const totalBruto = ini.total_bruto;
     const desconto = ini.desconto;
-    const saldo = Math.max(0, Math.round((total - totalPago) * 100) / 100);
+    const cred = this.creditoComandaAplicado();
+    const saldoIni = ini.saldo;
+    const saldo =
+      saldoIni != null && Number.isFinite(saldoIni)
+        ? Math.max(0, Math.round(saldoIni * 100) / 100)
+        : Math.max(
+            0,
+            Math.round((total - totalPago - cred) * 100) / 100,
+          );
     return {
       ...api,
       total_bruto: totalBruto,
@@ -316,11 +346,12 @@ export class FaturarDrawerComponent implements OnInit {
           this.pagamentos = r.items ?? [];
           this.rascunho = [];
           this.resumo = this.mesclarResumoComInicial(r.resumo);
-          if (this.resumo.saldo > 0 && !this.valorCtrl.value.trim()) {
-            this.valorCtrl.setValue(formataMoedaBrl(this.resumo.saldo), {
+          const saldoPagar = this.saldoRestante();
+          if (saldoPagar > 0.001 && !this.valorCtrl.dirty) {
+            this.valorCtrl.setValue(formataMoedaBrl(saldoPagar), {
               emitEvent: false,
             });
-          } else if (this.resumo.saldo <= 0) {
+          } else if (saldoPagar <= 0.001) {
             this.valorCtrl.setValue('', { emitEvent: false });
           }
         },
@@ -351,11 +382,12 @@ export class FaturarDrawerComponent implements OnInit {
     ];
   }
 
-  /** Permite «Pendente» só enquanto a comanda ainda tem saldo a alocar. */
+  /**
+   * Métodos de pagamento clicáveis (validação de valor ao adicionar ao rascunho).
+   * «Pendente» só com saldo em aberto na comanda.
+   */
   podeRegistrarParaMetodo(m: MetodoPagamentoComanda): boolean {
     if (this.salvando) return false;
-    const v = parsePtDecimal(this.valorCtrl.value);
-    if (!Number.isFinite(v) || v <= 0) return false;
     if (m === 'pendente') return this.saldoRestante() > 0.001;
     return true;
   }
@@ -555,11 +587,24 @@ export class FaturarDrawerComponent implements OnInit {
     );
   }
 
-  /** Quanto falta alocar para fechar o total da comanda. */
+  /** Quanto falta alocar (total comanda − pago − crédito previsto na comanda). */
   saldoRestante(): number {
+    const cred = this.creditoComandaAplicado();
     return Math.max(
       0,
-      Math.round((this.resumo.total - this.totalAlocado()) * 100) / 100,
+      Math.round(
+        (this.resumo.total - this.totalAlocado() - cred) * 100,
+      ) / 100,
+    );
+  }
+
+  /** Total líquido exibido no resumo (após crédito previsto da comanda). */
+  totalLiquidoResumo(): number {
+    const cred = this.valorCreditosComandaResumo();
+    if (cred <= 0.001) return this.resumo.total;
+    return Math.max(
+      0,
+      Math.round((this.resumo.total - cred) * 100) / 100,
     );
   }
 
@@ -628,11 +673,7 @@ export class FaturarDrawerComponent implements OnInit {
     if (this.rascunho.length === 0 && credComanda <= 0.001) return false;
     const temComanda = this.rascunho.some((r) => r.destino === 'comanda');
     const temCred = this.rascunho.some((r) => r.destino === 'credito');
-    const saldoAposCreditoComanda = Math.max(
-      0,
-      Math.round((this.saldoRestante() - credComanda) * 100) / 100,
-    );
-    const quitadoComRascunho = saldoAposCreditoComanda <= 0.001;
+    const quitadoComRascunho = this.saldoRestante() <= 0.001;
     const baseQuitada =
       this.resumo.total_pago + EPS_SALDO >= this.resumo.total;
     if (temComanda && !quitadoComRascunho) return false;
@@ -733,10 +774,19 @@ export class FaturarDrawerComponent implements OnInit {
   }
 
   removerRascunho(idLocal: string): void {
+    const linha = this.rascunho.find((x) => x.idLocal === idLocal);
+    const valorRemovido =
+      linha != null && Number.isFinite(linha.valor)
+        ? Math.round(linha.valor * 100) / 100
+        : 0;
     this.rascunho = this.rascunho.filter((x) => x.idLocal !== idLocal);
-    const rest = this.saldoRestante();
-    if (rest > 0.001 && !this.valorCtrl.value.trim()) {
-      this.valorCtrl.setValue(formataMoedaBrl(rest), { emitEvent: false });
+    const atual = parsePtDecimal(this.valorCtrl.value);
+    const base = Number.isFinite(atual) && atual > 0 ? atual : 0;
+    const novo = Math.round((base + valorRemovido) * 100) / 100;
+    if (novo > 0.001) {
+      this.valorCtrl.setValue(formataMoedaBrl(novo), { emitEvent: false });
+    } else {
+      this.valorCtrl.setValue('', { emitEvent: false });
     }
   }
 
@@ -898,6 +948,9 @@ export class FaturarDrawerComponent implements OnInit {
     if (this.pagamentoDataPickerOpen) {
       ev.preventDefault();
       this.pagamentoDataPickerOpen = false;
+      return;
     }
+    ev.preventDefault();
+    this.fechar.emit();
   }
 }

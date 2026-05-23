@@ -245,6 +245,7 @@
         [descontoResumoCtrl]="descontoResumoCtrl"
         [creditoResumoCtrl]="creditoResumoCtrl"
         [descontoSomenteLeitura]="comandaFinalizada()"
+        [creditoSomenteLeitura]="comandaFinalizada()"
         [cashbackReais]="cashbackComandaReais()"
         [totalReais]="totalComandaResumoCalculado()"
       />
@@ -332,15 +333,47 @@
           Cancelar
         </button>
         @if (podeExcluirComanda()) {
-          <button
-            type="button"
-            class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
-            (click)="abrirModalExcluir()"
-            [disabled]="excluindo"
-            aria-label="Excluir comanda"
+          <div
+            class="nc-outros-wrap nc-excluir-wrap"
+            [class.nc-outros-wrap--open]="excluirMenuAberto"
           >
-            {{ excluindo ? 'Excluindo…' : 'Excluir' }}
-          </button>
+            <button
+              type="button"
+              class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
+              (click)="toggleExcluirMenu($event)"
+              [disabled]="excluindo"
+              [attr.aria-expanded]="excluirMenuAberto"
+              aria-haspopup="menu"
+              aria-label="Excluir comanda"
+            >
+              {{ excluindo ? 'Excluindo…' : 'Excluir' }}
+              <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
+            </button>
+            @if (excluirMenuAberto) {
+              <ul class="nc-outros-panel" role="menu">
+                <li role="none">
+                  <button
+                    type="button"
+                    class="nc-outros-opt"
+                    role="menuitem"
+                    (click)="abrirModalExcluir('somente_comanda')"
+                  >
+                    Excluir somente comanda
+                  </button>
+                </li>
+                <li role="none">
+                  <button
+                    type="button"
+                    class="nc-outros-opt"
+                    role="menuitem"
+                    (click)="abrirModalExcluir('completo')"
+                  >
+                    Excluir comanda e agendamentos
+                  </button>
+                </li>
+              </ul>
+            }
+          </div>
         }
         @if (!comandaFinalizada()) {
           <button
@@ -375,10 +408,10 @@
     <div class="nc-comanda-diag__backdrop" (click)="fecharModalExcluir()"></div>
     <div class="nc-comanda-diag__panel nc-comanda-diag__panel--confirm">
       <h2 id="nc-comanda-excluir-titulo" class="nc-comanda-diag__title">
-        Excluir comanda?
+        {{ tituloModalExcluir() }}
       </h2>
       <p class="nc-comanda-diag__text">
-        Esta ação remove o atendimento e não pode ser anulada. Confirme se deseja continuar.
+        {{ textoModalExcluir() }}
       </p>
       @if (erroExcluir) {
         <p class="nc-comanda-diag__erro" role="alert">{{ erroExcluir }}</p>

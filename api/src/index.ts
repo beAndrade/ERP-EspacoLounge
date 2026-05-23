@@ -12,6 +12,8 @@ import {
   confirmarPagamentoPorIdAtendimento,
   createAtendimento,
   excluirAtendimentoPorIdAtendimento,
+  excluirComandaPorIdAtendimento,
+  type ModoExclusaoComanda,
   finalizarCobrancaPorIdAtendimento,
   listAtendimentosRaw,
 } from './services/atendimentos-domain';
@@ -39,7 +41,10 @@ import {
   criarProfissional,
   listProfissionaisForApi,
 } from './services/profissionais-domain';
-import { listClienteCreditoMovimentos } from './services/clientes-credito-movimentos';
+import {
+  ajustarClienteCreditoManual,
+  listClienteCreditoMovimentos,
+} from './services/clientes-credito-movimentos';
 import {
   allocNextClienteClId,
   deleteClienteById,
@@ -153,26 +158,54 @@ async function execConfirmarPagamento(body: {
   }
 }
 
+function parseModoExclusaoComanda(
+  body: Record<string, unknown>,
+): ModoExclusaoComanda | null {
+  const raw = body['modo_exclusao'];
+  if (typeof raw === 'string') {
+    const m = raw.trim().toLowerCase();
+    if (m === 'somente_comanda' || m === 'completo') return m;
+  }
+  return null;
+}
+
+function parseManterCabecalhoPedido(body: Record<string, unknown>): boolean {
+  const rawM = body['manter_cabecalho_pedido'];
+  return (
+    rawM === true ||
+    rawM === 1 ||
+    (typeof rawM === 'string' &&
+      ['1', 'true', 'yes', 'sim'].includes(rawM.trim().toLowerCase()))
+  );
+}
+
 async function execExcluirAtendimento(body: {
   id_atendimento?: string;
   manter_cabecalho_pedido?: boolean;
+  modo_exclusao?: string;
 }) {
   try {
     const id = String(body.id_atendimento || '').trim();
     if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
-    const rawM = (body as Record<string, unknown>)['manter_cabecalho_pedido'];
-    const manterCab =
-      rawM === true ||
-      rawM === 1 ||
-      (typeof rawM === 'string' &&
-        ['1', 'true', 'yes', 'sim'].includes(rawM.trim().toLowerCase()));
-    const n = await excluirAtendimentoPorIdAtendimento(db, id, {
-      manterCabecalhoPedido: manterCab,
-    });
-    if (!n && !manterCab) {
+    const bRec = body as Record<string, unknown>;
+    const modo = parseModoExclusaoComanda(bRec);
+    let n: number;
+    if (modo) {
+      n = await excluirComandaPorIdAtendimento(db, id, modo);
+    } else if (parseManterCabecalhoPedido(bRec)) {
+      n = await excluirAtendimentoPorIdAtendimento(db, id, {
+        manterCabecalhoPedido: true,
+      });
+    } else {
+      n = await excluirComandaPorIdAtendimento(db, id, 'completo');
+    }
+    if (!n && !parseManterCabecalhoPedido(bRec)) {
       return fail('NOT_FOUND', 'Nenhuma linha encontrada para excluir');
     }
-    return ok({ removidas: n });
+    return ok({
+      removidas: n,
+      modo_exclusao: modo ?? (parseManterCabecalhoPedido(bRec) ? 'legado_manter_pedido' : 'completo'),
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return fail('SERVER', msg);
@@ -212,6 +245,47 @@ const app = new Elysia({ adapter: node() })
       return ok({ items });
     },
     { params: t.Object({ id: t.String() }) },
+  )
+  .post(
+    '/api/clientes/:id/credito-movimentos',
+    async ({ params, body }) => {
+      const item = await getClienteById(db, params.id);
+      if (!item) return fail('NOT_FOUND', 'Cliente não encontrado');
+      const tipoRaw = String(body.tipo ?? '').trim().toLowerCase();
+      const tipo =
+        tipoRaw === 'saida' || tipoRaw === 'retirar' || tipoRaw === 'remover'
+          ? ('saida' as const)
+          : ('entrada' as const);
+      try {
+        const result = await ajustarClienteCreditoManual(db, params.id, {
+          valor: body.valor,
+          tipo,
+          motivo: body.motivo,
+          gerar_movimentacao_financeira: body.gerar_movimentacao_financeira,
+        });
+        return ok({
+          saldo: result.saldo,
+          item: result.movimento,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        valor: t.Number({ minimum: 0.01 }),
+        tipo: t.Union([
+          t.Literal('entrada'),
+          t.Literal('saida'),
+          t.Literal('adicionar'),
+          t.Literal('retirar'),
+        ]),
+        motivo: t.Optional(t.String({ maxLength: 400 })),
+        gerar_movimentacao_financeira: t.Optional(t.Boolean()),
+      }),
+    },
   )
   .post(
     '/api/clientes',
@@ -717,15 +791,16 @@ const app = new Elysia({ adapter: node() })
       const idAt = String(
         b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
       ).trim();
-      const rawM = (b as Record<string, unknown>)['manter_cabecalho_pedido'];
-      const manterCab =
-        rawM === true ||
-        rawM === 1 ||
-        (typeof rawM === 'string' &&
-          ['1', 'true', 'yes', 'sim'].includes(rawM.trim().toLowerCase()));
+      const bRec = b as Record<string, unknown>;
       return execExcluirAtendimento({
         id_atendimento: idAt,
-        manter_cabecalho_pedido: manterCab,
+        modo_exclusao:
+          typeof bRec['modo_exclusao'] === 'string'
+            ? bRec['modo_exclusao']
+            : undefined,
+        manter_cabecalho_pedido: bRec['manter_cabecalho_pedido'] as
+          | boolean
+          | undefined,
       });
     }
     try {

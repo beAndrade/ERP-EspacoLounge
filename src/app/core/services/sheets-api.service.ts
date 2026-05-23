@@ -19,6 +19,8 @@ import {
   Cliente,
   ClienteCadastroPayload,
   ClienteCreditoMovimento,
+  CriarClienteCreditoMovimentoPayload,
+  CriarClienteCreditoMovimentoResponse,
   CreateAtendimentoPayload,
   FinTransacaoItem,
   MovimentacaoListaItem,
@@ -79,6 +81,20 @@ export class SheetsApiService {
         map((r) => this.unwrap(r)),
         map((d) => d.items ?? []),
       );
+  }
+
+  criarClienteCreditoMovimento(
+    clienteId: string,
+    body: CriarClienteCreditoMovimentoPayload,
+  ): Observable<CriarClienteCreditoMovimentoResponse> {
+    return this.http
+      .post<ApiResponse<CriarClienteCreditoMovimentoResponse>>(
+        this.url(
+          `/api/clientes/${encodeURIComponent(clienteId)}/credito-movimentos`,
+        ),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   listServicos(): Observable<Servico[]> {
@@ -508,14 +524,19 @@ export class SheetsApiService {
 
   excluirAtendimento(
     idAtendimento: string,
-    opts?: { manterCabecalhoPedido?: boolean },
+    opts?: {
+      manterCabecalhoPedido?: boolean;
+      modoExclusao?: 'somente_comanda' | 'completo';
+    },
   ): Observable<{ removidas: number }> {
     const params = new HttpParams().set('acao', 'excluir');
     const body: Record<string, unknown> = {
       id_atendimento: idAtendimento,
       acao: 'excluir',
     };
-    if (opts?.manterCabecalhoPedido) {
+    if (opts?.modoExclusao) {
+      body['modo_exclusao'] = opts.modoExclusao;
+    } else if (opts?.manterCabecalhoPedido) {
       body['manter_cabecalho_pedido'] = true;
     }
     return this.http

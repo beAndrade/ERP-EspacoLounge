@@ -25,28 +25,31 @@
       <span class="cliente-creditos__saldo-valor">{{
         d.creditoSaldo | currency: 'BRL' : 'symbol' : '1.2-2'
       }}</span>
-      <button
-        type="button"
-        class="cliente-creditos__saldo-edit"
-        aria-label="Ajustar saldo de crédito (em breve)"
-        disabled
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+      <span class="drawer-table__tip-trigger">
+        <button
+          type="button"
+          class="cliente-creditos__saldo-edit"
+          aria-label="Atualizar crédito"
+          (click)="abrirAtualizarCredito.emit()"
         >
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+        </button>
+        <span class="drawer-table__tip" role="tooltip">Atualizar crédito</span>
+      </span>
     </div>
   </div>
 

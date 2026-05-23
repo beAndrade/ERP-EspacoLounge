@@ -1,0 +1,41 @@
+---
+description: Padrão obrigatório para drawers empilhados (overlay, ESC, clique fora)
+globs:
+  - src/app/**/*.component.ts
+  - src/app/**/*.component.html
+  - src/app/**/*.component.scss
+---
+
+# Drawers empilhados
+
+Ao criar ou alterar **qualquer drawer lateral** (gaveta `app-drawer`, sub-drawer, edição, comanda, faturar, etc.):
+
+## Overlay escuro
+
+- Importar `src/app/styles/drawer-stack.scss` no SCSS do componente da página.
+- Usar classe **`overlay`** com fundo `#00000073` (já definido no partial).
+- Estado aberto: **`[class.overlay--open]="drawerAberto"`** (flag `*Aberto`, não só `*PanelOpen`), para o escurecimento acompanhar o painel na abertura e no fecho.
+- **`(click)="fechar…()"`** no overlay — fecha só essa camada (ou a superior, conforme a pilha).
+
+## Tecla ESC
+
+- No **componente host** da página (quem monta os drawers), `@HostListener('document:keydown.escape')`.
+- Ordem: fechar **camada superior primeiro** (ex.: faturar → comanda → editar → modal).
+- `ev.preventDefault()` quando tratar o ESC.
+- Não fechar se houver operação em curso (`salvando`, confirmação, etc.).
+
+## Z-index (comanda + sub-drawer faturar)
+
+Ordem obrigatória (referência comandas):
+
+1. `overlay--comanda` (ex.: 1100)
+2. `app-drawer--comanda` (ex.: 1102)
+3. `overlay--faturar` **acima** do drawer comanda (ex.: 1104) — escurece o fundo inteiro
+4. `app-drawer--faturar` (ex.: 1105)
+
+Se `overlay--faturar` ficar abaixo do drawer comanda, o fundo à esquerda fica branco sem escurecimento.
+
+## Referência
+
+- Estilos: `src/app/styles/drawer-stack.scss`
+- Implementação: `src/app/features/financeiro/pages/transacoes/financeiro-transacoes.component.*`
