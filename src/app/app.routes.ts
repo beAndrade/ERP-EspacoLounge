@@ -12,6 +12,7 @@ import { FinanceiroComissoesComponent } from './features/financeiro/pages/comiss
 import { FinanceiroShellComponent } from './features/financeiro/pages/shell/financeiro-shell.component';
 import { FinanceiroPainelComponent } from './features/financeiro/pages/painel/financeiro-painel.component';
 import { FinanceiroTransacoesComponent } from './features/financeiro/pages/transacoes/financeiro-transacoes.component';
+import { FinanceiroCadastrosComponent } from './features/financeiro/pages/cadastros/financeiro-cadastros.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 import { EstoqueComponent } from './features/estoque/pages/main/estoque.component';
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
@@ -29,6 +30,11 @@ export const routes: Routes = [
     path: 'pacotes',
     component: EmBreveComponent,
     data: { titulo: 'Pacotes' },
+  },
+  {
+    path: 'pacotes/predefinidos',
+    component: EmBreveComponent,
+    data: { titulo: 'Pacotes Predefinidos' },
   },
   { path: 'comandas', component: ComandasComponent },
   { path: 'atendimentos', redirectTo: 'comandas', pathMatch: 'full' },
@@ -114,6 +120,7 @@ export const routes: Routes = [
       { path: 'painel', component: FinanceiroPainelComponent },
       { path: 'transacoes', component: FinanceiroTransacoesComponent },
       { path: 'comissoes', component: FinanceiroComissoesComponent },
+      { path: 'cadastros', component: FinanceiroCadastrosComponent },
     ],
   },
   { path: '**', redirectTo: '' },

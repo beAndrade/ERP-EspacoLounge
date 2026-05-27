@@ -1,5 +1,9 @@
-/* Drawer global de cadastro de cliente (host em app-root). */
-.app-drawer {
+/* ViewEncapsulation.None — não usar `.app-drawer` sozinho (afeta outros módulos). */
+.cliente-drawer.app-drawer,
+.cliente-comanda-empilhada.app-drawer,
+.cliente-credito-empilhada.app-drawer,
+.cliente-faturar-empilhada.app-drawer,
+.cliente-edit-ag-empilhada.app-drawer {
   --drawer-inset-x: 15px;
   --drawer-pad-x: var(--drawer-inset-x);
   position: fixed;
@@ -17,18 +21,12 @@
   transform: translateX(100%);
   transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
 
-  &--open {
+  &.app-drawer--open {
     transform: translateX(0);
   }
 }
 
 @media (min-width: 1648px) {
-  .app-drawer {
-    right: 0;
-    width: auto;
-    left: max(320px, calc(100vw - 1400px));
-  }
-
   .cliente-drawer.app-drawer {
     left: auto;
     right: 0;

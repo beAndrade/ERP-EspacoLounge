@@ -12,12 +12,14 @@ import { FormsModule } from '@angular/forms';
 import type {
   CategoriaFinanceiraItem,
   Cliente,
+  ProfissionalListaItem,
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
-  contaFromMetodo,
-  type FinTransacaoLinhaUi,
-} from './fin-transacoes.mapper';
+  METODOS_NOME_FALLBACK,
+  mapFormasParaNomes,
+} from '../../../../core/utils/fin-formas-pagamento.util';
+import type { FinTransacaoLinhaUi } from './fin-transacoes.mapper';
 
 export interface FinTransacaoEditarSubmit {
   movimentacaoId: number;
@@ -25,14 +27,24 @@ export interface FinTransacaoEditarSubmit {
   categoria_id: number;
   metodo_pagamento: string;
   descricao?: string;
+  data_mov?: string;
+  pago_em?: string | null;
 }
-
-const METODOS = ['Débito', 'Crédito', 'Dinheiro', 'Pix', 'Transferência'] as const;
 
 function ymdParaExibicao(ymd: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim().slice(0, 10));
   if (!m) return '';
   return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+function profissionalIdFromTitular(
+  titular: string,
+  profissionais: ProfissionalListaItem[],
+): number | null {
+  const nome = titular.trim().toLowerCase();
+  if (!nome) return null;
+  const hit = profissionais.find((p) => p.nome.trim().toLowerCase() === nome);
+  return hit?.id ?? null;
 }
 
 @Component({
@@ -53,23 +65,25 @@ export class FinTransacaoEditarDrawerComponent {
   readonly fechar = output<void>();
   readonly salvar = output<FinTransacaoEditarSubmit>();
 
-  readonly metodos = METODOS;
+  readonly metodos = signal<string[]>([...METODOS_NOME_FALLBACK]);
   readonly categorias = signal<CategoriaFinanceiraItem[]>([]);
   readonly clientes = signal<Cliente[]>([]);
+  readonly profissionais = signal<ProfissionalListaItem[]>([]);
   readonly carregandoOpcoes = signal(false);
   readonly erroOpcoes = signal<string | null>(null);
 
-  receitaOrganizacional = false;
   ajustarCompetencia = false;
   valorBrutoDigitos = '';
   taxasDigitos = '';
+  valorDigitos = '';
   descricao = '';
   dataVencimentoYmd = '';
   dataBaixaYmd = '';
   metodoPagamento = '';
-  conta: 'Caixa' | 'Banco' = 'Caixa';
   categoriaId: number | null = null;
   clienteId = '';
+  fornecedorId = '';
+  profissionalId: number | null = null;
   erroForm = '';
 
   constructor() {
@@ -78,19 +92,22 @@ export class FinTransacaoEditarDrawerComponent {
       const row = this.linha();
       if (!row) return;
       this.erroForm = '';
-      this.receitaOrganizacional = false;
       this.ajustarCompetencia = false;
-      this.valorBrutoDigitos = String(Math.round(row.valorBruto * 100));
-      this.taxasDigitos = '0';
+      const valorCentavos = String(Math.round(row.valorBruto * 100));
+      this.valorBrutoDigitos = valorCentavos;
+      this.valorDigitos = valorCentavos;
+      const taxaReais = Math.max(0, row.valorBruto - row.valorLiquido);
+      this.taxasDigitos = String(Math.round(taxaReais * 100));
       this.descricao = String(row.descricao ?? row.subtitulo ?? '').trim();
       this.dataVencimentoYmd = row.dataYmd;
-      this.dataBaixaYmd = row.dataYmd;
+      this.dataBaixaYmd = row.pagoEmYmd ?? (row.status === 'pago' ? row.dataYmd : '');
       this.metodoPagamento =
         row.formaPagamento !== '—' ? row.formaPagamento : '';
-      this.conta = row.conta;
       this.categoriaId = row.categoriaId ?? null;
       this.clienteId = row.clienteId?.trim() ?? '';
-      this.carregarOpcoes();
+      this.fornecedorId = '';
+      this.profissionalId = null;
+      this.carregarOpcoes(row);
     });
   }
 
@@ -129,6 +146,10 @@ export class FinTransacaoEditarDrawerComponent {
     return Math.max(0, bruto - taxas);
   }
 
+  valorDespesaReais(): number {
+    return (parseInt(this.valorDigitos || '0', 10) || 0) / 100;
+  }
+
   rotuloValorLiquido(): string {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -136,15 +157,12 @@ export class FinTransacaoEditarDrawerComponent {
     }).format(this.valorLiquidoReais());
   }
 
-  onMetodoChange(): void {
-    this.conta = contaFromMetodo(this.metodoPagamento);
-  }
-
-  onValorInput(ev: Event, qual: 'bruto' | 'taxas'): void {
+  onValorInput(ev: Event, qual: 'bruto' | 'taxas' | 'valor'): void {
     const el = ev.target as HTMLInputElement;
     const d = el.value.replace(/\D/g, '').slice(0, 15);
     if (qual === 'bruto') this.valorBrutoDigitos = d;
-    else this.taxasDigitos = d;
+    else if (qual === 'taxas') this.taxasDigitos = d;
+    else this.valorDigitos = d;
   }
 
   abrirCalendarioData(ev: Event, input: HTMLInputElement): void {
@@ -164,7 +182,7 @@ export class FinTransacaoEditarDrawerComponent {
     else this.dataBaixaYmd = v;
   }
 
-  private carregarOpcoes(): void {
+  private carregarOpcoes(row: FinTransacaoLinhaUi): void {
     this.carregandoOpcoes.set(true);
     this.erroOpcoes.set(null);
     this.api
@@ -191,18 +209,44 @@ export class FinTransacaoEditarDrawerComponent {
       });
 
     this.api
+      .listFinFormasPagamentoOpcoes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          const nomes = mapFormasParaNomes(items);
+          if (nomes.length) this.metodos.set(nomes);
+        },
+        error: () => {
+          /* mantém fallback */
+        },
+      });
+
+    this.api
       .listClientes()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => this.clientes.set(items),
         error: () => this.clientes.set([]),
       });
+
+    this.api
+      .listProfissionais()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          this.profissionais.set(items);
+          if (!row.linhaReceita) {
+            this.profissionalId = profissionalIdFromTitular(row.titular, items);
+          }
+        },
+        error: () => this.profissionais.set([]),
+      });
   }
 
   submit(): void {
     const row = this.linha();
     const movId = row?.movimentacaoId;
-    if (movId == null || movId <= 0) return;
+    if (!row || movId == null || movId <= 0) return;
 
     if (this.categoriaId == null) {
       this.erroForm = 'Escolha uma categoria.';
@@ -213,11 +257,23 @@ export class FinTransacaoEditarDrawerComponent {
       this.erroForm = 'Selecione a forma de pagamento.';
       return;
     }
-    const v = this.valorLiquidoReais();
-    if (v <= 0) {
-      this.erroForm = 'Informe um valor líquido maior que zero.';
+    if (!this.dataVencimentoYmd.trim()) {
+      this.erroForm = 'Informe a data de vencimento.';
       return;
     }
+
+    const v = row.linhaReceita
+      ? this.valorLiquidoReais()
+      : this.valorDespesaReais();
+    if (v <= 0) {
+      this.erroForm = 'Informe um valor maior que zero.';
+      return;
+    }
+
+    const dataMov = this.ajustarCompetencia
+      ? this.dataBaixaYmd || this.dataVencimentoYmd
+      : this.dataVencimentoYmd;
+    const pagoEm = this.dataBaixaYmd.trim() || null;
 
     this.erroForm = '';
     this.salvar.emit({
@@ -226,6 +282,8 @@ export class FinTransacaoEditarDrawerComponent {
       categoria_id: this.categoriaId,
       metodo_pagamento: metodo,
       descricao: this.descricao.trim() || undefined,
+      data_mov: dataMov,
+      pago_em: pagoEm,
     });
   }
 }

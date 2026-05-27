@@ -64,6 +64,11 @@ export function extractApiErrorMessage(
       return `Não foi possível ligar à API.${API_HINT}`;
     }
 
+    /** 204 sem corpo: pedido pode ter sido gravado; reinicie a API se persistir. */
+    if (err.status === 204) {
+      return 'O servidor respondeu sem dados (204). Reinicie a API na pasta api e tente de novo.';
+    }
+
     if (/failure during parsing|parse/i.test(err.message ?? '')) {
       return `${err.message}${API_HINT}`;
     }

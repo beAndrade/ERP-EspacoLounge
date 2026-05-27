@@ -31,126 +31,97 @@
     }
 
     @if (linha()?.linhaReceita) {
-      <label class="fin-edit-toggle-row">
-        <span class="fin-edit-toggle-row__text">
-          <span class="fin-edit-toggle-row__label"
-            >É uma receita organizacional?</span
+      <div class="fin-edit-grid fin-edit-grid--3">
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Valor bruto</span>
+          <input
+            type="text"
+            class="fin-edit-field__input"
+            inputmode="numeric"
+            [value]="rotuloMoeda(valorBrutoDigitos)"
+            (input)="onValorInput($event, 'bruto')"
+            [disabled]="salvando() || carregandoOpcoes()"
+          />
+        </label>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Taxas</span>
+          <input
+            type="text"
+            class="fin-edit-field__input"
+            inputmode="numeric"
+            [value]="rotuloMoeda(taxasDigitos)"
+            (input)="onValorInput($event, 'taxas')"
+            [disabled]="salvando() || carregandoOpcoes()"
+          />
+        </label>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Valor líquido</span>
+          <input
+            type="text"
+            class="fin-edit-field__input fin-edit-field__input--readonly"
+            [value]="rotuloValorLiquido()"
+            readonly
+            tabindex="-1"
+          />
+        </label>
+      </div>
+
+      <label class="fin-edit-field fin-edit-field--full">
+        <span class="fin-edit-field__label">Descrição</span>
+        <textarea
+          class="fin-edit-field__textarea"
+          rows="3"
+          [(ngModel)]="descricao"
+          [disabled]="salvando() || carregandoOpcoes()"
+        ></textarea>
+      </label>
+
+      <div class="fin-edit-grid fin-edit-grid--2">
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label fin-edit-field__label--req"
+            >Vencimento</span
           >
-          <span class="fin-edit-toggle-row__hint"
-            >Se ativo, não vincula a nenhum caixa</span
+          <span class="fin-edit-date-wrap">
+            <button
+              type="button"
+              class="fin-edit-date-btn"
+              [class.fin-edit-date-btn--placeholder]="
+                dataPlaceholder(dataVencimentoYmd)
+              "
+              (click)="abrirCalendarioData($event, vencInput)"
+              [disabled]="salvando() || carregandoOpcoes()"
+            >
+              {{ rotuloData(dataVencimentoYmd) }}
+            </button>
+            <input
+              #vencInput
+              type="date"
+              class="fin-edit-date-native"
+              [value]="dataVencimentoYmd"
+              tabindex="-1"
+              aria-hidden="true"
+              (change)="onDataAlterada($event, 'venc')"
+            />
+          </span>
+        </label>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label fin-edit-field__label--req"
+            >Forma de pagamento</span
           >
-        </span>
-        <button
-          type="button"
-          class="drawer-switch"
-          [class.drawer-switch--on]="receitaOrganizacional"
-          [attr.aria-pressed]="receitaOrganizacional"
-          (click)="receitaOrganizacional = !receitaOrganizacional"
-          [disabled]="salvando() || carregandoOpcoes()"
-        ></button>
-      </label>
-    }
-
-    <div class="fin-edit-grid fin-edit-grid--3">
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Valor bruto</span>
-        <input
-          type="text"
-          class="fin-edit-field__input"
-          inputmode="numeric"
-          [value]="rotuloMoeda(valorBrutoDigitos)"
-          (input)="onValorInput($event, 'bruto')"
-          [disabled]="salvando() || carregandoOpcoes()"
-        />
-      </label>
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Taxas</span>
-        <input
-          type="text"
-          class="fin-edit-field__input"
-          inputmode="numeric"
-          [value]="rotuloMoeda(taxasDigitos)"
-          (input)="onValorInput($event, 'taxas')"
-          [disabled]="salvando() || carregandoOpcoes()"
-        />
-      </label>
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Valor líquido</span>
-        <input
-          type="text"
-          class="fin-edit-field__input fin-edit-field__input--readonly"
-          [value]="rotuloValorLiquido()"
-          readonly
-          tabindex="-1"
-        />
-      </label>
-    </div>
-
-    <label class="fin-edit-field fin-edit-field--full">
-      <span class="fin-edit-field__label">Descrição</span>
-      <textarea
-        class="fin-edit-field__textarea"
-        rows="3"
-        [(ngModel)]="descricao"
-        [disabled]="salvando() || carregandoOpcoes()"
-      ></textarea>
-    </label>
-
-    <div class="fin-edit-grid fin-edit-grid--3">
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Vencimento</span>
-        <span class="fin-edit-date-wrap">
-          <button
-            type="button"
-            class="fin-edit-date-btn"
-            [class.fin-edit-date-btn--placeholder]="
-              dataPlaceholder(dataVencimentoYmd)
-            "
-            (click)="abrirCalendarioData($event, vencInput)"
+          <select
+            class="fin-edit-field__select"
+            [(ngModel)]="metodoPagamento"
             [disabled]="salvando() || carregandoOpcoes()"
           >
-            {{ rotuloData(dataVencimentoYmd) }}
-          </button>
-          <input
-            #vencInput
-            type="date"
-            class="fin-edit-date-native"
-            [value]="dataVencimentoYmd"
-            tabindex="-1"
-            aria-hidden="true"
-            (change)="onDataAlterada($event, 'venc')"
-          />
-        </span>
-      </label>
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Forma de pagamento</span>
-        <select
-          class="fin-edit-field__select"
-          [(ngModel)]="metodoPagamento"
-          (ngModelChange)="onMetodoChange()"
-          [disabled]="salvando() || carregandoOpcoes()"
-        >
-          <option value="" disabled>Selecione…</option>
-          @for (m of metodos; track m) {
-            <option [value]="m">{{ m }}</option>
-          }
-        </select>
-      </label>
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Conta</span>
-        <select
-          class="fin-edit-field__select"
-          [(ngModel)]="conta"
-          [disabled]="salvando() || carregandoOpcoes()"
-        >
-          <option value="Caixa">Caixa</option>
-          <option value="Banco">Banco</option>
-        </select>
-      </label>
-    </div>
+            <option value="" disabled>Selecione…</option>
+            @for (m of metodos(); track m) {
+              <option [value]="m">{{ m }}</option>
+            }
+          </select>
+        </label>
+      </div>
 
-    <div class="fin-edit-grid fin-edit-grid--3">
-      @if (linha()?.linhaReceita) {
+      <div class="fin-edit-grid fin-edit-grid--3">
         <label class="fin-edit-field">
           <span class="fin-edit-field__label">Recebido de</span>
           <select
@@ -164,9 +135,122 @@
             }
           </select>
         </label>
-      }
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Categoria</span>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label fin-edit-field__label--req"
+            >Categoria</span
+          >
+          <select
+            class="fin-edit-field__select"
+            [(ngModel)]="categoriaId"
+            [disabled]="salvando() || carregandoOpcoes()"
+          >
+            <option [ngValue]="null" disabled>Selecione…</option>
+            @for (c of categoriasFiltradas; track c.id) {
+              <option [ngValue]="c.id">{{ c.nome }}</option>
+            }
+          </select>
+        </label>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Baixa</span>
+          <span class="fin-edit-date-wrap">
+            <button
+              type="button"
+              class="fin-edit-date-btn"
+              [class.fin-edit-date-btn--placeholder]="
+                dataPlaceholder(dataBaixaYmd)
+              "
+              (click)="abrirCalendarioData($event, baixaInput)"
+              [disabled]="salvando() || carregandoOpcoes()"
+            >
+              {{ rotuloData(dataBaixaYmd) }}
+            </button>
+            <input
+              #baixaInput
+              type="date"
+              class="fin-edit-date-native"
+              [value]="dataBaixaYmd"
+              tabindex="-1"
+              aria-hidden="true"
+              (change)="onDataAlterada($event, 'baixa')"
+            />
+          </span>
+        </label>
+      </div>
+    } @else {
+      <div class="fin-edit-grid fin-edit-grid--2">
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label fin-edit-field__label--req"
+            >Valor</span
+          >
+          <input
+            type="text"
+            class="fin-edit-field__input"
+            inputmode="numeric"
+            [value]="rotuloMoeda(valorDigitos)"
+            (input)="onValorInput($event, 'valor')"
+            [disabled]="salvando() || carregandoOpcoes()"
+          />
+        </label>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Descrição</span>
+          <input
+            type="text"
+            class="fin-edit-field__input"
+            [(ngModel)]="descricao"
+            [disabled]="salvando() || carregandoOpcoes()"
+          />
+        </label>
+      </div>
+
+      <div class="fin-edit-grid fin-edit-grid--2">
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label fin-edit-field__label--req"
+            >Vencimento</span
+          >
+          <span class="fin-edit-date-wrap">
+            <button
+              type="button"
+              class="fin-edit-date-btn"
+              [class.fin-edit-date-btn--placeholder]="
+                dataPlaceholder(dataVencimentoYmd)
+              "
+              (click)="abrirCalendarioData($event, vencDespInput)"
+              [disabled]="salvando() || carregandoOpcoes()"
+            >
+              {{ rotuloData(dataVencimentoYmd) }}
+            </button>
+            <input
+              #vencDespInput
+              type="date"
+              class="fin-edit-date-native"
+              [value]="dataVencimentoYmd"
+              tabindex="-1"
+              aria-hidden="true"
+              (change)="onDataAlterada($event, 'venc')"
+            />
+          </span>
+        </label>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label fin-edit-field__label--req"
+            >Forma de pagamento</span
+          >
+          <select
+            class="fin-edit-field__select"
+            [(ngModel)]="metodoPagamento"
+            [disabled]="salvando() || carregandoOpcoes()"
+          >
+            <option value="" disabled>Selecione…</option>
+            @for (m of metodos(); track m) {
+              <option [value]="m">{{ m }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <label class="fin-edit-field fin-edit-field--full">
+        <span class="fin-edit-field__label fin-edit-field__label--req"
+          >Categoria</span
+        >
         <select
           class="fin-edit-field__select"
           [(ngModel)]="categoriaId"
@@ -178,42 +262,88 @@
           }
         </select>
       </label>
-      <label class="fin-edit-field">
-        <span class="fin-edit-field__label">Baixa</span>
-        <span class="fin-edit-date-wrap">
-          <button
-            type="button"
-            class="fin-edit-date-btn"
-            [class.fin-edit-date-btn--placeholder]="dataPlaceholder(dataBaixaYmd)"
-            (click)="abrirCalendarioData($event, baixaInput)"
+
+      <div class="fin-edit-grid fin-edit-grid--2">
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Pago para fornecedor</span>
+          <select
+            class="fin-edit-field__select"
+            [(ngModel)]="fornecedorId"
             [disabled]="salvando() || carregandoOpcoes()"
           >
-            {{ rotuloData(dataBaixaYmd) }}
-          </button>
-          <input
-            #baixaInput
-            type="date"
-            class="fin-edit-date-native"
-            [value]="dataBaixaYmd"
-            tabindex="-1"
-            aria-hidden="true"
-            (change)="onDataAlterada($event, 'baixa')"
-          />
-        </span>
-      </label>
-    </div>
+            <option value="">Fornecedor</option>
+          </select>
+        </label>
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Pago para profissional</span>
+          <select
+            class="fin-edit-field__select"
+            [(ngModel)]="profissionalId"
+            [disabled]="salvando() || carregandoOpcoes()"
+          >
+            <option [ngValue]="null">Selecionar profissional</option>
+            @for (p of profissionais(); track p.id) {
+              <option [ngValue]="p.id">{{ p.nome }}</option>
+            }
+          </select>
+        </label>
+      </div>
 
-    <label class="fin-edit-toggle-row fin-edit-toggle-row--compact">
-      <span class="fin-edit-toggle-row__label">Ajustar data de competência</span>
-      <button
-        type="button"
-        class="drawer-switch"
-        [class.drawer-switch--on]="ajustarCompetencia"
-        [attr.aria-pressed]="ajustarCompetencia"
-        (click)="ajustarCompetencia = !ajustarCompetencia"
-        [disabled]="salvando() || carregandoOpcoes()"
-      ></button>
-    </label>
+      <div class="fin-edit-grid fin-edit-grid--2 fin-edit-grid--baixa">
+        <label class="fin-edit-field">
+          <span class="fin-edit-field__label">Baixa</span>
+          <span class="fin-edit-date-wrap">
+            <button
+              type="button"
+              class="fin-edit-date-btn"
+              [class.fin-edit-date-btn--placeholder]="
+                dataPlaceholder(dataBaixaYmd)
+              "
+              (click)="abrirCalendarioData($event, baixaDespInput)"
+              [disabled]="salvando() || carregandoOpcoes()"
+            >
+              {{ rotuloData(dataBaixaYmd) }}
+            </button>
+            <input
+              #baixaDespInput
+              type="date"
+              class="fin-edit-date-native"
+              [value]="dataBaixaYmd"
+              tabindex="-1"
+              aria-hidden="true"
+              (change)="onDataAlterada($event, 'baixa')"
+            />
+          </span>
+        </label>
+        <label class="fin-edit-toggle-row fin-edit-toggle-row--inline">
+          <span class="fin-edit-toggle-row__label"
+            >Ajustar data de competência</span
+          >
+          <button
+            type="button"
+            class="drawer-switch"
+            [class.drawer-switch--on]="ajustarCompetencia"
+            [attr.aria-pressed]="ajustarCompetencia"
+            (click)="ajustarCompetencia = !ajustarCompetencia"
+            [disabled]="salvando() || carregandoOpcoes()"
+          ></button>
+        </label>
+      </div>
+    }
+
+    @if (linha()?.linhaReceita) {
+      <label class="fin-edit-toggle-row fin-edit-toggle-row--compact">
+        <span class="fin-edit-toggle-row__label">Ajustar data de competência</span>
+        <button
+          type="button"
+          class="drawer-switch"
+          [class.drawer-switch--on]="ajustarCompetencia"
+          [attr.aria-pressed]="ajustarCompetencia"
+          (click)="ajustarCompetencia = !ajustarCompetencia"
+          [disabled]="salvando() || carregandoOpcoes()"
+        ></button>
+      </label>
+    }
   </div>
 
   <footer class="fin-edit-footer">

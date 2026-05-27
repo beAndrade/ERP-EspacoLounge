@@ -1,0 +1,98 @@
+/** Tooltip escuro reutilizável (trigger + balão com seta para baixo). */
+
+.ui-tip-trigger,
+.drawer-table__tip-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  z-index: 1;
+
+  &:hover,
+  &:focus-within {
+    z-index: 3100;
+  }
+}
+
+.ui-tip,
+.drawer-table__tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  z-index: 3000;
+  min-width: max-content;
+  max-width: 280px;
+  padding: 0.55rem 0.9rem;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: #fff;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.82);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    visibility 0s linear 0.16s;
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.82);
+  }
+}
+
+.ui-tip-trigger--open .ui-tip {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.16s ease,
+    visibility 0s;
+}
+
+.ui-tip-trigger--align-end.ui-tip-trigger--open,
+.ui-tip-trigger--align-start.ui-tip-trigger--open {
+  z-index: 3200;
+}
+
+.ui-tip-trigger--align-end .ui-tip {
+  left: auto;
+  right: 0;
+  transform: none;
+
+  &::after {
+    left: auto;
+    right: 3px;
+    transform: none;
+  }
+}
+
+.ui-tip-trigger--align-start .ui-tip {
+  left: 0;
+  right: auto;
+  transform: none;
+
+  &::after {
+    left: 3px;
+    right: auto;
+    transform: none;
+  }
+}
+
+.drawer-table__tip-trigger:hover .drawer-table__tip,
+.drawer-table__tip-trigger:focus-within .drawer-table__tip {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.16s ease,
+    visibility 0s;
+}

@@ -1,0 +1,191 @@
+<div class="fin-cad-edit">
+  <div class="fin-cad-edit__body">
+    <header class="fin-cad-edit__head">
+      <h1 class="fin-cad-edit__title">{{ titulo }}</h1>
+      <button
+        type="button"
+        class="fin-cad-edit__close"
+        (click)="fechar.emit()"
+        aria-label="Fechar"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="22"
+          height="22"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </header>
+
+    @if (modo === 'categoria') {
+      <label class="fin-cad-edit__field fin-cad-edit__field--full">
+        <span class="fin-cad-edit__label fin-cad-edit__label--req">Nome</span>
+        <input
+          type="text"
+          class="fin-cad-edit__input"
+          [(ngModel)]="nome"
+          name="cadNome"
+          placeholder="Nome"
+          autocomplete="off"
+          [disabled]="salvando"
+        />
+      </label>
+
+      <div class="fin-cad-edit__grid fin-cad-edit__grid--2">
+        <label class="fin-cad-edit__field">
+          <span class="fin-cad-edit__label fin-cad-edit__label--req">Tipo</span>
+          <select
+            class="fin-cad-edit__input"
+            [(ngModel)]="natureza"
+            name="cadNatureza"
+            [disabled]="salvando || naturezaBloqueada"
+          >
+            <option value="receita">Crédito</option>
+            <option value="despesa">Débito</option>
+          </select>
+        </label>
+        <div class="fin-cad-edit__field">
+          <span class="fin-cad-edit__label fin-cad-edit__label--with-tip">
+            Tela padrão
+            <app-ui-tip-trigger [tip]="tipTelaPadrao" align="end">
+              <span class="fin-cad-edit__info-icon" aria-hidden="true">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+              </span>
+            </app-ui-tip-trigger>
+          </span>
+          <select
+            class="fin-cad-edit__input"
+            disabled
+            aria-disabled="true"
+            title="Recurso ainda não disponível"
+          >
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>
+    } @else {
+      <label class="fin-cad-edit__field fin-cad-edit__field--full">
+        <span class="fin-cad-edit__label fin-cad-edit__label--req">Nome</span>
+        <input
+          type="text"
+          class="fin-cad-edit__input"
+          [(ngModel)]="nome"
+          name="cadNome"
+          placeholder="Nome"
+          autocomplete="off"
+          [disabled]="salvando"
+        />
+      </label>
+
+      <div class="fin-cad-edit__grid fin-cad-edit__grid--2">
+        <label class="fin-cad-edit__field">
+          <span class="fin-cad-edit__label">Taxa fixa</span>
+          <input
+            type="text"
+            class="fin-cad-edit__input"
+            inputmode="numeric"
+            [value]="rotuloTaxaFixa()"
+            (input)="onTaxaFixaInput($event)"
+            name="cadTaxaFixa"
+            autocomplete="off"
+            placeholder="R$ 0,00"
+            [disabled]="salvando"
+          />
+        </label>
+        <label class="fin-cad-edit__field">
+          <span class="fin-cad-edit__label">Taxa</span>
+          <input
+            type="text"
+            class="fin-cad-edit__input"
+            inputmode="decimal"
+            [value]="taxaPctTexto"
+            (input)="onTaxaPctInput($event)"
+            name="cadTaxaPct"
+            autocomplete="off"
+            placeholder="% 0,00"
+            [disabled]="salvando"
+          />
+        </label>
+      </div>
+
+      <label class="fin-cad-edit__field fin-cad-edit__field--full">
+        <span class="fin-cad-edit__label fin-cad-edit__label--req"
+          >Prazo de recebimento</span
+        >
+        <input
+          type="text"
+          class="fin-cad-edit__input"
+          inputmode="numeric"
+          [value]="prazoRecebimentoTexto"
+          (input)="onPrazoInput($event)"
+          name="cadPrazoRecebimento"
+          autocomplete="off"
+          placeholder="0"
+          [disabled]="salvando"
+        />
+      </label>
+
+      <label class="fin-cad-edit__toggle-row">
+        <span class="fin-cad-edit__toggle-row__label">Baixa automática</span>
+        <button
+          type="button"
+          class="drawer-switch"
+          [class.drawer-switch--on]="baixaAutomatica"
+          [attr.aria-pressed]="baixaAutomatica"
+          (click)="baixaAutomatica = !baixaAutomatica"
+          [disabled]="salvando"
+        ></button>
+      </label>
+      <label class="fin-cad-edit__toggle-row">
+        <span class="fin-cad-edit__toggle-row__label">Ativa</span>
+        <button
+          type="button"
+          class="drawer-switch"
+          [class.drawer-switch--on]="ativo"
+          [attr.aria-pressed]="ativo"
+          (click)="ativo = !ativo"
+          [disabled]="salvando"
+        ></button>
+      </label>
+    }
+  </div>
+
+  <footer class="fin-cad-edit__foot">
+    <button
+      type="button"
+      class="fin-cad-edit__btn fin-cad-edit__btn--ghost"
+      (click)="fechar.emit()"
+      [disabled]="salvando"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="fin-cad-edit__btn fin-cad-edit__btn--primary"
+      (click)="onSalvar()"
+      [disabled]="salvando || !nome.trim()"
+    >
+      {{ salvando ? 'Salvando…' : 'Salvar' }}
+    </button>
+  </footer>
+</div>

@@ -119,7 +119,7 @@
           required
         >
           <option value="" disabled>Selecione…</option>
-          @for (m of metodos; track m) {
+          @for (m of metodos(); track m) {
             <option [value]="m">{{ m }}</option>
           }
         </select>

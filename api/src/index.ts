@@ -24,18 +24,36 @@ import {
   criarPagamentoComanda,
   excluirPagamentoComanda,
   getResumoComanda,
+  liquidarPendenciaComandaPorId,
   listarPagamentosPorAtendimento,
 } from './services/comanda-pagamentos-domain';
 import {
   atualizarMovimentacaoPorId,
   criarDespesaCadastro,
   criarMovimentacaoManual,
+  estornarMovimentacaoPagamentoApi,
   excluirMovimentacaoPorId,
   getCaixaDiaApi,
   listCategoriasFinanceirasApi,
+  listComissoesDetalhadasApi,
   listMovimentacoesApi,
   listTransacoesFinanceirasApi,
+  marcarMovimentacaoComoPagaApi,
+  pagarComissoesApi,
+  estornarComissaoMovimentacaoApi,
+  excluirComissaoMovimentacaoApi,
 } from './services/finance-domain';
+import {
+  atualizarCategoriaCadastroApi,
+  atualizarFormaPagamentoCadastroApi,
+  criarCategoriaCadastroApi,
+  criarFormaPagamentoCadastroApi,
+  excluirCategoriaCadastroApi,
+  excluirFormaPagamentoCadastroApi,
+  listCategoriasCadastroApi,
+  listFormasPagamentoCadastroApi,
+  listFormasPagamentoOpcoesApi,
+} from './services/finance-cadastros-domain';
 import {
   atualizarProfissional,
   criarProfissional,
@@ -212,6 +230,81 @@ async function execExcluirAtendimento(body: {
   }
 }
 
+async function handleComissoesDetalhadasGet(
+  query: Record<string, string | undefined>,
+) {
+  try {
+    const dataInicio = String(
+      query.dataInicio ?? query.data_inicio ?? '',
+    ).trim();
+    const dataFim = String(query.dataFim ?? query.data_fim ?? '').trim();
+    const profRaw = String(
+      query.profissionalId ?? query.profissional_id ?? '',
+    ).trim();
+    const profissionalId = Number(profRaw);
+    const mostrarAnteriores =
+      query.mostrarAnteriores === '1' ||
+      query.mostrarAnteriores === 'true' ||
+      query.mostrar_anteriores === '1' ||
+      query.mostrar_anteriores === 'true';
+    const items = await listComissoesDetalhadasApi(db, {
+      dataInicio,
+      dataFim,
+      profissionalId,
+      mostrarAnteriores,
+    });
+    return ok({
+      items,
+      fonte: 'atendimentos',
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (
+      msg.includes('obrigatórias') ||
+      msg.includes('obrigatório') ||
+      msg.includes('não pode ser posterior')
+    ) {
+      return fail('VALIDATION', msg);
+    }
+    return fail('SERVER', msg);
+  }
+}
+
+async function handleComissoesPagarPost(body: {
+  profissional_id?: number;
+  data_pagamento?: string;
+  atendimento_ids?: number[];
+  pagamentos?: { metodo?: string; valor?: number }[];
+}) {
+  try {
+    const result = await pagarComissoesApi(db, {
+      profissional_id: Number(body.profissional_id),
+      data_pagamento: String(body.data_pagamento ?? ''),
+      atendimento_ids: (body.atendimento_ids ?? []).map((x) => Number(x)),
+      pagamentos: (body.pagamentos ?? []).map((p) => ({
+        metodo: String(p.metodo ?? ''),
+        valor: Number(p.valor),
+      })),
+    });
+    return ok(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (
+      msg.includes('obrigatório') ||
+      msg.includes('obrigatória') ||
+      msg.includes('inválid') ||
+      msg.includes('coincidir') ||
+      msg.includes('Selecione') ||
+      msg.includes('Informe') ||
+      msg.includes('já foram') ||
+      msg.includes('não foram')
+    ) {
+      return fail('VALIDATION', msg);
+    }
+    return fail('SERVER', msg);
+  }
+}
+
 const app = new Elysia({ adapter: node() })
   .use(
     cors({
@@ -225,6 +318,89 @@ const app = new Elysia({ adapter: node() })
       status: 'up',
       time: instantEmDateParaSqlLocalBrasil(new Date()) ?? '',
     }),
+  )
+  .get('/api/financeiro/comissoes/detalhadas', async ({ query }) =>
+    handleComissoesDetalhadasGet(query as Record<string, string | undefined>),
+  )
+  .post(
+    '/api/financeiro/comissoes/pagar',
+    async ({ body, set }) => {
+      set.status = 200;
+      set.headers['content-type'] = 'application/json; charset=utf-8';
+      return handleComissoesPagarPost(
+        body as {
+          profissional_id?: number;
+          data_pagamento?: string;
+          atendimento_ids?: number[];
+          pagamentos?: { metodo?: string; valor?: number }[];
+        },
+      );
+    },
+    {
+      body: t.Object({
+        profissional_id: t.Number(),
+        data_pagamento: t.String(),
+        atendimento_ids: t.Array(t.Number()),
+        pagamentos: t.Array(
+          t.Object({
+            metodo: t.String(),
+            valor: t.Number(),
+          }),
+        ),
+      }),
+    },
+  )
+  .post(
+    '/api/financeiro/comissoes/estornar',
+    async ({ body, set }) => {
+      set.status = 200;
+      set.headers['content-type'] = 'application/json; charset=utf-8';
+      try {
+        const result = await estornarComissaoMovimentacaoApi(
+          db,
+          Number((body as { movimentacao_id?: number }).movimentacao_id),
+        );
+        await recalcularTotaisComissaoFolhaPorPeriodo(db, result.periodo_ym);
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (
+          msg.includes('inválid') ||
+          msg.includes('não encontrada') ||
+          msg.includes('não é um')
+        ) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { body: t.Object({ movimentacao_id: t.Number() }) },
+  )
+  .post(
+    '/api/financeiro/comissoes/excluir',
+    async ({ body, set }) => {
+      set.status = 200;
+      set.headers['content-type'] = 'application/json; charset=utf-8';
+      try {
+        const result = await excluirComissaoMovimentacaoApi(
+          db,
+          Number((body as { movimentacao_id?: number }).movimentacao_id),
+        );
+        await recalcularTotaisComissaoFolhaPorPeriodo(db, result.periodo_ym);
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (
+          msg.includes('inválid') ||
+          msg.includes('não encontrada') ||
+          msg.includes('não é um')
+        ) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { body: t.Object({ movimentacao_id: t.Number() }) },
   )
   .get('/api/clientes', async () => ok({ items: await listClientesNormalized(db) }))
   .get(
@@ -537,6 +713,199 @@ const app = new Elysia({ adapter: node() })
   .get('/api/categorias-financeiras', async () =>
     ok({ items: await listCategoriasFinanceirasApi(db) }),
   )
+  .get('/api/financeiro/formas-pagamento/opcoes', async () =>
+    ok({ items: await listFormasPagamentoOpcoesApi(db) }),
+  )
+  .get('/api/financeiro/categorias', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const incluirInativas =
+        q.incluir_inativas === '1' || q.incluirInativas === '1';
+      return ok({
+        items: await listCategoriasCadastroApi(db, { incluirInativas }),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .post(
+    '/api/financeiro/categorias',
+    async ({ body }) => {
+      try {
+        const b = body as { nome?: string; natureza?: string };
+        const natureza = b.natureza === 'despesa' ? 'despesa' : 'receita';
+        const id = await criarCategoriaCadastroApi(db, {
+          nome: String(b.nome ?? ''),
+          natureza,
+        });
+        return ok({ id });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      body: t.Object({
+        nome: t.String(),
+        natureza: t.Union([t.Literal('receita'), t.Literal('despesa')]),
+      }),
+    },
+  )
+  .patch(
+    '/api/financeiro/categorias/:id',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as { nome?: string; natureza?: string };
+        await atualizarCategoriaCadastroApi(db, id, {
+          nome: b.nome !== undefined ? String(b.nome) : undefined,
+          natureza:
+            b.natureza === 'receita' || b.natureza === 'despesa'
+              ? b.natureza
+              : undefined,
+        });
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        nome: t.Optional(t.String()),
+        natureza: t.Optional(
+          t.Union([t.Literal('receita'), t.Literal('despesa')]),
+        ),
+      }),
+    },
+  )
+  .delete('/api/financeiro/categorias/:id', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const result = await excluirCategoriaCadastroApi(db, id);
+      return ok({ ok: true, result });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+      return fail('VALIDATION', msg);
+    }
+  })
+  .get('/api/financeiro/formas-pagamento', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const incluirInativas =
+        q.incluir_inativas === '1' || q.incluirInativas === '1';
+      return ok({
+        items: await listFormasPagamentoCadastroApi(db, { incluirInativas }),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .post(
+    '/api/financeiro/formas-pagamento',
+    async ({ body }) => {
+      try {
+        const b = body as {
+          nome?: string;
+          baixa_automatica?: boolean;
+          taxa_percentual?: number;
+          taxa_fixa?: number;
+          prazo_recebimento?: number;
+          ativo?: boolean;
+        };
+        const id = await criarFormaPagamentoCadastroApi(db, {
+          nome: String(b.nome ?? ''),
+          baixa_automatica: b.baixa_automatica === true,
+          taxa_percentual: b.taxa_percentual,
+          taxa_fixa: b.taxa_fixa,
+          prazo_recebimento: b.prazo_recebimento,
+          ativo: b.ativo,
+        });
+        return ok({ id });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      body: t.Object({
+        nome: t.String(),
+        baixa_automatica: t.Optional(t.Boolean()),
+        taxa_percentual: t.Optional(t.Number()),
+        taxa_fixa: t.Optional(t.Number()),
+        prazo_recebimento: t.Optional(t.Number()),
+        ativo: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .patch(
+    '/api/financeiro/formas-pagamento/:id',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as {
+          nome?: string;
+          baixa_automatica?: boolean;
+          taxa_percentual?: number;
+          taxa_fixa?: number;
+          prazo_recebimento?: number;
+          ativo?: boolean;
+        };
+        await atualizarFormaPagamentoCadastroApi(db, id, {
+          nome: b.nome !== undefined ? String(b.nome) : undefined,
+          baixa_automatica: b.baixa_automatica,
+          taxa_percentual: b.taxa_percentual,
+          taxa_fixa: b.taxa_fixa,
+          prazo_recebimento: b.prazo_recebimento,
+          ativo: b.ativo,
+        });
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        nome: t.Optional(t.String()),
+        baixa_automatica: t.Optional(t.Boolean()),
+        taxa_percentual: t.Optional(t.Number()),
+        taxa_fixa: t.Optional(t.Number()),
+        prazo_recebimento: t.Optional(t.Number()),
+        ativo: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .delete('/api/financeiro/formas-pagamento/:id', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const result = await excluirFormaPagamentoCadastroApi(db, id);
+      return ok({ ok: true, result });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+      return fail('VALIDATION', msg);
+    }
+  })
   .get('/api/movimentacoes', async ({ query }) => {
     try {
       const q = query as Record<string, string | undefined>;
@@ -576,6 +945,79 @@ const app = new Elysia({ adapter: node() })
       return fail('SERVER', msg);
     }
   })
+  .post(
+    '/api/financeiro/transacoes/movimentacoes/:id/pagar',
+    async ({ params, body, set }) => {
+      set.status = 200;
+      set.headers['content-type'] = 'application/json; charset=utf-8';
+      try {
+        await marcarMovimentacaoComoPagaApi(
+          db,
+          Number(params.id),
+          String((body as { data_pagamento?: string }).data_pagamento ?? ''),
+        );
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('inválida') || msg.includes('inválido') || msg.includes('não encontrada')) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({ data_pagamento: t.String() }),
+    },
+  )
+  .post(
+    '/api/financeiro/transacoes/movimentacoes/:id/estornar',
+    async ({ params, set }) => {
+      set.status = 200;
+      set.headers['content-type'] = 'application/json; charset=utf-8';
+      try {
+        await estornarMovimentacaoPagamentoApi(db, Number(params.id));
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('inválido') || msg.includes('não encontrada') || msg.includes('Use o fluxo')) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
+  .post(
+    '/api/financeiro/transacoes/pendencias/:id/pagar',
+    async ({ params, body, set }) => {
+      set.status = 200;
+      set.headers['content-type'] = 'application/json; charset=utf-8';
+      try {
+        await liquidarPendenciaComandaPorId(
+          db,
+          Number(params.id),
+          String((body as { data_pagamento?: string }).data_pagamento ?? ''),
+        );
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (
+          msg.includes('inválida') ||
+          msg.includes('inválido') ||
+          msg.includes('não encontrada') ||
+          msg.includes('já está liquidada')
+        ) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({ data_pagamento: t.String() }),
+    },
+  )
   .get('/api/caixa/dia', async ({ query }) => {
     try {
       const q = query as Record<string, string | undefined>;
@@ -639,6 +1081,8 @@ const app = new Elysia({ adapter: node() })
           descricao?: string | null;
           categoria_id?: number;
           metodo_pagamento?: string | null;
+          data_mov?: string;
+          pago_em?: string | null;
         } = {};
         if (b.valor !== undefined) patch.valor = Number(b.valor);
         if (b.descricao !== undefined) {
@@ -653,6 +1097,13 @@ const app = new Elysia({ adapter: node() })
             b.metodo_pagamento === null
               ? null
               : String(b.metodo_pagamento);
+        }
+        if (b.data_mov !== undefined) {
+          patch.data_mov = String(b.data_mov);
+        }
+        if (b.pago_em !== undefined) {
+          patch.pago_em =
+            b.pago_em === null ? null : String(b.pago_em);
         }
         await atualizarMovimentacaoPorId(db, id, patch);
         return ok({ ok: true });
@@ -671,6 +1122,8 @@ const app = new Elysia({ adapter: node() })
         descricao: t.Optional(t.Union([t.String(), t.Null()])),
         categoria_id: t.Optional(t.Number()),
         metodo_pagamento: t.Optional(t.Union([t.String(), t.Null()])),
+        data_mov: t.Optional(t.String()),
+        pago_em: t.Optional(t.Union([t.String(), t.Null()])),
       }),
     },
   )

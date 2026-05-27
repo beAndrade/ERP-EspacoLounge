@@ -1,6 +1,13 @@
 import { NgClass } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
+import { filter } from 'rxjs';
 import { AppToastComponent } from './shared/app-toast/app-toast.component';
 import { ClienteCadastroDrawerHostComponent } from './shared/cliente-cadastro-drawer/cliente-cadastro-drawer-host.component';
 
@@ -63,7 +70,7 @@ export class AppComponent implements OnInit {
     controle: [
       '/estoque',
       '/servicos',
-      '/pacotes',
+      '/pacotes/predefinidos',
       '/categorias',
       '/marcas',
       '/compras',
@@ -81,6 +88,10 @@ export class AppComponent implements OnInit {
     } catch {
       /* ignore */
     }
+    this.syncNavExpandForActiveRoutes();
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(() => this.syncNavExpandForActiveRoutes());
   }
 
   onNavExpandTrigger(ev: MouseEvent, id: NavSidebarDropdownId): void {
@@ -98,7 +109,7 @@ export class AppComponent implements OnInit {
   }
 
   navExpandIsOpen(id: NavSidebarDropdownId): boolean {
-    return this.navExpandOpenIds.includes(id);
+    return this.navExpandOpenIds.includes(id) || this.sectionActive(id);
   }
 
   /** Rota ativa sob um prefixo (ex.: `/financeiro`, `/relatorios`). */
@@ -137,5 +148,30 @@ export class AppComponent implements OnInit {
     const base = prefix.replace(/\/+$/, '') || '/';
     const p = path.replace(/\/+$/, '') || '/';
     return p === base || p.startsWith(base + '/');
+  }
+
+  /** Mantém Financeiro/Controle/etc. expandidos enquanto a rota ativa pertence à secção. */
+  private syncNavExpandForActiveRoutes(): void {
+    const secaoIds: NavSidebarDropdownId[] = [
+      'financeiro',
+      'controle',
+      'cadastros',
+      'marketing',
+      'relatorios',
+    ];
+    const abrir = secaoIds.filter((id) => this.sectionActive(id));
+    if (abrir.length === 0) return;
+
+    const next = [...this.navExpandOpenIds];
+    let mudou = false;
+    for (const id of abrir) {
+      if (!next.includes(id)) {
+        next.push(id);
+        mudou = true;
+      }
+    }
+    if (mudou) {
+      this.navExpandOpenIds = next;
+    }
   }
 }

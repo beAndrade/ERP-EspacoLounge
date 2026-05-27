@@ -721,6 +721,7 @@ export async function inserirPagamentoComandaEmTx(
         descricao: descricaoMov,
         idAtendimento: id,
         metodoPagamento: rotuloMetodoComanda(metodo),
+        pagoEm: dataPagamento,
         origem: ORIGEM_COMANDA_PAGAMENTO,
       })
       .returning({ id: movimentacoes.id });
@@ -859,6 +860,7 @@ export async function aplicarCreditoClientePorExcessoEmTx(
     descricao: descricaoMov,
     idAtendimento: idAt,
     metodoPagamento: rotuloMetodoComanda(prep.metodo),
+    pagoEm: prep.dataPagamento,
     origem: ORIGEM_COMANDA_PAGAMENTO,
   });
 
@@ -960,6 +962,71 @@ export async function criarPagamentoComanda(
     pagamento: rowParaDto(result.pagamentoRow),
     resumo,
   };
+}
+
+function metodoComandaPeloRotulo(rotulo: string | null | undefined): MetodoPagamentoComanda {
+  const t = String(rotulo ?? '')
+    .trim()
+    .toLowerCase();
+  if (t.includes('dinheiro')) return 'dinheiro';
+  if (t.includes('pix')) return 'pix';
+  if (t.includes('crédito') || t.includes('credito')) return 'cartao_credito';
+  if (t.includes('débito') || t.includes('debito')) return 'cartao_debito';
+  if (t.includes('transfer')) return 'transferencia';
+  if (t.includes('cart')) return 'cartao_credito';
+  if (t.includes('outros') || t.includes('outro')) return 'outros';
+  return 'outros';
+}
+
+export async function liquidarPendenciaComandaPorId(
+  db: Db,
+  comandaPagamentoId: number,
+  dataPagamentoYmd: string,
+): Promise<void> {
+  const id = Number(comandaPagamentoId);
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new Error('comanda_pagamento_id inválido');
+  }
+  const data = normalizarYmd(dataPagamentoYmd);
+  if (!data) {
+    throw new Error('data_pagamento inválida; use YYYY-MM-DD');
+  }
+
+  const [pend] = await db
+    .select()
+    .from(comandaPagamentos)
+    .where(eq(comandaPagamentos.id, id))
+    .limit(1);
+  if (!pend) throw new Error('Prestação pendente não encontrada');
+  if (pend.metodo !== 'pendente') {
+    throw new Error('Esta prestação já está liquidada');
+  }
+
+  const idAt = String(pend.idAtendimento ?? '').trim();
+  if (!idAt) throw new Error('Prestação sem id_atendimento válido');
+  const metodo = metodoComandaPeloRotulo(pend.metodoRotulo);
+  const metodoRotulo = String(pend.metodoRotulo ?? '').trim() || rotuloMetodoComanda(metodo);
+
+  await db.transaction(async (tx) => {
+    const novo = await inserirPagamentoComandaEmTx(tx, idAt, {
+      data_pagamento: data,
+      valor: Number(pend.valor),
+      metodo,
+      parcelas: pend.parcelas,
+      parcela_numero: pend.parcelaNumero,
+      parcelas_total: pend.parcelasTotal,
+      metodo_rotulo: metodoRotulo,
+      troco: null,
+      observacao: pend.observacao,
+    });
+    if (!novo?.id) {
+      throw new Error('Falha ao liquidar prestação pendente');
+    }
+    await tx.delete(comandaPagamentos).where(eq(comandaPagamentos.id, id));
+  });
+
+  await sincronizarPagamentoStatusAtendimento(db, idAt);
+  await recalcularFolhaAposMudancaAtendimento(db, idAt).catch(() => {});
 }
 
 /**

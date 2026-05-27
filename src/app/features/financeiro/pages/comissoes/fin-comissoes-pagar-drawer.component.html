@@ -1,0 +1,326 @@
+<div class="fat-drawer fin-com-pagar" (click)="fecharDropdowns()">
+  <div class="fat-body" (scroll)="onFatBodyScroll()">
+    <header class="fat-head">
+      <h1 class="fat-title">Pagamento de comissões</h1>
+      <button
+        type="button"
+        class="fat-close"
+        (click)="fechar.emit()"
+        aria-label="Fechar"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="22"
+          height="22"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="fin-com-pagar__resumo-grid">
+      <div class="fin-com-pagar__resumo-card">
+        <span class="fin-com-pagar__resumo-label">Comissões</span>
+        <strong>{{
+          resumo().comissoes | currency: 'BRL' : 'symbol' : '1.2-2'
+        }}</strong>
+      </div>
+      <div class="fin-com-pagar__resumo-card">
+        <span class="fin-com-pagar__resumo-label">Vales</span>
+        <strong>{{
+          resumo().vales | currency: 'BRL' : 'symbol' : '1.2-2'
+        }}</strong>
+      </div>
+      <div class="fin-com-pagar__resumo-card">
+        <span class="fin-com-pagar__resumo-label">Bonificações</span>
+        <strong>{{
+          resumo().bonificacoes | currency: 'BRL' : 'symbol' : '1.2-2'
+        }}</strong>
+      </div>
+      <div class="fin-com-pagar__resumo-card">
+        <span class="fin-com-pagar__resumo-label">Bloqueado</span>
+        <strong>{{
+          resumo().bloqueado | currency: 'BRL' : 'symbol' : '1.2-2'
+        }}</strong>
+      </div>
+    </div>
+
+    <div class="fin-com-pagar__liquido">
+      <span class="fin-com-pagar__liquido-label">Líquido</span>
+      <span class="fin-com-pagar__liquido-valor">{{
+        resumo().liquido | currency: 'BRL' : 'symbol' : '1.2-2'
+      }}</span>
+    </div>
+
+    <div class="fat-form-grid fin-com-pagar__form-grid">
+      <div class="fat-field">
+        <label class="fat-field__label" for="fin-com-pagar-valor">Valor</label>
+        <input
+          id="fin-com-pagar-valor"
+          type="text"
+          class="fat-field__input"
+          inputmode="numeric"
+          [value]="valorStr"
+          (input)="onValorInput($event)"
+          (blur)="onValorBlur()"
+          aria-label="Valor do pagamento"
+        />
+      </div>
+      <div class="fat-field fat-field--data fin-com-pagar__vencimento-field">
+        <span class="fat-field__label">Vencimento</span>
+        <span
+          class="fat-data-field__wrap"
+          role="button"
+          tabindex="0"
+          (click)="onVencimentoFieldClick($event)"
+          (keydown.enter)="onVencimentoFieldClick($event)"
+          (keydown.space)="
+            $event.preventDefault(); onVencimentoFieldClick($event)
+          "
+          [attr.aria-expanded]="vencimentoPickerAberto()"
+          aria-label="Data de vencimento"
+        >
+          <span
+            class="fat-data-field__display"
+            [class.fat-data-field__display--placeholder]="
+              dataExibicaoVencimento() === 'DD/MM/AAAA'
+            "
+          >
+            <span class="fat-data-field__value-text">{{
+              dataExibicaoVencimento()
+            }}</span>
+            <span class="fat-data-field__cal" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            </span>
+          </span>
+          @if (vencimentoPickerAberto()) {
+            <div
+              class="fat-data-field__calendar-pop"
+              (click)="$event.stopPropagation()"
+            >
+              <app-agenda-modal-calendar
+                [ymd]="vencimentoYmd()"
+                [selectedYmd]="vencimentoYmd()"
+                (ymdPicked)="onVencimentoPicked($event)"
+              />
+            </div>
+          }
+        </span>
+      </div>
+    </div>
+
+    <div class="fat-metodos fin-com-pagar__metodos">
+      <button
+        type="button"
+        class="fat-metodo-btn"
+        (click)="adicionarMetodo('pix'); $event.stopPropagation()"
+      >
+        <svg
+          class="fin-com-pagar__pix-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 640 640"
+          width="16"
+          height="16"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            d="M306.4 356.5C311.8 351.1 321.1 351.1 326.5 356.5L403.5 433.5C417.7 447.7 436.6 455.5 456.6 455.5L471.7 455.5L374.6 552.6C344.3 582.1 295.1 582.1 264.8 552.6L167.3 455.2L176.6 455.2C196.6 455.2 215.5 447.4 229.7 433.2L306.4 356.5zM326.5 282.9C320.1 288.4 311.9 288.5 306.4 282.9L229.7 206.2C215.5 191.1 196.6 184.2 176.6 184.2L167.3 184.2L264.7 86.8C295.1 56.5 344.3 56.5 374.6 86.8L471.8 183.9L456.6 183.9C436.6 183.9 417.7 191.7 403.5 205.9L326.5 282.9zM176.6 206.7C190.4 206.7 203.1 212.3 213.7 222.1L290.4 298.8C297.6 305.1 307 309.6 316.5 309.6C325.9 309.6 335.3 305.1 342.5 298.8L419.5 221.8C429.3 212.1 442.8 206.5 456.6 206.5L494.3 206.5L552.6 264.8C582.9 295.1 582.9 344.3 552.6 374.6L494.3 432.9L456.6 432.9C442.8 432.9 429.3 427.3 419.5 417.5L342.5 340.5C328.6 326.6 304.3 326.6 290.4 340.6L213.7 417.2C203.1 427 190.4 432.6 176.6 432.6L144.8 432.6L86.8 374.6C56.5 344.3 56.5 295.1 86.8 264.8L144.8 206.7L176.6 206.7z"
+          />
+        </svg>
+        Pix
+      </button>
+
+      <button
+        type="button"
+        class="fat-metodo-btn"
+        (click)="adicionarMetodo('dinheiro'); $event.stopPropagation()"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+          <path d="M12 18V6" />
+        </svg>
+        Dinheiro
+      </button>
+
+      <div class="fat-metodo-cartao-wrap" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="fat-metodo-btn fat-metodo-btn--cartao"
+          (click)="toggleCartaoDropdown($event)"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="cartaoDropdownAberto()"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+          >
+            <path
+              d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"
+            />
+            <path
+              d="M2 10a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"
+            />
+          </svg>
+          <span class="fat-metodo-btn__label">Cartão</span>
+          <svg
+            class="fat-metodo-btn__chev"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        @if (cartaoDropdownAberto()) {
+          <div class="fat-cartao-dropdown" role="menu">
+            <button
+              type="button"
+              class="fat-cartao-dropdown__btn"
+              role="menuitem"
+              (click)="adicionarMetodo('cartao_credito')"
+            >
+              Cartão de crédito
+            </button>
+            <button
+              type="button"
+              class="fat-cartao-dropdown__btn"
+              role="menuitem"
+              (click)="adicionarMetodo('cartao_debito')"
+            >
+              Cartão de débito
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <hr class="fat-sep" />
+
+    <h2 class="fat-h2">Pagamentos</h2>
+    @if (!temPagamentos()) {
+      <p class="fat-empty">Nenhum pagamento adicionado</p>
+    } @else {
+      <ul class="fat-pag-list" role="list">
+        @for (p of pagamentoLinhas(); track p.idLocal) {
+          <li class="fat-pag-item">
+            <div class="fat-pag-info">
+              <button
+                type="button"
+                class="fat-pag-del"
+                aria-label="Remover pagamento"
+                (click)="removerRascunho(p.idLocal)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+                  />
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+              <span class="fat-pag-metodo">
+                <span class="fat-pag-metodo__label">
+                  {{ rotuloMetodoPrincipal(p.metodo) }}
+                  @if (parcelaRotuloSufixo(p.metodo); as px) {
+                    <span class="fat-pag-metodo__parcela">{{ px }}</span>
+                  }
+                </span>
+              </span>
+              <span class="fat-pag-data">{{ dataExibicaoLinha(p) }}</span>
+            </div>
+            <div class="fat-pag-actions">
+              <div class="fat-pag-valor-wrap">
+                <span class="fat-pag-valor">{{
+                  p.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                }}</span>
+                <span class="fat-pag-badge fat-pag-badge--pago">
+                  <svg
+                    class="fat-pag-badge__ico"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  Pago
+                </span>
+              </div>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <footer class="fat-footer">
+    <button type="button" class="fat-btn fat-btn--ghost" (click)="fechar.emit()">
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="fat-btn fat-btn--primary"
+      [disabled]="!podeConfirmarPagar()"
+      (click)="onConfirmar()"
+    >
+      Pagar
+    </button>
+  </footer>
+</div>

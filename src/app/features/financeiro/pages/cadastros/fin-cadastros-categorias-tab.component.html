@@ -1,0 +1,192 @@
+<div class="fin-cad-tab">
+  @if (erro()) {
+    <p class="fin-cad-tab__erro" role="alert">{{ erro() }}</p>
+  }
+  @if (mensagem()) {
+    <p class="fin-cad-tab__ok">{{ mensagem() }}</p>
+  }
+
+  <div class="list-table-card fin-cad-tab__card">
+    <div class="table-wrap">
+      <table class="list-table fin-cad-tab__table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Crédito/Débito</th>
+            <th class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (carregando()) {
+            <tr>
+              <td colspan="3">Carregando…</td>
+            </tr>
+          } @else if (linhasPagina().length === 0) {
+            <tr>
+              <td colspan="3">Nenhuma categoria encontrada.</td>
+            </tr>
+          } @else {
+            @for (row of linhasPagina(); track row.id) {
+              <tr [class.fin-cad-tab__row--inativa]="!row.ativo">
+                <td>{{ row.nome }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge--ok]="row.natureza === 'receita'"
+                    [class.badge--debito]="row.natureza === 'despesa'"
+                  >
+                    {{ rotuloNatureza(row.natureza) }}
+                  </span>
+                </td>
+                <td class="col-acoes">
+                  <div class="list-row-acoes fin-cad-tab__acoes">
+                    <button
+                      type="button"
+                      class="list-row-acoes__btn list-row-acoes__btn--edit"
+                      (click)="abrirEditar(row)"
+                      aria-label="Editar"
+                    >
+                      <app-ui-tip-trigger tip="Editar">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          />
+                          <path
+                            d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                          />
+                        </svg>
+                      </app-ui-tip-trigger>
+                    </button>
+                    @if (!row.sistema) {
+                      <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                      <button
+                        type="button"
+                        class="list-row-acoes__btn list-row-acoes__btn--delete"
+                        [disabled]="excluindoId === row.id"
+                        (click)="excluir(row)"
+                        aria-label="Excluir"
+                      >
+                        <app-ui-tip-trigger tip="Excluir" align="end">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="list-row-acoes__icon--sm"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+                            />
+                            <path d="M3 6h18" />
+                            <path
+                              d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                            />
+                          </svg>
+                        </app-ui-tip-trigger>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="list-footer fin-cad-tab__footer">
+      <div class="list-footer__toolbar">
+        <span class="list-footer__total">{{ totalExibido() }} no total</span>
+        <div class="list-footer__pager">
+          <button
+            type="button"
+            class="list-footer__chev"
+            [disabled]="!podePaginaAnterior"
+            (click)="paginaAnterior()"
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
+          <span class="list-footer__page-num">{{ pagina }}</span>
+          <button
+            type="button"
+            class="list-footer__chev"
+            [disabled]="!podePaginaSeguinte"
+            (click)="paginaSeguinte()"
+            aria-label="Seguinte"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div class="list-footer__per-page">
+        <button
+          type="button"
+          class="list-footer__per-page-trigger"
+          (click)="perPageMenuAberto = !perPageMenuAberto"
+        >
+          {{ itensPorPagina }} / página
+        </button>
+        @if (perPageMenuAberto) {
+          <ul class="list-footer__per-page-menu">
+            @for (n of opcoesItensPorPagina; track n) {
+              <li>
+                <button
+                  type="button"
+                  (click)="itensPorPagina = n; pagina = 1; perPageMenuAberto = false"
+                >
+                  {{ n }} / página
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </footer>
+  </div>
+</div>
+
+@if (drawerAbertoShell) {
+  <div
+    class="overlay overlay--fin-cad"
+    [class.overlay--open]="drawerAberto"
+    aria-hidden="true"
+    (click)="fecharDrawer()"
+  ></div>
+  <div
+    class="fin-cad-drawer-shell app-drawer"
+    [class.app-drawer--open]="drawerPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="drawerTitulo"
+    (click)="$event.stopPropagation()"
+  >
+    <app-fin-cadastro-drawer
+      modo="categoria"
+      [titulo]="drawerTitulo"
+      [nome]="drawerNome"
+      [natureza]="drawerNatureza"
+      [naturezaBloqueada]="drawerNaturezaBloqueada"
+      [salvando]="drawerSalvando()"
+      (fechar)="fecharDrawer()"
+      (salvar)="salvarDrawer($event)"
+    />
+  </div>
+}

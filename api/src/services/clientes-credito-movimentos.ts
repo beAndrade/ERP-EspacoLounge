@@ -179,6 +179,7 @@ export async function ajustarClienteCreditoManual(
           valor: v.toFixed(2),
           categoriaId,
           descricao: motivo || descFinBase,
+          pagoEm: dataMov,
           origem: ORIGEM_MANUAL,
         });
       } else {
@@ -192,6 +193,7 @@ export async function ajustarClienteCreditoManual(
           valor: v.toFixed(2),
           categoriaId,
           descricao: motivo || descFinBase,
+          pagoEm: dataMov,
           origem: ORIGEM_MANUAL,
         });
       }

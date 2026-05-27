@@ -42,9 +42,14 @@ export class FinanceiroShellComponent implements OnInit {
     return path.includes('/financeiro/comissoes');
   }
 
+  get emCadastros(): boolean {
+    const path = this.router.url.split('?')[0] ?? '';
+    return path.includes('/financeiro/cadastros');
+  }
+
   /** Rotas com layout Belasis próprio (sem toolbar do shell). */
   get layoutProprio(): boolean {
-    return this.emPainel || this.emTransacoes || this.emComissoes;
+    return this.emPainel || this.emTransacoes || this.emComissoes || this.emCadastros;
   }
 
   pinDraft = '';

@@ -79,6 +79,8 @@ Todas as respostas: `{ ok: boolean, data: T | null, error: { code, message } | n
 | GET | `/api/atendimentos?dataInicio&dataFim` | `{ items }` (chaves PT + `id`) |
 | GET | `/api/folha?periodo=YYYY-MM` | `{ items }` folha por mês — requer `X-Admin-Pin` |
 | POST | `/api/folha/recalcular-comissoes` | `{ periodo, profissional_id? }` — requer `X-Admin-Pin` |
+| GET | `/api/financeiro/comissoes/detalhadas` | `dataInicio`, `dataFim`, `profissionalId`, `mostrarAnteriores?` — linhas de `atendimentos` |
+| GET | `/api/financeiro/transacoes` | `dataInicio`, `dataFim` — movimentações + pendências |
 | POST | `/api/atendimentos` | corpo = payload `CreateAtendimento` (tipos Serviço, Mega, Pacote, Produto, Cabelo ou legado só `servico_id`) |
 
 ## Deploy

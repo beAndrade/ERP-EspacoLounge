@@ -12,6 +12,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import type { CategoriaFinanceiraItem } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import {
+  METODOS_NOME_FALLBACK,
+  mapFormasParaNomes,
+} from '../../../../core/utils/fin-formas-pagamento.util';
 
 export interface FinTransacaoNovoSubmit {
   natureza: 'receita' | 'despesa';
@@ -21,8 +25,6 @@ export interface FinTransacaoNovoSubmit {
   metodo_pagamento: string;
   descricao?: string;
 }
-
-const METODOS = ['Débito', 'Crédito', 'Dinheiro', 'Pix'] as const;
 
 function ymdHoje(): string {
   const d = new Date();
@@ -53,7 +55,7 @@ export class FinTransacaoNovoModalComponent {
   readonly fechar = output<void>();
   readonly confirmar = output<FinTransacaoNovoSubmit>();
 
-  readonly metodos = METODOS;
+  readonly metodos = signal<string[]>([...METODOS_NOME_FALLBACK]);
   readonly categorias = signal<CategoriaFinanceiraItem[]>([]);
   readonly carregandoOpcoes = signal(false);
   readonly erroOpcoes = signal<string | null>(null);
@@ -77,6 +79,7 @@ export class FinTransacaoNovoModalComponent {
       const ini = this.naturezaInicial();
       this.natureza = ini === 'receita' || ini === 'despesa' ? ini : 'despesa';
       this.carregarCategorias();
+      this.carregarFormasPagamento();
     });
   }
 
@@ -166,6 +169,21 @@ export class FinTransacaoNovoModalComponent {
             e.message || 'Não foi possível carregar categorias.',
           );
           this.carregandoOpcoes.set(false);
+        },
+      });
+  }
+
+  private carregarFormasPagamento(): void {
+    this.api
+      .listFinFormasPagamentoOpcoes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          const nomes = mapFormasParaNomes(items);
+          if (nomes.length) this.metodos.set(nomes);
+        },
+        error: () => {
+          /* mantém fallback */
         },
       });
   }

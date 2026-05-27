@@ -308,6 +308,8 @@ export const atendimentos = pgTable(
     cobrancaStatus: text('cobranca_status'),
     /** Só após `finalizada`: `pendente` ou null = a cobrar; `confirmado` = pago */
     pagamentoStatus: text('pagamento_status'),
+    /** Data em que a comissão da linha foi paga à profissional (`YYYY-MM-DD`). */
+    comissaoPagaEm: date('comissao_paga_em'),
     /** Preenchido ao confirmar pagamento (ex.: Dinheiro, Pix, Cartão). */
     pagamentoMetodo: text('pagamento_metodo'),
     /** Estado visual na grelha da agenda (ex.: confirmado, aguardando). */
@@ -332,6 +334,35 @@ export const categoriasFinanceiras = pgTable('categorias_financeiras', {
   ativo: boolean('ativo').default(true).notNull(),
 });
 
+export const formasPagamentoFinanceiras = pgTable(
+  'formas_pagamento_financeiras',
+  {
+    id: serial('id').primaryKey(),
+    nome: text('nome').notNull(),
+    codigoInterno: text('codigo_interno').notNull().unique(),
+    baixaAutomatica: boolean('baixa_automatica').default(false).notNull(),
+    taxaPercentual: numeric('taxa_percentual', { precision: 6, scale: 3 })
+      .default('0')
+      .notNull(),
+    taxaFixa: numeric('taxa_fixa', { precision: 14, scale: 2 })
+      .default('0')
+      .notNull(),
+    prazoRecebimento: integer('prazo_recebimento').default(0).notNull(),
+    ordem: integer('ordem').default(0).notNull(),
+    ativo: boolean('ativo').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('formas_pagamento_financeiras_ativo_ordem_idx').on(
+      t.ativo,
+      t.ordem,
+      t.id,
+    ),
+  ],
+);
+
 export const movimentacoes = pgTable(
   'movimentacoes',
   {
@@ -345,6 +376,8 @@ export const movimentacoes = pgTable(
     descricao: text('descricao'),
     idAtendimento: text('id_atendimento'),
     metodoPagamento: text('metodo_pagamento'),
+    /** Data de confirmação de pagamento (`YYYY-MM-DD`); null = em aberto. */
+    pagoEm: date('pago_em'),
     /** Ex.: `atendimento_confirmacao`, `manual`. */
     origem: text('origem').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -353,6 +386,7 @@ export const movimentacoes = pgTable(
   },
   (t) => [
     index('movimentacoes_data_mov_idx').on(t.dataMov),
+    index('movimentacoes_pago_em_idx').on(t.pagoEm),
     index('movimentacoes_categoria_id_idx').on(t.categoriaId),
     index('movimentacoes_id_atendimento_idx').on(t.idAtendimento),
     uniqueIndex('movimentacoes_confirm_receita_id_at_idx')

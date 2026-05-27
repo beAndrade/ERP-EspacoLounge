@@ -14,36 +14,35 @@ $periodo-row-gap: 6px;
   position: relative;
   z-index: 1021;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 0.35rem;
   min-width: 0;
-  padding: 0.35rem 0.5rem 0.35rem 0.65rem;
+  padding: 0.35rem 0.5rem 0 0.65rem;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
+  overflow: hidden;
 }
 
 .periodo-filtro__inputs {
   --periodo-input-w: 7rem;
   --periodo-sep-w: 2.15rem;
   --periodo-gap: 0.35rem;
-  --periodo-campo-index: 0;
-  --periodo-underline-step: calc(
-    var(--periodo-input-w) + var(--periodo-gap) + var(--periodo-sep-w) + var(--periodo-gap)
-  );
-  --periodo-field-line: 2px;
+  --periodo-field-line: 1px;
 
   position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--periodo-gap);
   flex: 1 1 auto;
   min-width: 0;
   box-sizing: border-box;
-  padding-bottom: var(--periodo-field-line);
+  padding-bottom: 0;
+  align-self: stretch;
 }
 
 .periodo-filtro__field {
+  position: relative;
   flex: 0 0 var(--periodo-input-w);
   width: var(--periodo-input-w);
   box-sizing: border-box;
@@ -53,17 +52,21 @@ $periodo-row-gap: 6px;
   position: absolute;
   left: 0;
   bottom: 0;
-  width: var(--periodo-input-w);
+  width: 100%;
   height: var(--periodo-field-line);
   margin: 0;
   padding: 0;
   border: none;
   border-radius: 0;
-  background: $periodo-accent;
+  background: var(--color-primary, $periodo-accent);
   pointer-events: none;
-  z-index: 2;
-  transform: translateX(calc(var(--periodo-campo-index) * var(--periodo-underline-step)));
-  transition: transform $periodo-anim;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.periodo-filtro__field:focus-within .periodo-filtro__underline {
+  opacity: 1;
 }
 
 .periodo-filtro__input {
@@ -157,6 +160,29 @@ $periodo-row-gap: 6px;
     transform: translateY(0) scale(1);
     pointer-events: auto;
   }
+
+  &--flutuante {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    z-index: 1100;
+    transform: translateY(-10px) scale(0.98);
+    transform-origin: top left;
+
+    &.periodo-filtro__panel--open {
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+.periodo-filtro--painel-flutuante .periodo-filtro__backdrop,
+.periodo-filtro__backdrop--portal {
+  z-index: 1095;
+}
+
+.periodo-filtro__panel--portal {
+  z-index: 1100;
 }
 
 .periodo-filtro__presets {

@@ -337,6 +337,42 @@ export interface CategoriaFinanceiraItem {
   ordem: number;
 }
 
+/** Categoria — cadastro admin (`GET /api/financeiro/categorias`). */
+export interface FinCategoriaCadastroItem {
+  id: number;
+  nome: string;
+  natureza: 'receita' | 'despesa';
+  slug: string;
+  ordem: number;
+  ativo: boolean;
+  sistema: boolean;
+}
+
+/** Forma de pagamento — cadastro admin (`GET /api/financeiro/formas-pagamento`). */
+export interface FinFormaPagamentoCadastroItem {
+  id: number;
+  nome: string;
+  codigo_interno: string;
+  baixa_automatica: boolean;
+  taxa_percentual: number;
+  taxa_fixa: number;
+  prazo_recebimento: number;
+  ordem: number;
+  ativo: boolean;
+  sistema: boolean;
+}
+
+/** Opção de forma para dropdowns (`GET /api/financeiro/formas-pagamento/opcoes`). */
+export interface FinFormaPagamentoOpcaoItem {
+  id: number;
+  nome: string;
+  codigo_interno: string;
+  baixa_automatica: boolean;
+  taxa_percentual: number;
+  taxa_fixa: number;
+  prazo_recebimento: number;
+}
+
 /** Linha de `movimentacoes` na API Node. */
 export interface MovimentacaoListaItem {
   id: number;
@@ -352,6 +388,23 @@ export interface MovimentacaoListaItem {
   /** Preenchido quando existe linha em `despesas` ligada (cadastro estruturado). */
   despesa_tipo?: string | null;
   despesa_categoria_livre?: string | null;
+}
+
+/** Linha detalhada de comissões (`GET /api/financeiro/comissoes/detalhadas`). */
+export interface FinComissaoDetalheItem {
+  id: number;
+  data_ymd: string;
+  id_atendimento: string;
+  id_cliente: string;
+  cliente_nome: string;
+  numero_comanda: number | null;
+  servico: string;
+  quantidade: number;
+  valor: number;
+  comissao: number;
+  comissao_pct: number | null;
+  comissao_tipo: string;
+  disponivel: number;
 }
 
 /** Linha unificada (`GET /api/financeiro/transacoes`). */
@@ -375,8 +428,12 @@ export interface FinTransacaoItem {
   origem_label: string;
   movimentacao_id: number | null;
   comanda_pagamento_id: number | null;
-  status: 'pago' | 'atrasado';
+  status: 'pago' | 'atrasado' | 'em_aberto';
   editavel: boolean;
+  metodo_baixa_automatica?: boolean;
+  pago_em?: string | null;
+  taxa_percentual?: number;
+  taxa_fixa?: number;
 }
 
 /** Resumo diário (`GET /api/caixa/dia?data=`). */

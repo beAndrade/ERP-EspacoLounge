@@ -14,6 +14,10 @@ import type {
   MetodoPagamentoComanda,
 } from '../../core/models/api.models';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import {
+  METODOS_COMANDA_FALLBACK,
+  mapFormasParaMetodosComanda,
+} from '../../core/utils/fin-formas-pagamento.util';
 
 export interface ClientePagarDebitosModalSubmit {
   dataYmd: string;
@@ -27,14 +31,9 @@ interface MetodoOpcao {
   rotulo: string;
 }
 
-const METODOS_PAGAR: MetodoOpcao[] = [
-  { value: 'dinheiro', rotulo: 'Dinheiro' },
-  { value: 'cartao_credito', rotulo: 'Cartão de crédito' },
-  { value: 'cartao_debito', rotulo: 'Cartão de débito' },
-  { value: 'pix', rotulo: 'Pix' },
-  { value: 'transferencia', rotulo: 'Transferência' },
-  { value: 'outros', rotulo: 'Outros' },
-];
+const METODOS_PAGAR_FALLBACK: MetodoOpcao[] = METODOS_COMANDA_FALLBACK.filter(
+  (m) => m.value !== 'pendente',
+).map((m) => ({ value: m.value, rotulo: m.rotulo }));
 
 const CONTAS_OPCOES = [
   { value: 'caixa', rotulo: 'Caixa' },
@@ -64,7 +63,7 @@ export class ClientePagarDebitosModalComponent {
   readonly fechar = output<void>();
   readonly confirmar = output<ClientePagarDebitosModalSubmit>();
 
-  readonly metodos = METODOS_PAGAR;
+  readonly metodos = signal<MetodoOpcao[]>([...METODOS_PAGAR_FALLBACK]);
   readonly contas = CONTAS_OPCOES;
 
   readonly categorias = signal<CategoriaFinanceiraItem[]>([]);
@@ -133,7 +132,7 @@ export class ClientePagarDebitosModalComponent {
       return;
     }
     const met = String(this.metodo ?? '').trim() as MetodoPagamentoComanda;
-    if (!met || !METODOS_PAGAR.some((m) => m.value === met)) {
+    if (!met || !this.metodos().some((m) => m.value === met)) {
       this.erroForm = 'Selecione a forma de pagamento.';
       return;
     }
@@ -182,6 +181,24 @@ export class ClientePagarDebitosModalComponent {
           this.categoriaId = null;
           this.erroOpcoes.set('Não foi possível carregar categorias.');
           this.carregandoOpcoes.set(false);
+        },
+      });
+    this.api
+      .listFinFormasPagamentoOpcoes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (items) => {
+          const mapped = mapFormasParaMetodosComanda(items).filter(
+            (m) => m.value !== 'pendente',
+          );
+          if (mapped.length) {
+            this.metodos.set(
+              mapped.map((m) => ({ value: m.value, rotulo: m.rotulo })),
+            );
+          }
+        },
+        error: () => {
+          /* mantém fallback */
         },
       });
   }

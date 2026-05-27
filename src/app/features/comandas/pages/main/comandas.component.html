@@ -366,9 +366,6 @@
                           [class.badge--finalizado]="classeBadgeStatus(g) === 'badge--finalizado'"
                           >{{ rotuloStatus(g) }}</span
                         >
-                        @if (saldoAtrasadoMaisDe7Dias(g)) {
-                          <div class="badge badge--critical">Saldo > 7 dias</div>
-                        }
                       </td>
                       <td class="col-valor">
                         <div class="col-valor__inner">

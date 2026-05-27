@@ -1,0 +1,78 @@
+<div class="fin-comissoes-print" aria-hidden="true">
+  <h1 class="fin-comissoes-print__title">Comissões</h1>
+  <p class="fin-comissoes-print__meta">
+    <span>Período: {{ periodoImpressao }}</span>
+  </p>
+  <p class="fin-comissoes-print__meta">
+    <span>Profissional: {{ profissionalNome }}</span>
+  </p>
+
+  <table class="fin-comissoes-print__table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Item</th>
+        <th>Valor</th>
+        <th>Comissão</th>
+        <th>Disponível</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of linhas; track row.id) {
+        <tr>
+          <td>{{ dataFormatada(row.dataYmd) }}</td>
+          <td class="fin-comissoes-print__item">
+            <span class="fin-comissoes-print__cliente">
+              {{ row.clienteNome }}
+              <span class="fin-comissoes-print__comanda"
+                >(#{{ numeroComanda(row) }})</span
+              >
+            </span>
+            <span class="fin-comissoes-print__servico">
+              {{ row.servico }}
+              <span class="fin-comissoes-print__qty"
+                >(<span aria-hidden="true">×</span>{{ row.quantidade }})</span
+              >
+            </span>
+          </td>
+          <td>{{ row.valor | currency: 'BRL' : 'symbol' : '1.2-2' }}</td>
+          <td class="fin-comissoes-print__comissao">
+            <span>% {{ row.comissaoPct | number: '1.2-2' }}</span>
+            <span>{{ row.comissaoTipo }}</span>
+          </td>
+          <td class="fin-comissoes-print__disp">{{
+            row.disponivel | currency: 'BRL' : 'symbol' : '1.2-2'
+          }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <section class="fin-comissoes-print__totais">
+    <h2 class="fin-comissoes-print__totais-title">Totais</h2>
+    <dl class="fin-comissoes-print__totais-list">
+      <div class="fin-comissoes-print__totais-row">
+        <dt>Comissões</dt>
+        <dd>{{ totalComissoes | currency: 'BRL' : 'symbol' : '1.2-2' }}</dd>
+      </div>
+      <div class="fin-comissoes-print__totais-row">
+        <dt>Produtos consumidos</dt>
+        <dd>R$ 0,00</dd>
+      </div>
+      <div class="fin-comissoes-print__totais-row">
+        <dt>Vales</dt>
+        <dd>R$ 0,00</dd>
+      </div>
+      <div class="fin-comissoes-print__totais-row">
+        <dt>Bonificações</dt>
+        <dd>R$ 0,00</dd>
+      </div>
+      <div
+        class="fin-comissoes-print__totais-row fin-comissoes-print__totais-row--total"
+      >
+        <dt>Total</dt>
+        <dd>{{ totalLiquido | currency: 'BRL' : 'symbol' : '1.2-2' }}</dd>
+      </div>
+    </dl>
+  </section>
+</div>

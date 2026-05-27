@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import type { HttpResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import {
   ApiResponse,
@@ -22,6 +23,10 @@ import {
   CriarClienteCreditoMovimentoPayload,
   CriarClienteCreditoMovimentoResponse,
   CreateAtendimentoPayload,
+  FinComissaoDetalheItem,
+  FinCategoriaCadastroItem,
+  FinFormaPagamentoCadastroItem,
+  FinFormaPagamentoOpcaoItem,
   FinTransacaoItem,
   MovimentacaoListaItem,
   PacoteCatalogoItem,
@@ -286,6 +291,206 @@ export class SheetsApiService {
       );
   }
 
+  listFinCategoriasCadastro(incluirInativas = false): Observable<FinCategoriaCadastroItem[]> {
+    let params = new HttpParams();
+    if (incluirInativas) params = params.set('incluir_inativas', '1');
+    return this.http
+      .get<ApiResponse<{ items: FinCategoriaCadastroItem[] }>>(
+        this.url('/api/financeiro/categorias'),
+        { params },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  criarFinCategoria(body: {
+    nome: string;
+    natureza: 'receita' | 'despesa';
+  }): Observable<{ id: number }> {
+    return this.http
+      .post<ApiResponse<{ id: number }>>(
+        this.url('/api/financeiro/categorias'),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  atualizarFinCategoria(
+    id: number,
+    body: { nome?: string; natureza?: 'receita' | 'despesa' },
+  ): Observable<{ ok: boolean }> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/financeiro/categorias/${id}`),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  excluirFinCategoria(id: number): Observable<{ ok: boolean; result?: string }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean; result?: string }>>(
+        this.url(`/api/financeiro/categorias/${id}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listFinFormasPagamento(incluirInativas = false): Observable<FinFormaPagamentoCadastroItem[]> {
+    let params = new HttpParams();
+    if (incluirInativas) params = params.set('incluir_inativas', '1');
+    return this.http
+      .get<ApiResponse<{ items: FinFormaPagamentoCadastroItem[] }>>(
+        this.url('/api/financeiro/formas-pagamento'),
+        { params },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  listFinFormasPagamentoOpcoes(): Observable<FinFormaPagamentoOpcaoItem[]> {
+    return this.http
+      .get<ApiResponse<{ items: FinFormaPagamentoOpcaoItem[] }>>(
+        this.url('/api/financeiro/formas-pagamento/opcoes'),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  criarFinFormaPagamento(body: {
+    nome: string;
+    baixa_automatica?: boolean;
+    taxa_percentual?: number;
+    taxa_fixa?: number;
+    prazo_recebimento?: number;
+    ativo?: boolean;
+  }): Observable<{ id: number }> {
+    return this.http
+      .post<ApiResponse<{ id: number }>>(
+        this.url('/api/financeiro/formas-pagamento'),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  atualizarFinFormaPagamento(
+    id: number,
+    body: {
+      nome?: string;
+      baixa_automatica?: boolean;
+      taxa_percentual?: number;
+      taxa_fixa?: number;
+      prazo_recebimento?: number;
+      ativo?: boolean;
+    },
+  ): Observable<{ ok: boolean }> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/financeiro/formas-pagamento/${id}`),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  excluirFinFormaPagamento(id: number): Observable<{ ok: boolean; result?: string }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean; result?: string }>>(
+        this.url(`/api/financeiro/formas-pagamento/${id}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listComissoesDetalhadas(params: {
+    dataInicio: string;
+    dataFim: string;
+    profissionalId: number;
+    mostrarAnteriores?: boolean;
+  }): Observable<FinComissaoDetalheItem[]> {
+    let hp = new HttpParams()
+      .set('dataInicio', params.dataInicio)
+      .set('dataFim', params.dataFim)
+      .set('profissionalId', String(params.profissionalId));
+    if (params.mostrarAnteriores) {
+      hp = hp.set('mostrarAnteriores', '1');
+    }
+    return this.http
+      .get<ApiResponse<{ items: FinComissaoDetalheItem[] }>>(
+        this.url('/api/financeiro/comissoes/detalhadas'),
+        { params: hp },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  pagarComissoes(body: {
+    profissional_id: number;
+    data_pagamento: string;
+    atendimento_ids: number[];
+    pagamentos: { metodo: string; valor: number }[];
+  }): Observable<{ movimentacao_ids: number[]; total_comissao: number }> {
+    const fallbackTotal = Math.round(
+      body.pagamentos.reduce((s, p) => s + Number(p.valor), 0) * 100,
+    ) / 100;
+    return this.postEnvelope<{ movimentacao_ids: number[]; total_comissao: number }>(
+      '/api/financeiro/comissoes/pagar',
+      body,
+      () => ({ movimentacao_ids: [], total_comissao: fallbackTotal }),
+    );
+  }
+
+  estornarComissaoMovimentacao(movimentacaoId: number): Observable<{ ok: boolean }> {
+    return this.postEnvelope<{ ok: boolean }>(
+      '/api/financeiro/comissoes/estornar',
+      { movimentacao_id: movimentacaoId },
+      () => ({ ok: true }),
+    );
+  }
+
+  excluirComissaoMovimentacao(movimentacaoId: number): Observable<{ ok: boolean }> {
+    return this.postEnvelope<{ ok: boolean }>(
+      '/api/financeiro/comissoes/excluir',
+      { movimentacao_id: movimentacaoId },
+      () => ({ ok: true }),
+    );
+  }
+
+  pagarMovimentacaoTransacao(
+    movimentacaoId: number,
+    dataPagamento: string,
+  ): Observable<{ ok: boolean }> {
+    return this.postEnvelope<{ ok: boolean }>(
+      `/api/financeiro/transacoes/movimentacoes/${encodeURIComponent(String(movimentacaoId))}/pagar`,
+      { data_pagamento: dataPagamento },
+      () => ({ ok: true }),
+    );
+  }
+
+  estornarMovimentacaoTransacao(movimentacaoId: number): Observable<{ ok: boolean }> {
+    return this.postEnvelope<{ ok: boolean }>(
+      `/api/financeiro/transacoes/movimentacoes/${encodeURIComponent(String(movimentacaoId))}/estornar`,
+      {},
+      () => ({ ok: true }),
+    );
+  }
+
+  pagarPendenciaTransacao(
+    comandaPagamentoId: number,
+    dataPagamento: string,
+  ): Observable<{ ok: boolean }> {
+    return this.postEnvelope<{ ok: boolean }>(
+      `/api/financeiro/transacoes/pendencias/${encodeURIComponent(String(comandaPagamentoId))}/pagar`,
+      { data_pagamento: dataPagamento },
+      () => ({ ok: true }),
+    );
+  }
+
   listTransacoesFinanceiras(params: {
     dataInicio: string;
     dataFim: string;
@@ -345,6 +550,8 @@ export class SheetsApiService {
       descricao?: string | null;
       categoria_id?: number;
       metodo_pagamento?: string | null;
+      data_mov?: string;
+      pago_em?: string | null;
     },
   ): Observable<{ ok: boolean }> {
     return this.http
@@ -938,6 +1145,27 @@ export class SheetsApiService {
       return s;
     }
     return String(v);
+  }
+
+  /**
+   * POST com envelope da API. Aceita HTTP 204 (corpo vazio) — o HttpClient do Angular
+   * falha ao fazer parse JSON nesse caso, embora o pedido tenha sido bem-sucedido.
+   */
+  private postEnvelope<T>(
+    path: string,
+    body: unknown,
+    fallbackOn204: () => T,
+  ): Observable<T> {
+    return this.http
+      .post<ApiResponse<T>>(this.url(path), body, { observe: 'response' })
+      .pipe(
+        map((resp: HttpResponse<ApiResponse<T>>) => {
+          if (resp.status === 204 || resp.body == null) {
+            return fallbackOn204();
+          }
+          return this.unwrap(resp.body);
+        }),
+      );
   }
 
   private unwrap<T>(r: ApiResponse<T>): T {

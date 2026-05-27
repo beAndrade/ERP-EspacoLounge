@@ -64,6 +64,11 @@
             </div>
           </div>
 
+          <p class="fin-transacoes-filtros__hint">
+            Inclui movimentações (comandas pagas, despesas manuais, pagamentos de comissão)
+            e prestações em atraso das comandas.
+          </p>
+
           <div class="fin-transacoes-filtros__footer">
             <button type="button" class="btn btn--ghost" (click)="limparFiltrosPeriodo()">
               Limpar
@@ -113,11 +118,11 @@
                   <label class="sr-only" for="fin-trans-busca">Buscar transações</label>
                   <input
                     id="fin-trans-busca"
-                    type="search"
+                    type="text"
                     class="list-head__busca-input"
                     [(ngModel)]="busca"
                     name="buscaTrans"
-                    placeholder="Buscar transações…"
+                    [placeholder]="buscaPlaceholder"
                     [class.list-head__busca-input--search-open]="buscaAberta"
                     [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
                     autocomplete="off"
@@ -417,7 +422,7 @@
                     <th class="col-bruto" scope="col">Valor bruto</th>
                     <th class="col-liq" scope="col">Valor líquido</th>
                     <th class="col-status" scope="col">Status</th>
-                    <th class="col-pago" scope="col">Estornar</th>
+                    <th class="col-pago" scope="col">Pago</th>
                     <th class="col-acoes" scope="col"><span class="sr-only">Ações</span></th>
                   </tr>
                 </thead>
@@ -432,7 +437,8 @@
                   @for (row of linhasPagina; track row.id) {
                     <tr
                       [class.list-table__row--selected]="linhaSelecionada(row.id)"
-                      [class.fin-transacoes__row--receita]="row.linhaReceita"
+                      [class.fin-transacoes__row--receita]="row.linhaReceita === true"
+                      [class.fin-transacoes__row--despesa]="row.linhaReceita !== true"
                     >
                       <td class="col-check">
                         <input
@@ -475,7 +481,6 @@
                         <span>{{
                           row.valorBruto | currency: 'BRL' : 'symbol' : '1.2-2'
                         }}</span>
-                        <span class="fin-transacoes__conta">{{ row.conta }}</span>
                       </td>
                       <td class="col-liq">{{
                         row.valorLiquido | currency: 'BRL' : 'symbol' : '1.2-2'
@@ -484,27 +489,58 @@
                         <span
                           class="badge"
                           [class.badge--ok]="classeBadgeStatusTransacao(row) === 'badge--ok'"
+                          [class.badge--warn]="
+                            classeBadgeStatusTransacao(row) === 'badge--warn'
+                          "
                           [class.badge--atraso]="
                             classeBadgeStatusTransacao(row) === 'badge--atraso'
                           "
-                          >{{ rotuloStatusTransacao(row) }}</span
+                          >
+                          @if (row.status === 'pago') {
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              class="lucide lucide-check-icon lucide-check badge__icon"
+                              aria-hidden="true"
+                            >
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          }
+                          {{ rotuloStatusTransacao(row) }}</span
                         >
                       </td>
                       <td class="col-pago">
-                        @if (podeEstornarComanda(row)) {
-                          <span
-                            class="fin-transacoes__tip-wrap"
-                            [attr.data-tip]="tooltipEstornar(row)"
-                          >
+                        @if (colunaPagoVisivel(row)) {
+                          <app-ui-tip-trigger [tip]="tooltipColunaPago(row)">
                             <button
                               type="button"
-                              class="drawer-switch fin-transacoes__estornar-switch"
-                              [attr.aria-pressed]="false"
-                              [disabled]="estornarDesabilitado(row)"
-                              [attr.aria-label]="tooltipEstornar(row)"
-                              (click)="onEstornarComanda(row, $event)"
+                              class="drawer-switch"
+                              [class.drawer-switch--on]="row.status === 'pago'"
+                              [attr.aria-pressed]="row.status === 'pago'"
+                              [disabled]="switchPagoDesabilitado(row)"
+                              [attr.aria-label]="tooltipColunaPago(row)"
+                              (click)="onTogglePago(row, $event)"
                             ></button>
-                          </span>
+                          </app-ui-tip-trigger>
+                          @if (pagoPopoverLinhaId === row.id) {
+                            <div
+                              class="fin-transacoes-pago-popover"
+                              (click)="$event.stopPropagation()"
+                            >
+                              <app-agenda-modal-calendar
+                                [ymd]="pagoPopoverData"
+                                [selectedYmd]="pagoPopoverData"
+                                (ymdPicked)="onPagoDataPicked($event, row)"
+                              />
+                            </div>
+                          }
                         }
                       </td>
                       <td class="col-acoes">
@@ -513,120 +549,74 @@
                             class="list-row-acoes fin-transacoes-row-acoes"
                             (click)="$event.stopPropagation()"
                           >
-                            <span
-                              class="fin-transacoes__tip-wrap"
-                              data-tip="Editar"
+                            <button
+                              type="button"
+                              class="list-row-acoes__btn list-row-acoes__btn--edit"
+                              [disabled]="!podeAcaoEditarLinha(row)"
+                              (click)="onAcaoEditarLinha(row)"
+                              aria-label="Editar"
                             >
+                              <app-ui-tip-trigger tip="Editar">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                                  />
+                                  <path
+                                    d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                                  />
+                                </svg>
+                              </app-ui-tip-trigger>
+                            </button>
+                            @if (podeExcluirNoMenu(row)) {
+                              @if (podeAcaoEditarLinha(row)) {
+                                <span
+                                  class="list-row-acoes__sep"
+                                  aria-hidden="true"
+                                ></span>
+                              }
                               <button
                                 type="button"
-                                class="list-row-acoes__btn list-row-acoes__btn--edit"
-                                [disabled]="!podeAbrirEditarDrawer(row)"
-                                (click)="onAcaoEditarLinha(row)"
-                                aria-label="Editar"
+                                class="list-row-acoes__btn list-row-acoes__btn--delete"
+                                [disabled]="excluindoId === row.id"
+                                (click)="abrirModalExclusao(row)"
+                                aria-label="Excluir"
                               >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                                />
-                                <path
-                                  d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
-                                />
-                              </svg>
-                              </button>
-                            </span>
-                            <span
-                              class="list-row-acoes__sep"
-                              aria-hidden="true"
-                            ></span>
-                            <div class="fin-transacoes-row-menu">
-                              <span
-                                class="fin-transacoes__tip-wrap"
-                                data-tip="Mais ações"
-                              >
-                                <button
-                                  type="button"
-                                  class="list-row-acoes__btn list-row-acoes__btn--menu"
-                                  (click)="toggleMenuAcao(row, $event)"
-                                  [attr.aria-expanded]="
-                                    menuAcaoAbertoId === row.id
-                                  "
-                                  aria-haspopup="menu"
-                                  aria-label="Mais ações"
-                                >
+                                <app-ui-tip-trigger tip="Excluir">
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
-                                    width="14"
-                                    height="14"
+                                    width="24"
+                                    height="24"
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     stroke="currentColor"
                                     stroke-width="2"
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
+                                    class="lucide lucide-trash-icon lucide-trash"
                                     aria-hidden="true"
                                   >
-                                    <path d="M4 5h16" />
-                                    <path d="M4 12h16" />
-                                    <path d="M4 19h16" />
+                                    <path
+                                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+                                    />
+                                    <path d="M3 6h18" />
+                                    <path
+                                      d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                    />
                                   </svg>
-                                </button>
-                              </span>
-                              @if (menuAcaoAbertoId === row.id) {
-                                <ul
-                                  class="fin-transacoes-row-menu__panel"
-                                  role="menu"
-                                  (click)="$event.stopPropagation()"
-                                >
-                                  @if (podeExcluirNoMenu(row)) {
-                                    <li role="none">
-                                      <button
-                                        type="button"
-                                        class="fin-transacoes-row-menu__item fin-transacoes-row-menu__item--danger"
-                                        role="menuitem"
-                                        [disabled]="excluindoId === row.id"
-                                        (click)="
-                                          menuAcaoAbertoId = null;
-                                          excluirLinha(row)
-                                        "
-                                      >
-                                        <svg
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          width="14"
-                                          height="14"
-                                          viewBox="0 0 24 24"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          stroke-width="2"
-                                          stroke-linecap="round"
-                                          stroke-linejoin="round"
-                                          aria-hidden="true"
-                                        >
-                                          <path d="M3 6h18" />
-                                          <path
-                                            d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
-                                          />
-                                          <path
-                                            d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
-                                          />
-                                        </svg>
-                                        Excluir
-                                      </button>
-                                    </li>
-                                  }
-                                </ul>
-                              }
-                            </div>
+                                </app-ui-tip-trigger>
+                              </button>
+                            }
                           </div>
                         }
                       </td>
@@ -737,6 +727,12 @@
   (confirmar)="onConfirmarNovo($event)"
 />
 
+<app-fin-transacoes-totais-modal
+  [aberto]="modalTotaisAberto()"
+  [resumo]="resumoTotais()"
+  (fechar)="fecharModalTotais()"
+/>
+
 @if (comandaPainelAberto && comandaDrawerContexto) {
   <div
     class="overlay overlay--comanda"
@@ -812,5 +808,120 @@
       (faturado)="onFaturaComandaSucesso()"
       (fechar)="fecharFaturarDrawer()"
     />
+  </div>
+}
+
+@if (estornoModalLinha) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalEstorno()"
+  ></div>
+  <div
+    class="comandas-modal fin-transacoes-estorno-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmar estorno"
+    (click)="$event.stopPropagation()"
+  >
+    <p class="comandas-modal__text fin-transacoes-estorno-modal__text">
+      Tem certeza que deseja estornar essa transação?
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="estornoModalSalvando"
+        (click)="fecharModalEstorno()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="estornoModalSalvando"
+        (click)="confirmarModalEstorno()"
+      >
+        {{ estornoModalSalvando ? 'Estornando…' : 'Sim, estornar' }}
+      </button>
+    </div>
+  </div>
+}
+
+@if (exclusaoModalLinha) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalExclusao()"
+  ></div>
+  <div
+    class="comandas-modal fin-transacoes-exclusao-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmar exclusão"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir esta transação?
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="exclusaoModalSalvando"
+        (click)="fecharModalExclusao()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="exclusaoModalSalvando"
+        (click)="confirmarModalExclusao()"
+      >
+        {{ exclusaoModalSalvando ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
+    </div>
+  </div>
+}
+
+@if (pagamentoModalLinha) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalPagamento()"
+  ></div>
+  <div
+    class="comandas-modal fin-transacoes-estorno-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmar pagamento"
+    (click)="$event.stopPropagation()"
+  >
+    <p class="comandas-modal__text fin-transacoes-estorno-modal__text">
+      Confirmar o pagamento em {{ formatarData(pagamentoModalData) }}?
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="pagamentoModalSalvando"
+        (click)="fecharModalPagamento()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="pagamentoModalSalvando"
+        (click)="confirmarModalPagamento()"
+      >
+        {{ pagamentoModalSalvando ? 'Confirmando…' : 'Sim, confirmar' }}
+      </button>
+    </div>
   </div>
 }

@@ -1,0 +1,83 @@
+@use '../../../../styles/list-page-shell';
+@use './fin-cadastro-drawer-shell.scss';
+@use '../../../../styles/drawer-stack';
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.fin-cad-tab__erro {
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.fin-cad-tab__ok {
+  color: #389e0d;
+  font-size: 13px;
+}
+
+.fin-cad-tab__card {
+  margin-top: 0.25rem;
+}
+
+.fin-cad-tab__table .badge {
+  display: inline-flex;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 22px;
+  border: 1px solid transparent;
+
+  &--ok {
+    color: #389e0d;
+    background: #f6ffed;
+    border-color: #b7eb8f;
+  }
+
+  &--debito {
+    color: #cf1322;
+    background: #fff1f0;
+    border-color: #ffa39e;
+  }
+}
+
+.fin-cad-tab__table .badge--baixa-auto {
+  color: #389e0d;
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.fin-cad-tab__table .badge--baixa-manual {
+  color: #0958d9;
+  background: #e6f4ff;
+  border-color: #91caff;
+}
+
+.fin-cad-tab__row--inativa td {
+  opacity: 0.55;
+}
+
+.fin-cad-tab__table .col-acoes {
+  text-align: right;
+  width: 88px;
+}
+
+.fin-cad-tab__acoes {
+  justify-content: flex-end;
+
+  .list-row-acoes__btn svg,
+  .list-row-acoes__btn .list-row-acoes__icon--sm {
+    width: 12px;
+    height: 12px;
+    display: block;
+  }
+
+  .list-row-acoes__btn--delete {
+    color: #ff4d4f;
+
+    svg {
+      color: #ff4d4f;
+    }
+  }
+}

@@ -5,6 +5,7 @@
 @use 'list-page-shell';
 @use 'table-card-shell';
 @use 'badge-atraso-icon';
+@use 'ui-tooltip';
 
 .drawer-table-card {
   width: 100%;
@@ -154,65 +155,6 @@
   height: 14px;
   background: #e7e5e4;
   align-self: center;
-}
-
-/** Tooltip escuro — posicionado no trigger (evita anchor-name partilhado). */
-.drawer-table__tip-trigger {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-  z-index: 1;
-
-  &:hover,
-  &:focus-within {
-    z-index: 3100;
-  }
-}
-
-.drawer-table__tip {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 14px);
-  z-index: 3000;
-  min-width: max-content;
-  max-width: 280px;
-  padding: 0.3rem 0.55rem;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.25;
-  color: #fff;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.82);
-  border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateX(-50%);
-  pointer-events: none;
-  transition:
-    opacity 0.16s ease,
-    visibility 0s linear 0.16s;
-  white-space: nowrap;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 7px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.82);
-  }
-}
-
-.drawer-table__tip-trigger:hover .drawer-table__tip,
-.drawer-table__tip-trigger:focus-within .drawer-table__tip {
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity 0.16s ease,
-    visibility 0s;
 }
 
 .drawer-table__cell-pagar {

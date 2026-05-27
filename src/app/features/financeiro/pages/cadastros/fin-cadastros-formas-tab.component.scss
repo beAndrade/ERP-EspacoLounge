@@ -1,0 +1,66 @@
+@use './fin-cadastros-categorias-tab.component.scss';
+@use './fin-cadastro-drawer-shell.scss';
+@use '../../../../styles/drawer-stack';
+
+:host {
+  display: block;
+}
+
+/* Checkbox 40px, Ações 120px; Nome / Prazo / Taxa repartem o restante. */
+.fin-cad-tab__table.list-table {
+  table-layout: fixed;
+  width: 100%;
+
+  col.list-table__col-check {
+    width: 40px;
+  }
+
+  col.fin-cad-tab__col-nome,
+  col.fin-cad-tab__col-prazo,
+  col.fin-cad-tab__col-taxa {
+    width: calc((100% - 160px) / 3);
+  }
+
+  col.fin-cad-tab__col-acoes {
+    width: 120px;
+  }
+
+  thead th {
+    height: 47.56px;
+    box-sizing: border-box;
+    vertical-align: middle;
+  }
+
+  thead th.col-check,
+  tbody td.col-check {
+    width: 40px;
+    max-width: 40px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  thead th.col-acoes,
+  tbody td.col-acoes {
+    width: 120px;
+    max-width: 120px;
+  }
+
+  .col-acoes {
+    width: 120px;
+    max-width: 120px;
+    text-align: right;
+  }
+}
+
+.fin-cad-tab__table .col-prazo,
+.fin-cad-tab__table .col-taxa {
+  white-space: nowrap;
+  color: #374151;
+  font-size: 13px;
+}
+
+.fin-cad-tab__table thead th.col-prazo,
+.fin-cad-tab__table thead th.col-taxa {
+  white-space: normal;
+  line-height: 1.25;
+}

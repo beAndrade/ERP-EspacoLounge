@@ -114,9 +114,33 @@ col.drawer-table__col-comanda-link {
 
 
 
-.drawer-table--agendamentos .col-desc,
+.drawer-table--agendamentos tbody td.col-desc {
+
+  overflow: hidden;
+
+  max-width: 0;
+
+}
+
+
 
 .drawer-table--agendamentos .col-prof {
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+}
+
+
+
+.cliente-agendamentos__desc-cell {
+
+  display: block;
+
+  min-width: 0;
 
   overflow: hidden;
 

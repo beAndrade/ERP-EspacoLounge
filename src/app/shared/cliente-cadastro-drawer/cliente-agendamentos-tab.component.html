@@ -86,7 +86,13 @@
 
                 <td class="col-data">{{ row.dataHoraExibicao }}</td>
 
-                <td class="col-desc">{{ row.servico }}</td>
+                <td class="col-desc">
+                  <span
+                    class="cliente-agendamentos__desc-cell"
+                    [attr.title]="row.servico"
+                    >{{ row.servico }}</span
+                  >
+                </td>
 
                 <td class="col-status">
 

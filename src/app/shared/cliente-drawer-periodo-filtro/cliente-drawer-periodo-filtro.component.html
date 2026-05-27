@@ -1,4 +1,9 @@
-<div class="periodo-filtro" #anchor>
+<div
+  class="periodo-filtro"
+  [class.periodo-filtro--bar-ativo]="panelAberto"
+  [class.periodo-filtro--painel-flutuante]="painelFlutuante() && panelNoDom"
+  #anchor
+>
   @if (panelNoDom) {
     <button
       type="button"
@@ -10,12 +15,8 @@
   }
 
   <div class="periodo-filtro__bar" aria-label="Filtrar por período">
-    <div
-      class="periodo-filtro__inputs"
-      [style.--periodo-campo-index]="campoAtivoIndex"
-    >
-      <span class="periodo-filtro__underline" aria-hidden="true"></span>
-      <div class="periodo-filtro__field">
+    <div class="periodo-filtro__inputs">
+      <div class="periodo-filtro__field periodo-filtro__field--inicio">
         <input
           type="text"
           class="periodo-filtro__input"
@@ -26,9 +27,10 @@
           (click)="abrirCampo('inicio', $event)"
           (focus)="abrirCampo('inicio', $event)"
         />
+        <span class="periodo-filtro__underline" aria-hidden="true"></span>
       </div>
       <span class="periodo-filtro__sep">até</span>
-      <div class="periodo-filtro__field">
+      <div class="periodo-filtro__field periodo-filtro__field--fim">
         <input
           type="text"
           class="periodo-filtro__input"
@@ -39,6 +41,7 @@
           (click)="abrirCampo('fim', $event)"
           (focus)="abrirCampo('fim', $event)"
         />
+        <span class="periodo-filtro__underline" aria-hidden="true"></span>
       </div>
     </div>
     <button
@@ -70,8 +73,11 @@
   @if (panelNoDom) {
     <div
       class="periodo-filtro__panel"
+      [class.periodo-filtro__panel--flutuante]="painelFlutuante()"
       [class.periodo-filtro__panel--open]="panelAberto"
       [class.periodo-filtro__panel--hover-preview]="painelComPreviewHover()"
+      [style.top.px]="painelFlutuante() && panelPos ? panelPos.top : null"
+      [style.left.px]="painelFlutuante() && panelPos ? panelPos.left : null"
       role="dialog"
       aria-label="Selecionar período"
       (click)="$event.stopPropagation()"

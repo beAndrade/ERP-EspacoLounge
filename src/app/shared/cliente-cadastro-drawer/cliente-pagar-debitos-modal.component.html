@@ -79,7 +79,7 @@
             required
           >
             <option value="" disabled selected hidden>Forma de pagamento</option>
-            @for (m of metodos; track m.value) {
+            @for (m of metodos(); track m.value) {
               <option [value]="m.value">{{ m.rotulo }}</option>
             }
           </select>

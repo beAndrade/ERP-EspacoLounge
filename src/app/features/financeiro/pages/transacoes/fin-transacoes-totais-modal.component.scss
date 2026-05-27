@@ -1,0 +1,121 @@
+@use '../../../../styles/drawer-stack';
+
+.fin-trans-totais-modal-overlay {
+  z-index: 1320;
+}
+
+.fin-trans-totais-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1321;
+  width: min(920px, calc(100vw - 32px));
+  padding: 22px 24px 24px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
+}
+
+.fin-trans-totais-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.fin-trans-totais-modal__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2f3136;
+}
+
+.fin-trans-totais-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px -8px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+
+  &:hover {
+    background: #f5f5f4;
+    color: #374151;
+  }
+}
+
+.fin-trans-totais-modal__meta {
+  margin: 0 0 1rem;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.fin-trans-totais-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fin-trans-totais-modal__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 88px;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.fin-trans-totais-modal__card-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.fin-trans-totais-modal__card-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.fin-trans-totais-modal__card--recebidos {
+  background: #22a06b;
+}
+
+.fin-trans-totais-modal__card--a-receber {
+  background: #3b82f6;
+}
+
+.fin-trans-totais-modal__card--pagos {
+  background: #f59e0b;
+}
+
+.fin-trans-totais-modal__card--a-pagar {
+  background: #ef4444;
+}
+
+@media (max-width: 800px) {
+  .fin-trans-totais-modal__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .fin-trans-totais-modal__grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -952,18 +952,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return 'badge--atraso';
   }
 
-  saldoAtrasadoMaisDe7Dias(g: ComandaGrupo): boolean {
-    if (this.comandaQuitadaNasCifras(g)) return false;
-    const saldo = Number(g.linhas[0]?.saldo ?? 0) || 0;
-    if (saldo <= 0) return false;
-    const dt = new Date(`${g.data}T00:00:00`);
-    if (Number.isNaN(dt.getTime())) return false;
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const diffDias = Math.floor((hoje.getTime() - dt.getTime()) / 86_400_000);
-    return diffDias > 7;
-  }
-
   toggleFiltroStatusComanda(id: FiltroStatusComandaId): void {
     if (this.filtroStatusComandaSelecionados.has(id)) {
       this.filtroStatusComandaSelecionados.delete(id);

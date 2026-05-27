@@ -88,6 +88,14 @@
     padding: 0.5rem 0 0.25rem;
   }
 
+  &--inline {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    min-height: var(--drawer-field-h);
+  }
+
   &__text {
     display: flex;
     flex-direction: column;
@@ -111,8 +119,16 @@
   display: grid;
   gap: 0.65rem;
 
+  &--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   &--3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  &--baixa {
+    align-items: end;
   }
 }
 
@@ -130,6 +146,12 @@
     font-size: 13px;
     font-weight: 500;
     color: #34363b;
+
+    &--req::before {
+      content: '*';
+      margin-right: 2px;
+      color: #ff4d4f;
+    }
   }
 
   &__input,
@@ -236,6 +258,7 @@
 }
 
 @media (max-width: 720px) {
+  .fin-edit-grid--2,
   .fin-edit-grid--3 {
     grid-template-columns: 1fr;
   }

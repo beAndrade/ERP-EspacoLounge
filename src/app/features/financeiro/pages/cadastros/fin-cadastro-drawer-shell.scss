@@ -1,0 +1,40 @@
+/* Shell fixo à direita (overlay + slide) — partilhado entre abas de cadastro financeiro. */
+.fin-cad-drawer-shell.app-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  z-index: 1103;
+  display: flex;
+  flex-direction: column;
+  width: min(100vw, 520px);
+  max-width: 100%;
+  height: 100vh;
+  min-height: 0;
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+  will-change: transform;
+
+  &.app-drawer--open {
+    transform: translateX(0);
+  }
+
+  @media (min-width: 1648px) {
+    left: auto;
+    right: 0;
+    width: min(520px, 100vw);
+  }
+
+  & > app-fin-cadastro-drawer {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+  }
+}

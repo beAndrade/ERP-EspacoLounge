@@ -3,7 +3,10 @@ import {
   Component,
   ElementRef,
   HostListener,
+  OnDestroy,
+  Renderer2,
   inject,
+  input,
   model,
   output,
 } from '@angular/core';
@@ -35,14 +38,27 @@ export const PERIODO_FILTRO_ANIM_MS = 340;
   templateUrl: './cliente-drawer-periodo-filtro.component.html',
   styleUrl: './cliente-drawer-periodo-filtro.component.scss',
 })
-export class ClienteDrawerPeriodoFiltroComponent {
+export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   private readonly hostEl = inject(ElementRef<HTMLElement>);
+  private readonly renderer = inject(Renderer2);
   private fecharPainelTimer: ReturnType<typeof setTimeout> | null = null;
+  private painelPortalizado = false;
+  private portalBackdrop: HTMLElement | null = null;
+  private portalPanel: HTMLElement | null = null;
 
   inicioYmd = model('');
   fimYmd = model('');
 
+  /**
+   * `true`: painel em `position: fixed` abaixo da barra (evita corte por `overflow: hidden`
+   * em sidebars estreitas). `false`: posicionamento absoluto ao anchor (drawer cliente).
+   */
+  painelFlutuante = input(false);
+
   periodoAlterado = output<void>();
+
+  /** Posição viewport do painel flutuante (`top`/`left` em px). */
+  panelPos: { top: number; left: number } | null = null;
 
   readonly presets = PERIODO_PRESETS;
   readonly diasSemana = PERIODO_DIAS_SEMANA;
@@ -119,7 +135,17 @@ export class ClienteDrawerPeriodoFiltroComponent {
     this.fecharPainelTimer = setTimeout(() => {
       this.fecharPainelTimer = null;
       this.panelNoDom = false;
+      this.panelPos = null;
+      this.restaurarPainelNoHost();
     }, PERIODO_FILTRO_ANIM_MS);
+  }
+
+  ngOnDestroy(): void {
+    if (this.fecharPainelTimer != null) {
+      clearTimeout(this.fecharPainelTimer);
+      this.fecharPainelTimer = null;
+    }
+    this.restaurarPainelNoHost();
   }
 
   aplicarPreset(id: PeriodoPresetId): void {
@@ -287,19 +313,99 @@ export class ClienteDrawerPeriodoFiltroComponent {
     this.fecharPainel();
   }
 
+  @HostListener('window:scroll')
+  @HostListener('window:resize')
+  reposicionarPainelSeFlutuante(): void {
+    if (!this.painelFlutuante() || !this.panelAberto) return;
+    this.atualizarPosicaoPainelFlutuante();
+  }
+
   private abrirPainelAnimado(): void {
     if (this.fecharPainelTimer != null) {
       clearTimeout(this.fecharPainelTimer);
       this.fecharPainelTimer = null;
     }
     this.ancorarMesesNoIntervalo();
+    if (this.painelFlutuante()) {
+      this.atualizarPosicaoPainelFlutuante();
+    } else {
+      this.panelPos = null;
+    }
     this.panelNoDom = true;
     this.panelAberto = false;
     queueMicrotask(() => {
       requestAnimationFrame(() => {
+        if (this.painelFlutuante()) {
+          this.portalizarPainelFlutuante();
+          this.atualizarPosicaoPainelFlutuante();
+        }
         this.panelAberto = true;
       });
     });
+  }
+
+  /** Evita corte por `overflow`/`transform` em sidebars (fixed relativo ao ancestral). */
+  private portalizarPainelFlutuante(): void {
+    if (!this.painelFlutuante() || !this.panelNoDom || this.painelPortalizado) return;
+
+    const wrap = this.hostEl.nativeElement.querySelector(
+      '.periodo-filtro',
+    ) as HTMLElement | null;
+    const bar = wrap?.querySelector('.periodo-filtro__bar') as HTMLElement | null;
+    const backdrop = wrap?.querySelector(
+      '.periodo-filtro__backdrop',
+    ) as HTMLElement | null;
+    const panel = wrap?.querySelector('.periodo-filtro__panel') as HTMLElement | null;
+    if (!wrap || !bar || !backdrop || !panel) return;
+
+    this.portalBackdrop = backdrop;
+    this.portalPanel = panel;
+    this.renderer.appendChild(document.body, backdrop);
+    this.renderer.appendChild(document.body, panel);
+    this.renderer.addClass(backdrop, 'periodo-filtro__backdrop--portal');
+    this.renderer.addClass(panel, 'periodo-filtro__panel--portal');
+    this.painelPortalizado = true;
+  }
+
+  private restaurarPainelNoHost(): void {
+    if (!this.painelPortalizado) return;
+
+    const wrap = this.hostEl.nativeElement.querySelector(
+      '.periodo-filtro',
+    ) as HTMLElement | null;
+    const bar = wrap?.querySelector('.periodo-filtro__bar') as HTMLElement | null;
+    const backdrop = this.portalBackdrop;
+    const panel = this.portalPanel;
+
+    if (wrap && bar && backdrop && panel) {
+      wrap.insertBefore(backdrop, bar);
+      bar.insertAdjacentElement('afterend', panel);
+      this.renderer.removeClass(backdrop, 'periodo-filtro__backdrop--portal');
+      this.renderer.removeClass(panel, 'periodo-filtro__panel--portal');
+    }
+
+    this.portalBackdrop = null;
+    this.portalPanel = null;
+    this.painelPortalizado = false;
+  }
+
+  private atualizarPosicaoPainelFlutuante(): void {
+    const bar = this.hostEl.nativeElement.querySelector(
+      '.periodo-filtro__bar',
+    ) as HTMLElement | null;
+    if (!bar) return;
+    const r = bar.getBoundingClientRect();
+    const gap = 6;
+    const margem = 16;
+    const larguraPainel = Math.min(640, window.innerWidth - margem * 2);
+    let left = r.left;
+    if (left + larguraPainel > window.innerWidth - margem) {
+      left = Math.max(margem, window.innerWidth - margem - larguraPainel);
+    }
+    this.panelPos = {
+      top: Math.round(r.bottom + gap),
+      left: Math.round(left),
+    };
   }
 
   private ancorarMesesNoIntervalo(): void {

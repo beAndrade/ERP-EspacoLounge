@@ -1,0 +1,112 @@
+@use '../../../agenda/pages/hub/faturar-drawer.component.scss';
+
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.fin-com-pagar.fat-drawer {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.fin-com-pagar__resumo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.fin-com-pagar__resumo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: rgb(243, 243, 243) 0 0 7px 4px;
+  text-align: center;
+  font-size: 12px;
+  color: #000000bf;
+
+  strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: #000000bf;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.fin-com-pagar__resumo-label {
+  font-size: 12px;
+  color: #000000bf;
+}
+
+.fin-com-pagar__liquido {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: rgb(243, 243, 243) 0 0 7px 4px;
+  text-align: center;
+}
+
+.fin-com-pagar__liquido-label {
+  font-size: 20px;
+  font-weight: 400;
+  color: #000000bf;
+  line-height: 1.25;
+}
+
+.fin-com-pagar__liquido-valor {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4fc14f;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.fin-com-pagar__vencimento-field.fat-field--data {
+  .fat-data-field__calendar-pop {
+    left: auto;
+    right: 0;
+  }
+}
+
+.fin-com-pagar__form-grid {
+  margin-top: 0.25rem;
+}
+
+.fin-com-pagar__metodos {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.fin-com-pagar__pix-icon {
+  flex-shrink: 0;
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 420px) {
+  .fin-com-pagar__metodos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

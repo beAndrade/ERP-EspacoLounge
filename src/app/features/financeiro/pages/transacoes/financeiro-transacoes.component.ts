@@ -11,7 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { catchError, forkJoin, of, switchMap } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap, throwError, type Observable } from 'rxjs';
 import type {
   Cliente,
   ComandaResumoPagamentos,
@@ -26,6 +26,7 @@ import {
   ClienteCadastroDrawerService,
   type AbrirCadastroClientePayload,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { abrirCadastroClienteDesdeSidebarComanda } from '../../../../shared/cliente-cadastro-drawer/comanda-drawer-sidebar-cadastro.util';
 import {
   FinTransacaoEditarDrawerComponent,
   type FinTransacaoEditarSubmit,
@@ -34,6 +35,13 @@ import {
   FinTransacaoNovoModalComponent,
   type FinTransacaoNovoSubmit,
 } from './fin-transacao-novo-modal.component';
+import {
+  FinTransacoesTotaisModalComponent,
+  type FinTransacoesTotaisResumo,
+} from './fin-transacoes-totais-modal.component';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { AgendaModalCalendarComponent } from '../../../agenda/pages/novo/agenda-modal-calendar.component';
 import {
   mapFinTransacaoItemToUi,
   type FinTransacaoLinhaUi,
@@ -78,9 +86,12 @@ type FaturarDrawerCtx = {
     CurrencyPipe,
     FormsModule,
     FinTransacaoNovoModalComponent,
+    FinTransacoesTotaisModalComponent,
     FinTransacaoEditarDrawerComponent,
     NovaComandaDrawerComponent,
     FaturarDrawerComponent,
+    UiTipTriggerComponent,
+    AgendaModalCalendarComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro-transacoes.component.html',
@@ -89,6 +100,7 @@ type FaturarDrawerCtx = {
 export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  private readonly toast = inject(AppToastService);
 
   @ViewChild(NovaComandaDrawerComponent)
   comandaDrawerRef?: NovaComandaDrawerComponent;
@@ -98,6 +110,13 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   comandaDrawerContexto: ComandaDrawerContextoAgenda | null = null;
   comandaDataYmdParaFaturar: string | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly comandaContextoHolder = {
+    get: () => this.comandaDrawerContexto,
+    set: (ctx: ComandaDrawerContextoAgenda) => {
+      this.comandaDrawerContexto = ctx;
+    },
+  };
 
   faturarDrawerAberto = false;
   faturarDrawerPanelOpen = false;
@@ -113,9 +132,6 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private pageScrollLockAtivo = false;
   private bodyScrollPreDrawer = 0;
   private abrindoComanda = false;
-
-  /** Menu «⋯» na coluna Ações (`row.id` = `id_ui`). */
-  menuAcaoAbertoId: number | null = null;
 
   readonly opcoesItensPorPagina = [10, 20, 50];
 
@@ -146,6 +162,15 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   readonly modalNovoNatureza = signal<'receita' | 'despesa' | null>(null);
   readonly modalNovoSalvando = signal(false);
 
+  readonly modalTotaisAberto = signal(false);
+  readonly resumoTotais = signal<FinTransacoesTotaisResumo>({
+    recebidos: 0,
+    aReceber: 0,
+    pagos: 0,
+    aPagar: 0,
+    quantidadeLinhas: 0,
+  });
+
   private readonly duracaoPulsoToolbarMs = 600;
   private tPulsoBusca: ReturnType<typeof setTimeout> | null = null;
   private tPulsoFiltro: ReturnType<typeof setTimeout> | null = null;
@@ -154,6 +179,15 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private readonly selecionados = signal<ReadonlySet<number>>(new Set());
   excluindoId: number | null = null;
   liquidandoPagoId: number | null = null;
+  estornoModalLinha: FinTransacaoLinhaUi | null = null;
+  estornoModalSalvando = false;
+  exclusaoModalLinha: FinTransacaoLinhaUi | null = null;
+  exclusaoModalSalvando = false;
+  pagoPopoverLinhaId: number | null = null;
+  pagoPopoverData = ymdHoje();
+  pagamentoModalLinha: FinTransacaoLinhaUi | null = null;
+  pagamentoModalData = ymdHoje();
+  pagamentoModalSalvando = false;
 
   ngOnInit(): void {
     this.carregar();
@@ -258,20 +292,56 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   }
 
   private linhaMatchesBusca(row: FinTransacaoLinhaUi, q: string): boolean {
+    const qDigits = q.replace(/\D/g, '');
+    const brutoBr = row.valorBruto.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const liquidoBr = row.valorLiquido.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const brutoDigits = brutoBr.replace(/\D/g, '');
+    const liquidoDigits = liquidoBr.replace(/\D/g, '');
     const blob = [
       row.titular,
       row.subtitulo,
       row.origem,
       row.formaPagamento,
       row.categoria,
-      row.conta,
       row.status,
       this.formatarData(row.dataYmd),
       row.dataYmd,
+      brutoBr,
+      liquidoBr,
+      String(row.valorBruto),
+      String(row.valorLiquido),
     ]
       .join(' ')
       .toLowerCase();
-    return blob.includes(q);
+    return (
+      blob.includes(q) ||
+      (qDigits.length > 0 &&
+        (brutoDigits.includes(qDigits) || liquidoDigits.includes(qDigits)))
+    );
+  }
+
+  get buscaPlaceholder(): string {
+    return this.buscaAberta
+      ? 'Procure por cliente, profissional ou valor...'
+      : '';
+  }
+
+  fecharPainelBusca(): void {
+    this.buscaAberta = false;
+  }
+
+  private abrirPainelBusca(): void {
+    this.dispararPulsoToolbar('busca');
+    this.buscaAberta = true;
+    queueMicrotask(() => {
+      document.getElementById('fin-trans-busca')?.focus();
+    });
   }
 
   private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
@@ -302,6 +372,44 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     this.tMensagemAcao = window.setTimeout(() => {
       this.mensagemAcao = null;
     }, 4000);
+  }
+
+  private statusAposEstorno(dataYmd: string): 'em_aberto' | 'atrasado' {
+    return dataYmd < ymdHoje() ? 'atrasado' : 'em_aberto';
+  }
+
+  private patchLinhaPagamento(rowId: number, dataPagamento: string): void {
+    this.linhasFonte = this.linhasFonte.map((r) =>
+      r.id === rowId
+        ? {
+            ...r,
+            dataYmd: dataPagamento,
+            status: 'pago',
+            pagoToggle: true,
+          }
+        : r,
+    );
+  }
+
+  private patchLinhaEstorno(rowId: number): void {
+    this.linhasFonte = this.linhasFonte.map((r) =>
+      r.id === rowId
+        ? {
+            ...r,
+            status: this.statusAposEstorno(r.dataYmd),
+            pagoToggle: false,
+          }
+        : r,
+    );
+  }
+
+  private removerLinhaLocal(rowId: number): void {
+    this.linhasFonte = this.linhasFonte.filter((r) => r.id !== rowId);
+    this.selecionados.update((atual) => {
+      const next = new Set(atual);
+      next.delete(rowId);
+      return next;
+    });
   }
 
   private formatarMoeda(n: number): string {
@@ -343,11 +451,15 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   }
 
   rotuloStatusTransacao(row: FinTransacaoLinhaUi): string {
-    return row.status === 'pago' ? 'Pago' : 'Atrasado';
+    if (row.status === 'pago') return 'Pago';
+    if (row.status === 'em_aberto') return 'Em aberto';
+    return 'Atrasado';
   }
 
   classeBadgeStatusTransacao(row: FinTransacaoLinhaUi): string {
-    return row.status === 'pago' ? 'badge--ok' : 'badge--atraso';
+    if (row.status === 'pago') return 'badge--ok';
+    if (row.status === 'em_aberto') return 'badge--warn';
+    return 'badge--atraso';
   }
 
   podeAbrirPerfilTitular(row: FinTransacaoLinhaUi): boolean {
@@ -364,55 +476,199 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Coluna «Estornar»: reverte pagamento da comanda (não indica estado pago). */
   podeEstornarComanda(row: FinTransacaoLinhaUi): boolean {
-    if (!this.podeVerComanda(row)) return false;
-    if (row.tipoLinha !== 'movimentacao' || !row.pagoToggle) return false;
+    if (row.status !== 'pago') return false;
+    if (row.tipoLinha !== 'movimentacao') return false;
     const idAt = row.idAtendimento?.trim();
     if (!idAt) return false;
-    if (row.comandaPagamentoId != null && row.comandaPagamentoId > 0) {
-      return true;
-    }
-    return row.movimentacaoId != null && row.movimentacaoId > 0;
+    if (row.comandaPagamentoId != null && row.comandaPagamentoId > 0) return true;
+    return row.movimentacaoId != null && row.movimentacaoId > 0 && row.origemApi === 'comanda_pagamento';
   }
 
-  estornarDesabilitado(row: FinTransacaoLinhaUi): boolean {
-    return this.liquidandoPagoId === row.id || !this.podeEstornarComanda(row);
+  podeEstornarComissao(row: FinTransacaoLinhaUi): boolean {
+    return (
+      row.status === 'pago' &&
+      row.tipoLinha === 'movimentacao' &&
+      row.origemApi === 'comissao_pagamento' &&
+      row.movimentacaoId != null &&
+      row.movimentacaoId > 0
+    );
   }
 
-  tooltipEstornar(row: FinTransacaoLinhaUi): string {
-    return this.podeEstornarComanda(row) ? 'Clique para estornar' : '';
+  podeEstornarMovimentacao(row: FinTransacaoLinhaUi): boolean {
+    return (
+      row.status === 'pago' &&
+      row.tipoLinha === 'movimentacao' &&
+      row.movimentacaoId != null &&
+      row.movimentacaoId > 0 &&
+      row.origemApi !== 'comanda_pagamento' &&
+      row.origemApi !== 'comissao_pagamento'
+    );
   }
 
-  onEstornarComanda(row: FinTransacaoLinhaUi, ev: Event): void {
+  podeEstornarLinha(row: FinTransacaoLinhaUi): boolean {
+    return (
+      this.podeEstornarComanda(row) ||
+      this.podeEstornarComissao(row) ||
+      this.podeEstornarMovimentacao(row)
+    );
+  }
+
+  podePagarPendencia(row: FinTransacaoLinhaUi): boolean {
+    return (
+      row.status !== 'pago' &&
+      row.tipoLinha === 'pendencia' &&
+      row.comandaPagamentoId != null &&
+      row.comandaPagamentoId > 0
+    );
+  }
+
+  podePagarMovimentacao(row: FinTransacaoLinhaUi): boolean {
+    return (
+      row.status !== 'pago' &&
+      row.tipoLinha === 'movimentacao' &&
+      row.movimentacaoId != null &&
+      row.movimentacaoId > 0 &&
+      row.origemApi !== 'comanda_pagamento' &&
+      row.origemApi !== 'comissao_pagamento'
+    );
+  }
+
+  podePagarLinha(row: FinTransacaoLinhaUi): boolean {
+    return this.podePagarPendencia(row) || this.podePagarMovimentacao(row);
+  }
+
+  colunaPagoVisivel(row: FinTransacaoLinhaUi): boolean {
+    return this.podeEstornarLinha(row) || this.podePagarLinha(row);
+  }
+
+  switchPagoDesabilitado(row: FinTransacaoLinhaUi): boolean {
+    return this.liquidandoPagoId === row.id || !this.colunaPagoVisivel(row);
+  }
+
+  tooltipColunaPago(row: FinTransacaoLinhaUi): string {
+    if (row.status === 'pago') return 'Clique para estornar';
+    return 'Clique para marcar como pago';
+  }
+
+  onTogglePago(row: FinTransacaoLinhaUi, ev: Event): void {
     ev.stopPropagation();
-    if (this.estornarDesabilitado(row) || this.liquidandoPagoId != null) {
+    if (this.switchPagoDesabilitado(row)) return;
+    if (row.status === 'pago') {
+      this.estornoModalLinha = row;
       return;
     }
-    if (
-      !confirm(
-        'Estornar este pagamento? O valor voltará para a comanda em aberto.',
-      )
-    ) {
-      return;
-    }
+    this.pagoPopoverLinhaId = row.id;
+    this.pagoPopoverData = ymdHoje();
+  }
+
+  onPagoDataPicked(ymd: string, row: FinTransacaoLinhaUi): void {
+    if (!this.podePagarLinha(row)) return;
+    this.pagamentoModalLinha = row;
+    this.pagamentoModalData = ymd;
+    this.pagoPopoverLinhaId = null;
+  }
+
+  fecharModalEstorno(): void {
+    if (this.estornoModalSalvando) return;
+    this.estornoModalLinha = null;
+  }
+
+  confirmarModalEstorno(): void {
+    const row = this.estornoModalLinha;
+    if (!row || this.estornoModalSalvando) return;
+    this.estornoModalSalvando = true;
     this.liquidandoPagoId = row.id;
-    this.executarEstornoComanda(row).subscribe({
+    this.executarEstornoLinha(row).subscribe({
       next: () => {
+        this.estornoModalSalvando = false;
         this.liquidandoPagoId = null;
-        this.carregar();
-        this.mostrarMensagemAcao('Pagamento estornado.');
+        this.estornoModalLinha = null;
+        this.patchLinhaEstorno(row.id);
+        this.toast.show('Pagamento excluído com sucesso!');
       },
       error: (e: Error) => {
+        this.estornoModalSalvando = false;
         this.liquidandoPagoId = null;
-        this.mostrarMensagemAcao(
+        this.toast.show(
           e.message || 'Não foi possível estornar o pagamento.',
         );
       },
     });
   }
 
+  fecharModalPagamento(): void {
+    if (this.pagamentoModalSalvando) return;
+    this.pagamentoModalLinha = null;
+  }
+
+  confirmarModalPagamento(): void {
+    const row = this.pagamentoModalLinha;
+    if (!row || this.pagamentoModalSalvando) return;
+    this.pagamentoModalSalvando = true;
+    this.liquidandoPagoId = row.id;
+    const data = this.pagamentoModalData;
+    const req = this.podePagarPendencia(row)
+      ? this.api.pagarPendenciaTransacao(row.comandaPagamentoId!, data)
+      : this.api.pagarMovimentacaoTransacao(row.movimentacaoId!, data);
+    req.subscribe({
+      next: () => {
+        this.pagamentoModalSalvando = false;
+        this.liquidandoPagoId = null;
+        this.pagamentoModalLinha = null;
+        this.patchLinhaPagamento(row.id, data);
+        this.toast.show('Pagamento realizado com sucesso!');
+      },
+      error: (e: Error) => {
+        this.pagamentoModalSalvando = false;
+        this.liquidandoPagoId = null;
+        this.toast.show(
+          e.message || 'Não foi possível confirmar o pagamento.',
+        );
+      },
+    });
+  }
+
+  private executarEstornoLinha(row: FinTransacaoLinhaUi): Observable<void> {
+    if (this.podeEstornarComissao(row)) {
+      const movId = row.movimentacaoId!;
+      return this.api
+        .estornarComissaoMovimentacao(movId)
+        .pipe(map(() => undefined));
+    }
+    const movId = row.movimentacaoId;
+    if (movId != null && movId > 0) {
+      return this.api
+        .estornarMovimentacaoTransacao(movId)
+        .pipe(map(() => undefined));
+    }
+    if (this.podeEstornarComanda(row)) {
+      return this.executarEstornoComanda(row).pipe(map(() => undefined));
+    }
+    return throwError(() => new Error('Não foi possível estornar este pagamento.'));
+  }
+
   private executarEstornoComanda(row: FinTransacaoLinhaUi) {
+    const idAt = row.idAtendimento!.trim();
+    const pagId = row.comandaPagamentoId;
+    return this.api.listComandaPagamentos(idAt).pipe(
+      switchMap(({ items }) => {
+        const alvo =
+          pagId != null && pagId > 0
+            ? items.find((p) => p.id === pagId)
+            : items.find((p) => p.movimentacao_id === row.movimentacaoId);
+        const mid = alvo?.movimentacao_id;
+        if (!mid) {
+          throw new Error(
+            'Pagamento da comanda não encontrado para estornar.',
+          );
+        }
+        return this.api.estornarMovimentacaoTransacao(mid);
+      }),
+    );
+  }
+
+  private executarExcluirComandaPagamento(row: FinTransacaoLinhaUi) {
     const idAt = row.idAtendimento!.trim();
     const pagId = row.comandaPagamentoId;
     if (pagId != null && pagId > 0) {
@@ -424,12 +680,69 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
         const alvo = items.find((p) => p.movimentacao_id === movId);
         if (!alvo?.id) {
           throw new Error(
-            'Pagamento da comanda não encontrado para estornar.',
+            'Pagamento da comanda não encontrado para excluir.',
           );
         }
         return this.api.excluirComandaPagamento(idAt, alvo.id);
       }),
     );
+  }
+
+  private executarExclusaoLinha(row: FinTransacaoLinhaUi): Observable<void> {
+    if (this.podePagarPendencia(row)) {
+      const idAt = row.idAtendimento!.trim();
+      const pagId = row.comandaPagamentoId!;
+      return this.api
+        .excluirComandaPagamento(idAt, pagId)
+        .pipe(map(() => undefined));
+    }
+    if (this.podeEstornarComissao(row)) {
+      return this.api
+        .excluirComissaoMovimentacao(row.movimentacaoId!)
+        .pipe(map(() => undefined));
+    }
+    if (this.podeEstornarComanda(row)) {
+      return this.executarExcluirComandaPagamento(row).pipe(map(() => undefined));
+    }
+    const movId = row.movimentacaoId;
+    if (movId != null && movId > 0 && row.editavel) {
+      return this.api.deleteMovimentacao(movId).pipe(map(() => undefined));
+    }
+    if (this.podeEstornarMovimentacao(row) && movId != null && movId > 0) {
+      return this.api.deleteMovimentacao(movId).pipe(map(() => undefined));
+    }
+    return throwError(() => new Error('Não foi possível excluir esta transação.'));
+  }
+
+  abrirModalExclusao(row: FinTransacaoLinhaUi): void {
+    if (!this.podeExcluirNoMenu(row) || this.excluindoId != null) return;
+    this.exclusaoModalLinha = row;
+  }
+
+  fecharModalExclusao(): void {
+    if (this.exclusaoModalSalvando) return;
+    this.exclusaoModalLinha = null;
+  }
+
+  confirmarModalExclusao(): void {
+    const row = this.exclusaoModalLinha;
+    if (!row || this.exclusaoModalSalvando) return;
+    this.exclusaoModalSalvando = true;
+    this.excluindoId = row.id;
+    this.executarExclusaoLinha(row).subscribe({
+      next: () => {
+        this.exclusaoModalSalvando = false;
+        this.excluindoId = null;
+        this.exclusaoModalLinha = null;
+        this.removerLinhaLocal(row.id);
+        this.toast.show('Transação excluída com sucesso!');
+      },
+      error: (e: Error) => {
+        this.exclusaoModalSalvando = false;
+        this.excluindoId = null;
+        this.toast.show(e.message || 'Não foi possível excluir a transação.');
+      },
+    });
   }
 
   linhaSelecionada(id: number): boolean {
@@ -469,13 +782,21 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   }
 
   onBuscaWrapClick(): void {
-    this.dispararPulsoToolbar('busca');
-    this.buscaAberta = !this.buscaAberta;
+    if (!this.buscaAberta) {
+      this.abrirPainelBusca();
+    }
+  }
+
+  onBuscaSubmit(): void {
+    const el = document.getElementById('fin-trans-busca');
+    if (el instanceof HTMLInputElement) {
+      el.blur();
+    }
   }
 
   onBuscaEnter(ev: Event): void {
     ev.preventDefault();
-    this.pagina = 1;
+    this.onBuscaSubmit();
   }
 
   toggleFiltros(): void {
@@ -489,16 +810,41 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   }
 
   calcularTotais(): void {
-    const linhas = this.linhasFiltradas;
-    let bruto = 0;
-    let liquido = 0;
+    this.resumoTotais.set(this.montarResumoTotais(this.linhasFiltradas));
+    this.modalTotaisAberto.set(true);
+  }
+
+  fecharModalTotais(): void {
+    this.modalTotaisAberto.set(false);
+  }
+
+  private montarResumoTotais(
+    linhas: FinTransacaoLinhaUi[],
+  ): FinTransacoesTotaisResumo {
+    let recebidos = 0;
+    let aReceber = 0;
+    let pagos = 0;
+    let aPagar = 0;
     for (const row of linhas) {
-      bruto += row.valorBruto;
-      liquido += row.valorLiquido;
+      const v = row.valorBruto;
+      const receita = row.linhaReceita === true;
+      const pago = row.status === 'pago';
+      if (receita) {
+        if (pago) recebidos += v;
+        else aReceber += v;
+      } else if (pago) {
+        pagos += v;
+      } else {
+        aPagar += v;
+      }
     }
-    this.mostrarMensagemAcao(
-      `Totais (${linhas.length} linha${linhas.length === 1 ? '' : 's'}): bruto ${this.formatarMoeda(bruto)}, líquido ${this.formatarMoeda(liquido)}`,
-    );
+    return {
+      recebidos,
+      aReceber,
+      pagos,
+      aPagar,
+      quantidadeLinhas: linhas.length,
+    };
   }
 
   toggleNovoMenu(ev: Event): void {
@@ -590,18 +936,30 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
 
   podeExcluirNoMenu(row: FinTransacaoLinhaUi): boolean {
     if (this.podeEditarExcluir(row)) return true;
-    return this.podeEstornarComanda(row);
+    if (this.podeEstornarLinha(row)) return true;
+    return this.podePagarPendencia(row);
+  }
+
+  podeAcaoEditarLinha(row: FinTransacaoLinhaUi): boolean {
+    return (
+      this.podeAbrirEditarDrawer(row) ||
+      this.podeVerComanda(row)
+    );
   }
 
   linhaTemAcoes(row: FinTransacaoLinhaUi): boolean {
-    return this.podeAbrirEditarDrawer(row);
+    return this.podeAcaoEditarLinha(row) || this.podeExcluirNoMenu(row);
   }
 
-  @HostListener('document:click')
-  fecharMenuAcaoDocumento(): void {
-    this.menuAcaoAbertoId = null;
+  @HostListener('document:click', ['$event'])
+  fecharMenuAcaoDocumento(ev: MouseEvent): void {
+    const t = ev.target as HTMLElement | null;
     this.novoMenuAberto = false;
     this.perPageMenuAberto = false;
+    this.pagoPopoverLinhaId = null;
+    if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
+      this.fecharPainelBusca();
+    }
   }
 
   /**
@@ -609,11 +967,42 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
    */
   @HostListener('document:keydown.escape', ['$event'])
   onEscapeGlobal(ev: KeyboardEvent): void {
+    if (this.pagamentoModalLinha) {
+      if (!this.pagamentoModalSalvando) {
+        ev.preventDefault();
+        this.fecharModalPagamento();
+      }
+      return;
+    }
+    if (this.pagoPopoverLinhaId != null) {
+      ev.preventDefault();
+      this.pagoPopoverLinhaId = null;
+      return;
+    }
+    if (this.exclusaoModalLinha) {
+      if (!this.exclusaoModalSalvando) {
+        ev.preventDefault();
+        this.fecharModalExclusao();
+      }
+      return;
+    }
+    if (this.estornoModalLinha) {
+      if (!this.estornoModalSalvando) {
+        ev.preventDefault();
+        this.fecharModalEstorno();
+      }
+      return;
+    }
     if (this.modalNovoAberto()) {
       if (!this.modalNovoSalvando()) {
         ev.preventDefault();
         this.fecharModalNovo();
       }
+      return;
+    }
+    if (this.modalTotaisAberto()) {
+      ev.preventDefault();
+      this.fecharModalTotais();
       return;
     }
     if (this.faturarDrawerAberto) {
@@ -638,34 +1027,33 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       this.filtrosAbertos = false;
       return;
     }
-    if (this.menuAcaoAbertoId != null) {
-      ev.preventDefault();
-      this.menuAcaoAbertoId = null;
-      return;
-    }
     if (this.perPageMenuAberto) {
       ev.preventDefault();
       this.perPageMenuAberto = false;
+      return;
     }
-  }
-
-  toggleMenuAcao(row: FinTransacaoLinhaUi, ev: Event): void {
-    ev.stopPropagation();
-    this.menuAcaoAbertoId =
-      this.menuAcaoAbertoId === row.id ? null : row.id;
+    if (!this.buscaAberta) return;
+    ev.preventDefault();
+    this.fecharPainelBusca();
   }
 
   onAcaoEditarLinha(row: FinTransacaoLinhaUi): void {
-    if (!this.podeAbrirEditarDrawer(row)) return;
-    this.editarLinha = row;
-    this.abrirDrawerComAnimacao(
-      () => {
-        this.editarDrawerAberto = true;
-      },
-      (open) => {
-        this.editarDrawerPanelOpen = open;
-      },
-    );
+    if (this.podeAbrirEditarDrawer(row)) {
+      this.editarLinha = row;
+      this.abrirDrawerComAnimacao(
+        () => {
+          this.editarDrawerAberto = true;
+        },
+        (open) => {
+          this.editarDrawerPanelOpen = open;
+        },
+      );
+      return;
+    }
+    if (this.podeVerComanda(row)) {
+      this.verComanda(row);
+      return;
+    }
   }
 
   fecharEditarDrawer(): void {
@@ -695,6 +1083,8 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
         categoria_id: ev.categoria_id,
         metodo_pagamento: ev.metodo_pagamento,
         descricao: ev.descricao ?? null,
+        data_mov: ev.data_mov,
+        pago_em: ev.pago_em,
       })
       .subscribe({
         next: () => {
@@ -885,36 +1275,12 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   onAbrirCadastroClienteDaComanda(
     payload: AbrirCadastroClientePayload = {},
   ): void {
-    const cid = this.comandaDrawerContexto?.clienteId?.trim();
-    if (!cid) return;
-    const nomeLista =
-      this.comandaDrawerContexto?.cliente?.nome?.trim() ?? '';
-    this.cadastroDrawer.abrirEdicaoPorLinkSidebar(cid, payload, {
-      nomeLista,
-      callbacks: {
-        onClienteCarregado: (c) => {
-          if (this.comandaDrawerContexto?.clienteId?.trim() === cid) {
-            this.comandaDrawerContexto = {
-              ...this.comandaDrawerContexto!,
-              cliente: c,
-            };
-          }
-        },
-        onSalvo: (salvo) => {
-          const cidSalvo = (salvo.id ?? cid).trim();
-          if (
-            cidSalvo &&
-            this.comandaDrawerContexto?.clienteId?.trim() === cidSalvo
-          ) {
-            this.comandaDrawerContexto = {
-              ...this.comandaDrawerContexto!,
-              cliente: salvo,
-            };
-            this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cidSalvo);
-          }
-        },
-      },
-    });
+    abrirCadastroClienteDesdeSidebarComanda(
+      this.cadastroDrawer,
+      this.comandaContextoHolder,
+      payload,
+      (cid) => this.comandaDrawerRef?.recarregarClienteAposSalvarFicha(cid),
+    );
   }
 
   ariaLabelComandaDrawer(): string {
@@ -983,57 +1349,6 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       row.movimentacaoId != null &&
       row.movimentacaoId > 0
     );
-  }
-
-  excluirLinha(row: FinTransacaoLinhaUi): void {
-    if (this.podeEstornarComanda(row)) {
-      if (
-        !confirm(
-          'Excluir este pagamento? O valor voltará para a comanda em aberto.',
-        )
-      ) {
-        return;
-      }
-      this.excluindoId = row.id;
-      this.executarEstornoComanda(row).subscribe({
-        next: () => {
-          this.excluindoId = null;
-          this.carregar();
-          this.mostrarMensagemAcao('Pagamento excluído.');
-        },
-        error: (e: Error) => {
-          this.excluindoId = null;
-          this.mostrarMensagemAcao(
-            e.message || 'Não foi possível excluir o pagamento.',
-          );
-        },
-      });
-      return;
-    }
-
-    const movId = row.movimentacaoId;
-    if (movId == null || movId <= 0 || !row.editavel) return;
-    if (
-      !confirm(
-        'Eliminar este lançamento? Esta ação não pode ser desfeita pelo app.',
-      )
-    ) {
-      return;
-    }
-    this.excluindoId = movId;
-    this.api.deleteMovimentacao(movId).subscribe({
-      next: () => {
-        this.excluindoId = null;
-        this.carregar();
-        this.mostrarMensagemAcao('Lançamento eliminado.');
-      },
-      error: (e: Error) => {
-        this.excluindoId = null;
-        this.mostrarMensagemAcao(
-          e.message || 'Não foi possível eliminar o lançamento.',
-        );
-      },
-    });
   }
 
   paginaAnterior(): void {

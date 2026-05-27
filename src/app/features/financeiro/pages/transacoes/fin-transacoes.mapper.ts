@@ -13,7 +13,7 @@ export interface FinTransacaoLinhaUi {
   valorBruto: number;
   valorLiquido: number;
   conta: 'Caixa' | 'Banco';
-  status: 'pago' | 'atrasado';
+  status: 'pago' | 'atrasado' | 'em_aberto';
   pagoToggle: boolean;
   linhaReceita?: boolean;
   idAtendimento?: string | null;
@@ -24,11 +24,26 @@ export interface FinTransacaoLinhaUi {
   origemApi?: string;
   editavel?: boolean;
   tipoLinha?: 'movimentacao' | 'pendencia';
+  /** Forma com baixa automática (cadastro financeiro). */
+  metodoBaixaAutomatica?: boolean;
+  pagoEmYmd?: string | null;
 }
 
 function valorNum(s: string): number {
   const n = parseFloat(String(s).replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
+}
+
+function calcularValorLiquido(
+  bruto: number,
+  natureza: 'receita' | 'despesa',
+  taxaPct: number,
+  taxaFixa: number,
+): number {
+  if (natureza !== 'receita') return bruto;
+  const pctPart = (bruto * taxaPct) / 100;
+  const taxaReais = pctPart + taxaFixa;
+  return Math.max(0, Math.round((bruto - taxaReais) * 100) / 100);
 }
 
 /** Dinheiro/Pix → Caixa; cartão/transferência/débito/crédito → Banco. */
@@ -52,14 +67,18 @@ export function contaFromMetodo(metodo: string | null | undefined): 'Caixa' | 'B
 }
 
 function titularFromItem(item: FinTransacaoItem): string {
-  const nome = String(item.nome_cliente ?? '').trim();
-  if (nome) return nome;
   const d = String(item.descricao ?? '').trim();
   if (d) {
+    const mComissao = /^Pagamento de comiss[aã]o para (.+)$/i.exec(d);
+    if (mComissao?.[1]) return mComissao[1].trim();
     const m1 = /^Pagamento comanda — (.+)$/i.exec(d);
     if (m1?.[1]) return m1[1].trim();
     const m2 = /^Crédito cliente \(excesso de pagamento\) — (.+)$/i.exec(d);
     if (m2?.[1]) return m2[1].trim();
+  }
+  const nome = String(item.nome_cliente ?? '').trim();
+  if (nome) return nome;
+  if (d) {
     if (d.length <= 80) return d;
   }
   return String(item.categoria_nome ?? '').trim() || '—';
@@ -68,6 +87,9 @@ function titularFromItem(item: FinTransacaoItem): string {
 export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLinhaUi {
   const v = valorNum(item.valor);
   const forma = String(item.metodo_pagamento ?? '').trim() || '—';
+  const taxaPct = item.taxa_percentual ?? 0;
+  const taxaFixa = item.taxa_fixa ?? 0;
+  const valorLiquido = calcularValorLiquido(v, item.natureza, taxaPct, taxaFixa);
   return {
     id: item.id_ui,
     dataYmd: String(item.data_mov).slice(0, 10),
@@ -79,7 +101,7 @@ export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLin
     categoriaId: item.categoria_id,
     descricao: item.descricao,
     valorBruto: v,
-    valorLiquido: v,
+    valorLiquido,
     conta: contaFromMetodo(item.metodo_pagamento),
     status: item.status,
     pagoToggle: item.status === 'pago',
@@ -92,5 +114,7 @@ export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLin
     origemApi: item.origem,
     editavel: item.editavel,
     tipoLinha: item.tipo,
+    metodoBaixaAutomatica: item.metodo_baixa_automatica === true,
+    pagoEmYmd: item.pago_em ? String(item.pago_em).slice(0, 10) : null,
   };
 }

@@ -568,27 +568,253 @@ END $$;
   }
   /** Alinha com `0032_cliente_credito_movimentos` quando `db:migrate` ainda não correu. */
   await db.execute(sql.raw(`
-CREATE TABLE IF NOT EXISTS "cliente_credito_movimentos" (
-  "id" serial PRIMARY KEY NOT NULL,
-  "cliente_id" text NOT NULL,
-  "id_atendimento" text,
-  "data_mov" date NOT NULL,
-  "valor" numeric(14, 2) NOT NULL,
-  "tipo" text NOT NULL,
-  "motivo" text NOT NULL,
-  "created_at" timestamptz DEFAULT now() NOT NULL,
-  CONSTRAINT "cliente_credito_movimentos_cliente_id_clientes_id_cliente_fk"
-    FOREIGN KEY ("cliente_id") REFERENCES "clientes"("id_cliente") ON DELETE CASCADE,
-  CONSTRAINT "cliente_credito_movimentos_tipo_chk"
-    CHECK ("tipo" IN ('entrada', 'saida'))
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables t
+    WHERE t.table_schema = current_schema()
+      AND t.table_name = 'cliente_credito_movimentos'
+  ) THEN
+    CREATE TABLE "cliente_credito_movimentos" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "cliente_id" text NOT NULL,
+      "id_atendimento" text,
+      "data_mov" date NOT NULL,
+      "valor" numeric(14, 2) NOT NULL,
+      "tipo" text NOT NULL,
+      "motivo" text NOT NULL,
+      "created_at" timestamptz DEFAULT now() NOT NULL,
+      CONSTRAINT "cliente_credito_movimentos_cliente_id_clientes_id_cliente_fk"
+        FOREIGN KEY ("cliente_id") REFERENCES "clientes"("id_cliente") ON DELETE CASCADE,
+      CONSTRAINT "cliente_credito_movimentos_tipo_chk"
+        CHECK ("tipo" IN ('entrada', 'saida'))
+    );
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'cliente_credito_movimentos'
+      AND i.indexname = 'cliente_credito_movimentos_cliente_idx'
+  ) THEN
+    CREATE INDEX "cliente_credito_movimentos_cliente_idx"
+      ON "cliente_credito_movimentos" ("cliente_id");
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'cliente_credito_movimentos'
+      AND i.indexname = 'cliente_credito_movimentos_cliente_data_idx'
+  ) THEN
+    CREATE INDEX "cliente_credito_movimentos_cliente_data_idx"
+      ON "cliente_credito_movimentos" ("cliente_id", "data_mov" DESC, "id" DESC);
+  END IF;
+END $$;
+`));
+  /** Alinha com `0033_comissao_paga_transacoes` quando `db:migrate` ainda não correu. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos' AND c.column_name = 'comissao_paga_em'
+  ) THEN
+    ALTER TABLE "atendimentos" ADD COLUMN "comissao_paga_em" date;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'atendimentos'
+      AND i.indexname = 'atendimentos_comissao_paga_em_idx'
+  ) THEN
+    CREATE INDEX "atendimentos_comissao_paga_em_idx"
+      ON "atendimentos" ("comissao_paga_em")
+      WHERE "comissao_paga_em" IS NOT NULL;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+INSERT INTO "categorias_financeiras" ("nome", "natureza", "slug", "ordem", "ativo")
+SELECT 'Comissão', 'despesa', 'despesa_comissao', 125, true
+WHERE NOT EXISTS (
+  SELECT 1 FROM "categorias_financeiras" WHERE "slug" = 'despesa_comissao'
 );
 `));
+  /** Alinha com `0034_movimentacoes_pago_em` quando `db:migrate` ainda não correu. */
   await db.execute(sql.raw(`
-CREATE INDEX IF NOT EXISTS "cliente_credito_movimentos_cliente_idx"
-  ON "cliente_credito_movimentos" ("cliente_id");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'movimentacoes' AND c.column_name = 'pago_em'
+  ) THEN
+    ALTER TABLE "movimentacoes" ADD COLUMN "pago_em" date;
+  END IF;
+END $$;
 `));
   await db.execute(sql.raw(`
-CREATE INDEX IF NOT EXISTS "cliente_credito_movimentos_cliente_data_idx"
-  ON "cliente_credito_movimentos" ("cliente_id", "data_mov" DESC, "id" DESC);
+UPDATE "movimentacoes"
+SET "pago_em" = "data_mov"
+WHERE "pago_em" IS NULL;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'movimentacoes'
+      AND i.indexname = 'movimentacoes_pago_em_idx'
+  ) THEN
+    CREATE INDEX "movimentacoes_pago_em_idx"
+      ON "movimentacoes" ("pago_em");
+  END IF;
+END $$;
+`));
+  /** Alinha com `0035_formas_pagamento_financeiras` quando `db:migrate` ainda não correu. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables t
+    WHERE t.table_schema = current_schema()
+      AND t.table_name = 'formas_pagamento_financeiras'
+  ) THEN
+    CREATE TABLE "formas_pagamento_financeiras" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "nome" text NOT NULL,
+      "codigo_interno" text NOT NULL,
+      "baixa_automatica" boolean DEFAULT false NOT NULL,
+      "ordem" integer DEFAULT 0 NOT NULL,
+      "ativo" boolean DEFAULT true NOT NULL,
+      "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+      CONSTRAINT "formas_pagamento_financeiras_codigo_interno_unique" UNIQUE ("codigo_interno")
+    );
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'formas_pagamento_financeiras'
+      AND i.indexname = 'formas_pagamento_financeiras_ativo_ordem_idx'
+  ) THEN
+    CREATE INDEX "formas_pagamento_financeiras_ativo_ordem_idx"
+      ON "formas_pagamento_financeiras" ("ativo", "ordem", "id");
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+INSERT INTO "formas_pagamento_financeiras" ("nome", "codigo_interno", "baixa_automatica", "ordem", "ativo")
+SELECT v.nome, v.codigo, v.baixa, v.ordem, true
+FROM (VALUES
+  ('Pix', 'pix', true, 10),
+  ('Dinheiro', 'dinheiro', true, 20),
+  ('Cartão de Crédito', 'cartao_credito', false, 30),
+  ('Cartão de Débito', 'cartao_debito', true, 40),
+  ('Transferência', 'transferencia', false, 50),
+  ('Boleto', 'boleto', false, 60),
+  ('Cheque à Vista', 'cheque_vista', false, 70),
+  ('Cheque Pré', 'cheque_pre', false, 80),
+  ('Convênio', 'convenio', false, 90),
+  ('Depósito', 'deposito', false, 100),
+  ('Pendente', 'pendente', false, 110),
+  ('Outros', 'outros', false, 120)
+) AS v(nome, codigo, baixa, ordem)
+WHERE NOT EXISTS (
+  SELECT 1 FROM "formas_pagamento_financeiras" LIMIT 1
+);
+`));
+  /** Alinha com `0036_formas_pagamento_cenario_salao`. */
+  await db.execute(sql.raw(`
+UPDATE "formas_pagamento_financeiras"
+SET "baixa_automatica" = true
+WHERE "codigo_interno" IN ('pix', 'dinheiro', 'cartao_debito');
+`));
+  await db.execute(sql.raw(`
+UPDATE "formas_pagamento_financeiras"
+SET "baixa_automatica" = false
+WHERE "codigo_interno" NOT IN ('pix', 'dinheiro', 'cartao_debito');
+`));
+  await db.execute(sql.raw(`
+UPDATE "formas_pagamento_financeiras"
+SET "ativo" = false
+WHERE "codigo_interno" IN (
+  'boleto', 'cheque_vista', 'cheque_pre', 'convenio', 'deposito'
+);
+`));
+  /** Alinha com `0037_formas_pagamento_taxas`. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'formas_pagamento_financeiras'
+      AND c.column_name = 'taxa_percentual'
+  ) THEN
+    ALTER TABLE "formas_pagamento_financeiras"
+      ADD COLUMN "taxa_percentual" numeric(6, 3) DEFAULT 0 NOT NULL,
+      ADD COLUMN "taxa_fixa" numeric(14, 2) DEFAULT 0 NOT NULL;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+UPDATE "formas_pagamento_financeiras"
+SET "taxa_percentual" = 3.000
+WHERE "codigo_interno" = 'cartao_credito'
+  AND "taxa_percentual" = 0;
+`));
+  await db.execute(sql.raw(`
+UPDATE "formas_pagamento_financeiras"
+SET "taxa_percentual" = 1.500
+WHERE "codigo_interno" = 'cartao_debito'
+  AND "taxa_percentual" = 0;
+`));
+  /** Alinha com `0038_formas_pagamento_prazo`. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'formas_pagamento_financeiras'
+      AND c.column_name = 'prazo_recebimento'
+  ) THEN
+    ALTER TABLE "formas_pagamento_financeiras"
+      ADD COLUMN "prazo_recebimento" integer DEFAULT 0 NOT NULL;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+UPDATE "formas_pagamento_financeiras"
+SET "prazo_recebimento" = 30
+WHERE "codigo_interno" IN ('cartao_credito', 'boleto', 'cheque_pre')
+  AND "prazo_recebimento" = 0;
+`));
+  await db.execute(sql.raw(`
+UPDATE "formas_pagamento_financeiras"
+SET "prazo_recebimento" = 1
+WHERE "codigo_interno" = 'transferencia'
+  AND "prazo_recebimento" = 0;
 `));
 }

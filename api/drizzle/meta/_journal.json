@@ -232,6 +232,48 @@
       "when": 1775697944000,
       "tag": "0032_cliente_credito_movimentos",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1775697945000,
+      "tag": "0033_comissao_paga_transacoes",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1775697946000,
+      "tag": "0034_movimentacoes_pago_em",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1775697947000,
+      "tag": "0035_formas_pagamento_financeiras",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1775697948000,
+      "tag": "0036_formas_pagamento_cenario_salao",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1775697949000,
+      "tag": "0037_formas_pagamento_taxas",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1775697950000,
+      "tag": "0038_formas_pagamento_prazo",
+      "breakpoints": true
     }
   ]
 }

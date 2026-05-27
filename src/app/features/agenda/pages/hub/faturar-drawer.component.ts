@@ -15,6 +15,12 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { AgendaModalCalendarComponent } from '../novo/agenda-modal-calendar.component';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import {
+  METODOS_COMANDA_FALLBACK,
+  mapFormasParaMetodosComanda,
+  rotulosMetodoComandaFromFormas,
+  type MetodoComandaOpcaoUi,
+} from '../../../../core/utils/fin-formas-pagamento.util';
 import type {
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
@@ -128,17 +134,7 @@ type MetodoSlotPrincipal =
   | { kind: 'opcao'; opcao: MetodoOpcao }
   | { kind: 'cartao' };
 
-const METODOS: MetodoOpcao[] = [
-  { value: 'dinheiro', rotulo: 'Dinheiro', grupo: 'dinheiro' },
-  { value: 'cartao_credito', rotulo: 'Cartão de crédito', grupo: 'cartao' },
-  { value: 'cartao_debito', rotulo: 'Cartão de débito', grupo: 'outros' },
-  { value: 'pix', rotulo: 'Pix', grupo: 'pix' },
-  { value: 'pendente', rotulo: 'Pendente', grupo: 'outros' },
-  { value: 'transferencia', rotulo: 'Transferência', grupo: 'outros' },
-  { value: 'outros', rotulo: 'Outros', grupo: 'outros' },
-];
-
-const ROTULO_METODO_UI: Record<MetodoPagamentoComanda, string> = {
+const ROTULO_METODO_UI_FALLBACK: Record<MetodoPagamentoComanda, string> = {
   dinheiro: 'Dinheiro',
   cartao_credito: 'Cartão de crédito',
   cartao_debito: 'Cartão de débito',
@@ -243,6 +239,12 @@ export class FaturarDrawerComponent implements OnInit {
 
   excluindoPagamentoId: number | null = null;
 
+  /** Formas de pagamento (cadastro financeiro ou fallback). */
+  formasMetodos: MetodoComandaOpcaoUi[] = [...METODOS_COMANDA_FALLBACK];
+  private rotulosMetodoUi: Partial<Record<MetodoPagamentoComanda, string>> = {
+    ...ROTULO_METODO_UI_FALLBACK,
+  };
+
   constructor() {
     /** Pré-carrega valor com o saldo restante quando o resumo muda. */
     effect(() => {
@@ -287,6 +289,29 @@ export class FaturarDrawerComponent implements OnInit {
 
   ngOnInit(): void {
     this.recarregar();
+    this.carregarFormasPagamento();
+  }
+
+  private carregarFormasPagamento(): void {
+    this.api.listFinFormasPagamentoOpcoes().subscribe({
+      next: (items) => {
+        const mapped = mapFormasParaMetodosComanda(items);
+        if (mapped.length > 0) {
+          this.formasMetodos = mapped;
+          this.rotulosMetodoUi = {
+            ...ROTULO_METODO_UI_FALLBACK,
+            ...rotulosMetodoComandaFromFormas(items),
+          };
+        }
+      },
+      error: () => {
+        /* mantém fallback */
+      },
+    });
+  }
+
+  rotuloMetodoUi(m: MetodoPagamentoComanda): string {
+    return this.rotulosMetodoUi[m] ?? ROTULO_METODO_UI_FALLBACK[m] ?? m;
   }
 
   // ----- Data -------------------------------------------------------------
@@ -361,8 +386,8 @@ export class FaturarDrawerComponent implements OnInit {
   // ----- Métodos / botões --------------------------------------------------
 
   metodoSlotsPrincipais(): MetodoSlotPrincipal[] {
-    const dinheiro = METODOS.find((m) => m.value === 'dinheiro');
-    const pix = METODOS.find((m) => m.value === 'pix');
+    const dinheiro = this.formasMetodos.find((m) => m.value === 'dinheiro');
+    const pix = this.formasMetodos.find((m) => m.value === 'pix');
     const slots: MetodoSlotPrincipal[] = [];
     if (dinheiro) slots.push({ kind: 'opcao', opcao: dinheiro });
     slots.push({ kind: 'cartao' });
@@ -376,10 +401,11 @@ export class FaturarDrawerComponent implements OnInit {
 
   /** Opções do dropdown «Cartão» (rótulos com capitalização do UI). */
   metodosCartaoDropdown(): Array<{ value: MetodoPagamentoComanda; rotulo: string }> {
-    return [
-      { value: 'cartao_credito', rotulo: 'Cartão de Crédito' },
-      { value: 'cartao_debito', rotulo: 'Cartão de Débito' },
-    ];
+    return this.formasMetodos
+      .filter(
+        (m) => m.value === 'cartao_credito' || m.value === 'cartao_debito',
+      )
+      .map((m) => ({ value: m.value, rotulo: m.rotulo }));
   }
 
   /**
@@ -622,9 +648,7 @@ export class FaturarDrawerComponent implements OnInit {
     if (l.kind === 'api') {
       return l.row.metodo_rotulo;
     }
-    return (
-      ROTULO_METODO_UI[l.row.metodoRotulo ?? l.row.metodo] ?? l.row.metodo
-    );
+    return this.rotuloMetodoUi(l.row.metodoRotulo ?? l.row.metodo);
   }
 
   /** Ex.: `1/2` ao lado do método (rascunho ou linhas gravadas parceladas). */
@@ -812,8 +836,7 @@ export class FaturarDrawerComponent implements OnInit {
             ? {
                 parcela_numero: r.parcelaNumero,
                 parcelas_total: r.parcelasTotal,
-                metodo_rotulo:
-                  ROTULO_METODO_UI[r.metodoRotulo ?? r.metodo] ?? r.metodo,
+                metodo_rotulo: this.rotuloMetodoUi(r.metodoRotulo ?? r.metodo),
               }
             : {}),
           observacao: null,

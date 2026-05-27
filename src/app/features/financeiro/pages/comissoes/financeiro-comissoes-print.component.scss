@@ -1,0 +1,146 @@
+.fin-comissoes-print {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .fin-comissoes-print,
+  .fin-comissoes-print * {
+    visibility: visible;
+  }
+
+  .fin-comissoes-print {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    color: #111827;
+    font-size: 12px;
+    font-family: inherit;
+  }
+
+  .fin-comissoes-print__title {
+    margin: 0 0 0.75rem;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    color: #374151;
+  }
+
+  .fin-comissoes-print__meta {
+    margin: 0 0 0.35rem;
+    font-size: 12px;
+    color: #374151;
+  }
+
+  .fin-comissoes-print__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0 1.25rem;
+    font-size: 12px;
+  }
+
+  .fin-comissoes-print__table thead th {
+    padding: 0.5rem 0.65rem;
+    border: 1px solid #d1d5db;
+    background: #f3f4f6;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .fin-comissoes-print__table thead th:nth-child(3),
+  .fin-comissoes-print__table thead th:nth-child(5),
+  .fin-comissoes-print__table tbody td:nth-child(3),
+  .fin-comissoes-print__table tbody td:nth-child(5) {
+    text-align: right;
+  }
+
+  .fin-comissoes-print__table tbody td {
+    padding: 0.45rem 0.65rem;
+    border: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+
+  .fin-comissoes-print__cliente {
+    display: block;
+    font-weight: 500;
+  }
+
+  .fin-comissoes-print__comanda {
+    color: #505afb;
+  }
+
+  .fin-comissoes-print__servico {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  .fin-comissoes-print__qty {
+    font-size: 10px;
+    vertical-align: super;
+  }
+
+  .fin-comissoes-print__comissao {
+    line-height: 1.35;
+
+    span {
+      display: block;
+    }
+  }
+
+  .fin-comissoes-print__disp {
+    font-weight: 600;
+    color: #22a06b;
+    text-align: right;
+  }
+
+  .fin-comissoes-print__totais {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #d1d5db;
+  }
+
+  .fin-comissoes-print__totais-title {
+    margin: 0 0 0.65rem;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    color: #374151;
+  }
+
+  .fin-comissoes-print__totais-list {
+    margin: 0;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .fin-comissoes-print__totais-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 12px;
+
+    dt,
+    dd {
+      margin: 0;
+    }
+
+    &--total {
+      border-bottom: none;
+      margin-top: 0.25rem;
+      padding-top: 0.5rem;
+      font-weight: 700;
+      color: #22a06b;
+    }
+  }
+}

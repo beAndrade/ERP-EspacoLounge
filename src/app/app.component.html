@@ -421,6 +421,34 @@
               <span class="nav-item__label">Comissões</span>
             </a>
           </li>
+          <li>
+            <a
+              routerLink="/financeiro/cadastros"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Cadastros financeiros"
+              title="Cadastros"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 3v18" />
+                <rect x="4" y="8" width="16" height="13" rx="2" />
+                <path d="M8 3h8" />
+              </svg>
+              <span class="nav-item__label">Cadastros</span>
+            </a>
+          </li>
         </ul>
         </div>
       </div>
@@ -549,8 +577,9 @@
           </li>
           <li>
             <a
-              routerLink="/pacotes"
+              routerLink="/pacotes/predefinidos"
               routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
               class="nav-item nav-item--sub"
               aria-label="Pacotes Predefinidos"
               title="Pacotes Predefinidos"
