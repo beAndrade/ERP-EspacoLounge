@@ -11,13 +11,17 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap, throwError, type Observable } from 'rxjs';
 import type {
+  CategoriaFinanceiraItem,
   Cliente,
   ComandaResumoPagamentos,
 } from '../../../../core/models/api.models';
 import { parseFiltroDataDdMm } from '../../../../core/utils/atendimento-display';
+import { mapFormasParaNomes } from '../../../../core/utils/fin-formas-pagamento.util';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
 import { NovaComandaDrawerComponent } from '../../../agenda/pages/hub/nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from '../../../agenda/pages/hub/faturar-drawer.component';
 import type { ComandaDrawerContextoAgenda } from '../../../agenda/pages/hub/comanda-drawer.types';
@@ -31,6 +35,7 @@ import {
   FinTransacaoEditarDrawerComponent,
   type FinTransacaoEditarSubmit,
 } from './fin-transacao-editar-drawer.component';
+import { FinFiltrosFloatingTipComponent } from './fin-filtros-floating-tip.component';
 import {
   FinTransacaoNovoModalComponent,
   type FinTransacaoNovoSubmit,
@@ -40,19 +45,36 @@ import {
   type FinTransacoesTotaisResumo,
 } from './fin-transacoes-totais-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { AgendaModalCalendarComponent } from '../../../agenda/pages/novo/agenda-modal-calendar.component';
 import {
   mapFinTransacaoItemToUi,
   type FinTransacaoLinhaUi,
 } from './fin-transacoes.mapper';
+import {
+  calcularTotaisTransacoes,
+  filtroPadraoTransacoes,
+  filtroParaQueryParams,
+  linhaNoPeriodoPorTipoData,
+  linhaPassaFiltroNaturezaCheckboxes,
+  linhaPassaFiltroStatusCheckboxes,
+  primeiroDiaMesYmdFiltro,
+  queryParamsParaFiltro,
+  ultimoDiaMesYmdFiltro,
+  type FinTransacoesFiltroNatureza,
+  type FinTransacoesFiltroStatus,
+  type FinTransacoesFiltroTipoData,
+  type FinTransacoesVisaoPreset,
+} from './fin-transacoes-filtro.util';
 
 export type { FinTransacaoLinhaUi };
 
 registerLocaleData(localePt);
 
 type OrdenacaoData = 'asc' | 'desc';
-type FiltroNatureza = 'todos' | 'receita' | 'despesa';
+type FiltroNatureza = FinTransacoesFiltroNatureza;
+type FiltroStatus = FinTransacoesFiltroStatus;
 
 function ymdToDdMmYyyy(ymd: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim().slice(0, 10));
@@ -63,11 +85,6 @@ function ymdToDdMmYyyy(ymd: string): string {
 function ymdHoje(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function primeiroDiaMesYmd(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
 const DRAWER_ANIM_MS = 430;
@@ -85,6 +102,8 @@ type FaturarDrawerCtx = {
   imports: [
     CurrencyPipe,
     FormsModule,
+    ClienteDrawerPeriodoFiltroComponent,
+    FinFiltrosFloatingTipComponent,
     FinTransacaoNovoModalComponent,
     FinTransacoesTotaisModalComponent,
     FinTransacaoEditarDrawerComponent,
@@ -101,6 +120,8 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly toast = inject(AppToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   @ViewChild(NovaComandaDrawerComponent)
   comandaDrawerRef?: NovaComandaDrawerComponent;
@@ -139,13 +160,34 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   carregando = false;
   erro = '';
 
-  dataInicio = ymdToDdMmYyyy(primeiroDiaMesYmd());
-  dataFim = ymdToDdMmYyyy(ymdHoje());
+  dataInicio = ymdToDdMmYyyy(primeiroDiaMesYmdFiltro());
+  dataFim = ymdToDdMmYyyy(ultimoDiaMesYmdFiltro());
+  periodoInicioYmd = primeiroDiaMesYmdFiltro();
+  periodoFimYmd = ultimoDiaMesYmdFiltro();
   filtroNatureza: FiltroNatureza = 'todos';
+  filtroStatus: FiltroStatus = 'todos';
+  filtroVisao: FinTransacoesVisaoPreset | null = null;
+
+  filtroReceber = true;
+  filtroPagar = true;
+  filtroTipoData: FinTransacoesFiltroTipoData = 'vencimento';
+  statusPago = true;
+  statusEmAberto = true;
+  statusAtrasado = true;
+
+  private readonly formasOpcoes = signal<string[]>([]);
+  private readonly categoriasOpcoes = signal<CategoriaFinanceiraItem[]>([]);
+  private formasMarcadas = new Set<string>();
+  private categoriasMarcadas = new Set<number>();
+  private opcoesFiltroCarregadas = false;
+
+  private queryParamsInicializado = false;
+  private ultimoCarregamentoChave = '';
 
   ordenacaoData: OrdenacaoData = 'desc';
   dataSortTipVisivel = false;
   private dataSortTipSuprimida = false;
+  private dataSortTipShowTimer: ReturnType<typeof setTimeout> | null = null;
 
   buscaAberta = false;
   busca = '';
@@ -153,9 +195,11 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   itensPorPagina = 20;
   perPageMenuAberto = false;
   novoMenuAberto = false;
+  novoMenuFechando = false;
   filtrosAbertos = false;
   pulsoToolbarBusca = false;
   pulsoToolbarFiltro = false;
+  pulsoToolbarNovo = false;
   mensagemAcao: string | null = null;
 
   readonly modalNovoAberto = signal(false);
@@ -172,8 +216,11 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   });
 
   private readonly duracaoPulsoToolbarMs = 600;
+  private readonly duracaoNovoMenuAnimMs = 220;
   private tPulsoBusca: ReturnType<typeof setTimeout> | null = null;
   private tPulsoFiltro: ReturnType<typeof setTimeout> | null = null;
+  private tPulsoNovo: ReturnType<typeof setTimeout> | null = null;
+  private tNovoMenuFechar: ReturnType<typeof setTimeout> | null = null;
   private tMensagemAcao: ReturnType<typeof setTimeout> | null = null;
 
   private readonly selecionados = signal<ReadonlySet<number>>(new Set());
@@ -190,10 +237,46 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   pagamentoModalSalvando = false;
 
   ngOnInit(): void {
-    this.carregar();
+    this.carregarOpcoesFiltrosSidebar();
+
+    this.route.queryParamMap.subscribe((params) => {
+      const raw: Record<string, string | undefined> = {};
+      for (const key of params.keys) {
+        raw[key] = params.get(key) ?? undefined;
+      }
+      const tinhaVisao = !!String(raw['visao'] ?? '').trim();
+      const filtro = queryParamsParaFiltro(raw);
+      const carregamentoChave = `${filtro.dataInicio}|${filtro.dataFim}|${filtro.tipoData ?? 'vencimento'}`;
+      const carregamentoMudou = carregamentoChave !== this.ultimoCarregamentoChave;
+
+      this.dataInicio = filtro.dataInicio;
+      this.dataFim = filtro.dataFim;
+      this.syncPeriodoYmdFromDdMm();
+      this.filtroNatureza = filtro.natureza;
+      this.filtroStatus = filtro.status;
+      this.filtroVisao = filtro.visao ?? null;
+      this.filtroTipoData = filtro.tipoData ?? 'vencimento';
+      // Só aplica checkboxes a partir da URL na entrada ou preset do Painel;
+      // evita reverter receber/pagar ao sincronizar URL após toggle no sidebar.
+      if (!this.queryParamsInicializado || tinhaVisao) {
+        this.aplicarFiltroEstadoParaUi(filtro.natureza, filtro.status);
+      }
+      if (tinhaVisao) this.filtrosAbertos = true;
+
+      if (!tinhaVisao && !this.queryParamsInicializado) {
+        this.syncUrlFromFiltro();
+      }
+
+      if (!this.queryParamsInicializado || carregamentoMudou) {
+        this.carregar();
+      }
+      this.queryParamsInicializado = true;
+      this.pagina = 1;
+    });
   }
 
   ngOnDestroy(): void {
+    this.clearDataSortTipShowTimer();
     if (this.comandaDrawerCloseTimer != null) {
       clearTimeout(this.comandaDrawerCloseTimer);
     }
@@ -205,6 +288,9 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     }
     if (this.pageScrollLockAtivo) {
       this.desbloquearScrollPagina();
+    }
+    if (this.tNovoMenuFechar != null) {
+      window.clearTimeout(this.tNovoMenuFechar);
     }
   }
 
@@ -225,11 +311,18 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
 
     this.carregando = true;
     this.erro = '';
-    this.api.listTransacoesFinanceiras({ dataInicio: di, dataFim: df }).subscribe({
+    this.api
+      .listTransacoesFinanceiras({
+        dataInicio: di,
+        dataFim: df,
+        tipoData: this.filtroTipoData,
+      })
+      .subscribe({
       next: (items) => {
         this.linhasFonte = items.map(mapFinTransacaoItemToUi);
         this.selecionados.set(new Set());
         this.pagina = 1;
+        this.ultimoCarregamentoChave = `${diTxt}|${dfTxt}|${this.filtroTipoData}`;
         this.carregando = false;
       },
       error: (e: Error) => {
@@ -242,25 +335,50 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     });
   }
 
-  aplicarFiltros(): void {
-    this.filtrosAbertos = false;
-    this.carregar();
+  /** Sincroniza URL e recarrega da API só se o período mudou; checkboxes filtram na hora. */
+  private aplicarFiltrosAutomatico(): void {
+    this.syncDdMmFromPeriodoYmd();
+    this.filtroNatureza = this.derivarNaturezaParaUrl();
+    this.filtroStatus = this.derivarStatusParaUrl();
+    this.syncUrlFromFiltro();
+    const chave = `${this.dataInicio.trim()}|${this.dataFim.trim()}|${this.filtroTipoData}`;
+    if (chave !== this.ultimoCarregamentoChave) {
+      this.carregar();
+    }
   }
 
-  limparFiltrosPeriodo(): void {
-    this.dataInicio = ymdToDdMmYyyy(primeiroDiaMesYmd());
-    this.dataFim = ymdToDdMmYyyy(ymdHoje());
-    this.filtroNatureza = 'todos';
-    this.carregar();
+  /** Tipo receber/pagar: filtra na hora e grava natureza na URL (sem recarregar API). */
+  private aplicarFiltrosNaturezaNaHora(): void {
+    this.filtroNatureza = this.derivarNaturezaParaUrl();
+    this.syncUrlFromFiltro();
+  }
+
+  /** Só «Contas a receber» marcado — lista e valores em verde. */
+  get filtroSomenteReceber(): boolean {
+    return this.filtroReceber && !this.filtroPagar;
+  }
+
+  /** Só «Contas a pagar» marcado — lista e valores em vermelho. */
+  get filtroSomentePagar(): boolean {
+    return this.filtroPagar && !this.filtroReceber;
   }
 
   get linhasFiltradas(): FinTransacaoLinhaUi[] {
+    const inicio = this.periodoInicioYmd;
+    const fim = this.periodoFimYmd;
     let list = [...this.linhasFonte];
-    if (this.filtroNatureza === 'receita') {
-      list = list.filter((r) => r.linhaReceita);
-    } else if (this.filtroNatureza === 'despesa') {
-      list = list.filter((r) => !r.linhaReceita);
-    }
+    list = list.filter(
+      (r) =>
+        linhaPassaFiltroNaturezaCheckboxes(r, this.filtroReceber, this.filtroPagar) &&
+        linhaPassaFiltroStatusCheckboxes(r, {
+          pago: this.statusPago,
+          emAberto: this.statusEmAberto,
+          atrasado: this.statusAtrasado,
+        }) &&
+        linhaNoPeriodoPorTipoData(r, this.filtroTipoData, inicio, fim) &&
+        this.linhaPassaForma(r) &&
+        this.linhaPassaCategoria(r),
+    );
     const q = this.busca.trim().toLowerCase();
     if (q) {
       list = list.filter((row) => this.linhaMatchesBusca(row, q));
@@ -344,7 +462,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     });
   }
 
-  private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
+  private dispararPulsoToolbar(which: 'busca' | 'filtro' | 'novo'): void {
     if (which === 'busca') {
       if (this.tPulsoBusca != null) window.clearTimeout(this.tPulsoBusca);
       this.pulsoToolbarBusca = false;
@@ -354,7 +472,9 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
           this.pulsoToolbarBusca = false;
         }, this.duracaoPulsoToolbarMs);
       });
-    } else {
+      return;
+    }
+    if (which === 'filtro') {
       if (this.tPulsoFiltro != null) window.clearTimeout(this.tPulsoFiltro);
       this.pulsoToolbarFiltro = false;
       queueMicrotask(() => {
@@ -363,7 +483,27 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
           this.pulsoToolbarFiltro = false;
         }, this.duracaoPulsoToolbarMs);
       });
+      return;
     }
+    if (this.tPulsoNovo != null) window.clearTimeout(this.tPulsoNovo);
+    this.pulsoToolbarNovo = false;
+    queueMicrotask(() => {
+      this.pulsoToolbarNovo = true;
+      this.tPulsoNovo = window.setTimeout(() => {
+        this.pulsoToolbarNovo = false;
+      }, this.duracaoPulsoToolbarMs);
+    });
+  }
+
+  private fecharNovoMenuAnimado(): void {
+    if (!this.novoMenuAberto) return;
+    this.novoMenuAberto = false;
+    this.novoMenuFechando = true;
+    if (this.tNovoMenuFechar != null) window.clearTimeout(this.tNovoMenuFechar);
+    this.tNovoMenuFechar = window.setTimeout(() => {
+      this.novoMenuFechando = false;
+      this.tNovoMenuFechar = null;
+    }, this.duracaoNovoMenuAnimMs);
   }
 
   private mostrarMensagemAcao(texto: string): void {
@@ -420,17 +560,31 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   }
 
   onSortDataMouseEnter(): void {
-    if (!this.dataSortTipSuprimida) {
-      this.dataSortTipVisivel = true;
-    }
+    if (this.dataSortTipSuprimida) return;
+    this.clearDataSortTipShowTimer();
+    this.dataSortTipShowTimer = setTimeout(() => {
+      this.dataSortTipShowTimer = null;
+      if (!this.dataSortTipSuprimida) {
+        this.dataSortTipVisivel = true;
+      }
+    }, UI_TIP_SHOW_DELAY_MS);
   }
 
   onSortDataMouseLeave(): void {
+    this.clearDataSortTipShowTimer();
     this.dataSortTipVisivel = false;
     this.dataSortTipSuprimida = false;
   }
 
+  private clearDataSortTipShowTimer(): void {
+    if (this.dataSortTipShowTimer != null) {
+      clearTimeout(this.dataSortTipShowTimer);
+      this.dataSortTipShowTimer = null;
+    }
+  }
+
   onOrdenarDataClick(event: MouseEvent): void {
+    this.clearDataSortTipShowTimer();
     this.ordenacaoData = this.ordenacaoData === 'asc' ? 'desc' : 'asc';
     this.pagina = 1;
     this.dataSortTipVisivel = false;
@@ -548,7 +702,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
 
   tooltipColunaPago(row: FinTransacaoLinhaUi): string {
     if (row.status === 'pago') return 'Clique para estornar';
-    return 'Clique para marcar como pago';
+    return 'Clique para pagar';
   }
 
   onTogglePago(row: FinTransacaoLinhaUi, ev: Event): void {
@@ -801,16 +955,258 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
 
   toggleFiltros(): void {
     this.dispararPulsoToolbar('filtro');
-    this.filtrosAbertos = !this.filtrosAbertos;
+    const abrindo = !this.filtrosAbertos;
+    this.filtrosAbertos = abrindo;
+    if (abrindo) this.carregarOpcoesFiltrosSidebar();
   }
 
-  toggleFiltroNatureza(n: FiltroNatureza): void {
-    this.filtroNatureza = n;
+  onPeriodoFiltroAlterado(): void {
+    this.syncDdMmFromPeriodoYmd();
+    this.filtroVisao = null;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  onFiltroTipoDataChange(tipo: FinTransacoesFiltroTipoData): void {
+    this.filtroTipoData = tipo;
+    this.filtroVisao = null;
     this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  formasPagamentoFiltro(): string[] {
+    return this.formasOpcoes();
+  }
+
+  categoriasFiltro(): CategoriaFinanceiraItem[] {
+    return this.categoriasOpcoes();
+  }
+
+  formaSelecionada(forma: string): boolean {
+    return this.formasMarcadas.has(forma);
+  }
+
+  categoriaSelecionada(id: number): boolean {
+    return this.categoriasMarcadas.has(id);
+  }
+
+  toggleFiltroReceber(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (!checked && !this.filtroPagar) {
+      (ev.target as HTMLInputElement).checked = true;
+      return;
+    }
+    this.filtroReceber = checked;
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosNaturezaNaHora();
+  }
+
+  toggleFiltroPagar(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (!checked && !this.filtroReceber) {
+      (ev.target as HTMLInputElement).checked = true;
+      return;
+    }
+    this.filtroPagar = checked;
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosNaturezaNaHora();
+  }
+
+  toggleStatusPago(ev: Event): void {
+    this.statusPago = (ev.target as HTMLInputElement).checked;
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  toggleStatusEmAberto(ev: Event): void {
+    this.statusEmAberto = (ev.target as HTMLInputElement).checked;
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  toggleStatusAtrasado(ev: Event): void {
+    this.statusAtrasado = (ev.target as HTMLInputElement).checked;
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  toggleFormaPagamento(forma: string, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (checked) this.formasMarcadas.add(forma);
+    else this.formasMarcadas.delete(forma);
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  toggleCategoria(id: number, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (checked) this.categoriasMarcadas.add(id);
+    else this.categoriasMarcadas.delete(id);
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  desmarcarTodasFormas(): void {
+    this.formasMarcadas.clear();
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  desmarcarTodasCategorias(): void {
+    this.categoriasMarcadas.clear();
+    this.filtroVisao = null;
+    this.pagina = 1;
+    this.aplicarFiltrosAutomatico();
+  }
+
+  private carregarOpcoesFiltrosSidebar(): void {
+    if (this.opcoesFiltroCarregadas) return;
+    this.opcoesFiltroCarregadas = true;
+    forkJoin({
+      formas: this.api.listFinFormasPagamentoOpcoes().pipe(catchError(() => of([]))),
+      categorias: this.api.listCategoriasFinanceiras().pipe(catchError(() => of([]))),
+    }).subscribe(({ formas, categorias }) => {
+      const nomes = mapFormasParaNomes(formas);
+      const extras = new Set(nomes);
+      for (const row of this.linhasFonte) {
+        const f = row.formaPagamento.trim();
+        if (f && f !== '—') extras.add(f);
+      }
+      this.formasOpcoes.set([...extras].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+      this.categoriasOpcoes.set(
+        [...categorias].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+      );
+      this.inicializarMarcacoesFiltro();
+    });
+  }
+
+  private inicializarMarcacoesFiltro(): void {
+    this.formasMarcadas = new Set(this.formasOpcoes());
+    this.categoriasMarcadas = new Set(this.categoriasOpcoes().map((c) => c.id));
+  }
+
+  private linhaPassaForma(row: FinTransacaoLinhaUi): boolean {
+    if (!this.opcoesFiltroCarregadas) return true;
+    if (this.formasMarcadas.size === 0) return false;
+    const forma = row.formaPagamento.trim() || '—';
+    return this.formasMarcadas.has(forma);
+  }
+
+  private linhaPassaCategoria(row: FinTransacaoLinhaUi): boolean {
+    if (!this.opcoesFiltroCarregadas) return true;
+    if (this.categoriasMarcadas.size === 0) return false;
+    const id = row.categoriaId;
+    if (id != null && this.categoriasMarcadas.has(id)) return true;
+    const nome = row.categoria.trim();
+    return this.categoriasOpcoes().some(
+      (c) => this.categoriasMarcadas.has(c.id) && c.nome === nome,
+    );
+  }
+
+  private syncPeriodoYmdFromDdMm(): void {
+    const di = parseFiltroDataDdMm(this.dataInicio.trim());
+    const df = parseFiltroDataDdMm(this.dataFim.trim());
+    if (di) this.periodoInicioYmd = di;
+    if (df) this.periodoFimYmd = df;
+  }
+
+  private syncDdMmFromPeriodoYmd(): void {
+    if (this.periodoInicioYmd) {
+      this.dataInicio = ymdToDdMmYyyy(this.periodoInicioYmd);
+    }
+    if (this.periodoFimYmd) {
+      this.dataFim = ymdToDdMmYyyy(this.periodoFimYmd);
+    }
+  }
+
+  private aplicarFiltroEstadoParaUi(
+    natureza: FiltroNatureza,
+    status: FiltroStatus,
+  ): void {
+    if (natureza === 'receita') {
+      this.filtroReceber = true;
+      this.filtroPagar = false;
+    } else if (natureza === 'despesa') {
+      this.filtroReceber = false;
+      this.filtroPagar = true;
+    } else {
+      this.filtroReceber = true;
+      this.filtroPagar = true;
+    }
+
+    if (status === 'pago') {
+      this.statusPago = true;
+      this.statusEmAberto = false;
+      this.statusAtrasado = false;
+    } else if (status === 'em_aberto') {
+      this.statusPago = false;
+      this.statusEmAberto = true;
+      this.statusAtrasado = true;
+    } else {
+      this.statusPago = true;
+      this.statusEmAberto = true;
+      this.statusAtrasado = true;
+    }
+  }
+
+  private derivarNaturezaParaUrl(): FiltroNatureza {
+    if (this.filtroReceber && this.filtroPagar) return 'todos';
+    if (this.filtroReceber) return 'receita';
+    if (this.filtroPagar) return 'despesa';
+    return 'todos';
+  }
+
+  private derivarStatusParaUrl(): FiltroStatus {
+    if (this.statusPago && this.statusEmAberto && this.statusAtrasado) {
+      return 'todos';
+    }
+    if (this.statusPago && !this.statusEmAberto && !this.statusAtrasado) {
+      return 'pago';
+    }
+    if (!this.statusPago && this.statusEmAberto && this.statusAtrasado) {
+      return 'em_aberto';
+    }
+    return 'todos';
+  }
+
+  rotuloVisaoAtiva(): string | null {
+    if (!this.filtroVisao) return null;
+    const map: Record<FinTransacoesVisaoPreset, string> = {
+      'receber-hoje': 'A receber hoje',
+      'pagar-hoje': 'A pagar hoje',
+      recebidos: 'Recebidos',
+      'a-receber': 'A Receber',
+      pagos: 'Pagos',
+      'a-pagar': 'A Pagar',
+    };
+    return map[this.filtroVisao] ?? null;
+  }
+
+  private syncUrlFromFiltro(): void {
+    const q = filtroParaQueryParams({
+      dataInicio: this.dataInicio,
+      dataFim: this.dataFim,
+      natureza: this.derivarNaturezaParaUrl(),
+      status: this.derivarStatusParaUrl(),
+      tipoData: this.filtroTipoData,
+      visao: this.filtroVisao,
+    });
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: q,
+      replaceUrl: true,
+    });
   }
 
   calcularTotais(): void {
-    this.resumoTotais.set(this.montarResumoTotais(this.linhasFiltradas));
+    this.resumoTotais.set(calcularTotaisTransacoes(this.linhasFiltradas));
     this.modalTotaisAberto.set(true);
   }
 
@@ -818,59 +1214,40 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     this.modalTotaisAberto.set(false);
   }
 
-  private montarResumoTotais(
-    linhas: FinTransacaoLinhaUi[],
-  ): FinTransacoesTotaisResumo {
-    let recebidos = 0;
-    let aReceber = 0;
-    let pagos = 0;
-    let aPagar = 0;
-    for (const row of linhas) {
-      const v = row.valorBruto;
-      const receita = row.linhaReceita === true;
-      const pago = row.status === 'pago';
-      if (receita) {
-        if (pago) recebidos += v;
-        else aReceber += v;
-      } else if (pago) {
-        pagos += v;
-      } else {
-        aPagar += v;
-      }
-    }
-    return {
-      recebidos,
-      aReceber,
-      pagos,
-      aPagar,
-      quantidadeLinhas: linhas.length,
-    };
-  }
-
   toggleNovoMenu(ev: Event): void {
     ev.stopPropagation();
-    this.novoMenuAberto = !this.novoMenuAberto;
+    this.dispararPulsoToolbar('novo');
+    if (this.novoMenuAberto) {
+      this.fecharNovoMenuAnimado();
+      return;
+    }
+    if (this.tNovoMenuFechar != null) {
+      window.clearTimeout(this.tNovoMenuFechar);
+      this.tNovoMenuFechar = null;
+    }
+    this.novoMenuFechando = false;
+    this.novoMenuAberto = true;
   }
 
   abrirNovoRecebimento(): void {
-    this.novoMenuAberto = false;
+    this.fecharNovoMenuAnimado();
     this.modalNovoNatureza.set('receita');
     this.modalNovoAberto.set(true);
   }
 
   abrirNovoDespesa(): void {
-    this.novoMenuAberto = false;
+    this.fecharNovoMenuAnimado();
     this.modalNovoNatureza.set('despesa');
     this.modalNovoAberto.set(true);
   }
 
   abrirNovoVale(): void {
-    this.novoMenuAberto = false;
+    this.fecharNovoMenuAnimado();
     this.mostrarMensagemAcao('Cadastro de vale em breve.');
   }
 
   abrirNovoTransferencia(): void {
-    this.novoMenuAberto = false;
+    this.fecharNovoMenuAnimado();
     this.mostrarMensagemAcao('Transferência em breve.');
   }
 
@@ -954,7 +1331,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   fecharMenuAcaoDocumento(ev: MouseEvent): void {
     const t = ev.target as HTMLElement | null;
-    this.novoMenuAberto = false;
+    this.fecharNovoMenuAnimado();
     this.perPageMenuAberto = false;
     this.pagoPopoverLinhaId = null;
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {

@@ -929,9 +929,11 @@ const app = new Elysia({ adapter: node() })
         q.dataInicio ?? q.data_inicio ?? '',
       ).trim();
       const dataFim = String(q.dataFim ?? q.data_fim ?? '').trim();
+      const tipoData = String(q.tipoData ?? q.tipo_data ?? '').trim();
       const items = await listTransacoesFinanceirasApi(db, {
         dataInicio,
         dataFim,
+        tipoData: tipoData || undefined,
       });
       return ok({ items });
     } catch (e) {

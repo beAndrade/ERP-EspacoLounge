@@ -38,6 +38,18 @@ export function ymdExibicaoDdMmAaaa(ymd: string): string {
   return dataDdMmBarraAaaa(String(ymd ?? '').trim().slice(0, 10));
 }
 
+/** Ex.: `27 mai, 2026` (Belasis / sidebar financeiro). */
+export function ymdExibicaoBelasis(ymd: string): string {
+  const ymdNorm = String(ymd ?? '').trim().slice(0, 10);
+  if (!ymdValido(ymdNorm)) return '';
+  const [y, mo, d] = ymdNorm.split('-').map((x) => parseInt(x, 10));
+  const mes = new Date(y, mo - 1, d)
+    .toLocaleDateString('pt-BR', { month: 'short' })
+    .replace('.', '')
+    .toLowerCase();
+  return `${d} ${mes}, ${y}`;
+}
+
 export function compararYmd(a: string, b: string): number {
   return String(a ?? '').slice(0, 10).localeCompare(String(b ?? '').slice(0, 10));
 }

@@ -1,0 +1,356 @@
+/** Sidebar de filtros — cards estilo Belasis */
+
+.fin-transacoes-filtros,
+.fin-transacoes-filtros__scroll {
+  background: transparent;
+}
+
+.fin-transacoes-filtros {
+  --fin-filtros-card-width: 215px;
+  --fin-filtros-scroll-gap: 0.75rem;
+  /* cards + respiro à direita + faixa da scrollbar */
+  --fin-filtros-track-width: calc(
+    var(--fin-filtros-card-width) + var(--fin-filtros-scroll-gap) + 14px
+  );
+  flex: 0 0 var(--fin-filtros-track-width);
+  width: var(--fin-filtros-track-width);
+  max-width: var(--fin-filtros-track-width);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100dvh - 6.5rem);
+  align-self: flex-start;
+  position: sticky;
+  top: 0.25rem;
+  background: transparent;
+  border-right: none;
+}
+
+.fin-transacoes-filtros__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 0 0.75rem 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  box-sizing: border-box;
+}
+
+.fin-filtros-card {
+  width: var(--fin-filtros-card-width);
+  max-width: var(--fin-filtros-card-width);
+  margin-inline-end: var(--fin-filtros-scroll-gap);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  padding: 15px;
+}
+
+.fin-filtros-card__title {
+  margin: 0 0 0.65rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fin-filtros-card__title-label {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.fin-filtros-card__title app-fin-filtros-floating-tip {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.fin-filtros-tip-body-storage {
+  display: none !important;
+}
+
+.fin-filtros-card__title-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: help;
+}
+
+.fin-filtros-card__subhead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0.5rem;
+  font-size: 12px;
+  color: #9ca3af;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: #e5e7eb;
+  }
+}
+
+.fin-filtros-card__link {
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary, #505afb);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &--solo {
+    display: block;
+    margin: -0.25rem 0 0.55rem;
+    text-align: left;
+  }
+}
+
+.fin-filtros-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Checkbox quadrado — paridade Comandas / list-table */
+.fin-transacoes-filtros input[type='checkbox'] {
+  --list-check-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --list-check-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid #efefef;
+  border-radius: 5px;
+  background-color: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+  overflow: visible;
+  transform: scale(1);
+  transition:
+    background-color 0.22s var(--list-check-ease),
+    border-color 0.22s var(--list-check-ease),
+    transform 0.16s var(--list-check-spring);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 47%;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(0.35);
+    transform-origin: center center;
+    opacity: 0;
+    transition:
+      transform 0.32s var(--list-check-spring),
+      opacity 0.14s ease;
+  }
+
+  &:hover:not(:disabled):not(:checked) {
+    border-color: #e7e5e4;
+    background-color: #f5f5f4;
+    transition:
+      background-color 0.22s var(--list-check-ease),
+      border-color 0.22s var(--list-check-ease),
+      transform 0.16s var(--list-check-spring);
+  }
+
+  &:hover:not(:disabled):checked {
+    background-color: color-mix(in srgb, var(--color-primary, #505afb) 68%, #fff);
+    border-color: color-mix(in srgb, var(--color-primary, #505afb) 68%, #fff);
+    transition:
+      background-color 0.22s var(--list-check-ease),
+      border-color 0.22s var(--list-check-ease),
+      transform 0.16s var(--list-check-spring);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.9);
+  }
+
+  &:checked {
+    background-color: var(--color-primary, #505afb);
+    border-color: var(--color-primary, #505afb);
+    box-shadow: none;
+
+    &::after {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(45deg) scale(1);
+      transition:
+        transform 0.36s var(--list-check-spring) 0.04s,
+        opacity 0.12s ease 0.02s;
+    }
+  }
+
+  &:checked:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+.fin-filtros-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fin-filtros-check__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  background: transparent;
+
+  &:hover {
+    background: transparent;
+  }
+
+  .badge {
+    pointer-events: none;
+  }
+}
+
+.fin-filtros-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-filtros-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  > span:not(.fin-filtros-radio__dot) {
+    background: transparent;
+
+    &:hover {
+      background: transparent;
+    }
+  }
+}
+
+.fin-filtros-radio__dot {
+  --fin-filtros-radio-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color 0.22s var(--fin-filtros-radio-ease),
+    background-color 0.22s var(--fin-filtros-radio-ease);
+
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transform: scale(0.6);
+    transition:
+      opacity 0.22s var(--fin-filtros-radio-ease),
+      transform 0.22s var(--fin-filtros-radio-ease),
+      background-color 0.22s var(--fin-filtros-radio-ease);
+  }
+}
+
+/* Ativo: anel preenchido + centro branco vazado */
+.fin-filtros-radio input:checked + .fin-filtros-radio__dot {
+  border-color: var(--color-primary, #505afb);
+  background-color: var(--color-primary, #505afb);
+
+  &::after {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Tipo de data: hover no texto ou no círculo (só não marcado) — borda vinho */
+.fin-filtros-card--tipo-data {
+  .fin-filtros-radio:has(input:not(:checked)):hover .fin-filtros-radio__dot {
+    border-color: #811741;
+    background-color: #fff;
+  }
+}
+
+.fin-filtros-card--periodo {
+  margin-top: 0;
+}

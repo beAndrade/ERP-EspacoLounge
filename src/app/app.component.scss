@@ -1,22 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&display=swap');
 
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 .shell {
   /** Largura mínima para o título da marca numa linha com o botão de recolher */
   --sidebar-w: 230px;
   --sidebar-w-collapsed: 4.5rem;
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: stretch;
-  /** Pequeno respiro entre a sidebar e a coluna do conteúdo. */
-  gap: 0.4rem;
+  /** Respiro lateral só em `main.main` (sem gap nem padding aqui). */
+  gap: 0;
   width: 100%;
   max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   overflow-x: hidden;
   background: var(--color-bg);
+
+  /**
+   * Overlays/toasts com `position: fixed` — fora do flex para não criar faixa
+   * nem “gap” roxo no inspetor à direita da coluna principal.
+   */
+  > app-cliente-cadastro-drawer-host,
+  > app-app-toast {
+    position: absolute;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    flex: none;
+  }
 }
 
 .app-sidebar {
@@ -82,9 +109,14 @@
 .app-main-column {
   flex: 1 1 0;
   min-width: 0;
-  overflow-x: hidden;
+  max-width: 100%;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
+
+  > .main {
+    flex: 1 1 auto;
+  }
 }
 
 .app-sidebar__header {
@@ -671,11 +703,22 @@
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  max-width: none;
-  overflow-x: hidden;
+  max-width: 100%;
   margin: 0;
+  padding: 0 12px 0 8px;
   box-sizing: border-box;
-  padding: 0 0 0 8px;
+  overflow-x: clip;
+  overflow-y: auto;
+
+  > :not(router-outlet) {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 /* Padrão visual de inputs em todos os drawers da aplicação. */
@@ -713,7 +756,7 @@
 
 @media (max-width: 640px) {
   .main {
-    padding: 0 0 0 6px;
+    padding: 0 8px 0 6px;
   }
 }
 

@@ -412,6 +412,7 @@ export interface FinTransacaoItem {
   tipo: 'movimentacao' | 'pendencia';
   id_ui: number;
   data_mov: string;
+  criado_em?: string;
   natureza: 'receita' | 'despesa';
   valor: string;
   categoria_id: number;

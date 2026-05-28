@@ -1,5 +1,29 @@
 /** Tooltip escuro reutilizável (trigger + balão com seta para baixo). */
 
+:root {
+  /* vertical (top/bottom) maior que lateral (left/right) — único padrão em todo o app */
+  --ui-tip-pad-block: 0.5rem;
+  --ui-tip-pad-inline: 0.5rem;
+  --ui-tip-font-size: 14px;
+  --ui-tip-line-height: 1.25;
+  --ui-tip-radius: 10px;
+  --ui-tip-show-delay: 200ms;
+}
+
+@mixin ui-tip-surface {
+  padding-block: var(--ui-tip-pad-block);
+  padding-inline: var(--ui-tip-pad-inline);
+  font-size: var(--ui-tip-font-size);
+  font-weight: 500;
+  line-height: var(--ui-tip-line-height);
+  color: #fff;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.82);
+  border-radius: var(--ui-tip-radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+}
+
 .ui-tip-trigger,
 .drawer-table__tip-trigger {
   position: relative;
@@ -22,23 +46,16 @@
   z-index: 3000;
   min-width: max-content;
   max-width: 280px;
-  padding: 0.55rem 0.9rem;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.25;
-  color: #fff;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.82);
-  border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  @include ui-tip-surface;
   opacity: 0;
   visibility: hidden;
   transform: translateX(-50%);
   pointer-events: none;
+  white-space: nowrap;
   transition:
     opacity 0.16s ease,
     visibility 0s linear 0.16s;
-  white-space: nowrap;
+  transition-delay: 0s, 0s;
 
   &::after {
     content: '';
@@ -88,11 +105,72 @@
   }
 }
 
-.drawer-table__tip-trigger:hover .drawer-table__tip,
+.drawer-table__tip-trigger:hover .drawer-table__tip {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.16s ease,
+    visibility 0s;
+  transition-delay: var(--ui-tip-show-delay), var(--ui-tip-show-delay);
+}
+
 .drawer-table__tip-trigger:focus-within .drawer-table__tip {
   opacity: 1;
   visibility: visible;
   transition:
     opacity 0.16s ease,
     visibility 0s;
+  transition-delay: 0s, 0s;
+}
+
+/** Portal em `body` — classe separada de `.ui-tip` (evita `bottom`/`transform` do inline). */
+.ui-tip-portal {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  z-index: 10050;
+  min-width: max-content;
+  max-width: min(280px, calc(100vw - 24px));
+  @include ui-tip-surface;
+  opacity: 0;
+  visibility: hidden;
+  transform: none;
+  pointer-events: none;
+  white-space: nowrap;
+  transition:
+    opacity 0.16s ease,
+    visibility 0s linear 0.16s;
+
+  &.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity 0.16s ease,
+      visibility 0s;
+  }
+
+  .ui-tip-portal__label {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .ui-tip-portal__arrow {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 7px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.82);
+  }
+
+  &.ui-tip-portal--below .ui-tip-portal__arrow {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: rgba(0, 0, 0, 0.82);
+  }
 }

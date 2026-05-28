@@ -3,17 +3,24 @@
     <h1 class="fin-painel__title">Painel</h1>
   </header>
 
+  @if (erro()) {
+    <p class="fin-painel__erro" role="alert">{{ erro() }}</p>
+  }
+
   <div class="fin-painel__layout">
     <aside class="fin-painel__col-side" aria-label="Resumo e contas">
       <section class="fin-painel__block" aria-labelledby="fin-painel-resumo-title">
         <h2 id="fin-painel-resumo-title" class="fin-painel__block-title">Resumo</h2>
         <ul class="fin-painel__resumo-list">
-          @for (card of resumoHoje; track card.id) {
+          @for (card of resumoHoje(); track card.id) {
             <li>
-              <div
-                class="fin-painel__resumo-card"
+              <a
+                class="fin-painel__resumo-card fin-painel__resumo-card--link"
                 [class.fin-painel__resumo-card--receber]="card.tema === 'receber'"
                 [class.fin-painel__resumo-card--pagar]="card.tema === 'pagar'"
+                routerLink="/financeiro/transacoes"
+                [queryParams]="card.queryParams"
+                [attr.aria-label]="card.titulo + ' — ver transações'"
               >
                 <span class="fin-painel__card-arrow" aria-hidden="true">
                   <svg
@@ -34,7 +41,7 @@
                 <strong class="fin-painel__card-value">{{
                   card.valor | currency: 'BRL' : 'symbol' : '1.2-2'
                 }}</strong>
-              </div>
+              </a>
             </li>
           }
         </ul>
@@ -43,7 +50,7 @@
       <section class="fin-painel__block" aria-labelledby="fin-painel-contas-title">
         <h2 id="fin-painel-contas-title" class="fin-painel__block-title">Contas</h2>
         <ul class="fin-painel__contas-list">
-          @for (conta of contas; track conta.id) {
+          @for (conta of contas(); track conta.id) {
             <li>
               <div class="fin-painel__conta-card">
                 <span class="fin-painel__card-arrow" aria-hidden="true">
@@ -107,14 +114,17 @@
           </button>
         </div>
         <ul class="fin-painel__totais-grid">
-          @for (card of totais; track card.id) {
+          @for (card of totais(); track card.id) {
             <li>
-              <div
-                class="fin-painel__metric-card"
+              <a
+                class="fin-painel__metric-card fin-painel__metric-card--link"
                 [class.fin-painel__metric-card--recebidos]="card.tema === 'recebidos'"
                 [class.fin-painel__metric-card--a-receber]="card.tema === 'a-receber'"
                 [class.fin-painel__metric-card--pagos]="card.tema === 'pagos'"
                 [class.fin-painel__metric-card--a-pagar]="card.tema === 'a-pagar'"
+                routerLink="/financeiro/transacoes"
+                [queryParams]="card.queryParams"
+                [attr.aria-label]="card.titulo + ' — ver transações'"
               >
                 <span class="fin-painel__card-arrow" aria-hidden="true">
                   <svg
@@ -135,7 +145,7 @@
                 <strong class="fin-painel__card-value">{{
                   card.valor | currency: 'BRL' : 'symbol' : '1.2-2'
                 }}</strong>
-              </div>
+              </a>
             </li>
           }
         </ul>

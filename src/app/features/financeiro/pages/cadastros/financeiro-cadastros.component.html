@@ -1,127 +1,71 @@
-<div class="list-page fin-cadastros-page">
-  <div class="list-layout__main">
-    <div class="list-page__lead">
-      <header class="list-head fin-cadastros__head">
-        <div class="list-head__title-row fin-cadastros__head-row">
-          <div class="list-head__left">
-            <h1 class="list-head__title">Cadastros</h1>
-          </div>
-          <div class="list-head__actions">
-            <div
-              class="list-head__busca-wrap"
-              [class.list-head__busca-wrap--open]="buscaAberta"
-              role="search"
-              (click)="onBuscaWrapClick()"
-            >
-              <span class="list-head__busca-icon" aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <path d="m21 21-4.34-4.34" />
-                  <circle cx="11" cy="11" r="8" />
-                </svg>
-              </span>
-              <span
-                class="list-head__busca-label"
-                [class.list-head__busca-label--hidden]="buscaAberta"
+<div
+  class="list-page fin-cadastros-page"
+  [class.fin-cadastros-page--filtros-abertos]="filtrosAbertos && tabAtiva() === 'formas'"
+>
+  <div class="list-page__lead fin-cadastros-page__lead">
+    <header class="list-head fin-cadastros__head">
+      <div class="list-head__title-row fin-cadastros__head-row">
+        <div class="list-head__left">
+          <h1 class="list-head__title">Cadastros</h1>
+        </div>
+        <div class="list-head__actions">
+          <div
+            class="list-head__busca-wrap"
+            [class.list-head__busca-wrap--open]="buscaAberta"
+            role="search"
+            (click)="onBuscaWrapClick()"
+          >
+            <span class="list-head__busca-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
                 aria-hidden="true"
-                >Buscar</span
               >
-              <label class="sr-only" for="fin-cad-busca">{{ labelBuscaInput() }}</label>
-              <input
-                id="fin-cad-busca"
-                type="text"
-                class="list-head__busca-input"
-                [(ngModel)]="busca"
-                name="buscaCadastros"
-                [placeholder]="buscaPlaceholder"
-                [class.list-head__busca-input--search-open]="buscaAberta"
-                autocomplete="off"
-                (click)="$event.stopPropagation()"
-                (keydown.enter)="onBuscaEnter($event)"
-                (input)="tabAtivo()?.resetPagina()"
-                [attr.aria-expanded]="buscaAberta"
-                [attr.aria-label]="labelBuscaInput()"
-                title="Buscar"
-              />
-            </div>
-            @if (tabAtiva() === 'formas') {
-              <div class="fin-cadastros-filtro-wrap">
-                <button
-                  type="button"
-                  class="list-head__toolbar-btn"
-                  [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos || filtroStatusAtivo"
-                  (click)="toggleFiltros($event)"
-                  aria-label="Filtrar"
-                  [attr.aria-expanded]="filtrosAbertos"
-                  title="Filtrar"
-                >
-                  <svg
-                    class="list-icon-sm list-icon-sm--funnel"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-                    />
-                  </svg>
-                  <span class="list-head__toolbar-label">Filtrar</span>
-                </button>
-                @if (filtrosAbertos) {
-                  <aside
-                    class="fin-cadastros-filtro-popover"
-                    aria-label="Filtros"
-                    (click)="$event.stopPropagation()"
-                  >
-                    <h3 class="fin-cadastros-filtro-popover__title">Status</h3>
-                    <div class="fin-cadastros-filtro-popover__checks">
-                      <label class="fin-cadastros-filtro-check">
-                        <input
-                          type="checkbox"
-                          [(ngModel)]="filtroAtivada"
-                          name="finCadFiltroAtivada"
-                          (change)="aplicarFiltroStatus()"
-                        />
-                        Ativada
-                      </label>
-                      <label class="fin-cadastros-filtro-check">
-                        <input
-                          type="checkbox"
-                          [(ngModel)]="filtroDesativada"
-                          name="finCadFiltroDesativada"
-                          (change)="aplicarFiltroStatus()"
-                        />
-                        Desativada
-                      </label>
-                    </div>
-                  </aside>
-                }
-              </div>
-            }
+                <path d="m21 21-4.34-4.34" />
+                <circle cx="11" cy="11" r="8" />
+              </svg>
+            </span>
+            <span
+              class="list-head__busca-label"
+              [class.list-head__busca-label--hidden]="buscaAberta"
+              aria-hidden="true"
+              >Buscar</span
+            >
+            <label class="sr-only" for="fin-cad-busca">{{ labelBuscaInput() }}</label>
+            <input
+              id="fin-cad-busca"
+              type="text"
+              class="list-head__busca-input"
+              [(ngModel)]="busca"
+              name="buscaCadastros"
+              [placeholder]="buscaPlaceholder"
+              [class.list-head__busca-input--search-open]="buscaAberta"
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+              (keydown.enter)="onBuscaEnter($event)"
+              (input)="tabAtivo()?.resetPagina()"
+              [attr.aria-expanded]="buscaAberta"
+              [attr.aria-label]="labelBuscaInput()"
+              title="Buscar"
+            />
+          </div>
+          @if (tabAtiva() === 'formas') {
             <button
               type="button"
-              class="list-head__toolbar-btn list-head__toolbar-btn--link"
-              (click)="abrirNovo()"
-              aria-label="Novo cadastro"
-              title="Novo"
+              class="list-head__toolbar-btn"
+              [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos || filtroStatusAtivo"
+              (click)="toggleFiltros()"
+              aria-label="Filtrar"
+              [attr.aria-expanded]="filtrosAbertos"
+              title="Filtrar"
             >
               <svg
-                class="list-icon-sm"
+                class="list-icon-sm list-icon-sm--funnel"
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
                 height="14"
@@ -133,38 +77,100 @@
                 stroke-linejoin="round"
                 aria-hidden="true"
               >
-                <path d="M5 12h14" />
-                <path d="M12 5v14" />
+                <path
+                  d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+                />
               </svg>
-              <span>Novo</span>
-            </button>
-          </div>
-        </div>
-        <nav class="fin-cadastros__tabs" aria-label="Secções de cadastros">
-          @for (tab of tabs; track tab.id) {
-            <button
-              type="button"
-              class="fin-cadastros__tab"
-              [class.fin-cadastros__tab--active]="tabAtiva() === tab.id"
-              (click)="selecionarTab(tab.id)"
-            >
-              {{ tab.label }}
+              <span class="list-head__toolbar-label">Filtrar</span>
             </button>
           }
-        </nav>
-      </header>
-    </div>
+          <button
+            type="button"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+            (click)="abrirNovo()"
+            aria-label="Novo cadastro"
+            title="Novo"
+          >
+            <svg
+              class="list-icon-sm"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span>Novo</span>
+          </button>
+        </div>
+      </div>
+      <nav class="fin-cadastros__tabs" aria-label="Secções de cadastros">
+        @for (tab of tabs; track tab.id) {
+          <button
+            type="button"
+            class="fin-cadastros__tab"
+            [class.fin-cadastros__tab--active]="tabAtiva() === tab.id"
+            (click)="selecionarTab(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
+        }
+      </nav>
+    </header>
+  </div>
 
-    <div class="fin-cadastros__main">
-      @if (tabAtiva() === 'categorias') {
-        <app-fin-cadastros-categorias-tab [busca]="busca" />
-      } @else {
-        <app-fin-cadastros-formas-tab
-          [busca]="busca"
-          [filtroAtivada]="filtroAtivada"
-          [filtroDesativada]="filtroDesativada"
-        />
-      }
+  <div class="fin-cadastros-layout">
+    @if (filtrosAbertos && tabAtiva() === 'formas') {
+      <aside class="fin-transacoes-filtros" aria-label="Filtros de formas de pagamento">
+        <div class="fin-transacoes-filtros__scroll">
+          <section class="fin-filtros-card">
+            <h3 class="fin-filtros-card__title">Status</h3>
+            <ul class="fin-filtros-check-list">
+              <li>
+                <label class="fin-filtros-check">
+                  <input
+                    type="checkbox"
+                    [checked]="filtroAtivada"
+                    (change)="toggleFiltroAtivada($event)"
+                  />
+                  <span class="fin-filtros-check__label">Ativada</span>
+                </label>
+              </li>
+              <li>
+                <label class="fin-filtros-check">
+                  <input
+                    type="checkbox"
+                    [checked]="filtroDesativada"
+                    (change)="toggleFiltroDesativada($event)"
+                  />
+                  <span class="fin-filtros-check__label">Desativada</span>
+                </label>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </aside>
+    }
+
+    <div class="fin-cadastros-layout__main">
+      <div class="fin-cadastros__main">
+        @if (tabAtiva() === 'categorias') {
+          <app-fin-cadastros-categorias-tab [busca]="busca" />
+        } @else {
+          <app-fin-cadastros-formas-tab
+            [busca]="busca"
+            [filtroAtivada]="filtroAtivada"
+            [filtroDesativada]="filtroDesativada"
+          />
+        }
+      </div>
     </div>
   </div>
 </div>

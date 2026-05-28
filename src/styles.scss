@@ -1,5 +1,6 @@
 @use './app/styles/table-card-shell';
 @use './app/styles/confirm-exclusao-modal';
+@use './app/styles/ui-tooltip';
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 :root {
@@ -52,13 +53,28 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   background: var(--color-bg);
   color: var(--color-text);
   line-height: 1.5;
+}
+
+app-root {
+  display: block;
+  width: 100%;
+  min-height: 100dvh;
 }
 
 a {

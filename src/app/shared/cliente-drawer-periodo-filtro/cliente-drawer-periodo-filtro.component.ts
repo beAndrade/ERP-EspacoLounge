@@ -24,6 +24,7 @@ import {
   periodoSegmentoLinha,
   periodoPreset,
   tituloMesCalendario,
+  ymdExibicaoBelasis,
   ymdExibicaoDdMmAaaa,
   ymdValido,
 } from './cliente-periodo-filtro.util';
@@ -55,6 +56,9 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
    */
   painelFlutuante = input(false);
 
+  /** `belasis`: `27 mai, 2026` + barra só com borda inferior. */
+  exibicaoFormato = input<'padrao' | 'belasis'>('padrao');
+
   periodoAlterado = output<void>();
 
   /** Posição viewport do painel flutuante (`top`/`left` em px). */
@@ -81,12 +85,18 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
 
   get exibicaoInicio(): string {
     const y = this.inicioYmd().trim().slice(0, 10);
-    return ymdValido(y) ? ymdExibicaoDdMmAaaa(y) : '';
+    if (!ymdValido(y)) return '';
+    return this.exibicaoFormato() === 'belasis'
+      ? ymdExibicaoBelasis(y)
+      : ymdExibicaoDdMmAaaa(y);
   }
 
   get exibicaoFim(): string {
     const y = this.fimYmd().trim().slice(0, 10);
-    return ymdValido(y) ? ymdExibicaoDdMmAaaa(y) : '';
+    if (!ymdValido(y)) return '';
+    return this.exibicaoFormato() === 'belasis'
+      ? ymdExibicaoBelasis(y)
+      : ymdExibicaoDdMmAaaa(y);
   }
 
   get mesDireita(): Date {
@@ -390,11 +400,18 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   }
 
   private atualizarPosicaoPainelFlutuante(): void {
-    const bar = this.hostEl.nativeElement.querySelector(
-      '.periodo-filtro__bar',
-    ) as HTMLElement | null;
-    if (!bar) return;
-    const r = bar.getBoundingClientRect();
+    const anchor =
+      (this.hostEl.nativeElement.querySelector(
+        '.periodo-filtro__field--fim .periodo-filtro__field-row',
+      ) as HTMLElement | null) ??
+      (this.hostEl.nativeElement.querySelector(
+        '.periodo-filtro__field--inicio .periodo-filtro__field-row',
+      ) as HTMLElement | null) ??
+      (this.hostEl.nativeElement.querySelector(
+        '.periodo-filtro__bar',
+      ) as HTMLElement | null);
+    if (!anchor) return;
+    const r = anchor.getBoundingClientRect();
     const gap = 6;
     const margem = 16;
     const larguraPainel = Math.min(640, window.innerWidth - margem * 2);

@@ -3,6 +3,8 @@ import type { FinTransacaoItem } from '../../../../core/models/api.models';
 export interface FinTransacaoLinhaUi {
   id: number;
   dataYmd: string;
+  /** Data de criação do lançamento (competência). */
+  criadoEmYmd: string;
   titular: string;
   subtitulo: string;
   origem: string;
@@ -93,6 +95,7 @@ export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLin
   return {
     id: item.id_ui,
     dataYmd: String(item.data_mov).slice(0, 10),
+    criadoEmYmd: String(item.criado_em ?? item.data_mov).slice(0, 10),
     titular: titularFromItem(item),
     subtitulo: String(item.subtitulo ?? '').trim() || '—',
     origem: String(item.origem_label ?? '').trim() || '—',

@@ -1,0 +1,43 @@
+/** Botões de linha (editar/excluir) — paridade Transações / Cadastros financeiro. */
+.fin-list-row-acoes {
+  position: relative;
+  justify-content: flex-end;
+  gap: 0;
+  overflow: visible;
+
+  .list-row-acoes__sep {
+    flex-shrink: 0;
+    align-self: center;
+    width: 1px;
+    height: 14px;
+    margin: 0;
+    background: #ebebeb;
+  }
+
+  .list-row-acoes__btn {
+    &:hover:not(:disabled) {
+      background: transparent;
+    }
+  }
+
+  .list-row-acoes__btn svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+  }
+
+  .list-row-acoes__btn app-ui-tip-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  .list-row-acoes__btn--delete {
+    color: #ff4d4f;
+
+    svg {
+      color: #ff4d4f;
+    }
+  }
+}

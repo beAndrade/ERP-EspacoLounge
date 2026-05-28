@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import {
   mapaBaixaAutomaticaFormas,
@@ -118,6 +118,20 @@ export function slugCategoriaReceitaPredominante(rows: AtendLinha[]): string {
     return SLUG_POR_TIPO[bestTipo] ?? 'receita_servicos';
   }
   return 'receita_servicos';
+}
+
+function ymdFromTimestamp(v: string | Date | null | undefined): string | null {
+  if (v == null) return null;
+  if (v instanceof Date) {
+    const s = instantEmDateParaSqlLocalBrasil(v);
+    return (s ?? '').trim().slice(0, 10) || null;
+  }
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  const local = instantEmDateParaSqlLocalBrasil(d);
+  return (local ?? '').trim().slice(0, 10) || null;
 }
 
 function ymdFromDate(d: string | Date | null | undefined): string {
@@ -293,6 +307,8 @@ export interface FinTransacaoItemApi {
   /** ID positivo = `movimentacoes.id`; negativo = `-comanda_pagamentos.id`. */
   id_ui: number;
   data_mov: string;
+  /** Data de criação do lançamento (`YYYY-MM-DD`), para filtro por competência. */
+  criado_em: string;
   natureza: 'receita' | 'despesa';
   valor: string;
   categoria_id: number;
@@ -555,16 +571,44 @@ function movimentacaoEditavel(origem: string): boolean {
  * - `pagamentos` legados (folha) sem `movimentacao` espelhada (`observacao` ≠ `mov:{id}`)
  * Comissões *a pagar* em Comissões só entram aqui após `POST /api/financeiro/comissoes/pagar`.
  */
+export type FinTransacoesTipoDataApi = 'vencimento' | 'competencia' | 'pagamento';
+
+function parseTipoDataTransacoes(v: string | undefined): FinTransacoesTipoDataApi {
+  const t = String(v ?? '').trim().toLowerCase();
+  if (t === 'competencia' || t === 'pagamento') return t;
+  return 'vencimento';
+}
+
 export async function listTransacoesFinanceirasApi(
   db: Db,
-  opts: { dataInicio: string; dataFim: string },
+  opts: {
+    dataInicio: string;
+    dataFim: string;
+    tipoData?: string;
+  },
 ): Promise<FinTransacaoItemApi[]> {
   const { di, df } = validarIntervaloDatas(opts.dataInicio, opts.dataFim);
+  const tipoData = parseTipoDataTransacoes(opts.tipoData);
+
+  const movDateFilter =
+    tipoData === 'competencia'
+      ? and(
+          gte(sql`(${movimentacoes.createdAt})::date`, di),
+          lte(sql`(${movimentacoes.createdAt})::date`, df),
+        )
+      : tipoData === 'pagamento'
+        ? and(
+            isNotNull(movimentacoes.pagoEm),
+            gte(movimentacoes.pagoEm, di),
+            lte(movimentacoes.pagoEm, df),
+          )
+        : and(gte(movimentacoes.dataMov, di), lte(movimentacoes.dataMov, df));
 
   const movRows = await db
     .select({
       id: movimentacoes.id,
       data_mov: movimentacoes.dataMov,
+      criado_em: movimentacoes.createdAt,
       pago_em: movimentacoes.pagoEm,
       natureza: movimentacoes.natureza,
       valor: movimentacoes.valor,
@@ -580,7 +624,7 @@ export async function listTransacoesFinanceirasApi(
       categoriasFinanceiras,
       eq(categoriasFinanceiras.id, movimentacoes.categoriaId),
     )
-    .where(and(gte(movimentacoes.dataMov, di), lte(movimentacoes.dataMov, df)))
+    .where(movDateFilter)
     .orderBy(desc(movimentacoes.dataMov), desc(movimentacoes.id));
 
   const catReceitaPadraoId = await getCategoriaIdPorSlug(db, 'receita_servicos');
@@ -620,26 +664,39 @@ export async function listTransacoesFinanceirasApi(
     .from(pagamentos)
     .leftJoin(profissionais, eq(profissionais.id, pagamentos.profissionalId));
 
-  const pendRows = await db
-    .select({
-      id: comandaPagamentos.id,
-      data_pagamento: comandaPagamentos.dataPagamento,
-      valor: comandaPagamentos.valor,
-      metodo_rotulo: comandaPagamentos.metodoRotulo,
-      id_atendimento: comandaPagamentos.idAtendimento,
-    })
-    .from(comandaPagamentos)
-    .where(
-      and(
-        eq(comandaPagamentos.metodo, 'pendente'),
-        gte(comandaPagamentos.dataPagamento, di),
-        lte(comandaPagamentos.dataPagamento, df),
-      ),
-    )
-    .orderBy(
-      desc(comandaPagamentos.dataPagamento),
-      desc(comandaPagamentos.id),
-    );
+  const pendDateFilter =
+    tipoData === 'competencia'
+      ? and(
+          eq(comandaPagamentos.metodo, 'pendente'),
+          gte(sql`(${comandaPagamentos.createdAt})::date`, di),
+          lte(sql`(${comandaPagamentos.createdAt})::date`, df),
+        )
+      : tipoData === 'pagamento'
+        ? sql`false`
+        : and(
+            eq(comandaPagamentos.metodo, 'pendente'),
+            gte(comandaPagamentos.dataPagamento, di),
+            lte(comandaPagamentos.dataPagamento, df),
+          );
+
+  const pendRows =
+    tipoData === 'pagamento'
+      ? []
+      : await db
+          .select({
+            id: comandaPagamentos.id,
+            data_pagamento: comandaPagamentos.dataPagamento,
+            criado_em: comandaPagamentos.createdAt,
+            valor: comandaPagamentos.valor,
+            metodo_rotulo: comandaPagamentos.metodoRotulo,
+            id_atendimento: comandaPagamentos.idAtendimento,
+          })
+          .from(comandaPagamentos)
+          .where(pendDateFilter)
+          .orderBy(
+            desc(comandaPagamentos.dataPagamento),
+            desc(comandaPagamentos.id),
+          );
 
   const idsAt = [
     ...movRows.map((r) => r.id_atendimento),
@@ -675,6 +732,7 @@ export async function listTransacoesFinanceirasApi(
       tipo: 'movimentacao',
       id_ui: r.id,
       data_mov: String(r.data_mov),
+      criado_em: ymdFromTimestamp(r.criado_em) ?? String(r.data_mov),
       natureza: r.natureza,
       valor: String(r.valor),
       categoria_id: r.categoria_id,
@@ -713,6 +771,7 @@ export async function listTransacoesFinanceirasApi(
       tipo: 'pendencia',
       id_ui: -r.id,
       data_mov: String(r.data_pagamento),
+      criado_em: ymdFromTimestamp(r.criado_em) ?? String(r.data_pagamento),
       natureza: 'receita',
       valor: String(r.valor),
       categoria_id: catReceitaPadraoId,
@@ -746,7 +805,8 @@ export async function listTransacoesFinanceirasApi(
     if (movEspelho != null && movComissaoIds.has(movEspelho)) continue;
 
     const dataYmd = ymdFromPagamentoData(r.data);
-    if (!dataYmd || dataYmd < di || dataYmd > df) continue;
+    if (!dataYmd) continue;
+    if (dataYmd < di || dataYmd > df) continue;
 
     const valorN = toNumberPt(r.valor);
     if (valorN == null || valorN <= 0) continue;
@@ -762,6 +822,7 @@ export async function listTransacoesFinanceirasApi(
       tipo: 'movimentacao',
       id_ui: -(PAGAMENTO_TRANSACAO_ID_OFFSET + r.id),
       data_mov: dataYmd,
+      criado_em: dataYmd,
       natureza: 'despesa',
       valor: String(r.valor ?? valorN.toFixed(2)),
       categoria_id: catComissaoId,

@@ -1,352 +1,507 @@
 <div
   class="list-page fin-transacoes-page"
   [class.fin-transacoes-page--filtros-abertos]="filtrosAbertos"
+  [class.fin-transacoes-page--somente-receber]="filtroSomenteReceber"
+  [class.fin-transacoes-page--somente-pagar]="filtroSomentePagar"
 >
+  <div class="list-page__lead fin-transacoes-page__lead">
+      <header class="list-head">
+        <div class="list-head__title-row">
+          <div class="list-head__left">
+            <h1 class="list-head__title">Transações</h1>
+          </div>
+          <div class="list-head__actions">
+            <div
+              class="list-head__busca-wrap"
+              [class.list-head__busca-wrap--open]="buscaAberta"
+              role="search"
+              (click)="onBuscaWrapClick()"
+            >
+              <span class="list-head__busca-icon" aria-hidden="true">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="m21 21-4.34-4.34" />
+                  <circle cx="11" cy="11" r="8" />
+                </svg>
+              </span>
+              <span
+                class="list-head__busca-label"
+                [class.list-head__busca-label--hidden]="buscaAberta"
+                aria-hidden="true"
+                >Buscar</span
+              >
+              <label class="sr-only" for="fin-trans-busca">Buscar transações</label>
+              <input
+                id="fin-trans-busca"
+                type="text"
+                class="list-head__busca-input"
+                [(ngModel)]="busca"
+                name="buscaTrans"
+                [placeholder]="buscaPlaceholder"
+                [class.list-head__busca-input--search-open]="buscaAberta"
+                [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+                autocomplete="off"
+                (click)="$event.stopPropagation()"
+                (keydown.enter)="onBuscaEnter($event)"
+                (input)="pagina = 1"
+                [attr.aria-expanded]="buscaAberta"
+                aria-label="Buscar transações"
+                title="Buscar"
+              />
+            </div>
+            <button
+              type="button"
+              class="list-head__toolbar-btn"
+              [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+              [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+              (click)="toggleFiltros()"
+              aria-label="Filtrar"
+              title="Filtrar"
+            >
+              <svg
+                class="list-icon-sm list-icon-sm--funnel"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+                />
+              </svg>
+              <span class="list-head__toolbar-label">Filtrar</span>
+            </button>
+            <button
+              type="button"
+              class="list-head__toolbar-btn"
+              (click)="calcularTotais()"
+              aria-label="Calcular totais"
+              title="Calcular totais"
+            >
+              <svg
+                class="list-icon-sm lucide lucide-calculator"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect width="16" height="20" x="4" y="2" rx="2" />
+                <line x1="8" x2="16" y1="6" y2="6" />
+                <line x1="16" x2="16" y1="14" y2="18" />
+                <path d="M16 10h.01" />
+                <path d="M12 10h.01" />
+                <path d="M8 10h.01" />
+                <path d="M12 14h.01" />
+                <path d="M8 14h.01" />
+                <path d="M12 18h.01" />
+                <path d="M8 18h.01" />
+              </svg>
+              <span class="list-head__toolbar-label">Calcular totais</span>
+            </button>
+            <div
+              class="fin-transacoes-novo-menu"
+              [class.fin-transacoes-novo-menu--open]="novoMenuAberto"
+            >
+              <button
+                type="button"
+                class="list-head__toolbar-btn list-head__toolbar-btn--link fin-transacoes-novo-menu__trigger"
+                [class.list-head__toolbar-btn--pulse-once-novo]="pulsoToolbarNovo"
+                (click)="toggleNovoMenu($event)"
+                [attr.aria-expanded]="novoMenuAberto"
+                aria-haspopup="menu"
+                aria-label="Novo lançamento"
+                title="Novo"
+              >
+                <svg
+                  class="list-icon-sm"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
+                <span>Novo</span>
+              </button>
+              <ul
+                class="fin-transacoes-novo-menu__panel"
+                [class.fin-transacoes-novo-menu__panel--open]="novoMenuAberto"
+                [class.fin-transacoes-novo-menu__panel--closing]="novoMenuFechando"
+                role="menu"
+                aria-label="Tipo de lançamento"
+                [attr.aria-hidden]="!novoMenuAberto && !novoMenuFechando"
+                (click)="$event.stopPropagation()"
+              >
+                  <li role="none">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--recebimento"
+                      (click)="abrirNovoRecebimento()"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14" />
+                        <path d="M12 5v14" />
+                      </svg>
+                      Recebimento
+                    </button>
+                  </li>
+                  <li role="none">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--despesa"
+                      (click)="abrirNovoDespesa()"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14" />
+                      </svg>
+                      Despesa
+                    </button>
+                  </li>
+                  <li role="none">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--vale"
+                      (click)="abrirNovoVale()"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+                        />
+                        <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                      </svg>
+                      Vale
+                    </button>
+                  </li>
+                  <li role="none">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--transferencia"
+                      (click)="abrirNovoTransferencia()"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m16 3 4 4-4 4" />
+                        <path d="M20 7H4" />
+                        <path d="m8 21-4-4 4-4" />
+                        <path d="M4 17h16" />
+                      </svg>
+                      Transferência
+                    </button>
+                  </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </header>
+      @if (erro) {
+        <p class="fin-transacoes__erro" role="alert">{{ erro }}</p>
+      }
+      @if (mensagemAcao) {
+        <p class="fin-transacoes__acao-hint" role="status">{{ mensagemAcao }}</p>
+      }
+  </div>
+
   <div class="fin-transacoes-layout">
     @if (filtrosAbertos) {
       <aside class="fin-transacoes-filtros" aria-label="Filtros de transações">
-        <div class="fin-transacoes-filtros__inner">
-          <div class="fin-transacoes-filtros-block">
-            <h3 class="fin-transacoes-filtros-block__title">Período</h3>
-            <div class="fin-transacoes-filtros-block__body fin-transacoes-filtros-periodo">
-              <label>
-                <span>Data inicial (dd-mm-aaaa)</span>
-                <input
-                  type="text"
-                  [(ngModel)]="dataInicio"
-                  name="finDi"
-                  inputmode="numeric"
-                  maxlength="10"
-                  autocomplete="off"
-                />
-              </label>
-              <label>
-                <span>Data final (dd-mm-aaaa)</span>
-                <input
-                  type="text"
-                  [(ngModel)]="dataFim"
-                  name="finDf"
-                  inputmode="numeric"
-                  maxlength="10"
-                  autocomplete="off"
-                />
-              </label>
-            </div>
-          </div>
+        <div class="fin-transacoes-filtros__scroll">
+          <section class="fin-filtros-card fin-filtros-card--periodo">
+            <h3 class="fin-filtros-card__title">Período</h3>
+            <app-cliente-drawer-periodo-filtro
+              [(inicioYmd)]="periodoInicioYmd"
+              [(fimYmd)]="periodoFimYmd"
+              exibicaoFormato="belasis"
+              [painelFlutuante]="true"
+              (periodoAlterado)="onPeriodoFiltroAlterado()"
+            />
+          </section>
 
-          <div class="fin-transacoes-filtros-block">
-            <h3 class="fin-transacoes-filtros-block__title">Natureza</h3>
-            <div class="fin-transacoes-filtros-block__body fin-transacoes-filtros-chips">
+          <section class="fin-filtros-card">
+            <h3 class="fin-filtros-card__title">Tipo de transação</h3>
+            <ul class="fin-filtros-check-list">
+              <li>
+                <label class="fin-filtros-check">
+                  <input
+                    type="checkbox"
+                    [checked]="filtroReceber"
+                    (change)="toggleFiltroReceber($event)"
+                  />
+                  <span class="fin-filtros-check__label">Contas a receber</span>
+                </label>
+              </li>
+              <li>
+                <label class="fin-filtros-check">
+                  <input
+                    type="checkbox"
+                    [checked]="filtroPagar"
+                    (change)="toggleFiltroPagar($event)"
+                  />
+                  <span class="fin-filtros-check__label">Contas a pagar</span>
+                </label>
+              </li>
+            </ul>
+          </section>
+
+          <section class="fin-filtros-card fin-filtros-card--tipo-data">
+            <h3 class="fin-filtros-card__title">
+              <span class="fin-filtros-card__title-label">Tipo de data</span>
+              <app-fin-filtros-floating-tip>
+                <button
+                  finFiltrosTipTrigger
+                  type="button"
+                  class="fin-filtros-card__title-tip"
+                  aria-describedby="fin-tip-tipo-data"
+                >
+                  ?
+                </button>
+                <div finFiltrosTipBody id="fin-tip-tipo-data">
+                  <p>
+                    <strong>Vencimento/Disponibilidade:</strong> Contas que estão
+                    disponíveis dentro do período. Para despesas, é considerado a data
+                    de vencimento.
+                  </p>
+                  <p><strong>Competência:</strong> Contas criadas dentro do período.</p>
+                  <p>
+                    <strong>Pagamento:</strong> Contas com pagamento dentro do período.
+                  </p>
+                </div>
+              </app-fin-filtros-floating-tip>
+            </h3>
+            <ul class="fin-filtros-radio-list">
+              <li>
+                <label class="fin-filtros-radio">
+                  <input
+                    type="radio"
+                    name="finTipoData"
+                    value="vencimento"
+                    [checked]="filtroTipoData === 'vencimento'"
+                    (change)="onFiltroTipoDataChange('vencimento')"
+                  />
+                  <span class="fin-filtros-radio__dot" aria-hidden="true"></span>
+                  <span>Venc/Disponibilidade</span>
+                </label>
+              </li>
+              <li>
+                <label class="fin-filtros-radio">
+                  <input
+                    type="radio"
+                    name="finTipoData"
+                    value="competencia"
+                    [checked]="filtroTipoData === 'competencia'"
+                    (change)="onFiltroTipoDataChange('competencia')"
+                  />
+                  <span class="fin-filtros-radio__dot" aria-hidden="true"></span>
+                  <span>Competência</span>
+                </label>
+              </li>
+              <li>
+                <label class="fin-filtros-radio">
+                  <input
+                    type="radio"
+                    name="finTipoData"
+                    value="pagamento"
+                    [checked]="filtroTipoData === 'pagamento'"
+                    (change)="onFiltroTipoDataChange('pagamento')"
+                  />
+                  <span class="fin-filtros-radio__dot" aria-hidden="true"></span>
+                  <span>Pagamento</span>
+                </label>
+              </li>
+            </ul>
+          </section>
+
+          <section class="fin-filtros-card">
+            <h3 class="fin-filtros-card__title">Status</h3>
+            <ul class="fin-filtros-check-list">
+              <li>
+                <label class="fin-filtros-check">
+                  <input
+                    type="checkbox"
+                    [checked]="statusEmAberto"
+                    (change)="toggleStatusEmAberto($event)"
+                  />
+                  <span class="fin-filtros-check__label">
+                    <span class="badge badge--warn">Em aberto</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label class="fin-filtros-check">
+                  <input
+                    type="checkbox"
+                    [checked]="statusAtrasado"
+                    (change)="toggleStatusAtrasado($event)"
+                  />
+                  <span class="fin-filtros-check__label">
+                    <span class="badge badge--atraso">Atrasado</span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label class="fin-filtros-check">
+                  <input
+                    type="checkbox"
+                    [checked]="statusPago"
+                    (change)="toggleStatusPago($event)"
+                  />
+                  <span class="fin-filtros-check__label">
+                    <span class="badge badge--ok">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="lucide lucide-check badge__icon"
+                        aria-hidden="true"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                      Pago
+                    </span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+          </section>
+
+          @if (formasPagamentoFiltro().length > 0) {
+            <section class="fin-filtros-card">
+              <h3 class="fin-filtros-card__title">Formas de pagamento</h3>
+              <div class="fin-filtros-card__subhead"><span>Ativas</span></div>
               <button
                 type="button"
-                class="fin-transacoes-filtros-chip"
-                [class.fin-transacoes-filtros-chip--on]="filtroNatureza === 'todos'"
-                (click)="toggleFiltroNatureza('todos')"
+                class="fin-filtros-card__link fin-filtros-card__link--solo"
+                (click)="desmarcarTodasFormas()"
               >
-                Todas
+                Desmarcar tudo
               </button>
+              <ul class="fin-filtros-check-list">
+                @for (forma of formasPagamentoFiltro(); track forma) {
+                  <li>
+                    <label class="fin-filtros-check">
+                      <input
+                        type="checkbox"
+                        [checked]="formaSelecionada(forma)"
+                        (change)="toggleFormaPagamento(forma, $event)"
+                      />
+                      <span class="fin-filtros-check__label">{{ forma }}</span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          @if (categoriasFiltro().length > 0) {
+            <section class="fin-filtros-card">
+              <h3 class="fin-filtros-card__title">Categorias</h3>
               <button
                 type="button"
-                class="fin-transacoes-filtros-chip"
-                [class.fin-transacoes-filtros-chip--on]="filtroNatureza === 'receita'"
-                (click)="toggleFiltroNatureza('receita')"
+                class="fin-filtros-card__link fin-filtros-card__link--solo"
+                (click)="desmarcarTodasCategorias()"
               >
-                Receitas
+                Desmarcar tudo
               </button>
-              <button
-                type="button"
-                class="fin-transacoes-filtros-chip"
-                [class.fin-transacoes-filtros-chip--on]="filtroNatureza === 'despesa'"
-                (click)="toggleFiltroNatureza('despesa')"
-              >
-                Despesas
-              </button>
-            </div>
-          </div>
-
-          <p class="fin-transacoes-filtros__hint">
-            Inclui movimentações (comandas pagas, despesas manuais, pagamentos de comissão)
-            e prestações em atraso das comandas.
-          </p>
-
-          <div class="fin-transacoes-filtros__footer">
-            <button type="button" class="btn btn--ghost" (click)="limparFiltrosPeriodo()">
-              Limpar
-            </button>
-            <button type="button" class="btn" (click)="aplicarFiltros()">Aplicar</button>
-          </div>
+              <ul class="fin-filtros-check-list">
+                @for (cat of categoriasFiltro(); track cat.id) {
+                  <li>
+                    <label class="fin-filtros-check">
+                      <input
+                        type="checkbox"
+                        [checked]="categoriaSelecionada(cat.id)"
+                        (change)="toggleCategoria(cat.id, $event)"
+                      />
+                      <span class="fin-filtros-check__label">{{ cat.nome }}</span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
         </div>
       </aside>
     }
 
     <div class="fin-transacoes-layout__main">
-      <div class="list-layout__main">
-        <div class="list-page__lead">
-          <header class="list-head">
-            <div class="list-head__title-row">
-              <div class="list-head__left">
-                <h1 class="list-head__title">Transações</h1>
-              </div>
-              <div class="list-head__actions">
-                <div
-                  class="list-head__busca-wrap"
-                  [class.list-head__busca-wrap--open]="buscaAberta"
-                  role="search"
-                  (click)="onBuscaWrapClick()"
-                >
-                  <span class="list-head__busca-icon" aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      aria-hidden="true"
-                    >
-                      <path d="m21 21-4.34-4.34" />
-                      <circle cx="11" cy="11" r="8" />
-                    </svg>
-                  </span>
-                  <span
-                    class="list-head__busca-label"
-                    [class.list-head__busca-label--hidden]="buscaAberta"
-                    aria-hidden="true"
-                    >Buscar</span
-                  >
-                  <label class="sr-only" for="fin-trans-busca">Buscar transações</label>
-                  <input
-                    id="fin-trans-busca"
-                    type="text"
-                    class="list-head__busca-input"
-                    [(ngModel)]="busca"
-                    name="buscaTrans"
-                    [placeholder]="buscaPlaceholder"
-                    [class.list-head__busca-input--search-open]="buscaAberta"
-                    [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
-                    autocomplete="off"
-                    (click)="$event.stopPropagation()"
-                    (keydown.enter)="onBuscaEnter($event)"
-                    (input)="pagina = 1"
-                    [attr.aria-expanded]="buscaAberta"
-                    aria-label="Buscar transações"
-                    title="Buscar"
-                  />
-                </div>
-                <button
-                  type="button"
-                  class="list-head__toolbar-btn"
-                  [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
-                  [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
-                  (click)="toggleFiltros()"
-                  aria-label="Filtrar"
-                  title="Filtrar"
-                >
-                  <svg
-                    class="list-icon-sm list-icon-sm--funnel"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-                    />
-                  </svg>
-                  <span class="list-head__toolbar-label">Filtrar</span>
-                </button>
-                <button
-                  type="button"
-                  class="list-head__toolbar-btn"
-                  (click)="calcularTotais()"
-                  aria-label="Calcular totais"
-                  title="Calcular totais"
-                >
-                  <svg
-                    class="list-icon-sm lucide lucide-calculator"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <rect width="16" height="20" x="4" y="2" rx="2" />
-                    <line x1="8" x2="16" y1="6" y2="6" />
-                    <line x1="16" x2="16" y1="14" y2="18" />
-                    <path d="M16 10h.01" />
-                    <path d="M12 10h.01" />
-                    <path d="M8 10h.01" />
-                    <path d="M12 14h.01" />
-                    <path d="M8 14h.01" />
-                    <path d="M12 18h.01" />
-                    <path d="M8 18h.01" />
-                  </svg>
-                  <span class="list-head__toolbar-label">Calcular totais</span>
-                </button>
-                <div class="fin-transacoes-novo-menu">
-                  <button
-                    type="button"
-                    class="list-head__toolbar-btn list-head__toolbar-btn--link"
-                    (click)="toggleNovoMenu($event)"
-                    [attr.aria-expanded]="novoMenuAberto"
-                    aria-haspopup="menu"
-                    aria-label="Novo lançamento"
-                    title="Novo"
-                  >
-                    <svg
-                      class="list-icon-sm"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="M12 5v14" />
-                    </svg>
-                    <span>Novo</span>
-                  </button>
-                  @if (novoMenuAberto) {
-                    <ul
-                      class="fin-transacoes-novo-menu__panel"
-                      role="menu"
-                      aria-label="Tipo de lançamento"
-                      (click)="$event.stopPropagation()"
-                    >
-                      <li role="none">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--recebimento"
-                          (click)="abrirNovoRecebimento()"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M5 12h14" />
-                            <path d="M12 5v14" />
-                          </svg>
-                          Recebimento
-                        </button>
-                      </li>
-                      <li role="none">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--despesa"
-                          (click)="abrirNovoDespesa()"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M5 12h14" />
-                          </svg>
-                          Despesa
-                        </button>
-                      </li>
-                      <li role="none">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--vale"
-                          (click)="abrirNovoVale()"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path
-                              d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
-                            />
-                            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                          </svg>
-                          Vale
-                        </button>
-                      </li>
-                      <li role="none">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--transferencia"
-                          (click)="abrirNovoTransferencia()"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="m16 3 4 4-4 4" />
-                            <path d="M20 7H4" />
-                            <path d="m8 21-4-4 4-4" />
-                            <path d="M4 17h16" />
-                          </svg>
-                          Transferência
-                        </button>
-                      </li>
-                    </ul>
-                  }
-                </div>
-              </div>
-            </div>
-          </header>
-          @if (erro) {
-            <p class="fin-transacoes__erro" role="alert">{{ erro }}</p>
-          }
-          @if (mensagemAcao) {
-            <p class="fin-transacoes__acao-hint" role="status">{{ mensagemAcao }}</p>
-          }
-        </div>
-
         <div class="list-table-card fin-transacoes__card">
           @if (carregando) {
             <p class="fin-transacoes__loading">A carregar transações…</p>
@@ -376,19 +531,19 @@
                         aria-label="Selecionar todas"
                       />
                     </th>
-                    <th
-                      class="col-data fin-trans-th-sort-wrap"
-                      scope="col"
-                      (mouseenter)="onSortDataMouseEnter()"
-                      (mouseleave)="onSortDataMouseLeave()"
-                    >
+                    <th class="col-data fin-trans-th-sort-wrap" scope="col">
                       <button
                         type="button"
                         class="fin-trans-th-sort"
                         (click)="onOrdenarDataClick($event)"
                         [attr.aria-label]="'Ordenar por data — ' + tooltipOrdenacaoData()"
                       >
-                        <span class="fin-trans-th-sort__label">Data</span>
+                        <span
+                          class="fin-trans-th-sort__label"
+                          (mouseenter)="onSortDataMouseEnter()"
+                          (mouseleave)="onSortDataMouseLeave()"
+                          >Data</span
+                        >
                         <span class="fin-trans-th-sort__icons" aria-hidden="true">
                           <svg
                             class="fin-trans-th-sort__tri fin-trans-th-sort__tri--up"
@@ -423,7 +578,7 @@
                     <th class="col-liq" scope="col">Valor líquido</th>
                     <th class="col-status" scope="col">Status</th>
                     <th class="col-pago" scope="col">Pago</th>
-                    <th class="col-acoes" scope="col"><span class="sr-only">Ações</span></th>
+                    <th class="col-acoes" scope="col">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -466,7 +621,7 @@
                         @if (podeVerComanda(row)) {
                           <button
                             type="button"
-                            class="fin-transacoes__link fin-transacoes__link--btn"
+                            class="fin-transacoes__link--btn"
                             (click)="verComanda(row)"
                           >
                             {{ row.origem }}
@@ -518,7 +673,7 @@
                       </td>
                       <td class="col-pago">
                         @if (colunaPagoVisivel(row)) {
-                          <app-ui-tip-trigger [tip]="tooltipColunaPago(row)">
+                          <app-ui-tip-trigger [tip]="tooltipColunaPago(row)" floating>
                             <button
                               type="button"
                               class="drawer-switch"
@@ -546,7 +701,7 @@
                       <td class="col-acoes">
                         @if (linhaTemAcoes(row)) {
                           <div
-                            class="list-row-acoes fin-transacoes-row-acoes"
+                            class="list-row-acoes fin-list-row-acoes"
                             (click)="$event.stopPropagation()"
                           >
                             <button
@@ -556,7 +711,7 @@
                               (click)="onAcaoEditarLinha(row)"
                               aria-label="Editar"
                             >
-                              <app-ui-tip-trigger tip="Editar">
+                              <app-ui-tip-trigger tip="Editar" floating>
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   width="14"
@@ -592,11 +747,11 @@
                                 (click)="abrirModalExclusao(row)"
                                 aria-label="Excluir"
                               >
-                                <app-ui-tip-trigger tip="Excluir">
+                                <app-ui-tip-trigger tip="Excluir" floating>
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
-                                    width="24"
-                                    height="24"
+                                    width="14"
+                                    height="14"
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     stroke="currentColor"
@@ -714,7 +869,6 @@
             </footer>
           }
         </div>
-      </div>
     </div>
   </div>
 </div>

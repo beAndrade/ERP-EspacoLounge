@@ -494,10 +494,14 @@ export class SheetsApiService {
   listTransacoesFinanceiras(params: {
     dataInicio: string;
     dataFim: string;
+    tipoData?: 'vencimento' | 'competencia' | 'pagamento';
   }): Observable<FinTransacaoItem[]> {
-    const hp = new HttpParams()
+    let hp = new HttpParams()
       .set('dataInicio', params.dataInicio)
       .set('dataFim', params.dataFim);
+    if (params.tipoData && params.tipoData !== 'vencimento') {
+      hp = hp.set('tipoData', params.tipoData);
+    }
     return this.http
       .get<ApiResponse<{ items: FinTransacaoItem[] }>>(
         this.url('/api/financeiro/transacoes'),

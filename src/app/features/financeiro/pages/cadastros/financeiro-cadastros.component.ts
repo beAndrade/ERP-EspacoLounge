@@ -31,8 +31,8 @@ export class FinanceiroCadastrosComponent {
   readonly tabAtiva = signal<CadastroTab>('categorias');
 
   readonly tabs: { id: CadastroTab; label: string }[] = [
-    { id: 'categorias', label: 'Categorias' },
     { id: 'formas', label: 'Formas de pagamento' },
+    { id: 'categorias', label: 'Categorias' },
   ];
 
   busca = '';
@@ -85,8 +85,7 @@ export class FinanceiroCadastrosComponent {
     this.onBuscaSubmit();
   }
 
-  toggleFiltros(ev: Event): void {
-    ev.stopPropagation();
+  toggleFiltros(): void {
     this.filtrosAbertos = !this.filtrosAbertos;
   }
 
@@ -94,10 +93,27 @@ export class FinanceiroCadastrosComponent {
     this.filtrosAbertos = false;
   }
 
-  aplicarFiltroStatus(): void {
-    if (!this.filtroAtivada && !this.filtroDesativada) {
-      this.filtroAtivada = true;
+  toggleFiltroAtivada(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (!checked && !this.filtroDesativada) {
+      (ev.target as HTMLInputElement).checked = true;
+      return;
     }
+    this.filtroAtivada = checked;
+    this.aplicarFiltroStatus();
+  }
+
+  toggleFiltroDesativada(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (!checked && !this.filtroAtivada) {
+      (ev.target as HTMLInputElement).checked = true;
+      return;
+    }
+    this.filtroDesativada = checked;
+    this.aplicarFiltroStatus();
+  }
+
+  private aplicarFiltroStatus(): void {
     this.formasTab?.carregar();
   }
 
@@ -126,7 +142,11 @@ export class FinanceiroCadastrosComponent {
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.fecharPainelBusca();
     }
-    if (this.filtrosAbertos && !t?.closest?.('.fin-cadastros-filtro-wrap')) {
+    if (
+      this.filtrosAbertos &&
+      !t?.closest?.('.fin-transacoes-filtros') &&
+      !t?.closest?.('.list-head__toolbar-btn')
+    ) {
       this.fecharFiltros();
     }
   }

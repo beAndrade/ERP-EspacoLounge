@@ -22,6 +22,7 @@ import {
   formatarDataDdMmYyyy,
 } from '../../../../core/utils/br-document-masks';
 import { parseFiltroDataDdMm } from '../../../../core/utils/atendimento-display';
+import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 
 type OrdenacaoNome = 'asc' | 'desc';
 
@@ -79,6 +80,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
   /** Tooltip do cabeçalho Nome (só hover; suprimida após clique até sair da célula). */
   nomeSortTipVisivel = false;
   private nomeSortTipSuprimida = false;
+  private nomeSortTipShowTimer: ReturnType<typeof setTimeout> | null = null;
   perfilDrawerAberto = false;
   perfilDrawerPanelOpen = false;
   perfilDrawerCliente: Cliente | null = null;
@@ -98,6 +100,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.clearNomeSortTipShowTimer();
     if (this.perfilDrawerCloseTimer != null) {
       clearTimeout(this.perfilDrawerCloseTimer);
     }
@@ -403,17 +406,31 @@ export class ClientesComponent implements OnInit, OnDestroy {
   }
 
   onSortNomeMouseEnter(): void {
-    if (!this.nomeSortTipSuprimida) {
-      this.nomeSortTipVisivel = true;
-    }
+    if (this.nomeSortTipSuprimida) return;
+    this.clearNomeSortTipShowTimer();
+    this.nomeSortTipShowTimer = setTimeout(() => {
+      this.nomeSortTipShowTimer = null;
+      if (!this.nomeSortTipSuprimida) {
+        this.nomeSortTipVisivel = true;
+      }
+    }, UI_TIP_SHOW_DELAY_MS);
   }
 
   onSortNomeMouseLeave(): void {
+    this.clearNomeSortTipShowTimer();
     this.nomeSortTipVisivel = false;
     this.nomeSortTipSuprimida = false;
   }
 
+  private clearNomeSortTipShowTimer(): void {
+    if (this.nomeSortTipShowTimer != null) {
+      clearTimeout(this.nomeSortTipShowTimer);
+      this.nomeSortTipShowTimer = null;
+    }
+  }
+
   onOrdenarNomeClick(event: MouseEvent): void {
+    this.clearNomeSortTipShowTimer();
     this.ordenacaoNome = this.ordenacaoNome === 'asc' ? 'desc' : 'asc';
     this.pagina = 1;
     this.nomeSortTipVisivel = false;

@@ -181,6 +181,11 @@ $periodo-row-gap: 6px;
   z-index: 1095;
 }
 
+.periodo-filtro--painel-flutuante .periodo-filtro__backdrop--open,
+.periodo-filtro__backdrop--portal.periodo-filtro__backdrop--open {
+  background: rgba(15, 23, 42, 0.35);
+}
+
 .periodo-filtro__panel--portal {
   z-index: 1100;
 }
@@ -375,4 +380,88 @@ $periodo-row-gap: 6px;
   line-height: 1;
   color: #1f2937;
   transition: all 0.2s;
+}
+
+/* Sidebar financeiro (Belasis): borda inferior + hover vinho */
+.periodo-filtro--belasis {
+  .periodo-filtro__bar {
+    position: relative;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .periodo-filtro__inputs {
+    --periodo-input-w: 100%;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+    width: 100%;
+    min-width: 0;
+    padding-right: 0;
+  }
+
+  .periodo-filtro__field {
+    flex: 0 0 auto;
+    width: 100%;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .periodo-filtro__field--inicio .periodo-filtro__field-row,
+  .periodo-filtro__field--fim .periodo-filtro__field-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding-bottom: 0.15rem;
+    border-bottom: 1px solid #e5e7eb;
+    transition: border-color 0.15s ease;
+
+    &:hover,
+    &:focus-within {
+      border-bottom-color: #811741;
+    }
+  }
+
+  .periodo-filtro__field--inicio .periodo-filtro__input,
+  .periodo-filtro__field--fim .periodo-filtro__input {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .periodo-filtro__underline {
+    display: none;
+  }
+
+  .periodo-filtro__input {
+    padding: 0.1rem 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .periodo-filtro__sep {
+    display: none;
+  }
+
+  .periodo-filtro__cal-btn {
+    position: static;
+    flex: 0 0 auto;
+    align-self: center;
+    margin: 0;
+    padding: 0.15rem;
+    color: #9ca3af;
+
+    &:hover {
+      background: transparent;
+      color: #811741;
+    }
+  }
 }

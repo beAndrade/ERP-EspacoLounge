@@ -47,9 +47,12 @@ import {
   ymdInicioFiltroVendasPadrao,
   type ClienteVendaHistoricoLinha,
 } from './cliente-vendas.util';
+import { UI_TIP_SHOW_DELAY_MS } from '../ui-tip-trigger/ui-tip-delay';
 
 export const DRAWER_ANIM_MS = 430;
-export const CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS = 200;
+
+/** @deprecated Use `UI_TIP_SHOW_DELAY_MS` — mantido para imports externos. */
+export const CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS = UI_TIP_SHOW_DELAY_MS;
 
 export const CLIENTE_CADASTRO_ABAS = [
   'Cadastro',

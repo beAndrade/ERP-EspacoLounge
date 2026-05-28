@@ -20,8 +20,7 @@
 .list-table-card > .table-wrap,
 .comandas-table-card > .table-wrap,
 .drawer-table-card > .drawer-table-wrap {
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow: visible;
   border-radius: 0;
   border-start-start-radius: 14px;
   border-start-end-radius: 14px;

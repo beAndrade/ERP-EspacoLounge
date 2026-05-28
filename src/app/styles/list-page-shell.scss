@@ -1,5 +1,7 @@
 /* Shell reutilizável: toolbar + tabela + rodapé (comandas, clientes, …). */
 
+$list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+
 .list-page {
   --list-search-open-width: clamp(280px, 40vw, 400px);
   display: flex;
@@ -164,6 +166,7 @@
   border-color: #f1f1f1;
   border-radius: 12px;
   background: #ffffff;
+  box-shadow: $list-surface-elev-shadow;
   box-sizing: border-box;
   overflow: hidden;
   cursor: pointer;
@@ -224,7 +227,7 @@
   min-width: 0;
   max-width: var(--list-search-open-width);
   border-color: #811741;
-  box-shadow: 0 0 0 1px rgba(129, 23, 65, 0.1);
+  box-shadow: $list-surface-elev-shadow, 0 0 0 1px rgba(129, 23, 65, 0.1);
   cursor: text;
 }
 
@@ -333,7 +336,8 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
   outline: none;
   border: 1px solid #e7e5e4;
   border-radius: 12px;
-  background: transparent;
+  background: #ffffff;
+  box-shadow: $list-surface-elev-shadow;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -349,6 +353,7 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
   &.list-head__toolbar-btn--filtro-on {
     position: relative;
     isolation: isolate;
+    box-shadow: $list-surface-elev-shadow;
     filter: drop-shadow(0 1px 4px rgba(239, 175, 65, 0.22));
     background: #efaf41;
     border-color: #efaf41;
@@ -373,6 +378,7 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
     isolation: isolate;
     border: 1px solid #811741;
     background-color: #811741;
+    box-shadow: $list-surface-elev-shadow;
     color: #ffffff;
     font-weight: 500;
 
@@ -380,6 +386,10 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
       background-color: #9d3a5c;
       border-color: #9d3a5c;
       color: #ffffff;
+    }
+
+    &.list-head__toolbar-btn--pulse-once-novo {
+      animation: listToolbarPulseLinkBordo 0.6s ease-out 1 forwards;
     }
   }
 
@@ -439,6 +449,24 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
   }
 }
 
+@keyframes listToolbarPulseLinkBordo {
+  0% {
+    box-shadow:
+      0 2px 0 rgba(0, 0, 0, 0.02),
+      0 0 0 0 rgba(255, 255, 255, 0.48);
+  }
+  55% {
+    box-shadow:
+      0 2px 0 rgba(0, 0, 0, 0.02),
+      0 0 0 6px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow:
+      0 2px 0 rgba(0, 0, 0, 0.02),
+      0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
 .list-head__toolbar-label {
   @media (max-width: 520px) {
     display: none;
@@ -448,10 +476,12 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
 .list-table-card {
   background: var(--color-surface);
   border: 1px solid #efefef;
+  box-shadow: $list-surface-elev-shadow;
   overflow: visible;
 
   > .table-wrap {
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
     border-start-start-radius: 14px;
     border-start-end-radius: 14px;
     border-top-left-radius: 14px;
@@ -702,6 +732,14 @@ tbody td.col-check + td {
 .col-acoes {
   width: 4.5rem;
   text-align: right;
+}
+
+.list-table thead th.col-acoes {
+  text-align: center;
+}
+
+.list-table tbody td.col-acoes {
+  overflow: visible;
 }
 
 .list-row-acoes {

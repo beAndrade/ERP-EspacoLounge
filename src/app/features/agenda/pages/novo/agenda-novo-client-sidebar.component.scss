@@ -210,12 +210,18 @@
   text-align: center;
 }
 
-.client-sidebar-drawer__badge-novo-wrap:hover .client-sidebar-drawer__badge-novo-tooltip,
+.client-sidebar-drawer__badge-novo-wrap:hover .client-sidebar-drawer__badge-novo-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: var(--ui-tip-show-delay), var(--ui-tip-show-delay), 0s;
+}
+
 .client-sidebar-drawer__badge-novo-wrap:focus-visible .client-sidebar-drawer__badge-novo-tooltip {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
-  transition-delay: 0.2s, 0.2s, 0s;
+  transition-delay: 0s, 0s, 0s;
 }
 
 .client-sidebar-drawer__badge-novo {

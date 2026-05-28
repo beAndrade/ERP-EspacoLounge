@@ -1,4 +1,5 @@
 @use '../../../../styles/list-page-shell';
+@use '../../../../styles/fin-list-row-acoes';
 @use './fin-cadastro-drawer-shell.scss';
 @use '../../../../styles/drawer-stack';
 
@@ -59,25 +60,6 @@
 }
 
 .fin-cad-tab__table .col-acoes {
-  text-align: right;
   width: 88px;
-}
-
-.fin-cad-tab__acoes {
-  justify-content: flex-end;
-
-  .list-row-acoes__btn svg,
-  .list-row-acoes__btn .list-row-acoes__icon--sm {
-    width: 12px;
-    height: 12px;
-    display: block;
-  }
-
-  .list-row-acoes__btn--delete {
-    color: #ff4d4f;
-
-    svg {
-      color: #ff4d4f;
-    }
-  }
+  max-width: 88px;
 }

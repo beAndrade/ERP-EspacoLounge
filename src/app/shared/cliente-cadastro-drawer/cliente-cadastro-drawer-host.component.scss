@@ -382,6 +382,7 @@
     opacity 0.22s ease,
     transform 0.22s ease,
     visibility 0s linear 0.22s;
+  transition-delay: 0s, 0s, 0s;
 
   &::after {
     content: '';
@@ -394,7 +395,17 @@
   }
 }
 
-.cliente-field-help:hover .cliente-field-help-tooltip,
+.cliente-field-help:hover .cliente-field-help-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    visibility 0s;
+  transition-delay: var(--ui-tip-show-delay), var(--ui-tip-show-delay), var(--ui-tip-show-delay);
+}
+
 .cliente-info-btn--field-help:focus-visible + .cliente-field-help-tooltip {
   opacity: 1;
   visibility: visible;
@@ -403,6 +414,7 @@
     opacity 0.22s ease,
     transform 0.22s ease,
     visibility 0s;
+  transition-delay: 0s, 0s, 0s;
 }
 
 .cliente-nav {
@@ -1601,12 +1613,20 @@
     }
   }
 
-  &:hover .cliente-info-tooltip,
+  &:hover .cliente-info-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s;
+    transition-delay: var(--ui-tip-show-delay), var(--ui-tip-show-delay), var(--ui-tip-show-delay);
+  }
+
   &:focus-visible .cliente-info-tooltip {
     visibility: visible;
     opacity: 1;
     transform: translateY(0);
     transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s;
+    transition-delay: 0s, 0s, 0s;
   }
 }
 

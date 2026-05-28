@@ -488,6 +488,7 @@ thead th.col-ticket {
     transition:
       opacity 0.22s ease,
       transform 0.22s ease;
+    transition-delay: 0s, 0s;
     white-space: nowrap;
 
     &::after {
@@ -502,10 +503,16 @@ thead th.col-ticket {
     }
   }
 
-  &__disc:hover &__disc-tip,
+  &__disc:hover &__disc-tip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    transition-delay: var(--ui-tip-show-delay), var(--ui-tip-show-delay);
+  }
+
   &__disc:focus-within &__disc-tip {
     opacity: 1;
     transform: translate(-50%, 0);
+    transition-delay: 0s, 0s;
   }
 }
 
