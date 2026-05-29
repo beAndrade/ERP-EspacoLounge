@@ -122,35 +122,42 @@
               class="fin-transacoes-novo-menu"
               [class.fin-transacoes-novo-menu--open]="novoMenuAberto"
             >
-              <button
-                type="button"
-                class="list-head__toolbar-btn list-head__toolbar-btn--link fin-transacoes-novo-menu__trigger"
-                [class.list-head__toolbar-btn--pulse-once-novo]="pulsoToolbarNovo"
-                (click)="toggleNovoMenu($event)"
-                [attr.aria-expanded]="novoMenuAberto"
-                aria-haspopup="menu"
-                aria-label="Novo lançamento"
-                title="Novo"
-              >
-                <svg
-                  class="list-icon-sm"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+              <div class="fin-transacoes-novo-menu__trigger-wrap">
+                <span
+                  class="fin-transacoes-novo-menu__pulse-ring"
+                  [class.fin-transacoes-novo-menu__pulse-ring--on]="pulsoToolbarNovo"
                   aria-hidden="true"
+                ></span>
+                <button
+                  type="button"
+                  class="list-head__toolbar-btn list-head__toolbar-btn--link fin-transacoes-novo-menu__trigger"
+                  (click)="toggleNovoMenu($event)"
+                  [attr.aria-expanded]="novoMenuAberto"
+                  aria-haspopup="menu"
+                  aria-label="Novo lançamento"
+                  title="Novo"
                 >
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
-                <span>Novo</span>
-              </button>
+                  <svg
+                    class="list-icon-sm"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="M12 5v14" />
+                  </svg>
+                  <span>Novo</span>
+                </button>
+              </div>
               <ul
+                #novoMenuPanel
                 class="fin-transacoes-novo-menu__panel"
                 [class.fin-transacoes-novo-menu__panel--open]="novoMenuAberto"
                 [class.fin-transacoes-novo-menu__panel--closing]="novoMenuFechando"
@@ -233,33 +240,6 @@
                         <path d="M14 2v4a2 2 0 0 0 2 2h4" />
                       </svg>
                       Vale
-                    </button>
-                  </li>
-                  <li role="none">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      class="fin-transacoes-novo-menu__item fin-transacoes-novo-menu__item--transferencia"
-                      (click)="abrirNovoTransferencia()"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="m16 3 4 4-4 4" />
-                        <path d="M20 7H4" />
-                        <path d="m8 21-4-4 4-4" />
-                        <path d="M4 17h16" />
-                      </svg>
-                      Transferência
                     </button>
                   </li>
               </ul>
@@ -873,13 +853,36 @@
   </div>
 </div>
 
-<app-fin-transacao-novo-modal
-  [aberto]="modalNovoAberto()"
-  [naturezaInicial]="modalNovoNatureza()"
-  [salvando]="modalNovoSalvando()"
-  (fechar)="fecharModalNovo()"
-  (confirmar)="onConfirmarNovo($event)"
-/>
+@if (novoDrawerAberto) {
+  <div
+    class="overlay overlay--novo"
+    [class.overlay--open]="novoDrawerAberto"
+    aria-hidden="true"
+    (click)="fecharNovoDrawer()"
+  ></div>
+  <div
+    class="fin-trans-drawer app-drawer app-drawer--novo"
+    [class.app-drawer--open]="novoDrawerPanelOpen"
+    role="dialog"
+    aria-modal="true"
+  [attr.aria-label]="
+    novoDrawerTipo() === 'receita'
+      ? 'Novo recebimento'
+      : novoDrawerTipo() === 'vale'
+        ? 'Novo vale'
+        : 'Nova despesa'
+  "
+    (click)="$event.stopPropagation()"
+  >
+    <app-fin-transacao-novo-drawer
+      [aberto]="novoDrawerAberto"
+      [tipo]="novoDrawerTipo()"
+      [salvando]="novoDrawerSalvando()"
+      (fechar)="fecharNovoDrawer()"
+      (confirmar)="onConfirmarNovo($event)"
+    />
+  </div>
+}
 
 <app-fin-transacoes-totais-modal
   [aberto]="modalTotaisAberto()"

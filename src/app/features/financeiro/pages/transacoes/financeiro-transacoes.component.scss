@@ -62,7 +62,8 @@
   }
 
   .list-head__toolbar-btn,
-  .fin-transacoes-novo-menu {
+  .fin-transacoes-novo-menu,
+  .fin-transacoes-novo-menu__trigger-wrap {
     flex: 0 0 auto;
     max-width: 100%;
   }
@@ -629,11 +630,48 @@
 
 .fin-transacoes-novo-menu {
   --fin-novo-menu-anim: 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  --fin-novo-menu-fechar: 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
   overflow: visible;
+}
+
+.fin-transacoes-novo-menu__trigger-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.fin-transacoes-novo-menu__pulse-ring {
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(157, 23, 77, 0);
+
+  &--on {
+    animation: fin-transacoes-novo-pulse-ring 0.6s ease-out 1 forwards;
+  }
+}
+
+.fin-transacoes-novo-menu__trigger {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes fin-transacoes-novo-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(157, 23, 77, 0.28);
+  }
+  55% {
+    box-shadow: 0 0 0 5px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
 }
 
 .fin-transacoes-novo-menu__panel {
@@ -658,7 +696,7 @@
     0 9px 28px 8px rgba(0, 0, 0, 0.06);
   opacity: 0;
   visibility: hidden;
-  transform: scaleY(0);
+  transform: translateY(-6px) scaleY(0.96);
   transform-origin: top right;
   pointer-events: none;
   transition:
@@ -669,24 +707,27 @@
   &--open {
     opacity: 1;
     visibility: visible;
-    transform: scaleY(1);
+    transform: translateY(0) scaleY(1);
     pointer-events: auto;
     transition:
       transform var(--fin-novo-menu-anim),
-      opacity 0.16s ease,
+      opacity 0.2s ease,
       visibility 0s;
   }
 
-  /** Recolher para cima (mantém opacidade até o scaleY terminar). */
-  &--closing:not(&--open) {
-    opacity: 1;
+  /**
+   * Fechar: recolher para cima (scaleY) + fade — `transform-origin: top right`
+   * mantém o canto do painel fixo (sem translateY).
+   */
+  &--open#{&}--closing {
+    opacity: 0;
     visibility: visible;
-    transform: scaleY(0);
+    transform: translateY(0) scaleY(0);
     pointer-events: none;
     transition:
-      transform var(--fin-novo-menu-anim),
-      opacity 0s linear var(--fin-novo-menu-anim),
-      visibility 0s linear var(--fin-novo-menu-anim);
+      transform var(--fin-novo-menu-fechar),
+      opacity var(--fin-novo-menu-fechar),
+      visibility 0s linear 0.42s;
   }
 
   > li {
@@ -696,9 +737,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fin-transacoes-novo-menu__panel,
-  .fin-transacoes-novo-menu__panel--closing:not(.fin-transacoes-novo-menu__panel--open) {
+  .fin-transacoes-novo-menu__panel {
     transition-duration: 0.01ms !important;
+  }
+
+  .fin-transacoes-novo-menu__pulse-ring--on {
+    animation-duration: 0.01ms !important;
   }
 }
 
@@ -769,7 +813,8 @@
  * Drawers: overlay em `styles/drawer-stack.scss`.
  * Ordem (igual comandas/agenda): overlay comanda < drawer comanda < overlay faturar < drawer faturar.
  */
-:host .overlay--editar {
+:host .overlay--editar,
+:host .overlay--novo {
   z-index: 1099;
 }
 
@@ -843,6 +888,20 @@
   }
 
   &.app-drawer--editar > app-fin-transacao-editar-drawer {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  &.app-drawer--novo {
+    z-index: 1103;
+    max-width: min(560px, 100vw);
+    margin-left: auto;
+  }
+
+  &.app-drawer--novo > app-fin-transacao-novo-drawer {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
@@ -927,3 +986,4 @@
   right: 0;
   max-width: calc(100vw - 1.5rem);
 }
+

@@ -7,6 +7,8 @@ import {
   OnDestroy,
   OnInit,
   ViewChild,
+  ChangeDetectorRef,
+  ElementRef,
   inject,
   signal,
 } from '@angular/core';
@@ -37,9 +39,10 @@ import {
 } from './fin-transacao-editar-drawer.component';
 import { FinFiltrosFloatingTipComponent } from './fin-filtros-floating-tip.component';
 import {
-  FinTransacaoNovoModalComponent,
+  FinTransacaoNovoDrawerComponent,
   type FinTransacaoNovoSubmit,
-} from './fin-transacao-novo-modal.component';
+  type FinTransacaoNovoTipo,
+} from './fin-transacao-novo-drawer.component';
 import {
   FinTransacoesTotaisModalComponent,
   type FinTransacoesTotaisResumo,
@@ -104,7 +107,7 @@ type FaturarDrawerCtx = {
     FormsModule,
     ClienteDrawerPeriodoFiltroComponent,
     FinFiltrosFloatingTipComponent,
-    FinTransacaoNovoModalComponent,
+    FinTransacaoNovoDrawerComponent,
     FinTransacoesTotaisModalComponent,
     FinTransacaoEditarDrawerComponent,
     NovaComandaDrawerComponent,
@@ -118,6 +121,7 @@ type FaturarDrawerCtx = {
 })
 export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly toast = inject(AppToastService);
   private readonly route = inject(ActivatedRoute);
@@ -149,6 +153,12 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   editarLinha: FinTransacaoLinhaUi | null = null;
   readonly editarSalvando = signal(false);
   private editarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  novoDrawerAberto = false;
+  novoDrawerPanelOpen = false;
+  readonly novoDrawerTipo = signal<FinTransacaoNovoTipo>('despesa');
+  readonly novoDrawerSalvando = signal(false);
+  private novoDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   private pageScrollLockAtivo = false;
   private bodyScrollPreDrawer = 0;
@@ -202,10 +212,6 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   pulsoToolbarNovo = false;
   mensagemAcao: string | null = null;
 
-  readonly modalNovoAberto = signal(false);
-  readonly modalNovoNatureza = signal<'receita' | 'despesa' | null>(null);
-  readonly modalNovoSalvando = signal(false);
-
   readonly modalTotaisAberto = signal(false);
   readonly resumoTotais = signal<FinTransacoesTotaisResumo>({
     recebidos: 0,
@@ -216,11 +222,14 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   });
 
   private readonly duracaoPulsoToolbarMs = 600;
-  private readonly duracaoNovoMenuAnimMs = 220;
+  private readonly duracaoNovoMenuAnimMs = 420;
   private tPulsoBusca: ReturnType<typeof setTimeout> | null = null;
   private tPulsoFiltro: ReturnType<typeof setTimeout> | null = null;
   private tPulsoNovo: ReturnType<typeof setTimeout> | null = null;
   private tNovoMenuFechar: ReturnType<typeof setTimeout> | null = null;
+
+  @ViewChild('novoMenuPanel', { static: true })
+  private novoMenuPanel?: ElementRef<HTMLUListElement>;
   private tMensagemAcao: ReturnType<typeof setTimeout> | null = null;
 
   private readonly selecionados = signal<ReadonlySet<number>>(new Set());
@@ -286,12 +295,14 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     if (this.editarDrawerCloseTimer != null) {
       clearTimeout(this.editarDrawerCloseTimer);
     }
+    if (this.novoDrawerCloseTimer != null) {
+      clearTimeout(this.novoDrawerCloseTimer);
+    }
     if (this.pageScrollLockAtivo) {
       this.desbloquearScrollPagina();
     }
-    if (this.tNovoMenuFechar != null) {
-      window.clearTimeout(this.tNovoMenuFechar);
-    }
+    this.cancelarFechamentoNovoMenu();
+    if (this.tPulsoNovo != null) window.clearTimeout(this.tPulsoNovo);
   }
 
   carregar(): void {
@@ -495,15 +506,62 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     });
   }
 
-  private fecharNovoMenuAnimado(): void {
-    if (!this.novoMenuAberto) return;
-    this.novoMenuAberto = false;
-    this.novoMenuFechando = true;
-    if (this.tNovoMenuFechar != null) window.clearTimeout(this.tNovoMenuFechar);
-    this.tNovoMenuFechar = window.setTimeout(() => {
-      this.novoMenuFechando = false;
+  private cancelarFechamentoNovoMenu(): void {
+    if (this.tNovoMenuFechar != null) {
+      window.clearTimeout(this.tNovoMenuFechar);
       this.tNovoMenuFechar = null;
-    }, this.duracaoNovoMenuAnimMs);
+    }
+    const el = this.novoMenuPanel?.nativeElement;
+    if (el) {
+      el.removeEventListener('transitionend', this.onTransitionEndFecharNovoMenu);
+    }
+    this.novoMenuFechando = false;
+  }
+
+  private readonly onTransitionEndFecharNovoMenu = (ev: Event): void => {
+    const el = this.novoMenuPanel?.nativeElement;
+    if (!el || ev.target !== el) return;
+    const te = ev as TransitionEvent;
+    if (te.propertyName !== 'opacity') return;
+    this.finalizarFechamentoNovoMenu();
+  };
+
+  private finalizarFechamentoNovoMenu(): void {
+    this.cancelarFechamentoNovoMenu();
+    this.novoMenuAberto = false;
+    this.cdr.detectChanges();
+  }
+
+  private abrirNovoMenu(): void {
+    this.cancelarFechamentoNovoMenu();
+    this.novoMenuAberto = true;
+    this.cdr.detectChanges();
+  }
+
+  private fecharNovoMenuAnimado(): void {
+    if (!this.novoMenuAberto || this.novoMenuFechando) return;
+    const el = this.novoMenuPanel?.nativeElement;
+
+    this.cancelarFechamentoNovoMenu();
+
+    if (!el) {
+      this.finalizarFechamentoNovoMenu();
+      return;
+    }
+
+    el.addEventListener('transitionend', this.onTransitionEndFecharNovoMenu);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!this.novoMenuAberto) return;
+        this.novoMenuFechando = true;
+        this.cdr.detectChanges();
+
+        this.tNovoMenuFechar = window.setTimeout(() => {
+          if (this.novoMenuFechando) this.finalizarFechamentoNovoMenu();
+        }, this.duracaoNovoMenuAnimMs + 80);
+      });
+    });
   }
 
   private mostrarMensagemAcao(texto: string): void {
@@ -1217,67 +1275,77 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   toggleNovoMenu(ev: Event): void {
     ev.stopPropagation();
     this.dispararPulsoToolbar('novo');
-    if (this.novoMenuAberto) {
+    if (this.novoMenuAberto && !this.novoMenuFechando) {
       this.fecharNovoMenuAnimado();
       return;
     }
-    if (this.tNovoMenuFechar != null) {
-      window.clearTimeout(this.tNovoMenuFechar);
-      this.tNovoMenuFechar = null;
-    }
-    this.novoMenuFechando = false;
-    this.novoMenuAberto = true;
+    this.abrirNovoMenu();
   }
 
   abrirNovoRecebimento(): void {
-    this.fecharNovoMenuAnimado();
-    this.modalNovoNatureza.set('receita');
-    this.modalNovoAberto.set(true);
+    this.abrirNovoDrawer('receita');
   }
 
   abrirNovoDespesa(): void {
-    this.fecharNovoMenuAnimado();
-    this.modalNovoNatureza.set('despesa');
-    this.modalNovoAberto.set(true);
+    this.abrirNovoDrawer('despesa');
   }
 
   abrirNovoVale(): void {
-    this.fecharNovoMenuAnimado();
-    this.mostrarMensagemAcao('Cadastro de vale em breve.');
+    this.abrirNovoDrawer('vale');
   }
 
-  abrirNovoTransferencia(): void {
+  private abrirNovoDrawer(tipo: FinTransacaoNovoTipo): void {
     this.fecharNovoMenuAnimado();
-    this.mostrarMensagemAcao('Transferência em breve.');
+    this.novoDrawerTipo.set(tipo);
+    this.abrirDrawerComAnimacao(
+      () => {
+        this.novoDrawerAberto = true;
+      },
+      (open) => {
+        this.novoDrawerPanelOpen = open;
+      },
+    );
   }
 
-  fecharModalNovo(): void {
-    if (!this.modalNovoSalvando()) {
-      this.modalNovoAberto.set(false);
-      this.modalNovoNatureza.set(null);
+  fecharNovoDrawer(): void {
+    if (!this.novoDrawerAberto || this.novoDrawerSalvando()) return;
+    this.novoDrawerPanelOpen = false;
+    if (this.novoDrawerCloseTimer != null) {
+      clearTimeout(this.novoDrawerCloseTimer);
     }
+    this.novoDrawerCloseTimer = setTimeout(() => {
+      this.novoDrawerCloseTimer = null;
+      this.novoDrawerAberto = false;
+      if (
+        !this.comandaPainelAberto &&
+        !this.faturarDrawerAberto &&
+        !this.editarDrawerAberto
+      ) {
+        this.desbloquearScrollPagina();
+      }
+    }, DRAWER_ANIM_MS);
   }
 
   onConfirmarNovo(ev: FinTransacaoNovoSubmit): void {
-    this.modalNovoSalvando.set(true);
+    this.novoDrawerSalvando.set(true);
     const done = () => {
-      this.modalNovoSalvando.set(false);
-      this.modalNovoAberto.set(false);
-      this.modalNovoNatureza.set(null);
+      this.novoDrawerSalvando.set(false);
+      this.fecharNovoDrawer();
       this.carregar();
       this.mostrarMensagemAcao('Lançamento registado.');
     };
     const fail = (e: Error) => {
-      this.modalNovoSalvando.set(false);
+      this.novoDrawerSalvando.set(false);
       this.mostrarMensagemAcao(
         e.message || 'Não foi possível guardar o lançamento.',
       );
     };
 
-    if (ev.natureza === 'despesa') {
+    if (ev.tipo === 'receita') {
       this.api
-        .createDespesa({
+        .createMovimentacao({
           data_mov: ev.data_mov,
+          natureza: 'receita',
           valor: ev.valor,
           categoria_id: ev.categoria_id,
           descricao: ev.descricao,
@@ -1286,9 +1354,8 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
         .subscribe({ next: () => done(), error: fail });
     } else {
       this.api
-        .createMovimentacao({
+        .createDespesa({
           data_mov: ev.data_mov,
-          natureza: 'receita',
           valor: ev.valor,
           categoria_id: ev.categoria_id,
           descricao: ev.descricao,
@@ -1331,7 +1398,9 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   fecharMenuAcaoDocumento(ev: MouseEvent): void {
     const t = ev.target as HTMLElement | null;
-    this.fecharNovoMenuAnimado();
+    if (!t?.closest?.('.fin-transacoes-novo-menu')) {
+      this.fecharNovoMenuAnimado();
+    }
     this.perPageMenuAberto = false;
     this.pagoPopoverLinhaId = null;
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
@@ -1370,10 +1439,10 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       }
       return;
     }
-    if (this.modalNovoAberto()) {
-      if (!this.modalNovoSalvando()) {
+    if (this.novoDrawerAberto) {
+      if (!this.novoDrawerSalvando()) {
         ev.preventDefault();
-        this.fecharModalNovo();
+        this.fecharNovoDrawer();
       }
       return;
     }
@@ -1445,7 +1514,8 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       this.editarLinha = null;
       if (
         !this.comandaPainelAberto &&
-        !this.faturarDrawerAberto
+        !this.faturarDrawerAberto &&
+        !this.novoDrawerAberto
       ) {
         this.desbloquearScrollPagina();
       }
