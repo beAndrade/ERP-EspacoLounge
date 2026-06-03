@@ -328,9 +328,6 @@ export async function excluirCategoriaCadastroApi(
     .where(eq(categoriasFinanceiras.id, id))
     .limit(1);
   if (!row) throw new Error('Categoria não encontrada.');
-  if (SLUGS_CATEGORIA_SISTEMA.has(row.slug)) {
-    throw new Error('Esta categoria de sistema não pode ser excluída.');
-  }
 
   const [uso] = await db
     .select({ id: movimentacoes.id })
@@ -592,15 +589,11 @@ export async function excluirFormaPagamentoCadastroApi(
     .where(eq(formasPagamentoFinanceiras.id, id))
     .limit(1);
   if (!row) throw new Error('Forma de pagamento não encontrada.');
-  if (CODIGOS_FORMA_SISTEMA.has(row.codigoInterno)) {
-    throw new Error('Esta forma de pagamento de sistema não pode ser excluída.');
-  }
 
   await db
-    .update(formasPagamentoFinanceiras)
-    .set({ ativo: false })
+    .delete(formasPagamentoFinanceiras)
     .where(eq(formasPagamentoFinanceiras.id, id));
-  return 'deactivated';
+  return 'removed';
 }
 
 /** Opções para dropdowns (nome visível + código interno). */

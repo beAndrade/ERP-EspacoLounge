@@ -589,12 +589,13 @@ input[type='number'].fat-field__input {
   opacity: 0.85;
 }
 
-/** Método + excluir: hover na linha (`li`); ícone alinhado à data; texto desloca com transform. */
+/** Método + excluir: ícone sempre visível; rótulo com margem fixa à esquerda. */
 .fat-pag-metodo {
   display: inline-block;
   box-sizing: border-box;
   max-width: 100%;
   min-height: 1.5rem;
+  padding-left: 28px;
   color: var(--fat-fg);
 }
 
@@ -612,18 +613,27 @@ input[type='number'].fat-field__input {
   margin: 0;
   padding: 0;
   border: 0;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 1;
+  pointer-events: auto;
   border-radius: 0;
   background: transparent;
   color: #e57373;
-  transition: opacity 0.1s ease;
+  cursor: pointer;
 
   svg {
     display: block;
     width: 16px;
     height: 16px;
     flex-shrink: 0;
+  }
+
+  &:hover:not(:disabled) {
+    color: #ef5350;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }
 
@@ -633,7 +643,6 @@ input[type='number'].fat-field__input {
   font-size: 18px;
   line-height: 1.25;
   white-space: nowrap;
-  transition: transform 0.2s ease;
 }
 
 .fat-pag-metodo__parcela {
@@ -641,18 +650,6 @@ input[type='number'].fat-field__input {
   font-weight: 400;
   font-size: 14px;
   color: #9ca3af;
-}
-
-.fat-pag-item:hover .fat-pag-info .fat-pag-del,
-.fat-pag-item:focus-within .fat-pag-info .fat-pag-del {
-  opacity: 1;
-  pointer-events: auto;
-  transition: opacity 0.16s ease;
-}
-
-.fat-pag-item:hover .fat-pag-metodo__label,
-.fat-pag-item:focus-within .fat-pag-metodo__label {
-  transform: translateX(24px);
 }
 
 .fat-pag-parcelas {

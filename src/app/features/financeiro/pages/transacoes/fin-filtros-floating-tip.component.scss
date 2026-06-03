@@ -36,6 +36,16 @@ app-fin-filtros-floating-tip {
   white-space: normal;
   box-sizing: border-box;
 
+  .fin-filtros-tip-panel__body,
+  .fin-filtros-tip-panel__body p {
+    margin: 0;
+    text-align: left;
+  }
+
+  .fin-filtros-tip-panel__body p + p {
+    margin-top: 0.55rem;
+  }
+
   p {
     margin: 0;
 
@@ -72,5 +82,18 @@ app-fin-filtros-floating-tip {
     bottom: 100%;
     border-top-color: transparent;
     border-bottom-color: rgba(0, 0, 0, 0.82);
+  }
+}
+
+/** Tooltip «Mostrar comissões anteriores» (sidebar Comissões). */
+.fin-filtros-tip-panel--portal.fin-comissoes-anteriores-tip {
+  min-width: 17.5rem;
+  max-width: min(300px, calc(100vw - 16px));
+  padding: 0.75rem;
+  text-align: left;
+
+  .fin-filtros-tip-panel__body,
+  .fin-filtros-tip-panel__body p {
+    line-height: 1.5;
   }
 }

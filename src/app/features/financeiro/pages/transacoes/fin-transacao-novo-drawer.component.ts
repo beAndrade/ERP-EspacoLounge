@@ -12,13 +12,16 @@ import { FormsModule } from '@angular/forms';
 import type {
   CategoriaFinanceiraItem,
   Cliente,
+  FinFormaPagamentoOpcaoItem,
   ProfissionalListaItem,
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   METODOS_NOME_FALLBACK,
   mapFormasParaNomes,
+  taxaPorNomeForma,
 } from '../../../../core/utils/fin-formas-pagamento.util';
+import { calcularTaxaReais } from '../../../../core/utils/fin-taxa.util';
 
 export type FinTransacaoNovoTipo = 'receita' | 'despesa' | 'vale';
 
@@ -62,6 +65,7 @@ export class FinTransacaoNovoDrawerComponent {
   readonly confirmar = output<FinTransacaoNovoSubmit>();
 
   readonly metodos = signal<string[]>([...METODOS_NOME_FALLBACK]);
+  readonly formasOpcoes = signal<FinFormaPagamentoOpcaoItem[]>([]);
   readonly categorias = signal<CategoriaFinanceiraItem[]>([]);
   readonly clientes = signal<Cliente[]>([]);
   readonly profissionais = signal<ProfissionalListaItem[]>([]);
@@ -141,8 +145,12 @@ export class FinTransacaoNovoDrawerComponent {
     }).format(v);
   }
 
+  valorBrutoReais(): number {
+    return (parseInt(this.valorBrutoDigitos || '0', 10) || 0) / 100;
+  }
+
   valorLiquidoReais(): number {
-    const bruto = (parseInt(this.valorBrutoDigitos || '0', 10) || 0) / 100;
+    const bruto = this.valorBrutoReais();
     const taxas = (parseInt(this.taxasDigitos || '0', 10) || 0) / 100;
     return Math.max(0, bruto - taxas);
   }
@@ -161,9 +169,24 @@ export class FinTransacaoNovoDrawerComponent {
   onValorInput(ev: Event, qual: 'bruto' | 'taxas' | 'valor'): void {
     const el = ev.target as HTMLInputElement;
     const d = el.value.replace(/\D/g, '').slice(0, 15);
-    if (qual === 'bruto') this.valorBrutoDigitos = d;
-    else if (qual === 'taxas') this.taxasDigitos = d;
+    if (qual === 'bruto') {
+      this.valorBrutoDigitos = d;
+      if (this.tipo() === 'receita') this.aplicarTaxasDoCadastro();
+    } else if (qual === 'taxas') this.taxasDigitos = d;
     else this.valorDigitos = d;
+  }
+
+  onMetodoPagamentoAlterado(): void {
+    if (this.tipo() === 'receita') this.aplicarTaxasDoCadastro();
+  }
+
+  private aplicarTaxasDoCadastro(): void {
+    const nome = this.metodoPagamento.trim();
+    if (!nome) return;
+    const { pct, fixa } = taxaPorNomeForma(this.formasOpcoes(), nome);
+    const bruto = this.valorBrutoReais();
+    const taxa = calcularTaxaReais(bruto, pct, fixa);
+    this.taxasDigitos = String(Math.round(taxa * 100));
   }
 
   abrirCalendarioData(ev: Event, input: HTMLInputElement): void {
@@ -236,6 +259,7 @@ export class FinTransacaoNovoDrawerComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => {
+          this.formasOpcoes.set(items);
           const nomes = mapFormasParaNomes(items);
           if (nomes.length) this.metodos.set(nomes);
         },
@@ -278,8 +302,7 @@ export class FinTransacaoNovoDrawerComponent {
     }
 
     const t = this.tipo();
-    const v =
-      t === 'receita' ? this.valorLiquidoReais() : this.valorSimplesReais();
+    const v = t === 'receita' ? this.valorBrutoReais() : this.valorSimplesReais();
     if (v <= 0) {
       this.erroForm = 'Informe um valor maior que zero.';
       return;

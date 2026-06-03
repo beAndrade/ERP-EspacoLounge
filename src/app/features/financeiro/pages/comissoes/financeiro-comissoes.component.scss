@@ -9,6 +9,8 @@
 }
 
 .fin-comissoes {
+  --fin-comissoes-text: #000000bf;
+
   display: flex;
   flex-direction: column;
   min-height: min(100%, calc(100vh - 4rem));
@@ -60,6 +62,11 @@
   color: #78716c;
   cursor: pointer;
   position: relative;
+  transition: color 0.15s ease;
+
+  &:hover:not(&--active) {
+    color: #811741;
+  }
 
   &--active {
     color: var(--color-primary, #505afb);
@@ -125,13 +132,37 @@
     width: min(420px, 100%);
     margin-inline: auto;
 
+    app-cliente-drawer-periodo-filtro {
+      display: block;
+      width: 100%;
+    }
+
+    ::ng-deep .periodo-filtro {
+      width: 100%;
+    }
+
+    ::ng-deep .periodo-filtro--underline-bar {
+      --periodo-field-line: 3px;
+      --periodo-field-pad-b: 0.28rem;
+      --periodo-bar-pad-x: 2.25rem;
+      --periodo-bar-pad-shift: 0.4rem;
+    }
+
     ::ng-deep .periodo-filtro__bar {
       position: relative;
+      display: flex;
       justify-content: center;
-      align-items: stretch;
-      min-height: 40px;
-      padding: 0 2.5rem 0 1.15rem;
-      border-radius: 999px;
+      align-items: flex-end;
+      width: 100%;
+      gap: 0;
+      height: 32px;
+      min-height: 32px;
+      padding: 0
+        calc(var(--periodo-bar-pad-x) + var(--periodo-bar-pad-shift))
+        0
+        calc(var(--periodo-bar-pad-x) - var(--periodo-bar-pad-shift));
+      border-radius: 16px;
+      overflow: visible;
       cursor: text;
       box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
       transition:
@@ -152,44 +183,42 @@
 
     ::ng-deep .periodo-filtro__inputs {
       --periodo-input-w: 7.25rem;
-      --periodo-sep-w: 2.35rem;
-      --periodo-field-line: 1px;
+      --periodo-sep-w: 1.5rem;
+      --periodo-gap: 0.35rem;
 
-      flex: 1 1 auto;
+      flex: 0 0 auto;
       justify-content: center;
-      align-self: stretch;
+      align-self: flex-end;
       align-items: center;
-      min-height: 100%;
-      padding-bottom: 0;
-      max-width: calc(100% - 2rem);
+      min-height: 0;
+      min-width: 0;
+      width: max-content;
+      max-width: calc(100% - (var(--periodo-bar-pad-x) * 2));
+      margin: 0;
+      padding: 0;
     }
 
-    ::ng-deep .periodo-filtro__field {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: auto;
-    }
-
-    ::ng-deep .periodo-filtro__field--inicio:focus-within .periodo-filtro__underline {
-      left: 50%;
-      width: 6.65rem;
-      max-width: 100%;
-      transform: translateX(-50%);
-    }
-
-    ::ng-deep .periodo-filtro__field--fim:focus-within .periodo-filtro__underline {
-      left: 0.12rem;
-      width: calc(100% + 3.35rem);
-      max-width: none;
-      transform: none;
+    ::ng-deep .periodo-filtro--sublinhado-slide .periodo-filtro__inputs {
+      align-self: flex-end;
     }
 
     ::ng-deep .periodo-filtro__input {
       cursor: text;
       height: auto;
-      padding: 0 0.2rem;
       line-height: 1.35;
+      font-size: 0.875rem;
+    }
+
+    ::ng-deep .periodo-filtro__field--inicio .periodo-filtro__input {
+      padding: 0.1rem 0.28rem 0 0;
+    }
+
+    ::ng-deep .periodo-filtro__field--fim .periodo-filtro__input {
+      padding: 0.1rem var(--periodo-bar-pad-shift) 0 0.08rem;
+    }
+
+    ::ng-deep .periodo-filtro--sublinhado-slide .periodo-filtro__underline-slide {
+      background: var(--color-primary, #505afb);
     }
 
     ::ng-deep .periodo-filtro__sep {
@@ -204,18 +233,20 @@
       }
     }
 
-    ::ng-deep .periodo-filtro__cal-btn {
+    ::ng-deep .periodo-filtro__cal-icon {
       position: absolute;
-      right: 0.45rem;
       top: 50%;
+      right: 0.85rem;
+      bottom: auto;
       transform: translateY(-50%);
+      flex: 0 0 auto;
       margin: 0;
-      cursor: text;
-      pointer-events: auto;
+      color: #9ca3af;
 
-      &:hover {
-        background: transparent;
-        color: #6b7280;
+      svg {
+        width: 18px;
+        height: 18px;
+        stroke: #9ca3af;
       }
     }
 
@@ -235,96 +266,12 @@
     margin: 0;
     width: 100%;
     min-width: 0;
-
-    ::ng-deep .periodo-filtro__bar {
-      position: relative;
-      display: flex;
-      align-items: stretch;
-      border-radius: 8px;
-      padding: 0.4rem 2.75rem 0 0.5rem;
-      gap: 0;
-      overflow: hidden;
-    }
-
-    ::ng-deep .periodo-filtro__inputs {
-      --periodo-input-w: 5.9rem;
-      --periodo-sep-w: 1.35rem;
-      --periodo-gap: 0.15rem;
-      flex: 1 1 auto;
-      min-width: 0;
-      max-width: 100%;
-      padding-bottom: 0;
-      justify-content: center;
-      align-self: stretch;
-      align-items: center;
-    }
-
-    ::ng-deep .periodo-filtro__field {
-      flex: 0 0 var(--periodo-input-w);
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    ::ng-deep .periodo-filtro__sep {
-      font-size: 0;
-      line-height: 1;
-      flex-shrink: 0;
-
-      &::after {
-        content: '→';
-        font-size: 0.8125rem;
-        color: #9ca3af;
-        white-space: nowrap;
-      }
-    }
-
-    ::ng-deep .periodo-filtro__input {
-      width: 100%;
-      font-size: 0.8125rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 0.1rem 0.05rem 0;
-    }
-
-    ::ng-deep .periodo-filtro__inputs {
-      --periodo-field-line: 1px;
-    }
-
-    ::ng-deep .periodo-filtro__field--inicio:focus-within .periodo-filtro__underline {
-      left: 50%;
-      width: 5.35rem;
-      transform: translateX(-50%);
-    }
-
-    ::ng-deep .periodo-filtro__field--fim:focus-within .periodo-filtro__underline {
-      left: 0.08rem;
-      width: calc(100% + 1.85rem);
-      transform: none;
-    }
-
-    ::ng-deep .periodo-filtro__cal-btn {
-      position: absolute;
-      right: 0.35rem;
-      top: 50%;
-      transform: translateY(-50%);
-      margin: 0;
-      flex-shrink: 0;
-      z-index: 4;
-      pointer-events: auto;
-      cursor: pointer;
-
-      &:hover {
-        background: #f3f4f6;
-        color: #393ed4;
-      }
-    }
-
-    ::ng-deep .periodo-filtro__input {
-      cursor: pointer;
-    }
-
   }
+}
+
+.fin-comissoes__sidebar-card--periodo:has(.periodo-filtro--bar-ativo) {
+  position: relative;
+  z-index: 1102;
 }
 
 .fin-comissoes__toggle-row {
@@ -437,8 +384,8 @@
     opacity 0.22s ease;
 
   &--aberto {
-    flex: 0 0 min(300px, 34vw);
-    width: min(300px, 34vw);
+    flex: 0 0 min(275px, 34vw);
+    width: min(275px, 34vw);
     margin-right: 1rem;
     opacity: 1;
     overflow: visible;
@@ -451,7 +398,7 @@
   flex-direction: column;
   gap: 0.85rem;
   width: 100%;
-  min-width: min(300px, 34vw);
+  min-width: min(275px, 34vw);
   box-sizing: border-box;
   transform: translateX(-16px);
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
@@ -472,6 +419,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  box-sizing: border-box;
+  width: 275px;
+  max-width: 100%;
   padding: 0.85rem;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
@@ -481,19 +431,148 @@
     overflow: visible;
     z-index: 2;
   }
+
+  &--prof {
+    overflow: visible;
+    z-index: 3;
+  }
+}
+
+.fin-comissoes__sidebar-prof {
+  display: block;
+  width: 100%;
+
+  app-saas-select {
+    display: block;
+    width: 100%;
+  }
+
+  ::ng-deep .saas-select__trigger {
+    min-height: 32px;
+    height: 32px;
+    padding: 0 2.25rem 0 0.65rem;
+    border-color: #f1f1f1;
+    border-radius: 12px;
+    font-size: 14px;
+    background: #ffffff;
+    box-shadow: none;
+    transition:
+      border 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+
+    &:hover:not(:disabled) {
+      border-color: #811741;
+      box-shadow: none;
+    }
+
+    &:focus-visible {
+      border-color: #811741;
+      box-shadow: none;
+    }
+  }
+
+  ::ng-deep .saas-select--open .saas-select__trigger {
+    border-color: #811741;
+    box-shadow: none;
+  }
+
+  ::ng-deep .saas-select__value {
+    font-size: 14px;
+  }
+
+  ::ng-deep .saas-select__icons {
+    color: #a8a29e;
+  }
+
+  ::ng-deep .saas-select__panel-elev {
+    left: -8px;
+    right: -8px;
+    width: calc(100% + 16px);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    overflow-x: hidden;
+  }
+
+  ::ng-deep .saas-select__panel {
+    border-radius: 10px;
+    border-color: #e5e7eb;
+    overflow-x: hidden;
+  }
+
+  ::ng-deep .saas-select__list {
+    padding: 0.28rem 0.32rem 0.22rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  ::ng-deep .saas-select__option {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0.45rem 0.55rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--fin-comissoes-text, #000000bf);
+    background: transparent;
+    transition:
+      background-color 0.16s ease,
+      color 0.16s ease;
+
+    &:hover:not(.saas-select__option--active) {
+      background: #f3f4f6;
+      color: var(--fin-comissoes-text, #000000bf);
+    }
+
+    &--active {
+      font-weight: 700;
+      color: #000000;
+      background: #eef2ff;
+
+      &:hover {
+        background: #eef2ff;
+        color: #000000;
+      }
+    }
+  }
+
+  ::ng-deep .saas-select__criar-wrap {
+    margin: 0 0.32rem;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+  }
+
+  ::ng-deep .saas-select__criar {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+    font-weight: 600;
+    color: #505afb;
+    background: #fff;
+    transition: none;
+
+    &:hover {
+      background: #fff;
+    }
+  }
 }
 
 .fin-comissoes__sidebar-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fin-comissoes-text, #000000bf);
 }
 
 .fin-comissoes__select {
   width: 100%;
-  height: 36px;
+  height: 32px;
+  min-height: 32px;
   padding: 0 2.5rem 0 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #d6d3d1;
   border-radius: 8px;
   font: inherit;
   font-size: 14px;
@@ -508,6 +587,19 @@
   background-position: right 14px center;
   background-size: 14px 14px;
   cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+
+  &:hover {
+    border-color: #811741;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #811741;
+    box-shadow: 0 0 0 3px rgba(80, 90, 251, 0.1);
+  }
 
   &::-ms-expand {
     display: none;
@@ -707,12 +799,246 @@
   color: #22a06b;
 }
 
+.fin-comissoes__sidebar-check {
+  display: block;
+  margin: 0;
+  padding: 0;
+  min-height: 20px;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+
+  app-fin-filtros-floating-tip {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+
+    .fin-filtros-tip-anchor {
+      display: inline-flex;
+      justify-content: center;
+      max-width: 100%;
+    }
+  }
+
+  input {
+    --list-check-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --list-check-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    box-sizing: border-box;
+    display: inline-block;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border: 1px solid #efefef;
+    border-radius: 5px;
+    background-color: #fff;
+    cursor: pointer;
+    transition:
+      background-color 0.22s var(--list-check-ease),
+      border-color 0.16s ease 0s,
+      transform 0.16s var(--list-check-spring);
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 47%;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: translate(-50%, -50%) rotate(45deg) scale(0.35);
+      opacity: 0;
+      transition:
+        transform 0.32s var(--list-check-spring),
+        opacity 0.14s ease;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: #811741;
+      transition-delay: 0s, 0.16s, 0s;
+    }
+
+    &:checked {
+      background-color: var(--color-primary, #505afb);
+      border-color: var(--color-primary, #505afb);
+
+      &::after {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(45deg) scale(1);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid
+        color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.fin-comissoes__sidebar-check-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: auto;
+  max-width: 100%;
+  min-height: 20px;
+}
+
+.fin-comissoes__sidebar-check-control {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.fin-comissoes__sidebar-check-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fin-comissoes-text, #000000bf);
+}
+
+.fin-comissoes__sidebar-card--check {
+  gap: 0;
+  align-items: center;
+  padding: 0.75rem 0.85rem;
+  overflow: visible;
+}
+
+.fin-comissoes__resumo-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 13px;
+  }
+
+  dt {
+    margin: 0;
+    color: var(--fin-comissoes-text, #000000bf);
+    font-weight: 500;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--fin-comissoes-text, #000000bf);
+  }
+}
+
+.fin-comissoes__resumo-saldo {
+  color: var(--color-primary, #505afb);
+}
+
+.fin-comissoes-table--pagas {
+  th,
+  td {
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  .col-num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .col-acoes {
+    width: 56px;
+    text-align: center;
+  }
+}
+
+.fin-comissoes-table__row-paga {
+  background: #fff5f5;
+
+  &:hover {
+    background: #ffeded;
+  }
+}
+
+.fin-comissoes-table__valor-pago {
+  font-weight: 600;
+  color: #374151;
+}
+
+.fin-comissoes-acoes {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.fin-comissoes-acoes__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(15, 23, 42, 0.06);
+    color: #374151;
+  }
+}
+
+.fin-comissoes-acoes__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 140px;
+  padding: 0.35rem 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.fin-comissoes-acoes__item {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.85rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  color: #374151;
+  cursor: pointer;
+
+  &:hover {
+    background: #f9fafb;
+  }
+}
+
 .fin-comissoes__bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
   width: 100%;
   box-sizing: border-box;
   margin: 0;
@@ -725,22 +1051,45 @@
 
 .fin-comissoes__bar-totais {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem 2rem;
-  font-size: 14px;
-  color: #374151;
-
-  strong {
-    margin-left: 0.35rem;
-    font-variant-numeric: tabular-nums;
-  }
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-evenly;
+  gap: 0;
+  min-width: 0;
+  padding-right: 1rem;
 }
 
-.fin-comissoes__bar-liquido strong {
+.fin-comissoes__bar-total-item {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.fin-comissoes__bar-total-label {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--fin-comissoes-text, #000000bf);
+}
+
+.fin-comissoes__bar-total-value {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: var(--fin-comissoes-text, #000000bf);
+}
+
+.fin-comissoes__bar-total-item--liquido .fin-comissoes__bar-total-value {
   color: var(--color-primary, #505afb);
 }
 
 .fin-comissoes__btn-pagar {
+  flex: 0 0 auto;
   height: 40px;
   padding: 0 22px;
   border: none;

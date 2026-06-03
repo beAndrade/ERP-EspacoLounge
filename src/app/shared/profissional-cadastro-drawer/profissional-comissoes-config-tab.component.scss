@@ -1,0 +1,48 @@
+.prof-comissoes-config {
+  max-width: 36rem;
+}
+
+.prof-comissoes-intro {
+  margin: 0 0 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-muted, #64748b);
+}
+
+.prof-comissoes-fieldset {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.prof-comissoes-fieldset__legend {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text, #1e293b);
+}
+
+.prof-comissoes-radio {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.45;
+
+  input {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+  }
+}
+
+.prof-comissoes-radio__text {
+  color: var(--text-muted, #64748b);
+
+  strong {
+    color: var(--text, #1e293b);
+    font-weight: 600;
+  }
+}

@@ -1,4 +1,4 @@
-import { and, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { atendimentos, folha, profissionais } from '../db/schema';
 import {
@@ -17,13 +17,13 @@ function primeiroDiaMesSeguinte(periodoYm: string): string {
 }
 
 /** Ex.: `2026-04` → `04/2026` (legado planilha). */
-function periodoYmParaMesLegivel(ym: string): string {
+export function periodoYmParaMesLegivel(ym: string): string {
   const [y, mo] = ym.split('-');
   return `${mo}/${y}`;
 }
 
 /** `atendimentos.data` → `YYYY-MM` ou null. */
-function dataAtendimentoParaPeriodoYm(
+export function dataAtendimentoParaPeriodoYm(
   data: string | Date | null | undefined,
 ): string | null {
   if (data == null) return null;
@@ -33,6 +33,33 @@ function dataAtendimentoParaPeriodoYm(
       : `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   return s.slice(0, 7);
+}
+
+function statusFolhaFromTotais(total: number, pago: number): string {
+  if (total <= 0) return 'sem_comissao';
+  if (pago <= 0.005) return 'pendente';
+  const saldo = Math.round((total - pago) * 100) / 100;
+  if (saldo <= 0.005) return 'quitado';
+  return 'parcial';
+}
+
+type SomaProf = { total: number; n: number };
+
+function acumularComissaoPorProf(
+  rows: { profissionalId: number | null; comissao: string | null }[],
+): Map<number, SomaProf> {
+  const somaPorProf = new Map<number, SomaProf>();
+  for (const r of rows) {
+    const pid = r.profissionalId;
+    if (pid == null || pid <= 0) continue;
+    const c = toNumberPt(r.comissao);
+    const add = c != null && c > 0 ? c : 0;
+    const cur = somaPorProf.get(pid) ?? { total: 0, n: 0 };
+    cur.total += add;
+    cur.n += 1;
+    somaPorProf.set(pid, cur);
+  }
+  return somaPorProf;
 }
 
 /**
@@ -64,21 +91,134 @@ export async function recalcularFolhaAposMudancaAtendimento(
   }
 }
 
+/** Recalcula `folha` nos meses de competência das linhas de `atendimentos` indicadas. */
+export async function recalcularFolhaAposIdsAtendimento(
+  db: Db,
+  atendimentoIds: number[],
+): Promise<void> {
+  const ids = [
+    ...new Set(
+      atendimentoIds.filter((x) => Number.isFinite(x) && x > 0),
+    ),
+  ];
+  if (ids.length === 0) return;
+
+  const rows = await db
+    .select({
+      profissionalId: atendimentos.profissionalId,
+      data: atendimentos.data,
+    })
+    .from(atendimentos)
+    .where(inArray(atendimentos.id, ids));
+
+  const chaves = new Set<string>();
+  for (const r of rows) {
+    const pid = r.profissionalId;
+    const ym = dataAtendimentoParaPeriodoYm(
+      r.data as string | Date | null | undefined,
+    );
+    if (pid != null && pid > 0 && ym && PERIODO_YM_RE.test(ym)) {
+      chaves.add(`${pid}|${ym}`);
+    }
+  }
+
+  for (const k of chaves) {
+    const [pidS, ym] = k.split('|');
+    await recalcularTotaisComissaoFolhaPorPeriodo(db, ym, {
+      profissionalId: Number(pidS),
+    });
+  }
+}
+
+/**
+ * Competência principal de um lote de pagamento (mês com maior soma de comissão).
+ * Garante linha em `folha` e devolve `folha.id` para `pagamentos.folha_id`.
+ */
+export async function folhaIdPrincipalParaLoteAtendimentos(
+  db: Db,
+  profId: number,
+  atendimentoIds: number[],
+): Promise<{ folhaId: number | null; periodoYm: string | null }> {
+  const ids = [
+    ...new Set(
+      atendimentoIds.filter((x) => Number.isFinite(x) && x > 0),
+    ),
+  ];
+  if (ids.length === 0) return { folhaId: null, periodoYm: null };
+
+  const rows = await db
+    .select({
+      data: atendimentos.data,
+      comissao: atendimentos.comissao,
+    })
+    .from(atendimentos)
+    .where(
+      and(
+        inArray(atendimentos.id, ids),
+        eq(atendimentos.profissionalId, profId),
+      ),
+    );
+
+  const porPeriodo = new Map<string, number>();
+  for (const r of rows) {
+    const ym = dataAtendimentoParaPeriodoYm(
+      r.data as string | Date | null | undefined,
+    );
+    if (!ym || !PERIODO_YM_RE.test(ym)) continue;
+    const c = toNumberPt(r.comissao) ?? 0;
+    porPeriodo.set(ym, (porPeriodo.get(ym) ?? 0) + (c > 0 ? c : 0));
+  }
+
+  if (porPeriodo.size === 0) return { folhaId: null, periodoYm: null };
+
+  let bestYm = '';
+  let bestVal = -1;
+  for (const [ym, v] of porPeriodo) {
+    if (v > bestVal) {
+      bestVal = v;
+      bestYm = ym;
+    }
+  }
+
+  await recalcularTotaisComissaoFolhaPorPeriodo(db, bestYm, {
+    profissionalId: profId,
+  });
+
+  const [f] = await db
+    .select({ id: folha.id })
+    .from(folha)
+    .where(
+      and(
+        eq(folha.profissionalId, profId),
+        eq(folha.periodoReferencia, bestYm),
+      ),
+    )
+    .limit(1);
+
+  return { folhaId: f?.id ?? null, periodoYm: bestYm };
+}
+
 export type RecalcularComissoesFolhaResultado = {
   periodo: string;
   linhas_folha_atualizadas: number;
   itens: {
     folha_id: number;
     profissional_id: number | null;
+    profissional_nome: string;
     total_comissao_reais: number;
+    total_pago_reais: number;
+    saldo_reais: number;
+    status: string;
     linhas_atendimento: number;
   }[];
 };
 
 /**
- * Soma `atendimentos.comissao` (linhas finalizadas) por profissional no mês
- * e grava em `folha.total_comissao`. Recalcula `saldo` = comissão − total_pago
- * quando `total_pago` for interpretável como valor.
+ * Sincroniza `folha` com `atendimentos` no mês de competência:
+ * - `total_comissao` = soma das linhas finalizadas com comissão > 0
+ * - `total_pago` = soma das linhas finalizadas já pagas à profissional (`comissao_paga_em`)
+ * - `saldo` = total_comissao − total_pago
+ * - `status` = pendente | parcial | quitado | sem_comissao
  */
 export async function recalcularTotaisComissaoFolhaPorPeriodo(
   db: Db,
@@ -109,29 +249,28 @@ export async function recalcularTotaisComissaoFolhaPorPeriodo(
     sql`lower(coalesce(${atendimentos.cobrancaStatus}, '')) = 'finalizada'`,
   );
 
+  const whereAt = profFilter != null
+    ? and(baseAt, eq(atendimentos.profissionalId, profFilter))
+    : baseAt;
+
   const linhas = await db
     .select({
       profissionalId: atendimentos.profissionalId,
       comissao: atendimentos.comissao,
     })
     .from(atendimentos)
-    .where(
-      profFilter != null
-        ? and(baseAt, eq(atendimentos.profissionalId, profFilter))
-        : baseAt,
-    );
+    .where(whereAt);
 
-  const somaPorProf = new Map<number, { total: number; n: number }>();
-  for (const r of linhas) {
-    const pid = r.profissionalId;
-    if (pid == null || pid <= 0) continue;
-    const c = toNumberPt(r.comissao);
-    const add = c != null && c > 0 ? c : 0;
-    const cur = somaPorProf.get(pid) ?? { total: 0, n: 0 };
-    cur.total += add;
-    cur.n += 1;
-    somaPorProf.set(pid, cur);
-  }
+  const linhasPagas = await db
+    .select({
+      profissionalId: atendimentos.profissionalId,
+      comissao: atendimentos.comissao,
+    })
+    .from(atendimentos)
+    .where(and(whereAt, isNotNull(atendimentos.comissaoPagaEm)));
+
+  const somaPorProf = acumularComissaoPorProf(linhas);
+  const pagoPorProf = acumularComissaoPorProf(linhasPagas);
 
   const condFolha = profFilter != null
     ? and(eq(folha.periodoReferencia, periodo), eq(folha.profissionalId, profFilter))
@@ -144,7 +283,12 @@ export async function recalcularTotaisComissaoFolhaPorPeriodo(
       .map((f) => [f.profissionalId as number, f]),
   );
 
-  for (const pid of somaPorProf.keys()) {
+  const profIdsAtivos = new Set([
+    ...somaPorProf.keys(),
+    ...pagoPorProf.keys(),
+  ]);
+
+  for (const pid of profIdsAtivos) {
     if (profFilter != null && pid !== profFilter) continue;
     if (folhaPorProfId.has(pid)) continue;
 
@@ -160,9 +304,9 @@ export async function recalcularTotaisComissaoFolhaPorPeriodo(
       mes: periodoYmParaMesLegivel(periodo),
       periodoReferencia: periodo,
       totalComissao: formatMoedaReciboPt(0),
-      totalPago: null,
-      saldo: null,
-      status: null,
+      totalPago: formatMoedaReciboPt(0),
+      saldo: formatMoedaReciboPt(0),
+      status: 'pendente',
     });
   }
 
@@ -175,29 +319,39 @@ export async function recalcularTotaisComissaoFolhaPorPeriodo(
     const pid = f.profissionalId;
     if (pid == null || pid <= 0) continue;
 
-    const agg = somaPorProf.get(pid);
-    const total = agg?.total ?? 0;
-    const nAt = agg?.n ?? 0;
+    const total = Math.round((somaPorProf.get(pid)?.total ?? 0) * 100) / 100;
+    const pago = Math.round((pagoPorProf.get(pid)?.total ?? 0) * 100) / 100;
+    const saldo = Math.max(0, Math.round((total - pago) * 100) / 100);
+    const nAt = somaPorProf.get(pid)?.n ?? 0;
+    const status = statusFolhaFromTotais(total, pago);
 
-    const pago = toNumberPt(f.totalPago);
-    const patch: {
-      totalComissao: string;
-      saldo?: string;
-    } = {
-      totalComissao: formatMoedaReciboPt(total),
-    };
-    if (pago !== null) {
-      patch.saldo = formatMoedaReciboPt(
-        Math.round((total - pago) * 100) / 100,
-      );
-    }
+    const [pr] = await db
+      .select({ nome: profissionais.nome })
+      .from(profissionais)
+      .where(eq(profissionais.id, pid))
+      .limit(1);
 
-    await db.update(folha).set(patch).where(eq(folha.id, f.id));
+    await db
+      .update(folha)
+      .set({
+        profissional: pr?.nome ?? f.profissional,
+        mes: periodoYmParaMesLegivel(periodo),
+        totalComissao: formatMoedaReciboPt(total),
+        totalPago: formatMoedaReciboPt(pago),
+        saldo: formatMoedaReciboPt(saldo),
+        status,
+      })
+      .where(eq(folha.id, f.id));
+
     atualizadas += 1;
     itens.push({
       folha_id: f.id,
       profissional_id: pid,
-      total_comissao_reais: Math.round(total * 100) / 100,
+      profissional_nome: String(pr?.nome ?? f.profissional ?? '').trim() || '—',
+      total_comissao_reais: total,
+      total_pago_reais: pago,
+      saldo_reais: saldo,
+      status,
       linhas_atendimento: nAt,
     });
   }
@@ -231,6 +385,8 @@ export async function listFolhaPorPeriodoApi(
     throw new Error('periodo inválido: use YYYY-MM (ex.: 2026-04)');
   }
 
+  await recalcularTotaisComissaoFolhaPorPeriodo(db, periodo);
+
   const rows = await db
     .select({
       id: folha.id,
@@ -261,4 +417,82 @@ export async function listFolhaPorPeriodoApi(
     saldo: r.saldo,
     status: r.status,
   }));
+}
+
+export type FinComissaoResumidaItemApi = {
+  folha_id: number;
+  profissional_id: number;
+  profissional_nome: string;
+  periodo_referencia: string;
+  total_comissao: number;
+  total_pago: number;
+  saldo: number;
+  status: string;
+};
+
+/** Resumo mensal (`folha`) para intervalo de competências que intersecta o filtro. */
+export async function listComissoesResumidasApi(
+  db: Db,
+  opts: {
+    dataInicio: string;
+    dataFim: string;
+    profissionalId?: number | null;
+  },
+): Promise<FinComissaoResumidaItemApi[]> {
+  const di = String(opts.dataInicio ?? '').trim().slice(0, 10);
+  const df = String(opts.dataFim ?? '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(di) || !/^\d{4}-\d{2}-\d{2}$/.test(df)) {
+    throw new Error('data_inicio e data_fim são obrigatórias (YYYY-MM-DD)');
+  }
+  if (di > df) {
+    throw new Error('data_inicio não pode ser posterior a data_fim');
+  }
+
+  const profFiltro = Number(opts.profissionalId);
+  const filtrarProf = Number.isFinite(profFiltro) && profFiltro > 0;
+
+  const periodoIni = di.slice(0, 7);
+  const periodoFim = df.slice(0, 7);
+  const periodos: string[] = [];
+  let [y, m] = periodoIni.split('-').map((x) => parseInt(x, 10));
+  const [yFim, mFim] = periodoFim.split('-').map((x) => parseInt(x, 10));
+  while (y < yFim || (y === yFim && m <= mFim)) {
+    periodos.push(`${y}-${String(m).padStart(2, '0')}`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+
+  const out: FinComissaoResumidaItemApi[] = [];
+  for (const p of periodos) {
+    const r = await recalcularTotaisComissaoFolhaPorPeriodo(
+      db,
+      p,
+      filtrarProf ? { profissionalId: profFiltro } : undefined,
+    );
+    for (const item of r.itens) {
+      if (item.profissional_id == null) continue;
+      out.push({
+        folha_id: item.folha_id,
+        profissional_id: item.profissional_id,
+        profissional_nome: item.profissional_nome,
+        periodo_referencia: p,
+        total_comissao: item.total_comissao_reais,
+        total_pago: item.total_pago_reais,
+        saldo: item.saldo_reais,
+        status: item.status,
+      });
+    }
+  }
+
+  out.sort((a, b) => {
+    if (a.periodo_referencia !== b.periodo_referencia) {
+      return a.periodo_referencia < b.periodo_referencia ? 1 : -1;
+    }
+    return a.profissional_nome.localeCompare(b.profissional_nome, 'pt');
+  });
+
+  return out;
 }

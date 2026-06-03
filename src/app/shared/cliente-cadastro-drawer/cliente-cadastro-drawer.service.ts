@@ -48,6 +48,9 @@ import {
   type ClienteVendaHistoricoLinha,
 } from './cliente-vendas.util';
 import { UI_TIP_SHOW_DELAY_MS } from '../ui-tip-trigger/ui-tip-delay';
+import { AppToastService } from '../app-toast/app-toast.service';
+
+export const CLIENTE_SALVO_TOAST_MSG = 'Cliente salvo com sucesso!';
 
 export const DRAWER_ANIM_MS = 430;
 
@@ -112,6 +115,7 @@ export interface ClienteCadastroDrawerAbrirEdicaoOptions {
 export class ClienteCadastroDrawerService {
   private readonly api = inject(SheetsApiService);
   private readonly appRef = inject(ApplicationRef);
+  private readonly toast = inject(AppToastService);
 
   aberto = false;
   panelOpen = false;
@@ -811,6 +815,7 @@ export class ClienteCadastroDrawerService {
     };
 
     const onOk = (salvo?: Cliente): void => {
+      this.exibirToastClienteSalvoComSucesso();
       if (embutido) {
         concluirSalvoEmbutido(salvo);
         return;
@@ -844,6 +849,10 @@ export class ClienteCadastroDrawerService {
     this.saveSub = req
       .pipe(finalize(finalizeFn))
       .subscribe({ next: (salvo) => onOk(salvo), error: onErr });
+  }
+
+  private exibirToastClienteSalvoComSucesso(): void {
+    this.toast.show(CLIENTE_SALVO_TOAST_MSG);
   }
 
   private prefetchClientesParaUnicidade(): void {

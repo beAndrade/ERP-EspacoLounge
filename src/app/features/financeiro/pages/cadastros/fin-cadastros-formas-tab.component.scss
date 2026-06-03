@@ -7,11 +7,8 @@
   display: block;
 }
 
-/* Checkbox 40px, Ações 120px; Nome / Prazo / Taxa repartem o restante. */
+/* Checkbox 40px, Ações 88px; Nome / Prazo / Taxa repartem o restante. */
 .fin-cad-tab__table.list-table {
-  table-layout: fixed;
-  width: 100%;
-
   col.list-table__col-check {
     width: 40px;
   }
@@ -19,11 +16,11 @@
   col.fin-cad-tab__col-nome,
   col.fin-cad-tab__col-prazo,
   col.fin-cad-tab__col-taxa {
-    width: calc((100% - 160px) / 3);
+    width: calc((100% - 128px) / 3);
   }
 
   col.fin-cad-tab__col-acoes {
-    width: 120px;
+    width: clamp(72px, 6vw, 88px);
   }
 
   thead th {
@@ -42,14 +39,8 @@
 
   thead th.col-acoes,
   tbody td.col-acoes {
-    width: 120px;
-    max-width: 120px;
-  }
-
-  .col-acoes {
-    width: 120px;
-    max-width: 120px;
-    text-align: right;
+    width: clamp(72px, 6vw, 88px);
+    max-width: 88px;
   }
 }
 

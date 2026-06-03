@@ -1,0 +1,65 @@
+@import '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss';
+
+/* Drawer profissional — mesma base do cliente, dimensões pedidas. */
+.cliente-drawer.cliente-drawer--profissional.app-drawer {
+  --cliente-drawer-shell-w: 1200px;
+  left: auto;
+  right: 0;
+  width: min(1200px, 100vw);
+  max-width: 100vw;
+
+  .cliente-head {
+    flex: 0 0 80px;
+    min-height: 80px;
+    height: 80px;
+    padding: 0 50px 0 30px;
+    align-items: center;
+  }
+
+  .cliente-head__title-wrap {
+    padding-right: 48px;
+  }
+
+  .cliente-head__close {
+    width: 56px;
+    height: 56px;
+    padding: 16px;
+  }
+
+  /* Nav lateral — mesmo contrato visual do drawer de cliente. */
+  .cliente-nav {
+    --cliente-nav-item-h: 35px;
+    --cliente-nav-gap: 16px;
+    padding: 0 0 0 30px;
+    min-width: 0;
+    max-width: 168px;
+    border-right: 1px solid hsl(220, 13%, 91%);
+  }
+
+  .cliente-nav__item {
+    min-height: var(--cliente-nav-item-h);
+    padding: 0 24px 0 0;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .cliente-nav__item--active {
+    font-weight: 600;
+    color: var(--cliente-accent);
+  }
+
+  .cliente-nav__item--disabled {
+    color: #a1a1aa;
+    cursor: not-allowed;
+  }
+
+  .cliente-body:has(> .cliente-main) {
+    grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1648px) {
+  .cliente-drawer.cliente-drawer--profissional.app-drawer {
+    width: 1200px;
+  }
+}

@@ -14,7 +14,6 @@ import {
   ClientePerfilAba,
   ClientePerfilDrawerComponent,
 } from '../../../../shared/cliente-perfil-drawer/cliente-perfil-drawer.component';
-import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
 import {
@@ -44,7 +43,6 @@ const DRAWER_ANIM_MS = 430;
 export class ClientesComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
-  private readonly toast = inject(AppToastService);
 
   carregando = false;
   erro = '';
@@ -360,7 +358,6 @@ export class ClientesComponent implements OnInit, OnDestroy {
 
   onPerfilClienteSalvoComSucesso(): void {
     this.fecharPerfilCliente();
-    this.toast.show('Cliente salvo com sucesso!');
   }
 
   private abrirPerfilDrawerAnimacao(): void {

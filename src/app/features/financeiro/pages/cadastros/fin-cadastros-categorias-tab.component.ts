@@ -10,8 +10,12 @@ import {
 import { FormsModule } from '@angular/forms';
 import type { FinCategoriaCadastroItem } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { FinCadastroDrawerComponent } from './fin-cadastro-drawer.component';
+
+const CATEGORIA_SALVA_TOAST_MSG = 'Categoria salva com sucesso!';
+const CATEGORIA_EXCLUIDA_TOAST_MSG = 'Categoria excluída com sucesso!';
 
 @Component({
   selector: 'app-fin-cadastros-categorias-tab',
@@ -22,12 +26,12 @@ import { FinCadastroDrawerComponent } from './fin-cadastro-drawer.component';
 })
 export class FinCadastrosCategoriasTabComponent implements OnInit, OnChanges {
   private readonly api = inject(SheetsApiService);
+  private readonly toast = inject(AppToastService);
 
   @Input() busca = '';
 
   readonly carregando = signal(false);
   readonly erro = signal('');
-  readonly mensagem = signal('');
   linhas: FinCategoriaCadastroItem[] = [];
   pagina = 1;
   itensPorPagina = 20;
@@ -41,7 +45,8 @@ export class FinCadastrosCategoriasTabComponent implements OnInit, OnChanges {
   drawerNaturezaBloqueada = false;
   editando: FinCategoriaCadastroItem | null = null;
   readonly drawerSalvando = signal(false);
-  excluindoId: number | null = null;
+  exclusaoModalRow: FinCategoriaCadastroItem | null = null;
+  exclusaoModalSalvando = false;
   drawerAbertoShell = false;
   drawerPanelOpen = false;
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -161,11 +166,10 @@ export class FinCadastrosCategoriasTabComponent implements OnInit, OnChanges {
     natureza?: 'receita' | 'despesa';
   }): void {
     this.drawerSalvando.set(true);
-    this.mensagem.set('');
     const onOk = (): void => {
       this.drawerSalvando.set(false);
       this.fecharDrawer();
-      this.mensagem.set('Categoria salva.');
+      this.toast.show(CATEGORIA_SALVA_TOAST_MSG);
       this.carregar();
     };
     const onErr = (e: Error): void => {
@@ -186,23 +190,35 @@ export class FinCadastrosCategoriasTabComponent implements OnInit, OnChanges {
       .subscribe({ next: onOk, error: onErr });
   }
 
-  excluir(row: FinCategoriaCadastroItem): void {
-    if (row.sistema) return;
-    if (!confirm(`Excluir a categoria «${row.nome}»?`)) return;
-    this.excluindoId = row.id;
+  abrirModalExclusao(row: FinCategoriaCadastroItem): void {
+    this.exclusaoModalRow = row;
+  }
+
+  fecharModalExclusao(): void {
+    if (this.exclusaoModalSalvando) return;
+    this.exclusaoModalRow = null;
+  }
+
+  confirmarModalExclusao(): void {
+    const row = this.exclusaoModalRow;
+    if (!row || this.exclusaoModalSalvando) return;
+    this.exclusaoModalSalvando = true;
+    this.erro.set('');
     this.api.excluirFinCategoria(row.id).subscribe({
       next: (res) => {
-        this.excluindoId = null;
-        this.mensagem.set(
+        this.exclusaoModalSalvando = false;
+        this.exclusaoModalRow = null;
+        this.toast.show(
           res.result === 'deactivated'
             ? 'Categoria desativada (já usada em movimentações).'
-            : 'Categoria excluída.',
+            : CATEGORIA_EXCLUIDA_TOAST_MSG,
         );
         this.carregar();
       },
       error: (e: Error) => {
-        this.excluindoId = null;
-        this.erro.set(e.message || 'Não foi possível excluir.');
+        this.exclusaoModalSalvando = false;
+        this.exclusaoModalRow = null;
+        this.toast.show(e.message || 'Não foi possível excluir.');
       },
     });
   }

@@ -2,13 +2,15 @@
   @if (erro()) {
     <p class="fin-cad-tab__erro" role="alert">{{ erro() }}</p>
   }
-  @if (mensagem()) {
-    <p class="fin-cad-tab__ok">{{ mensagem() }}</p>
-  }
 
   <div class="list-table-card fin-cad-tab__card">
     <div class="table-wrap">
       <table class="list-table fin-cad-tab__table">
+        <colgroup>
+          <col />
+          <col />
+          <col class="fin-cad-tab__col-acoes" />
+        </colgroup>
         <thead>
           <tr>
             <th>Nome</th>
@@ -39,14 +41,17 @@
                   </span>
                 </td>
                 <td class="col-acoes">
-                  <div class="list-row-acoes fin-list-row-acoes">
+                  <div
+                    class="list-row-acoes fin-list-row-acoes"
+                    (click)="$event.stopPropagation()"
+                  >
                     <button
                       type="button"
                       class="list-row-acoes__btn list-row-acoes__btn--edit"
                       (click)="abrirEditar(row)"
                       aria-label="Editar"
                     >
-                      <app-ui-tip-trigger tip="Editar">
+                      <app-ui-tip-trigger tip="Editar" floating>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           width="14"
@@ -68,39 +73,38 @@
                         </svg>
                       </app-ui-tip-trigger>
                     </button>
-                    @if (!row.sistema) {
-                      <span class="list-row-acoes__sep" aria-hidden="true"></span>
-                      <button
-                        type="button"
-                        class="list-row-acoes__btn list-row-acoes__btn--delete"
-                        [disabled]="excluindoId === row.id"
-                        (click)="excluir(row)"
-                        aria-label="Excluir"
-                      >
-                        <app-ui-tip-trigger tip="Excluir" align="end">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path
-                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
-                            />
-                            <path d="M3 6h18" />
-                            <path
-                              d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                            />
-                          </svg>
-                        </app-ui-tip-trigger>
-                      </button>
-                    }
+                    <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                    <button
+                      type="button"
+                      class="list-row-acoes__btn list-row-acoes__btn--delete"
+                      [disabled]="exclusaoModalSalvando && exclusaoModalRow?.id === row.id"
+                      (click)="abrirModalExclusao(row)"
+                      aria-label="Excluir"
+                    >
+                      <app-ui-tip-trigger tip="Excluir" floating>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="lucide lucide-trash-icon lucide-trash"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+                          />
+                          <path d="M3 6h18" />
+                          <path
+                            d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          />
+                        </svg>
+                      </app-ui-tip-trigger>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -187,5 +191,46 @@
       (fechar)="fecharDrawer()"
       (salvar)="salvarDrawer($event)"
     />
+  </div>
+}
+
+@if (exclusaoModalRow) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalExclusao()"
+  ></div>
+  <div
+    class="comandas-modal fin-cad-categorias-exclusao-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmar exclusão"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir essa categoria?
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="exclusaoModalSalvando"
+        (click)="fecharModalExclusao()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="exclusaoModalSalvando"
+        (click)="confirmarModalExclusao()"
+      >
+        {{ exclusaoModalSalvando ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
+    </div>
   </div>
 }

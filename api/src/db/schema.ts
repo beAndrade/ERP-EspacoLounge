@@ -108,7 +108,63 @@ export const profissionais = pgTable('profissionais', {
   nome: text('nome').notNull(),
   /** Inativos permanecem no histórico; não entram em novos atendimentos nem na lista da agenda. */
   ativo: boolean('ativo').notNull().default(true),
+  celular: text('celular'),
+  apelido: text('apelido'),
+  profissao: text('profissao'),
+  aniversario: date('aniversario'),
+  cpfCnpj: text('cpf_cnpj'),
+  rg: text('rg'),
+  anotacoes: text('anotacoes'),
+  /** Persistido; lógica de agendamento online virá depois. */
+  disponivelAgendamentoOnline: boolean('disponivel_agendamento_online')
+    .notNull()
+    .default(true),
+  /** Se false, não entra na grelha/selects da agenda. */
+  gerarAgenda: boolean('gerar_agenda').notNull().default(true),
+  /** Se false, comissão gravada como vazia/0 em novos atendimentos. */
+  recebeComissao: boolean('recebe_comissao').notNull().default(true),
+  /**
+   * Listagem Detalhadas: `pagamento_cliente` (só comandas pagas pelo cliente, padrão)
+   * ou `competencia` (finalizadas no período, sem exigir pagamento do cliente).
+   */
+  comissaoListagemModo: text('comissao_listagem_modo')
+    .notNull()
+    .default('pagamento_cliente'),
 });
+
+/** Override de comissão por profissional + serviço (só afeta novos atendimentos). */
+export const profissionalServicoComissao = pgTable(
+  'profissional_servico_comissao',
+  {
+    id: serial('id').primaryKey(),
+    profissionalId: integer('profissional_id')
+      .notNull()
+      .references(() => profissionais.id, { onDelete: 'cascade' }),
+    servicoId: integer('servico_id')
+      .notNull()
+      .references(() => servicos.id, { onDelete: 'cascade' }),
+    /** `percentual` | `fixo` */
+    tipo: text('tipo').notNull().default('percentual'),
+    /** % (ex. 40) ou valor fixo em reais (ex. 25.00), conforme `tipo`. */
+    valor: text('valor').notNull().default(''),
+    comoAuxiliar: boolean('como_auxiliar').notNull().default(false),
+    /** Base de cálculo reservada (Fase 3); hoje `valor_bruto`. */
+    sobre: text('sobre').notNull().default('valor_bruto'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('profissional_servico_comissao_prof_serv_uq').on(
+      t.profissionalId,
+      t.servicoId,
+    ),
+    index('profissional_servico_comissao_prof_idx').on(t.profissionalId),
+  ],
+);
 
 export const servicos = pgTable('servicos', {
   id: integer('id').primaryKey(),

@@ -55,31 +55,29 @@
                   title="Buscar"
                 />
               </div>
-              @if (!mostrarFormulario) {
-                <button
-                  type="button"
-                  class="list-head__toolbar-btn list-head__toolbar-btn--link"
-                  (click)="abrirNovo()"
+              <button
+                type="button"
+                class="list-head__toolbar-btn list-head__toolbar-btn--link"
+                (click)="abrirNovo()"
+              >
+                <svg
+                  class="list-icon-sm"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
                 >
-                  <svg
-                    class="list-icon-sm"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="M12 5v14" />
-                  </svg>
-                  <span>Novo</span>
-                </button>
-              }
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
+                <span>Novo</span>
+              </button>
             </div>
           </div>
         </header>
@@ -108,48 +106,6 @@
 
       @if (erro) {
         <p class="alert" role="alert">{{ erro }}</p>
-      }
-
-      @if (mostrarFormulario) {
-        <form class="prof-form-painel" (ngSubmit)="salvar()" novalidate>
-          <h2 class="prof-form-painel__titulo">
-            {{ editandoId == null ? 'Novo profissional' : 'Editar profissional' }}
-          </h2>
-          @if (erroForm) {
-            <p class="alert" role="alert">{{ erroForm }}</p>
-          }
-          <label class="prof-form-campo">
-            <span>Nome <span class="prof-form-req">*</span></span>
-            <input
-              type="text"
-              name="nomeProf"
-              [(ngModel)]="formNome"
-              required
-              autocomplete="name"
-            />
-          </label>
-          <label class="prof-form-campo prof-form-campo--check">
-            <input type="checkbox" name="ativoProf" [(ngModel)]="formAtivo" />
-            <span>Ativo</span>
-          </label>
-          <div class="prof-form-acoes">
-            <button
-              type="submit"
-              class="btn"
-              [disabled]="salvando || !formNome.trim()"
-            >
-              {{ salvando ? 'Salvando…' : 'Salvar' }}
-            </button>
-            <button
-              type="button"
-              class="btn outline"
-              (click)="cancelarForm()"
-              [disabled]="salvando"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
       }
 
       @if (!erro) {

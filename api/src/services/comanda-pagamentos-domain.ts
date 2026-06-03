@@ -720,7 +720,7 @@ export async function inserirPagamentoComandaEmTx(
         categoriaId,
         descricao: descricaoMov,
         idAtendimento: id,
-        metodoPagamento: rotuloMetodoComanda(metodo),
+        metodoPagamento: metodoRotulo,
         pagoEm: dataPagamento,
         origem: ORIGEM_COMANDA_PAGAMENTO,
       })
@@ -859,7 +859,7 @@ export async function aplicarCreditoClientePorExcessoEmTx(
     categoriaId,
     descricao: descricaoMov,
     idAtendimento: idAt,
-    metodoPagamento: rotuloMetodoComanda(prep.metodo),
+    metodoPagamento: prep.metodoRotulo,
     pagoEm: prep.dataPagamento,
     origem: ORIGEM_COMANDA_PAGAMENTO,
   });

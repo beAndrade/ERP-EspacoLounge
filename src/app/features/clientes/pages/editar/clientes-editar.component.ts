@@ -8,6 +8,10 @@ import {
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { TelefoneBrMaskDirective } from '../../../../core/directives/telefone-br-mask.directive';
 import { formatarTelefoneBrDeValor } from '../../../../core/utils/telefone-br';
+import {
+  CLIENTE_SALVO_TOAST_MSG,
+} from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 
 @Component({
   selector: 'app-clientes-editar',
@@ -21,6 +25,7 @@ export class ClientesEditarComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly toast = inject(AppToastService);
 
   clienteId = '';
   carregando = true;
@@ -73,6 +78,7 @@ export class ClientesEditarComponent implements OnInit {
       .subscribe({
         next: () => {
           this.salvando = false;
+          this.toast.show(CLIENTE_SALVO_TOAST_MSG);
           void this.router.navigate(['/clientes']);
         },
         error: (e: Error) => {

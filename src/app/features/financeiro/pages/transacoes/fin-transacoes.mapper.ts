@@ -1,4 +1,5 @@
 import type { FinTransacaoItem } from '../../../../core/models/api.models';
+import { calcularValorLiquidoReceita } from '../../../../core/utils/fin-taxa.util';
 
 export interface FinTransacaoLinhaUi {
   id: number;
@@ -43,9 +44,7 @@ function calcularValorLiquido(
   taxaFixa: number,
 ): number {
   if (natureza !== 'receita') return bruto;
-  const pctPart = (bruto * taxaPct) / 100;
-  const taxaReais = pctPart + taxaFixa;
-  return Math.max(0, Math.round((bruto - taxaReais) * 100) / 100);
+  return calcularValorLiquidoReceita(bruto, taxaPct, taxaFixa);
 }
 
 /** Dinheiro/Pix → Caixa; cartão/transferência/débito/crédito → Banco. */

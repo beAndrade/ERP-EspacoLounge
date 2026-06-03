@@ -5,6 +5,8 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { descricaoParaListaLinha } from '../lib/descricao-lista';
 import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
+import { aplicarComissaoProfissionalNoValorServico } from './profissional-comissao-domain.js';
+import { profissionalRecebeComissao } from './profissionais-domain';
 import {
   addMinutesToParts,
   formatSqlLocalDateTime,
@@ -1076,6 +1078,11 @@ async function appendAtendimentoLinha(
     o.quantidade != null && Number.isFinite(o.quantidade) && o.quantidade > 0
       ? Math.trunc(o.quantidade)
       : 1;
+  let comissaoLinha = o.comissao;
+  if (o.profissionalId != null) {
+    const recebe = await profissionalRecebeComissao(db, o.profissionalId);
+    if (!recebe) comissaoLinha = '';
+  }
   await db.insert(atendimentos).values({
     idAtendimento: o.idAt,
     data: dataSql,
@@ -1092,7 +1099,7 @@ async function appendAtendimentoLinha(
     profissionalId: o.profissionalId,
     valor: o.valor,
     valorManual: o.valorManual ?? '',
-    comissao: normalizeComissaoParaBD(o.comissao),
+    comissao: normalizeComissaoParaBD(comissaoLinha),
     quantidade: qtdLinha,
     desconto: descontoCriacaoParaBD(o.desconto),
     descricao: o.descricao,
@@ -1254,7 +1261,7 @@ async function createAtendimentoServico(
     if (!legacy && cat === 'Tamanho' && !tamanhoParam) {
       tamanhoParam = 'Curto';
     }
-    const vc = valorEComissaoServico(
+    let vc = valorEComissaoServico(
       srv,
       cat,
       tamanhoParam || 'Curto',
@@ -1272,6 +1279,14 @@ async function createAtendimentoServico(
         'Profissional é obrigatório (profissional_id no item ou no corpo)',
       );
     }
+
+    const comissaoOv = await aplicarComissaoProfissionalNoValorServico(
+      db,
+      profissionalId,
+      srv.id,
+      { valor: vc.valor, comissao: vc.comissao },
+    );
+    vc = { ...vc, valor: comissaoOv.valor, comissao: comissaoOv.comissao };
 
     const qtd = it.quantidade;
     const vNum = toNumberPt(vc.valor);

@@ -1,0 +1,94 @@
+<main class="cliente-main prof-comissoes-servicos">
+  <div class="prof-comissoes-servicos__toolbar">
+    <p class="prof-comissoes-intro">
+      Comissão por serviço para este profissional. Se existir linha aqui, ela
+      substitui o catálogo global ao incluir o serviço numa comanda (só linhas
+      novas).
+    </p>
+    <button
+      type="button"
+      class="cliente-footer-btn cliente-footer-btn--ghost prof-comissoes-servicos__import"
+      [disabled]="d.salvando || d.comissaoServicosImportando"
+      (click)="d.importarComissaoServicosCatalogo()"
+    >
+      {{
+        d.comissaoServicosImportando
+          ? 'Importando…'
+          : 'Importar do catálogo'
+      }}
+    </button>
+  </div>
+
+  @if (d.comissaoServicosCarregando) {
+    <p class="cliente-tab-placeholder">Carregando serviços…</p>
+  } @else if (d.comissaoServicosItens.length === 0) {
+    <p class="cliente-tab-placeholder">
+      Nenhum serviço configurado. Use «Importar do catálogo» para copiar % ou
+      valor fixo de cada serviço do cadastro global.
+    </p>
+  } @else {
+    <div class="prof-comissoes-table-wrap">
+      <table class="prof-comissoes-table">
+        <thead>
+          <tr>
+            <th scope="col">Serviço</th>
+            <th scope="col">Tipo</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Auxiliar</th>
+            <th scope="col"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of d.comissaoServicosItens; track row.servico_id) {
+            <tr>
+              <td class="prof-comissoes-table__nome">{{ row.servico_nome }}</td>
+              <td>
+                <select
+                  class="prof-comissoes-table__select"
+                  [(ngModel)]="row.tipo"
+                  [name]="'tipo_' + row.servico_id"
+                  [disabled]="d.salvando"
+                >
+                  <option value="percentual">Percentual</option>
+                  <option value="fixo">Fixo</option>
+                </select>
+              </td>
+              <td>
+                <label class="sr-only">{{ labelValor(row.tipo) }}</label>
+                <input
+                  type="number"
+                  class="prof-comissoes-table__input"
+                  [(ngModel)]="row.valor"
+                  [name]="'valor_' + row.servico_id"
+                  min="0"
+                  step="0.01"
+                  [disabled]="d.salvando"
+                />
+              </td>
+              <td class="prof-comissoes-table__check">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="row.como_auxiliar"
+                  [name]="'aux_' + row.servico_id"
+                  [disabled]="d.salvando"
+                  aria-label="Comissão como auxiliar"
+                />
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="prof-comissoes-table__remove"
+                  [disabled]="d.salvando"
+                  (click)="d.removerComissaoServicoLinha(row.servico_id)"
+                  [attr.aria-label]="'Remover ' + row.servico_nome"
+                >
+                  Remover
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</main>

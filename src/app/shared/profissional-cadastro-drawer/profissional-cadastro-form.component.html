@@ -1,0 +1,325 @@
+@if (d.carregando) {
+  <p class="cliente-tab-placeholder">Carregando…</p>
+} @else {
+  <div class="cliente-cadastro-form__cols">
+    <main class="cliente-main">
+      <div class="cliente-photo-block">
+        <div class="cliente-photo" aria-hidden="true">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-user-round-icon lucide-user-round"
+          >
+            <circle cx="12" cy="8" r="5" />
+            <path d="M20 21a8 8 0 0 0-16 0" />
+          </svg>
+        </div>
+        <div class="cliente-photo-actions">
+          <button
+            type="button"
+            class="cliente-photo-btn cliente-photo-btn--primary"
+            disabled
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" x2="12" y1="3" y2="15" />
+            </svg>
+            Alterar
+          </button>
+        </div>
+      </div>
+
+      <div class="cliente-form-grid">
+        <div
+          class="cliente-field cliente-field--full"
+          [class.cliente-field--error]="d.erroNome()"
+        >
+          <label class="cliente-field__inner">
+            <span class="cliente-field-label cliente-field-label--required"
+              >Nome</span
+            >
+            <input
+              type="text"
+              [(ngModel)]="d.cadastroNome"
+              name="prof_nome"
+              autocomplete="name"
+              placeholder="Nome"
+              [disabled]="d.salvando"
+            />
+            @if (d.erroNome(); as errNome) {
+              <span class="cliente-field__error-msg" role="alert">{{
+                errNome
+              }}</span>
+            }
+          </label>
+        </div>
+
+        <div class="cliente-field cliente-field--full">
+          <label class="cliente-field__inner">
+            <span class="cliente-field-label">Apelido</span>
+            <input
+              type="text"
+              [(ngModel)]="d.cadastroApelido"
+              name="prof_apelido"
+              autocomplete="nickname"
+              placeholder="Apelido"
+              [disabled]="d.salvando"
+            />
+          </label>
+        </div>
+
+        <div class="cliente-form-row cliente-form-row--pair">
+          <div
+            class="cliente-field"
+            [class.cliente-field--error]="d.erroCelular()"
+          >
+            <label class="cliente-field__inner">
+              <span class="cliente-field-label cliente-field-label--required"
+                >Celular</span
+              >
+              <div
+                class="cliente-phone-input"
+                [class.cliente-field__control--error]="d.erroCelular()"
+              >
+                <input
+                  type="tel"
+                  [ngModel]="d.cadastroCelular"
+                  (ngModelChange)="d.onCelularChange($event)"
+                  name="prof_celular"
+                  inputmode="numeric"
+                  autocomplete="tel-national"
+                  maxlength="16"
+                  placeholder="(11) 99999-9999"
+                  [disabled]="d.salvando"
+                />
+              </div>
+              @if (d.erroCelular(); as errCel) {
+                <span class="cliente-field__error-msg" role="alert">{{
+                  errCel
+                }}</span>
+              }
+            </label>
+          </div>
+          <div class="cliente-field">
+            <label class="cliente-field__inner">
+              <span class="cliente-field-label">Profissão</span>
+              <input
+                type="text"
+                [(ngModel)]="d.cadastroProfissao"
+                name="prof_profissao"
+                placeholder="Profissão"
+                [disabled]="d.salvando"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div class="cliente-form-row cliente-form-row--pair">
+          <div class="cliente-field">
+            <label class="cliente-field__inner">
+              <span class="cliente-field-label">Aniversário</span>
+              <input
+                type="text"
+                [ngModel]="d.cadastroAniversario"
+                (ngModelChange)="d.onAniversarioInput($event)"
+                name="prof_aniversario"
+                placeholder="dd/mm/aaaa"
+                inputmode="numeric"
+                maxlength="10"
+                autocomplete="bday"
+                [disabled]="d.salvando"
+              />
+            </label>
+          </div>
+          <div class="cliente-field">
+            <label class="cliente-field__inner">
+              <span class="cliente-field-label">CPF/CNPJ</span>
+              <input
+                type="text"
+                [ngModel]="d.cadastroCpfCnpj"
+                (ngModelChange)="d.onCpfCnpjInput($event)"
+                name="prof_cpf_cnpj"
+                placeholder="CPF ou CNPJ"
+                inputmode="numeric"
+                autocomplete="off"
+                [disabled]="d.salvando"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div class="cliente-field cliente-field--full">
+          <label class="cliente-field__inner">
+            <span class="cliente-field-label">RG</span>
+            <input
+              type="text"
+              [ngModel]="d.cadastroRg"
+              (ngModelChange)="d.onRgInput($event)"
+              name="prof_rg"
+              placeholder="00.000.000-0"
+              inputmode="numeric"
+              maxlength="12"
+              autocomplete="off"
+              [disabled]="d.salvando"
+            />
+          </label>
+        </div>
+
+        <div class="cliente-field cliente-field--full">
+          <label class="cliente-field__inner">
+            <span class="cliente-field-label">Anotações</span>
+            <textarea
+              [(ngModel)]="d.cadastroAnotacoes"
+              name="prof_anotacoes"
+              rows="3"
+              placeholder="Anotações"
+              [disabled]="d.salvando"
+            ></textarea>
+          </label>
+        </div>
+      </div>
+    </main>
+
+    <aside class="cliente-side" aria-label="Configurações">
+      <div class="cliente-side-block cliente-side-block--last">
+        <div class="cliente-side-block__head">
+          <button
+            type="button"
+            class="cliente-side-title"
+            [attr.aria-expanded]="d.secaoConfiguracoesAberta"
+            (click)="d.secaoConfiguracoesAberta = !d.secaoConfiguracoesAberta"
+          >
+            Configurações
+            <span
+              class="cliente-side-chevron"
+              [class.cliente-side-chevron--open]="d.secaoConfiguracoesAberta"
+            ></span>
+          </button>
+        </div>
+        <div
+          class="cliente-side-content cliente-side-content--settings"
+          [class.cliente-side-content--open]="d.secaoConfiguracoesAberta"
+          [attr.aria-hidden]="!d.secaoConfiguracoesAberta"
+        >
+          <div class="cliente-switch-block">
+            <div class="block-toggles block-toggles--inline" role="group">
+              <div class="toggle-switch toggle-switch--inline">
+                <span
+                  class="toggle toggle--liquid"
+                  role="switch"
+                  tabindex="0"
+                  [class.active]="d.ativo"
+                  [class.toggle--liq-armed]="d.ativoToggleLiqArmed"
+                  [attr.aria-checked]="d.ativo"
+                  aria-label="Ativar ou desativar profissional"
+                  (click)="d.onAtivoToggleClick($event)"
+                  (keydown)="d.onAtivoToggleKeydown($event)"
+                ></span>
+              </div>
+            </div>
+            <div class="cliente-switch-block__labels">
+              <span class="cliente-switch-block__title">Ativo</span>
+              <p class="cliente-switch-block__hint">
+                Um profissional desativado não será listado para realizar
+                agendamentos, comandas etc.
+              </p>
+            </div>
+          </div>
+
+          <div class="cliente-switch-block">
+            <div class="block-toggles block-toggles--inline" role="group">
+              <div class="toggle-switch toggle-switch--inline">
+                <span
+                  class="toggle toggle--liquid"
+                  role="switch"
+                  tabindex="0"
+                  [class.active]="d.disponivelAgendamentoOnline"
+                  [class.toggle--liq-armed]="d.disponivelAgendamentoOnlineToggleLiqArmed"
+                  [attr.aria-checked]="d.disponivelAgendamentoOnline"
+                  aria-label="Disponível para agendamento online"
+                  (click)="d.onDisponivelAgendamentoOnlineToggleClick($event)"
+                  (keydown)="d.onDisponivelAgendamentoOnlineToggleKeydown($event)"
+                ></span>
+              </div>
+            </div>
+            <div class="cliente-switch-block__labels">
+              <span class="cliente-switch-block__title"
+                >Disponível para agendamento online</span
+              >
+              <p class="cliente-switch-block__hint">
+                Clientes poderão escolher este profissional para agendamentos
+                online (em breve).
+              </p>
+            </div>
+          </div>
+
+          <div class="cliente-switch-block">
+            <div class="block-toggles block-toggles--inline" role="group">
+              <div class="toggle-switch toggle-switch--inline">
+                <span
+                  class="toggle toggle--liquid"
+                  role="switch"
+                  tabindex="0"
+                  [class.active]="d.gerarAgenda"
+                  [class.toggle--liq-armed]="d.gerarAgendaToggleLiqArmed"
+                  [attr.aria-checked]="d.gerarAgenda"
+                  aria-label="Gerar agenda"
+                  (click)="d.onGerarAgendaToggleClick($event)"
+                  (keydown)="d.onGerarAgendaToggleKeydown($event)"
+                ></span>
+              </div>
+            </div>
+            <div class="cliente-switch-block__labels">
+              <span class="cliente-switch-block__title">Gerar agenda</span>
+              <p class="cliente-switch-block__hint">
+                Caso esteja desativado não será gerada agenda para este
+                profissional.
+              </p>
+            </div>
+          </div>
+
+          <div class="cliente-switch-block">
+            <div class="block-toggles block-toggles--inline" role="group">
+              <div class="toggle-switch toggle-switch--inline">
+                <span
+                  class="toggle toggle--liquid"
+                  role="switch"
+                  tabindex="0"
+                  [class.active]="d.recebeComissao"
+                  [class.toggle--liq-armed]="d.recebeComissaoToggleLiqArmed"
+                  [attr.aria-checked]="d.recebeComissao"
+                  aria-label="Recebe comissão"
+                  (click)="d.onRecebeComissaoToggleClick($event)"
+                  (keydown)="d.onRecebeComissaoToggleKeydown($event)"
+                ></span>
+              </div>
+            </div>
+            <div class="cliente-switch-block__labels">
+              <span class="cliente-switch-block__title">Recebe comissão</span>
+              <p class="cliente-switch-block__hint">
+                Desmarque se o profissional não recebe comissão.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+}

@@ -263,6 +263,24 @@
   .badge {
     pointer-events: none;
   }
+
+  /* Filtro Status: só texto, sem ícone de relógio (tabela mantém o ícone). */
+  .badge--atraso::before {
+    content: none;
+    display: none;
+    width: 0;
+    height: 0;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .badge--atraso {
+    gap: 0;
+  }
+
+  .badge--ok .badge__icon {
+    display: none;
+  }
 }
 
 .fin-filtros-radio-list {

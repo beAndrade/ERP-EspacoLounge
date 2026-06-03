@@ -1,0 +1,67 @@
+@if (d.carregando) {
+  <p class="cliente-tab-placeholder">Carregando…</p>
+} @else {
+  <main class="cliente-main prof-comissoes-config">
+    <p class="prof-comissoes-intro">
+      Define como as comissões deste profissional aparecem em
+      <strong>Financeiro → Comissões</strong>. Alterações valem para novas
+      listagens; valores já gravados em atendimentos não são recalculados.
+    </p>
+
+    <div class="cliente-switch-block">
+      <div class="block-toggles block-toggles--inline" role="group">
+        <div class="toggle-switch toggle-switch--inline">
+          <span
+            class="toggle toggle--liquid"
+            role="switch"
+            tabindex="0"
+            [class.active]="d.recebeComissao"
+            [class.toggle--liq-armed]="d.recebeComissaoToggleLiqArmed"
+            [attr.aria-checked]="d.recebeComissao"
+            aria-label="Recebe comissão"
+            (click)="d.onRecebeComissaoToggleClick($event)"
+            (keydown)="d.onRecebeComissaoToggleKeydown($event)"
+          ></span>
+        </div>
+      </div>
+      <div class="cliente-switch-block__labels">
+        <span class="cliente-switch-block__title">Recebe comissão</span>
+        <p class="cliente-switch-block__hint">
+          Profissionais sem comissão não entram nos totais de comissões.
+        </p>
+      </div>
+    </div>
+
+    <fieldset class="prof-comissoes-fieldset">
+      <legend class="prof-comissoes-fieldset__legend">
+        Quando listar comissões (aba Detalhadas)
+      </legend>
+      <label class="prof-comissoes-radio">
+        <input
+          type="radio"
+          name="comissao_listagem_modo"
+          value="pagamento_cliente"
+          [(ngModel)]="d.comissaoListagemModo"
+          [disabled]="d.salvando"
+        />
+        <span class="prof-comissoes-radio__text">
+          <strong>Após o cliente pagar</strong> (padrão) — só comandas com
+          pagamento do cliente confirmado, salvo «mostrar anteriores».
+        </span>
+      </label>
+      <label class="prof-comissoes-radio">
+        <input
+          type="radio"
+          name="comissao_listagem_modo"
+          value="competencia"
+          [(ngModel)]="d.comissaoListagemModo"
+          [disabled]="d.salvando"
+        />
+        <span class="prof-comissoes-radio__text">
+          <strong>Por data do atendimento</strong> — comandas finalizadas no
+          período, mesmo sem pagamento do cliente.
+        </span>
+      </label>
+    </fieldset>
+  </main>
+}

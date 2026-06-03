@@ -19,6 +19,13 @@ export interface MetodoComandaOpcaoUi {
   value: MetodoPagamentoComanda;
   rotulo: string;
   grupo: MetodoComandaGrupo;
+  taxa_percentual: number;
+  taxa_fixa: number;
+}
+
+export interface FormaTaxaConfig {
+  pct: number;
+  fixa: number;
 }
 
 export function grupoMetodoComanda(codigo: string): MetodoComandaGrupo {
@@ -39,6 +46,8 @@ export function mapFormasParaMetodosComanda(
       value: c,
       rotulo: i.nome,
       grupo: grupoMetodoComanda(c),
+      taxa_percentual: Number(i.taxa_percentual) || 0,
+      taxa_fixa: Number(i.taxa_fixa) || 0,
     });
   }
   return out;
@@ -46,6 +55,41 @@ export function mapFormasParaMetodosComanda(
 
 export function mapFormasParaNomes(items: FinFormaPagamentoOpcaoItem[]): string[] {
   return items.map((i) => i.nome);
+}
+
+export function taxaPorMetodoComanda(
+  items: FinFormaPagamentoOpcaoItem[],
+  metodo: MetodoPagamentoComanda,
+): FormaTaxaConfig {
+  const row = items.find((i) => i.codigo_interno === metodo);
+  return {
+    pct: row ? Number(row.taxa_percentual) || 0 : 0,
+    fixa: row ? Number(row.taxa_fixa) || 0 : 0,
+  };
+}
+
+export function taxaPorMetodoComandaUi(
+  opcoes: MetodoComandaOpcaoUi[],
+  metodo: MetodoPagamentoComanda,
+): FormaTaxaConfig {
+  const row = opcoes.find((o) => o.value === metodo);
+  return {
+    pct: row?.taxa_percentual ?? 0,
+    fixa: row?.taxa_fixa ?? 0,
+  };
+}
+
+export function taxaPorNomeForma(
+  items: FinFormaPagamentoOpcaoItem[],
+  nome: string,
+): FormaTaxaConfig {
+  const n = nome.trim().toLowerCase();
+  if (!n) return { pct: 0, fixa: 0 };
+  const row = items.find((i) => i.nome.trim().toLowerCase() === n);
+  return {
+    pct: row ? Number(row.taxa_percentual) || 0 : 0,
+    fixa: row ? Number(row.taxa_fixa) || 0 : 0,
+  };
 }
 
 export function rotulosMetodoComandaFromFormas(
@@ -61,13 +105,43 @@ export function rotulosMetodoComandaFromFormas(
 
 /** Fallback quando a API ainda não tem formas (ex.: migration pendente). */
 export const METODOS_COMANDA_FALLBACK: MetodoComandaOpcaoUi[] = [
-  { value: 'dinheiro', rotulo: 'Dinheiro', grupo: 'dinheiro' },
-  { value: 'cartao_credito', rotulo: 'Cartão de crédito', grupo: 'cartao' },
-  { value: 'cartao_debito', rotulo: 'Cartão de débito', grupo: 'outros' },
-  { value: 'pix', rotulo: 'Pix', grupo: 'pix' },
-  { value: 'pendente', rotulo: 'Pendente', grupo: 'outros' },
-  { value: 'transferencia', rotulo: 'Transferência', grupo: 'outros' },
-  { value: 'outros', rotulo: 'Outros', grupo: 'outros' },
+  {
+    value: 'dinheiro',
+    rotulo: 'Dinheiro',
+    grupo: 'dinheiro',
+    taxa_percentual: 0,
+    taxa_fixa: 0,
+  },
+  {
+    value: 'cartao_credito',
+    rotulo: 'Cartão de crédito',
+    grupo: 'cartao',
+    taxa_percentual: 3,
+    taxa_fixa: 0,
+  },
+  {
+    value: 'cartao_debito',
+    rotulo: 'Cartão de débito',
+    grupo: 'outros',
+    taxa_percentual: 1.5,
+    taxa_fixa: 0,
+  },
+  { value: 'pix', rotulo: 'Pix', grupo: 'pix', taxa_percentual: 0, taxa_fixa: 0 },
+  {
+    value: 'pendente',
+    rotulo: 'Pendente',
+    grupo: 'outros',
+    taxa_percentual: 0,
+    taxa_fixa: 0,
+  },
+  {
+    value: 'transferencia',
+    rotulo: 'Transferência',
+    grupo: 'outros',
+    taxa_percentual: 0,
+    taxa_fixa: 0,
+  },
+  { value: 'outros', rotulo: 'Outros', grupo: 'outros', taxa_percentual: 0, taxa_fixa: 0 },
 ];
 
 export const METODOS_NOME_FALLBACK = [

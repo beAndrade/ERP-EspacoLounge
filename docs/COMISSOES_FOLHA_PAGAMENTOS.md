@@ -1,83 +1,66 @@
 # Comissões: `atendimentos`, `folha` e `pagamentos`
 
+Regras de configuração (override por profissional/serviço, modos de listagem): ver [COMISSOES_REGRAS_NEGOCIO.md](./COMISSOES_REGRAS_NEGOCIO.md).
+
 ## Papéis
 
 | Tabela | Papel |
 |--------|--------|
-| **`atendimentos`** | Fonte de verdade **por linha de serviço**: `profissional_id` (quem executou), `valor`, `comissao` (texto já normalizado para BD), `data`, `cobranca_status` / `pagamento_status` (ciclo de cobrança **do cliente**). A comissão da profissional nasce aqui quando o pedido é montado (catálogo / regras Mega). |
-| **`folha`** | **Resumo mensal por profissional** (legado da planilha “Folha”): totais esperados ou consolidados (`total_comissao`, `total_pago`, `saldo`, `status`). Deve alinhar-se logicamente com a **soma das comissões** em `atendimentos` do mesmo `profissional_id` e **competência** (mês civil da `data`). O campo `periodo_referencia` (`YYYY-MM`) liga explicitamente a linha da folha ao mês. |
-| **`pagamentos`** | **Pagamento à profissional** (saída do salão): cada registo é um pagamento efetuado (valor, data, tipo, observação). `profissional_id` identifica a beneficiária; `folha_id` (opcional) associa o pagamento à **linha de folha** do mês que está a ser quitado. `mes_ref` mantém-se como texto legado compatível com a planilha. |
+| **`atendimentos`** | Fonte de verdade **por linha de serviço**: `profissional_id`, `valor`, `comissao`, `data`, `cobranca_status`, `comissao_paga_em` (quando a profissional já recebeu). |
+| **`folha`** | **Resumo mensal por profissional** (competência `periodo_referencia` = `YYYY-MM` da `data` do atendimento). Sincronizado automaticamente: `total_comissao`, `total_pago`, `saldo`, `status`. |
+| **`pagamentos`** | Pagamento efetuado à profissional. No fluxo de Comissões: `folha_id`, `mes_ref`, observação `mov:{id};atend:{ids}`. |
+| **`movimentacoes`** | Despesa financeira (`origem = comissao_pagamento`) espelhando o pagamento. |
 
-## Fluxo de dados
+## Fluxo operacional (uso diário)
 
-1. **Gerar comissão**: ao criar/finalizar linhas em `atendimentos`, preenche-se `comissao` (regra do serviço / Mega / Pacote).
-2. **Conferir / fechar mês na folha**: agregação por `profissional_id` + `periodo_referencia` (derivado de `atendimentos.data`), comparando com `folha.total_comissao` (pode ser recalculada por job ou API).
-3. **Pagar profissional**: inserir linha em `pagamentos` com `valor`, `profissional_id`, opcionalmente `folha_id`; atualizar `folha.total_pago` / `saldo` conforme o processo interno.
+1. **Comanda / agenda** — serviço finalizado → linha em `atendimentos` com `comissao` e `cobranca_status = finalizada`. Folha do mês é recalculada.
+2. **Cliente paga a comanda** — `comanda_pagamentos` atualizado. A aba **Detalhadas** (padrão) só lista comissões de comandas **pagas pelo cliente**.
+3. **Pagar comissão à profissional** — tela Comissões → selecionar linhas → `POST /api/financeiro/comissoes/pagar`:
+   - Preenche `atendimentos.comissao_paga_em`
+   - Cria `movimentacoes` + `pagamentos` (com `folha_id` do mês principal do lote)
+   - Recalcula `folha` nos meses de competência afetados
+4. **Histórico** — aba **Pagas** (`GET /api/financeiro/comissoes/pagas`).
+5. **Estorno** — menu Ações na aba Pagas → `POST /api/financeiro/comissoes/estornar` → limpa `comissao_paga_em` e recalcula folha.
 
-## Relacionamento lógico (sem FK em `atendimentos`)
+## Sincronização da folha
 
-Não é obrigatório FK de `atendimentos` → `folha`: a competência é `(profissional_id, date_trunc('month', data))`. A folha é um **agregado** (e eventualmente cache) desse conjunto.
+`recalcularTotaisComissaoFolhaPorPeriodo(periodo YYYY-MM)`:
 
-## Exemplo de agregação (referência SQL)
+| Campo | Origem |
+|-------|--------|
+| `total_comissao` | Soma `atendimentos.comissao` (finalizadas, comissão > 0) no mês |
+| `total_pago` | Soma das mesmas linhas com `comissao_paga_em` preenchido |
+| `saldo` | `total_comissao − total_pago` (mín. 0) |
+| `status` | `pendente` · `parcial` · `quitado` · `sem_comissao` |
 
-```sql
--- Comissões por profissional e mês (valores ainda em texto; normalização numérica na aplicação)
-SELECT
-  a.profissional_id,
-  to_char(date_trunc('month', a.data::timestamp), 'YYYY-MM') AS competencia,
-  COUNT(*) AS linhas,
-  SUM(length(trim(coalesce(a.comissao, '')))) AS tem_comissao_preenchida
-FROM atendimentos a
-WHERE a.profissional_id IS NOT NULL
-  AND a.data IS NOT NULL
-  AND lower(coalesce(a.cobranca_status, '')) = 'finalizada'
-GROUP BY 1, 2;
+Chamado automaticamente após pagar/estornar comissões, finalizar comanda e via `POST /api/folha/recalcular-comissoes`.
+
+## APIs de Comissões
+
+| Método | Rota | Uso |
+|--------|------|-----|
+| GET | `/api/financeiro/comissoes/detalhadas` | Linhas a pagar (aba Detalhadas) |
+| GET | `/api/financeiro/comissoes/pagas` | Lotes pagos (aba Pagas) |
+| GET | `/api/financeiro/comissoes/resumidas` | Resumo folha no período (sidebar) |
+| POST | `/api/financeiro/comissoes/pagar` | Registrar pagamento |
+| POST | `/api/financeiro/comissoes/estornar` | Estornar lote |
+| POST | `/api/folha/recalcular-comissoes` | Forçar recálculo de um mês |
+
+## Diferença folha vs Detalhadas
+
+- **Folha** inclui **todas** as comissões de serviços finalizados no mês (independente do cliente ter pago).
+- **Detalhadas** (padrão) exige comanda **paga pelo cliente** e `comissao_paga_em` vazio.
+- Checkbox **Mostrar comissões anteriores** inclui comissões de comandas ainda não pagas pelo cliente.
+
+## Primeira utilização / dados existentes
+
+Para alinhar linhas de `folha` já existentes:
+
+```http
+POST /api/folha/recalcular-comissoes
+Content-Type: application/json
+
+{ "periodo": "2026-05" }
 ```
 
-(Um passo seguinte típico é coluna `comissao_valor numeric` ou view materializada com parse em PT-BR.)
-
-## Diagrama
-
-```mermaid
-erDiagram
-  profissionais ||--o{ atendimentos : "executa"
-  profissionais ||--o{ folha : "resumo_mes"
-  profissionais ||--o{ pagamentos : "beneficiaria"
-  folha ||--o{ pagamentos : "quita_mes_opcional"
-  atendimentos {
-    int profissional_id FK
-    text comissao
-    date data
-    text cobranca_status
-  }
-  folha {
-    int profissional_id FK
-    text periodo_referencia "YYYY-MM"
-    text total_comissao
-    text total_pago
-    text saldo
-  }
-  pagamentos {
-    int profissional_id FK
-    int folha_id FK
-    text valor
-    text mes_ref
-  }
-```
-
-## Recálculo via API
-
-`POST /api/folha/recalcular-comissoes`
-
-Corpo JSON:
-
-- `periodo` (obrigatório): `YYYY-MM` (ex.: `2026-04`).
-- `profissional_id` (opcional): limita atendimentos e linhas de folha a essa profissional.
-
-Comportamento: soma `comissao` das linhas de `atendimentos` com `cobranca_status = finalizada`, `profissional_id` definido e `data` no mês; atualiza `folha.total_comissao` nas linhas cuja `periodo_referencia` coincide. Se `total_pago` for legível como valor, atualiza também `saldo` (comissão − pago).
-
-## Próximos passos sugeridos
-
-- Botão na UI de folha que chame este endpoint.
-- Tipo `numeric` para totais e valores de pagamento (migração gradual a partir de `text`).
-- Tabela de **auditoria** `folha_historico` se precisarem de rastrear alterações manuais na folha.
+Repita para cada mês em uso ou chame após importação de planilha.

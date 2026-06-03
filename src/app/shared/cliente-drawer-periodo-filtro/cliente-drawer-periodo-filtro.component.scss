@@ -3,6 +3,17 @@
   position: relative;
 }
 
+/** Acima do backdrop portalizado (1095) — cliques na barra/sidebar não fecham o painel. */
+:host(:has(.periodo-filtro--bar-ativo)) {
+  position: relative;
+  z-index: 1102;
+}
+
+.periodo-filtro--bar-ativo {
+  position: relative;
+  z-index: 1;
+}
+
 $periodo-easing: cubic-bezier(0.22, 1, 0.36, 1);
 $periodo-anim: 0.34s $periodo-easing;
 $periodo-accent: #393ed4;
@@ -53,7 +64,7 @@ $periodo-row-gap: 6px;
   left: 0;
   bottom: 0;
   width: 100%;
-  height: var(--periodo-field-line);
+  height: var(--periodo-field-line, 2.5px);
   margin: 0;
   padding: 0;
   border: none;
@@ -62,11 +73,107 @@ $periodo-row-gap: 6px;
   pointer-events: none;
   z-index: 3;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transform: scaleX(0);
+  transform-origin: center bottom;
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.22s ease;
 }
 
-.periodo-filtro__field:focus-within .periodo-filtro__underline {
+.periodo-filtro__field:focus-within .periodo-filtro__underline,
+.periodo-filtro__field--ativo .periodo-filtro__underline {
   opacity: 1;
+  transform: scaleX(1);
+}
+
+/** Barra com sublinhado no rodapé (padrão, centro, sidebar comissões, transações…). */
+.periodo-filtro--underline-bar {
+  --periodo-field-line: 2.5px;
+  --periodo-field-pad-b: 0.32rem;
+
+  .periodo-filtro__bar {
+    align-items: flex-end;
+    overflow: visible;
+  }
+
+  .periodo-filtro__inputs {
+    align-items: center;
+    align-self: flex-end;
+    padding-bottom: 0;
+  }
+
+  .periodo-filtro__field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    align-self: center;
+    padding-bottom: var(--periodo-field-pad-b);
+  }
+
+  .periodo-filtro__input {
+    padding: 0.1rem 0.08rem 0;
+  }
+
+  .periodo-filtro__sep {
+    align-self: center;
+    margin-bottom: var(--periodo-field-pad-b);
+  }
+
+  .periodo-filtro__cal-btn,
+  .periodo-filtro__cal-icon {
+    align-self: center;
+    margin-bottom: var(--periodo-field-pad-b);
+  }
+}
+
+.periodo-filtro--sublinhado-slide {
+  .periodo-filtro__inputs {
+    position: relative;
+    align-self: center;
+    box-sizing: border-box;
+    padding-bottom: 0;
+  }
+
+  &.periodo-filtro--underline-bar {
+    .periodo-filtro__field {
+      padding-bottom: 0;
+    }
+
+    .periodo-filtro__sep {
+      margin-bottom: 0;
+    }
+  }
+
+  .periodo-filtro__field .periodo-filtro__underline {
+    display: none;
+  }
+
+  .periodo-filtro__underline-slide {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: var(--periodo-field-line, 3px);
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: var(--color-primary, $periodo-accent);
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0;
+    transition:
+      left 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease,
+      background-color 0.22s ease;
+
+    &--visivel {
+      opacity: 1;
+    }
+  }
 }
 
 .periodo-filtro__input {
@@ -113,6 +220,25 @@ $periodo-row-gap: 6px;
   }
 }
 
+.periodo-filtro__cal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0 0 0 0.15rem;
+  color: #9ca3af;
+  line-height: 0;
+  pointer-events: none;
+  user-select: none;
+
+  svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+}
+
 .periodo-filtro__backdrop {
   position: fixed;
   inset: 0;
@@ -128,7 +254,8 @@ $periodo-row-gap: 6px;
 
   &--open {
     opacity: 1;
-    pointer-events: auto;
+    /** Fechar via `fecharSeCliqueFora` — evita bloquear o outro input da barra. */
+    pointer-events: none;
   }
 }
 
@@ -185,6 +312,21 @@ $periodo-row-gap: 6px;
 .periodo-filtro__backdrop--portal.periodo-filtro__backdrop--open {
   background: rgba(15, 23, 42, 0.35);
 }
+
+.periodo-filtro__backdrop--transparente {
+  &.periodo-filtro__backdrop--open,
+  &.periodo-filtro__backdrop--portal.periodo-filtro__backdrop--open {
+    background: transparent;
+  }
+}
+
+.periodo-filtro__backdrop--comissoes-sidebar {
+  &.periodo-filtro__backdrop--open,
+  &.periodo-filtro__backdrop--portal.periodo-filtro__backdrop--open {
+    box-shadow: 0 1px 4px rgba(129, 23, 65, 0.18);
+  }
+}
+
 
 .periodo-filtro__panel--portal {
   z-index: 1100;
@@ -462,6 +604,179 @@ $periodo-row-gap: 6px;
     &:hover {
       background: transparent;
       color: #811741;
+    }
+  }
+}
+
+/* Sidebar compacta — financeiro comissões (barra única + seta + sublinhado deslizante) */
+.periodo-filtro--comissoes-sidebar {
+  display: block;
+  width: 100%;
+
+  --periodo-field-line: 2.5px;
+  --periodo-bar-pad-x: 1.6rem;
+  --periodo-bar-pad-shift: 0.35rem;
+
+  .periodo-filtro__bar {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    height: 32px;
+    min-height: 32px;
+    background: #ffffff;
+    border: 1px solid #f1f1f1;
+    border-radius: 12px;
+    padding: 0
+      calc(var(--periodo-bar-pad-x) + var(--periodo-bar-pad-shift))
+      0
+      calc(var(--periodo-bar-pad-x) - var(--periodo-bar-pad-shift));
+    gap: 0;
+    overflow: visible;
+    box-shadow: none;
+    cursor: text;
+    transition:
+      border 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+
+    &:hover,
+    &:focus-within {
+      border-color: #f1f1f1;
+    }
+  }
+
+  &.periodo-filtro--bar-ativo .periodo-filtro__bar {
+    border-color: #f1f1f1;
+    box-shadow: 0 1px 4px rgba(129, 23, 65, 0.18);
+  }
+
+  &.periodo-filtro--sublinhado-slide .periodo-filtro__inputs {
+    align-self: center;
+  }
+
+  .periodo-filtro__inputs {
+    --periodo-input-w: 6rem;
+    --periodo-sep-w: 1rem;
+    --periodo-gap: 0.2rem;
+
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: 0;
+    max-width: calc(100% - (var(--periodo-bar-pad-x) * 2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  &.periodo-filtro--sublinhado-slide .periodo-filtro__underline-slide {
+    background: #811741;
+  }
+
+  .periodo-filtro__field {
+    flex: 0 0 var(--periodo-input-w);
+    min-width: 0;
+    overflow: visible;
+    box-sizing: border-box;
+    padding-bottom: 0;
+
+    &--inicio .periodo-filtro__input {
+      padding: 0.1rem 0.22rem 0 0;
+    }
+
+    &--fim .periodo-filtro__input {
+      padding: 0.1rem var(--periodo-bar-pad-shift) 0 0.06rem;
+    }
+
+    &:focus-within .periodo-filtro__input,
+    &--ativo .periodo-filtro__input {
+      box-shadow: none;
+      border: none;
+      outline: none;
+    }
+  }
+
+  .periodo-filtro__sep {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 var(--periodo-sep-w);
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+    line-height: 1;
+    color: #9ca3af;
+    user-select: none;
+
+    &--seta {
+      font-size: 0.875rem;
+    }
+  }
+
+  .periodo-filtro__input {
+    width: 100%;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    line-height: 1.35;
+    text-align: center;
+    cursor: text;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+  }
+
+  .periodo-filtro__cal-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    bottom: auto;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+    flex-shrink: 0;
+    z-index: 4;
+    pointer-events: auto;
+    cursor: text;
+    color: #d1d5db;
+    transition: none;
+    overflow: visible;
+
+    svg {
+      display: block;
+      width: 14px;
+      height: 14px;
+      stroke: #d1d5db;
+      transition: none;
+      pointer-events: none;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: transparent;
+      color: #d1d5db;
+      cursor: text;
+
+      svg {
+        stroke: #d1d5db;
+      }
     }
   }
 }

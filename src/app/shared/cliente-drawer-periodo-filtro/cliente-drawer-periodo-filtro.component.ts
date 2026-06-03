@@ -56,6 +56,21 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
    */
   painelFlutuante = input(false);
 
+  /** Sem escurecer o fundo ao abrir o calendário (ex.: sidebar estreita). */
+  semBackdropEscuro = input(false);
+
+  /** Barra compacta da sidebar de comissões (seta, cursor texto, sublinhado). */
+  layoutComissoesSidebar = input(false);
+
+  /** Botão com ícone de calendário à direita da barra (inputs já abrem o painel se `false`). */
+  mostrarBotaoCalendario = input(true);
+
+  /** Ícone decorativo na barra (sem botão; ex.: filtro centro de comissões). */
+  mostrarIconeCalendario = input(false);
+
+  /** Um único sublinhado que desliza entre data inicial e final (ex.: filtro centro). */
+  sublinhadoDeslizante = input(false);
+
   /** `belasis`: `27 mai, 2026` + barra só com borda inferior. */
   exibicaoFormato = input<'padrao' | 'belasis'>('padrao');
 
@@ -78,6 +93,10 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   /** Preset sob o cursor — pré-visualização no calendário (prioridade sobre hoverYmd). */
   presetHoverId: PeriodoPresetId | null = null;
   mesEsquerda = inicioDoMes(new Date());
+
+  /** `left`/`width` em px do sublinhado deslizante (relativo a `.periodo-filtro__inputs`). */
+  sublinhadoLeft = 0;
+  sublinhadoWidth = 0;
 
   get campoAtivoIndex(): number {
     return this.campoAtivo === 'fim' ? 1 : 0;
@@ -123,7 +142,21 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   abrirCampo(campo: PeriodoFiltroCampoAtivo, ev?: Event): void {
     ev?.stopPropagation();
     this.campoAtivo = campo;
+    this.agendarSublinhadoDeslizante();
+    if (this.calendarioInterativo()) {
+      this.limparHoverPainel();
+      if (this.painelFlutuante()) {
+        queueMicrotask(() => this.atualizarPosicaoPainelFlutuante());
+      }
+      return;
+    }
     this.abrirPainelAnimado();
+  }
+
+  /** Painel aberto ou em animação de abertura (evita reabrir/fechar ao trocar de campo). */
+  private calendarioInterativo(): boolean {
+    if (this.panelAberto) return true;
+    return this.panelNoDom && this.fecharPainelTimer == null;
   }
 
   togglePainel(ev: Event): void {
@@ -133,6 +166,21 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
       return;
     }
     this.abrirPainelAnimado();
+  }
+
+  @HostListener('document:mousedown', ['$event'])
+  fecharSeCliqueFora(ev: MouseEvent): void {
+    if (!this.panelAberto || !this.panelNoDom) return;
+    const alvo = ev.target;
+    if (!(alvo instanceof Node)) return;
+    if (this.hostEl.nativeElement.contains(alvo)) return;
+    const painel =
+      this.portalPanel ??
+      (this.hostEl.nativeElement.querySelector(
+        '.periodo-filtro__panel',
+      ) as HTMLElement | null);
+    if (painel?.contains(alvo)) return;
+    this.fecharPainel();
   }
 
   fecharPainel(): void {
@@ -212,6 +260,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
         this.fimYmd.set(ymd);
       }
       this.campoAtivo = 'fim';
+      this.agendarSublinhadoDeslizante();
       return;
     }
 
@@ -328,9 +377,14 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   reposicionarPainelSeFlutuante(): void {
     if (!this.painelFlutuante() || !this.panelAberto) return;
     this.atualizarPosicaoPainelFlutuante();
+    this.agendarSublinhadoDeslizante();
   }
 
   private abrirPainelAnimado(): void {
+    if (this.calendarioInterativo()) {
+      this.agendarSublinhadoDeslizante();
+      return;
+    }
     if (this.fecharPainelTimer != null) {
       clearTimeout(this.fecharPainelTimer);
       this.fecharPainelTimer = null;
@@ -343,6 +397,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     }
     this.panelNoDom = true;
     this.panelAberto = false;
+    this.agendarSublinhadoDeslizante();
     queueMicrotask(() => {
       requestAnimationFrame(() => {
         if (this.painelFlutuante()) {
@@ -350,8 +405,36 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
           this.atualizarPosicaoPainelFlutuante();
         }
         this.panelAberto = true;
+        this.agendarSublinhadoDeslizante();
       });
     });
+  }
+
+  private agendarSublinhadoDeslizante(): void {
+    if (!this.sublinhadoDeslizante()) return;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        this.atualizarSublinhadoDeslizante();
+        requestAnimationFrame(() => this.atualizarSublinhadoDeslizante());
+      });
+    });
+  }
+
+  private atualizarSublinhadoDeslizante(): void {
+    if (!this.sublinhadoDeslizante()) return;
+    const wrap = this.hostEl.nativeElement.querySelector(
+      '.periodo-filtro__inputs',
+    ) as HTMLElement | null;
+    const field = this.hostEl.nativeElement.querySelector(
+      this.campoAtivo === 'fim'
+        ? '.periodo-filtro__field--fim'
+        : '.periodo-filtro__field--inicio',
+    ) as HTMLElement | null;
+    if (!wrap || !field) return;
+    const wr = wrap.getBoundingClientRect();
+    const fr = field.getBoundingClientRect();
+    this.sublinhadoLeft = Math.round(fr.left - wr.left);
+    this.sublinhadoWidth = Math.round(fr.width);
   }
 
   /** Evita corte por `overflow`/`transform` em sidebars (fixed relativo ao ancestral). */
@@ -401,6 +484,9 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
 
   private atualizarPosicaoPainelFlutuante(): void {
     const anchor =
+      (this.layoutComissoesSidebar()
+        ? this.hostEl.nativeElement.querySelector('.periodo-filtro__bar')
+        : null) ??
       (this.hostEl.nativeElement.querySelector(
         '.periodo-filtro__field--fim .periodo-filtro__field-row',
       ) as HTMLElement | null) ??

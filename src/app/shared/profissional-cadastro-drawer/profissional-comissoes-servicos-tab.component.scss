@@ -1,0 +1,88 @@
+.prof-comissoes-servicos__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.prof-comissoes-servicos__toolbar .prof-comissoes-intro {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.prof-comissoes-servicos__import {
+  flex-shrink: 0;
+}
+
+.prof-comissoes-table-wrap {
+  overflow-x: auto;
+}
+
+.prof-comissoes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th,
+  td {
+    padding: 0.5rem 0.625rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    vertical-align: middle;
+  }
+
+  th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    white-space: nowrap;
+  }
+}
+
+.prof-comissoes-table__nome {
+  min-width: 8rem;
+  font-weight: 500;
+}
+
+.prof-comissoes-table__select,
+.prof-comissoes-table__input {
+  width: 100%;
+  max-width: 7rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 4px;
+}
+
+.prof-comissoes-table__check {
+  text-align: center;
+}
+
+.prof-comissoes-table__remove {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--brand, #811741);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

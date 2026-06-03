@@ -5,6 +5,7 @@ import {
   ViewChild,
   ViewEncapsulation,
   inject,
+  input,
 } from '@angular/core';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 
@@ -18,8 +19,8 @@ import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-d
       #anchor
       (mouseenter)="onMouseEnter()"
       (mouseleave)="scheduleHide()"
-      (focusin)="show()"
-      (focusout)="scheduleHide()"
+      (focusin)="onFocusIn()"
+      (focusout)="onFocusOut()"
     >
       <ng-content select="[finFiltrosTipTrigger]" />
     </span>
@@ -32,6 +33,18 @@ import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-d
 })
 export class FinFiltrosFloatingTipComponent implements OnDestroy {
   private readonly host = inject(ElementRef<HTMLElement>);
+
+  /** Quando falso, não abre ao focar (ex.: checkbox que deve esconder ao clicar). */
+  readonly openOnFocus = input(true);
+
+  /** Atraso (ms) antes de exibir o balão — alinhar ao hover do campo (ex.: 160). */
+  readonly showDelayMs = input(UI_TIP_SHOW_DELAY_MS);
+
+  /** Seletor do elemento para posicionar a seta (relativo ao gatilho projetado). */
+  readonly arrowAlignSelector = input<string | null>(null);
+
+  /** Classe extra no painel portal (ex.: estilo do tooltip de comissões anteriores). */
+  readonly panelModifier = input<string | null>(null);
 
   @ViewChild('anchor', { static: true })
   private anchorRef!: ElementRef<HTMLElement>;
@@ -51,7 +64,17 @@ export class FinFiltrosFloatingTipComponent implements OnDestroy {
     this.showTimer = setTimeout(() => {
       this.showTimer = null;
       this.show();
-    }, UI_TIP_SHOW_DELAY_MS);
+    }, this.showDelayMs());
+  }
+
+  onFocusIn(): void {
+    if (!this.openOnFocus()) return;
+    this.show();
+  }
+
+  onFocusOut(): void {
+    if (!this.openOnFocus()) return;
+    this.scheduleHide();
   }
 
   show(): void {
@@ -59,6 +82,8 @@ export class FinFiltrosFloatingTipComponent implements OnDestroy {
     this.clearHideTimer();
     if (!this.panel) {
       this.panel = this.buildPanel();
+    } else {
+      this.syncPanelContent();
     }
     if (!this.panel.isConnected) {
       document.body.appendChild(this.panel);
@@ -94,20 +119,48 @@ export class FinFiltrosFloatingTipComponent implements OnDestroy {
   private buildPanel(): HTMLElement {
     const panel = document.createElement('div');
     panel.className = 'fin-filtros-tip-panel fin-filtros-tip-panel--portal';
+    const mod = this.panelModifier()?.trim();
+    if (mod) panel.classList.add(mod);
     panel.setAttribute('role', 'tooltip');
 
-    const storage = this.host.nativeElement.querySelector('[finFiltrosTipBody]');
-    if (storage) {
-      panel.innerHTML = storage.innerHTML;
-    }
+    const body = document.createElement('div');
+    body.className = 'fin-filtros-tip-panel__body';
+    panel.appendChild(body);
+
     const arrow = document.createElement('span');
     arrow.className = 'fin-filtros-tip-panel__arrow';
     arrow.setAttribute('aria-hidden', 'true');
     panel.appendChild(arrow);
 
+    this.syncPanelContent(panel);
+
     panel.addEventListener('mouseenter', () => this.clearHideTimer());
     panel.addEventListener('mouseleave', () => this.scheduleHide());
     return panel;
+  }
+
+  private syncPanelContent(panel: HTMLElement | null = this.panel): void {
+    if (!panel) return;
+    const body = panel.querySelector('.fin-filtros-tip-panel__body');
+    if (!body) return;
+    const storage = this.host.nativeElement.querySelector(
+      '.fin-filtros-tip-body-storage',
+    );
+    body.innerHTML = storage?.innerHTML?.trim() ? storage.innerHTML : '';
+  }
+
+  private resolveAlignRect(anchor: HTMLElement): DOMRect {
+    const trigger =
+      anchor.querySelector('[finFiltrosTipTrigger]') ?? anchor;
+    const triggerEl = trigger instanceof HTMLElement ? trigger : anchor;
+    const sel = this.arrowAlignSelector()?.trim();
+    if (sel) {
+      const el = triggerEl.querySelector(sel);
+      if (el instanceof HTMLElement) {
+        return el.getBoundingClientRect();
+      }
+    }
+    return triggerEl.getBoundingClientRect();
   }
 
   private positionPanel(): void {
@@ -115,27 +168,24 @@ export class FinFiltrosFloatingTipComponent implements OnDestroy {
     const anchor = this.anchorRef?.nativeElement;
     if (!panel || !anchor) return;
 
-    const trigger = anchor.querySelector('[finFiltrosTipTrigger]') ?? anchor;
-    const triggerEl =
-      trigger instanceof HTMLElement ? trigger : anchor;
-    const triggerRect = triggerEl.getBoundingClientRect();
+    const alignRect = this.resolveAlignRect(anchor);
 
     panel.style.visibility = 'hidden';
     panel.style.display = 'block';
     const panelW = panel.offsetWidth;
     const panelH = panel.offsetHeight;
-    const gap = 12;
+    const gap = 10;
     const margin = 8;
 
-    let top = triggerRect.top - panelH - gap;
+    let top = alignRect.top - panelH - gap;
     let placeBelow = false;
     if (top < margin) {
-      top = triggerRect.bottom + gap;
+      top = alignRect.bottom + gap;
       placeBelow = true;
     }
 
-    const triggerCenterX = triggerRect.left + triggerRect.width / 2;
-    let left = triggerCenterX - panelW / 2;
+    const alignCenterX = alignRect.left + alignRect.width / 2;
+    let left = alignCenterX - panelW / 2;
     left = Math.max(margin, Math.min(left, window.innerWidth - panelW - margin));
 
     panel.style.top = `${top}px`;
@@ -145,8 +195,7 @@ export class FinFiltrosFloatingTipComponent implements OnDestroy {
 
     const arrow = panel.querySelector('.fin-filtros-tip-panel__arrow') as HTMLElement | null;
     if (arrow) {
-      const tipCenter = triggerRect.left + triggerRect.width / 2;
-      let arrowLeft = tipCenter - left - 7;
+      let arrowLeft = alignCenterX - left - 7;
       arrowLeft = Math.max(12, Math.min(panelW - 24, arrowLeft));
       arrow.style.left = `${arrowLeft}px`;
       arrow.style.right = 'auto';

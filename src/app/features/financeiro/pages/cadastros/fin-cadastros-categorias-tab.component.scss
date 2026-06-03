@@ -13,13 +13,27 @@
   font-size: 13px;
 }
 
-.fin-cad-tab__ok {
-  color: #389e0d;
-  font-size: 13px;
-}
-
 .fin-cad-tab__card {
   margin-top: 0.25rem;
+}
+
+.fin-cad-tab__table {
+  table-layout: fixed;
+  width: 100%;
+
+  col.fin-cad-tab__col-acoes {
+    width: clamp(72px, 6vw, 88px);
+  }
+
+  thead th.col-acoes {
+    text-align: center;
+  }
+
+  tbody td.col-acoes {
+    overflow: visible;
+    width: clamp(72px, 6vw, 88px);
+    max-width: 88px;
+  }
 }
 
 .fin-cad-tab__table .badge {
@@ -57,9 +71,4 @@
 
 .fin-cad-tab__row--inativa td {
   opacity: 0.55;
-}
-
-.fin-cad-tab__table .col-acoes {
-  width: 88px;
-  max-width: 88px;
 }

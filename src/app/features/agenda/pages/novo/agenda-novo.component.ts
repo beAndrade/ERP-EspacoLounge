@@ -482,7 +482,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       pacotes: this.api.listPacotes(),
       produtos: this.api.listProdutos(),
       cabelos: this.api.listCabelos(),
-      profissionais: this.api.listProfissionais().pipe(
+      profissionais: this.api.listProfissionais(false, 'agenda').pipe(
         catchError(() => of([] as ProfissionalListaItem[])),
       ),
     }).subscribe({

@@ -10,12 +10,17 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { SaasSelectComponent } from '../../../agenda/pages/novo/saas-select.component';
 import { FormsModule } from '@angular/forms';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { catchError, of } from 'rxjs';
 import type { Cliente } from '../../../../core/models/api.models';
-import type { FinComissaoDetalheItem } from '../../../../core/models/api.models';
+import type {
+  FinComissaoDetalheItem,
+  FinComissaoPagaItem,
+  FinComissaoResumidaItem,
+} from '../../../../core/models/api.models';
 import type { ComandaDrawerContextoAgenda } from '../../../agenda/pages/hub/comanda-drawer.types';
 import { NovaComandaDrawerComponent } from '../../../agenda/pages/hub/nova-comanda-drawer.component';
 import type { SaasSelectOption } from '../../../agenda/pages/novo/saas-select.component';
@@ -33,17 +38,31 @@ import {
   type AbrirCadastroClientePayload,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { abrirCadastroClienteDesdeSidebarComanda } from '../../../../shared/cliente-cadastro-drawer/comanda-drawer-sidebar-cadastro.util';
+import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
+import { FinFiltrosFloatingTipComponent } from '../transacoes/fin-filtros-floating-tip.component';
 
 const DRAWER_ANIM_MS = 430;
 
 registerLocaleData(localePt);
 
-export type FinComissaoTab = 'detalhadas' | 'resumidas' | 'pagas' | 'configuracoes';
+export type FinComissaoTab = 'detalhadas' | 'pagas';
 
 export interface FinComissaoProfissionalUi {
   id: number;
   nome: string;
   telefone: string;
+}
+
+export interface FinComissaoPagaLinhaUi {
+  movimentacaoId: number;
+  dataYmd: string;
+  pagamentoYmd: string;
+  profissionalNome: string;
+  usuarioNome: string;
+  comissoes: number;
+  vales: number;
+  bonificacoes: number;
+  valorPago: number;
 }
 
 export interface FinComissaoLinhaUi {
@@ -75,6 +94,8 @@ export interface FinComissaoLinhaUi {
     FinComissoesPagarDrawerComponent,
     ClienteDrawerPeriodoFiltroComponent,
     NovaComandaDrawerComponent,
+    SaasSelectComponent,
+    FinFiltrosFloatingTipComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro-comissoes.component.html',
@@ -84,6 +105,7 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
   private readonly toast = inject(AppToastService);
   private readonly api = inject(SheetsApiService);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
 
   @ViewChild(NovaComandaDrawerComponent)
   private comandaDrawerRef?: NovaComandaDrawerComponent;
@@ -107,17 +129,32 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
   private pageScrollLockAtivo = false;
   private bodyScrollPreDrawer = 0;
   private carregarLinhasSeq = 0;
+  private carregarPagasSeq = 0;
+
+  assinadasDigitalmenteFiltro: 'todas' | 'sim' | 'nao' = 'todas';
 
   readonly tabs: { id: FinComissaoTab; label: string }[] = [
     { id: 'detalhadas', label: 'Detalhadas' },
-    { id: 'resumidas', label: 'Resumidas' },
     { id: 'pagas', label: 'Pagas' },
-    { id: 'configuracoes', label: 'Configurações' },
   ];
 
   readonly profissionais = signal<FinComissaoProfissionalUi[]>([]);
+
+  readonly profissionaisSelectOptions = computed(() =>
+    this.profissionais().map((p) => ({
+      value: String(p.id),
+      label: p.nome,
+    })),
+  );
   readonly linhasDetalhe = signal<FinComissaoLinhaUi[]>([]);
+  readonly linhasPagas = signal<FinComissaoPagaLinhaUi[]>([]);
   readonly erroCarregamento = signal('');
+  readonly menuAcoesPagasAberto = signal<number | null>(null);
+  readonly resumoFolha = signal<{
+    totalComissao: number;
+    totalPago: number;
+    saldo: number;
+  } | null>(null);
 
   readonly vista = signal<'filtros' | 'detalhe'>('filtros');
   readonly tabAtiva = signal<FinComissaoTab>('detalhadas');
@@ -170,6 +207,10 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     const { inicio, fim } = this.periodoPadraoUltimos30Dias();
     this.periodoInicio = inicio;
     this.periodoFim = fim;
+    this.recarregarProfissionais();
+  }
+
+  recarregarProfissionais(selecionarId?: number): void {
     this.api
       .listProfissionais()
       .pipe(
@@ -186,10 +227,12 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
           .map((p) => ({
             id: p.id,
             nome: p.nome,
-            telefone: '',
+            telefone: p.celular ?? '',
           }));
         this.profissionais.set(lista);
-        if (lista.length > 0 && this.profissionalIdSidebar == null) {
+        if (selecionarId != null) {
+          this.profissionalIdSidebar = selecionarId;
+        } else if (lista.length > 0 && this.profissionalIdSidebar == null) {
           this.profissionalIdSidebar = lista[0].id;
         }
       });
@@ -203,6 +246,11 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
       clearTimeout(this.comandaDrawerCloseTimer);
     }
     this.desbloquearScrollPagina();
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.fecharMenuAcoesPagas();
   }
 
   @HostListener('document:keydown.escape', ['$event'])
@@ -400,8 +448,31 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     return [{ value: cid, label }];
   }
 
+  emLayoutLista(): boolean {
+    return this.tabAtiva() === 'pagas' || this.vista() === 'detalhe';
+  }
+
   selecionarTab(id: FinComissaoTab): void {
+    const anterior = this.tabAtiva();
     this.tabAtiva.set(id);
+    this.menuAcoesPagasAberto.set(null);
+    if (id === 'pagas') {
+      this.profissionalIdSidebar = null;
+      this.sidebarAberto.set(true);
+      this.carregarLinhasPagas();
+      return;
+    }
+    if (anterior === 'pagas') {
+      if (
+        this.profissionalIdSidebar == null &&
+        this.profissionais().length > 0
+      ) {
+        this.profissionalIdSidebar = this.profissionais()[0].id;
+      }
+      if (this.vista() === 'detalhe') {
+        this.carregarLinhasDetalhe();
+      }
+    }
   }
 
   abrirProfissional(prof: FinComissaoProfissionalUi): void {
@@ -411,19 +482,40 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     this.sidebarAberto.set(true);
     this.vista.set('detalhe');
     this.carregarLinhasDetalhe();
+    this.carregarResumoFolha();
   }
 
-  alternarMostrarAnteriores(): void {
-    this.mostrarAnteriores = !this.mostrarAnteriores;
+  onMostrarAnterioresChange(): void {
     if (this.vista() === 'detalhe') this.carregarLinhasDetalhe();
   }
 
   onPeriodoAlterado(): void {
-    if (this.vista() === 'detalhe') this.carregarLinhasDetalhe();
+    if (this.tabAtiva() === 'pagas') this.carregarLinhasPagas();
+    else if (this.vista() === 'detalhe') {
+      this.carregarLinhasDetalhe();
+      this.carregarResumoFolha();
+    }
+  }
+
+  onCriarProfissional(): void {
+    this.profissionalDrawer.abrirNovo({
+      onSalvo: (p) => {
+        this.recarregarProfissionais(p.id);
+        this.onProfissionalSidebarChange();
+      },
+    });
   }
 
   onProfissionalSidebarChange(): void {
-    if (this.vista() === 'detalhe') this.carregarLinhasDetalhe();
+    if (this.tabAtiva() === 'pagas') this.carregarLinhasPagas();
+    else if (this.vista() === 'detalhe') {
+      this.carregarLinhasDetalhe();
+      this.carregarResumoFolha();
+    }
+  }
+
+  onAssinadasFiltroChange(): void {
+    if (this.tabAtiva() === 'pagas') this.carregarLinhasPagas();
   }
 
   toggleSidebarFiltros(): void {
@@ -490,15 +582,54 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
       )
       .subscribe((res) => {
         if (!res) return;
+        this.toast.show('Pagamento de comissões realizado com sucesso!');
         this.fecharPagarDrawer();
         this.linhasDetalhe.update((linhas) =>
           linhas.filter((row) => !idsPagos.includes(row.id)),
         );
         this.selecionados.set(new Set());
-        window.setTimeout(() => {
-          this.toast.show('Pagamento de comissões realizado com sucesso!');
-        }, DRAWER_ANIM_MS);
+        this.carregarLinhasPagas();
+        this.carregarResumoFolha();
       });
+  }
+
+  alternarMenuAcoesPagas(movimentacaoId: number, ev: Event): void {
+    ev.stopPropagation();
+    this.menuAcoesPagasAberto.update((atual) =>
+      atual === movimentacaoId ? null : movimentacaoId,
+    );
+  }
+
+  fecharMenuAcoesPagas(): void {
+    this.menuAcoesPagasAberto.set(null);
+  }
+
+  estornarPagamentoComissao(row: FinComissaoPagaLinhaUi): void {
+    this.menuAcoesPagasAberto.set(null);
+    if (
+      !window.confirm(
+        'Estornar este pagamento de comissões? As linhas voltarão à aba Detalhadas.',
+      )
+    ) {
+      return;
+    }
+    this.api.estornarComissaoMovimentacao(row.movimentacaoId).subscribe({
+      next: () => {
+        this.toast.show('Pagamento de comissões estornado.');
+        this.carregarLinhasPagas();
+        if (this.vista() === 'detalhe' && this.tabAtiva() === 'detalhadas') {
+          this.carregarLinhasDetalhe();
+          this.carregarResumoFolha();
+        }
+      },
+      error: (e: unknown) => {
+        const msg =
+          e instanceof Error
+            ? e.message
+            : 'Não foi possível estornar o pagamento.';
+        this.toast.show(msg);
+      },
+    });
   }
 
   private bloquearScrollPagina(): void {
@@ -526,7 +657,62 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
   }
 
   atualizarLista(): void {
-    this.carregarLinhasDetalhe();
+    if (this.tabAtiva() === 'pagas') this.carregarLinhasPagas();
+    else this.carregarLinhasDetalhe();
+  }
+
+  private carregarLinhasPagas(): void {
+    const di = this.periodoInicio.trim();
+    const df = this.periodoFim.trim();
+    if (!di || !df) {
+      this.linhasPagas.set([]);
+      return;
+    }
+
+    const profId = this.profissionalIdSidebar;
+    const seq = ++this.carregarPagasSeq;
+    this.linhasPagas.set([]);
+    this.carregando.set(true);
+    this.erroCarregamento.set('');
+
+    this.api
+      .listComissoesPagas({
+        dataInicio: di,
+        dataFim: df,
+        profissionalId: profId != null && profId > 0 ? profId : null,
+      })
+      .pipe(
+        catchError((e: Error) => {
+          this.erroCarregamento.set(
+            e.message ||
+              'Não foi possível carregar as comissões pagas. Confirme a API.',
+          );
+          return of([] as FinComissaoPagaItem[]);
+        }),
+      )
+      .subscribe((items) => {
+        if (seq !== this.carregarPagasSeq) return;
+        let linhas = items.map((r) => this.mapLinhaPagaApi(r));
+        if (this.assinadasDigitalmenteFiltro !== 'todas') {
+          linhas = [];
+        }
+        this.linhasPagas.set(linhas);
+        this.carregando.set(false);
+      });
+  }
+
+  private mapLinhaPagaApi(r: FinComissaoPagaItem): FinComissaoPagaLinhaUi {
+    return {
+      movimentacaoId: r.movimentacao_id,
+      dataYmd: r.data_ymd,
+      pagamentoYmd: r.pagamento_ymd,
+      profissionalNome: r.profissional_nome,
+      usuarioNome: r.usuario_nome,
+      comissoes: r.comissoes,
+      vales: r.vales,
+      bonificacoes: r.bonificacoes,
+      valorPago: r.valor_pago,
+    };
   }
 
   /** Linhas vêm de `GET /api/financeiro/comissoes/detalhadas` → tabela `atendimentos`. */
@@ -570,6 +756,43 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
         this.linhasDetalhe.set(items.map((r) => this.mapLinhaApi(r)));
         this.selecionados.set(new Set());
         this.carregando.set(false);
+      });
+  }
+
+  private carregarResumoFolha(): void {
+    if (this.tabAtiva() !== 'detalhadas' || this.vista() !== 'detalhe') {
+      this.resumoFolha.set(null);
+      return;
+    }
+    const profId = this.profissionalIdSidebar;
+    const di = this.periodoInicio.trim();
+    const df = this.periodoFim.trim();
+    if (profId == null || profId <= 0 || !di || !df) {
+      this.resumoFolha.set(null);
+      return;
+    }
+
+    this.api
+      .listComissoesResumidas({
+        dataInicio: di,
+        dataFim: df,
+        profissionalId: profId,
+      })
+      .pipe(catchError(() => of([] as FinComissaoResumidaItem[])))
+      .subscribe((items) => {
+        let totalComissao = 0;
+        let totalPago = 0;
+        let saldo = 0;
+        for (const row of items) {
+          totalComissao += row.total_comissao;
+          totalPago += row.total_pago;
+          saldo += row.saldo;
+        }
+        this.resumoFolha.set({
+          totalComissao: Math.round(totalComissao * 100) / 100,
+          totalPago: Math.round(totalPago * 100) / 100,
+          saldo: Math.round(saldo * 100) / 100,
+        });
       });
   }
 

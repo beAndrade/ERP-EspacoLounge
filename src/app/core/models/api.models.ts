@@ -326,7 +326,45 @@ export interface ProfissionalListaItem {
   nome: string;
   /** Omitido em respostas antigas; na API atual vem sempre preenchido. */
   ativo?: boolean;
+  celular?: string | null;
+  apelido?: string | null;
+  profissao?: string | null;
+  aniversario?: string | null;
+  cpf_cnpj?: string | null;
+  rg?: string | null;
+  anotacoes?: string | null;
+  disponivel_agendamento_online?: boolean;
+  gerar_agenda?: boolean;
+  recebe_comissao?: boolean;
+  /** `pagamento_cliente` (padrão) ou `competencia` — listagem Financeiro → Comissões. */
+  comissao_listagem_modo?: 'pagamento_cliente' | 'competencia';
 }
+
+/** Override de comissão por profissional + serviço (`GET/PUT .../comissoes-servicos`). */
+export interface ProfissionalComissaoServicoItem {
+  servico_id: number;
+  servico_nome: string;
+  tipo: 'percentual' | 'fixo';
+  valor: number;
+  como_auxiliar: boolean;
+  sobre: string;
+}
+
+export type ProfissionalCadastroPayload = {
+  nome: string;
+  celular: string;
+  apelido?: string | null;
+  profissao?: string | null;
+  aniversario?: string | null;
+  cpf_cnpj?: string | null;
+  rg?: string | null;
+  anotacoes?: string | null;
+  ativo?: boolean;
+  disponivel_agendamento_online?: boolean;
+  gerar_agenda?: boolean;
+  recebe_comissao?: boolean;
+  comissao_listagem_modo?: 'pagamento_cliente' | 'competencia';
+};
 
 /** Categoria do razão financeiro (`GET /api/categorias-financeiras`). */
 export interface CategoriaFinanceiraItem {
@@ -388,6 +426,32 @@ export interface MovimentacaoListaItem {
   /** Preenchido quando existe linha em `despesas` ligada (cadastro estruturado). */
   despesa_tipo?: string | null;
   despesa_categoria_livre?: string | null;
+}
+
+/** Resumo mensal por profissional (`GET /api/financeiro/comissoes/resumidas`). */
+export interface FinComissaoResumidaItem {
+  folha_id: number;
+  profissional_id: number;
+  profissional_nome: string;
+  periodo_referencia: string;
+  total_comissao: number;
+  total_pago: number;
+  saldo: number;
+  status: string;
+}
+
+/** Lote de comissões já pago (`GET /api/financeiro/comissoes/pagas`). */
+export interface FinComissaoPagaItem {
+  movimentacao_id: number;
+  data_ymd: string;
+  pagamento_ymd: string;
+  profissional_id: number;
+  profissional_nome: string;
+  usuario_nome: string;
+  comissoes: number;
+  vales: number;
+  bonificacoes: number;
+  valor_pago: number;
 }
 
 /** Linha detalhada de comissões (`GET /api/financeiro/comissoes/detalhadas`). */

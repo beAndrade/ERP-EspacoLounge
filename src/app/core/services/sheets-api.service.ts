@@ -24,6 +24,8 @@ import {
   CriarClienteCreditoMovimentoResponse,
   CreateAtendimentoPayload,
   FinComissaoDetalheItem,
+  FinComissaoPagaItem,
+  FinComissaoResumidaItem,
   FinCategoriaCadastroItem,
   FinFormaPagamentoCadastroItem,
   FinFormaPagamentoOpcaoItem,
@@ -31,6 +33,8 @@ import {
   MovimentacaoListaItem,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
+  ProfissionalCadastroPayload,
+  ProfissionalComissaoServicoItem,
   ProfissionalListaItem,
   RegraMegaItem,
   Servico,
@@ -181,15 +185,22 @@ export class SheetsApiService {
    * Lista profissionais. Por defeito só **ativos** (agenda e novos atendimentos).
    * `incluirInativos` usa `GET /api/profissionais?incluir_inativos=1` (gestão).
    */
-  listProfissionais(incluirInativos = false): Observable<ProfissionalListaItem[]> {
+  listProfissionais(
+    incluirInativos = false,
+    contexto?: 'agenda',
+  ): Observable<ProfissionalListaItem[]> {
     let params = new HttpParams();
     if (incluirInativos) {
       params = params.set('incluir_inativos', '1');
     }
+    if (contexto === 'agenda') {
+      params = params.set('contexto', 'agenda');
+    }
+    const opts = params.keys().length > 0 ? { params } : {};
     return this.http
       .get<ApiResponse<{ items: ProfissionalListaItem[] }>>(
         this.url('/api/profissionais'),
-        incluirInativos ? { params } : {},
+        opts,
       )
       .pipe(
         map((r) => this.unwrap(r)),
@@ -197,10 +208,20 @@ export class SheetsApiService {
       );
   }
 
-  createProfissional(payload: {
-    nome: string;
-    ativo?: boolean;
-  }): Observable<ProfissionalListaItem> {
+  getProfissional(id: number): Observable<ProfissionalListaItem> {
+    return this.http
+      .get<ApiResponse<{ item: ProfissionalListaItem }>>(
+        this.url(`/api/profissionais/${encodeURIComponent(String(id))}`),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  createProfissional(
+    payload: ProfissionalCadastroPayload,
+  ): Observable<ProfissionalListaItem> {
     return this.http
       .post<ApiResponse<{ item: ProfissionalListaItem }>>(
         this.url('/api/profissionais'),
@@ -212,23 +233,70 @@ export class SheetsApiService {
       );
   }
 
-  updateProfissional(payload: {
-    id: number;
-    nome?: string;
-    ativo?: boolean;
-  }): Observable<ProfissionalListaItem> {
-    const body: { nome?: string; ativo?: boolean } = {};
-    if (payload.nome !== undefined) body.nome = payload.nome;
-    if (payload.ativo !== undefined) body.ativo = payload.ativo;
+  updateProfissional(
+    payload: { id: number } & Partial<ProfissionalCadastroPayload>,
+  ): Observable<ProfissionalListaItem> {
+    const { id, ...rest } = payload;
+    const body = { ...rest };
     return this.http
       .patch<ApiResponse<{ item: ProfissionalListaItem }>>(
-        this.url(`/api/profissionais/${encodeURIComponent(String(payload.id))}`),
+        this.url(`/api/profissionais/${encodeURIComponent(String(id))}`),
         body,
       )
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.item),
       );
+  }
+
+  listProfissionalComissaoServicos(
+    profissionalId: number,
+  ): Observable<ProfissionalComissaoServicoItem[]> {
+    return this.http
+      .get<ApiResponse<{ items: ProfissionalComissaoServicoItem[] }>>(
+        this.url(
+          `/api/profissionais/${encodeURIComponent(String(profissionalId))}/comissoes-servicos`,
+        ),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  replaceProfissionalComissaoServicos(
+    profissionalId: number,
+    items: Pick<
+      ProfissionalComissaoServicoItem,
+      'servico_id' | 'tipo' | 'valor' | 'como_auxiliar' | 'sobre'
+    >[],
+  ): Observable<ProfissionalComissaoServicoItem[]> {
+    return this.http
+      .put<ApiResponse<{ items: ProfissionalComissaoServicoItem[] }>>(
+        this.url(
+          `/api/profissionais/${encodeURIComponent(String(profissionalId))}/comissoes-servicos`,
+        ),
+        { items },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  importarProfissionalComissaoServicosCatalogo(
+    profissionalId: number,
+  ): Observable<{ importados: number; items: ProfissionalComissaoServicoItem[] }> {
+    return this.http
+      .post<
+        ApiResponse<{ importados: number; items: ProfissionalComissaoServicoItem[] }>
+      >(
+        this.url(
+          `/api/profissionais/${encodeURIComponent(String(profissionalId))}/comissoes-servicos/importar-catalogo`,
+        ),
+        {},
+      )
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   listAgendamentos(
@@ -403,6 +471,52 @@ export class SheetsApiService {
         this.url(`/api/financeiro/formas-pagamento/${id}`),
       )
       .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listComissoesResumidas(params: {
+    dataInicio: string;
+    dataFim: string;
+    profissionalId?: number | null;
+  }): Observable<FinComissaoResumidaItem[]> {
+    let hp = new HttpParams()
+      .set('dataInicio', params.dataInicio)
+      .set('dataFim', params.dataFim);
+    const profId = params.profissionalId;
+    if (profId != null && profId > 0) {
+      hp = hp.set('profissionalId', String(profId));
+    }
+    return this.http
+      .get<ApiResponse<{ items: FinComissaoResumidaItem[] }>>(
+        this.url('/api/financeiro/comissoes/resumidas'),
+        { params: hp },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  listComissoesPagas(params: {
+    dataInicio: string;
+    dataFim: string;
+    profissionalId?: number | null;
+  }): Observable<FinComissaoPagaItem[]> {
+    let hp = new HttpParams()
+      .set('dataInicio', params.dataInicio)
+      .set('dataFim', params.dataFim);
+    const profId = params.profissionalId;
+    if (profId != null && profId > 0) {
+      hp = hp.set('profissionalId', String(profId));
+    }
+    return this.http
+      .get<ApiResponse<{ items: FinComissaoPagaItem[] }>>(
+        this.url('/api/financeiro/comissoes/pagas'),
+        { params: hp },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
   }
 
   listComissoesDetalhadas(params: {

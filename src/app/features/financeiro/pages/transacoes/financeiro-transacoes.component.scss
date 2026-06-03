@@ -271,7 +271,7 @@
 
 .fin-transacoes-table tbody td {
   box-sizing: border-box;
-  height: 84.69px;
+  height: 65.84px;
   transition:
     background 0.2s,
     border-color 0.2s;
@@ -294,7 +294,7 @@
 }
 
 .fin-transacoes-table thead th.col-data {
-  background: #ebebeb;
+  background: #f0f0f0;
   padding: 0;
 }
 
@@ -314,7 +314,7 @@
   padding: 0 8px;
   margin: 0;
   border: none;
-  background: transparent;
+  background: #f0f0f0;
   font: inherit;
   font-weight: 600;
   font-size: 14px;
@@ -477,11 +477,19 @@
   }
 }
 
+/* Receita / despesa: linha inteira colorida; coluna Data um tom mais escuro */
 .fin-transacoes-table.list-table
   tbody
   tr.fin-transacoes__row--receita
   > td:not(.table-body__busy):not(.table-body__empty) {
   background: rgba(222, 243, 222, 0.6);
+}
+
+.fin-transacoes-table.list-table
+  tbody
+  tr.fin-transacoes__row--receita
+  > td.col-data:not(.table-body__busy):not(.table-body__empty) {
+  background: #e3f5e3;
 }
 
 .fin-transacoes-table.list-table
@@ -507,6 +515,13 @@
 
 .fin-transacoes-table.list-table
   tbody
+  tr.fin-transacoes__row--despesa
+  > td.col-data:not(.table-body__busy):not(.table-body__empty) {
+  background: #ffe9e9;
+}
+
+.fin-transacoes-table.list-table
+  tbody
   tr.fin-transacoes__row--despesa:hover
   > td:not(.table-body__busy):not(.table-body__empty) {
   background: #fafafa;
@@ -519,36 +534,43 @@
   background: #f0f3ff;
 }
 
-/* Filtro só receber: fundo da linha em verde */
+/* Filtro só receber / só pagar */
 .fin-transacoes-page--somente-receber {
   .fin-transacoes-table.list-table tbody tr.fin-transacoes__row--receita {
     > td:not(.table-body__busy):not(.table-body__empty) {
       background: rgba(222, 243, 222, 0.6);
     }
 
+    > td.col-data:not(.table-body__busy):not(.table-body__empty) {
+      background: #e3f5e3;
+    }
+
     &:hover > td:not(.table-body__busy):not(.table-body__empty) {
-      background: rgba(222, 243, 222, 0.85);
+      background: #fafafa;
     }
 
     &.list-table__row--selected > td:not(.table-body__busy):not(.table-body__empty) {
-      background: #e8f5e9;
+      background: #f0f3ff;
     }
   }
 }
 
-/* Filtro só pagar: fundo da linha em vermelho */
 .fin-transacoes-page--somente-pagar {
   .fin-transacoes-table.list-table tbody tr.fin-transacoes__row--despesa {
     > td:not(.table-body__busy):not(.table-body__empty) {
       background: #ffefef;
     }
 
+    > td.col-data:not(.table-body__busy):not(.table-body__empty) {
+      background: #ffe9e9;
+    }
+
     &:hover > td:not(.table-body__busy):not(.table-body__empty) {
-      background: #ffe4e4;
+      background: #fafafa;
     }
 
     &.list-table__row--selected > td:not(.table-body__busy):not(.table-body__empty) {
-      background: #fee2e2;
+      background: #f0f3ff;
     }
   }
 }

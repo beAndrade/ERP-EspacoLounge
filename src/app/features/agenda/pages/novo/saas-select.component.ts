@@ -33,6 +33,7 @@ export type SaasSelectOption = { value: string; label: string };
     /** Permite ao pai elevar o `z-index` da linha/bloco (painel absoluto por cima das linhas seguintes). */
     '[class.saas-select-host--open]': 'panelOpen',
     '[class.saas-select-host--layout-sidebar]': 'layout === "sidebar"',
+    '[class.saas-select-host--trigger-cursor-text]': 'triggerCursor === "text"',
   },
   providers: [
     {
@@ -64,8 +65,12 @@ export class SaasSelectComponent
   /** Quando falso, o painel mostra a lista completa (sem barra "Pesquisar"). */
   @Input() showFilter = true;
   @Input() showCriarCliente = false;
+  /** Texto do botão no rodapé do painel (ex.: «Criar profissional»). */
+  @Input() criarButtonLabel = 'Criar cliente';
   /** Coluna esquerda do hub modal (busca). O “Cliente” da grelha usa o estilo padrão. */
   @Input() layout: 'default' | 'sidebar' = 'default';
+  /** Cursor do gatilho (`text` na sidebar de comissões). */
+  @Input() triggerCursor: 'pointer' | 'text' = 'pointer';
   /** Acessibilidade: nome do campo (evita depender de `<label>` a envolver o gatilho). */
   @Input('aria-label') ariaFieldLabel: string | null = null;
   @Output() picked = new EventEmitter<void>();

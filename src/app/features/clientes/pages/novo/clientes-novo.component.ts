@@ -11,6 +11,10 @@ import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { TelefoneBrMaskDirective } from '../../../../core/directives/telefone-br-mask.directive';
 import { isCelularBr11Digitos } from '../../../../core/utils/telefone-br';
 import { findClienteCadastroDuplicado } from '../../../../core/utils/clientes-unicidade';
+import {
+  CLIENTE_SALVO_TOAST_MSG,
+} from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 
 /** Nome com pelo menos 2 caracteres úteis (após trim). */
 function nomeClienteValidator(control: AbstractControl): ValidationErrors | null {
@@ -35,6 +39,7 @@ function celularBrObrigatorioValidator(control: AbstractControl): ValidationErro
   styleUrl: './clientes-novo.component.scss',
 })
 export class ClientesNovoComponent {
+  private readonly toast = inject(AppToastService);
   private readonly api = inject(SheetsApiService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -79,6 +84,7 @@ export class ClientesNovoComponent {
       .subscribe({
         next: () => {
           this.salvando = false;
+          this.toast.show(CLIENTE_SALVO_TOAST_MSG);
           this.router.navigate(['/clientes']);
         },
         error: (e: Error) => {

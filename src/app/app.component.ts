@@ -10,6 +10,7 @@ import {
 import { filter } from 'rxjs';
 import { AppToastComponent } from './shared/app-toast/app-toast.component';
 import { ClienteCadastroDrawerHostComponent } from './shared/cliente-cadastro-drawer/cliente-cadastro-drawer-host.component';
+import { ProfissionalCadastroDrawerHostComponent } from './shared/profissional-cadastro-drawer/profissional-cadastro-drawer-host.component';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -29,6 +30,7 @@ export type NavSidebarDropdownId =
     RouterLinkActive,
     NgClass,
     ClienteCadastroDrawerHostComponent,
+    ProfissionalCadastroDrawerHostComponent,
     AppToastComponent,
   ],
   templateUrl: './app.component.html',

@@ -2,6 +2,8 @@ import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { ProfissionalListaItem } from '../../../../core/models/api.models';
+import { formatarCelularBr } from '../../../../core/utils/telefone-br';
+import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 
 type AbaProfissionais = 'ativos' | 'inativos';
 
@@ -14,6 +16,7 @@ type AbaProfissionais = 'ativos' | 'inativos';
 })
 export class ProfissionaisComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
+  private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
 
   aba: AbaProfissionais = 'ativos';
   busca = '';
@@ -24,14 +27,7 @@ export class ProfissionaisComponent implements OnInit {
 
   carregando = false;
   erro = '';
-  salvando = false;
-  erroForm = '';
   itens: ProfissionalListaItem[] = [];
-
-  mostrarFormulario = false;
-  editandoId: number | null = null;
-  formNome = '';
-  formAtivo = true;
 
   pagina = 1;
   itensPorPagina = 20;
@@ -156,72 +152,20 @@ export class ProfissionaisComponent implements OnInit {
   }
 
   abrirNovo(): void {
-    this.editandoId = null;
-    this.formNome = '';
-    this.formAtivo = this.aba === 'ativos';
-    this.erroForm = '';
-    this.mostrarFormulario = true;
+    this.profissionalDrawer.abrirNovo({
+      onSalvo: () => this.carregar(),
+    });
   }
 
   abrirEditar(p: ProfissionalListaItem): void {
-    this.editandoId = p.id;
-    this.formNome = p.nome.trim();
-    this.formAtivo = p.ativo !== false;
-    this.erroForm = '';
-    this.mostrarFormulario = true;
+    this.profissionalDrawer.abrirEdicao(p.id, {
+      onSalvo: () => this.carregar(),
+    });
   }
 
-  cancelarForm(): void {
-    this.mostrarFormulario = false;
-    this.editandoId = null;
-    this.erroForm = '';
-  }
-
-  salvar(): void {
-    const nome = this.formNome.trim();
-    if (!nome) {
-      this.erroForm = 'Nome é obrigatório.';
-      return;
-    }
-    this.salvando = true;
-    this.erroForm = '';
-    if (this.editandoId == null) {
-      this.api.createProfissional({ nome, ativo: this.formAtivo }).subscribe({
-        next: () => {
-          this.salvando = false;
-          this.mostrarFormulario = false;
-          this.carregar();
-        },
-        error: (e: Error) => {
-          this.salvando = false;
-          this.erroForm =
-            e.message || 'Não foi possível guardar. Tente novamente.';
-        },
-      });
-    } else {
-      this.api
-        .updateProfissional({
-          id: this.editandoId,
-          nome,
-          ativo: this.formAtivo,
-        })
-        .subscribe({
-          next: () => {
-            this.salvando = false;
-            this.mostrarFormulario = false;
-            this.carregar();
-          },
-          error: (e: Error) => {
-            this.salvando = false;
-            this.erroForm =
-              e.message || 'Não foi possível guardar. Tente novamente.';
-          },
-        });
-    }
-  }
-
-  exibirCelular(_p: ProfissionalListaItem): string {
-    return '—';
+  exibirCelular(p: ProfissionalListaItem): string {
+    const f = formatarCelularBr(p.celular);
+    return f || '—';
   }
 
   exibirEmail(_p: ProfissionalListaItem): string {
@@ -230,9 +174,7 @@ export class ProfissionaisComponent implements OnInit {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
-    if (this.mostrarFormulario) {
-      ev.preventDefault();
-      if (!this.salvando) this.cancelarForm();
+    if (this.profissionalDrawer.aberto) {
       return;
     }
     if (this.perPageMenuAberto) {

@@ -4,7 +4,7 @@
       <div class="list-head__left">
         <h1 class="list-head__title">Comissões</h1>
       </div>
-      @if (vista() === 'detalhe') {
+      @if (emLayoutLista()) {
         <div class="list-head__actions">
           <button
             type="button"
@@ -105,9 +105,7 @@
     </nav>
   </header>
 
-  @if (tabAtiva() !== 'detalhadas') {
-    <p class="fin-comissoes__hint">Esta secção estará disponível em breve.</p>
-  } @else if (vista() === 'filtros') {
+  @if (tabAtiva() === 'detalhadas' && vista() === 'filtros') {
     <section class="fin-comissoes__filtros-centro" aria-label="Filtros">
       <h2 class="fin-comissoes__filtros-titulo">Filtros</h2>
       <p class="fin-comissoes__filtros-sub">
@@ -115,6 +113,9 @@
       </p>
       <div class="fin-comissoes__periodo-filtro fin-comissoes__periodo-filtro--centro">
         <app-cliente-drawer-periodo-filtro
+          [mostrarBotaoCalendario]="false"
+          [mostrarIconeCalendario]="true"
+          [sublinhadoDeslizante]="true"
           [(inicioYmd)]="periodoInicio"
           [(fimYmd)]="periodoFim"
           (periodoAlterado)="onPeriodoAlterado()"
@@ -165,25 +166,112 @@
           <div class="fin-comissoes__periodo-filtro fin-comissoes__periodo-filtro--sidebar">
             <app-cliente-drawer-periodo-filtro
               [painelFlutuante]="true"
+              [semBackdropEscuro]="true"
+              [layoutComissoesSidebar]="true"
+              [sublinhadoDeslizante]="true"
               [(inicioYmd)]="periodoInicio"
               [(fimYmd)]="periodoFim"
               (periodoAlterado)="onPeriodoAlterado()"
             />
           </div>
         </div>
-        <div class="fin-comissoes__sidebar-card">
+        <div class="fin-comissoes__sidebar-card fin-comissoes__sidebar-card--prof">
           <span class="fin-comissoes__sidebar-label">Profissional</span>
-          <select
-            class="fin-comissoes__select"
-            [(ngModel)]="profissionalIdSidebar"
-            (ngModelChange)="onProfissionalSidebarChange()"
-            name="profSidebar"
-          >
-            @for (prof of profissionais(); track prof.id) {
-              <option [ngValue]="prof.id">{{ prof.nome }}</option>
-            }
-          </select>
+          <div class="fin-comissoes__sidebar-prof">
+            <app-saas-select
+              layout="sidebar"
+              triggerCursor="text"
+              [options]="profissionaisSelectOptions()"
+              [useNumericOutput]="true"
+              [showFilter]="false"
+              [showCriarCliente]="true"
+              criarButtonLabel="Criar profissional"
+              placeholder="Selecionar profissional"
+              ariaFieldLabel="Profissional"
+              [(ngModel)]="profissionalIdSidebar"
+              (ngModelChange)="onProfissionalSidebarChange()"
+              (criarCliente)="onCriarProfissional()"
+              name="profSidebar"
+            />
+          </div>
         </div>
+        @if (tabAtiva() === 'detalhadas') {
+          @if (resumoFolha(); as resumo) {
+            <div class="fin-comissoes__sidebar-card fin-comissoes__sidebar-card--resumo">
+              <span class="fin-comissoes__sidebar-label">Resumo</span>
+              <dl class="fin-comissoes__resumo-list">
+                <div>
+                  <dt>Comissões</dt>
+                  <dd>{{
+                    resumo.totalComissao | currency: 'BRL' : 'symbol' : '1.2-2'
+                  }}</dd>
+                </div>
+                <div>
+                  <dt>Pago</dt>
+                  <dd>{{
+                    resumo.totalPago | currency: 'BRL' : 'symbol' : '1.2-2'
+                  }}</dd>
+                </div>
+                <div>
+                  <dt>Saldo</dt>
+                  <dd class="fin-comissoes__resumo-saldo">{{
+                    resumo.saldo | currency: 'BRL' : 'symbol' : '1.2-2'
+                  }}</dd>
+                </div>
+              </dl>
+            </div>
+          }
+          <div class="fin-comissoes__sidebar-card fin-comissoes__sidebar-card--check">
+            <label class="fin-comissoes__sidebar-check">
+              <app-fin-filtros-floating-tip
+                #tipComissoesAnteriores
+                [openOnFocus]="false"
+                [showDelayMs]="160"
+                arrowAlignSelector="input[type='checkbox']"
+                panelModifier="fin-comissoes-anteriores-tip"
+              >
+                <span
+                  finFiltrosTipTrigger
+                  class="fin-comissoes__sidebar-check-trigger"
+                >
+                  <span class="fin-comissoes__sidebar-check-control">
+                    <input
+                      type="checkbox"
+                      [(ngModel)]="mostrarAnteriores"
+                      (ngModelChange)="onMostrarAnterioresChange()"
+                      (mousedown)="tipComissoesAnteriores.scheduleHide()"
+                      name="mostrarAnteriores"
+                    />
+                  </span>
+                  <span class="fin-comissoes__sidebar-check-label"
+                    >Mostrar comissões anteriores</span
+                  >
+                </span>
+                <div finFiltrosTipBody>
+                  <p>
+                    Mostra as comissões que possuem valores disponíveis e foram
+                    criadas antes da data inicial dos filtros inseridos
+                  </p>
+                </div>
+              </app-fin-filtros-floating-tip>
+            </label>
+          </div>
+        }
+        @if (tabAtiva() === 'pagas') {
+          <div class="fin-comissoes__sidebar-card">
+            <span class="fin-comissoes__sidebar-label">Assinadas digitalmente</span>
+            <select
+              class="fin-comissoes__select"
+              [(ngModel)]="assinadasDigitalmenteFiltro"
+              (ngModelChange)="onAssinadasFiltroChange()"
+              name="assinadasFiltro"
+            >
+              <option value="todas">Todas</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+        }
         </aside>
       </div>
 
@@ -192,8 +280,12 @@
           <p class="fin-comissoes__hint" role="alert">{{ erroCarregamento() }}</p>
         }
         <div class="fin-comissoes__table-panel">
-        <div class="list-table-card fin-comissoes__table-card">
+        <div
+          class="list-table-card fin-comissoes__table-card"
+          [class.fin-comissoes__table-card--pagas]="tabAtiva() === 'pagas'"
+        >
           <div class="table-wrap">
+            @if (tabAtiva() === 'detalhadas') {
             <table class="list-table fin-comissoes-table">
               <colgroup>
                 <col class="fin-comissoes-table__col-check" />
@@ -326,25 +418,153 @@
                 }
               </tbody>
             </table>
+            } @else {
+            <table class="list-table fin-comissoes-table fin-comissoes-table--pagas">
+              <thead>
+                <tr>
+                  <th scope="col">Data</th>
+                  <th scope="col">Pagamento</th>
+                  <th scope="col">Profissional</th>
+                  <th scope="col">Usuário</th>
+                  <th class="col-num" scope="col">Comissões</th>
+                  <th class="col-num" scope="col">Vales</th>
+                  <th class="col-num" scope="col">Bonificações</th>
+                  <th class="col-num" scope="col">Valor pago</th>
+                  <th class="col-acoes" scope="col">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (carregando()) {
+                  <tr>
+                    <td colspan="9" class="fin-comissoes__loading-row">
+                      Carregando comissões pagas…
+                    </td>
+                  </tr>
+                } @else if (linhasPagas().length === 0) {
+                  <tr>
+                    <td class="table-body__empty" colspan="9">
+                      <div class="table-empty" role="status">
+                        <span class="table-empty__icon-wrap" aria-hidden="true">
+                          <svg
+                            class="table-empty__icon lucide lucide-inbox"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="0.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                            <path
+                              d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+                            />
+                          </svg>
+                        </span>
+                        <p class="table-empty__label">Nenhum item encontrado</p>
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                  @for (row of linhasPagas(); track row.movimentacaoId) {
+                    <tr class="fin-comissoes-table__row-paga">
+                      <td>{{ formatarData(row.dataYmd) }}</td>
+                      <td>{{ formatarData(row.pagamentoYmd) }}</td>
+                      <td>{{ row.profissionalNome }}</td>
+                      <td>{{ row.usuarioNome }}</td>
+                      <td class="col-num">{{
+                        row.comissoes | currency: 'BRL' : 'symbol' : '1.2-2'
+                      }}</td>
+                      <td class="col-num">{{
+                        row.vales | currency: 'BRL' : 'symbol' : '1.2-2'
+                      }}</td>
+                      <td class="col-num">{{
+                        row.bonificacoes | currency: 'BRL' : 'symbol' : '1.2-2'
+                      }}</td>
+                      <td class="col-num fin-comissoes-table__valor-pago">{{
+                        row.valorPago | currency: 'BRL' : 'symbol' : '1.2-2'
+                      }}</td>
+                      <td class="col-acoes">
+                        <div class="fin-comissoes-acoes">
+                          <button
+                            type="button"
+                            class="fin-comissoes-acoes__btn"
+                            aria-label="Ações"
+                            [attr.aria-expanded]="
+                              menuAcoesPagasAberto() === row.movimentacaoId
+                            "
+                            (click)="alternarMenuAcoesPagas(row.movimentacaoId, $event)"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <line x1="4" x2="20" y1="6" y2="6" />
+                              <line x1="4" x2="20" y1="12" y2="12" />
+                              <line x1="4" x2="20" y1="18" y2="18" />
+                            </svg>
+                          </button>
+                          @if (menuAcoesPagasAberto() === row.movimentacaoId) {
+                            <div
+                              class="fin-comissoes-acoes__menu"
+                              role="menu"
+                              (click)="$event.stopPropagation()"
+                            >
+                              <button
+                                type="button"
+                                role="menuitem"
+                                class="fin-comissoes-acoes__item"
+                                (click)="estornarPagamentoComissao(row)"
+                              >
+                                Estornar
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+            }
           </div>
         </div>
 
+        @if (tabAtiva() === 'detalhadas') {
         <footer class="fin-comissoes__bar" aria-label="Resumo e pagamento">
           <div class="fin-comissoes__bar-totais">
+            <span class="fin-comissoes__bar-total-item">
+              <span class="fin-comissoes__bar-total-label">Comissões</span>
+              <strong class="fin-comissoes__bar-total-value">{{
+                totalComissoes() | currency: 'BRL' : 'symbol' : '1.2-2'
+              }}</strong>
+            </span>
+            <span class="fin-comissoes__bar-total-item">
+              <span class="fin-comissoes__bar-total-label">Vales</span>
+              <strong class="fin-comissoes__bar-total-value">R$ 0,00</strong>
+            </span>
+            <span class="fin-comissoes__bar-total-item">
+              <span class="fin-comissoes__bar-total-label">Bonificações</span>
+              <strong class="fin-comissoes__bar-total-value">R$ 0,00</strong>
+            </span>
             <span
-              >Comissões
-              <strong>{{
-                totalComissoes() | currency: 'BRL' : 'symbol' : '1.2-2'
-              }}</strong></span
+              class="fin-comissoes__bar-total-item fin-comissoes__bar-total-item--liquido"
             >
-            <span>Vales <strong>R$ 0,00</strong></span>
-            <span>Bonificações <strong>R$ 0,00</strong></span>
-            <span class="fin-comissoes__bar-liquido"
-              >Líquido
-              <strong>{{
+              <span class="fin-comissoes__bar-total-label">Líquido</span>
+              <strong class="fin-comissoes__bar-total-value">{{
                 totalComissoes() | currency: 'BRL' : 'symbol' : '1.2-2'
-              }}</strong></span
-            >
+              }}</strong>
+            </span>
           </div>
           <button
             type="button"
@@ -355,6 +575,7 @@
             Pagar comissões
           </button>
         </footer>
+        }
         </div>
       </div>
     </div>
@@ -407,7 +628,7 @@
     </div>
   }
 
-  @if (vista() === 'detalhe') {
+  @if (tabAtiva() === 'detalhadas' && vista() === 'detalhe') {
     <app-financeiro-comissoes-print
       [linhas]="linhasDetalhe()"
       [periodoInicio]="periodoInicio"

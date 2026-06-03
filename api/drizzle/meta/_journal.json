@@ -274,6 +274,20 @@
       "when": 1775697950000,
       "tag": "0038_formas_pagamento_prazo",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1775697951000,
+      "tag": "0039_profissionais_cadastro_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1775697952000,
+      "tag": "0040_profissional_comissao_config",
+      "breakpoints": true
     }
   ]
 }

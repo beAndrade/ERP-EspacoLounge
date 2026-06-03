@@ -234,6 +234,7 @@
   align-items: stretch;
 
   &:has(app-cliente-cadastro-form),
+  &:has(app-profissional-cadastro-form),
   &:has(app-cliente-cashback-tab),
   &:has(app-cliente-creditos-tab),
   &:has(app-cliente-debitos-tab),

@@ -180,7 +180,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.slotsHoras = this.gerarSlots();
-    this.api.listProfissionais().subscribe({
+    this.api.listProfissionais(false, 'agenda').subscribe({
       next: (items) => {
         this.profissionais = items ?? [];
       },

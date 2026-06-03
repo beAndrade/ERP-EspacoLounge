@@ -36,6 +36,7 @@ import {
   getCaixaDiaApi,
   listCategoriasFinanceirasApi,
   listComissoesDetalhadasApi,
+  listComissoesPagasApi,
   listMovimentacoesApi,
   listTransacoesFinanceirasApi,
   marcarMovimentacaoComoPagaApi,
@@ -57,7 +58,9 @@ import {
 import {
   atualizarProfissional,
   criarProfissional,
+  getProfissionalById,
   listProfissionaisForApi,
+  type ProfissionalWriteInput,
 } from './services/profissionais-domain';
 import {
   ajustarClienteCreditoManual,
@@ -106,6 +109,7 @@ const clienteCadastroBodySchema = t.Object({
 import { requireAdminPin } from './lib/admin-pin';
 import {
   listFolhaPorPeriodoApi,
+  listComissoesResumidasApi,
   recalcularTotaisComissaoFolhaPorPeriodo,
 } from './services/folha-domain';
 import { incrementarEstoqueProduto } from './services/estoque-domain';
@@ -230,6 +234,72 @@ async function execExcluirAtendimento(body: {
   }
 }
 
+async function handleComissoesResumidasGet(
+  query: Record<string, string | undefined>,
+) {
+  try {
+    const dataInicio = String(
+      query.dataInicio ?? query.data_inicio ?? '',
+    ).trim();
+    const dataFim = String(query.dataFim ?? query.data_fim ?? '').trim();
+    const profRaw = String(
+      query.profissionalId ?? query.profissional_id ?? '',
+    ).trim();
+    const profissionalId = profRaw ? Number(profRaw) : null;
+    const items = await listComissoesResumidasApi(db, {
+      dataInicio,
+      dataFim,
+      profissionalId:
+        profissionalId != null && Number.isFinite(profissionalId) && profissionalId > 0
+          ? profissionalId
+          : null,
+    });
+    return ok({ items });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (
+      msg.includes('obrigatórias') ||
+      msg.includes('não pode ser posterior')
+    ) {
+      return fail('VALIDATION', msg);
+    }
+    return fail('SERVER', msg);
+  }
+}
+
+async function handleComissoesPagasGet(
+  query: Record<string, string | undefined>,
+) {
+  try {
+    const dataInicio = String(
+      query.dataInicio ?? query.data_inicio ?? '',
+    ).trim();
+    const dataFim = String(query.dataFim ?? query.data_fim ?? '').trim();
+    const profRaw = String(
+      query.profissionalId ?? query.profissional_id ?? '',
+    ).trim();
+    const profissionalId = profRaw ? Number(profRaw) : null;
+    const items = await listComissoesPagasApi(db, {
+      dataInicio,
+      dataFim,
+      profissionalId:
+        profissionalId != null && Number.isFinite(profissionalId) && profissionalId > 0
+          ? profissionalId
+          : null,
+    });
+    return ok({ items });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (
+      msg.includes('obrigatórias') ||
+      msg.includes('não pode ser posterior')
+    ) {
+      return fail('VALIDATION', msg);
+    }
+    return fail('SERVER', msg);
+  }
+}
+
 async function handleComissoesDetalhadasGet(
   query: Record<string, string | undefined>,
 ) {
@@ -305,6 +375,45 @@ async function handleComissoesPagarPost(body: {
   }
 }
 
+function parseBoolField(v: unknown): boolean | undefined {
+  if (v === undefined) return undefined;
+  if (v === false || v === 0 || v === '0' || v === 'false') return false;
+  return Boolean(v);
+}
+
+function profissionalBodyFromRequest(body: unknown): ProfissionalWriteInput {
+  const b = body as Record<string, unknown>;
+  const out: ProfissionalWriteInput = {};
+  if (b.nome !== undefined) out.nome = String(b.nome);
+  if (b.celular !== undefined) out.celular = String(b.celular);
+  if (b.apelido !== undefined) out.apelido = String(b.apelido ?? '');
+  if (b.profissao !== undefined) out.profissao = String(b.profissao ?? '');
+  if (b.aniversario !== undefined) {
+    out.aniversario = String(b.aniversario ?? '');
+  }
+  if (b.cpf_cnpj !== undefined || b.cpfCnpj !== undefined) {
+    out.cpf_cnpj = String(b.cpf_cnpj ?? b.cpfCnpj ?? '');
+  }
+  if (b.rg !== undefined) out.rg = String(b.rg ?? '');
+  if (b.anotacoes !== undefined) out.anotacoes = String(b.anotacoes ?? '');
+  const ativo = parseBoolField(b.ativo);
+  if (ativo !== undefined) out.ativo = ativo;
+  const disp = parseBoolField(
+    b.disponivel_agendamento_online ?? b.disponivelAgendamentoOnline,
+  );
+  if (disp !== undefined) out.disponivel_agendamento_online = disp;
+  const gerar = parseBoolField(b.gerar_agenda ?? b.gerarAgenda);
+  if (gerar !== undefined) out.gerar_agenda = gerar;
+  const recebe = parseBoolField(b.recebe_comissao ?? b.recebeComissao);
+  if (recebe !== undefined) out.recebe_comissao = recebe;
+  if (b.comissao_listagem_modo !== undefined) {
+    out.comissao_listagem_modo = String(b.comissao_listagem_modo).trim() as
+      | 'pagamento_cliente'
+      | 'competencia';
+  }
+  return out;
+}
+
 const app = new Elysia({ adapter: node() })
   .use(
     cors({
@@ -321,6 +430,12 @@ const app = new Elysia({ adapter: node() })
   )
   .get('/api/financeiro/comissoes/detalhadas', async ({ query }) =>
     handleComissoesDetalhadasGet(query as Record<string, string | undefined>),
+  )
+  .get('/api/financeiro/comissoes/pagas', async ({ query }) =>
+    handleComissoesPagasGet(query as Record<string, string | undefined>),
+  )
+  .get('/api/financeiro/comissoes/resumidas', async ({ query }) =>
+    handleComissoesResumidasGet(query as Record<string, string | undefined>),
   )
   .post(
     '/api/financeiro/comissoes/pagar',
@@ -360,8 +475,7 @@ const app = new Elysia({ adapter: node() })
           db,
           Number((body as { movimentacao_id?: number }).movimentacao_id),
         );
-        await recalcularTotaisComissaoFolhaPorPeriodo(db, result.periodo_ym);
-        return ok({ ok: true });
+        return ok({ ok: true, periodos_ym: result.periodos_ym });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (
@@ -386,8 +500,7 @@ const app = new Elysia({ adapter: node() })
           db,
           Number((body as { movimentacao_id?: number }).movimentacao_id),
         );
-        await recalcularTotaisComissaoFolhaPorPeriodo(db, result.periodo_ym);
-        return ok({ ok: true });
+        return ok({ ok: true, periodos_ym: result.periodos_ym });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (
@@ -609,23 +722,18 @@ const app = new Elysia({ adapter: node() })
         '/profissionais',
         async ({ body }) => {
           try {
-            const nome = String((body as { nome?: string }).nome ?? '').trim();
-            if (!nome) return fail('VALIDATION', 'Nome é obrigatório');
-            const ativoRaw = (body as { ativo?: unknown }).ativo;
-            let ativo = true;
-            if (ativoRaw !== undefined) {
-              if (
-                ativoRaw === false ||
-                ativoRaw === 0 ||
-                ativoRaw === '0' ||
-                ativoRaw === 'false'
-              ) {
-                ativo = false;
-              } else {
-                ativo = Boolean(ativoRaw);
-              }
+            const input = profissionalBodyFromRequest(body);
+            if (!input.nome?.trim()) {
+              return fail('VALIDATION', 'Nome é obrigatório');
             }
-            const item = await criarProfissional(db, { nome, ativo });
+            if (!input.celular?.trim()) {
+              return fail('VALIDATION', 'Celular é obrigatório');
+            }
+            const item = await criarProfissional(db, {
+              ...input,
+              nome: input.nome!,
+              celular: input.celular!,
+            });
             return ok({ item });
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
@@ -639,7 +747,7 @@ const app = new Elysia({ adapter: node() })
           body: t.Object(
             {
               nome: t.String(),
-              ativo: t.Optional(t.Boolean()),
+              celular: t.String(),
             },
             { additionalProperties: true },
           ),
@@ -653,13 +761,99 @@ const app = new Elysia({ adapter: node() })
             raw === '1' ||
             raw.toLowerCase() === 'true' ||
             raw.toLowerCase() === 'yes';
-          const items = await listProfissionaisForApi(db, { incluirInativos });
+          const ctxRaw = String(q.contexto ?? '').trim().toLowerCase();
+          const contexto = ctxRaw === 'agenda' ? 'agenda' : 'default';
+          const items = await listProfissionaisForApi(db, {
+            incluirInativos,
+            contexto,
+          });
           return ok({ items });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           return fail('SERVER', msg);
         }
       })
+      .get('/profissionais/:id', async ({ params }) => {
+        try {
+          const id = Number.parseInt(String(params.id).trim(), 10);
+          if (!Number.isFinite(id) || id <= 0) {
+            return fail('VALIDATION', 'id inválido');
+          }
+          const item = await getProfissionalById(db, id);
+          if (!item) return fail('NOT_FOUND', 'Profissional não encontrado');
+          return ok({ item });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          return fail('SERVER', msg);
+        }
+      })
+      .get('/profissionais/:id/comissoes-servicos', async ({ params }) => {
+        try {
+          const id = Number.parseInt(String(params.id).trim(), 10);
+          if (!Number.isFinite(id) || id <= 0) {
+            return fail('VALIDATION', 'id inválido');
+          }
+          const { listProfissionalComissaoServicos } = await import(
+            './services/profissional-comissao-domain.js'
+          );
+          const items = await listProfissionalComissaoServicos(db, id);
+          return ok({ items });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+          return fail('SERVER', msg);
+        }
+      })
+      .put(
+        '/profissionais/:id/comissoes-servicos',
+        async ({ params, body }) => {
+          try {
+            const id = Number.parseInt(String(params.id).trim(), 10);
+            if (!Number.isFinite(id) || id <= 0) {
+              return fail('VALIDATION', 'id inválido');
+            }
+            const b = body as { items?: unknown };
+            const raw = Array.isArray(b.items) ? b.items : [];
+            const { replaceProfissionalComissaoServicos } = await import(
+              './services/profissional-comissao-domain.js'
+            );
+            const items = await replaceProfissionalComissaoServicos(db, id, raw);
+            return ok({ items });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+            if (/inválido|obrigatório/i.test(msg)) {
+              return fail('VALIDATION', msg);
+            }
+            return fail('SERVER', msg);
+          }
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object({}, { additionalProperties: true }),
+        },
+      )
+      .post(
+        '/profissionais/:id/comissoes-servicos/importar-catalogo',
+        async ({ params }) => {
+          try {
+            const id = Number.parseInt(String(params.id).trim(), 10);
+            if (!Number.isFinite(id) || id <= 0) {
+              return fail('VALIDATION', 'id inválido');
+            }
+            const { importarComissaoServicosDoCatalogo } = await import(
+              './services/profissional-comissao-domain.js'
+            );
+            const result = await importarComissaoServicosDoCatalogo(db, id);
+            return ok(result);
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+            return fail('SERVER', msg);
+          }
+        },
+        { params: t.Object({ id: t.String() }) },
+      )
       .patch(
         '/profissionais/:id',
         async ({ params, body }) => {
@@ -668,22 +862,9 @@ const app = new Elysia({ adapter: node() })
             if (!Number.isFinite(id) || id <= 0) {
               return fail('VALIDATION', 'id inválido');
             }
-            const b = body as { nome?: string; ativo?: unknown };
-            const patch: { nome?: string; ativo?: boolean } = {};
-            if (b.nome !== undefined) patch.nome = String(b.nome);
-            if (b.ativo !== undefined) {
-              const v = b.ativo;
-              if (v === false || v === 0 || v === '0' || v === 'false') {
-                patch.ativo = false;
-              } else {
-                patch.ativo = Boolean(v);
-              }
-            }
-            if (patch.nome !== undefined && !String(patch.nome).trim()) {
-              return fail('VALIDATION', 'Nome é obrigatório');
-            }
-            if (patch.nome === undefined && b.ativo === undefined) {
-              return fail('VALIDATION', 'Envie nome e/ou ativo');
+            const patch = profissionalBodyFromRequest(body);
+            if (Object.keys(patch).length === 0) {
+              return fail('VALIDATION', 'Nenhum campo para atualizar');
             }
             const item = await atualizarProfissional(db, id, patch);
             return ok({ item });
@@ -700,13 +881,7 @@ const app = new Elysia({ adapter: node() })
         },
         {
           params: t.Object({ id: t.String() }),
-          body: t.Object(
-            {
-              nome: t.Optional(t.String()),
-              ativo: t.Optional(t.Boolean()),
-            },
-            { additionalProperties: true },
-          ),
+          body: t.Object({}, { additionalProperties: true }),
         },
       ),
   )

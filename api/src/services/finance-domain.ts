@@ -1287,8 +1287,15 @@ export async function listComissoesDetalhadasApi(
     ),
   );
 
+  const { getProfissionalComissaoPolitica } = await import(
+    './profissional-comissao-domain.js'
+  );
+  const politica = await getProfissionalComissaoPolitica(db, profId);
+  const exigePagamentoCliente =
+    politica?.comissao_listagem_modo !== 'competencia';
+
   let resumosPorIdAt: Map<string, { status: string }> | null = null;
-  if (!opts.mostrarAnteriores && idsAt.length > 0) {
+  if (exigePagamentoCliente && !opts.mostrarAnteriores && idsAt.length > 0) {
     const { getResumosPorAtendimento } = await import(
       './comanda-pagamentos-domain.js'
     );
@@ -1355,6 +1362,199 @@ export async function listComissoesDetalhadasApi(
   return out;
 }
 
+/** Linha agregada de um lote de pagamento de comissões (`GET /api/financeiro/comissoes/pagas`). */
+export interface FinComissaoPagaItemApi {
+  movimentacao_id: number;
+  data_ymd: string;
+  pagamento_ymd: string;
+  profissional_id: number;
+  profissional_nome: string;
+  usuario_nome: string;
+  comissoes: number;
+  vales: number;
+  bonificacoes: number;
+  valor_pago: number;
+}
+
+export type ListComissoesPagasOpts = {
+  dataInicio: string;
+  dataFim: string;
+  /** Omitir ou ≤0 para listar todos os profissionais no período. */
+  profissionalId?: number | null;
+};
+
+function atendTokenFromObservacao(
+  observacao: string | null | undefined,
+): string | null {
+  const m = /(?:^|;)atend:([\d,]+)/.exec(String(observacao ?? '').trim());
+  const token = m?.[1]?.trim();
+  return token && token.length > 0 ? token : null;
+}
+
+/**
+ * Histórico de pagamentos de comissões — agrupa `pagamentos` com observação
+ * `mov:…;atend:…` (mesmo lote que `POST /api/financeiro/comissoes/pagar`).
+ */
+export async function listComissoesPagasApi(
+  db: Db,
+  opts: ListComissoesPagasOpts,
+): Promise<FinComissaoPagaItemApi[]> {
+  const di = String(opts.dataInicio ?? '').trim();
+  const df = String(opts.dataFim ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(di) || !/^\d{4}-\d{2}-\d{2}$/.test(df)) {
+    throw new Error('data_inicio e data_fim são obrigatórias (YYYY-MM-DD)');
+  }
+  if (di > df) {
+    throw new Error('data_inicio não pode ser posterior a data_fim');
+  }
+
+  const profFiltro = Number(opts.profissionalId);
+  const filtrarProf = Number.isFinite(profFiltro) && profFiltro > 0;
+
+  const conds = [
+    sql`${pagamentos.observacao} LIKE ${'%mov:%'}`,
+    sql`${pagamentos.observacao} LIKE ${'%atend:%'}`,
+    gte(pagamentos.data, di),
+    lte(pagamentos.data, df),
+  ];
+  if (filtrarProf) {
+    conds.push(eq(pagamentos.profissionalId, profFiltro));
+  }
+
+  const pagRows = await db
+    .select({
+      id: pagamentos.id,
+      data: pagamentos.data,
+      profissionalId: pagamentos.profissionalId,
+      profissional: pagamentos.profissional,
+      valor: pagamentos.valor,
+      observacao: pagamentos.observacao,
+    })
+    .from(pagamentos)
+    .where(and(...conds))
+    .orderBy(desc(pagamentos.data), desc(pagamentos.id));
+
+  type Grupo = {
+    pagamentoYmd: string;
+    profissionalId: number;
+    profissionalNome: string;
+    usuarioNome: string;
+    atendIds: number[];
+    movimentacaoId: number;
+    valorPago: number;
+  };
+
+  const grupos = new Map<string, Grupo>();
+
+  for (const p of pagRows) {
+    const token = atendTokenFromObservacao(p.observacao);
+    if (!token) continue;
+    const movId = parseObservacaoMovId(p.observacao);
+    if (movId == null) continue;
+
+    const pagYmd = String(p.data ?? '').trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(pagYmd)) continue;
+
+    const profId = Number(p.profissionalId);
+    if (!Number.isFinite(profId) || profId <= 0) continue;
+
+    const key = `${profId}|${pagYmd}|${token}`;
+    const valorLinha = toNumberPt(p.valor) ?? 0;
+    const nomeProf = String(p.profissional ?? '').trim() || '—';
+
+    const existente = grupos.get(key);
+    if (existente) {
+      existente.valorPago =
+        Math.round((existente.valorPago + valorLinha) * 100) / 100;
+      if (movId < existente.movimentacaoId) {
+        existente.movimentacaoId = movId;
+      }
+      continue;
+    }
+
+    const atendIds = [
+      ...new Set(
+        token
+          .split(',')
+          .map((x) => Number(x.trim()))
+          .filter((x) => Number.isFinite(x) && x > 0),
+      ),
+    ];
+
+    grupos.set(key, {
+      pagamentoYmd: pagYmd,
+      profissionalId: profId,
+      profissionalNome: nomeProf,
+      usuarioNome: nomeProf,
+      atendIds,
+      movimentacaoId: movId,
+      valorPago: Math.round(valorLinha * 100) / 100,
+    });
+  }
+
+  if (grupos.size === 0) return [];
+
+  const todosAtendIds = [
+    ...new Set([...grupos.values()].flatMap((g) => g.atendIds)),
+  ];
+
+  const atendRows =
+    todosAtendIds.length > 0
+      ? await db
+          .select({
+            id: atendimentos.id,
+            data: atendimentos.data,
+            comissao: atendimentos.comissao,
+            comissaoPagaEm: atendimentos.comissaoPagaEm,
+          })
+          .from(atendimentos)
+          .where(inArray(atendimentos.id, todosAtendIds))
+      : [];
+
+  const atendPorId = new Map(atendRows.map((a) => [a.id, a]));
+
+  const out: FinComissaoPagaItemApi[] = [];
+
+  for (const g of grupos.values()) {
+    let comissoes = 0;
+    let dataMin: string | null = null;
+
+    for (const aid of g.atendIds) {
+      const a = atendPorId.get(aid);
+      if (!a) continue;
+      const c = toNumberPt(a.comissao);
+      if (c != null && c > 0) comissoes += c;
+      const dYmd = ymdFromDateCol(a.data as string | Date | null);
+      if (dYmd && (dataMin == null || dYmd < dataMin)) dataMin = dYmd;
+    }
+
+    comissoes = Math.round(comissoes * 100) / 100;
+    const dataYmd = dataMin ?? g.pagamentoYmd;
+
+    out.push({
+      movimentacao_id: g.movimentacaoId,
+      data_ymd: dataYmd,
+      pagamento_ymd: g.pagamentoYmd,
+      profissional_id: g.profissionalId,
+      profissional_nome: g.profissionalNome,
+      usuario_nome: g.usuarioNome,
+      comissoes,
+      vales: 0,
+      bonificacoes: 0,
+      valor_pago: g.valorPago,
+    });
+  }
+
+  out.sort((a, b) => {
+    if (a.pagamento_ymd !== b.pagamento_ymd) {
+      return a.pagamento_ymd < b.pagamento_ymd ? 1 : -1;
+    }
+    return b.movimentacao_id - a.movimentacao_id;
+  });
+
+  return out;
+}
+
 export interface PagarComissoesPagamentoLinha {
   metodo: string;
   valor: number;
@@ -1405,6 +1605,7 @@ export async function pagarComissoesApi(
   const rows = await db
     .select({
       id: atendimentos.id,
+      data: atendimentos.data,
       comissao: atendimentos.comissao,
       profissionalId: atendimentos.profissionalId,
       comissaoPagaEm: atendimentos.comissaoPagaEm,
@@ -1454,7 +1655,18 @@ export async function pagarComissoesApi(
   const catComissaoId = await getCategoriaIdPorSlug(db, 'despesa_comissao');
   const descBase = `Pagamento de comissão para ${nomeProf}`;
 
-  return await db.transaction(async (tx) => {
+  const { folhaIdPrincipalParaLoteAtendimentos, recalcularFolhaAposIdsAtendimento } =
+    await import('./folha-domain.js');
+  const { folhaId, periodoYm } = await folhaIdPrincipalParaLoteAtendimentos(
+    db,
+    profId,
+    ids,
+  );
+  const mesRefLegivel = periodoYm
+    ? `${periodoYm.slice(5, 7)}/${periodoYm.slice(0, 4)}`
+    : null;
+
+  const result = await db.transaction(async (tx) => {
     await tx
       .update(atendimentos)
       .set({ comissaoPagaEm: dataPag })
@@ -1489,21 +1701,26 @@ export async function pagarComissoesApi(
         data: dataPag,
         profissionalId: profId,
         profissional: nomeProf,
+        folhaId: folhaId ?? undefined,
         tipo: metodoRotuloComissaoApi(p.metodo),
         valor: p.valor.toFixed(2),
+        mesRef: mesRefLegivel,
         observacao: observacaoComissaoPagamento(mov.id, ids),
       });
     }
 
     return { movimentacao_ids: movimentacaoIds, total_comissao: totalComissao };
   });
+
+  await recalcularFolhaAposIdsAtendimento(db, ids);
+  return result;
 }
 
 /** Estorna o lote de pagamento de comissão ligado à movimentação (todas as parcelas do mesmo pagamento). */
 export async function estornarComissaoMovimentacaoApi(
   db: Db,
   movimentacaoId: number,
-): Promise<{ periodo_ym: string }> {
+): Promise<{ periodos_ym: string[] }> {
   const movId = Number(movimentacaoId);
   if (!Number.isFinite(movId) || movId <= 0) {
     throw new Error('movimentacao_id inválido');
@@ -1580,23 +1797,37 @@ export async function estornarComissaoMovimentacaoApi(
       await tx
         .update(atendimentos)
         .set({ comissaoPagaEm: null })
-        .where(
-          and(
-            inArray(atendimentos.id, atendIds),
-            eq(atendimentos.comissaoPagaEm, dataPag),
-          ),
-        );
+        .where(inArray(atendimentos.id, atendIds));
     }
   });
 
-  return { periodo_ym: dataPag.slice(0, 7) };
+  const { recalcularFolhaAposIdsAtendimento, dataAtendimentoParaPeriodoYm } =
+    await import('./folha-domain.js');
+  await recalcularFolhaAposIdsAtendimento(db, atendIds);
+
+  const periodos = new Set<string>();
+  if (atendIds.length > 0) {
+    const rows = await db
+      .select({ data: atendimentos.data })
+      .from(atendimentos)
+      .where(inArray(atendimentos.id, atendIds));
+    for (const r of rows) {
+      const ym = dataAtendimentoParaPeriodoYm(
+        r.data as string | Date | null | undefined,
+      );
+      if (ym) periodos.add(ym);
+    }
+  }
+  if (periodos.size === 0) periodos.add(dataPag.slice(0, 7));
+
+  return { periodos_ym: [...periodos] };
 }
 
 /** Remove o lote de pagamento de comissão ligado à movimentação (exclusão definitiva). */
 export async function excluirComissaoMovimentacaoApi(
   db: Db,
   movimentacaoId: number,
-): Promise<{ periodo_ym: string }> {
+): Promise<{ periodos_ym: string[] }> {
   const movId = Number(movimentacaoId);
   if (!Number.isFinite(movId) || movId <= 0) {
     throw new Error('movimentacao_id inválido');
@@ -1672,14 +1903,28 @@ export async function excluirComissaoMovimentacaoApi(
       await tx
         .update(atendimentos)
         .set({ comissaoPagaEm: null })
-        .where(
-          and(
-            inArray(atendimentos.id, atendIds),
-            eq(atendimentos.comissaoPagaEm, dataPag),
-          ),
-        );
+        .where(inArray(atendimentos.id, atendIds));
     }
   });
 
-  return { periodo_ym: dataPag.slice(0, 7) };
+  const { recalcularFolhaAposIdsAtendimento, dataAtendimentoParaPeriodoYm } =
+    await import('./folha-domain.js');
+  await recalcularFolhaAposIdsAtendimento(db, atendIds);
+
+  const periodos = new Set<string>();
+  if (atendIds.length > 0) {
+    const rows = await db
+      .select({ data: atendimentos.data })
+      .from(atendimentos)
+      .where(inArray(atendimentos.id, atendIds));
+    for (const r of rows) {
+      const ym = dataAtendimentoParaPeriodoYm(
+        r.data as string | Date | null | undefined,
+      );
+      if (ym) periodos.add(ym);
+    }
+  }
+  if (periodos.size === 0) periodos.add(dataPag.slice(0, 7));
+
+  return { periodos_ym: [...periodos] };
 }

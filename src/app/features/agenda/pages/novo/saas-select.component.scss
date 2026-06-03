@@ -224,3 +224,7 @@
   border-color: var(--drawer-field-border, #e7e5e4);
   background: #fff;
 }
+
+:host.saas-select-host--trigger-cursor-text .saas-select__trigger {
+  cursor: text;
+}

@@ -1,0 +1,10 @@
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "celular" text;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "apelido" text;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "profissao" text;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "aniversario" date;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "cpf_cnpj" text;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "rg" text;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "anotacoes" text;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "disponivel_agendamento_online" boolean DEFAULT true NOT NULL;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "gerar_agenda" boolean DEFAULT true NOT NULL;
+ALTER TABLE "profissionais" ADD COLUMN IF NOT EXISTS "recebe_comissao" boolean DEFAULT true NOT NULL;

@@ -111,6 +111,7 @@
           <select
             class="fin-edit-field__select"
             [(ngModel)]="metodoPagamento"
+            (ngModelChange)="onMetodoPagamentoAlterado()"
             [disabled]="salvando() || carregandoOpcoes()"
           >
             <option value="" disabled>Selecione…</option>
