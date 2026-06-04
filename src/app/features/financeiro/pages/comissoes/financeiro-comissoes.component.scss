@@ -1193,6 +1193,107 @@
   }
 }
 
+.fin-comissoes-col--placeholder {
+  display: none;
+}
+
+.fin-comissoes__mobile-cards {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .fin-comissoes__table-card .table-wrap {
+    display: none;
+  }
+
+  .fin-comissoes__mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.65rem 0.5rem 1rem;
+  }
+
+  .fin-comissoes-mobile-card {
+    padding: 0.85rem 1rem;
+    border: 1px solid #e7e5e4;
+    border-radius: var(--radius, 8px);
+    background: var(--color-surface, #fff);
+
+    &--selected {
+      border-color: var(--color-primary, #505afb);
+      background: color-mix(in srgb, var(--color-primary, #505afb) 6%, #fff);
+    }
+  }
+
+  .fin-comissoes-mobile-card__check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .fin-comissoes-mobile-card__cliente {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .fin-comissoes-mobile-card__comanda {
+    font-weight: 400;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+  }
+
+  .fin-comissoes-mobile-card__servico {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+  }
+
+  .fin-comissoes-mobile-card__vals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--color-muted);
+
+    strong {
+      display: block;
+      color: #1c1917;
+      font-size: 1rem;
+    }
+  }
+
+  .fin-comissoes-mobile-card__link {
+    margin-top: 0.65rem;
+    min-height: var(--touch-min, 44px);
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #d6d3d1;
+    border-radius: var(--radius, 8px);
+    background: var(--color-surface, #fff);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .fin-comissoes__bar-totais {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .fin-comissoes__detalhe-layout .list-filtros-drawer {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 100;
+    max-width: min(100vw, 20rem);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.12);
+  }
+}
+
 @media print {
   :host {
     display: block;

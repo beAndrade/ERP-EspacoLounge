@@ -1,4 +1,4 @@
-@import '../cliente-cadastro-drawer/cliente-cadastro-form.component.scss';
+@use '../cliente-cadastro-drawer/cliente-cadastro-form.component.scss' as *;
 
 .cliente-form-grid .cliente-field__inner > textarea {
   width: 100%;

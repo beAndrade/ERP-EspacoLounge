@@ -131,7 +131,6 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
   private carregarLinhasSeq = 0;
   private carregarPagasSeq = 0;
 
-  assinadasDigitalmenteFiltro: 'todas' | 'sim' | 'nao' = 'todas';
 
   readonly tabs: { id: FinComissaoTab; label: string }[] = [
     { id: 'detalhadas', label: 'Detalhadas' },
@@ -255,6 +254,15 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscapeGlobal(ev: KeyboardEvent): void {
+    if (this.cadastroDrawer.tratarEscapeComandaEmpilhadaNaFicha()) {
+      ev.preventDefault();
+      return;
+    }
+    if (this.cadastroDrawer.isAberto) {
+      ev.preventDefault();
+      this.cadastroDrawer.fechar();
+      return;
+    }
     if (this.comandaPainelAberto) {
       ev.preventDefault();
       this.fecharComandaDrawer();
@@ -514,10 +522,6 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     }
   }
 
-  onAssinadasFiltroChange(): void {
-    if (this.tabAtiva() === 'pagas') this.carregarLinhasPagas();
-  }
-
   toggleSidebarFiltros(): void {
     this.sidebarAberto.update((aberto) => !aberto);
   }
@@ -692,10 +696,7 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
       )
       .subscribe((items) => {
         if (seq !== this.carregarPagasSeq) return;
-        let linhas = items.map((r) => this.mapLinhaPagaApi(r));
-        if (this.assinadasDigitalmenteFiltro !== 'todas') {
-          linhas = [];
-        }
+        const linhas = items.map((r) => this.mapLinhaPagaApi(r));
         this.linhasPagas.set(linhas);
         this.carregando.set(false);
       });

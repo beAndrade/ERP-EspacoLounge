@@ -1,84 +1,115 @@
-<div class="toolbar">
-  <h1>Agenda — lista</h1>
-  <div class="toolbar-actions">
-    <a routerLink="/agenda/calendario" class="btn">Calendário (mês)</a>
-    <a routerLink="/agenda/novo" class="btn primary">Novo atendimento</a>
+<div class="list-page agenda-lista-page">
+  <header class="list-head">
+    <div class="list-head__title-row">
+      <div class="list-head__left">
+        <h1 class="list-head__title">Agenda — lista</h1>
+      </div>
+      <div class="list-head__actions">
+        <a routerLink="/agenda/calendario" class="list-head__toolbar-btn">
+          <span class="list-head__toolbar-label">Calendário</span>
+        </a>
+        <a routerLink="/agenda" class="list-head__toolbar-btn list-head__toolbar-btn--primary">
+          <span class="list-head__toolbar-label">Hub do dia</span>
+        </a>
+        <a routerLink="/agenda/novo" class="list-head__toolbar-btn list-head__toolbar-btn--primary">
+          <span class="list-head__toolbar-label">Novo</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <p class="agenda-lista-hint hint">
+    Por padrão, últimos 90 dias — altere as datas e toque em Atualizar.
+  </p>
+
+  <div class="agenda-lista-filtros filtros">
+    <label>
+      <span>De (dd-mm-aaaa)</span>
+      <input
+        type="text"
+        [(ngModel)]="dataInicio"
+        name="di"
+        inputmode="numeric"
+        placeholder="09-01-2026"
+        maxlength="10"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </label>
+    <label>
+      <span>Até (dd-mm-aaaa)</span>
+      <input
+        type="text"
+        [(ngModel)]="dataFim"
+        name="df"
+        inputmode="numeric"
+        placeholder="09-04-2026"
+        maxlength="10"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </label>
+    <button type="button" class="btn primary" (click)="carregar()">Atualizar lista</button>
   </div>
+
+  @if (erro) {
+    <p class="alert" role="alert">{{ erro }}</p>
+  }
+  @if (carregando) {
+    <p class="hint">Carregando…</p>
+  }
+
+  @if (!carregando && !erro && itens.length === 0) {
+    <p class="hint">Nenhum atendimento neste período.</p>
+  }
+
+  @if (!carregando && itens.length > 0) {
+    <div class="list-table-card agenda-lista-table-card" role="region" aria-label="Lista de atendimentos">
+      <div class="table-wrap agenda-lista-table-wrap">
+        <table class="list-table agenda-lista-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th>Descrição</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of itens; track $index) {
+              <tr>
+                <td>{{ dataDdMmAaaa(a.data) }}</td>
+                <td>{{ a.nomeCliente || '—' }}</td>
+                <td>{{ a.descricao || '—' }}</td>
+                <td>
+                  @if (valorNum(a.valor) !== null) {
+                    {{ valorNum(a.valor)! | number: '1.2-2' }}
+                  } @else {
+                    —
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <ul class="agenda-lista-cards" aria-label="Lista de atendimentos (cartões)">
+      @for (a of itens; track $index) {
+        <li class="agenda-lista-card">
+          <div class="agenda-lista-card__head">
+            <span class="agenda-lista-card__data">{{ dataDdMmAaaa(a.data) }}</span>
+            @if (valorNum(a.valor) !== null) {
+              <span class="agenda-lista-card__valor">{{
+                valorNum(a.valor)! | number: '1.2-2'
+              }}</span>
+            }
+          </div>
+          <p class="agenda-lista-card__cliente">{{ a.nomeCliente || '—' }}</p>
+          <p class="agenda-lista-card__desc">{{ a.descricao || '—' }}</p>
+        </li>
+      }
+    </ul>
+  }
 </div>
-
-<p class="hint">
-  Lista simples: <strong>quando</strong>, <strong>quem</strong>, <strong>o quê</strong> e <strong>quanto</strong>.
-  Por padrão mostra os últimos 90 dias — mude as datas abaixo se precisar.
-</p>
-
-<div class="filtros">
-  <label>
-    <span>De (dd-mm-aaaa)</span>
-    <input
-      type="text"
-      [(ngModel)]="dataInicio"
-      name="di"
-      inputmode="numeric"
-      placeholder="09-01-2026"
-      maxlength="10"
-      autocomplete="off"
-      spellcheck="false"
-    />
-  </label>
-  <label>
-    <span>Até (dd-mm-aaaa)</span>
-    <input
-      type="text"
-      [(ngModel)]="dataFim"
-      name="df"
-      inputmode="numeric"
-      placeholder="09-04-2026"
-      maxlength="10"
-      autocomplete="off"
-      spellcheck="false"
-    />
-  </label>
-  <button type="button" class="btn" (click)="carregar()">Atualizar lista</button>
-</div>
-
-@if (erro) {
-  <p class="alert" role="alert">{{ erro }}</p>
-}
-@if (carregando) {
-  <p class="hint">Carregando…</p>
-}
-
-@if (!carregando && !erro && itens.length === 0) {
-  <p class="hint">Nenhum atendimento neste período.</p>
-}
-
-@if (!carregando && itens.length > 0) {
-  <div class="table-wrap" role="region" aria-label="Lista de atendimentos">
-    <table>
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Cliente</th>
-          <th>Descrição</th>
-          <th>Valor</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (a of itens; track $index) {
-          <tr>
-            <td>{{ dataDdMmAaaa(a.data) }}</td>
-            <td>{{ a.nomeCliente || '—' }}</td>
-            <td>{{ a.descricao || '—' }}</td>
-            <td>
-              @if (valorNum(a.valor) !== null) {
-                {{ valorNum(a.valor)! | number: '1.2-2' }}
-              } @else {
-                —
-              }
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-}

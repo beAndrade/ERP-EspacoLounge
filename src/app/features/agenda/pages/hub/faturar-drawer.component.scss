@@ -369,6 +369,18 @@ input[type='number'].fat-field__input {
 }
 
 /* Métodos de pagamento — grelha 2×2 */
+@media (max-width: 640px) {
+  .fat-metodos {
+    grid-template-columns: 1fr;
+  }
+
+  .fat-metodos__btn,
+  .fat-metodo-btn {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
 .fat-metodos {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

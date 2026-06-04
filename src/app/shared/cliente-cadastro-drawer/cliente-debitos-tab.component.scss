@@ -28,7 +28,7 @@
 
   flex-direction: column;
 
-  gap: 2rem;
+  gap: 1.25rem;
 
   width: 100%;
 
@@ -232,23 +232,13 @@
 
 
 
-.cliente-debitos__sec .drawer-table-foot:not(.drawer-table-foot--selecao) {
-  height: 0;
-  min-height: 0;
-  overflow: hidden;
-  background: transparent;
-}
-
 .cliente-debitos__sec .drawer-table-foot--selecao {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  height: auto;
+  height: 56px;
   min-height: 56px;
   padding: 10px 16px;
-  background: #fafafa;
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
   box-sizing: border-box;
 }
 
@@ -312,13 +302,7 @@
 }
 
 .cliente-debitos__sec--comandas {
-  padding-top: 1rem;
+  padding-top: 0.5rem;
   border-top: 1px dotted #d1d5db;
-
-  .drawer-table-foot {
-    height: 56px;
-    min-height: 56px;
-    background: transparent;
-  }
 }
 

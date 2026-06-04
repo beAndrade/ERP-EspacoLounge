@@ -227,7 +227,7 @@
   background: var(--cliente-accent);
   pointer-events: none;
   transform: translateY(calc(var(--cliente-nav-active-index) * var(--cliente-nav-row-step)));
-  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cliente-perfil-drawer .cliente-nav__item {

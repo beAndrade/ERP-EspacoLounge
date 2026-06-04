@@ -272,7 +272,7 @@ export function idClienteDoGrupo(g: ComandaGrupoResumo): string {
 export interface ContagensSidebarCliente {
   /** Comandas com status «Pendente» (cobrança não finalizada), como na lista. */
   comandasPendente: number;
-  /** Comandas faturadas com pagamento «Atrasado» na lista. */
+  /** Comandas faturadas com pagamento «Atrasado» (não inclui pendente de faturação). */
   pagamentosAtrasados: number;
 }
 
@@ -291,8 +291,10 @@ export function contagensSidebarParaCliente(
   let pagamentosAtrasados = 0;
   for (const g of grupos) {
     if (comandaQuitadaNasCifrasGrupo(g)) continue;
-    if (statusComandaColunaFromGrupo(g) === 'pendente') {
+    const statusCol = statusComandaColunaFromGrupo(g);
+    if (statusCol === 'pendente') {
       comandasPendente += 1;
+      continue;
     }
     if (pagamentoColunaFromGrupo(g) === 'atrasado') {
       pagamentosAtrasados += 1;
@@ -400,23 +402,26 @@ export function painelDebitosClienteFromAtendimentos(
 
     if (comandaQuitadaNasCifrasGrupo(g)) continue;
 
-    /** Mesma regra da coluna Pagamento em Comandas (inclui pendente com data vencida). */
+    const statusCol = statusComandaColunaFromGrupo(g);
+
+    /** Cobrança não finalizada → «Comandas em aberto» (mesma regra da sidebar). */
+    if (statusCol === 'pendente') {
+      comandasAberto.push({
+        idAtendimento: idAt,
+        numeroComanda: numero,
+        dataYmd: g.data,
+        valorReais: valorMonetarioGrupoCliente(g),
+      });
+      continue;
+    }
+
+    /** Faturada com pagamento em atraso → «Débitos». */
     if (pagamentoColunaFromGrupo(g) === 'atrasado') {
       debitos.push({
         idAtendimento: idAt,
         numeroComanda: numero,
         descricao: rotuloComandaDebito(numero, nome),
         vencimentoYmd: vencimentoDebitoGrupo(g),
-        valorReais: valorMonetarioGrupoCliente(g),
-      });
-      continue;
-    }
-
-    if (statusComandaColunaFromGrupo(g) === 'pendente') {
-      comandasAberto.push({
-        idAtendimento: idAt,
-        numeroComanda: numero,
-        dataYmd: g.data,
         valorReais: valorMonetarioGrupoCliente(g),
       });
     }

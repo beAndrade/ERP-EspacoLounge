@@ -19,7 +19,8 @@
       <button
         type="button"
         class="client-sidebar-drawer__nome-destaque client-sidebar-drawer__nome-btn"
-        aria-label="Abrir perfil do cliente (em breve)"
+        (click)="clicouAbrirCadastroCliente()"
+        [attr.aria-label]="'Abrir ficha de ' + (cliente?.nome?.trim() || 'cliente')"
       >
         {{ cliente?.nome?.trim() || '—' }}
       </button>

@@ -223,6 +223,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return this.modoModal && !!this.idAtendimentoEmEdicao?.trim();
   }
 
+  /** Painel lateral do cliente (mobile / viewport estreito). */
+  painelClienteMobileAberto = false;
+
+  @HostBinding('class.agenda-novo--cliente-panel-open')
+  get clientePanelMobileAberto(): boolean {
+    return this.modoModal && this.painelClienteMobileAberto;
+  }
+
   @HostBinding('class.agenda-novo--somente-comanda')
   get hostSomenteComanda(): boolean {
     return this.isFluxoSomenteComanda();
@@ -3950,11 +3958,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       : '';
   }
 
+  togglePainelClienteMobile(): void {
+    this.painelClienteMobileAberto = !this.painelClienteMobileAberto;
+  }
+
   /**
    * Cancelar o drawer: em agendamento **novo**, remove o rascunho de repetição
    * em sessionStorage para o cliente — ao reabrir, o cascade fica neutro.
    */
   onCancelarModalClique(): void {
+    this.painelClienteMobileAberto = false;
     if (this.modoModal && !this.idAtendimentoEmEdicao?.trim()) {
       const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
       if (cid) {

@@ -73,11 +73,35 @@
 
 
 .cliente-agendamentos__head app-cliente-drawer-periodo-filtro {
-
   flex: 0 1 auto;
-
   min-width: 0;
+}
 
+:host ::ng-deep .cliente-agendamentos__head .periodo-filtro__bar {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 0.5rem 0 0.65rem;
+  border: 1px solid #f1f1f1;
+  border-radius: 12px;
+  background: #fff;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__inputs {
+  align-self: center;
+  padding-bottom: 0;
+}
+
+:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__field {
+  padding-bottom: 0;
+}
+
+:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__sep,
+:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__cal-btn,
+:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__cal-icon {
+  margin-bottom: 0;
+  align-self: center;
 }
 
 
@@ -94,13 +118,44 @@
 
 
 
-col.drawer-table__col-comanda-link {
+.drawer-table--agendamentos {
+  col.drawer-table__col-data {
+    width: 160px;
+  }
 
-  width: 12%;
+  col.drawer-table__col-desc-wide {
+    width: 342px;
+  }
 
+  col.drawer-table__col-status {
+    width: 120px;
+  }
+
+  col.drawer-table__col-prof {
+    width: 140px;
+  }
+
+  col.drawer-table__col-comanda-link {
+    width: 120px;
+  }
+
+  col.drawer-table__col-acoes {
+    width: 72px;
+  }
 }
 
+.drawer-table.drawer-table--agendamentos thead th.col-acoes,
+.drawer-table.drawer-table--agendamentos tbody td.col-acoes {
+  text-align: center;
+}
 
+.drawer-table.drawer-table--agendamentos tbody td.col-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0;
+  text-align: center;
+}
 
 .drawer-table--agendamentos .col-data {
 

@@ -1,4 +1,4 @@
-@import '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss';
+@use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
 
 /* Drawer profissional — mesma base do cliente, dimensões pedidas. */
 .cliente-drawer.cliente-drawer--profissional.app-drawer {

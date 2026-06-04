@@ -1,10 +1,14 @@
 import {
   Component,
+  ElementRef,
   HostListener,
+  OnDestroy,
+  OnInit,
   ViewChild,
   ViewEncapsulation,
   inject,
 } from '@angular/core';
+import { portalHostElementToBody } from '../drawer-body-portal';
 import { FormsModule } from '@angular/forms';
 import type { ComandaResumoPagamentos } from '../../core/models/api.models';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
@@ -54,10 +58,22 @@ type FaturarEmpilhadoCtx = {
   styleUrl: './cliente-cadastro-drawer-host.component.scss',
   encapsulation: ViewEncapsulation.None,
 })
-export class ClienteCadastroDrawerHostComponent {
+export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   readonly d = inject(ClienteCadastroDrawerService);
 
+  private readonly hostEl = inject(ElementRef<HTMLElement>).nativeElement;
+  private restoreBodyPortal: (() => void) | null = null;
+
   private readonly api = inject(SheetsApiService);
+
+  ngOnInit(): void {
+    this.restoreBodyPortal = portalHostElementToBody(this.hostEl);
+  }
+
+  ngOnDestroy(): void {
+    this.restoreBodyPortal?.();
+    this.restoreBodyPortal = null;
+  }
 
   @ViewChild(ClienteDebitosTabComponent)
   private debitosTabRef?: ClienteDebitosTabComponent;

@@ -1,3 +1,35 @@
+/**
+ * Empilhamento global: ficha do cliente acima de comanda/faturar das páginas
+ * (transações, comandas, comissões — z-index até ~1105).
+ *
+ * Não usar `:host` aqui — com ViewEncapsulation.None o pseudo não casa no DOM real.
+ */
+app-cliente-cadastro-drawer-host,
+app-profissional-cadastro-drawer-host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 1280;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  overflow: visible;
+  pointer-events: none;
+  --z-cliente-global-overlay: 1280;
+  --z-cliente-global-drawer: 1282;
+  --z-cliente-global-tooltip: 1283;
+  --z-cliente-stack-overlay: 1284;
+  --z-cliente-stack-drawer: 1285;
+  --z-cliente-stack-faturar-overlay: 1286;
+  --z-cliente-stack-faturar-drawer: 1287;
+  --z-cliente-stack-edit-overlay: 1288;
+  --z-cliente-stack-edit-drawer: 1289;
+  --z-cliente-stack-credito-overlay: 1290;
+  --z-cliente-stack-credito-drawer: 1291;
+}
+
 /* ViewEncapsulation.None — não usar `.app-drawer` sozinho (afeta outros módulos). */
 .cliente-drawer.app-drawer,
 .cliente-comanda-empilhada.app-drawer,
@@ -11,7 +43,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1000;
+  z-index: var(--z-cliente-global-drawer, 1282);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -38,7 +70,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 999;
+  z-index: calc(var(--z-cliente-global-overlay, 1280) - 1);
   box-sizing: border-box;
   background: #00000073;
   opacity: 0;
@@ -52,16 +84,25 @@
 }
 
 .overlay--cliente {
-  z-index: 1007;
+  z-index: var(--z-cliente-global-overlay, 1280);
   background: #00000073;
+  pointer-events: none;
+
+  &.overlay--open {
+    pointer-events: auto;
+  }
 }
 
 .cliente-drawer {
   padding: 0;
+  pointer-events: none;
+
+  &.app-drawer--open {
+    pointer-events: auto;
+  }
 
   &.app-drawer {
-    /* Por cima do drawer da comanda / faturar quando a ficha é aberta por cima. */
-    z-index: 1008;
+    z-index: var(--z-cliente-global-drawer, 1282);
     /* Encostado à direita. Máx. 1200px em ecrãs grandes. */
     --drawer-inset-x: 0;
     --drawer-pad-x: 0;
@@ -214,6 +255,10 @@
 }
 
 .cliente-body {
+  --cliente-nav-pad-start: 30px;
+  --cliente-nav-item-w: 173px;
+  --cliente-nav-col-w: calc(var(--cliente-nav-pad-start) + var(--cliente-nav-item-w));
+
   flex: 1 1 auto;
   min-height: 100%;
   min-width: 0;
@@ -226,7 +271,7 @@
     Evita faixa vazia enorme entre inputs e o separador vertical.
   */
   grid-template-columns:
-    minmax(130px, 168px)
+    var(--cliente-nav-col-w)
     minmax(0, max-content)
     minmax(0, 1fr);
   gap: 0;
@@ -240,7 +285,7 @@
   &:has(app-cliente-debitos-tab),
   &:has(app-cliente-agendamentos-tab),
   &:has(app-cliente-vendas-tab) {
-    grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
+    grid-template-columns: var(--cliente-nav-col-w) minmax(0, 1fr);
   }
 
   .drawer-table {
@@ -429,13 +474,14 @@
   --cliente-nav-gap: 16px;
   --cliente-nav-row-step: calc(var(--cliente-nav-item-h) + var(--cliente-nav-gap));
   --cliente-nav-active-index: 0;
+  --cliente-nav-indicator-dur: 0.48s;
 
   position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--cliente-nav-gap);
   border-right: 1px solid hsl(220, 13%, 91%);
-  padding: 0 0 0 30px;
+  padding: 0 0 0 var(--cliente-nav-pad-start, 30px);
   min-height: 100%;
   box-sizing: border-box;
   overflow: visible;
@@ -453,13 +499,14 @@
   pointer-events: none;
   z-index: 2;
   transform: translateY(calc(var(--cliente-nav-active-index) * var(--cliente-nav-row-step)));
-  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--cliente-nav-indicator-dur, 0.48s) cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cliente-nav__item {
   position: relative;
   z-index: 0;
-  width: 100%;
+  width: var(--cliente-nav-item-w, 173px);
+  max-width: 100%;
   text-align: left;
   border: none;
   appearance: none;
@@ -1536,7 +1583,7 @@
  */
 .cliente-nav-lock-tooltip {
   position: fixed;
-  z-index: 1009;
+  z-index: var(--z-cliente-global-tooltip);
   width: max-content;
   max-width: min(260px, calc(100vw - 40px));
   padding: 8px 12px;
@@ -1679,7 +1726,7 @@
   .cliente-body:has(app-cliente-debitos-tab),
   .cliente-body:has(app-cliente-agendamentos-tab),
   .cliente-body:has(app-cliente-vendas-tab) {
-    grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
+    grid-template-columns: var(--cliente-nav-col-w) minmax(0, 1fr);
   }
 }
 
@@ -1729,6 +1776,7 @@
     }
 
     &__item {
+      width: auto;
       margin-top: 0;
       padding: 8px 24px 8px 0;
       text-align: left;
@@ -1844,23 +1892,23 @@
 
 /* Drawers empilhados sobre a ficha do cliente (Visualizar comanda, etc.) */
 .overlay--cliente-comanda-empilhada {
-  z-index: 1009;
+  z-index: var(--z-cliente-stack-overlay);
 }
 
 .overlay--cliente-credito-empilhada {
-  z-index: 1015;
+  z-index: var(--z-cliente-stack-credito-overlay);
 }
 
 .overlay--cliente-faturar-empilhada {
-  z-index: 1011;
+  z-index: var(--z-cliente-stack-faturar-overlay);
 }
 
 .overlay--cliente-edit-ag-empilhada {
-  z-index: 1013;
+  z-index: var(--z-cliente-stack-edit-overlay);
 }
 
 .cliente-comanda-empilhada.app-drawer {
-  z-index: 1010;
+  z-index: var(--z-cliente-stack-drawer);
   left: auto;
   right: 0;
   width: min(1400px, 100vw);
@@ -1877,7 +1925,7 @@
 }
 
 .cliente-credito-empilhada.app-drawer {
-  z-index: 1016;
+  z-index: var(--z-cliente-stack-credito-drawer);
   left: auto;
   right: 0;
   width: min(480px, 100vw);
@@ -1894,7 +1942,7 @@
 }
 
 .cliente-faturar-empilhada.app-drawer {
-  z-index: 1012;
+  z-index: var(--z-cliente-stack-faturar-drawer);
   left: auto;
   right: 0;
   width: min(480px, 100vw);
@@ -1911,7 +1959,7 @@
 }
 
 .cliente-edit-ag-empilhada.app-drawer {
-  z-index: 1014;
+  z-index: var(--z-cliente-stack-edit-drawer);
   left: auto;
   right: 0;
   width: min(1400px, 100vw);

@@ -151,7 +151,7 @@
   min-width: 0;
 
   &--modal {
-    --modal-sidebar-w: 320px;
+    --modal-sidebar-w: 299px;
     --modal-col-gap: 1.25rem;
     /** Só o rodapé: linha superior à largura total do drawer (pseudo). */
     --drawer-bleed-l: 0px;
@@ -213,11 +213,55 @@
     display: none;
   }
 
+  :host.agenda-novo--drawer.agenda-novo--cliente-panel-open
+    .form-shell.form-shell--modal
+    .form-shell__client {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    max-width: 100vw;
+    overflow-y: auto;
+    background: #fff;
+    padding: 1rem var(--drawer-pad-x, 1rem) 2rem;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  }
+
   :host.agenda-novo--drawer
     .form-shell.form-shell--modal
     .form-shell__main--modal {
     min-width: 0;
     width: 100%;
+  }
+}
+
+.agenda-modal__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.agenda-modal__cliente-btn {
+  min-height: var(--touch-min);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid #d6d3d1;
+  background: var(--color-surface);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+  }
+}
+
+@media (min-width: 1337px) {
+  .agenda-modal__cliente-btn {
+    display: none;
   }
 }
 

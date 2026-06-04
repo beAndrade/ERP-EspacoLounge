@@ -567,18 +567,32 @@
                       </td>
                       <td class="col-data">{{ formatarData(row.dataYmd) }}</td>
                       <td class="col-titular">
-                        @if (podeAbrirPerfilTitular(row)) {
+                        @if (exibirTitularDuasLinhas(row)) {
+                          @if (podeAbrirPerfilTitular(row)) {
+                            <button
+                              type="button"
+                              class="fin-transacoes__titular fin-transacoes__titular--btn"
+                              (click)="abrirPerfilTitular(row, $event)"
+                            >
+                              {{ row.titular }}
+                            </button>
+                          } @else {
+                            <span class="fin-transacoes__titular">{{ row.titular }}</span>
+                          }
+                          <span class="fin-transacoes__sub">{{ row.subtitulo }}</span>
+                        } @else if (podeAbrirPerfilTitular(row)) {
                           <button
                             type="button"
-                            class="fin-transacoes__titular fin-transacoes__titular--btn"
+                            class="fin-transacoes__descricao fin-transacoes__descricao--btn"
                             (click)="abrirPerfilTitular(row, $event)"
                           >
-                            {{ row.titular }}
+                            {{ linhaPrincipal(row) }}
                           </button>
                         } @else {
-                          <span class="fin-transacoes__titular">{{ row.titular }}</span>
+                          <span class="fin-transacoes__descricao">{{
+                            linhaPrincipal(row)
+                          }}</span>
                         }
-                        <span class="fin-transacoes__sub">{{ row.subtitulo }}</span>
                       </td>
                       <td class="col-origem">
                         @if (podeVerComanda(row)) {
@@ -590,7 +604,11 @@
                             {{ row.origem }}
                           </button>
                         } @else {
-                          <span class="fin-transacoes__link">{{ row.origem }}</span>
+                          <span
+                            class="fin-transacoes__link"
+                            [class.fin-transacoes__link--comissao]="ehLinhaComissao(row)"
+                            >{{ row.origem }}</span
+                          >
                         }
                       </td>
                       <td class="col-forma">{{ row.formaPagamento }}</td>

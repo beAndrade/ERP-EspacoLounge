@@ -249,27 +249,12 @@
                 </span>
                 <div finFiltrosTipBody>
                   <p>
-                    Mostra as comissões que possuem valores disponíveis e foram
-                    criadas antes da data inicial dos filtros inseridos
+                    Inclui comissões do período em que a comanda ainda não foi
+                    paga pelo cliente (além das já quitadas listadas por padrão).
                   </p>
                 </div>
               </app-fin-filtros-floating-tip>
             </label>
-          </div>
-        }
-        @if (tabAtiva() === 'pagas') {
-          <div class="fin-comissoes__sidebar-card">
-            <span class="fin-comissoes__sidebar-label">Assinadas digitalmente</span>
-            <select
-              class="fin-comissoes__select"
-              [(ngModel)]="assinadasDigitalmenteFiltro"
-              (ngModelChange)="onAssinadasFiltroChange()"
-              name="assinadasFiltro"
-            >
-              <option value="todas">Todas</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
           </div>
         }
         </aside>
@@ -427,8 +412,8 @@
                   <th scope="col">Profissional</th>
                   <th scope="col">Usuário</th>
                   <th class="col-num" scope="col">Comissões</th>
-                  <th class="col-num" scope="col">Vales</th>
-                  <th class="col-num" scope="col">Bonificações</th>
+                  <th class="col-num fin-comissoes-col--placeholder" scope="col">Vales</th>
+                  <th class="col-num fin-comissoes-col--placeholder" scope="col">Bonificações</th>
                   <th class="col-num" scope="col">Valor pago</th>
                   <th class="col-acoes" scope="col">Ações</th>
                 </tr>
@@ -477,10 +462,10 @@
                       <td class="col-num">{{
                         row.comissoes | currency: 'BRL' : 'symbol' : '1.2-2'
                       }}</td>
-                      <td class="col-num">{{
+                      <td class="col-num fin-comissoes-col--placeholder">{{
                         row.vales | currency: 'BRL' : 'symbol' : '1.2-2'
                       }}</td>
-                      <td class="col-num">{{
+                      <td class="col-num fin-comissoes-col--placeholder">{{
                         row.bonificacoes | currency: 'BRL' : 'symbol' : '1.2-2'
                       }}</td>
                       <td class="col-num fin-comissoes-table__valor-pago">{{
@@ -538,6 +523,98 @@
             </table>
             }
           </div>
+
+          <div class="fin-comissoes__mobile-cards" aria-label="Lista em cartões">
+            @if (tabAtiva() === 'detalhadas') {
+              @if (carregando()) {
+                <p class="fin-comissoes__hint">Carregando comissões…</p>
+              } @else if (linhasDetalhe().length === 0) {
+                <p class="fin-comissoes__hint">Nenhum item encontrado</p>
+              } @else {
+                @for (row of linhasDetalhe(); track row.id) {
+                  <article
+                    class="fin-comissoes-mobile-card"
+                    [class.fin-comissoes-mobile-card--selected]="linhaSelecionada(row.id)"
+                  >
+                    <label class="fin-comissoes-mobile-card__check">
+                      <input
+                        type="checkbox"
+                        [checked]="linhaSelecionada(row.id)"
+                        (change)="toggleLinha(row.id, $event)"
+                        [attr.aria-label]="'Selecionar ' + row.servico"
+                      />
+                      <span class="fin-comissoes-mobile-card__data">{{
+                        formatarData(row.dataYmd)
+                      }}</span>
+                    </label>
+                    <p class="fin-comissoes-mobile-card__cliente">
+                      {{ row.clienteNome }}
+                      <span class="fin-comissoes-mobile-card__comanda"
+                        >(#{{ rotuloNumeroComanda(row) }})</span
+                      >
+                    </p>
+                    <p class="fin-comissoes-mobile-card__servico">{{ row.servico }}</p>
+                    <div class="fin-comissoes-mobile-card__vals">
+                      <span
+                        >Comissão
+                        <strong>{{
+                          row.disponivel | currency: 'BRL' : 'symbol' : '1.2-2'
+                        }}</strong></span
+                      >
+                      <span
+                        >Valor
+                        <strong>{{
+                          row.valor | currency: 'BRL' : 'symbol' : '1.2-2'
+                        }}</strong></span
+                      >
+                    </div>
+                    @if (podeAbrirComanda(row)) {
+                      <button
+                        type="button"
+                        class="fin-comissoes-mobile-card__link"
+                        (click)="abrirComanda(row, $event)"
+                      >
+                        Abrir comanda
+                      </button>
+                    }
+                  </article>
+                }
+              }
+            } @else {
+              @if (carregando()) {
+                <p class="fin-comissoes__hint">Carregando comissões pagas…</p>
+              } @else if (linhasPagas().length === 0) {
+                <p class="fin-comissoes__hint">Nenhum item encontrado</p>
+              } @else {
+                @for (row of linhasPagas(); track row.movimentacaoId) {
+                  <article class="fin-comissoes-mobile-card fin-comissoes-mobile-card--paga">
+                    <p class="fin-comissoes-mobile-card__cliente">
+                      {{ row.profissionalNome }}
+                    </p>
+                    <p class="fin-comissoes-mobile-card__servico">
+                      Pago em {{ formatarData(row.pagamentoYmd) }} · Ref.
+                      {{ formatarData(row.dataYmd) }}
+                    </p>
+                    <div class="fin-comissoes-mobile-card__vals">
+                      <span
+                        >Pago
+                        <strong>{{
+                          row.valorPago | currency: 'BRL' : 'symbol' : '1.2-2'
+                        }}</strong></span
+                      >
+                    </div>
+                    <button
+                      type="button"
+                      class="fin-comissoes-mobile-card__link"
+                      (click)="estornarPagamentoComissao(row)"
+                    >
+                      Estornar
+                    </button>
+                  </article>
+                }
+              }
+            }
+          </div>
         </div>
 
         @if (tabAtiva() === 'detalhadas') {
@@ -549,11 +626,11 @@
                 totalComissoes() | currency: 'BRL' : 'symbol' : '1.2-2'
               }}</strong>
             </span>
-            <span class="fin-comissoes__bar-total-item">
+            <span class="fin-comissoes__bar-total-item fin-comissoes-col--placeholder">
               <span class="fin-comissoes__bar-total-label">Vales</span>
               <strong class="fin-comissoes__bar-total-value">R$ 0,00</strong>
             </span>
-            <span class="fin-comissoes__bar-total-item">
+            <span class="fin-comissoes__bar-total-item fin-comissoes-col--placeholder">
               <span class="fin-comissoes__bar-total-label">Bonificações</span>
               <strong class="fin-comissoes__bar-total-value">R$ 0,00</strong>
             </span>

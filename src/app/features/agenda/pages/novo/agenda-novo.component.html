@@ -69,6 +69,17 @@
           @if (modoModal) {
             <div class="agenda-modal__header">
               <h1 class="agenda-modal__title">{{ tituloModal() }}</h1>
+              <div class="agenda-modal__header-actions">
+                <button
+                  type="button"
+                  class="agenda-modal__cliente-btn"
+                  [class.agenda-modal__cliente-btn--active]="painelClienteMobileAberto"
+                  (click)="togglePainelClienteMobile()"
+                  aria-label="Dados do cliente"
+                  [attr.aria-expanded]="painelClienteMobileAberto"
+                >
+                  Cliente
+                </button>
               <button
                 type="button"
                 class="agenda-modal__close"
@@ -91,6 +102,7 @@
                   />
                 </svg>
               </button>
+              </div>
             </div>
             @if (erro) {
               <p class="alert alert--modal-validacao" role="alert">{{ erro }}</p>

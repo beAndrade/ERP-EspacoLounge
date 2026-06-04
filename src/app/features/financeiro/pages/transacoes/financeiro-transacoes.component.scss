@@ -156,10 +156,6 @@
   color: var(--color-primary, #505afb);
   cursor: pointer;
   text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
 
 .fin-transacoes__icon-btn {
@@ -579,6 +575,7 @@
   display: block;
   font-weight: 600;
   font-size: 13.3333px;
+  line-height: 1.35;
   color: var(--color-primary, #505afb);
 
   &--btn {
@@ -590,23 +587,48 @@
     text-align: left;
     font: inherit;
     line-height: inherit;
-
-    &:hover {
-      text-decoration: underline;
-    }
+    text-decoration: none;
   }
 }
 
 .fin-transacoes__sub {
   display: block;
   font-size: 12px;
-  color: #6b7280;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--list-body-text, #000000bf);
   margin-top: 2px;
+}
+
+.fin-transacoes__descricao {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--list-body-text, #000000bf);
+
+  &--btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    line-height: inherit;
+    color: var(--color-primary, #505afb);
+    text-decoration: none;
+  }
 }
 
 .fin-transacoes__link {
   color: var(--color-primary, #505afb);
   font-weight: 500;
+
+  &--comissao {
+    color: var(--list-body-text, #000000bf);
+    font-weight: 500;
+  }
 }
 
 .fin-transacoes-page .badge {

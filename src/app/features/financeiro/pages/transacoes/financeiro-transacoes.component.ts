@@ -678,6 +678,41 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     return !!row.clienteId?.trim();
   }
 
+  /** Texto principal da coluna (descrição / subtítulo da API). */
+  linhaPrincipal(row: FinTransacaoLinhaUi): string {
+    const sub = String(row.subtitulo ?? '').trim();
+    if (sub && sub !== '—') return sub;
+    const desc = String(row.descricao ?? '').trim();
+    if (desc) return desc;
+    return String(row.titular ?? '').trim() || '—';
+  }
+
+  /** Serviços/comanda: nome do cliente + linha de referência (Belasis). */
+  exibirTitularDuasLinhas(row: FinTransacaoLinhaUi): boolean {
+    if (this.ehLinhaComissao(row)) return false;
+    const sub = String(row.subtitulo ?? '').trim();
+    if (!sub || sub === '—') return false;
+    const nome = String(row.titular ?? '').trim();
+    if (!nome || nome === '—') return false;
+    if (/^Referente à comanda #\d+ para /i.test(sub)) return true;
+    const cat = String(row.categoria ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return cat === 'servicos';
+  }
+
+  ehLinhaComissao(row: FinTransacaoLinhaUi): boolean {
+    if (row.origemApi === 'comissao_pagamento') return true;
+    const cat = String(row.categoria ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return cat.includes('comiss');
+  }
+
   abrirPerfilTitular(row: FinTransacaoLinhaUi, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
@@ -1449,6 +1484,15 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     if (this.modalTotaisAberto()) {
       ev.preventDefault();
       this.fecharModalTotais();
+      return;
+    }
+    if (this.cadastroDrawer.tratarEscapeComandaEmpilhadaNaFicha()) {
+      ev.preventDefault();
+      return;
+    }
+    if (this.cadastroDrawer.isAberto) {
+      ev.preventDefault();
+      this.cadastroDrawer.fechar();
       return;
     }
     if (this.faturarDrawerAberto) {

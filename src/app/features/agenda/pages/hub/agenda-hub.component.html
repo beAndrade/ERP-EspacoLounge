@@ -2,68 +2,200 @@
   <p class="alert" role="alert">{{ erro }}</p>
 }
 
-<h1 class="hub-welcome">
-  Olá, {{ sessao.nomeExibicao() }}, seja bem-vinda!
-</h1>
+<div class="hub-page">
+  @if (algumPainelHubAberto()) {
+    <button
+      type="button"
+      class="hub-panel-backdrop"
+      aria-label="Fechar painel"
+      (click)="fecharPaineisHub()"
+    ></button>
+  }
 
-<div class="hub-layout">
-  <aside class="hub-sidebar" aria-label="Calendário e profissionais">
-    <div class="mini-cal">
-      <div class="mini-cal__nav">
-        <button type="button" class="btn-icon" (click)="mesAnterior()">‹</button>
-        <span class="mini-cal__titulo">{{ tituloMes() }}</span>
-        <button type="button" class="btn-icon" (click)="mesSeguinte()">›</button>
-        <button type="button" class="btn-hoje" (click)="irParaHoje()">Hoje</button>
+  <header class="hub-header list-head">
+    <div class="hub-header__shell">
+      <div class="hub-header__row list-head__title-row">
+        <div class="hub-header__nav" aria-label="Navegação do dia">
+          <button
+            type="button"
+            class="hub-header__nav-btn"
+            (click)="diaAnterior()"
+            aria-label="Dia anterior"
+          >
+            ‹
+          </button>
+          <span
+            class="hub-header__dia-titulo"
+            role="status"
+            aria-live="polite"
+            [attr.aria-label]="'Dia selecionado: ' + rotuloNavegacaoDia()"
+          >
+            {{ rotuloNavegacaoDia() }}
+          </span>
+          <button
+            type="button"
+            class="hub-header__nav-btn"
+            (click)="diaSeguinte()"
+            aria-label="Dia seguinte"
+          >
+            ›
+          </button>
+        </div>
+
+        <div class="hub-header__actions list-head__actions">
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            [class.list-head__toolbar-btn--filtro-on]="painelCalendarioAberto"
+            (click)="togglePainelCalendario()"
+            [attr.aria-expanded]="painelCalendarioAberto"
+          >
+            Calendário
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            [class.list-head__toolbar-btn--filtro-on]="painelProfissionaisAberto"
+            (click)="togglePainelProfissionais()"
+            [attr.aria-expanded]="painelProfissionaisAberto"
+          >
+            Profissionais
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            disabled
+            title="Em breve"
+          >
+            Visualização
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            disabled
+            title="Em breve"
+          >
+            Filtrar
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            disabled
+            title="Em breve"
+          >
+            Ações
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+            (click)="abrirNovoAtendimentoModal()"
+          >
+            + Novo
+          </button>
+        </div>
       </div>
-      <div class="mini-cal__grid" role="grid">
-        @for (d of ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; track d) {
-          <span class="mini-cal__dow">{{ d }}</span>
-        }
-        @for (c of celulas(); track $index) {
-          @if (c.dia === null) {
-            <span class="mini-cal__cell mini-cal__cell--empty"></span>
-          } @else {
+
+      @if (modoVista === 'semana') {
+        <div class="hub-week-strip" role="group" aria-label="Dias da semana">
+          @for (d of diasFaixaSemana(); track d.ymd) {
             <button
               type="button"
-              class="mini-cal__cell"
-              [class.mini-cal__cell--selected]="c.ymd === diaYmd"
-              [class.mini-cal__cell--hoje]="c.ymd === hojeYmd()"
-              (click)="selecionarDia(c.ymd)"
+              class="hub-week-strip__dia"
+              [class.hub-week-strip__dia--selected]="d.selecionado"
+              [class.hub-week-strip__dia--hoje]="d.hoje"
+              (click)="selecionarDia(d.ymd)"
             >
-              <span class="mini-cal__num">{{ c.dia }}</span>
-              @if (contagem(c.ymd) > 0) {
-                <span class="mini-cal__badge">{{ contagem(c.ymd) }}</span>
+              <span class="hub-week-strip__label">{{ d.label }}</span>
+              <span class="hub-week-strip__num">{{ d.diaNum }}</span>
+              @if (d.contagem > 0) {
+                <span class="hub-week-strip__badge">{{ d.contagem }}</span>
               }
             </button>
           }
-        }
+        </div>
+      }
+
+      <div
+        class="hub-panel hub-panel--calendario"
+        [class.hub-panel--open]="painelCalendarioAberto"
+        role="region"
+        aria-label="Calendário"
+        [attr.aria-hidden]="!painelCalendarioAberto"
+      >
+        <div class="mini-cal">
+          <div class="mini-cal__nav">
+            <button type="button" class="btn-icon" (click)="mesAnterior()">‹</button>
+            <span class="mini-cal__titulo">{{ tituloMes() }}</span>
+            <button type="button" class="btn-icon" (click)="mesSeguinte()">›</button>
+            <button type="button" class="btn-hoje" (click)="irParaHoje()">Hoje</button>
+          </div>
+          <div class="mini-cal__grid" role="grid">
+            @for (d of ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; track d) {
+              <span class="mini-cal__dow">{{ d }}</span>
+            }
+            @for (c of celulas(); track $index) {
+              @if (c.dia === null) {
+                <span class="mini-cal__cell mini-cal__cell--empty"></span>
+              } @else {
+                <button
+                  type="button"
+                  class="mini-cal__cell"
+                  [class.mini-cal__cell--selected]="c.ymd === diaYmd"
+                  [class.mini-cal__cell--hoje]="c.ymd === hojeYmd()"
+                  (click)="selecionarDiaCalendario(c.ymd)"
+                >
+                  <span class="mini-cal__num">{{ c.dia }}</span>
+                  @if (contagem(c.ymd) > 0) {
+                    <span class="mini-cal__badge">{{ contagem(c.ymd) }}</span>
+                  }
+                </button>
+              }
+            }
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="hub-panel hub-panel--profissionais"
+        [class.hub-panel--open]="painelProfissionaisAberto"
+        role="region"
+        aria-label="Profissionais visíveis"
+        [attr.aria-hidden]="!painelProfissionaisAberto"
+      >
+        <div class="prof-filtros">
+          <h2 class="prof-filtros__titulo">Profissionais</h2>
+          <p class="hint">Desmarque para ocultar na grelha.</p>
+          @if (layoutMobile) {
+            <label class="hub-panel__prof-mobile">
+              <span>Ver na grelha (mobile)</span>
+              <select
+                [ngModel]="profissionalAtivoMobile()"
+                (ngModelChange)="profissionalMobileId = $event"
+                name="profMobile"
+              >
+                @for (p of profissionaisParaSelectMobile(); track p.id) {
+                  <option [ngValue]="p.id">{{ p.nome }}</option>
+                }
+              </select>
+            </label>
+          }
+          @for (p of profissionais; track p.id) {
+            <label class="prof-check">
+              <input
+                type="checkbox"
+                [checked]="!profOcultos.has(p.id)"
+                (change)="toggleProfissionalOculto(p.id)"
+              />
+              <span>{{ p.nome }}</span>
+            </label>
+          }
+          @if (profissionais.length === 0 && !carregandoMes) {
+            <p class="hint">Nenhum profissional na Folha.</p>
+          }
+        </div>
       </div>
     </div>
-
-    <div class="prof-filtros">
-      <h2 class="prof-filtros__titulo">Profissionais</h2>
-      <p class="hint">Desmarque para ocultar na grelha.</p>
-      @for (p of profissionais; track p.id) {
-        <label class="prof-check">
-          <input
-            type="checkbox"
-            [checked]="!profOcultos.has(p.id)"
-            (change)="toggleProfissionalOculto(p.id)"
-          />
-          <span>{{ p.nome }}</span>
-        </label>
-      }
-      @if (profissionais.length === 0 && !carregandoMes) {
-        <p class="hint">Nenhum profissional na Folha.</p>
-      }
-    </div>
-
-    <div class="hub-sidebar__actions">
-      <button type="button" class="btn btn-novo" (click)="abrirNovoAtendimentoModal()">
-        Novo atendimento
-      </button>
-    </div>
-  </aside>
+  </header>
 
   <section class="hub-main" aria-label="Grelha do dia">
     @if (carregandoDia) {
@@ -152,6 +284,16 @@
     </div>
   </section>
 </div>
+
+<button
+  type="button"
+  class="hub-fab"
+  (click)="abrirNovoAtendimentoModal()"
+  aria-label="Novo agendamento"
+  title="Novo agendamento"
+>
+  <span class="hub-fab__icon" aria-hidden="true">+</span>
+</button>
 
 @if (modalAberto && modalContexto) {
   <div

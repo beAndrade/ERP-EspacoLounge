@@ -1,4 +1,13 @@
-import { Component, HostListener, ViewEncapsulation, inject } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewEncapsulation,
+  inject,
+} from '@angular/core';
+import { portalHostElementToBody } from '../drawer-body-portal';
 import { ProfissionalCadastroDrawerService } from './profissional-cadastro-drawer.service';
 import { ProfissionalCadastroFormComponent } from './profissional-cadastro-form.component';
 import { ProfissionalComissoesConfigTabComponent } from './profissional-comissoes-config-tab.component';
@@ -16,8 +25,20 @@ import { ProfissionalComissoesServicosTabComponent } from './profissional-comiss
   styleUrl: './profissional-cadastro-drawer-host.component.scss',
   encapsulation: ViewEncapsulation.None,
 })
-export class ProfissionalCadastroDrawerHostComponent {
+export class ProfissionalCadastroDrawerHostComponent implements OnInit, OnDestroy {
   readonly d = inject(ProfissionalCadastroDrawerService);
+
+  private readonly hostEl = inject(ElementRef<HTMLElement>).nativeElement;
+  private restoreBodyPortal: (() => void) | null = null;
+
+  ngOnInit(): void {
+    this.restoreBodyPortal = portalHostElementToBody(this.hostEl);
+  }
+
+  ngOnDestroy(): void {
+    this.restoreBodyPortal?.();
+    this.restoreBodyPortal = null;
+  }
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {

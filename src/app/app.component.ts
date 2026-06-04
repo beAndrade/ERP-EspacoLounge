@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import {
   NavigationEnd,
   Router,
@@ -38,8 +38,14 @@ export type NavSidebarDropdownId =
 })
 export class AppComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly title = 'Espaço Lounge';
+
+  /** Viewport estreito: menu lateral em overlay. */
+  isMobileViewport = false;
+  mobileNavOpen = false;
+  private mobileMq: MediaQueryList | null = null;
 
   /** Menu Principal accordion (só afeta sidebar expandida). */
   principalExpanded = true;
@@ -90,10 +96,40 @@ export class AppComponent implements OnInit {
     } catch {
       /* ignore */
     }
+    this.setupMobileViewport();
     this.syncNavExpandForActiveRoutes();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(() => this.syncNavExpandForActiveRoutes());
+      .subscribe(() => {
+        this.syncNavExpandForActiveRoutes();
+        this.closeMobileNav();
+      });
+  }
+
+  toggleMobileNav(): void {
+    this.mobileNavOpen = !this.mobileNavOpen;
+  }
+
+  closeMobileNav(): void {
+    this.mobileNavOpen = false;
+  }
+
+  private setupMobileViewport(): void {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    this.mobileMq = window.matchMedia('(max-width: 640px)');
+    const apply = (): void => {
+      this.isMobileViewport = this.mobileMq?.matches ?? false;
+      if (this.isMobileViewport) {
+        this.sidebarCollapsed = true;
+        this.mobileNavOpen = false;
+      }
+    };
+    apply();
+    const onChange = (): void => apply();
+    this.mobileMq.addEventListener('change', onChange);
+    this.destroyRef.onDestroy(() => {
+      this.mobileMq?.removeEventListener('change', onChange);
+    });
   }
 
   onNavExpandTrigger(ev: MouseEvent, id: NavSidebarDropdownId): void {
@@ -131,6 +167,10 @@ export class AppComponent implements OnInit {
   }
 
   toggleSidebar(): void {
+    if (this.isMobileViewport) {
+      this.toggleMobileNav();
+      return;
+    }
     this.sidebarCollapsed = !this.sidebarCollapsed;
     try {
       localStorage.setItem(

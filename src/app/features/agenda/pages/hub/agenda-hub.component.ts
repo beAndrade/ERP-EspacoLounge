@@ -116,6 +116,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Profissionais ocultos na grelha (vazio = todos visíveis). */
   profOcultos = new Set<number>();
 
+  /** Mobile: dia único ou faixa semanal (mesma grelha por dia selecionado). */
+  modoVista: 'dia' | 'semana' = 'dia';
+  profissionalMobileId: number | null = null;
+  buscaCliente = '';
+  layoutMobile = false;
+
+  painelCalendarioAberto = false;
+  painelProfissionaisAberto = false;
+
   slotsHoras: string[] = [];
   modalAberto = false;
   modalContexto: {
@@ -166,6 +175,18 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+    if (this.algumPainelHubAberto()) {
+      ev.preventDefault();
+      this.fecharPaineisHub();
+      return;
+    }
+    if (
+      !this.modalAberto &&
+      !this.comandaPainelAberto &&
+      !this.faturarDrawerAberto
+    ) {
+      return;
+    }
     ev.preventDefault();
     if (this.faturarDrawerAberto && this.faturarDrawerPanelOpen) {
       this.fecharFaturarDrawer();
@@ -180,6 +201,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.slotsHoras = this.gerarSlots();
+    this.setupLayoutMobile();
+    window.addEventListener('keydown', this.onDrawerKeydown);
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('keydown', this.onDrawerKeydown);
+    });
     this.api.listProfissionais(false, 'agenda').subscribe({
       next: (items) => {
         this.profissionais = items ?? [];
@@ -233,7 +259,162 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   profissionaisVisiveis(): ProfissionalListaItem[] {
+    const all = this.profissionais.filter((p) => !this.profOcultos.has(p.id));
+    if (!this.layoutMobile) return all;
+    const pid = this.profissionalAtivoMobile();
+    if (pid == null) return all.length ? [all[0]] : [];
+    const found = all.find((p) => p.id === pid);
+    return found ? [found] : all.length ? [all[0]] : [];
+  }
+
+  profissionalAtivoMobile(): number | null {
+    const all = this.profissionais.filter((p) => !this.profOcultos.has(p.id));
+    if (all.length === 0) return null;
+    if (
+      this.profissionalMobileId != null &&
+      all.some((p) => p.id === this.profissionalMobileId)
+    ) {
+      return this.profissionalMobileId;
+    }
+    return all[0]?.id ?? null;
+  }
+
+  profissionaisParaSelectMobile(): ProfissionalListaItem[] {
     return this.profissionais.filter((p) => !this.profOcultos.has(p.id));
+  }
+
+  selecionarModoVista(modo: 'dia' | 'semana'): void {
+    this.modoVista = modo;
+  }
+
+  /**
+   * Rótulo central do header conforme distância a «hoje»:
+   * 0 → Hoje; +1 → Amanhã; +2 → nome do dia (ex. Sábado);
+   * +3+ / -2- → «07 jun, 2026 (dom)»; -1 → Ontem.
+   */
+  rotuloNavegacaoDia(): string {
+    const diff = this.diffDiasDesdeHoje(this.diaYmd);
+    if (diff === 0) return 'Hoje';
+    if (diff === 1) return 'Amanhã';
+    if (diff === -1) return 'Ontem';
+    if (diff === 2) return this.nomeDiaSemanaLongo(this.diaYmd);
+    return this.formatarDiaCabecalhoCompleto(this.diaYmd);
+  }
+
+  /** Diferença em dias civis (local): `ymd` menos hoje. */
+  private diffDiasDesdeHoje(ymd: string): number {
+    const hoje = this.parseYmdLocal(this.hojeYmd());
+    const alvo = this.parseYmdLocal(ymd);
+    hoje.setHours(12, 0, 0, 0);
+    alvo.setHours(12, 0, 0, 0);
+    return Math.round((alvo.getTime() - hoje.getTime()) / 86_400_000);
+  }
+
+  private nomeDiaSemanaLongo(ymd: string): string {
+    const nome = this.parseYmdLocal(ymd).toLocaleDateString('pt-BR', {
+      weekday: 'long',
+    });
+    if (!nome) return '';
+    return nome.charAt(0).toUpperCase() + nome.slice(1);
+  }
+
+  private formatarDiaCabecalhoCompleto(ymd: string): string {
+    const d = this.parseYmdLocal(ymd);
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = d
+      .toLocaleDateString('pt-BR', { month: 'short' })
+      .replace(/\./g, '')
+      .trim()
+      .toLowerCase();
+    const ano = d.getFullYear();
+    const dow = d
+      .toLocaleDateString('pt-BR', { weekday: 'short' })
+      .replace(/\./g, '')
+      .trim()
+      .toLowerCase()
+      .slice(0, 3);
+    return `${dia} ${mes}, ${ano} (${dow})`;
+  }
+
+  diasFaixaSemana(): Array<{
+    ymd: string;
+    label: string;
+    diaNum: number;
+    selecionado: boolean;
+    hoje: boolean;
+    contagem: number;
+  }> {
+    const anchor = this.parseYmdLocal(this.diaYmd);
+    const dow = anchor.getDay();
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(anchor);
+    monday.setDate(anchor.getDate() + mondayOffset);
+    const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const out: Array<{
+      ymd: string;
+      label: string;
+      diaNum: number;
+      selecionado: boolean;
+      hoje: boolean;
+      contagem: number;
+    }> = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const ymd = toYmd(d);
+      out.push({
+        ymd,
+        label: labels[i]!,
+        diaNum: d.getDate(),
+        selecionado: ymd === this.diaYmd,
+        hoje: ymd === this.hojeYmd(),
+        contagem: this.contagem(ymd),
+      });
+    }
+    return out;
+  }
+
+  diaAnterior(): void {
+    const d = this.parseYmdLocal(this.diaYmd);
+    d.setDate(d.getDate() - 1);
+    this.selecionarDia(toYmd(d));
+  }
+
+  diaSeguinte(): void {
+    const d = this.parseYmdLocal(this.diaYmd);
+    d.setDate(d.getDate() + 1);
+    this.selecionarDia(toYmd(d));
+  }
+
+  limparBuscaCliente(): void {
+    this.buscaCliente = '';
+  }
+
+  algumPainelHubAberto(): boolean {
+    return this.painelCalendarioAberto || this.painelProfissionaisAberto;
+  }
+
+  fecharPaineisHub(): void {
+    this.painelCalendarioAberto = false;
+    this.painelProfissionaisAberto = false;
+  }
+
+  togglePainelCalendario(): void {
+    const abrir = !this.painelCalendarioAberto;
+    this.fecharPaineisHub();
+    this.painelCalendarioAberto = abrir;
+  }
+
+  togglePainelProfissionais(): void {
+    const abrir = !this.painelProfissionaisAberto;
+    this.fecharPaineisHub();
+    this.painelProfissionaisAberto = abrir;
+  }
+
+  /** Escolha de dia no painel Calendário: atualiza grelha e fecha o painel. */
+  selecionarDiaCalendario(ymd: string | null): void {
+    this.selecionarDia(ymd);
+    this.fecharPaineisHub();
   }
 
   toggleProfissionalOculto(id: number): void {
@@ -278,6 +459,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   selecionarDia(ymd: string | null): void {
     if (!ymd) return;
     this.diaYmd = ymd;
+    const parts = this.parseYmdLocal(ymd);
+    if (
+      this.mesRef.getMonth() !== parts.getMonth() ||
+      this.mesRef.getFullYear() !== parts.getFullYear()
+    ) {
+      this.mesRef = this.inicioDoMes(parts);
+      this.carregarMes();
+    }
     this.carregarDia();
   }
 
@@ -459,7 +648,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    */
   private iniciarAberturaDrawer(): void {
     this.bloquearScrollPagina();
-    window.addEventListener('keydown', this.onDrawerKeydown);
     this.drawerPanelOpen = false;
     queueMicrotask(() => {
       requestAnimationFrame(() => {
@@ -472,7 +660,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private limparEfeitosDrawer(): void {
     this.desbloquearScrollPagina();
-    window.removeEventListener('keydown', this.onDrawerKeydown);
   }
 
   /**
@@ -553,7 +740,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaSomenteStandalone = standalone;
     if (standalone) {
       this.bloquearScrollPagina();
-      window.addEventListener('keydown', this.onDrawerKeydown);
     }
     this.comandaDrawerContexto = payload;
     const y = (payload.dataYmd ?? '').trim();
@@ -632,7 +818,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       return;
     }
     this.drawerPanelOpen = false;
-    window.removeEventListener('keydown', this.onDrawerKeydown);
     if (this.drawerCloseTimer != null) {
       clearTimeout(this.drawerCloseTimer);
     }
@@ -838,7 +1023,29 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       const sb = eb?.start ?? Infinity;
       return sa - sb;
     });
-    return out;
+    return out.filter((b) => this.blocoPassaBuscaCliente(b));
+  }
+
+  private blocoPassaBuscaCliente(b: AgendaHubBloco): boolean {
+    const q = this.buscaCliente.trim().toLowerCase();
+    if (!q) return true;
+    return this.nomeClienteBloco(b).toLowerCase().includes(q);
+  }
+
+  private setupLayoutMobile(): void {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const apply = (): void => {
+      this.layoutMobile = mq.matches;
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    this.destroyRef.onDestroy(() => mq.removeEventListener('change', apply));
+  }
+
+  private parseYmdLocal(ymd: string): Date {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(y!, (m ?? 1) - 1, d ?? 1);
   }
 
   /**

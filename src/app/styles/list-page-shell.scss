@@ -4,6 +4,7 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
 
 .list-page {
   --list-search-open-width: clamp(280px, 40vw, 400px);
+  --list-body-text: #000000bf;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -616,6 +617,7 @@ col.drawer-table__col-check {
   border-bottom: 1px solid #efefef;
   vertical-align: middle;
   font-size: 14px;
+  color: var(--list-body-text, #000000bf);
 }
 
 .list-table tbody tr:hover td:not(.table-body__busy):not(.table-body__empty) {
