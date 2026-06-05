@@ -98,3 +98,16 @@ select,
 textarea {
   font: inherit;
 }
+
+/**
+ * Agenda hub: bloqueia scroll na raiz; scroll vertical fica em `main.main--agenda-hub`.
+ */
+html.agenda-hub-scroll-lock {
+  overflow: hidden;
+  height: 100%;
+
+  body {
+    overflow: hidden;
+    height: 100%;
+  }
+}

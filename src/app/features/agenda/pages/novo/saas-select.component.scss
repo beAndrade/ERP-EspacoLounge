@@ -220,9 +220,65 @@
 }
 
 /** Busca na coluna esquerda do modal. */
-:host.saas-select-host--layout-sidebar .saas-select__trigger {
-  border-color: var(--drawer-field-border, #e7e5e4);
-  background: #fff;
+:host.saas-select-host--layout-sidebar {
+  .saas-select__trigger,
+  .saas-select__trigger--combobox {
+    border-color: var(--drawer-field-border, #e7e5e4);
+    background: #fff;
+    min-height: 41px;
+  }
+
+  .saas-select__panel-elev {
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .saas-select__list {
+    max-height: 16rem;
+  }
+
+  &.saas-select-host--open .saas-select__trigger--combobox {
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  }
+}
+
+.saas-select__trigger--combobox {
+  cursor: text;
+  outline: none;
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
+}
+
+.saas-select__trigger-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: var(--drawer-field-font-size, 0.95rem);
+  font-weight: var(--drawer-input-font-weight, 500);
+  color: var(--color-text, #1c1917);
+  outline: none;
+  cursor: text;
+
+  &::placeholder {
+    color: var(--color-muted, #78716c);
+    opacity: 1;
+  }
+
+  &::-webkit-search-cancel-button {
+    display: none;
+  }
 }
 
 :host.saas-select-host--trigger-cursor-text .saas-select__trigger {

@@ -8,10 +8,11 @@
   @if (!temClienteSelecionado) {
     <app-saas-select
       layout="sidebar"
+      triggerCursor="text"
       [bindToControl]="clienteIdControl"
       [options]="opcoesClientes"
       placeholder="Busque pelo cliente"
-      [showFilter]="true"
+      [showFilter]="false"
       [showCriarCliente]="false"
     />
   } @else {

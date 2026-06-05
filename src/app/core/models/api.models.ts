@@ -324,6 +324,8 @@ export interface CabeloCatalogoItem {
 export interface ProfissionalListaItem {
   id: number;
   nome: string;
+  /** URL da foto de perfil; omitido até existir na API. */
+  fotoUrl?: string | null;
   /** Omitido em respostas antigas; na API atual vem sempre preenchido. */
   ativo?: boolean;
   celular?: string | null;

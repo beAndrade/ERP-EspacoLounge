@@ -49,6 +49,13 @@ export class SaasSelectComponent
   private readonly host = inject(ElementRef<HTMLElement>);
   @ViewChild('triggerBtn', { static: true })
   private readonly triggerBtn?: ElementRef<HTMLButtonElement>;
+  @ViewChild('triggerInput')
+  private readonly triggerInput?: ElementRef<HTMLInputElement>;
+
+  /** Busca digitada no gatilho (layout sidebar / combobox). */
+  get inlineSearchInTrigger(): boolean {
+    return this.layout === 'sidebar';
+  }
 
   /**
    * Espelha um `FormControl` sem `formControlName` / `[formControl]` neste elemento,
@@ -175,25 +182,55 @@ export class SaasSelectComponent
 
   /** Fecha a lista (uso pelo pai no hub). */
   fecharPainel(): void {
-    this.panelOpen = false;
-    this.fixedPanelStyle = {};
-    this.detachFixedPanelScrollListeners();
-    this.focusTriggerSoon();
+    this.closePanel();
   }
 
   togglePanel(ev?: Event): void {
     ev?.stopPropagation();
     if (this.isDisabled) return;
     if (this.panelOpen) {
-      this.panelOpen = false;
-      this.fixedPanelStyle = {};
-      this.detachFixedPanelScrollListeners();
-      this.notifyTouched();
-      this.focusTriggerSoon();
+      this.closePanel();
       return;
     }
+    this.openPanel();
+  }
+
+  onComboboxTriggerClick(ev: Event): void {
+    ev.stopPropagation();
+    if (this.isDisabled) return;
+    if ((ev.target as HTMLElement).closest('.saas-select__trigger-input')) return;
+    if (!this.panelOpen) {
+      this.openPanel();
+    }
+  }
+
+  onTriggerFilterInput(ev: Event): void {
+    this.filterText = (ev.target as HTMLInputElement).value;
+    if (!this.panelOpen) {
+      this.openPanel(false);
+    }
+  }
+
+  onTriggerFilterKeydown(ev: KeyboardEvent): void {
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.closePanel();
+      return;
+    }
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const first = this.filteredOptions[0];
+      if (first) {
+        this.choose(first, ev);
+      }
+    }
+  }
+
+  private openPanel(resetFilter = true): void {
     this.panelOpen = true;
-    this.filterText = '';
+    if (resetFilter) {
+      this.filterText = '';
+    }
     this.painelAberto.emit();
     if (this.panelFixedMode) {
       queueMicrotask(() => {
@@ -202,6 +239,18 @@ export class SaasSelectComponent
       });
       this.attachFixedPanelScrollListeners();
     }
+    if (this.inlineSearchInTrigger) {
+      queueMicrotask(() => this.triggerInput?.nativeElement?.focus());
+    }
+  }
+
+  private closePanel(): void {
+    this.panelOpen = false;
+    this.filterText = '';
+    this.fixedPanelStyle = {};
+    this.detachFixedPanelScrollListeners();
+    this.notifyTouched();
+    this.focusTriggerSoon();
   }
 
   choose(opt: SaasSelectOption, ev: Event): void {
@@ -212,6 +261,7 @@ export class SaasSelectComponent
         : String(opt.value);
     this.emitValue();
     this.panelOpen = false;
+    this.filterText = '';
     this.fixedPanelStyle = {};
     this.detachFixedPanelScrollListeners();
     this.notifyTouched();
@@ -238,17 +288,18 @@ export class SaasSelectComponent
     if (!this.panelOpen) return;
     const t = ev.target as Node;
     if (!this.host.nativeElement.contains(t)) {
-      this.panelOpen = false;
-      this.fixedPanelStyle = {};
-      this.detachFixedPanelScrollListeners();
-      this.notifyTouched();
-      this.focusTriggerSoon();
+      this.closePanel();
     }
   }
 
   private focusTriggerSoon(): void {
-    // Evita aria warnings: não deixar foco preso em opção quando o painel fecha.
-    queueMicrotask(() => this.triggerBtn?.nativeElement?.focus());
+    queueMicrotask(() => {
+      if (this.inlineSearchInTrigger && this.panelOpen) {
+        this.triggerInput?.nativeElement?.focus();
+        return;
+      }
+      this.triggerBtn?.nativeElement?.focus();
+    });
   }
 
   private notifyTouched(): void {

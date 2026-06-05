@@ -735,7 +735,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 
-  > :not(router-outlet) {
+  > :not(router-outlet):not(app-agenda-hub) {
     display: block;
     width: 100%;
     max-width: 100%;
@@ -745,18 +745,41 @@
     box-sizing: border-box;
   }
 
-  > app-agenda-hub {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
+  /**
+   * Agenda: scroll no `main` (conteúdo do hub cresce com a grelha).
+   */
+  &.main--agenda-hub {
+    --hub-main-pad-left: 8px;
+    --hub-main-pad-right: 12px;
+    flex: 1 1 0%;
     min-height: 0;
-    height: 100%;
-  }
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 
-  &:has(> app-agenda-hub) {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    > app-agenda-hub {
+      display: block;
+      width: 100%;
+      min-height: min-content;
+      overflow: visible;
+    }
   }
 }
 
@@ -854,6 +877,11 @@
 
   .main {
     padding: 0 8px 0.5rem 6px;
+
+    &.main--agenda-hub {
+      --hub-main-pad-left: 6px;
+      --hub-main-pad-right: 8px;
+    }
   }
 }
 

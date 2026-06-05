@@ -1,8 +1,7 @@
-@if (erro) {
-  <p class="alert" role="alert">{{ erro }}</p>
-}
-
 <div class="hub-page">
+  @if (erro) {
+    <p class="alert" role="alert">{{ erro }}</p>
+  }
   @if (algumPainelHubAberto()) {
     <button
       type="button"
@@ -22,7 +21,21 @@
             (click)="diaAnterior()"
             aria-label="Dia anterior"
           >
-            ‹
+            <svg
+              class="hub-header__nav-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
           </button>
           <span
             class="hub-header__dia-titulo"
@@ -38,178 +51,385 @@
             (click)="diaSeguinte()"
             aria-label="Dia seguinte"
           >
-            ›
+            <svg
+              class="hub-header__nav-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
 
         <div class="hub-header__actions list-head__actions">
-          <button
-            type="button"
-            class="list-head__toolbar-btn"
-            [class.list-head__toolbar-btn--filtro-on]="painelCalendarioAberto"
-            (click)="togglePainelCalendario()"
-            [attr.aria-expanded]="painelCalendarioAberto"
+          <div
+            class="hub-toolbar-menu"
+            [class.hub-toolbar-menu--open]="hubMenuAberto === 'visualizacao'"
           >
-            Calendário
-          </button>
-          <button
-            type="button"
-            class="list-head__toolbar-btn"
-            [class.list-head__toolbar-btn--filtro-on]="painelProfissionaisAberto"
-            (click)="togglePainelProfissionais()"
-            [attr.aria-expanded]="painelProfissionaisAberto"
+            <button
+              type="button"
+              class="list-head__toolbar-btn hub-toolbar-menu__trigger"
+              [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarVisualizacao"
+              (click)="toggleHubMenu('visualizacao', $event)"
+              [attr.aria-expanded]="hubMenuAberto === 'visualizacao'"
+              aria-haspopup="menu"
+              aria-label="Visualização"
+              title="Visualização"
+            >
+              <svg
+                class="list-icon-sm"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span class="list-head__toolbar-label">Visualização</span>
+            </button>
+            <div
+              class="hub-toolbar-menu__panel"
+              [class.hub-toolbar-menu__panel--open]="hubMenuAberto === 'visualizacao'"
+              role="menu"
+              aria-label="Modo de visualização"
+              (click)="$event.stopPropagation()"
+            >
+              <button
+                type="button"
+                class="hub-toolbar-menu__item"
+                role="menuitemradio"
+                [class.hub-toolbar-menu__item--selected]="modoVista === 'dia'"
+                [class.hub-toolbar-menu__item--pulse-once]="pulsoMenuItem === 'vista-dia'"
+                [attr.aria-checked]="modoVista === 'dia'"
+                (click)="selecionarModoVista('dia')"
+              >
+                Diário
+              </button>
+              <button
+                type="button"
+                class="hub-toolbar-menu__item"
+                role="menuitemradio"
+                [class.hub-toolbar-menu__item--selected]="modoVista === 'semana'"
+                [class.hub-toolbar-menu__item--pulse-once]="pulsoMenuItem === 'vista-semana'"
+                [attr.aria-checked]="modoVista === 'semana'"
+                (click)="selecionarModoVista('semana')"
+              >
+                Semanal
+              </button>
+              <button
+                type="button"
+                class="hub-toolbar-menu__item"
+                role="menuitemradio"
+                [class.hub-toolbar-menu__item--selected]="modoVista === 'mensal'"
+                [class.hub-toolbar-menu__item--pulse-once]="pulsoMenuItem === 'vista-mensal'"
+                [attr.aria-checked]="modoVista === 'mensal'"
+                (click)="selecionarModoVista('mensal')"
+              >
+                Mensal
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="hub-toolbar-menu hub-toolbar-menu--wide"
+            [class.hub-toolbar-menu--open]="hubMenuAberto === 'filtrar'"
           >
-            Profissionais
-          </button>
-          <button
-            type="button"
-            class="list-head__toolbar-btn"
-            disabled
-            title="Em breve"
+            <button
+              type="button"
+              class="list-head__toolbar-btn hub-toolbar-menu__trigger"
+              [class.list-head__toolbar-btn--filtro-on]="filtroHubAtivo()"
+              [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+              (click)="toggleHubMenu('filtrar', $event)"
+              [attr.aria-expanded]="hubMenuAberto === 'filtrar'"
+              aria-haspopup="menu"
+              aria-label="Filtrar"
+              title="Filtrar"
+            >
+              <svg
+                class="list-icon-sm list-icon-sm--funnel"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+                />
+              </svg>
+              <span class="list-head__toolbar-label">Filtrar</span>
+            </button>
+            <div
+              class="hub-toolbar-menu__panel hub-toolbar-menu__panel--filtros"
+              [class.hub-toolbar-menu__panel--open]="hubMenuAberto === 'filtrar'"
+              role="menu"
+              aria-label="Filtros da grelha"
+              (click)="$event.stopPropagation()"
+            >
+              <section class="hub-filtros-sec">
+                <div class="hub-filtros-sec__head">
+                  <h3 class="hub-filtros-sec__title">Profissionais</h3>
+                  <button
+                    type="button"
+                    class="hub-filtros-sec__link"
+                    (click)="desmarcarTodosProfissionais()"
+                  >
+                    Desmarcar tudo
+                  </button>
+                </div>
+                <ul class="hub-filtros-list">
+                  @for (p of profissionais; track p.id) {
+                    <li class="hub-filtros-list__row">
+                      <label class="hub-filtros-check">
+                        <input
+                          type="checkbox"
+                          [checked]="profissionalFiltroVisivel(p.id)"
+                          (change)="toggleProfissionalOculto(p.id)"
+                        />
+                        <span class="hub-filtros-check__label">{{ p.nome }}</span>
+                      </label>
+                      <button
+                        type="button"
+                        class="hub-filtros-gear"
+                        (click)="abrirConfigProfissional(p, $event)"
+                        [attr.aria-label]="'Configurar ' + p.nome"
+                        title="Configurar profissional"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+                          />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
+                    </li>
+                  }
+                  @if (profissionais.length === 0 && !carregandoMes) {
+                    <li class="hub-filtros-list__empty">Nenhum profissional na Folha.</li>
+                  }
+                </ul>
+              </section>
+              <section class="hub-filtros-sec">
+                <div class="hub-filtros-sec__head">
+                  <h3 class="hub-filtros-sec__title">Status</h3>
+                  <button
+                    type="button"
+                    class="hub-filtros-sec__link"
+                    (click)="restaurarStatusFiltroPadrao()"
+                  >
+                    Padrão
+                  </button>
+                </div>
+                <ul class="hub-filtros-list">
+                  @for (st of statusFiltrosHub; track st.id) {
+                    <li>
+                      <label class="hub-filtros-check">
+                        <input
+                          type="checkbox"
+                          [checked]="statusFiltroVisivel(st.id)"
+                          (change)="toggleStatusFiltro(st.id)"
+                        />
+                        <span class="hub-filtros-check__label">
+                          <span
+                            class="hub-filtros-status-dot"
+                            [style.background]="st.cor ?? '#d6d3d1'"
+                            aria-hidden="true"
+                          ></span>
+                          {{ st.label }}
+                        </span>
+                      </label>
+                    </li>
+                  }
+                </ul>
+              </section>
+            </div>
+          </div>
+
+          <div
+            class="hub-toolbar-menu"
+            [class.hub-toolbar-menu--open]="hubMenuAberto === 'acoes'"
           >
-            Visualização
-          </button>
-          <button
-            type="button"
-            class="list-head__toolbar-btn"
-            disabled
-            title="Em breve"
-          >
-            Filtrar
-          </button>
-          <button
-            type="button"
-            class="list-head__toolbar-btn"
-            disabled
-            title="Em breve"
-          >
-            Ações
-          </button>
+            <button
+              type="button"
+              class="list-head__toolbar-btn hub-toolbar-menu__trigger"
+              [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarAcoes"
+              (click)="toggleHubMenu('acoes', $event)"
+              [attr.aria-expanded]="hubMenuAberto === 'acoes'"
+              aria-haspopup="menu"
+              aria-label="Ações"
+              title="Ações"
+            >
+              <svg
+                class="list-icon-sm"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+              </svg>
+              <span class="list-head__toolbar-label">Ações</span>
+            </button>
+            <div
+              class="hub-toolbar-menu__panel"
+              [class.hub-toolbar-menu__panel--open]="hubMenuAberto === 'acoes'"
+              role="menu"
+              aria-label="Ações da agenda"
+              (click)="$event.stopPropagation()"
+            >
+              <button
+                type="button"
+                class="hub-toolbar-menu__item hub-toolbar-menu__item--danger"
+                role="menuitem"
+                [class.hub-toolbar-menu__item--pulse-once]="pulsoMenuItem === 'acao-bloquear'"
+                (click)="acaoBloquearHorarios()"
+              >
+                <svg
+                  class="hub-toolbar-menu__item-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m4.9 4.9 14.2 14.2" />
+                </svg>
+                Bloquear horários
+              </button>
+              <button
+                type="button"
+                class="hub-toolbar-menu__item"
+                role="menuitem"
+                [class.hub-toolbar-menu__item--pulse-once]="pulsoMenuItem === 'acao-agrupar'"
+                (click)="acaoAgruparAgendamentos()"
+              >
+                <svg
+                  class="hub-toolbar-menu__item-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M21 12a9 9 0 1 1-9-9" />
+                  <path d="M21 3v6h-6" />
+                </svg>
+                Agrupar agendamentos
+              </button>
+            </div>
+          </div>
           <button
             type="button"
             class="list-head__toolbar-btn list-head__toolbar-btn--link"
             (click)="abrirNovoAtendimentoModal()"
           >
-            + Novo
-          </button>
-        </div>
-      </div>
-
-      @if (modoVista === 'semana') {
-        <div class="hub-week-strip" role="group" aria-label="Dias da semana">
-          @for (d of diasFaixaSemana(); track d.ymd) {
-            <button
-              type="button"
-              class="hub-week-strip__dia"
-              [class.hub-week-strip__dia--selected]="d.selecionado"
-              [class.hub-week-strip__dia--hoje]="d.hoje"
-              (click)="selecionarDia(d.ymd)"
+            <svg
+              class="list-icon-sm"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
             >
-              <span class="hub-week-strip__label">{{ d.label }}</span>
-              <span class="hub-week-strip__num">{{ d.diaNum }}</span>
-              @if (d.contagem > 0) {
-                <span class="hub-week-strip__badge">{{ d.contagem }}</span>
-              }
-            </button>
-          }
-        </div>
-      }
-
-      <div
-        class="hub-panel hub-panel--calendario"
-        [class.hub-panel--open]="painelCalendarioAberto"
-        role="region"
-        aria-label="Calendário"
-        [attr.aria-hidden]="!painelCalendarioAberto"
-      >
-        <div class="mini-cal">
-          <div class="mini-cal__nav">
-            <button type="button" class="btn-icon" (click)="mesAnterior()">‹</button>
-            <span class="mini-cal__titulo">{{ tituloMes() }}</span>
-            <button type="button" class="btn-icon" (click)="mesSeguinte()">›</button>
-            <button type="button" class="btn-hoje" (click)="irParaHoje()">Hoje</button>
-          </div>
-          <div class="mini-cal__grid" role="grid">
-            @for (d of ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; track d) {
-              <span class="mini-cal__dow">{{ d }}</span>
-            }
-            @for (c of celulas(); track $index) {
-              @if (c.dia === null) {
-                <span class="mini-cal__cell mini-cal__cell--empty"></span>
-              } @else {
-                <button
-                  type="button"
-                  class="mini-cal__cell"
-                  [class.mini-cal__cell--selected]="c.ymd === diaYmd"
-                  [class.mini-cal__cell--hoje]="c.ymd === hojeYmd()"
-                  (click)="selecionarDiaCalendario(c.ymd)"
-                >
-                  <span class="mini-cal__num">{{ c.dia }}</span>
-                  @if (contagem(c.ymd) > 0) {
-                    <span class="mini-cal__badge">{{ contagem(c.ymd) }}</span>
-                  }
-                </button>
-              }
-            }
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="hub-panel hub-panel--profissionais"
-        [class.hub-panel--open]="painelProfissionaisAberto"
-        role="region"
-        aria-label="Profissionais visíveis"
-        [attr.aria-hidden]="!painelProfissionaisAberto"
-      >
-        <div class="prof-filtros">
-          <h2 class="prof-filtros__titulo">Profissionais</h2>
-          <p class="hint">Desmarque para ocultar na grelha.</p>
-          @if (layoutMobile) {
-            <label class="hub-panel__prof-mobile">
-              <span>Ver na grelha (mobile)</span>
-              <select
-                [ngModel]="profissionalAtivoMobile()"
-                (ngModelChange)="profissionalMobileId = $event"
-                name="profMobile"
-              >
-                @for (p of profissionaisParaSelectMobile(); track p.id) {
-                  <option [ngValue]="p.id">{{ p.nome }}</option>
-                }
-              </select>
-            </label>
-          }
-          @for (p of profissionais; track p.id) {
-            <label class="prof-check">
-              <input
-                type="checkbox"
-                [checked]="!profOcultos.has(p.id)"
-                (change)="toggleProfissionalOculto(p.id)"
-              />
-              <span>{{ p.nome }}</span>
-            </label>
-          }
-          @if (profissionais.length === 0 && !carregandoMes) {
-            <p class="hint">Nenhum profissional na Folha.</p>
-          }
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span>Novo</span>
+          </button>
         </div>
       </div>
     </div>
   </header>
 
-  <section class="hub-main" aria-label="Grelha do dia">
-    @if (carregandoDia) {
-      <div class="dia-cab dia-cab--status" aria-live="polite">
-        <span class="hint">A carregar…</span>
-      </div>
-    }
-
-    <div class="grid-wrap" role="region" aria-label="Horários por profissional">
+  <div class="hub-scroll" role="region" aria-label="Área de scroll da grelha">
+  <section class="hub-main" [attr.aria-label]="modoVista === 'mensal' ? 'Calendário mensal' : modoVista === 'semana' ? 'Grelha semanal' : 'Grelha do dia'" [attr.aria-busy]="carregandoVista() || null">
+    @if (modoVista === 'dia') {
+    <div
+      class="grid-wrap"
+      [class.grid-wrap--loading]="carregandoVista()"
+      role="region"
+      aria-label="Horários por profissional"
+    >
       <div class="grid-head">
-        <div class="grid-head__corner"></div>
-        @for (p of profissionaisVisiveis(); track p.id) {
-          <div class="grid-head__cell">{{ p.nome }}</div>
-        }
+        <div class="grid-head__corner" aria-hidden="true"></div>
+        <div
+          class="grid-x-pane"
+          (scroll)="aoScrollHorizontalGrelha($event, 'dia')"
+        >
+          <div class="grid-head__prof-track">
+            @for (p of profissionaisVisiveis(); track p.id) {
+              <button
+                type="button"
+                class="grid-head__prof"
+                [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
+                (click)="aoClicarCabecalhoProfissional(p)"
+                [attr.aria-label]="'Profissional ' + p.nome"
+                [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+              >
+                <app-profissional-avatar
+                  variant="grid-head"
+                  [fotoUrl]="p.fotoUrl"
+                />
+                <span class="grid-head__prof-nome">{{ p.nome }}</span>
+              </button>
+            }
+          </div>
+        </div>
       </div>
       <div class="grid-body">
         <div class="grid-body__times" aria-hidden="true">
@@ -223,20 +443,24 @@
             </div>
           }
         </div>
-        <div class="grid-body__cols">
-          @for (p of profissionaisVisiveis(); track p.id) {
-            <div class="day-col">
-              @for (slot of slotsHoras; track slot) {
-                <button
-                  type="button"
-                  class="day-col__slot"
-                  [style.top.%]="slotTopPct(slot)"
-                  [style.height.%]="slotAlturaPct()"
-                  (click)="abrirNovo(p.id, slot)"
-                  [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome"
-                ></button>
-              }
-              @for (lay of blocosLayout(p.id); track lay.bloco.trackKey) {
+        <div
+          class="grid-x-pane grid-x-pane--scrollbar"
+          (scroll)="aoScrollHorizontalGrelha($event, 'dia')"
+        >
+          <div class="grid-body__cols">
+            @for (p of profissionaisVisiveis(); track p.id) {
+              <div class="day-col">
+                @for (slot of slotsHoras; track slot) {
+                  <button
+                    type="button"
+                    class="day-col__slot"
+                    [style.top.%]="slotTopPct(slot)"
+                    [style.height.%]="slotAlturaPct()"
+                    (click)="abrirNovo(p.id, slot)"
+                    [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome"
+                  ></button>
+                }
+                @for (lay of blocosLayout(p.id); track lay.bloco.trackKey) {
                 <div
                   class="day-col__card-slot"
                   [style.top.%]="topPctBloco(lay.bloco)"
@@ -276,13 +500,291 @@
                     </span>
                   </button>
                 </div>
-              }
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+    } @else if (modoVista === 'semana') {
+    <div
+      class="week-grid-wrap"
+      [class.grid-wrap--loading]="carregandoVista()"
+      role="region"
+      aria-label="Horários semanais por profissional"
+    >
+      <div class="grid-head week-grid-head week-grid-head--prof">
+        <div class="grid-head__corner" aria-hidden="true"></div>
+        <div
+          class="grid-x-pane"
+          (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
+        >
+          <div class="week-grid-head__prof-track">
+            @for (p of profissionaisVisiveis(); track p.id) {
+              <button
+                type="button"
+                class="grid-head__prof"
+                [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
+                (click)="aoClicarCabecalhoProfissional(p)"
+                [attr.aria-label]="'Profissional ' + p.nome"
+                [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+              >
+                <app-profissional-avatar
+                  variant="grid-head"
+                  [fotoUrl]="p.fotoUrl"
+                />
+                <span class="grid-head__prof-nome">{{ p.nome }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="week-grid-head week-grid-head--days">
+        <div class="grid-head__corner" aria-hidden="true"></div>
+        <div
+          class="grid-x-pane"
+          (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
+        >
+          <div class="week-grid-head__days-track">
+            @for (p of profissionaisVisiveis(); track p.id) {
+              <div class="week-grid-head__prof-days">
+                @for (d of diasFaixaSemanal(); track d.ymd) {
+                  <div
+                    class="week-grid-head__day"
+                    [class.week-grid-head__day--hoje]="d.hoje"
+                    [class.week-grid-head__day--selected]="d.selecionado"
+                  >
+                    <span class="week-grid-head__day-dow">{{
+                      rotuloDowColunaSemana(d)
+                    }}</span>
+                    <span class="week-grid-head__day-num">{{
+                      rotuloNumColunaSemana(d)
+                    }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="week-grid-body">
+        <div class="grid-body__times" aria-hidden="true">
+          @for (slot of slotsHoras; track slot) {
+            <div
+              class="grid-body__time-slot"
+              [style.top.%]="slotTopPct(slot)"
+              [style.height.%]="slotAlturaPct()"
+            >
+              <span class="grid-body__time">{{ slot }}</span>
             </div>
+          }
+        </div>
+        <div
+          class="grid-x-pane grid-x-pane--scrollbar"
+          (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
+        >
+          <div class="week-grid-body__cols">
+            @for (p of profissionaisVisiveis(); track p.id) {
+              <div class="week-grid-body__prof-cols">
+                @for (d of diasFaixaSemanal(); track d.ymd) {
+                <div
+                  class="day-col week-day-col"
+                  [class.week-day-col--bg-white]="d.hoje"
+                  [class.week-day-col--bg-muted]="!d.hoje"
+                >
+                  @for (slot of slotsHoras; track slot) {
+                    <button
+                      type="button"
+                      class="day-col__slot day-col__slot--week"
+                      [class.day-col__slot--fechado]="slotForaExpediente(slot)"
+                      [style.top.%]="slotTopPct(slot)"
+                      [style.height.%]="slotAlturaPct()"
+                      (click)="abrirNovo(p.id, slot, d.ymd)"
+                      [attr.aria-label]="'Novo às ' + slot + ' — ' + p.nome + ' — ' + d.ymd"
+                    ></button>
+                  }
+                  @for (lay of blocosLayout(p.id, d.ymd); track lay.bloco.trackKey) {
+                    <div
+                      class="day-col__card-slot"
+                      [style.top.%]="topPctBloco(lay.bloco, d.ymd)"
+                      [style.height.%]="alturaPctBloco(lay.bloco, d.ymd)"
+                      [style.left.%]="lay.leftPct"
+                      [style.width.%]="lay.widthPct"
+                    >
+                      <button
+                        type="button"
+                        class="day-col__card"
+                        [style.background]="corFundoCartaoBloco(lay.bloco)"
+                        [disabled]="!idAtendimentoBloco(lay.bloco)"
+                        [attr.aria-label]="
+                          (blocoComandaFaturada(lay.bloco)
+                            ? 'Visualizar comanda: '
+                            : 'Editar agendamento: ') + rotuloBloco(lay.bloco)
+                        "
+                        (click)="abrirDrawerEdicaoBloco(lay.bloco, $event)"
+                      >
+                        <span class="day-col__card-body">
+                          <span class="day-col__card-time-range">{{
+                            intervaloHHmmBloco(lay.bloco, d.ymd)
+                          }}</span>
+                          <span class="day-col__card-nome">{{
+                            nomeClienteBloco(lay.bloco)
+                          }}</span>
+                          @let itensCardSem = itensResumoBloco(lay.bloco);
+                          @if (itensCardSem.length) {
+                            <div class="day-col__card-itens-wrap">
+                              @for (item of itensCardSem; track item) {
+                                <span class="day-col__card-item-line">{{ item }}</span>
+                              }
+                            </div>
+                          }
+                        </span>
+                      </button>
+                    </div>
+                  }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+    } @else {
+    <div
+      class="month-grid-wrap"
+      [class.grid-wrap--loading]="carregandoVista()"
+      role="region"
+      aria-label="Calendário mensal"
+    >
+      <div class="month-grid-head">
+        @for (dow of monthDowLabels; track dow) {
+          <span class="month-grid-head__dow">{{ dow }}</span>
+        }
+      </div>
+      <div class="month-grid-body">
+        @for (c of celulas(); track $index) {
+          <div
+            class="month-grid-cell"
+            [class.month-grid-cell--fora-mes]="c.foraDoMes"
+            [class.month-grid-cell--hoje]="c.ymd === hojeYmd()"
+            [class.month-grid-cell--selected]="c.ymd === diaYmd"
+            role="button"
+            tabindex="0"
+            (click)="abrirNovoAgendamentoCelulaMensal(c.ymd)"
+            (keydown.enter)="abrirNovoAgendamentoCelulaMensal(c.ymd)"
+            (keydown.space)="abrirNovoAgendamentoCelulaMensal(c.ymd); $event.preventDefault()"
+            [attr.aria-label]="'Novo agendamento em ' + c.dia"
+          >
+            <span class="month-grid-cell__num-btn" aria-hidden="true">{{
+              c.dia
+            }}</span>
+            @if (!c.foraDoMes) {
+              <div class="month-grid-cell__events">
+                @for (bloco of blocosDoDiaMensal(c.ymd); track bloco.trackKey) {
+                  <button
+                    type="button"
+                    class="month-grid-cell__ev"
+                    [style.background]="corFundoCartaoBloco(bloco)"
+                    [disabled]="!idAtendimentoBloco(bloco)"
+                    [attr.aria-label]="rotuloBloco(bloco)"
+                    (click)="abrirDrawerEdicaoBloco(bloco, $event)"
+                  >
+                    <span class="month-grid-cell__ev-time">{{
+                      horaBloco(bloco, c.ymd)
+                    }}</span>
+                    <span class="month-grid-cell__ev-nome">{{
+                      nomeClienteBloco(bloco)
+                    }}</span>
+                    @let itemMensal = itensResumoBloco(bloco)[0];
+                    @if (itemMensal) {
+                      <span class="month-grid-cell__ev-serv">{{ itemMensal }}</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+    }
+  </section>
+  </div>
+
+  <div class="hub-cal-anchor">
+    <button
+      type="button"
+      class="hub-cal-float"
+      [class.hub-cal-float--open]="painelCalendarioAberto"
+      (click)="togglePainelCalendario()"
+      [attr.aria-expanded]="painelCalendarioAberto"
+      aria-haspopup="dialog"
+      aria-label="Abrir calendário"
+    >
+      <svg
+        class="hub-cal-float__icon"
+        xmlns="http://www.w3.org/2000/svg"
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <rect width="18" height="18" x="3" y="4" rx="2" />
+        <path d="M3 10h18" />
+      </svg>
+      <span>Calendário</span>
+    </button>
+
+    <div
+      class="hub-panel hub-panel--calendario hub-panel--calendario-float"
+      [class.hub-panel--open]="painelCalendarioAberto"
+      role="dialog"
+      aria-label="Calendário"
+      [attr.aria-hidden]="!painelCalendarioAberto"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="mini-cal">
+        <div class="mini-cal__nav">
+          <button type="button" class="btn-icon" (click)="mesAnterior()">‹</button>
+          <span class="mini-cal__titulo">{{ tituloMes() }}</span>
+          <button type="button" class="btn-icon" (click)="mesSeguinte()">›</button>
+          <button type="button" class="btn-hoje" (click)="irParaHoje()">Hoje</button>
+        </div>
+        <div class="mini-cal__grid" role="grid">
+          @for (d of ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; track d) {
+            <span class="mini-cal__dow">{{ d }}</span>
+          }
+          @for (c of celulas(); track $index) {
+            @if (c.dia === null) {
+              <span class="mini-cal__cell mini-cal__cell--empty"></span>
+            } @else {
+              <button
+                type="button"
+                class="mini-cal__cell"
+                [class.mini-cal__cell--selected]="c.ymd === diaYmd"
+                [class.mini-cal__cell--hoje]="c.ymd === hojeYmd()"
+                (click)="selecionarDiaCalendario(c.ymd)"
+              >
+                <span class="mini-cal__num">{{ c.dia }}</span>
+                @if (contagem(c.ymd) > 0) {
+                  <span class="mini-cal__badge">{{ contagem(c.ymd) }}</span>
+                }
+              </button>
+            }
           }
         </div>
       </div>
     </div>
-  </section>
+  </div>
 </div>
 
 <button

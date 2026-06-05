@@ -28,8 +28,10 @@ import {
 } from '../../../../core/utils/atendimento-display';
 import {
   AGENDA_COR_COMANDA_FATURADA,
+  AGENDA_STATUS_META,
   corHexAgendaPorStatus,
   normalizarAgendaStatusId,
+  type AgendaStatusId,
 } from '../../../../core/utils/agenda-status-card';
 import {
   cobrancaFinalizadaItem,
@@ -44,8 +46,27 @@ import {
   ClienteCadastroDrawerService,
   type AbrirCadastroClientePayload,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 
-type CelulaCalendario = { dia: number | null; ymd: string | null };
+type CelulaCalendario = {
+  dia: number;
+  ymd: string;
+  foraDoMes: boolean;
+};
+
+type HubModoVista = 'dia' | 'semana' | 'mensal';
+type HubMenuToolbar = 'visualizacao' | 'filtrar' | 'acoes';
+type HubStatusFiltroId = AgendaStatusId | 'faturado' | 'bloqueado';
+
+const HUB_STATUS_FILTROS: readonly {
+  id: HubStatusFiltroId;
+  label: string;
+  cor?: string;
+}[] = [
+  ...AGENDA_STATUS_META,
+  { id: 'faturado', label: 'Faturado', cor: AGENDA_COR_COMANDA_FATURADA },
+  { id: 'bloqueado', label: 'Bloqueado', cor: '#9ca3af' },
+];
 
 /**
  * Grelha do dia em minutos desde 00:00.
@@ -64,11 +85,15 @@ const GRID_RANGE = GRID_END_MIN - GRID_START_MIN;
 const AGENDA_SLOT_MIN = 30;
 /** Nº de faixas de 30 min na coluna (31). */
 const AGENDA_SLOT_COUNT = GRID_RANGE / AGENDA_SLOT_MIN;
+/** Dias da semana por profissional na grelha semanal (7 colunas cada). */
+const SEMANA_COLUNAS = 7;
+/** Grelha mensal: 6 semanas × 7 dias (sempre 42 células). */
+const MES_GRELHA_CELULAS = 42;
 /** Último slot de 30 min a começar na grelha (23:00). */
 const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
 
 /** Duração da animação do drawer (ms); manter igual a `--drawer-slide-duration` no SCSS. */
-const DRAWER_ANIM_MS = 430;
+const DRAWER_ANIM_MS = 520;
 
 /** Um cartão na grelha = mesmo `id` + mesmo profissional (várias linhas = um bloco). */
 type AgendaHubBloco = {
@@ -78,18 +103,25 @@ type AgendaHubBloco = {
 
 @Component({
   selector: 'app-agenda-hub',
+  host: {
+    class: 'agenda-hub-host',
+  },
   standalone: true,
   imports: [
     FormsModule,
     AgendaNovoComponent,
     NovaComandaDrawerComponent,
     FaturarDrawerComponent,
+    ProfissionalAvatarComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda-hub.component.html',
   styleUrl: './agenda-hub.component.scss',
 })
 export class AgendaHubComponent implements OnInit, OnDestroy {
+  private static readonly MAIN_AGENDA_CLASS = 'main--agenda-hub';
+  private static readonly ROOT_SCROLL_LOCK_CLASS = 'agenda-hub-scroll-lock';
+
   private readonly api = inject(SheetsApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -106,24 +138,52 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   mesRef = this.inicioDoMes(new Date());
   diaYmd = toYmd(new Date());
+  /** 1.º dia da faixa semanal (7 dias por prof.); por defeito = hoje. */
+  semanaGridInicioYmd = toYmd(new Date());
   carregandoMes = false;
   carregandoDia = false;
   erro = '';
   porDia = new Map<string, number>();
   itensMes: AtendimentoListaItem[] = [];
   linhasDia: AtendimentoListaItem[] = [];
+  linhasSemana: AtendimentoListaItem[] = [];
+  carregandoSemana = false;
   profissionais: ProfissionalListaItem[] = [];
   /** Profissionais ocultos na grelha (vazio = todos visíveis). */
   profOcultos = new Set<number>();
 
   /** Mobile: dia único ou faixa semanal (mesma grelha por dia selecionado). */
-  modoVista: 'dia' | 'semana' = 'dia';
+  modoVista: HubModoVista = 'dia';
   profissionalMobileId: number | null = null;
   buscaCliente = '';
   layoutMobile = false;
 
+  readonly statusFiltrosHub = HUB_STATUS_FILTROS;
+  /** Status ocultos na grelha (vazio = todos visíveis). */
+  statusOcultos = new Set<HubStatusFiltroId>();
+
+  hubMenuAberto: HubMenuToolbar | null = null;
+  pulsoToolbarVisualizacao = false;
+  pulsoToolbarFiltro = false;
+  pulsoToolbarAcoes = false;
+  pulsoMenuItem: string | null = null;
+  private tPulsoVisualizacao: ReturnType<typeof setTimeout> | null = null;
+  private tPulsoFiltro: ReturnType<typeof setTimeout> | null = null;
+  private tPulsoAcoes: ReturnType<typeof setTimeout> | null = null;
+  private tPulsoMenuItem: ReturnType<typeof setTimeout> | null = null;
+  private readonly duracaoPulsoToolbarMs = 600;
+  readonly monthDowLabels = [
+    'dom.',
+    'seg.',
+    'ter.',
+    'qua.',
+    'qui.',
+    'sex.',
+    'sáb.',
+  ] as const;
   painelCalendarioAberto = false;
-  painelProfissionaisAberto = false;
+  /** Destaque visual no cabeçalho da coluna (clique no nome). */
+  profCabecalhoAtivoId: number | null = null;
 
   slotsHoras: string[] = [];
   modalAberto = false;
@@ -173,8 +233,20 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
 
+  private readonly onHubToolbarDocClick = (ev: MouseEvent): void => {
+    const t = ev.target;
+    if (!(t instanceof Element)) return;
+    if (t.closest('.hub-toolbar-menu')) return;
+    this.fecharMenusToolbar();
+  };
+
   private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+    if (this.hubMenuAberto) {
+      ev.preventDefault();
+      this.fecharMenusToolbar();
+      return;
+    }
     if (this.algumPainelHubAberto()) {
       ev.preventDefault();
       this.fecharPaineisHub();
@@ -200,11 +272,16 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit(): void {
+    this.ativarLayoutAgendaNoMain();
+    this.destroyRef.onDestroy(() => this.desativarLayoutAgendaNoMain());
+
     this.slotsHoras = this.gerarSlots();
     this.setupLayoutMobile();
     window.addEventListener('keydown', this.onDrawerKeydown);
+    document.addEventListener('click', this.onHubToolbarDocClick);
     this.destroyRef.onDestroy(() => {
       window.removeEventListener('keydown', this.onDrawerKeydown);
+      document.removeEventListener('click', this.onHubToolbarDocClick);
     });
     this.api.listProfissionais(false, 'agenda').subscribe({
       next: (items) => {
@@ -214,8 +291,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         this.profissionais = [];
       },
     });
-    this.carregarMes();
-    this.carregarDia();
+    this.recarregarVistaAtiva();
     this.route.queryParamMap
       .pipe(
         filter((qm) => qm.get('abrirNovaComanda') === '1'),
@@ -238,7 +314,18 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       });
   }
 
+  private ativarLayoutAgendaNoMain(): void {
+    document.documentElement.classList.add(AgendaHubComponent.ROOT_SCROLL_LOCK_CLASS);
+    document.querySelector('main.main')?.classList.add(AgendaHubComponent.MAIN_AGENDA_CLASS);
+  }
+
+  private desativarLayoutAgendaNoMain(): void {
+    document.documentElement.classList.remove(AgendaHubComponent.ROOT_SCROLL_LOCK_CLASS);
+    document.querySelector('main.main')?.classList.remove(AgendaHubComponent.MAIN_AGENDA_CLASS);
+  }
+
   ngOnDestroy(): void {
+    this.desativarLayoutAgendaNoMain();
     if (this.timerAbrirNovaComandaDesdeLista != null) {
       clearTimeout(this.timerAbrirNovaComandaDesdeLista);
       this.timerAbrirNovaComandaDesdeLista = null;
@@ -283,22 +370,120 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return this.profissionais.filter((p) => !this.profOcultos.has(p.id));
   }
 
-  selecionarModoVista(modo: 'dia' | 'semana'): void {
+  selecionarModoVista(modo: HubModoVista): void {
     this.modoVista = modo;
+    this.fecharMenusToolbar();
+    this.dispararPulsoMenuItem(`vista-${modo}`);
+    if (modo === 'mensal') {
+      this.mesRef = this.inicioDoMes(this.parseYmdLocal(this.diaYmd));
+    }
+    if (modo === 'semana') {
+      this.semanaGridInicioYmd = this.hojeYmd();
+      this.diaYmd = this.hojeYmd();
+    }
+    this.recarregarVistaAtiva();
+  }
+
+  toggleHubMenu(menu: HubMenuToolbar, ev?: Event): void {
+    ev?.stopPropagation();
+    this.hubMenuAberto = this.hubMenuAberto === menu ? null : menu;
+    this.dispararPulsoToolbar(menu);
+  }
+
+  private dispararPulsoToolbar(which: HubMenuToolbar): void {
+    if (which === 'visualizacao') {
+      if (this.tPulsoVisualizacao != null) clearTimeout(this.tPulsoVisualizacao);
+      this.pulsoToolbarVisualizacao = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarVisualizacao = true;
+        this.tPulsoVisualizacao = setTimeout(() => {
+          this.pulsoToolbarVisualizacao = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+      return;
+    }
+    if (which === 'filtrar') {
+      if (this.tPulsoFiltro != null) clearTimeout(this.tPulsoFiltro);
+      this.pulsoToolbarFiltro = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarFiltro = true;
+        this.tPulsoFiltro = setTimeout(() => {
+          this.pulsoToolbarFiltro = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+      return;
+    }
+    if (this.tPulsoAcoes != null) clearTimeout(this.tPulsoAcoes);
+    this.pulsoToolbarAcoes = false;
+    queueMicrotask(() => {
+      this.pulsoToolbarAcoes = true;
+      this.tPulsoAcoes = setTimeout(() => {
+        this.pulsoToolbarAcoes = false;
+      }, this.duracaoPulsoToolbarMs);
+    });
+  }
+
+  dispararPulsoMenuItem(id: string): void {
+    if (this.tPulsoMenuItem != null) clearTimeout(this.tPulsoMenuItem);
+    this.pulsoMenuItem = null;
+    queueMicrotask(() => {
+      this.pulsoMenuItem = id;
+      this.tPulsoMenuItem = setTimeout(() => {
+        this.pulsoMenuItem = null;
+      }, this.duracaoPulsoToolbarMs);
+    });
+  }
+
+  carregandoVista(): boolean {
+    if (this.modoVista === 'semana') return this.carregandoSemana;
+    if (this.modoVista === 'mensal') return this.carregandoMes;
+    return this.carregandoDia;
+  }
+
+  fecharMenusToolbar(): void {
+    this.hubMenuAberto = null;
   }
 
   /**
    * Rótulo central do header conforme distância a «hoje»:
-   * 0 → Hoje; +1 → Amanhã; +2 → nome do dia (ex. Sábado);
-   * +3+ / -2- → «07 jun, 2026 (dom)»; -1 → Ontem.
+   * Diário: 0 → Hoje; +1 → Amanhã; +2 → nome do dia; +3+ / -2- → data completa; -1 → Ontem.
+   * Semanal: 0 → Essa semana; +1 → Próxima semana; -1 → Semana passada; ±2+ → intervalo de datas.
+   * Mensal: «Junho, 2026»; ‹ › mudam o mês.
    */
   rotuloNavegacaoDia(): string {
+    if (this.modoVista === 'mensal') {
+      return this.rotuloMesNavegacao();
+    }
+    if (this.modoVista === 'semana') {
+      return this.rotuloFaixaSemanal();
+    }
     const diff = this.diffDiasDesdeHoje(this.diaYmd);
     if (diff === 0) return 'Hoje';
     if (diff === 1) return 'Amanhã';
     if (diff === -1) return 'Ontem';
     if (diff === 2) return this.nomeDiaSemanaLongo(this.diaYmd);
     return this.formatarDiaCabecalhoCompleto(this.diaYmd);
+  }
+
+  rotuloDowColunaSemana(d: { label: string }): string {
+    return d.label
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .slice(0, 3);
+  }
+
+  rotuloNumColunaSemana(d: { diaNum: number }): string {
+    return String(d.diaNum).padStart(2, '0');
+  }
+
+  isDomingo(ymd: string): boolean {
+    return this.parseYmdLocal(ymd).getDay() === 0;
+  }
+
+  slotForaExpediente(slot: string): boolean {
+    const h = parseInt(slot.split(':')[0] ?? '0', 10);
+    return Number.isFinite(h) && h >= 12;
   }
 
   /** Diferença em dias civis (local): `ymd` menos hoje. */
@@ -336,6 +521,21 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return `${dia} ${mes}, ${ano} (${dow})`;
   }
 
+  /** 7 dias da semana (mesma faixa repetida em cada profissional). */
+  diasFaixaSemanal(): Array<{
+    ymd: string;
+    label: string;
+    diaNum: number;
+    selecionado: boolean;
+    hoje: boolean;
+    contagem: number;
+  }> {
+    return this.diasFaixaSemanaInterno(
+      SEMANA_COLUNAS,
+      this.semanaGridInicioYmd,
+    );
+  }
+
   diasFaixaSemana(): Array<{
     ymd: string;
     label: string;
@@ -344,12 +544,24 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     hoje: boolean;
     contagem: number;
   }> {
-    const anchor = this.parseYmdLocal(this.diaYmd);
-    const dow = anchor.getDay();
-    const mondayOffset = dow === 0 ? -6 : 1 - dow;
-    const monday = new Date(anchor);
-    monday.setDate(anchor.getDate() + mondayOffset);
-    const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    return this.diasFaixaSemanaInterno(
+      7,
+      this.inicioSemanaYmd(this.diaYmd),
+    );
+  }
+
+  private diasFaixaSemanaInterno(
+    total: number,
+    inicioYmd: string,
+  ): Array<{
+    ymd: string;
+    label: string;
+    diaNum: number;
+    selecionado: boolean;
+    hoje: boolean;
+    contagem: number;
+  }> {
+    const inicio = this.parseYmdLocal(inicioYmd);
     const out: Array<{
       ymd: string;
       label: string;
@@ -358,13 +570,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       hoje: boolean;
       contagem: number;
     }> = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
+    for (let i = 0; i < total; i++) {
+      const d = new Date(inicio);
+      d.setDate(inicio.getDate() + i);
       const ymd = toYmd(d);
       out.push({
         ymd,
-        label: labels[i]!,
+        label: this.labelDiaSemanaCurto(d),
         diaNum: d.getDate(),
         selecionado: ymd === this.diaYmd,
         hoje: ymd === this.hojeYmd(),
@@ -374,16 +586,104 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return out;
   }
 
+  private fimFaixaSemanalYmd(inicioYmd: string): string {
+    const d = this.parseYmdLocal(inicioYmd);
+    d.setDate(d.getDate() + SEMANA_COLUNAS - 1);
+    return toYmd(d);
+  }
+
+  /** Deslocamento da faixa visível em blocos de 7 dias relativamente a «hoje». */
+  private diffSemanasFaixaDesdeHoje(): number {
+    return Math.round(this.diffDiasDesdeHoje(this.semanaGridInicioYmd) / 7);
+  }
+
+  /** Vista mensal: «Junho, 2026». */
+  private rotuloMesNavegacao(): string {
+    const mes = this.mesRef.toLocaleDateString('pt-BR', { month: 'long' });
+    const mesCap = mes.charAt(0).toUpperCase() + mes.slice(1);
+    return `${mesCap}, ${this.mesRef.getFullYear()}`;
+  }
+
+  private rotuloFaixaSemanal(): string {
+    const diff = this.diffSemanasFaixaDesdeHoje();
+    if (diff === 0) return 'Essa semana';
+    if (diff === 1) return 'Próxima semana';
+    if (diff === -1) return 'Semana passada';
+    const inicio = this.semanaGridInicioYmd;
+    const fim = this.fimFaixaSemanalYmd(inicio);
+    return `${this.formatarDataFaixaSemanal(inicio)} - ${this.formatarDataFaixaSemanal(fim)}`;
+  }
+
+  /** Ex.: «18 jun, 2026» (mês abreviado minúsculo, sem zero à esquerda no dia). */
+  private formatarDataFaixaSemanal(ymd: string): string {
+    const d = this.parseYmdLocal(ymd);
+    const mes = d
+      .toLocaleDateString('pt-BR', { month: 'short' })
+      .replace(/\./g, '')
+      .trim()
+      .toLowerCase();
+    return `${d.getDate()} ${mes}, ${d.getFullYear()}`;
+  }
+
+  private labelDiaSemanaCurto(d: Date): string {
+    const nome = d
+      .toLocaleDateString('pt-BR', { weekday: 'short' })
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\./g, '')
+      .trim()
+      .toLowerCase();
+    return nome.slice(0, 3);
+  }
+
+  private deslocarFaixaSemanal(deltaDias: number): void {
+    const d = this.parseYmdLocal(this.semanaGridInicioYmd);
+    d.setDate(d.getDate() + deltaDias);
+    this.semanaGridInicioYmd = toYmd(d);
+    this.carregarSemana();
+  }
+
   diaAnterior(): void {
+    if (this.modoVista === 'mensal') {
+      this.mesAnterior();
+      return;
+    }
+    if (this.modoVista === 'semana') {
+      this.deslocarFaixaSemanal(-7);
+      return;
+    }
     const d = this.parseYmdLocal(this.diaYmd);
     d.setDate(d.getDate() - 1);
     this.selecionarDia(toYmd(d));
   }
 
   diaSeguinte(): void {
+    if (this.modoVista === 'mensal') {
+      this.mesSeguinte();
+      return;
+    }
+    if (this.modoVista === 'semana') {
+      this.deslocarFaixaSemanal(7);
+      return;
+    }
     const d = this.parseYmdLocal(this.diaYmd);
     d.setDate(d.getDate() + 1);
     this.selecionarDia(toYmd(d));
+  }
+
+  private inicioSemanaYmd(ymd: string): string {
+    const anchor = this.parseYmdLocal(ymd);
+    const dow = anchor.getDay();
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(anchor);
+    monday.setDate(anchor.getDate() + mondayOffset);
+    return toYmd(monday);
+  }
+
+  private fimSemanaYmd(ymd: string): string {
+    const monday = this.parseYmdLocal(this.inicioSemanaYmd(ymd));
+    monday.setDate(monday.getDate() + 6);
+    return toYmd(monday);
   }
 
   limparBuscaCliente(): void {
@@ -391,30 +691,104 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   algumPainelHubAberto(): boolean {
-    return this.painelCalendarioAberto || this.painelProfissionaisAberto;
+    return this.painelCalendarioAberto;
   }
 
   fecharPaineisHub(): void {
     this.painelCalendarioAberto = false;
-    this.painelProfissionaisAberto = false;
+    this.fecharMenusToolbar();
   }
 
   togglePainelCalendario(): void {
     const abrir = !this.painelCalendarioAberto;
-    this.fecharPaineisHub();
+    this.fecharMenusToolbar();
     this.painelCalendarioAberto = abrir;
   }
 
-  togglePainelProfissionais(): void {
-    const abrir = !this.painelProfissionaisAberto;
-    this.fecharPaineisHub();
-    this.painelProfissionaisAberto = abrir;
+  filtroHubAtivo(): boolean {
+    return this.profOcultos.size > 0 || this.statusOcultos.size > 0;
+  }
+
+  statusFiltroVisivel(id: HubStatusFiltroId): boolean {
+    return !this.statusOcultos.has(id);
+  }
+
+  toggleStatusFiltro(id: HubStatusFiltroId): void {
+    if (this.statusOcultos.has(id)) {
+      this.statusOcultos.delete(id);
+    } else {
+      this.statusOcultos.add(id);
+    }
+  }
+
+  restaurarStatusFiltroPadrao(): void {
+    this.statusOcultos.clear();
+  }
+
+  desmarcarTodosProfissionais(): void {
+    for (const p of this.profissionais) {
+      this.profOcultos.add(p.id);
+    }
+  }
+
+  profissionalFiltroVisivel(id: number): boolean {
+    return !this.profOcultos.has(id);
+  }
+
+  acaoBloquearHorarios(): void {
+    this.dispararPulsoMenuItem('acao-bloquear');
+    this.fecharMenusToolbar();
+    this.abrirNovoAtendimentoModal();
+  }
+
+  acaoAgruparAgendamentos(): void {
+    this.dispararPulsoMenuItem('acao-agrupar');
+    this.fecharMenusToolbar();
+    this.abrirNovoAtendimentoModal();
+  }
+
+  abrirConfigProfissional(_p: ProfissionalListaItem, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.fecharMenusToolbar();
+    void this.router.navigate(['/profissionais']);
+  }
+
+  atualizarGrelhaAgenda(): void {
+    this.recarregarVistaAtiva();
   }
 
   /** Escolha de dia no painel Calendário: atualiza grelha e fecha o painel. */
   selecionarDiaCalendario(ymd: string | null): void {
     this.selecionarDia(ymd);
     this.fecharPaineisHub();
+  }
+
+  aoClicarCabecalhoProfissional(p: ProfissionalListaItem): void {
+    this.profCabecalhoAtivoId =
+      this.profCabecalhoAtivoId === p.id ? null : p.id;
+    if (this.layoutMobile) {
+      this.profissionalMobileId = p.id;
+    }
+  }
+
+  private gridScrollSyncLock = false;
+
+  /** Sincroniza scroll horizontal entre cabeçalho e corpo da grelha. */
+  aoScrollHorizontalGrelha(ev: Event, grupo: 'dia' | 'semana'): void {
+    if (this.gridScrollSyncLock) return;
+    const source = ev.target as HTMLElement | null;
+    if (!source) return;
+    const wrap = source.closest(
+      grupo === 'semana' ? '.week-grid-wrap' : '.grid-wrap',
+    );
+    if (!wrap) return;
+    const left = source.scrollLeft;
+    this.gridScrollSyncLock = true;
+    wrap.querySelectorAll<HTMLElement>('.grid-x-pane').forEach((pane) => {
+      if (pane !== source) pane.scrollLeft = left;
+    });
+    this.gridScrollSyncLock = false;
   }
 
   toggleProfissionalOculto(id: number): void {
@@ -430,18 +804,45 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const m = this.mesRef.getMonth();
     const primeiroDow = new Date(y, m, 1).getDay();
     const diasNoMes = new Date(y, m + 1, 0).getDate();
+    const diasMesAnterior = new Date(y, m, 0).getDate();
     const out: CelulaCalendario[] = [];
+
     for (let i = 0; i < primeiroDow; i++) {
-      out.push({ dia: null, ymd: null });
+      const dia = diasMesAnterior - (primeiroDow - 1 - i);
+      const prevM = m === 0 ? 11 : m - 1;
+      const prevY = m === 0 ? y - 1 : y;
+      out.push({
+        dia,
+        ymd: this.ymdFromPartes(prevY, prevM, dia),
+        foraDoMes: true,
+      });
     }
+
     for (let d = 1; d <= diasNoMes; d++) {
-      const ymd = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      out.push({ dia: d, ymd });
+      out.push({
+        dia: d,
+        ymd: this.ymdFromPartes(y, m, d),
+        foraDoMes: false,
+      });
     }
-    while (out.length % 7 !== 0) {
-      out.push({ dia: null, ymd: null });
+
+    let diaSeguinte = 1;
+    while (out.length < MES_GRELHA_CELULAS) {
+      const nextM = m === 11 ? 0 : m + 1;
+      const nextY = m === 11 ? y + 1 : y;
+      out.push({
+        dia: diaSeguinte,
+        ymd: this.ymdFromPartes(nextY, nextM, diaSeguinte),
+        foraDoMes: true,
+      });
+      diaSeguinte++;
     }
+
     return out;
+  }
+
+  private ymdFromPartes(year: number, month: number, day: number): string {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
 
   contagem(ymd: string | null): number {
@@ -465,9 +866,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.mesRef.getFullYear() !== parts.getFullYear()
     ) {
       this.mesRef = this.inicioDoMes(parts);
-      this.carregarMes();
     }
-    this.carregarDia();
+    this.recarregarVistaAtiva();
   }
 
   mesAnterior(): void {
@@ -494,8 +894,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const hoje = new Date();
     this.mesRef = this.inicioDoMes(hoje);
     this.diaYmd = toYmd(hoje);
-    this.carregarMes();
-    this.carregarDia();
+    if (this.modoVista === 'semana') {
+      this.semanaGridInicioYmd = this.diaYmd;
+    }
+    this.recarregarVistaAtiva();
   }
 
   get colsCount(): number {
@@ -506,9 +908,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return toYmd(new Date());
   }
 
-  abrirNovo(profissionalId: number, hora: string): void {
+  abrirNovo(profissionalId: number, hora: string, dataYmd?: string): void {
     this.modalContexto = {
-      data: this.diaYmd,
+      data: dataYmd ?? this.diaYmd,
       profissional_id: profissionalId,
       hora,
       id_atendimento: undefined,
@@ -518,17 +920,24 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /** Abre o mesmo modal de novo atendimento, sem slot na grelha (hora no formulário). */
-  abrirNovoAtendimentoModal(): void {
+  abrirNovoAtendimentoModal(dataYmd?: string): void {
     const vis = this.profissionaisVisiveis();
     const pid = vis[0]?.id ?? this.profissionais[0]?.id ?? 0;
+    const data = dataYmd ?? this.diaYmd;
     this.modalContexto = {
-      data: this.diaYmd,
+      data,
       profissional_id: pid,
       hora: '',
       id_atendimento: undefined,
     };
     this.modalAberto = true;
     this.iniciarAberturaDrawer();
+  }
+
+  /** Vista mensal: clique na célula do dia → novo agendamento na data. */
+  abrirNovoAgendamentoCelulaMensal(ymd: string): void {
+    this.selecionarDia(ymd);
+    this.abrirNovoAtendimentoModal(ymd);
   }
 
   /**
@@ -608,9 +1017,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         : this.profissionaisVisiveis()[0]?.id ??
           this.profissionais[0]?.id ??
           0;
-    const hora = this.horaBloco(b);
+    const dataBloco =
+      (b.linhas[0]?.data || '').trim().slice(0, 10) || this.diaYmd;
+    const hora = this.horaBloco(b, dataBloco);
     this.modalContexto = {
-      data: this.diaYmd,
+      data: dataBloco,
       profissional_id: profId,
       hora: hora || undefined,
       id_atendimento: id,
@@ -631,8 +1042,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       parseInt(ymd.slice(8, 10), 10),
     );
     this.mesRef = this.inicioDoMes(ref);
-    this.carregarMes();
-    this.carregarDia();
+    this.recarregarVistaAtiva();
     const prev = this.modalContexto;
     this.modalContexto = {
       data: ymd,
@@ -831,15 +1241,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   onSalvoModal(): void {
     this.fecharModal();
-    this.carregarMes();
-    this.carregarDia();
+    this.recarregarVistaAtiva();
   }
 
   /** Comanda excluída na API: fecha só o painel e atualiza grelha / mês. */
   onComandaExcluida(): void {
     this.fecharComandaDrawer();
-    this.carregarMes();
-    this.carregarDia();
+    this.recarregarVistaAtiva();
   }
 
   /**
@@ -973,8 +1381,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       if (recarregarComanda) {
         this.comandaDrawerRef?.recarregarAposFaturar();
       }
-      this.carregarMes();
-      this.carregarDia();
+      this.recarregarVistaAtiva();
     }, DRAWER_ANIM_MS);
   }
 
@@ -987,20 +1394,80 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
   }
 
-  eventosNaColuna(profId: number): AtendimentoListaItem[] {
-    const rows = this.linhasDia.filter(
+  eventosNaColuna(profId: number, ymd?: string): AtendimentoListaItem[] {
+    const rows = this.linhasParaGrelha(ymd).filter(
       (a) => Number(a.profissional_id) === profId,
     );
     ordenarLinhasAtendimentoInPlace(rows);
     return rows;
   }
 
+  /** Blocos de um dia na vista mensal (todos os profissionais visíveis). */
+  blocosDoDiaMensal(ymd: string): AgendaHubBloco[] {
+    const profIds = new Set(this.profissionaisVisiveis().map((p) => p.id));
+    const rows = this.itensMes.filter((a) => {
+      const d = (a.data || '').trim().slice(0, 10);
+      if (d !== ymd) return false;
+      const pid = Number(a.profissional_id);
+      if (profIds.size && pid && !profIds.has(pid)) return false;
+      return true;
+    });
+    const map = new Map<string, AtendimentoListaItem[]>();
+    let legacySeq = 0;
+    for (const r of rows) {
+      const id = String(r.id || '').trim();
+      const pid = Number(r.profissional_id);
+      const key = id
+        ? `id:${id}:${pid}`
+        : `linha:${pid}-${r.linha_id ?? legacySeq++}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(r);
+    }
+    const out: AgendaHubBloco[] = [];
+    for (const [trackKey, linhas] of map) {
+      ordenarLinhasAtendimentoInPlace(linhas);
+      out.push({ trackKey, linhas });
+    }
+    out.sort((a, b) => {
+      const ea = this.extentMinutosBloco(a, ymd);
+      const eb = this.extentMinutosBloco(b, ymd);
+      return (ea?.start ?? Infinity) - (eb?.start ?? Infinity);
+    });
+    return out.filter(
+      (b) => this.blocoPassaBuscaCliente(b) && this.blocoPassaStatusFiltro(b),
+    );
+  }
+
+  private linhasParaGrelha(ymd?: string): AtendimentoListaItem[] {
+    const dia = (ymd ?? this.diaYmd).trim().slice(0, 10);
+    if (this.modoVista === 'semana') {
+      return this.linhasSemana.filter(
+        (a) => (a.data || '').trim().slice(0, 10) === dia,
+      );
+    }
+    if (this.modoVista === 'mensal') {
+      return this.itensMes.filter(
+        (a) => (a.data || '').trim().slice(0, 10) === dia,
+      );
+    }
+    return this.linhasDia;
+  }
+
+  private recarregarVistaAtiva(): void {
+    this.carregarMes();
+    if (this.modoVista === 'semana') {
+      this.carregarSemana();
+    } else if (this.modoVista === 'dia') {
+      this.carregarDia();
+    }
+  }
+
   /**
    * Linhas agrupadas por atendimento (`id`) no mesmo profissional — um bloco visual
    * do início mais cedo ao fim mais tarde (ex.: 3 linhas de 30 min = 1h30 num só cartão).
    */
-  blocosNaColuna(profId: number): AgendaHubBloco[] {
-    const rows = this.eventosNaColuna(profId);
+  blocosNaColuna(profId: number, ymd?: string): AgendaHubBloco[] {
+    const rows = this.eventosNaColuna(profId, ymd);
     const map = new Map<string, AtendimentoListaItem[]>();
     let legacySeq = 0;
     for (const r of rows) {
@@ -1023,13 +1490,35 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       const sb = eb?.start ?? Infinity;
       return sa - sb;
     });
-    return out.filter((b) => this.blocoPassaBuscaCliente(b));
+    return out.filter(
+      (b) => this.blocoPassaBuscaCliente(b) && this.blocoPassaStatusFiltro(b),
+    );
   }
 
   private blocoPassaBuscaCliente(b: AgendaHubBloco): boolean {
     const q = this.buscaCliente.trim().toLowerCase();
     if (!q) return true;
     return this.nomeClienteBloco(b).toLowerCase().includes(q);
+  }
+
+  private statusFiltroBloco(b: AgendaHubBloco): HubStatusFiltroId {
+    if (this.blocoComandaFaturada(b)) return 'faturado';
+    const l0 = b.linhas[0];
+    const raw = String(l0?.agenda_status ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+    if (raw === 'bloqueado' || raw === 'bloqueio') return 'bloqueado';
+    const nome = this.nomeClienteBloco(b).trim().toLowerCase();
+    if (!nome || nome === 'bloqueio' || nome === 'bloqueado') {
+      return 'bloqueado';
+    }
+    return normalizarAgendaStatusId(l0?.agenda_status);
+  }
+
+  private blocoPassaStatusFiltro(b: AgendaHubBloco): boolean {
+    if (this.statusOcultos.size === 0) return true;
+    return !this.statusOcultos.has(this.statusFiltroBloco(b));
   }
 
   private setupLayoutMobile(): void {
@@ -1052,12 +1541,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    * Cartões na mesma coluna (profissional) que se sobrepõem no tempo passam a
    * dividir a largura (ex.: 2 → 50% cada), em vez de empilhar e tapar o de baixo.
    */
-  blocosLayout(profId: number): Array<{
+  blocosLayout(
+    profId: number,
+    ymd?: string,
+  ): Array<{
     bloco: AgendaHubBloco;
     leftPct: number;
     widthPct: number;
   }> {
-    const blocos = this.blocosNaColuna(profId);
+    const blocos = this.blocosNaColuna(profId, ymd);
     type Ext = { bloco: AgendaHubBloco; start: number; end: number };
     const extents: Ext[] = [];
     for (const b of blocos) {
@@ -1143,8 +1635,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /** Intervalo exibido no cartão, ex.: `08:30 - 09:10`. */
-  intervaloHHmmBloco(b: AgendaHubBloco): string {
-    const ex = this.extentMinutosBloco(b);
+  intervaloHHmmBloco(b: AgendaHubBloco, ymdCtx?: string): string {
+    const ex = this.extentMinutosBloco(b, ymdCtx);
     if (!ex) return '';
     return `${this.hhmmDesdeMinutosDia(ex.start)} - ${this.hhmmDesdeMinutosDia(ex.end)}`;
   }
@@ -1153,7 +1645,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    * Duração de uma linha: primeiro `diffMinutesEntreHorarios` (funciona com ISO legado);
    * depois `fim − inicio` no dia da grelha; fallback 30 min.
    */
-  private duracaoMinutosAgendamento(ev: AtendimentoListaItem): number {
+  private duracaoMinutosAgendamento(
+    ev: AtendimentoListaItem,
+    ymdCtx?: string,
+  ): number {
     const iniS = ev.inicio ? String(ev.inicio).trim() : '';
     const fS = ev.fim ? String(ev.fim).trim() : '';
     if (iniS && fS) {
@@ -1162,7 +1657,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         return d;
       }
     }
-    const dia = this.diaYmd;
+    const dia = ymdCtx ?? this.diaYmd;
     const mi = minutosMeiaNoiteEmBrasilia(ev.inicio, dia);
     const mf = minutosMeiaNoiteEmBrasilia(ev.fim, dia);
     if (mi != null && mf != null && mf > mi) {
@@ -1175,11 +1670,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    * Primeiro horário (minutos) do pedido Mega/Pacote no dia — igual em todas as
    * colunas para alinhar cartões quando há profissionais diferentes nas etapas.
    */
-  private inicioGlobalMinutosMegaPacote(idAt: string): number | null {
+  private inicioGlobalMinutosMegaPacote(
+    idAt: string,
+    ymdCtx?: string,
+  ): number | null {
     const id = String(idAt || '').trim();
     if (!id) return null;
-    const dia = this.diaYmd;
-    const linhasPedido = this.linhasDia.filter(
+    const dia = ymdCtx ?? this.diaYmd;
+    const linhasPedido = this.linhasParaGrelha(dia).filter(
       (r) => String(r.id || '').trim() === id,
     );
     const hhmm = horaInicialMenorDasLinhasAtendimento(linhasPedido, dia);
@@ -1203,16 +1701,26 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /** Todas as linhas do mesmo `id_atendimento` no dia (horário pode estar noutra coluna/tipo). */
-  private linhasPedidoDoBloco(b: AgendaHubBloco): AtendimentoListaItem[] {
+  private linhasPedidoDoBloco(
+    b: AgendaHubBloco,
+    ymdCtx?: string,
+  ): AtendimentoListaItem[] {
     const idAt = String(b.linhas[0]?.id || '').trim();
     if (!idAt) return b.linhas;
-    return this.linhasDia.filter((r) => String(r.id || '').trim() === idAt);
+    const dia = ymdCtx ?? this.diaYmd;
+    return this.linhasParaGrelha(dia).filter(
+      (r) => String(r.id || '').trim() === idAt,
+    );
   }
 
-  private minutosInicioPreferencialBloco(b: AgendaHubBloco): number | null {
+  private minutosInicioPreferencialBloco(
+    b: AgendaHubBloco,
+    ymdCtx?: string,
+  ): number | null {
+    const dia = ymdCtx ?? this.diaYmd;
     const hhmm = horaInicialMenorDasLinhasAtendimento(
-      this.linhasPedidoDoBloco(b),
-      this.diaYmd,
+      this.linhasPedidoDoBloco(b, dia),
+      dia,
     );
     if (!hhmm) return null;
     const [hhS, mmS] = hhmm.split(':');
@@ -1220,14 +1728,18 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return Number.isFinite(mins) && mins >= 0 ? mins : null;
   }
 
-  private duracaoTotalBlocoMinutos(b: AgendaHubBloco): number {
+  private duracaoTotalBlocoMinutos(
+    b: AgendaHubBloco,
+    ymdCtx?: string,
+  ): number {
+    const dia = ymdCtx ?? this.diaYmd;
     if (this.blocoEMegaOuPacoteComEtapas(b)) {
-      const sum = this.duracaoSomaEtapasMegaPacoteNoBloco(b);
+      const sum = this.duracaoSomaEtapasMegaPacoteNoBloco(b, dia);
       if (sum > 0) return sum;
     }
     let sum = 0;
     for (const l of b.linhas) {
-      sum += this.duracaoMinutosAgendamento(l);
+      sum += this.duracaoMinutosAgendamento(l, dia);
     }
     return sum > 0 ? sum : AGENDA_SLOT_MIN;
   }
@@ -1246,7 +1758,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    * A cabeça tem `inicio`/`fim` nulos e `duracaoMinutosAgendamento` devolvia 30 min
    * por defeito — inflacionava mal (ex.: 30+60=90 em vez de 60+60=120).
    */
-  private duracaoSomaEtapasMegaPacoteNoBloco(b: AgendaHubBloco): number {
+  private duracaoSomaEtapasMegaPacoteNoBloco(
+    b: AgendaHubBloco,
+    ymdCtx?: string,
+  ): number {
+    const dia = ymdCtx ?? this.diaYmd;
     let sum = 0;
     for (const l of b.linhas) {
       const t = (l.tipo || '').trim().toLowerCase();
@@ -1254,7 +1770,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       if (!(l.etapa || '').trim()) continue;
       const ini = l.inicio ? String(l.inicio).trim() : '';
       if (!ini) continue;
-      sum += this.duracaoMinutosAgendamento(l);
+      sum += this.duracaoMinutosAgendamento(l, dia);
     }
     return sum;
   }
@@ -1269,16 +1785,17 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    */
   private extentMinutosBloco(
     b: AgendaHubBloco,
+    ymdCtx?: string,
   ): { start: number; end: number } | null {
-    const dia = this.diaYmd;
+    const dia = ymdCtx ?? this.diaYmd;
     const idAt = String(b.linhas[0]?.id || '').trim();
     const globalStart =
       idAt && this.blocoEMegaOuPacoteComEtapas(b)
-        ? this.inicioGlobalMinutosMegaPacote(idAt)
+        ? this.inicioGlobalMinutosMegaPacote(idAt, dia)
         : null;
 
     if (globalStart != null && Number.isFinite(globalStart)) {
-      const sumDur = this.duracaoSomaEtapasMegaPacoteNoBloco(b);
+      const sumDur = this.duracaoSomaEtapasMegaPacoteNoBloco(b, dia);
       const durEfetiva = Math.max(
         AGENDA_SLOT_MIN,
         sumDur > 0 ? sumDur : AGENDA_SLOT_MIN,
@@ -1307,7 +1824,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         endLine = mi + diffM;
       } else {
         const mf = minutosMeiaNoiteEmBrasilia(l.fim, dia);
-        const d = this.duracaoMinutosAgendamento(l);
+        const d = this.duracaoMinutosAgendamento(l, dia);
         endLine = mf != null && mf > mi ? mf : mi + d;
       }
       endLine = Math.min(endLine, GRID_END_MIN);
@@ -1322,21 +1839,21 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       return { start: startMin, end: endMax };
     }
 
-    const fallbackStart = this.minutosInicioPreferencialBloco(b);
+    const fallbackStart = this.minutosInicioPreferencialBloco(b, dia);
     if (fallbackStart == null || !Number.isFinite(fallbackStart)) {
       return null;
     }
     const durEfetiva = Math.max(
       AGENDA_SLOT_MIN,
-      this.duracaoTotalBlocoMinutos(b),
+      this.duracaoTotalBlocoMinutos(b, dia),
     );
     const end = Math.min(GRID_END_MIN, fallbackStart + durEfetiva);
     if (end <= fallbackStart) return null;
     return { start: fallbackStart, end };
   }
 
-  topPctBloco(b: AgendaHubBloco): number {
-    const ex = this.extentMinutosBloco(b);
+  topPctBloco(b: AgendaHubBloco, ymdCtx?: string): number {
+    const ex = this.extentMinutosBloco(b, ymdCtx);
     if (!ex) return 0;
     const t = Math.max(
       GRID_START_MIN,
@@ -1349,8 +1866,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    * Altura em %: uma unidade a mais que os slots cobertos pelo horário (ex.: 90 min → 4/31),
    * para alinhar o cartão aos traços da grelha (início, meios e fim do intervalo).
    */
-  alturaPctBloco(b: AgendaHubBloco): number {
-    const ex = this.extentMinutosBloco(b);
+  alturaPctBloco(b: AgendaHubBloco, ymdCtx?: string): number {
+    const ex = this.extentMinutosBloco(b, ymdCtx);
     if (!ex) {
       /* Mesma regra `slots + 1` com duração mínima de 1 slot (30 min). */
       return (2 / AGENDA_SLOT_COUNT) * 100;
@@ -1362,15 +1879,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const endVis = Math.min(GRID_END_MIN, Math.max(ex.end, startVis + 30));
     let dur = Math.max(AGENDA_SLOT_MIN, endVis - startVis);
     dur = Math.min(dur, GRID_RANGE);
-    const top = this.topPctBloco(b);
+    const top = this.topPctBloco(b, ymdCtx);
     const slots = dur / AGENDA_SLOT_MIN;
     const faixasVis = Math.min(AGENDA_SLOT_COUNT, slots + 1);
     const hPct = (faixasVis / AGENDA_SLOT_COUNT) * 100;
     return Math.min(hPct, Math.max(0, 100 - top));
   }
 
-  horaBloco(b: AgendaHubBloco): string {
-    const ex = this.extentMinutosBloco(b);
+  horaBloco(b: AgendaHubBloco, ymdCtx?: string): string {
+    const ex = this.extentMinutosBloco(b, ymdCtx);
     if (!ex) return '';
     const mf = Math.floor(ex.start);
     const hh = Math.floor(mf / 60) % 24;
@@ -1530,6 +2047,25 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
           e.message ||
           'Não foi possível carregar o mês na mini-agenda.';
         this.carregandoMes = false;
+      },
+    });
+  }
+
+  private carregarSemana(): void {
+    this.carregandoSemana = true;
+    const di = this.semanaGridInicioYmd;
+    const df = this.fimFaixaSemanalYmd(di);
+    this.api.listAgendamentos(di, df).subscribe({
+      next: (items) => {
+        this.linhasSemana = items;
+        this.carregandoSemana = false;
+      },
+      error: (e: Error) => {
+        this.erro =
+          e.message ||
+          'Não foi possível carregar a semana na grelha.';
+        this.linhasSemana = [];
+        this.carregandoSemana = false;
       },
     });
   }

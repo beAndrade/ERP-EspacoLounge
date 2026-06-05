@@ -1,0 +1,23 @@
+<span
+  class="profissional-avatar"
+  [class.profissional-avatar--grid-head]="variant === 'grid-head'"
+  [class.profissional-avatar--com-foto]="!!foto"
+  aria-hidden="true"
+>
+  @if (foto) {
+    <img [src]="foto" alt="" />
+  } @else {
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="profissional-avatar__ico lucide-user-round"
+    >
+      <circle cx="12" cy="8" r="5" />
+      <path d="M20 21a8 8 0 0 0-16 0" />
+    </svg>
+  }
+</span>
