@@ -77,9 +77,10 @@
             <app-profissional-comissoes-config-tab />
           } @else if (d.abaAtiva === 'Comissões e Auxiliares') {
             <app-profissional-comissoes-servicos-tab />
+          } @else if (d.abaAtiva === 'Usuário') {
+            <app-profissional-usuario-tab />
           } @else if (
             d.abaAtiva === 'Endereço' ||
-            d.abaAtiva === 'Usuário' ||
             d.abaAtiva === 'Assinatura digital'
           ) {
             <main class="cliente-main">
@@ -93,10 +94,11 @@
       @if (
         d.abaAtiva === 'Cadastro' ||
         d.abaAtiva === 'Configurar comissões' ||
-        d.abaAtiva === 'Comissões e Auxiliares'
+        d.abaAtiva === 'Comissões e Auxiliares' ||
+        d.abaAtiva === 'Usuário'
       ) {
         <footer class="cliente-drawer-footer">
-          @if (d.saveErro) {
+          @if (d.saveErro && d.abaAtiva !== 'Usuário') {
             <p class="cliente-save-hint cliente-save-hint--error" role="alert">
               {{ d.saveErro }}
             </p>
@@ -126,6 +128,15 @@
               (click)="d.salvarConfigComissoes()"
             >
               {{ d.salvando ? 'Salvando…' : 'Salvar' }}
+            </button>
+          } @else if (d.abaAtiva === 'Usuário') {
+            <button
+              type="button"
+              class="cliente-footer-btn cliente-footer-btn--primary"
+              [disabled]="d.usuarioSalvando || d.modo === 'novo'"
+              (click)="d.salvarUsuarioProfissional()"
+            >
+              {{ d.usuarioSalvando ? 'Salvando…' : 'Salvar' }}
             </button>
           } @else {
             <button

@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
+import { LoginComponent } from './pages/login/login.component';
 import { AgendaComponent } from './features/agenda/pages/main/agenda.component';
 import { AgendaHubComponent } from './features/agenda/pages/hub/agenda-hub.component';
 import { AgendaListaComponent } from './features/agenda/pages/lista/agenda-lista.component';
 import { AgendaNovoComponent } from './features/agenda/pages/novo/agenda-novo.component';
+import { AgendarPublicoComponent } from './features/agendamento-publico/pages/agendar/agendar-publico.component';
 import { ClientesComponent } from './features/clientes/pages/lista/clientes.component';
 import { ClientesNovoComponent } from './features/clientes/pages/novo/clientes-novo.component';
 import { ClientesEditarComponent } from './features/clientes/pages/editar/clientes-editar.component';
@@ -18,72 +20,95 @@ import { EstoqueComponent } from './features/estoque/pages/main/estoque.componen
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
 import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
 import { ComandasComponent } from './features/comandas/pages/main/comandas.component';
+import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'agendar', component: AgendarPublicoComponent },
+  { path: '', component: HomeComponent, canActivate: [authGuard] },
   {
     path: 'painel',
     component: EmBreveComponent,
+    canActivate: [authGuard],
     data: { titulo: 'Painel' },
   },
   {
     path: 'pacotes',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Pacotes' },
   },
   {
     path: 'pacotes/predefinidos',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Pacotes Predefinidos' },
   },
-  { path: 'comandas', component: ComandasComponent },
+  { path: 'comandas', component: ComandasComponent, canActivate: [authGuard] },
   { path: 'atendimentos', redirectTo: 'comandas', pathMatch: 'full' },
-  { path: 'agenda/novo', component: AgendaNovoComponent },
-  { path: 'agenda/lista', component: AgendaListaComponent },
-  { path: 'agenda/calendario', component: AgendaComponent },
-  { path: 'agenda', component: AgendaHubComponent },
-  { path: 'clientes', component: ClientesComponent },
-  { path: 'clientes/novo', component: ClientesNovoComponent },
-  { path: 'clientes/:id/editar', component: ClientesEditarComponent },
-  { path: 'servicos', component: ServicosComponent },
+  { path: 'agenda/novo', component: AgendaNovoComponent, canActivate: [authGuard] },
+  { path: 'agenda/lista', component: AgendaListaComponent, canActivate: [authGuard] },
+  { path: 'agenda/calendario', component: AgendaComponent, canActivate: [authGuard] },
+  { path: 'agenda', component: AgendaHubComponent, canActivate: [authGuard] },
+  { path: 'clientes', component: ClientesComponent, canActivate: [authGuard] },
+  { path: 'clientes/novo', component: ClientesNovoComponent, canActivate: [authGuard] },
+  {
+    path: 'clientes/:id/editar',
+    component: ClientesEditarComponent,
+    canActivate: [authGuard],
+  },
+  {
+    path: 'servicos',
+    component: ServicosComponent,
+    canActivate: [authGuard, adminGuard],
+  },
   {
     path: 'estoque',
     component: EstoqueComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Produtos' },
   },
   {
     path: 'categorias',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Categorias' },
   },
   {
     path: 'marcas',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Marcas' },
   },
   {
     path: 'compras',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Compras' },
   },
   {
     path: 'promocoes',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Promoções' },
   },
   {
     path: 'cashback',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Cashback' },
   },
   {
     path: 'avaliacoes',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Avaliações' },
   },
   {
     path: 'relatorios/painel',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Relatórios — Painel' },
   },
   {
@@ -95,26 +120,31 @@ export const routes: Routes = [
   {
     path: 'consultoria',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Consultoria' },
   },
   {
     path: 'profissionais',
     component: ProfissionaisComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Profissionais' },
   },
   {
     path: 'fornecedores',
     component: FornecedoresComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Fornecedores' },
   },
   {
     path: 'configuracoes',
     component: EmBreveComponent,
+    canActivate: [authGuard, adminGuard],
     data: { titulo: 'Configurações' },
   },
   {
     path: 'financeiro',
     component: FinanceiroShellComponent,
+    canActivate: [authGuard, adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'painel' },
       { path: 'painel', component: FinanceiroPainelComponent },

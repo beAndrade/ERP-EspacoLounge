@@ -12,6 +12,7 @@ import { ProfissionalCadastroDrawerService } from './profissional-cadastro-drawe
 import { ProfissionalCadastroFormComponent } from './profissional-cadastro-form.component';
 import { ProfissionalComissoesConfigTabComponent } from './profissional-comissoes-config-tab.component';
 import { ProfissionalComissoesServicosTabComponent } from './profissional-comissoes-servicos-tab.component';
+import { ProfissionalUsuarioTabComponent } from './profissional-usuario-tab.component';
 
 @Component({
   selector: 'app-profissional-cadastro-drawer-host',
@@ -20,6 +21,7 @@ import { ProfissionalComissoesServicosTabComponent } from './profissional-comiss
     ProfissionalCadastroFormComponent,
     ProfissionalComissoesConfigTabComponent,
     ProfissionalComissoesServicosTabComponent,
+    ProfissionalUsuarioTabComponent,
   ],
   templateUrl: './profissional-cadastro-drawer-host.component.html',
   styleUrl: './profissional-cadastro-drawer-host.component.scss',

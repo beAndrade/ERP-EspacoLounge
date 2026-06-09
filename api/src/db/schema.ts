@@ -30,6 +30,9 @@ export const atendimentoItemTipoEnum = pgEnum('atendimento_item_tipo', [
 ]);
 
 /** Métodos de pagamento aceites na comanda (sub-drawer Faturar). */
+/** Papéis de acesso ao sistema interno. */
+export const usuarioRoleEnum = pgEnum('usuario_role', ['admin', 'profissional']);
+
 export const metodoPagamentoComandaEnum = pgEnum('metodo_pagamento_comanda', [
   'dinheiro',
   'cartao_credito',
@@ -504,6 +507,32 @@ export const comandaPagamentos = pgTable(
  * Detalhe opcional de uma despesa (metadados). O valor e o impacto no caixa vêm só de `movimentacoes`.
  * Linhas legadas (seed/planilha) podem existir sem `movimentacao_id`.
  */
+/** Conta de acesso ao app (admin ou profissional ligado a `profissionais`). */
+export const usuarios = pgTable(
+  'usuarios',
+  {
+    id: serial('id').primaryKey(),
+    email: text('email').notNull(),
+    senhaHash: text('senha_hash').notNull(),
+    nomeExibicao: text('nome_exibicao').notNull(),
+    role: usuarioRoleEnum('role').notNull().default('profissional'),
+    profissionalId: integer('profissional_id').references(() => profissionais.id, {
+      onDelete: 'set null',
+    }),
+    ativo: boolean('ativo').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('usuarios_email_lower_uq').on(sql`lower(trim(${t.email}))`),
+    index('usuarios_profissional_id_idx').on(t.profissionalId),
+  ],
+);
+
 export const despesas = pgTable(
   'despesas',
   {

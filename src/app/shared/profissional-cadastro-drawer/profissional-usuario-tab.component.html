@@ -1,0 +1,60 @@
+<main class="cliente-main prof-usuario">
+  <div class="prof-usuario__banner">
+    Com esse usuário e senha o profissional conseguirá fazer login no sistema
+    e ver a própria agenda.
+  </div>
+
+  @if (d.usuarioCarregando) {
+    <p class="cliente-tab-placeholder">Carregando…</p>
+  } @else {
+    <label class="prof-usuario__field">
+      <span class="prof-usuario__label">E-mail</span>
+      <input
+        class="prof-usuario__input"
+        type="email"
+        [(ngModel)]="d.usuarioEmail"
+        name="usuarioEmail"
+        autocomplete="off"
+        [disabled]="d.usuarioSalvando"
+      />
+    </label>
+
+    <label class="prof-usuario__field">
+      <span class="prof-usuario__label">Senha</span>
+      <div class="prof-usuario__senha-row">
+        <input
+          class="prof-usuario__input"
+          [type]="d.usuarioMostrarSenha ? 'text' : 'password'"
+          [(ngModel)]="d.usuarioSenha"
+          name="usuarioSenha"
+          autocomplete="new-password"
+          [placeholder]="d.usuarioTemConta ? 'Deixe em branco para manter' : 'Obrigatória'"
+          [disabled]="d.usuarioSalvando"
+        />
+        <button
+          type="button"
+          class="prof-usuario__toggle"
+          (click)="d.usuarioMostrarSenha = !d.usuarioMostrarSenha"
+        >
+          {{ d.usuarioMostrarSenha ? 'Ocultar' : 'Mostrar' }}
+        </button>
+      </div>
+    </label>
+
+    @if (d.usuarioTemConta) {
+      <label class="prof-usuario__ativo">
+        <input
+          type="checkbox"
+          [(ngModel)]="d.usuarioAtivo"
+          name="usuarioAtivo"
+          [disabled]="d.usuarioSalvando"
+        />
+        <span>Usuário ativo</span>
+      </label>
+    }
+
+    @if (d.usuarioErro) {
+      <p class="prof-usuario__erro" role="alert">{{ d.usuarioErro }}</p>
+    }
+  }
+</main>

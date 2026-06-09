@@ -1,0 +1,86 @@
+.pub-agendar {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.pub-agendar__head h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+}
+
+.pub-agendar__head p {
+  margin: 0 0 1.25rem;
+  color: #64748b;
+}
+
+.pub-agendar__form,
+.pub-agendar__ok {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pub-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pub-field span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pub-field input,
+.pub-field select {
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.pub-agendar__dados {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.pub-agendar__dados legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+.pub-agendar__erro {
+  margin: 0;
+  color: #b91c1c;
+}
+
+.pub-agendar__btn {
+  min-height: 48px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pub-agendar__ok {
+  padding: 1.25rem;
+  border-radius: 10px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.pub-agendar__ok h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.pub-agendar__ok p {
+  margin: 0;
+  color: #065f46;
+}

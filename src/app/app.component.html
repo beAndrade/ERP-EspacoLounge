@@ -1,3 +1,8 @@
+@if (isPublicRoute) {
+  <main class="main main--public">
+    <router-outlet />
+  </main>
+} @else {
 @if (isMobileViewport && mobileNavOpen) {
   <button
     type="button"
@@ -280,6 +285,7 @@
         </div>
       </div>
 
+      @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('financeiro')"
@@ -464,7 +470,9 @@
         </ul>
         </div>
       </div>
+      }
 
+      @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('controle')"
@@ -726,6 +734,7 @@
         </ul>
         </div>
       </div>
+      }
 
       <div
         class="nav-expand"
@@ -816,6 +825,7 @@
               <span class="nav-item__label">Clientes</span>
             </a>
           </li>
+          @if (sessao.isAdmin()) {
           <li>
             <a
               routerLink="/profissionais"
@@ -844,6 +854,8 @@
               <span class="nav-item__label">Profissionais</span>
             </a>
           </li>
+          }
+          @if (sessao.isAdmin()) {
           <li>
             <a
               routerLink="/fornecedores"
@@ -872,10 +884,12 @@
               <span class="nav-item__label">Fornecedores</span>
             </a>
           </li>
+          }
         </ul>
         </div>
       </div>
 
+      @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('marketing')"
@@ -1035,7 +1049,9 @@
         </ul>
         </div>
       </div>
+      }
 
+      @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
         [class.nav-expand--open]="navExpandIsOpen('relatorios')"
@@ -1136,7 +1152,9 @@
         </ul>
         </div>
       </div>
+      }
 
+      @if (sessao.isAdmin()) {
       <a
         routerLink="/configuracoes"
         routerLinkActive="active"
@@ -1162,7 +1180,18 @@
         </svg>
         <span class="nav-item__label">Configurações</span>
       </a>
+      }
     </nav>
+    <div class="app-sidebar__user" [class.app-sidebar__user--collapsed]="sidebarCollapsed">
+      @if (!sidebarCollapsed) {
+        <p class="app-sidebar__user-greeting">
+          Olá, {{ sessao.nomeExibicao() }}
+        </p>
+      }
+      <button type="button" class="app-sidebar__user-logout" (click)="sair()">
+        Sair
+      </button>
+    </div>
   </aside>
 
   <div class="app-main-column">
@@ -1198,3 +1227,4 @@
 <app-cliente-cadastro-drawer-host />
 <app-profissional-cadastro-drawer-host />
 <app-app-toast />
+}

@@ -1,0 +1,99 @@
+<div class="pub-agendar">
+  <header class="pub-agendar__head">
+    <h1>Agendar horário</h1>
+    <p>Escolha serviço, profissional e horário. Não é necessário criar conta.</p>
+  </header>
+
+  @if (sucesso) {
+    <section class="pub-agendar__ok" role="status">
+      <h2>Agendamento confirmado!</h2>
+      <p>Recebemos seu pedido. Em breve entraremos em contato para confirmar.</p>
+    </section>
+  } @else {
+    <form class="pub-agendar__form" (ngSubmit)="confirmar()">
+      <label class="pub-field">
+        <span>Serviço</span>
+        <select
+          [(ngModel)]="servicoId"
+          name="servico"
+          (ngModelChange)="aoMudarSelecao()"
+          [disabled]="carregandoCatalogo"
+          required
+        >
+          <option value="">Selecione…</option>
+          @for (s of servicos; track s.id) {
+            <option [value]="s.id">{{ s.nome }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="pub-field">
+        <span>Profissional</span>
+        <select
+          [(ngModel)]="profissionalId"
+          name="profissional"
+          (ngModelChange)="aoMudarSelecao()"
+          required
+        >
+          <option [ngValue]="null">Selecione…</option>
+          @for (p of profissionais; track p.id) {
+            <option [ngValue]="p.id">{{ p.nome }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="pub-field">
+        <span>Data</span>
+        <input
+          type="date"
+          [(ngModel)]="data"
+          name="data"
+          [min]="dataMin"
+          (ngModelChange)="aoMudarSelecao()"
+          required
+        />
+      </label>
+
+      <label class="pub-field">
+        <span>Horário</span>
+        <select
+          [(ngModel)]="hora"
+          name="hora"
+          [disabled]="carregandoSlots || slots.length === 0"
+          required
+        >
+          <option value="">
+            {{ carregandoSlots ? 'Carregando…' : slots.length ? 'Selecione…' : 'Sem horários' }}
+          </option>
+          @for (slot of slots; track slot) {
+            <option [value]="slot">{{ slot }}</option>
+          }
+        </select>
+      </label>
+
+      <fieldset class="pub-agendar__dados">
+        <legend>Seus dados</legend>
+        <label class="pub-field">
+          <span>Nome</span>
+          <input [(ngModel)]="nome" name="nome" required />
+        </label>
+        <label class="pub-field">
+          <span>Telefone (WhatsApp)</span>
+          <input [(ngModel)]="telefone" name="telefone" inputmode="tel" required />
+        </label>
+        <label class="pub-field">
+          <span>E-mail (opcional)</span>
+          <input type="email" [(ngModel)]="email" name="email" />
+        </label>
+      </fieldset>
+
+      @if (erro) {
+        <p class="pub-agendar__erro" role="alert">{{ erro }}</p>
+      }
+
+      <button type="submit" class="pub-agendar__btn" [disabled]="enviando">
+        {{ enviando ? 'Confirmando…' : 'Confirmar agendamento' }}
+      </button>
+    </form>
+  }
+</div>

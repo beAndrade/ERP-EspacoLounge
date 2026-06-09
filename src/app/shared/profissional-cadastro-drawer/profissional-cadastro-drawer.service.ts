@@ -114,6 +114,15 @@ export class ProfissionalCadastroDrawerService {
   profNavLockTooltipX = 0;
   profNavLockTooltipY = 0;
 
+  usuarioEmail = '';
+  usuarioSenha = '';
+  usuarioAtivo = true;
+  usuarioTemConta = false;
+  usuarioMostrarSenha = false;
+  usuarioCarregando = false;
+  usuarioSalvando = false;
+  usuarioErro = '';
+
   private callbacks: ProfissionalCadastroDrawerCallbacks | null = null;
   private saveSub: Subscription | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -127,11 +136,19 @@ export class ProfissionalCadastroDrawerService {
 
   abaDesabilitada(aba: ProfCadastroAba): boolean {
     if (!PROF_CADASTRO_ABAS_ATIVAS.includes(aba)) return true;
-    if (PROF_COMISSAO_ABAS.includes(aba) && this.modo === 'novo') return true;
+    if (
+      (PROF_COMISSAO_ABAS.includes(aba) || aba === 'Usuário') &&
+      this.modo === 'novo'
+    ) {
+      return true;
+    }
     return false;
   }
 
   profNavLockTooltipTexto(aba: ProfCadastroAba): string {
+    if (aba === 'Usuário' && this.modo === 'novo') {
+      return 'Salve o profissional antes de configurar o usuário';
+    }
     if (
       PROF_COMISSAO_ABAS.includes(aba) &&
       this.modo === 'novo' &&
@@ -153,6 +170,70 @@ export class ProfissionalCadastroDrawerService {
     if (aba === 'Comissões e Auxiliares') {
       this.carregarComissaoServicosSeNecessario();
     }
+    if (aba === 'Usuário') {
+      void this.carregarUsuarioProfissional();
+    }
+  }
+
+  carregarUsuarioProfissional(): void {
+    if (this.modo !== 'editar' || !this.profissionalId) return;
+    this.usuarioCarregando = true;
+    this.usuarioErro = '';
+    this.api.getProfissionalUsuario(this.profissionalId).subscribe({
+      next: (item) => {
+        this.usuarioCarregando = false;
+        if (item) {
+          this.usuarioEmail = item.email;
+          this.usuarioAtivo = item.ativo !== false;
+          this.usuarioTemConta = true;
+        } else {
+          this.usuarioEmail = '';
+          this.usuarioAtivo = true;
+          this.usuarioTemConta = false;
+        }
+        this.usuarioSenha = '';
+      },
+      error: () => {
+        this.usuarioCarregando = false;
+        this.usuarioErro = 'Não foi possível carregar o usuário.';
+      },
+    });
+  }
+
+  salvarUsuarioProfissional(): void {
+    if (this.modo !== 'editar' || !this.profissionalId) return;
+    const email = this.usuarioEmail.trim();
+    if (!email) {
+      this.usuarioErro = 'E-mail é obrigatório.';
+      return;
+    }
+    if (!this.usuarioTemConta && !this.usuarioSenha.trim()) {
+      this.usuarioErro = 'Senha é obrigatória ao criar o usuário.';
+      return;
+    }
+    this.usuarioErro = '';
+    this.usuarioSalvando = true;
+    this.api
+      .saveProfissionalUsuario(this.profissionalId, {
+        email,
+        senha: this.usuarioSenha.trim() || undefined,
+        ativo: this.usuarioAtivo,
+      })
+      .pipe(finalize(() => (this.usuarioSalvando = false)))
+      .subscribe({
+        next: (item) => {
+          this.usuarioEmail = item.email;
+          this.usuarioAtivo = item.ativo !== false;
+          this.usuarioTemConta = true;
+          this.usuarioSenha = '';
+          this.toast.show('Usuário do profissional salvo.');
+        },
+        error: (e: unknown) => {
+          this.usuarioErro =
+            extractApiErrorMessage(e) ||
+            'Não foi possível salvar o usuário.';
+        },
+      });
   }
 
   abrirNovo(callbacks?: ProfissionalCadastroDrawerCallbacks): void {
@@ -542,6 +623,14 @@ export class ProfissionalCadastroDrawerService {
     this.disponivelAgendamentoOnlineToggleLiqArmed = false;
     this.gerarAgendaToggleLiqArmed = false;
     this.recebeComissaoToggleLiqArmed = false;
+    this.usuarioEmail = '';
+    this.usuarioSenha = '';
+    this.usuarioAtivo = true;
+    this.usuarioTemConta = false;
+    this.usuarioMostrarSenha = false;
+    this.usuarioCarregando = false;
+    this.usuarioSalvando = false;
+    this.usuarioErro = '';
     this.ocultarProfNavLockTooltip();
   }
 

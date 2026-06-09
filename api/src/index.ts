@@ -113,6 +113,20 @@ import {
   recalcularTotaisComissaoFolhaPorPeriodo,
 } from './services/folha-domain';
 import { incrementarEstoqueProduto } from './services/estoque-domain';
+import { isPublicApiPath, authenticateRequest } from './lib/auth-guard';
+import {
+  ensureAdminBootstrap,
+  getUsuarioById,
+  getUsuarioByProfissionalId,
+  loginUsuario,
+  upsertUsuarioForProfissional,
+} from './services/auth-domain';
+import {
+  criarAgendamentoPublico,
+  listProfissionaisPublic,
+  listServicosPublic,
+  listSlotsDisponiveisPublic,
+} from './services/public-booking-domain';
 
 function corsOrigins(): string[] | true {
   const raw = process.env.CORS_ORIGINS?.trim();
@@ -127,6 +141,7 @@ function corsOrigins(): string[] | true {
 }
 
 await ensureSchemaPatches();
+await ensureAdminBootstrap(db);
 
 const bodyFinalizar = t.Object({
   id_atendimento: t.String(),
@@ -419,14 +434,143 @@ const app = new Elysia({ adapter: node() })
     cors({
       origin: corsOrigins(),
       methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'X-Admin-Pin'],
+      allowedHeaders: ['Content-Type', 'X-Admin-Pin', 'Authorization'],
     }),
   )
+  .onBeforeHandle(async ({ request, set }) => {
+    const url = new URL(request.url);
+    if (isPublicApiPath(url.pathname, request.method)) return;
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) {
+      set.status = 401;
+      return auth.response;
+    }
+  })
   .get('/health', () =>
     ok({
       status: 'up',
       time: instantEmDateParaSqlLocalBrasil(new Date()) ?? '',
     }),
+  )
+  .post(
+    '/api/auth/login',
+    async ({ body }) => {
+      try {
+        const b = body as { email?: string; senha?: string };
+        const result = await loginUsuario(
+          db,
+          String(b.email ?? ''),
+          String(b.senha ?? ''),
+        );
+        if (!result.ok) return fail('UNAUTHORIZED', result.message);
+        return ok({ token: result.token, user: result.user });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        email: t.String(),
+        senha: t.String(),
+      }),
+    },
+  )
+  .get('/api/auth/me', async ({ request }) => {
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const item = await getUsuarioById(db, auth.user.id);
+    if (!item) return fail('NOT_FOUND', 'Usuário não encontrado');
+    return ok({ user: item });
+  })
+  .get('/api/public/servicos', async () => {
+    try {
+      const items = await listServicosPublic(db);
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .get('/api/public/profissionais', async () => {
+    try {
+      const items = await listProfissionaisPublic(db);
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .get('/api/public/disponibilidade', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const result = await listSlotsDisponiveisPublic(db, {
+        profissional_id: Number(q.profissional_id),
+        data: String(q.data ?? ''),
+        servico_id: String(q.servico_id ?? ''),
+        tamanho: q.tamanho,
+      });
+      return ok(result);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/inválid|obrigatório|não encontrado|não disponível/i.test(msg)) {
+        return fail('VALIDATION', msg);
+      }
+      return fail('SERVER', msg);
+    }
+  })
+  .post(
+    '/api/public/agendamentos',
+    async ({ body }) => {
+      try {
+        const b = body as {
+          nome?: string;
+          telefone?: string;
+          email?: string;
+          servico_id?: string;
+          profissional_id?: number;
+          data?: string;
+          hora?: string;
+          tamanho?: string;
+          observacao?: string;
+        };
+        const result = await criarAgendamentoPublico(db, {
+          nome: String(b.nome ?? ''),
+          telefone: String(b.telefone ?? ''),
+          email: b.email,
+          servico_id: String(b.servico_id ?? ''),
+          profissional_id: Number(b.profissional_id),
+          data: String(b.data ?? ''),
+          hora: String(b.hora ?? ''),
+          tamanho: b.tamanho,
+          observacao: b.observacao,
+        });
+        return ok(result);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (
+          /inválid|obrigatório|não encontrado|não disponível|não está mais/i.test(
+            msg,
+          )
+        ) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        nome: t.String(),
+        telefone: t.String(),
+        email: t.Optional(t.String()),
+        servico_id: t.String(),
+        profissional_id: t.Number(),
+        data: t.String(),
+        hora: t.String(),
+        tamanho: t.Optional(t.String()),
+        observacao: t.Optional(t.String()),
+      }),
+    },
   )
   .get('/api/financeiro/comissoes/detalhadas', async ({ query }) =>
     handleComissoesDetalhadasGet(query as Record<string, string | undefined>),
@@ -787,6 +931,55 @@ const app = new Elysia({ adapter: node() })
           return fail('SERVER', msg);
         }
       })
+      .get('/profissionais/:id/usuario', async ({ params }) => {
+        try {
+          const id = Number.parseInt(String(params.id).trim(), 10);
+          if (!Number.isFinite(id) || id <= 0) {
+            return fail('VALIDATION', 'id inválido');
+          }
+          const item = await getUsuarioByProfissionalId(db, id);
+          return ok({ item });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          return fail('SERVER', msg);
+        }
+      })
+      .put(
+        '/profissionais/:id/usuario',
+        async ({ params, body }) => {
+          try {
+            const id = Number.parseInt(String(params.id).trim(), 10);
+            if (!Number.isFinite(id) || id <= 0) {
+              return fail('VALIDATION', 'id inválido');
+            }
+            const b = body as {
+              email?: string;
+              senha?: string;
+              ativo?: boolean;
+            };
+            const item = await upsertUsuarioForProfissional(db, id, {
+              email: String(b.email ?? ''),
+              senha: b.senha != null ? String(b.senha) : undefined,
+              ativo: b.ativo,
+            });
+            return ok({ item });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (/obrigatório|inválido|não encontrado/i.test(msg)) {
+              return fail('VALIDATION', msg);
+            }
+            return fail('SERVER', msg);
+          }
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object({
+            email: t.String(),
+            senha: t.Optional(t.String()),
+            ativo: t.Optional(t.Boolean()),
+          }),
+        },
+      )
       .get('/profissionais/:id/comissoes-servicos', async ({ params }) => {
         try {
           const id = Number.parseInt(String(params.id).trim(), 10);

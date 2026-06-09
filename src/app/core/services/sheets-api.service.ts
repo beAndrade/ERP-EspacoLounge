@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import type { HttpResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import type { AuthUser, ProfissionalUsuarioPayload } from '../models/auth.models';
 import {
   ApiResponse,
   AtendimentoCriadoResumo,
@@ -212,6 +213,36 @@ export class SheetsApiService {
     return this.http
       .get<ApiResponse<{ item: ProfissionalListaItem }>>(
         this.url(`/api/profissionais/${encodeURIComponent(String(id))}`),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  getProfissionalUsuario(id: number): Observable<AuthUser | null> {
+    return this.http
+      .get<ApiResponse<{ item: AuthUser | null }>>(
+        this.url(
+          `/api/profissionais/${encodeURIComponent(String(id))}/usuario`,
+        ),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item ?? null),
+      );
+  }
+
+  saveProfissionalUsuario(
+    id: number,
+    payload: ProfissionalUsuarioPayload,
+  ): Observable<AuthUser> {
+    return this.http
+      .put<ApiResponse<{ item: AuthUser }>>(
+        this.url(
+          `/api/profissionais/${encodeURIComponent(String(id))}/usuario`,
+        ),
+        payload,
       )
       .pipe(
         map((r) => this.unwrap(r)),

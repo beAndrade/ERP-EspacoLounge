@@ -262,14 +262,7 @@
                           [checked]="statusFiltroVisivel(st.id)"
                           (change)="toggleStatusFiltro(st.id)"
                         />
-                        <span class="hub-filtros-check__label">
-                          <span
-                            class="hub-filtros-status-dot"
-                            [style.background]="st.cor ?? '#d6d3d1'"
-                            aria-hidden="true"
-                          ></span>
-                          {{ st.label }}
-                        </span>
+                        <span class="hub-filtros-check__label">{{ st.label }}</span>
                       </label>
                     </li>
                   }
@@ -418,7 +411,7 @@
                 class="grid-head__prof"
                 [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
                 (click)="aoClicarCabecalhoProfissional(p)"
-                [attr.aria-label]="'Profissional ' + p.nome"
+                [attr.aria-label]="'Abrir perfil de ' + p.nome"
                 [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
               >
                 <app-profissional-avatar
@@ -527,7 +520,7 @@
                 class="grid-head__prof"
                 [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
                 (click)="aoClicarCabecalhoProfissional(p)"
-                [attr.aria-label]="'Profissional ' + p.nome"
+                [attr.aria-label]="'Abrir perfil de ' + p.nome"
                 [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
               >
                 <app-profissional-avatar

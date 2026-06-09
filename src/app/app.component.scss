@@ -885,6 +885,39 @@
   }
 }
 
+.app-sidebar__user {
+  margin-top: auto;
+  padding: 0.75rem 1rem 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.app-sidebar__user--collapsed {
+  padding-inline: 0.35rem;
+  text-align: center;
+}
+
+.app-sidebar__user-greeting {
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
+  opacity: 0.9;
+}
+
+.app-sidebar__user-logout {
+  min-height: 36px;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.main--public {
+  min-height: 100dvh;
+  padding: 0;
+}
+
 @supports not (background: color-mix(in srgb, red 50%, blue)) {
   .app-sidebar {
     background: #6b163c;

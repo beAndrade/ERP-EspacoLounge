@@ -288,6 +288,13 @@
       "when": 1775697952000,
       "tag": "0040_profissional_comissao_config",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1775697953000,
+      "tag": "0041_usuarios_auth",
+      "breakpoints": true
     }
   ]
 }

@@ -46,6 +46,7 @@ import {
   ClienteCadastroDrawerService,
   type AbrirCadastroClientePayload,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 
 type CelulaCalendario = {
@@ -127,6 +128,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
   readonly sessao = inject(SessaoUsuarioService);
 
   @ViewChild(AgendaNovoComponent)
@@ -283,14 +285,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       window.removeEventListener('keydown', this.onDrawerKeydown);
       document.removeEventListener('click', this.onHubToolbarDocClick);
     });
-    this.api.listProfissionais(false, 'agenda').subscribe({
-      next: (items) => {
-        this.profissionais = items ?? [];
-      },
-      error: () => {
-        this.profissionais = [];
-      },
-    });
+    this.carregarProfissionais();
     this.recarregarVistaAtiva();
     this.route.queryParamMap
       .pipe(
@@ -765,11 +760,41 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   aoClicarCabecalhoProfissional(p: ProfissionalListaItem): void {
-    this.profCabecalhoAtivoId =
-      this.profCabecalhoAtivoId === p.id ? null : p.id;
     if (this.layoutMobile) {
       this.profissionalMobileId = p.id;
     }
+    this.profCabecalhoAtivoId = p.id;
+    this.profissionalDrawer.abrirEdicao(p.id, {
+      onSalvo: () => {
+        this.carregarProfissionais();
+        this.recarregarVistaAtiva();
+      },
+      onFechar: () => {
+        this.profCabecalhoAtivoId = null;
+      },
+    });
+  }
+
+  private carregarProfissionais(): void {
+    this.api.listProfissionais(false, 'agenda').subscribe({
+      next: (items) => {
+        this.profissionais = items ?? [];
+        this.aplicarFiltroMinhaAgenda();
+      },
+      error: () => {
+        this.profissionais = [];
+      },
+    });
+  }
+
+  /** Profissionais logados veem só a própria coluna na grelha. */
+  private aplicarFiltroMinhaAgenda(): void {
+    const pid = this.sessao.profissionalId();
+    if (!this.sessao.isProfissional() || pid == null) return;
+    for (const p of this.profissionais) {
+      if (p.id !== pid) this.profOcultos.add(p.id);
+    }
+    this.profissionalMobileId = pid;
   }
 
   private gridScrollSyncLock = false;

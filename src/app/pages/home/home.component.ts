@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiResponse } from '../../core/models/api.models';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 
@@ -13,11 +13,13 @@ import { SheetsApiService } from '../../core/services/sheets-api.service';
 })
 export class HomeComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
+  private readonly router = inject(Router);
 
   status: 'idle' | 'loading' | 'ok' | 'erro' = 'idle';
   mensagemErro = '';
 
   ngOnInit(): void {
+    void this.router.navigate(['/agenda']);
     this.status = 'loading';
     this.api.getHealth().subscribe({
       next: (res: ApiResponse<{ status: string; time?: string }>) => {

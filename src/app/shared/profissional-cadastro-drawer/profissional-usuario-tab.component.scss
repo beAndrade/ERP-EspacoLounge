@@ -1,0 +1,60 @@
+.prof-usuario__banner {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.prof-usuario__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.prof-usuario__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.prof-usuario__input {
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.prof-usuario__senha-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.prof-usuario__senha-row .prof-usuario__input {
+  flex: 1;
+}
+
+.prof-usuario__toggle {
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.prof-usuario__ativo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prof-usuario__erro {
+  margin: 0;
+  color: #b91c1c;
+}

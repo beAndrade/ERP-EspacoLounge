@@ -1,0 +1,58 @@
+<div class="login-page">
+  <div class="login-card">
+    <h1 class="login-card__title">Espaço Lounge</h1>
+    <p class="login-card__subtitle">
+      Entre com seu e-mail e senha para acessar o sistema.
+    </p>
+
+    <form class="login-form" (ngSubmit)="entrar()">
+      <label class="login-field">
+        <span class="login-field__label">E-mail</span>
+        <input
+          class="login-field__input"
+          type="email"
+          name="email"
+          autocomplete="username"
+          [(ngModel)]="email"
+          [disabled]="carregando"
+          required
+        />
+      </label>
+
+      <label class="login-field">
+        <span class="login-field__label">Senha</span>
+        <div class="login-field__senha-wrap">
+          <input
+            class="login-field__input"
+            [type]="mostrarSenha ? 'text' : 'password'"
+            name="senha"
+            autocomplete="current-password"
+            [(ngModel)]="senha"
+            [disabled]="carregando"
+            required
+          />
+          <button
+            type="button"
+            class="login-field__toggle"
+            (click)="mostrarSenha = !mostrarSenha"
+            [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+          >
+            {{ mostrarSenha ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
+      </label>
+
+      @if (erro) {
+        <p class="login-form__erro" role="alert">{{ erro }}</p>
+      }
+
+      <button
+        type="submit"
+        class="login-form__submit"
+        [disabled]="carregando"
+      >
+        {{ carregando ? 'Entrando…' : 'Entrar' }}
+      </button>
+    </form>
+  </div>
+</div>

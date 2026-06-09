@@ -11,6 +11,8 @@ import { filter } from 'rxjs';
 import { AppToastComponent } from './shared/app-toast/app-toast.component';
 import { ClienteCadastroDrawerHostComponent } from './shared/cliente-cadastro-drawer/cliente-cadastro-drawer-host.component';
 import { ProfissionalCadastroDrawerHostComponent } from './shared/profissional-cadastro-drawer/profissional-cadastro-drawer-host.component';
+import { AuthService } from './core/services/auth.service';
+import { SessaoUsuarioService } from './core/services/sessao-usuario.service';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -39,8 +41,11 @@ export type NavSidebarDropdownId =
 export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
+  readonly sessao = inject(SessaoUsuarioService);
 
   readonly title = 'Espaço Lounge';
+  isPublicRoute = false;
 
   /** Viewport estreito: menu lateral em overlay. */
   isMobileViewport = false;
@@ -100,10 +105,21 @@ export class AppComponent implements OnInit {
     this.syncNavExpandForActiveRoutes();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(() => {
+      .subscribe((ev) => {
+        this.syncPublicRoute(ev.urlAfterRedirects);
         this.syncNavExpandForActiveRoutes();
         this.closeMobileNav();
       });
+    this.syncPublicRoute(this.router.url);
+  }
+
+  sair(): void {
+    this.auth.logout();
+  }
+
+  private syncPublicRoute(url: string): void {
+    const path = (url.split('?')[0] ?? '').replace(/\/+$/, '') || '/';
+    this.isPublicRoute = path === '/login' || path === '/agendar';
   }
 
   toggleMobileNav(): void {
