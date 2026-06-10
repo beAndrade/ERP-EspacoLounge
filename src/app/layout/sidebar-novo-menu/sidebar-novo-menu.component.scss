@@ -1,0 +1,129 @@
+:host {
+  display: block;
+  position: relative;
+  z-index: 2;
+}
+
+.sidebar-novo {
+  padding: 0 0.85rem 0.65rem;
+}
+
+.sidebar-novo--collapsed {
+  padding-inline: 0.35rem;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-novo__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-primary, #2563eb);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.sidebar-novo--collapsed .sidebar-novo__btn {
+  width: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.sidebar-novo__btn:hover,
+.sidebar-novo__btn[aria-expanded='true'] {
+  filter: brightness(0.98);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+}
+
+.sidebar-novo__plus {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.sidebar-novo__panel {
+  padding: 1rem 1.1rem 1.25rem;
+  background: #fff;
+  color: #1e293b;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.22);
+}
+
+.sidebar-novo__panel--fixed {
+  position: fixed;
+  z-index: 1400;
+  width: min(420px, calc(100vw - 2rem));
+  max-height: min(75vh, 560px);
+  overflow-y: auto;
+}
+
+.sidebar-novo__section + .sidebar-novo__section {
+  margin-top: 1rem;
+}
+
+.sidebar-novo__section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.sidebar-novo__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.sidebar-novo__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 84px;
+  padding: 0.45rem 0.25rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary, #2563eb);
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.sidebar-novo__tile:hover {
+  filter: brightness(1.06);
+}
+
+.sidebar-novo__tile-icon {
+  display: grid;
+  place-items: center;
+}
+
+.sidebar-novo__tile-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) {
+  .sidebar-novo__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sidebar-novo__panel--fixed {
+    width: min(360px, calc(100vw - 1.5rem));
+  }
+}

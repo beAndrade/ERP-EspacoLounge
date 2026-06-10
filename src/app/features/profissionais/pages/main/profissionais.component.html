@@ -1,3 +1,201 @@
+<ng-template #profLinhaCelulas let-p let-modoGhost="modoGhost">
+  <td class="col-info" aria-hidden="true">
+    @if (modoGhost) {
+      <span class="prof-row-drag-handle prof-row-drag-handle--ghost" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="lucide lucide-menu-icon lucide-menu"
+          aria-hidden="true"
+        >
+          <path d="M4 5h16" />
+          <path d="M4 12h16" />
+          <path d="M4 19h16" />
+        </svg>
+      </span>
+    } @else {
+      <button
+        type="button"
+        class="prof-row-drag-handle"
+        [class.prof-row-drag-handle--disabled]="!podeReordenar"
+        [attr.aria-label]="'Reordenar ' + p.nome"
+        [attr.aria-grabbed]="linhaPlaceholder(p)"
+        [disabled]="!podeReordenar || reordenando"
+        (pointerdown)="onDragHandleDown($event, p)"
+        (pointermove)="onArrasteMove($event)"
+        (pointerup)="onDragHandleUp($event)"
+        (pointercancel)="onDragHandleUp($event)"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="lucide lucide-menu-icon lucide-menu"
+          aria-hidden="true"
+        >
+          <path d="M4 5h16" />
+          <path d="M4 12h16" />
+          <path d="M4 19h16" />
+        </svg>
+      </button>
+    }
+  </td>
+  <td class="col-nome">
+    <div class="col-nome__cell">
+      <app-profissional-avatar
+        [fotoUrl]="profissionalFotoUrl(p)"
+        variant="grid-head"
+      />
+      <span class="col-nome__text">{{ p.nome }}</span>
+      @if (ehProfissionalAdmin(p)) {
+        <span class="prof-badge-admin">Admin</span>
+      }
+    </div>
+  </td>
+  <td>{{ exibirCelular(p) }}</td>
+  <td>
+    <span class="col-email__cell">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect width="20" height="16" x="2" y="4" rx="2" />
+        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+      </svg>
+      <span class="col-email__text">{{ exibirEmail(p) }}</span>
+    </span>
+  </td>
+  <td class="col-acoes">
+    <div class="list-row-acoes profissionais-row-acoes">
+      @if (modoGhost) {
+        <span
+          class="list-row-acoes__btn list-row-acoes__btn--edit"
+          aria-hidden="true"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-square-pen-icon lucide-square-pen"
+            aria-hidden="true"
+          >
+            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path
+              d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+            />
+          </svg>
+        </span>
+        @if (!ehProfissionalAdmin(p)) {
+          <span class="list-row-acoes__sep" aria-hidden="true"></span>
+          <span
+            class="list-row-acoes__btn list-row-acoes__btn--delete"
+            aria-hidden="true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-trash-icon lucide-trash"
+              aria-hidden="true"
+            >
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </span>
+        }
+      } @else {
+        <button
+          type="button"
+          class="list-row-acoes__btn list-row-acoes__btn--edit"
+          (click)="abrirEditar(p)"
+          aria-label="Editar profissional"
+          title="Editar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-square-pen-icon lucide-square-pen"
+            aria-hidden="true"
+          >
+            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path
+              d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+            />
+          </svg>
+        </button>
+        @if (!ehProfissionalAdmin(p)) {
+          <span class="list-row-acoes__sep" aria-hidden="true"></span>
+          <button
+            type="button"
+            class="list-row-acoes__btn list-row-acoes__btn--delete"
+            aria-label="Excluir profissional"
+            title="Excluir"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-trash-icon lucide-trash"
+              aria-hidden="true"
+            >
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        }
+      }
+    </div>
+  </td>
+</ng-template>
+
 <div class="list-page profissionais-page">
   <div class="list-layout">
     <div class="list-layout__main">
@@ -113,7 +311,6 @@
           <div class="table-wrap" role="region" aria-label="Lista de profissionais">
             <table class="list-table profissionais-table">
               <colgroup>
-                <col class="profissionais-table__col-menu" />
                 <col class="profissionais-table__col-info" />
                 <col class="profissionais-table__col-nome" />
                 <col class="profissionais-table__col-celular" />
@@ -122,26 +319,68 @@
               </colgroup>
               <thead>
                 <tr>
-                  <th class="col-menu" scope="col" aria-hidden="true"></th>
                   <th class="col-info" scope="col">
-                    <span class="sr-only">Informação</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                      title="Informação"
+                    <div
+                      class="prof-info-tip"
+                      (mouseenter)="onInfoMouseEnter()"
+                      (mouseleave)="onInfoMouseLeave()"
                     >
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16v-4" />
-                      <path d="M12 8h.01" />
-                    </svg>
+                      <button
+                        type="button"
+                        class="prof-info-tip__btn"
+                        aria-label="Como ordenar profissionais"
+                        [attr.aria-expanded]="infoTooltipAberto"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 16v-4" />
+                          <path d="M12 8h.01" />
+                        </svg>
+                      </button>
+                      <div
+                        class="prof-info-tip__panel"
+                        [class.prof-info-tip__panel--open]="infoTooltipAberto"
+                        role="tooltip"
+                      >
+                        <p class="prof-info-tip__title">
+                          Ordenando os profissionais
+                        </p>
+                        <p class="prof-info-tip__text">
+                          Clique e segure no ícone
+                          <span class="prof-info-tip__menu-ico" aria-hidden="true">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path d="M4 5h16" />
+                              <path d="M4 12h16" />
+                              <path d="M4 19h16" />
+                            </svg>
+                          </span>
+                          para arrastar o profissional para a posição desejada e
+                          alterar a ordem de exibição. Na agenda os profissionais
+                          são exibidos na mesma ordem que estão listados abaixo.
+                        </p>
+                      </div>
+                    </div>
                   </th>
                   <th scope="col">Nome</th>
                   <th scope="col">Celular</th>
@@ -149,16 +388,16 @@
                   <th class="col-acoes" scope="col" aria-label="Ações"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody [class.prof-tbody--reordering]="arrastando">
                 @if (carregando) {
                   <tr>
-                    <td class="table-body__busy" colspan="6">
+                    <td class="table-body__busy" colspan="5">
                       <span class="table-body__busy-text">Carregando…</span>
                     </td>
                   </tr>
                 } @else if (totalFiltrado() === 0) {
                   <tr>
-                    <td class="table-body__empty" colspan="6">
+                    <td class="table-body__empty" colspan="5">
                       <div class="table-empty">
                         <span class="table-empty__icon-wrap" aria-hidden="true">
                           <svg
@@ -184,212 +423,54 @@
                     </td>
                   </tr>
                 } @else {
-                  @for (p of itensPagina(); track p.id) {
-                    <tr>
-                      <td class="col-menu">
-                        <button
-                          type="button"
-                          class="prof-row-menu"
-                          [attr.aria-label]="'Mais opções para ' + p.nome"
-                          title="Opções"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <line x1="4" x2="20" y1="12" y2="12" />
-                            <line x1="4" x2="20" y1="6" y2="6" />
-                            <line x1="4" x2="20" y1="18" y2="18" />
-                          </svg>
-                        </button>
-                      </td>
-                      <td class="col-info" aria-hidden="true"></td>
-                      <td class="col-nome">
-                        <div class="col-nome__cell">
-                          <span class="col-nome__avatar" aria-hidden="true">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="1.5"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              aria-hidden="true"
-                            >
-                              <circle cx="12" cy="8" r="5" />
-                              <path d="M20 21a8 8 0 0 0-16 0" />
-                            </svg>
-                          </span>
-                          <span class="col-nome__text">{{ p.nome }}</span>
-                        </div>
-                      </td>
-                      <td>{{ exibirCelular(p) }}</td>
-                      <td>
-                        <span class="col-email__cell">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <rect width="20" height="16" x="2" y="4" rx="2" />
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                          </svg>
-                          <span class="col-email__text">{{ exibirEmail(p) }}</span>
-                        </span>
-                      </td>
-                      <td class="col-acoes">
-                        <div class="list-row-acoes">
-                          <button
-                            type="button"
-                            class="list-row-acoes__btn list-row-acoes__btn--edit"
-                            (click)="abrirEditar(p)"
-                            aria-label="Editar profissional"
-                            title="Editar"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="13.3333"
-                              height="13.3333"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              aria-hidden="true"
-                            >
-                              <path d="M12 20h9" />
-                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
+                  @for (p of listaCorpo(); track p.id; let i = $index) {
+                    <tr
+                      [attr.data-prof-id]="p.id"
+                      [class.prof-row--placeholder]="linhaPlaceholder(p)"
+                      [style.transform]="offsetVisualLinha(i)"
+                    >
+                      <ng-container
+                        *ngTemplateOutlet="
+                          profLinhaCelulas;
+                          context: { $implicit: p, modoGhost: false }
+                        "
+                      />
                     </tr>
                   }
                 }
               </tbody>
             </table>
           </div>
-
-          <footer class="list-footer">
-            <div class="list-footer__toolbar">
-              <span>{{ carregando ? '…' : totalFiltrado() }} no total</span>
-              <div class="list-footer__pager">
-                <button
-                  type="button"
-                  class="list-footer__chev"
-                  (click)="paginaAnterior()"
-                  [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
-                  aria-label="Página anterior"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="m15 18-6-6 6-6" />
-                  </svg>
-                </button>
-                <span class="list-footer__page-num" aria-current="page">{{ pagina }}</span>
-                <button
-                  type="button"
-                  class="list-footer__chev"
-                  (click)="paginaSeguinte()"
-                  [disabled]="carregando || pagina >= totalPaginas() || totalFiltrado() === 0"
-                  aria-label="Página seguinte"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="list-footer__per-page">
-              <span id="profissionais-per-page-label" class="sr-only">Itens por página</span>
-              <button
-                type="button"
-                class="list-footer__per-page-trigger"
-                [disabled]="carregando"
-                [attr.aria-expanded]="perPageMenuAberto"
-                aria-haspopup="listbox"
-                aria-labelledby="profissionais-per-page-label"
-                aria-controls="profissionais-per-page-listbox"
-                (click)="togglePerPageMenu($event)"
-              >
-                <span>{{ itensPorPagina }} / página</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-              @if (perPageMenuAberto) {
-                <div
-                  id="profissionais-per-page-listbox"
-                  class="list-footer__per-page-panel"
-                  role="listbox"
-                  aria-labelledby="profissionais-per-page-label"
-                  (click)="$event.stopPropagation()"
-                >
-                  @for (n of opcoesItensPorPagina; track n) {
-                    <button
-                      type="button"
-                      class="list-footer__per-page-option"
-                      [class.list-footer__per-page-option--active]="n === itensPorPagina"
-                      role="option"
-                      [attr.aria-selected]="n === itensPorPagina"
-                      (click)="selecionarItensPorPagina(n, $event)"
-                    >
-                      {{ n }} / página
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-          </footer>
         </div>
       }
     </div>
   </div>
+
+  @if (ghostProf; as gp) {
+    <div
+      class="prof-row-ghost"
+      [style.top.px]="ghostTop"
+      [style.left.px]="ghostLeft"
+      [style.width.px]="ghostWidth"
+      aria-hidden="true"
+    >
+      <table class="list-table profissionais-table prof-row-ghost__table">
+        <colgroup>
+          @for (w of ghostColWidths; track $index) {
+            <col [style.width.px]="w" />
+          }
+        </colgroup>
+        <tbody>
+          <tr class="prof-row-ghost__row">
+            <ng-container
+              *ngTemplateOutlet="
+                profLinhaCelulas;
+                context: { $implicit: gp, modoGhost: true }
+              "
+            />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
 </div>

@@ -23,20 +23,7 @@
           class="cliente-head__close"
           (click)="d.fechar()"
           aria-label="Fechar"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
+        ></button>
       </header>
       <div
         class="cliente-body-scroll"
@@ -73,19 +60,20 @@
           </nav>
           @if (d.abaAtiva === 'Cadastro') {
             <app-profissional-cadastro-form />
+          } @else if (d.abaAtiva === 'Endereço') {
+            <app-profissional-endereco-tab />
           } @else if (d.abaAtiva === 'Configurar comissões') {
             <app-profissional-comissoes-config-tab />
-          } @else if (d.abaAtiva === 'Comissões e Auxiliares') {
-            <app-profissional-comissoes-servicos-tab />
           } @else if (d.abaAtiva === 'Usuário') {
             <app-profissional-usuario-tab />
           } @else if (
-            d.abaAtiva === 'Endereço' ||
-            d.abaAtiva === 'Assinatura digital'
+            d.abaAtiva === 'Pagar salário/comissão' ||
+            d.abaAtiva === 'Vales e Bonificações'
           ) {
             <main class="cliente-main">
               <p class="cliente-tab-placeholder">
-                Conteúdo de «{{ d.abaAtiva }}» em desenvolvimento.
+                O painel desta secção abre por cima do cadastro. Clique
+                novamente na aba se fechou o painel.
               </p>
             </main>
           }
@@ -93,8 +81,8 @@
       </div>
       @if (
         d.abaAtiva === 'Cadastro' ||
+        d.abaAtiva === 'Endereço' ||
         d.abaAtiva === 'Configurar comissões' ||
-        d.abaAtiva === 'Comissões e Auxiliares' ||
         d.abaAtiva === 'Usuário'
       ) {
         <footer class="cliente-drawer-footer">
@@ -106,7 +94,7 @@
           <button
             type="button"
             class="cliente-footer-btn cliente-footer-btn--ghost"
-            [disabled]="d.salvando"
+            [disabled]="d.salvando || d.usuarioSalvando"
             (click)="d.fechar()"
           >
             Cancelar
@@ -117,6 +105,15 @@
               class="cliente-footer-btn cliente-footer-btn--primary"
               [disabled]="d.salvando"
               (click)="d.salvar()"
+            >
+              {{ d.salvando ? 'Salvando…' : 'Salvar' }}
+            </button>
+          } @else if (d.abaAtiva === 'Endereço') {
+            <button
+              type="button"
+              class="cliente-footer-btn cliente-footer-btn--primary"
+              [disabled]="d.salvando || d.modo === 'novo'"
+              (click)="d.salvarEndereco()"
             >
               {{ d.salvando ? 'Salvando…' : 'Salvar' }}
             </button>
@@ -138,20 +135,50 @@
             >
               {{ d.usuarioSalvando ? 'Salvando…' : 'Salvar' }}
             </button>
-          } @else {
-            <button
-              type="button"
-              class="cliente-footer-btn cliente-footer-btn--primary"
-              [disabled]="d.salvando || d.modo === 'novo'"
-              (click)="d.salvarComissaoServicos()"
-            >
-              {{ d.salvando ? 'Salvando…' : 'Salvar' }}
-            </button>
           }
         </footer>
       }
     </div>
   </div>
+
+  @if (d.salariosDrawerAberto) {
+    <div
+      class="overlay overlay--prof-salarios-empilhada"
+      [class.overlay--open]="d.salariosDrawerPanelOpen"
+      aria-hidden="true"
+      (click)="d.fecharSalariosDrawer()"
+    ></div>
+    <div
+      class="app-drawer profissional-salarios-empilhada"
+      [class.app-drawer--open]="d.salariosDrawerPanelOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Comissões e salários"
+      (click)="$event.stopPropagation()"
+    >
+      <app-profissional-salarios-drawer />
+    </div>
+  }
+
+  @if (d.valesDrawerAberto) {
+    <div
+      class="overlay overlay--prof-vales-empilhada"
+      [class.overlay--open]="d.valesDrawerPanelOpen"
+      aria-hidden="true"
+      (click)="d.fecharValesDrawer()"
+    ></div>
+    <div
+      class="app-drawer profissional-vales-empilhada"
+      [class.app-drawer--open]="d.valesDrawerPanelOpen"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Vales e bonificações"
+      (click)="$event.stopPropagation()"
+    >
+      <app-profissional-vales-drawer />
+    </div>
+  }
+
   @if (d.profNavLockTooltipVisible) {
     <span
       id="prof-nav-lock-tooltip"

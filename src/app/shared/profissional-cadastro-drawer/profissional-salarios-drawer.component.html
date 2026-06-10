@@ -1,0 +1,57 @@
+<div class="prof-stack-drawer">
+  <header class="prof-stack-drawer__head">
+    <h3 class="prof-stack-drawer__title">Comissões/Salários</h3>
+    <button
+      type="button"
+      class="prof-stack-drawer__close"
+      (click)="d.fecharSalariosDrawer()"
+      aria-label="Fechar"
+    ></button>
+  </header>
+
+  <div class="prof-stack-drawer__body">
+    <div class="prof-stack-table-wrap" role="region" aria-label="Comissões e salários">
+      <table class="prof-stack-table">
+        <thead>
+          <tr>
+            <th scope="col">Vencimento</th>
+            <th scope="col">Item</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Histórico</th>
+            <th scope="col">Pagamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="prof-stack-table__empty-row">
+            <td colspan="5">
+              <div class="prof-stack-empty">
+                <span class="prof-stack-empty__icon" aria-hidden="true"></span>
+                <p>Nenhum item encontrado</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="prof-stack-drawer__foot">
+    <div class="prof-stack-drawer__pager">
+      <span>0 no total</span>
+      <span class="prof-stack-drawer__pager-nav" aria-hidden="true">&lt; 1 &gt;</span>
+      <span class="prof-stack-drawer__pager-size">25 / page</span>
+    </div>
+    <div class="prof-stack-drawer__actions">
+      <button
+        type="button"
+        class="cliente-footer-btn cliente-footer-btn--ghost"
+        (click)="d.fecharSalariosDrawer()"
+      >
+        Cancelar
+      </button>
+      <button type="button" class="cliente-footer-btn cliente-footer-btn--primary" disabled>
+        + Novo
+      </button>
+    </div>
+  </footer>
+</div>

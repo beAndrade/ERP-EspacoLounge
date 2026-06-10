@@ -8,7 +8,7 @@ import {
 } from '@angular/forms';
 import { switchMap } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
-import { TelefoneBrMaskDirective } from '../../../../core/directives/telefone-br-mask.directive';
+import { CelularBrMaskDirective } from '../../../../core/directives/celular-br-mask.directive';
 import { isCelularBr11Digitos } from '../../../../core/utils/telefone-br';
 import { findClienteCadastroDuplicado } from '../../../../core/utils/clientes-unicidade';
 import {
@@ -34,7 +34,7 @@ function celularBrObrigatorioValidator(control: AbstractControl): ValidationErro
 @Component({
   selector: 'app-clientes-novo',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule, TelefoneBrMaskDirective],
+  imports: [RouterLink, ReactiveFormsModule, CelularBrMaskDirective],
   templateUrl: './clientes-novo.component.html',
   styleUrl: './clientes-novo.component.scss',
 })

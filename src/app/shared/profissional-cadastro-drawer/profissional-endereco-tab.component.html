@@ -1,0 +1,87 @@
+@if (d.carregando) {
+  <p class="cliente-tab-placeholder">Carregando…</p>
+} @else {
+  <main class="cliente-main prof-endereco">
+    <div class="prof-endereco-grid">
+      <label>
+        <span class="cliente-field-label">CEP</span>
+        <input
+          type="text"
+          [ngModel]="d.enderecoCep"
+          (ngModelChange)="d.onEnderecoCepChange($event)"
+          name="prof_cep"
+          inputmode="numeric"
+          maxlength="9"
+          autocomplete="postal-code"
+          placeholder="00000-000"
+          [disabled]="d.salvando"
+        />
+      </label>
+      <label class="prof-endereco-grid__logradouro">
+        <span class="cliente-field-label">Logradouro</span>
+        <input
+          type="text"
+          [(ngModel)]="d.enderecoLogradouro"
+          name="prof_logradouro"
+          autocomplete="street-address"
+          placeholder="Rua, Avenida, Travessa..."
+          [disabled]="d.salvando"
+        />
+      </label>
+      <label>
+        <span class="cliente-field-label">Número</span>
+        <input
+          type="text"
+          [(ngModel)]="d.enderecoNumero"
+          name="prof_endereco_numero"
+          placeholder="Número"
+          [disabled]="d.salvando"
+        />
+      </label>
+      <label>
+        <span class="cliente-field-label">Complemento</span>
+        <input
+          type="text"
+          [(ngModel)]="d.enderecoComplemento"
+          name="prof_complemento"
+          autocomplete="address-line2"
+          placeholder="Complemento"
+          [disabled]="d.salvando"
+        />
+      </label>
+      <label>
+        <span class="cliente-field-label">Bairro</span>
+        <input
+          type="text"
+          [(ngModel)]="d.enderecoBairro"
+          name="prof_bairro"
+          placeholder="Bairro"
+          [disabled]="d.salvando"
+        />
+      </label>
+      <label>
+        <span class="cliente-field-label">Estado</span>
+        <input
+          type="text"
+          [(ngModel)]="d.enderecoEstado"
+          name="prof_estado"
+          maxlength="2"
+          autocomplete="address-level1"
+          placeholder="UF"
+          [disabled]="d.salvando"
+        />
+      </label>
+      <label>
+        <span class="cliente-field-label">Cidade</span>
+        <input
+          type="text"
+          [(ngModel)]="d.enderecoCidade"
+          name="prof_cidade"
+          autocomplete="address-level2"
+          placeholder="Cidade"
+          [disabled]="d.salvando"
+        />
+      </label>
+    </div>
+  </main>
+}

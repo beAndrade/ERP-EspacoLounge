@@ -20,14 +20,16 @@
 }
 
 .profissional-avatar--grid-head {
-  width: 28px;
-  height: 28px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
   background: #f8f8f8;
   color: rgba(129, 23, 65, 0.75);
 
   .profissional-avatar__ico {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     stroke-width: 2;
   }
 

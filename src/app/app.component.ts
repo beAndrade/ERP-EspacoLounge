@@ -11,8 +11,10 @@ import { filter } from 'rxjs';
 import { AppToastComponent } from './shared/app-toast/app-toast.component';
 import { ClienteCadastroDrawerHostComponent } from './shared/cliente-cadastro-drawer/cliente-cadastro-drawer-host.component';
 import { ProfissionalCadastroDrawerHostComponent } from './shared/profissional-cadastro-drawer/profissional-cadastro-drawer-host.component';
-import { AuthService } from './core/services/auth.service';
 import { SessaoUsuarioService } from './core/services/sessao-usuario.service';
+import { SidebarProfileComponent } from './layout/sidebar-profile/sidebar-profile.component';
+import { SidebarNovoMenuComponent } from './layout/sidebar-novo-menu/sidebar-novo-menu.component';
+import { MinhaContaDrawerHostComponent } from './shared/minha-conta-drawer/minha-conta-drawer-host.component';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -33,6 +35,9 @@ export type NavSidebarDropdownId =
     NgClass,
     ClienteCadastroDrawerHostComponent,
     ProfissionalCadastroDrawerHostComponent,
+    MinhaContaDrawerHostComponent,
+    SidebarProfileComponent,
+    SidebarNovoMenuComponent,
     AppToastComponent,
   ],
   templateUrl: './app.component.html',
@@ -41,7 +46,6 @@ export type NavSidebarDropdownId =
 export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly auth = inject(AuthService);
   readonly sessao = inject(SessaoUsuarioService);
 
   readonly title = 'Espaço Lounge';
@@ -111,10 +115,6 @@ export class AppComponent implements OnInit {
         this.closeMobileNav();
       });
     this.syncPublicRoute(this.router.url);
-  }
-
-  sair(): void {
-    this.auth.logout();
   }
 
   private syncPublicRoute(url: string): void {

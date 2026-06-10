@@ -1,0 +1,74 @@
+<div
+  class="sidebar-profile"
+  [class.sidebar-profile--collapsed]="collapsed"
+>
+  <div class="sidebar-profile__row">
+    <span
+      class="sidebar-profile__avatar"
+      [class.sidebar-profile__avatar--com-foto]="!!foto()"
+      aria-hidden="true"
+    >
+      @if (foto(); as url) {
+        <img [src]="url" alt="" />
+      } @else {
+        {{ iniciais() }}
+      }
+    </span>
+    @if (!collapsed) {
+      <div class="sidebar-profile__text">
+        <p class="sidebar-profile__greeting">
+          Olá, {{ sessao.nomeExibicao() }}
+        </p>
+        <button
+          type="button"
+          class="sidebar-profile__trigger"
+          (click)="toggleDropdown($event)"
+          [attr.aria-expanded]="dropdownAberto"
+          aria-haspopup="menu"
+        >
+          Meu perfil
+          <span class="sidebar-profile__chev" aria-hidden="true">⌵</span>
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (dropdownAberto) {
+    <ul class="sidebar-profile__menu" role="menu" aria-label="Meu perfil">
+      <li role="none">
+        <button
+          type="button"
+          role="menuitem"
+          class="sidebar-profile__menu-item"
+          (click)="abrirMinhaConta()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          Minha conta
+        </button>
+      </li>
+      <li role="none">
+        <button
+          type="button"
+          role="menuitem"
+          class="sidebar-profile__menu-item"
+          (click)="assinaturaEmBreve()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4"/><path d="m6.8 15-3.4 2"/><path d="m20.7 17-3.4-2"/><path d="M6.8 9 3.4 7"/><path d="m20.7 7-3.4 2"/><circle cx="12" cy="12" r="4"/></svg>
+          Assinatura
+        </button>
+      </li>
+      <li role="none">
+        <button
+          type="button"
+          role="menuitem"
+          class="sidebar-profile__menu-item sidebar-profile__menu-item--sair"
+          (click)="sair()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Sair
+        </button>
+      </li>
+    </ul>
+  }
+</div>
+

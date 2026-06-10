@@ -281,6 +281,21 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       }
       this.queryParamsInicializado = true;
       this.pagina = 1;
+
+      const novo = String(params.get('novo') ?? '').trim().toLowerCase();
+      if (novo === 'receita' || novo === 'despesa' || novo === 'vale') {
+        queueMicrotask(() => {
+          if (novo === 'receita') this.abrirNovoRecebimento();
+          else if (novo === 'despesa') this.abrirNovoDespesa();
+          else this.abrirNovoVale();
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { novo: null },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+        });
+      }
     });
   }
 

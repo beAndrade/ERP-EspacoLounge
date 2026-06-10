@@ -9,12 +9,14 @@ import { aplicarComissaoProfissionalNoValorServico } from './profissional-comiss
 import { profissionalRecebeComissao } from './profissionais-domain';
 import {
   addMinutesToParts,
+  civilNaiveSalaoParaUtcMs,
   formatSqlLocalDateTime,
   instantEmDateParaSqlLocalBrasil,
   isoInstantParaSqlLocalBrasil,
   normalizeSqlLocalString,
   parseSqlLocalDateTime,
   partesSqlLocalDeTextoSalao,
+  type SqlLocalParts,
 } from '../lib/sql-local-datetime';
 import {
   atendimentoItens,
@@ -2517,4 +2519,179 @@ export async function confirmarPagamentoPorIdAtendimento(
   }
 
   return result;
+}
+
+export type RemarcarAgendamentoPayload = {
+  id_atendimento: string;
+  profissional_origem_id: number;
+  profissional_destino_id: number;
+  /** YYYY-MM-DD do novo início do bloco. */
+  data: string;
+  /** HH:mm do novo início do bloco. */
+  hora_inicio: string;
+};
+
+const AGENDA_GRID_START_MIN = 8 * 60;
+const AGENDA_GRID_LAST_SLOT_START_MIN = 23 * 60;
+
+/**
+ * Desloca no tempo (e opcionalmente de profissional) as linhas de um bloco na grelha.
+ * Só afeta linhas com o mesmo `id_atendimento` e `profissional_origem_id`.
+ */
+export async function remarcarBlocoAgendamento(
+  db: Db,
+  payload: RemarcarAgendamentoPayload,
+): Promise<{ linhasAtualizadas: number }> {
+  const id = String(payload.id_atendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+
+  const profOrig = Number(payload.profissional_origem_id);
+  const profDest = Number(payload.profissional_destino_id);
+  if (!Number.isFinite(profOrig) || profOrig <= 0) {
+    throw new Error('profissional_origem_id inválido');
+  }
+  if (!Number.isFinite(profDest) || profDest <= 0) {
+    throw new Error('profissional_destino_id inválido');
+  }
+
+  const data = String(payload.data || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+    throw new Error('data inválida (use YYYY-MM-DD)');
+  }
+
+  const hora = String(payload.hora_inicio || '').trim();
+  const hm = /^(\d{1,2}):(\d{2})$/.exec(hora);
+  if (!hm) throw new Error('hora_inicio inválida (use HH:mm)');
+  const hh = parseInt(hm[1], 10);
+  const mm = parseInt(hm[2], 10);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm) || hh > 23 || mm > 59) {
+    throw new Error('hora_inicio inválida');
+  }
+  const startMin = hh * 60 + mm;
+  if (
+    startMin < AGENDA_GRID_START_MIN ||
+    startMin > AGENDA_GRID_LAST_SLOT_START_MIN
+  ) {
+    throw new Error('Horário fora do expediente da agenda (08:00–23:00)');
+  }
+
+  await assertProfissionalIdExists(db, profDest, true);
+
+  const rows = await db
+    .select()
+    .from(atendimentos)
+    .where(
+      and(
+        eq(atendimentos.idAtendimento, id),
+        eq(atendimentos.profissionalId, profOrig),
+      ),
+    )
+    .orderBy(asc(atendimentos.id));
+
+  if (rows.length === 0) {
+    throw new Error('Nenhuma linha encontrada para remarcar');
+  }
+
+  for (const r of rows) {
+    if (String(r.cobrancaStatus || '').trim() === 'finalizada') {
+      throw new Error('Não é possível remarcar uma comanda já finalizada');
+    }
+  }
+
+  let anchorParts: SqlLocalParts | null = null;
+  for (const r of rows) {
+    const p = partesSqlLocalDeTextoSalao(r.inicio);
+    if (!p) continue;
+    if (
+      !anchorParts ||
+      civilNaiveSalaoParaUtcMs(p) < civilNaiveSalaoParaUtcMs(anchorParts)
+    ) {
+      anchorParts = p;
+    }
+  }
+  if (!anchorParts) {
+    throw new Error('Agendamento sem horário definido');
+  }
+
+  const newStart: SqlLocalParts = {
+    y: parseInt(data.slice(0, 4), 10),
+    mo: parseInt(data.slice(5, 7), 10),
+    d: parseInt(data.slice(8, 10), 10),
+    hh,
+    mm,
+    ss: 0,
+  };
+
+  const deltaMin = Math.round(
+    (civilNaiveSalaoParaUtcMs(newStart) -
+      civilNaiveSalaoParaUtcMs(anchorParts)) /
+      60000,
+  );
+
+  let atualizadas = 0;
+  for (const r of rows) {
+    const patch: {
+      profissionalId?: number;
+      inicio?: string | null;
+      fim?: string | null;
+      data?: string;
+    } = {};
+
+    if (profDest !== profOrig) {
+      patch.profissionalId = profDest;
+    }
+
+    const pIni = partesSqlLocalDeTextoSalao(r.inicio);
+    if (pIni) {
+      const newIni = formatSqlLocalDateTime(addMinutesToParts(pIni, deltaMin));
+      patch.inicio = newIni;
+      patch.data = newIni.slice(0, 10);
+    }
+
+    const pFim = partesSqlLocalDeTextoSalao(r.fim);
+    if (pFim) {
+      patch.fim = formatSqlLocalDateTime(addMinutesToParts(pFim, deltaMin));
+    } else if (patch.inicio) {
+      const pOldIni = partesSqlLocalDeTextoSalao(r.inicio);
+      const pOldFim = partesSqlLocalDeTextoSalao(r.fim);
+      let durMin = 30;
+      if (pOldIni && pOldFim) {
+        durMin = Math.max(
+          5,
+          Math.round(
+            (civilNaiveSalaoParaUtcMs(pOldFim) -
+              civilNaiveSalaoParaUtcMs(pOldIni)) /
+              60000,
+          ),
+        );
+      }
+      const pNewIni = parseSqlLocalDateTime(patch.inicio);
+      if (pNewIni) {
+        patch.fim = formatSqlLocalDateTime(addMinutesToParts(pNewIni, durMin));
+      }
+    }
+
+    if (Object.keys(patch).length === 0) continue;
+
+    await db.update(atendimentos).set(patch).where(eq(atendimentos.id, r.id));
+    atualizadas += 1;
+  }
+
+  if (profDest !== profOrig) {
+    await db
+      .update(atendimentoItens)
+      .set({ profissionalId: profDest })
+      .where(
+        and(
+          eq(atendimentoItens.idAtendimento, id),
+          eq(atendimentoItens.profissionalId, profOrig),
+        ),
+      );
+  }
+
+  if (atualizadas > 0) {
+    await recalcularFolhaAposMudancaAtendimento(db, id);
+  }
+
+  return { linhasAtualizadas: atualizadas };
 }

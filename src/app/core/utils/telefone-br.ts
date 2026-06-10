@@ -1,6 +1,9 @@
 /** Máximo de dígitos: DDD (2) + local (8 fixo ou 9 celular). */
 const MAX_DIGITOS = 11;
 
+/** Comprimento formatado de celular `(00) 00000-0000`. */
+export const CELULAR_BR_MAX_LENGTH = 15;
+
 /**
  * Formata progressivamente no padrão brasileiro:
  * - 10 dígitos: `(00) 0000-0000`

@@ -133,6 +133,16 @@ export const profissionais = pgTable('profissionais', {
   comissaoListagemModo: text('comissao_listagem_modo')
     .notNull()
     .default('pagamento_cliente'),
+  cep: text('cep'),
+  logradouro: text('logradouro'),
+  enderecoNumero: text('endereco_numero'),
+  complemento: text('complemento'),
+  bairro: text('bairro'),
+  estado: text('estado'),
+  cidade: text('cidade'),
+  fotoUrl: text('foto_url'),
+  /** Ordem de exibição na lista e nas colunas da agenda. */
+  ordem: integer('ordem').notNull().default(0),
 });
 
 /** Override de comissão por profissional + serviço (só afeta novos atendimentos). */

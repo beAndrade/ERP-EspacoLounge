@@ -20,6 +20,11 @@ export class SessaoUsuarioService {
     return this.auth.profissionalId();
   }
 
+  fotoUrl(): string | null {
+    const u = (this.auth.user()?.foto_url ?? '').trim();
+    return u || null;
+  }
+
   isAdmin(): boolean {
     return this.auth.isAdmin();
   }

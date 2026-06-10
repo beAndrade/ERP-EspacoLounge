@@ -48,6 +48,7 @@ import {
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
+import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
 
 type CelulaCalendario = {
   dia: number;
@@ -96,6 +97,9 @@ const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
 /** Duração da animação do drawer (ms); manter igual a `--drawer-slide-duration` no SCSS. */
 const DRAWER_ANIM_MS = 520;
 
+/** Distância mínima (px) para distinguir arraste de clique no cartão. */
+const ARRASTE_CARD_LIMIAR_PX = 8;
+
 /** Um cartão na grelha = mesmo `id` + mesmo profissional (várias linhas = um bloco). */
 type AgendaHubBloco = {
   trackKey: string;
@@ -130,6 +134,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
   readonly sessao = inject(SessaoUsuarioService);
+  readonly profissionalFotoUrl = profissionalFotoUrl;
 
   @ViewChild(AgendaNovoComponent)
   private agendaDrawerRef?: AgendaNovoComponent;
@@ -188,6 +193,42 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   profCabecalhoAtivoId: number | null = null;
 
   slotsHoras: string[] = [];
+
+  /** Modal «Atualizar Agendamento?» após arrastar cartão na grelha. */
+  remarcarModalAberto = false;
+  remarcarSalvando = false;
+  remarcarErro = '';
+  remarcarCtx: {
+    bloco: AgendaHubBloco;
+    profOrigemId: number;
+    ymdOrigem: string;
+    profDestinoId: number;
+    ymdDestino: string;
+    horaInicio: string;
+  } | null = null;
+
+  cardArrasteBloco: AgendaHubBloco | null = null;
+  cardArrasteYmd = '';
+  cardArrasteProfId = 0;
+  cardArrasteAtivo = false;
+  cardArrasteGhostTop = 0;
+  cardArrasteGhostLeft = 0;
+  cardArrasteGhostWidth = 0;
+  cardArrasteGhostHeight = 0;
+  cardArrasteGhostCor = '';
+  cardArrasteGhostRotulo = '';
+  private cardArrasteOffsetX = 0;
+  private cardArrasteOffsetY = 0;
+  private cardArrasteStartX = 0;
+  private cardArrasteStartY = 0;
+  private cardArrasteSuprimirClick = false;
+  private cardArrastePointerId: number | null = null;
+  private cardArrasteCaptureEl: HTMLElement | null = null;
+  private readonly onDocPointerMove = (e: PointerEvent) =>
+    this.onCardArrasteMove(e);
+  private readonly onDocPointerUp = (e: PointerEvent) =>
+    this.onCardArrasteUp(e);
+
   modalAberto = false;
   modalContexto: {
     data: string;
@@ -320,6 +361,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelarArrasteCard();
     this.desativarLayoutAgendaNoMain();
     if (this.timerAbrirNovaComandaDesdeLista != null) {
       clearTimeout(this.timerAbrirNovaComandaDesdeLista);
@@ -765,7 +807,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
     this.profCabecalhoAtivoId = p.id;
     this.profissionalDrawer.abrirEdicao(p.id, {
-      onSalvo: () => {
+      onSalvo: (item) => {
+        if (item) {
+          const foto = profissionalFotoUrl(item);
+          this.profissionais = this.profissionais.map((prof) =>
+            prof.id === item.id
+              ? { ...prof, ...item, fotoUrl: foto, foto_url: foto }
+              : prof,
+          );
+        }
         this.carregarProfissionais();
         this.recarregarVistaAtiva();
       },
@@ -1025,8 +1075,249 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return comandaQuitadaNasCifrasItem(l0, null);
   }
 
+  /** Cartão pode ser arrastado para remarcar horário/profissional. */
+  podeArrastarBloco(b: AgendaHubBloco): boolean {
+    if (!this.idAtendimentoBloco(b)) return false;
+    if (this.blocoComandaFaturada(b)) return false;
+    if (this.statusFiltroBloco(b) === 'bloqueado') return false;
+    return true;
+  }
+
+  cardArrasteEmCurso(b: AgendaHubBloco): boolean {
+    return (
+      this.cardArrasteAtivo &&
+      this.cardArrasteBloco?.trackKey === b.trackKey
+    );
+  }
+
+  onCardPointerDown(
+    ev: PointerEvent,
+    bloco: AgendaHubBloco,
+    profId: number,
+    ymd?: string,
+  ): void {
+    if (!this.podeArrastarBloco(bloco)) return;
+    if (ev.button !== 0) return;
+    if (this.remarcarModalAberto || this.modalAberto) return;
+
+    const btn = ev.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    this.cardArrasteBloco = bloco;
+    this.cardArrasteYmd = (ymd ?? this.diaYmd).trim().slice(0, 10);
+    this.cardArrasteProfId = profId;
+    this.cardArrasteOffsetX = ev.clientX - rect.left;
+    this.cardArrasteOffsetY = ev.clientY - rect.top;
+    this.cardArrasteStartX = ev.clientX;
+    this.cardArrasteStartY = ev.clientY;
+    this.cardArrasteGhostTop = rect.top;
+    this.cardArrasteGhostLeft = rect.left;
+    this.cardArrasteGhostWidth = rect.width;
+    this.cardArrasteGhostHeight = rect.height;
+    this.cardArrasteGhostCor = this.corFundoCartaoBloco(bloco);
+    this.cardArrasteGhostRotulo = this.rotuloBloco(bloco);
+    this.cardArrasteAtivo = false;
+    this.cardArrasteSuprimirClick = false;
+    this.cardArrastePointerId = ev.pointerId;
+    this.cardArrasteCaptureEl = btn;
+
+    btn.setPointerCapture(ev.pointerId);
+    document.addEventListener('pointermove', this.onDocPointerMove);
+    document.addEventListener('pointerup', this.onDocPointerUp);
+    document.addEventListener('pointercancel', this.onDocPointerUp);
+  }
+
+  private onCardArrasteMove(ev: PointerEvent): void {
+    if (this.cardArrasteBloco == null) return;
+    if (
+      this.cardArrastePointerId != null &&
+      ev.pointerId !== this.cardArrastePointerId
+    ) {
+      return;
+    }
+
+    const dx = ev.clientX - this.cardArrasteStartX;
+    const dy = ev.clientY - this.cardArrasteStartY;
+    if (
+      !this.cardArrasteAtivo &&
+      Math.hypot(dx, dy) < ARRASTE_CARD_LIMIAR_PX
+    ) {
+      return;
+    }
+
+    if (!this.cardArrasteAtivo) {
+      this.cardArrasteAtivo = true;
+      this.cardArrasteSuprimirClick = true;
+      document.body.classList.add('agenda-card-dragging');
+    }
+
+    this.cardArrasteGhostTop = ev.clientY - this.cardArrasteOffsetY;
+    this.cardArrasteGhostLeft = ev.clientX - this.cardArrasteOffsetX;
+  }
+
+  private onCardArrasteUp(ev: PointerEvent): void {
+    if (this.cardArrasteBloco == null) return;
+    if (
+      this.cardArrastePointerId != null &&
+      ev.pointerId !== this.cardArrastePointerId
+    ) {
+      return;
+    }
+
+    const bloco = this.cardArrasteBloco;
+    const profOrigemId = this.cardArrasteProfId;
+    const ymdOrigem = this.cardArrasteYmd;
+    const arrastou = this.cardArrasteAtivo;
+
+    try {
+      this.cardArrasteCaptureEl?.releasePointerCapture?.(ev.pointerId);
+    } catch {
+      /* pointer já libertado */
+    }
+
+    this.cancelarArrasteCard();
+
+    if (!arrastou) return;
+
+    const drop = this.resolverDropNaGrelha(ev.clientX, ev.clientY);
+    if (!drop) return;
+
+    const horaOrigem = this.horaBloco(bloco, ymdOrigem);
+    if (
+      drop.profId === profOrigemId &&
+      drop.ymd === ymdOrigem &&
+      drop.horaInicio === horaOrigem
+    ) {
+      return;
+    }
+
+    this.abrirModalRemarcar({
+      bloco,
+      profOrigemId,
+      ymdOrigem,
+      profDestinoId: drop.profId,
+      ymdDestino: drop.ymd,
+      horaInicio: drop.horaInicio,
+    });
+  }
+
+  private cancelarArrasteCard(): void {
+    document.removeEventListener('pointermove', this.onDocPointerMove);
+    document.removeEventListener('pointerup', this.onDocPointerUp);
+    document.removeEventListener('pointercancel', this.onDocPointerUp);
+    document.body.classList.remove('agenda-card-dragging');
+    this.cardArrasteBloco = null;
+    this.cardArrasteProfId = 0;
+    this.cardArrasteYmd = '';
+    this.cardArrasteAtivo = false;
+    this.cardArrastePointerId = null;
+    this.cardArrasteCaptureEl = null;
+  }
+
+  private resolverDropNaGrelha(
+    clientX: number,
+    clientY: number,
+  ): { profId: number; ymd: string; horaInicio: string } | null {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return null;
+    const col = el.closest('.day-col') as HTMLElement | null;
+    if (!col) return null;
+
+    const profId = Number(col.dataset['profId']);
+    const ymd = String(col.dataset['ymd'] ?? '').trim().slice(0, 10);
+    if (!Number.isFinite(profId) || profId <= 0) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+
+    const rect = col.getBoundingClientRect();
+    if (rect.height <= 0) return null;
+    const pct = (clientY - rect.top) / rect.height;
+    let mins = GRID_START_MIN + pct * GRID_RANGE;
+    mins = Math.round(mins / AGENDA_SLOT_MIN) * AGENDA_SLOT_MIN;
+    mins = Math.max(
+      GRID_START_MIN,
+      Math.min(GRID_LAST_SLOT_START_MIN, mins),
+    );
+    const hh = Math.floor(mins / 60);
+    const mm = mins % 60;
+    const horaInicio = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    return { profId, ymd, horaInicio };
+  }
+
+  private abrirModalRemarcar(ctx: {
+    bloco: AgendaHubBloco;
+    profOrigemId: number;
+    ymdOrigem: string;
+    profDestinoId: number;
+    ymdDestino: string;
+    horaInicio: string;
+  }): void {
+    this.remarcarErro = '';
+    this.remarcarSalvando = false;
+    this.remarcarCtx = ctx;
+    this.remarcarModalAberto = true;
+  }
+
+  fecharModalRemarcar(): void {
+    if (this.remarcarSalvando) return;
+    this.remarcarModalAberto = false;
+    this.remarcarCtx = null;
+    this.remarcarErro = '';
+  }
+
+  confirmarRemarcarAgendamento(): void {
+    const ctx = this.remarcarCtx;
+    if (!ctx || this.remarcarSalvando) return;
+    const idAt = this.idAtendimentoBloco(ctx.bloco);
+    if (!idAt) return;
+
+    this.remarcarSalvando = true;
+    this.remarcarErro = '';
+    this.api
+      .remarcarAgendamento({
+        id_atendimento: idAt,
+        profissional_origem_id: ctx.profOrigemId,
+        profissional_destino_id: ctx.profDestinoId,
+        data: ctx.ymdDestino,
+        hora_inicio: ctx.horaInicio,
+      })
+      .subscribe({
+        next: () => {
+          this.remarcarSalvando = false;
+          this.remarcarModalAberto = false;
+          this.remarcarCtx = null;
+          this.recarregarVistaAtiva();
+        },
+        error: (e: Error) => {
+          this.remarcarSalvando = false;
+          this.remarcarErro =
+            e.message ||
+            'Não foi possível atualizar o agendamento. Tente novamente.';
+        },
+      });
+  }
+
+  nomeProfissionalHub(id: number): string {
+    const pid = Number(id);
+    if (!Number.isFinite(pid) || pid <= 0) return '—';
+    return (
+      this.profissionais.find((p) => p.id === pid)?.nome?.trim() || '—'
+    );
+  }
+
+  formatarDataHoraRemarcar(ymd: string, hora: string): string {
+    const d = ymd.trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return hora;
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}, ${hora}h`;
+  }
+
   /** Abre o drawer em modo edição (sem saltar para a receção). */
   abrirDrawerEdicaoBloco(b: AgendaHubBloco, e: Event): void {
+    if (this.cardArrasteSuprimirClick) {
+      this.cardArrasteSuprimirClick = false;
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
     e.stopPropagation();
     const id = this.idAtendimentoBloco(b);
     if (!id) return;

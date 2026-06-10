@@ -1,0 +1,55 @@
+<div class="prof-stack-drawer">
+  <header class="prof-stack-drawer__head prof-stack-drawer__head--split">
+    <h3 class="prof-stack-drawer__title">Vales e Bonificações</h3>
+    <div class="prof-stack-drawer__head-actions">
+      <span class="prof-stack-drawer__date-range" aria-hidden="true">
+        Período
+      </span>
+      <button
+        type="button"
+        class="prof-stack-drawer__close"
+        (click)="d.fecharValesDrawer()"
+        aria-label="Fechar"
+      ></button>
+    </div>
+  </header>
+
+  <div class="prof-stack-drawer__body">
+    <div class="prof-stack-table-wrap" role="region" aria-label="Vales e bonificações">
+      <table class="prof-stack-table">
+        <thead>
+          <tr>
+            <th scope="col">Tipo</th>
+            <th scope="col">Vencimento</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Observação</th>
+            <th scope="col">Pagamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="prof-stack-table__empty-row">
+            <td colspan="5">
+              <div class="prof-stack-empty">
+                <span class="prof-stack-empty__icon" aria-hidden="true"></span>
+                <p>Nenhum item encontrado</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="prof-stack-drawer__foot">
+    <div class="prof-stack-drawer__pager">
+      <span>0 no total</span>
+      <span class="prof-stack-drawer__pager-nav" aria-hidden="true">&lt; 1 &gt;</span>
+      <span class="prof-stack-drawer__pager-size">25 / page</span>
+    </div>
+    <div class="prof-stack-drawer__actions">
+      <button type="button" class="cliente-footer-btn cliente-footer-btn--primary" disabled>
+        + Novo
+      </button>
+    </div>
+  </footer>
+</div>

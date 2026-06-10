@@ -416,7 +416,7 @@
               >
                 <app-profissional-avatar
                   variant="grid-head"
-                  [fotoUrl]="p.fotoUrl"
+                  [fotoUrl]="profissionalFotoUrl(p)"
                 />
                 <span class="grid-head__prof-nome">{{ p.nome }}</span>
               </button>
@@ -442,7 +442,7 @@
         >
           <div class="grid-body__cols">
             @for (p of profissionaisVisiveis(); track p.id) {
-              <div class="day-col">
+              <div class="day-col" [attr.data-prof-id]="p.id" [attr.data-ymd]="diaYmd">
                 @for (slot of slotsHoras; track slot) {
                   <button
                     type="button"
@@ -464,6 +464,8 @@
                   <button
                     type="button"
                     class="day-col__card"
+                    [class.day-col__card--arrastando]="cardArrasteEmCurso(lay.bloco)"
+                    [class.day-col__card--arrastavel]="podeArrastarBloco(lay.bloco)"
                     [style.background]="corFundoCartaoBloco(lay.bloco)"
                     [disabled]="!idAtendimentoBloco(lay.bloco)"
                     [attr.aria-label]="
@@ -471,6 +473,7 @@
                         ? 'Visualizar comanda: '
                         : 'Editar agendamento: ') + rotuloBloco(lay.bloco)
                     "
+                    (pointerdown)="onCardPointerDown($event, lay.bloco, p.id)"
                     (click)="abrirDrawerEdicaoBloco(lay.bloco, $event)"
                   >
                     <span class="day-col__card-body">
@@ -525,7 +528,7 @@
               >
                 <app-profissional-avatar
                   variant="grid-head"
-                  [fotoUrl]="p.fotoUrl"
+                  [fotoUrl]="profissionalFotoUrl(p)"
                 />
                 <span class="grid-head__prof-nome">{{ p.nome }}</span>
               </button>
@@ -585,6 +588,8 @@
                   class="day-col week-day-col"
                   [class.week-day-col--bg-white]="d.hoje"
                   [class.week-day-col--bg-muted]="!d.hoje"
+                  [attr.data-prof-id]="p.id"
+                  [attr.data-ymd]="d.ymd"
                 >
                   @for (slot of slotsHoras; track slot) {
                     <button
@@ -608,6 +613,8 @@
                       <button
                         type="button"
                         class="day-col__card"
+                        [class.day-col__card--arrastando]="cardArrasteEmCurso(lay.bloco)"
+                        [class.day-col__card--arrastavel]="podeArrastarBloco(lay.bloco)"
                         [style.background]="corFundoCartaoBloco(lay.bloco)"
                         [disabled]="!idAtendimentoBloco(lay.bloco)"
                         [attr.aria-label]="
@@ -615,6 +622,7 @@
                             ? 'Visualizar comanda: '
                             : 'Editar agendamento: ') + rotuloBloco(lay.bloco)
                         "
+                        (pointerdown)="onCardPointerDown($event, lay.bloco, p.id, d.ymd)"
                         (click)="abrirDrawerEdicaoBloco(lay.bloco, $event)"
                       >
                         <span class="day-col__card-body">
@@ -789,6 +797,73 @@
 >
   <span class="hub-fab__icon" aria-hidden="true">+</span>
 </button>
+
+@if (cardArrasteAtivo && cardArrasteBloco) {
+  <div
+    class="agenda-card-ghost"
+    aria-hidden="true"
+    [style.top.px]="cardArrasteGhostTop"
+    [style.left.px]="cardArrasteGhostLeft"
+    [style.width.px]="cardArrasteGhostWidth"
+    [style.height.px]="cardArrasteGhostHeight"
+    [style.background]="cardArrasteGhostCor"
+  >
+    <span class="agenda-card-ghost__text">{{ cardArrasteGhostRotulo }}</span>
+  </div>
+}
+
+@if (remarcarModalAberto && remarcarCtx; as rm) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalRemarcar()"
+  ></div>
+  <div
+    class="comandas-modal hub-remarcar-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hub-remarcar-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 id="hub-remarcar-title" class="comandas-modal__title hub-remarcar-modal__title">
+      Atualizar Agendamento?
+    </h3>
+    <p class="comandas-modal__text hub-remarcar-modal__text">
+      Você confirma a alteração do agendamento de
+      <strong>{{ nomeClienteBloco(rm.bloco) }}</strong>
+      para
+      <strong>{{
+        formatarDataHoraRemarcar(rm.ymdDestino, rm.horaInicio)
+      }}</strong>
+      com
+      <strong>{{ nomeProfissionalHub(rm.profDestinoId) }}</strong>?
+    </p>
+    @if (remarcarErro) {
+      <p class="hub-remarcar-modal__erro" role="alert">{{ remarcarErro }}</p>
+    }
+    <div class="hub-remarcar-modal__actions">
+      <button
+        type="button"
+        class="hub-remarcar-modal__btn hub-remarcar-modal__btn--nao"
+        [disabled]="remarcarSalvando"
+        (click)="fecharModalRemarcar()"
+      >
+        Não
+      </button>
+      <button
+        type="button"
+        class="hub-remarcar-modal__btn hub-remarcar-modal__btn--sim"
+        [disabled]="remarcarSalvando"
+        (click)="confirmarRemarcarAgendamento()"
+      >
+        {{ remarcarSalvando ? 'Salvando…' : 'Sim' }}
+      </button>
+    </div>
+  </div>
+}
 
 @if (modalAberto && modalContexto) {
   <div

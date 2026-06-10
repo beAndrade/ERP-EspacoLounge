@@ -92,7 +92,7 @@
   box-shadow: 1px 0 0 rgba(0, 0, 0, 0.06);
   border-right: none;
   transition: padding 0.22s cubic-bezier(0.32, 0.72, 0, 1);
-  overflow-x: hidden;
+  overflow-x: visible;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: auto;
@@ -883,34 +883,6 @@
       --hub-main-pad-right: 8px;
     }
   }
-}
-
-.app-sidebar__user {
-  margin-top: auto;
-  padding: 0.75rem 1rem 0.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.app-sidebar__user--collapsed {
-  padding-inline: 0.35rem;
-  text-align: center;
-}
-
-.app-sidebar__user-greeting {
-  margin: 0 0 0.35rem;
-  font-size: 0.8125rem;
-  opacity: 0.9;
-}
-
-.app-sidebar__user-logout {
-  min-height: 36px;
-  padding: 0.25rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
 }
 
 .main--public {

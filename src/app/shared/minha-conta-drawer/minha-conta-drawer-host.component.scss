@@ -1,0 +1,63 @@
+.minha-conta-tab {
+  padding-top: 0.5rem;
+}
+
+.minha-conta-atencao {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.minha-conta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.minha-conta-field__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.minha-conta-req {
+  color: #dc2626;
+}
+
+.minha-conta-field__input {
+  min-height: 44px;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.minha-conta-field__senha {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.minha-conta-field__senha .minha-conta-field__input {
+  flex: 1;
+}
+
+.minha-conta-field__toggle {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+}

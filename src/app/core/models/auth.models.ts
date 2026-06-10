@@ -6,6 +6,7 @@ export interface AuthUser {
   role: UsuarioRole;
   profissional_id: number | null;
   nome_exibicao: string;
+  foto_url?: string | null;
   ativo?: boolean;
   tem_senha?: boolean;
 }

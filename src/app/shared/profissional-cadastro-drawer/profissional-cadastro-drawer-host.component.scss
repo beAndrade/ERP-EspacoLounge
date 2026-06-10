@@ -1,5 +1,12 @@
 @use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
 
+app-profissional-cadastro-drawer-host {
+  --z-prof-salarios-overlay: 1292;
+  --z-prof-salarios-drawer: 1293;
+  --z-prof-vales-overlay: 1294;
+  --z-prof-vales-drawer: 1295;
+}
+
 /* Drawer profissional — mesma base do cliente, dimensões pedidas. */
 .cliente-drawer.cliente-drawer--profissional.app-drawer {
   --cliente-drawer-shell-w: 1200px;
@@ -23,16 +30,27 @@
   .cliente-head__close {
     width: 56px;
     height: 56px;
-    padding: 16px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &::before {
+      font-size: 28px;
+      font-weight: 300;
+    }
+
+    svg {
+      display: none;
+    }
   }
 
-  /* Nav lateral — mesmo contrato visual do drawer de cliente. */
   .cliente-nav {
     --cliente-nav-item-h: 35px;
     --cliente-nav-gap: 16px;
     padding: 0 0 0 30px;
     min-width: 0;
-    max-width: 168px;
+    max-width: 200px;
     border-right: 1px solid hsl(220, 13%, 91%);
   }
 
@@ -54,8 +72,43 @@
   }
 
   .cliente-body:has(> .cliente-main) {
-    grid-template-columns: minmax(130px, 168px) minmax(0, 1fr);
+    grid-template-columns: minmax(130px, 200px) minmax(0, 1fr);
   }
+}
+
+.overlay--prof-salarios-empilhada {
+  z-index: var(--z-prof-salarios-overlay);
+}
+
+.overlay--prof-vales-empilhada {
+  z-index: var(--z-prof-vales-overlay);
+}
+
+.profissional-salarios-empilhada.app-drawer,
+.profissional-vales-empilhada.app-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: min(960px, 100vw);
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+  overflow: hidden;
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: var(--z-prof-salarios-drawer);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+  }
+}
+
+.profissional-vales-empilhada.app-drawer {
+  z-index: var(--z-prof-vales-drawer);
 }
 
 @media (min-width: 1648px) {

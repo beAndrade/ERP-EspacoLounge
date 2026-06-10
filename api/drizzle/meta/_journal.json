@@ -295,6 +295,27 @@
       "when": 1775697953000,
       "tag": "0041_usuarios_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1775697954000,
+      "tag": "0042_profissionais_endereco",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1775697955000,
+      "tag": "0043_profissionais_foto_url",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1775697956000,
+      "tag": "0044_profissionais_ordem",
+      "breakpoints": true
     }
   ]
 }

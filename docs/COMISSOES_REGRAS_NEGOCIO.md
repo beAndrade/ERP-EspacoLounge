@@ -39,8 +39,31 @@ Confirmar com a recepção/gestão:
 
 1. Cada profissional pode ter **% diferente** do catálogo por serviço? (sim → usar aba Comissões e Auxiliares)
 2. Na tela de pagar comissões, o padrão deve ser **só após cliente pagar** ou **todas finalizadas do mês**? (define `comissao_listagem_modo` por profissional)
-3. Alguma profissional **não recebe comissão** em nenhum serviço? (`recebe_comissao` no Cadastro)
+3. Alguma profissional **não recebe comissão** em nenhum serviço? (`recebe_comissao` na aba **Configurar comissões**)
 4. Precisam de regras de **desconto/taxa de cartão** na comissão neste ano? (se não, manter Fase 3)
+
+## Onde configurar o quê
+
+| O quê | Onde hoje | Notas |
+|-------|-----------|-------|
+| % ou valor fixo **padrão** por serviço | `servicos` (seed/planilha) | Sem UI de edição ainda; ver roadmap abaixo |
+| Profissional **não recebe** comissão | Drawer → **Configurar comissões** | `profissionais.recebe_comissao` |
+| **Quando listar** comissões a pagar | Drawer → **Configurar comissões** | `comissao_listagem_modo` |
+| **Override** %/fixo por profissional + serviço | API `profissional_servico_comissao` | UI removida do drawer; import via API |
+| **Pagar / estornar** comissões | **Financeiro → Comissões** | Não fica no drawer do profissional |
+
+## Drawer profissional — abas MVP
+
+Abas visíveis: **Cadastro**, **Endereço**, **Usuário**, **Configurar comissões**, **Pagar salário/comissão** (drawer empilhado), **Vales e Bonificações** (drawer empilhado).
+
+Override por serviço (`Comissões e Auxiliares`) permanece na API; UI removida do drawer — usar import/API ou fase futura.
+
+Abas Belasis previstas: Assinatura digital, Expediente, Personalizar serviços, Permissões, Contas de banco.
+
+## Roadmap (pós-entrega)
+
+1. **UI catálogo de serviços** — editar `comissao_pct` / `comissao_fixa` no app (Serviços ou Financeiro → Cadastros), para cada instalação configurar sem seed manual.
+2. **Multi-salão** — tenant + config por estabelecimento; as abas actuais do drawer mantêm-se; muda apenas a origem do catálogo default.
 
 ## APIs novas
 

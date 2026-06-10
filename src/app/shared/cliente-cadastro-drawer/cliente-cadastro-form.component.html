@@ -145,6 +145,7 @@
                         >
                           <input
                             type="tel"
+                            appCelularBrMask
                             [ngModel]="d.cadastroCelular"
                             (ngModelChange)="d.onCelularChange($event)"
                             (blur)="d.blurCadastro('celular')"

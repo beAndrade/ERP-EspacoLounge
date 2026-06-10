@@ -1,6 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, ApplicationRef, inject } from '@angular/core';
 import { Subscription, finalize } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { AuthService } from '../../core/services/auth.service';
 import type {
   ProfissionalCadastroPayload,
   ProfissionalComissaoServicoItem,
@@ -8,6 +9,7 @@ import type {
 } from '../../core/models/api.models';
 import {
   dataDdMmYyyyValida,
+  formatarCepBr,
   formatarCpfBr,
   formatarCnpjBr,
   formatarDataDdMmYyyy,
@@ -19,6 +21,11 @@ import {
   telefoneBrDigitos,
 } from '../../core/utils/telefone-br';
 import { extractApiErrorMessage } from '../../core/utils/api-error-message';
+import {
+  comprimirImagemParaDataUrl,
+  fotoDataUrlValidaParaEnvio,
+} from '../../core/utils/foto-data-url.util';
+import { profissionalFotoUrl } from '../../core/utils/profissional-foto.util';
 import { AppToastService } from '../app-toast/app-toast.service';
 import {
   CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS,
@@ -27,36 +34,36 @@ import {
 
 export const PROFISSIONAL_SALVO_TOAST_MSG = 'Profissional salvo com sucesso!';
 
+/** Abas visíveis no drawer. */
 export const PROF_CADASTRO_ABAS = [
   'Cadastro',
   'Endereço',
   'Usuário',
+  'Configurar comissões',
+  'Pagar salário/comissão',
+  'Vales e Bonificações',
+] as const;
+
+/** Referência Belasis — abas previstas para fases futuras (não exibidas na nav). */
+export const PROF_CADASTRO_ABAS_FUTURAS = [
   'Assinatura digital',
   'Expediente',
   'Personalizar serviços',
-  'Configurar comissões',
   'Comissões e Auxiliares',
-  'Pagar salário/comissão',
-  'Vales e Bonificações',
   'Permissões',
   'Contas de banco',
 ] as const;
 
 export type ProfCadastroAba = (typeof PROF_CADASTRO_ABAS)[number];
 
-/** Abas clicáveis no drawer (demais mostram tooltip «Em breve»). */
+/** Abas clicáveis (demais secções só após salvar o profissional). */
 export const PROF_CADASTRO_ABAS_ATIVAS: readonly ProfCadastroAba[] = [
   'Cadastro',
   'Endereço',
   'Usuário',
-  'Assinatura digital',
   'Configurar comissões',
-  'Comissões e Auxiliares',
-];
-
-const PROF_COMISSAO_ABAS: readonly ProfCadastroAba[] = [
-  'Configurar comissões',
-  'Comissões e Auxiliares',
+  'Pagar salário/comissão',
+  'Vales e Bonificações',
 ];
 
 export interface ProfissionalCadastroDrawerCallbacks {
@@ -67,7 +74,9 @@ export interface ProfissionalCadastroDrawerCallbacks {
 @Injectable({ providedIn: 'root' })
 export class ProfissionalCadastroDrawerService {
   private readonly api = inject(SheetsApiService);
+  private readonly auth = inject(AuthService);
   private readonly toast = inject(AppToastService);
+  private readonly appRef = inject(ApplicationRef);
 
   aberto = false;
   panelOpen = false;
@@ -85,12 +94,30 @@ export class ProfissionalCadastroDrawerService {
   cadastroRg = '';
   cadastroAnotacoes = '';
 
+  cadastroFotoUrl = '';
+  private cadastroFotoUrlInicial = '';
+  private cadastroFotoRemovida = false;
+
+  enderecoCep = '';
+  enderecoLogradouro = '';
+  enderecoNumero = '';
+  enderecoComplemento = '';
+  enderecoBairro = '';
+  enderecoEstado = '';
+  enderecoCidade = '';
+
   ativo = true;
   disponivelAgendamentoOnline = true;
   gerarAgenda = true;
   recebeComissao = true;
   comissaoListagemModo: 'pagamento_cliente' | 'competencia' =
     'pagamento_cliente';
+  comissaoTextoRecibo = '';
+
+  salariosDrawerAberto = false;
+  salariosDrawerPanelOpen = false;
+  valesDrawerAberto = false;
+  valesDrawerPanelOpen = false;
 
   comissaoServicosItens: ProfissionalComissaoServicoItem[] = [];
   comissaoServicosCarregando = false;
@@ -126,6 +153,8 @@ export class ProfissionalCadastroDrawerService {
   private callbacks: ProfissionalCadastroDrawerCallbacks | null = null;
   private saveSub: Subscription | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private salariosCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private valesCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private navLockTooltipTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
@@ -136,25 +165,13 @@ export class ProfissionalCadastroDrawerService {
 
   abaDesabilitada(aba: ProfCadastroAba): boolean {
     if (!PROF_CADASTRO_ABAS_ATIVAS.includes(aba)) return true;
-    if (
-      (PROF_COMISSAO_ABAS.includes(aba) || aba === 'Usuário') &&
-      this.modo === 'novo'
-    ) {
-      return true;
-    }
+    if (this.modo === 'novo' && aba !== 'Cadastro') return true;
     return false;
   }
 
   profNavLockTooltipTexto(aba: ProfCadastroAba): string {
-    if (aba === 'Usuário' && this.modo === 'novo') {
-      return 'Salve o profissional antes de configurar o usuário';
-    }
-    if (
-      PROF_COMISSAO_ABAS.includes(aba) &&
-      this.modo === 'novo' &&
-      this.abaDesabilitada(aba)
-    ) {
-      return 'Salve o profissional antes de configurar comissões';
+    if (this.modo === 'novo' && aba !== 'Cadastro') {
+      return 'Salve o profissional antes de aceder a esta secção';
     }
     return 'Em breve';
   }
@@ -166,13 +183,105 @@ export class ProfissionalCadastroDrawerService {
 
   selecionarAba(aba: ProfCadastroAba): void {
     if (this.abaDesabilitada(aba)) return;
-    this.abaAtiva = aba;
-    if (aba === 'Comissões e Auxiliares') {
-      this.carregarComissaoServicosSeNecessario();
+    if (aba === 'Pagar salário/comissão') {
+      this.abrirSalariosDrawer();
+      return;
     }
+    if (aba === 'Vales e Bonificações') {
+      this.abrirValesDrawer();
+      return;
+    }
+    this.abaAtiva = aba;
     if (aba === 'Usuário') {
       void this.carregarUsuarioProfissional();
     }
+  }
+
+  abrirSalariosDrawer(): void {
+    if (this.modo !== 'editar' || !this.profissionalId) return;
+    this.abaAtiva = 'Pagar salário/comissão';
+    this.salariosDrawerAberto = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.salariosDrawerPanelOpen = true;
+      });
+    });
+  }
+
+  fecharSalariosDrawer(): void {
+    if (!this.salariosDrawerAberto) return;
+    this.salariosDrawerPanelOpen = false;
+    if (this.salariosCloseTimer != null) clearTimeout(this.salariosCloseTimer);
+    this.salariosCloseTimer = setTimeout(() => {
+      this.salariosCloseTimer = null;
+      this.salariosDrawerAberto = false;
+    }, DRAWER_ANIM_MS);
+  }
+
+  abrirValesDrawer(): void {
+    if (this.modo !== 'editar' || !this.profissionalId) return;
+    this.abaAtiva = 'Vales e Bonificações';
+    this.valesDrawerAberto = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.valesDrawerPanelOpen = true;
+      });
+    });
+  }
+
+  fecharValesDrawer(): void {
+    if (!this.valesDrawerAberto) return;
+    this.valesDrawerPanelOpen = false;
+    if (this.valesCloseTimer != null) clearTimeout(this.valesCloseTimer);
+    this.valesCloseTimer = setTimeout(() => {
+      this.valesCloseTimer = null;
+      this.valesDrawerAberto = false;
+    }, DRAWER_ANIM_MS);
+  }
+
+  fecharDrawerSecundarioAtivo(): boolean {
+    if (this.salariosDrawerAberto) {
+      this.fecharSalariosDrawer();
+      return true;
+    }
+    if (this.valesDrawerAberto) {
+      this.fecharValesDrawer();
+      return true;
+    }
+    return false;
+  }
+
+  onEnderecoCepChange(v: string): void {
+    this.enderecoCep = formatarCepBr(v);
+  }
+
+  salvarEndereco(): void {
+    if (this.modo !== 'editar' || !this.profissionalId) return;
+    this.saveErro = '';
+    this.salvando = true;
+    this.saveSub?.unsubscribe();
+    this.saveSub = this.api
+      .updateProfissional({
+        id: this.profissionalId,
+        cep: this.enderecoCep.trim() || null,
+        logradouro: this.enderecoLogradouro.trim() || null,
+        endereco_numero: this.enderecoNumero.trim() || null,
+        complemento: this.enderecoComplemento.trim() || null,
+        bairro: this.enderecoBairro.trim() || null,
+        estado: this.enderecoEstado.trim() || null,
+        cidade: this.enderecoCidade.trim() || null,
+      })
+      .pipe(finalize(() => (this.salvando = false)))
+      .subscribe({
+        next: () => {
+          this.toast.show('Endereço salvo.');
+        },
+        error: (e: unknown) => {
+          this.saveErro =
+            extractApiErrorMessage(e) ||
+            'Não foi possível salvar o endereço.';
+        },
+      });
   }
 
   carregarUsuarioProfissional(): void {
@@ -258,6 +367,8 @@ export class ProfissionalCadastroDrawerService {
 
   fechar(): void {
     if (!this.aberto) return;
+    this.fecharSalariosDrawer();
+    this.fecharValesDrawer();
     this.panelOpen = false;
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
@@ -287,6 +398,56 @@ export class ProfissionalCadastroDrawerService {
 
   onRgInput(v: string): void {
     this.cadastroRg = formatarRgBr9(v);
+  }
+
+  onFotoSelecionada(ev: Event): void {
+    const input = ev.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      if (input) input.value = '';
+      return;
+    }
+    void comprimirImagemParaDataUrl(file)
+      .then((dataUrl) => {
+        this.cadastroFotoUrl = dataUrl;
+        this.cadastroFotoRemovida = false;
+        this.saveErro = '';
+        this.appRef.tick();
+      })
+      .catch(() => {
+        this.saveErro =
+          'Não foi possível processar a imagem. Tente outro arquivo.';
+        this.appRef.tick();
+      })
+      .finally(() => {
+        if (input) input.value = '';
+      });
+  }
+
+  removerFotoSelecionada(): void {
+    this.cadastroFotoUrl = '';
+    this.cadastroFotoRemovida = true;
+    this.appRef.tick();
+  }
+
+  private fotoUrlParaPayload(): string | null | undefined {
+    if (this.cadastroFotoRemovida) {
+      return this.modo === 'editar' ? null : undefined;
+    }
+    const raw = (this.cadastroFotoUrl ?? '').trim();
+    const inicial = (this.cadastroFotoUrlInicial ?? '').trim();
+    if (!raw) {
+      if (this.modo === 'editar' && inicial) return null;
+      return undefined;
+    }
+    if (fotoDataUrlValidaParaEnvio(raw)) return raw;
+    if (raw === inicial) return undefined;
+    return undefined;
+  }
+
+  private sincronizarFotoSessao(item: ProfissionalListaItem): void {
+    if (item.id !== this.auth.profissionalId()) return;
+    this.auth.patchFotoUrl(profissionalFotoUrl(item));
   }
 
   erroNome(): string | null {
@@ -340,6 +501,21 @@ export class ProfissionalCadastroDrawerService {
       recebe_comissao: this.recebeComissao,
       comissao_listagem_modo: this.comissaoListagemModo,
     };
+    const fotoUrlPayload = this.fotoUrlParaPayload();
+    if (fotoUrlPayload !== undefined) {
+      payload.foto_url = fotoUrlPayload;
+    }
+    const rawFoto = (this.cadastroFotoUrl ?? '').trim();
+    if (
+      rawFoto &&
+      !this.cadastroFotoRemovida &&
+      fotoUrlPayload === undefined &&
+      rawFoto !== (this.cadastroFotoUrlInicial ?? '').trim()
+    ) {
+      this.saveErro =
+        'A foto não pôde ser incluída (arquivo grande demais). Tente outra imagem.';
+      return;
+    }
 
     this.salvando = true;
     this.saveSub?.unsubscribe();
@@ -355,6 +531,22 @@ export class ProfissionalCadastroDrawerService {
       .pipe(finalize(() => (this.salvando = false)))
       .subscribe({
         next: (item) => {
+          const fotoSalva = profissionalFotoUrl(item);
+          const fotoEnviada = this.fotoUrlParaPayload();
+          if (
+            fotoEnviada &&
+            typeof fotoEnviada === 'string' &&
+            fotoEnviada.length > 0 &&
+            !fotoSalva
+          ) {
+            this.saveErro =
+              'Os dados foram salvos, mas a foto não foi gravada. Tente salvar novamente.';
+            return;
+          }
+          this.cadastroFotoUrlInicial = fotoSalva ?? '';
+          this.cadastroFotoUrl = this.cadastroFotoUrlInicial;
+          this.cadastroFotoRemovida = false;
+          this.sincronizarFotoSessao(item);
           this.toast.show(PROFISSIONAL_SALVO_TOAST_MSG);
           this.callbacks?.onSalvo?.(item);
           this.fechar();
@@ -587,6 +779,17 @@ export class ProfissionalCadastroDrawerService {
           p.comissao_listagem_modo === 'competencia'
             ? 'competencia'
             : 'pagamento_cliente';
+        this.enderecoCep = formatarCepBr(p.cep ?? '');
+        this.enderecoLogradouro = p.logradouro ?? '';
+        this.enderecoNumero = p.endereco_numero ?? '';
+        this.enderecoComplemento = p.complemento ?? '';
+        this.enderecoBairro = p.bairro ?? '';
+        this.enderecoEstado = p.estado ?? '';
+        this.enderecoCidade = p.cidade ?? '';
+        const foto = profissionalFotoUrl(p);
+        this.cadastroFotoUrl = foto ?? '';
+        this.cadastroFotoUrlInicial = foto ?? '';
+        this.cadastroFotoRemovida = false;
         this.carregando = false;
       },
       error: () => {
@@ -609,11 +812,26 @@ export class ProfissionalCadastroDrawerService {
     this.cadastroCpfCnpj = '';
     this.cadastroRg = '';
     this.cadastroAnotacoes = '';
+    this.cadastroFotoUrl = '';
+    this.cadastroFotoUrlInicial = '';
+    this.cadastroFotoRemovida = false;
+    this.enderecoCep = '';
+    this.enderecoLogradouro = '';
+    this.enderecoNumero = '';
+    this.enderecoComplemento = '';
+    this.enderecoBairro = '';
+    this.enderecoEstado = '';
+    this.enderecoCidade = '';
     this.ativo = true;
     this.disponivelAgendamentoOnline = true;
     this.gerarAgenda = true;
     this.recebeComissao = true;
     this.comissaoListagemModo = 'pagamento_cliente';
+    this.comissaoTextoRecibo = '';
+    this.salariosDrawerAberto = false;
+    this.salariosDrawerPanelOpen = false;
+    this.valesDrawerAberto = false;
+    this.valesDrawerPanelOpen = false;
     this.comissaoServicosItens = [];
     this.comissaoServicosCarregando = false;
     this.comissaoServicosCarregado = false;

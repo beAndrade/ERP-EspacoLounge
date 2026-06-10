@@ -79,6 +79,8 @@
       </button>
     </div>
     <div class="app-sidebar__divider" role="presentation" aria-hidden="true"></div>
+    <app-sidebar-profile [collapsed]="sidebarCollapsed" />
+    <app-sidebar-novo-menu [collapsed]="sidebarCollapsed" />
     <nav
       id="app-sidebar-nav"
       class="nav nav--sidebar"
@@ -1182,16 +1184,6 @@
       </a>
       }
     </nav>
-    <div class="app-sidebar__user" [class.app-sidebar__user--collapsed]="sidebarCollapsed">
-      @if (!sidebarCollapsed) {
-        <p class="app-sidebar__user-greeting">
-          Olá, {{ sessao.nomeExibicao() }}
-        </p>
-      }
-      <button type="button" class="app-sidebar__user-logout" (click)="sair()">
-        Sair
-      </button>
-    </div>
   </aside>
 
   <div class="app-main-column">
@@ -1226,5 +1218,6 @@
 </div>
 <app-cliente-cadastro-drawer-host />
 <app-profissional-cadastro-drawer-host />
+<app-minha-conta-drawer-host />
 <app-app-toast />
 }

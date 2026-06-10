@@ -8,12 +8,13 @@ import {
   inject,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CelularBrMaskDirective } from '../../core/directives/celular-br-mask.directive';
 import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service';
 
 @Component({
   selector: 'app-cliente-cadastro-form',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, CelularBrMaskDirective],
   templateUrl: './cliente-cadastro-form.component.html',
   styleUrl: './cliente-cadastro-form.component.scss',
   encapsulation: ViewEncapsulation.None,

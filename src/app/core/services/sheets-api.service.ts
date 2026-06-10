@@ -209,6 +209,17 @@ export class SheetsApiService {
       );
   }
 
+  reordenarProfissionais(ids: number[]): Observable<void> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(this.url('/api/profissionais/ordem'), {
+        ids,
+      })
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map(() => undefined),
+      );
+  }
+
   getProfissional(id: number): Observable<ProfissionalListaItem> {
     return this.http
       .get<ApiResponse<{ item: ProfissionalListaItem }>>(
@@ -875,6 +886,23 @@ export class SheetsApiService {
           movimentacao_id?: number | null;
         }>
       >(this.url('/api/atendimentos'), { id_atendimento: idAtendimento, metodo: met }, { params })
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  remarcarAgendamento(payload: {
+    id_atendimento: string;
+    profissional_origem_id: number;
+    profissional_destino_id: number;
+    data: string;
+    hora_inicio: string;
+  }): Observable<{ linhas_atualizadas: number }> {
+    const params = new HttpParams().set('acao', 'remarcar');
+    return this.http
+      .post<ApiResponse<{ linhas_atualizadas: number }>>(
+        this.url('/api/atendimentos'),
+        { ...payload, acao: 'remarcar' },
+        { params },
+      )
       .pipe(map((raw) => this.unwrap(raw)));
   }
 

@@ -1,0 +1,63 @@
+<div
+  class="sidebar-novo"
+  [class.sidebar-novo--collapsed]="collapsed"
+>
+  <button
+    #novoBtn
+    type="button"
+    class="sidebar-novo__btn"
+    (click)="toggleMenu($event)"
+    [attr.aria-expanded]="menuAberto"
+    aria-haspopup="dialog"
+    [attr.aria-label]="collapsed ? 'Novo' : 'Novo atalho'"
+    [attr.title]="collapsed ? 'Novo' : null"
+  >
+    @if (collapsed) {
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    } @else {
+      <span>Novo</span>
+      <span class="sidebar-novo__plus" aria-hidden="true">+</span>
+    }
+  </button>
+
+  @if (menuAberto) {
+    <div
+      class="sidebar-novo__panel sidebar-novo__panel--fixed"
+      role="dialog"
+      aria-label="Atalhos Novo"
+      [style.top.px]="panelTop"
+      [style.left.px]="panelLeft"
+      (click)="$event.stopPropagation()"
+    >
+      @for (sec of sectionsVisiveis(); track sec.title) {
+        <div class="sidebar-novo__section">
+          <p class="sidebar-novo__section-title">{{ sec.title }}</p>
+          <div class="sidebar-novo__grid">
+            @for (item of sec.items; track item.id) {
+              <button
+                type="button"
+                class="sidebar-novo__tile"
+                (click)="executar(item.id)"
+              >
+                <span class="sidebar-novo__tile-icon" aria-hidden="true">
+                  @switch (item.id) {
+                    @case ('agendamento') {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                    }
+                    @case ('comanda') {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M12 2v4"/><path d="M16 2v4"/><rect width="16" height="18" x="4" y="4" rx="2"/></svg>
+                    }
+                    @default {
+                      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    }
+                  }
+                </span>
+                <span class="sidebar-novo__tile-label">{{ item.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

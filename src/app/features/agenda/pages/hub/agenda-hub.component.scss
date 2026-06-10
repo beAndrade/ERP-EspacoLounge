@@ -1060,6 +1060,8 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   line-height: 1.3;
   color: #fff;
   cursor: pointer;
+  touch-action: none;
+  user-select: none;
   border: none;
   border-radius: 9px;
   overflow: hidden;
@@ -1081,6 +1083,114 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
 .day-col__card:disabled {
   cursor: default;
   opacity: 0.88;
+}
+
+.day-col__card--arrastavel {
+  cursor: grab;
+}
+
+.day-col__card--arrastavel:active {
+  cursor: grabbing;
+}
+
+.day-col__card--arrastando {
+  opacity: 0.35;
+}
+
+.agenda-card-ghost {
+  position: fixed;
+  z-index: 1300;
+  pointer-events: none;
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  color: #fff;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  padding: 0.45rem 0.5rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  opacity: 0.92;
+}
+
+.agenda-card-ghost__text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host-context(body.agenda-card-dragging) {
+  .day-col__slot {
+    pointer-events: none;
+  }
+}
+
+.hub-remarcar-modal {
+  text-align: center;
+  padding: 28px 28px 22px;
+}
+
+.hub-remarcar-modal__title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.hub-remarcar-modal__text {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  text-align: center;
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+.hub-remarcar-modal__erro {
+  margin: 12px 0 0;
+  color: #c62828;
+  font-size: 0.875rem;
+}
+
+.hub-remarcar-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.hub-remarcar-modal__btn {
+  min-width: 88px;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+.hub-remarcar-modal__btn--nao {
+  background: #fff;
+  border-color: #d8dce3;
+  color: #3d4048;
+}
+
+.hub-remarcar-modal__btn--sim {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.hub-remarcar-modal__btn--sim:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 .day-col__card-body {

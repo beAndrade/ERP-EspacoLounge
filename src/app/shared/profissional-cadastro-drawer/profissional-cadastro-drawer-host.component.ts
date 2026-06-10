@@ -11,17 +11,21 @@ import { portalHostElementToBody } from '../drawer-body-portal';
 import { ProfissionalCadastroDrawerService } from './profissional-cadastro-drawer.service';
 import { ProfissionalCadastroFormComponent } from './profissional-cadastro-form.component';
 import { ProfissionalComissoesConfigTabComponent } from './profissional-comissoes-config-tab.component';
-import { ProfissionalComissoesServicosTabComponent } from './profissional-comissoes-servicos-tab.component';
+import { ProfissionalEnderecoTabComponent } from './profissional-endereco-tab.component';
+import { ProfissionalSalariosDrawerComponent } from './profissional-salarios-drawer.component';
 import { ProfissionalUsuarioTabComponent } from './profissional-usuario-tab.component';
+import { ProfissionalValesDrawerComponent } from './profissional-vales-drawer.component';
 
 @Component({
   selector: 'app-profissional-cadastro-drawer-host',
   standalone: true,
   imports: [
     ProfissionalCadastroFormComponent,
+    ProfissionalEnderecoTabComponent,
     ProfissionalComissoesConfigTabComponent,
-    ProfissionalComissoesServicosTabComponent,
     ProfissionalUsuarioTabComponent,
+    ProfissionalSalariosDrawerComponent,
+    ProfissionalValesDrawerComponent,
   ],
   templateUrl: './profissional-cadastro-drawer-host.component.html',
   styleUrl: './profissional-cadastro-drawer-host.component.scss',
@@ -44,7 +48,12 @@ export class ProfissionalCadastroDrawerHostComponent implements OnInit, OnDestro
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
-    if (!this.d.aberto || this.d.salvando) return;
+    if (!this.d.aberto) return;
+    if (this.d.fecharDrawerSecundarioAtivo()) {
+      ev.preventDefault();
+      return;
+    }
+    if (this.d.salvando || this.d.usuarioSalvando) return;
     ev.preventDefault();
     this.d.fechar();
   }

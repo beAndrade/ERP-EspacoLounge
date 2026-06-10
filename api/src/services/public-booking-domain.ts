@@ -45,7 +45,7 @@ export async function listProfissionaisPublic(db: Db) {
         eq(profissionais.disponivelAgendamentoOnline, true),
       ),
     )
-    .orderBy(asc(profissionais.nome));
+    .orderBy(asc(profissionais.ordem), asc(profissionais.nome));
   return rows.map((r) => ({
     id: r.id,
     nome: String(r.nome || '').trim(),

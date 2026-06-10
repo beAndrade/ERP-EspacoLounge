@@ -1,8 +1,9 @@
-import { and, asc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { Db } from '../db';
-import { profissionais } from '../db/schema';
+import { profissionais, usuarios } from '../db/schema';
 import { isCelularBr11Digitos, telefoneBrDigitos } from '../lib/telefone-br';
 import { parseComissaoListagemModoInput } from './profissional-comissao-domain.js';
+import { parseFotoUrlInput } from '../lib/foto-url.js';
 
 export type ProfissionalApiItem = {
   id: number;
@@ -19,6 +20,17 @@ export type ProfissionalApiItem = {
   gerar_agenda: boolean;
   recebe_comissao: boolean;
   comissao_listagem_modo: 'pagamento_cliente' | 'competencia';
+  cep: string | null;
+  logradouro: string | null;
+  endereco_numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  estado: string | null;
+  cidade: string | null;
+  foto_url: string | null;
+  ordem: number;
+  /** Papel da conta de acesso ligada ao profissional (`usuarios.role`), se existir. */
+  usuario_role: 'admin' | 'profissional' | null;
 };
 
 export type ProfissionalWriteInput = {
@@ -35,6 +47,14 @@ export type ProfissionalWriteInput = {
   gerar_agenda?: boolean;
   recebe_comissao?: boolean;
   comissao_listagem_modo?: 'pagamento_cliente' | 'competencia';
+  cep?: string | null;
+  logradouro?: string | null;
+  endereco_numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  estado?: string | null;
+  cidade?: string | null;
+  foto_url?: string | null;
 };
 
 const profSelect = {
@@ -52,6 +72,15 @@ const profSelect = {
   gerarAgenda: profissionais.gerarAgenda,
   recebeComissao: profissionais.recebeComissao,
   comissaoListagemModo: profissionais.comissaoListagemModo,
+  cep: profissionais.cep,
+  logradouro: profissionais.logradouro,
+  enderecoNumero: profissionais.enderecoNumero,
+  complemento: profissionais.complemento,
+  bairro: profissionais.bairro,
+  estado: profissionais.estado,
+  cidade: profissionais.cidade,
+  fotoUrl: profissionais.fotoUrl,
+  ordem: profissionais.ordem,
 };
 
 function nomeNormalizado(n: string): string {
@@ -88,6 +117,16 @@ function mapRow(r: {
   gerarAgenda: boolean;
   recebeComissao: boolean;
   comissaoListagemModo: string | null;
+  cep: string | null;
+  logradouro: string | null;
+  enderecoNumero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  estado: string | null;
+  cidade: string | null;
+  fotoUrl: string | null;
+  ordem: number;
+  usuarioRole?: 'admin' | 'profissional' | null;
 }): ProfissionalApiItem {
   let aniversario: string | null = null;
   if (r.aniversario) {
@@ -112,6 +151,16 @@ function mapRow(r: {
     gerar_agenda: Boolean(r.gerarAgenda),
     recebe_comissao: Boolean(r.recebeComissao),
     comissao_listagem_modo: parseComissaoListagemModoInput(r.comissaoListagemModo),
+    cep: r.cep ? String(r.cep).trim() : null,
+    logradouro: r.logradouro ? String(r.logradouro).trim() : null,
+    endereco_numero: r.enderecoNumero ? String(r.enderecoNumero).trim() : null,
+    complemento: r.complemento ? String(r.complemento).trim() : null,
+    bairro: r.bairro ? String(r.bairro).trim() : null,
+    estado: r.estado ? String(r.estado).trim() : null,
+    cidade: r.cidade ? String(r.cidade).trim() : null,
+    foto_url: r.fotoUrl ? String(r.fotoUrl).trim() : null,
+    ordem: Number(r.ordem) || 0,
+    usuario_role: r.usuarioRole ?? null,
   };
 }
 
@@ -161,18 +210,41 @@ function buildWhereList(opts?: {
   return and(...parts);
 }
 
+async function loadAdminProfissionalIds(db: Db): Promise<Set<number>> {
+  const rows = await db
+    .select({ profissionalId: usuarios.profissionalId })
+    .from(usuarios)
+    .where(
+      and(
+        eq(usuarios.role, 'admin'),
+        sql`${usuarios.profissionalId} IS NOT NULL`,
+      ),
+    );
+  return new Set(
+    rows
+      .map((r) => r.profissionalId)
+      .filter((id): id is number => id != null && id > 0),
+  );
+}
+
 export async function listProfissionaisForApi(
   db: Db,
   opts?: { incluirInativos?: boolean; contexto?: 'agenda' | 'default' },
 ): Promise<ProfissionalApiItem[]> {
   const where = buildWhereList(opts);
+  const adminIds = await loadAdminProfissionalIds(db);
   const rows = await db
     .select(profSelect)
     .from(profissionais)
     .where(where)
-    .orderBy(asc(profissionais.nome));
+    .orderBy(asc(profissionais.ordem), asc(profissionais.nome));
   return rows
-    .map((r) => mapRow(r))
+    .map((r) =>
+      mapRow({
+        ...r,
+        usuarioRole: adminIds.has(r.id) ? 'admin' : null,
+      }),
+    )
     .filter((x) => x.nome);
 }
 
@@ -181,13 +253,17 @@ export async function getProfissionalById(
   id: number,
 ): Promise<ProfissionalApiItem | null> {
   if (!Number.isFinite(id) || id <= 0) return null;
+  const adminIds = await loadAdminProfissionalIds(db);
   const [r] = await db
     .select(profSelect)
     .from(profissionais)
     .where(eq(profissionais.id, id))
     .limit(1);
   if (!r) return null;
-  const item = mapRow(r);
+  const item = mapRow({
+    ...r,
+    usuarioRole: adminIds.has(r.id) ? 'admin' : null,
+  });
   return item.nome ? item : null;
 }
 
@@ -221,6 +297,14 @@ function patchFromInput(input: ProfissionalWriteInput): Partial<{
   gerarAgenda: boolean;
   recebeComissao: boolean;
   comissaoListagemModo: string;
+  cep: string | null;
+  logradouro: string | null;
+  enderecoNumero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  estado: string | null;
+  cidade: string | null;
+  fotoUrl: string | null;
 }> {
   const patch: ReturnType<typeof patchFromInput> = {};
   if (input.nome !== undefined) {
@@ -262,6 +346,22 @@ function patchFromInput(input: ProfissionalWriteInput): Partial<{
       input.comissao_listagem_modo,
     );
   }
+  if (input.cep !== undefined) patch.cep = textoOpcional(input.cep);
+  if (input.logradouro !== undefined) {
+    patch.logradouro = textoOpcional(input.logradouro);
+  }
+  if (input.endereco_numero !== undefined) {
+    patch.enderecoNumero = textoOpcional(input.endereco_numero);
+  }
+  if (input.complemento !== undefined) {
+    patch.complemento = textoOpcional(input.complemento);
+  }
+  if (input.bairro !== undefined) patch.bairro = textoOpcional(input.bairro);
+  if (input.estado !== undefined) patch.estado = textoOpcional(input.estado);
+  if (input.cidade !== undefined) patch.cidade = textoOpcional(input.cidade);
+  if (input.foto_url !== undefined) {
+    patch.fotoUrl = parseFotoUrlInput(input.foto_url) ?? null;
+  }
   return patch;
 }
 
@@ -290,11 +390,17 @@ export async function criarProfissional(
       ? parseAniversario(input.aniversario)
       : null;
 
+  const [maxOrd] = await db
+    .select({ m: sql<number>`coalesce(max(${profissionais.ordem}), 0)` })
+    .from(profissionais);
+  const ordem = Number(maxOrd?.m ?? 0) + 10;
+
   const [ins] = await db
     .insert(profissionais)
     .values({
       nome,
       celular,
+      ordem,
       ativo,
       apelido: textoOpcional(input.apelido),
       profissao: textoOpcional(input.profissao),
@@ -306,6 +412,17 @@ export async function criarProfissional(
       gerarAgenda,
       recebeComissao,
       comissaoListagemModo,
+      cep: textoOpcional(input.cep),
+      logradouro: textoOpcional(input.logradouro),
+      enderecoNumero: textoOpcional(input.endereco_numero),
+      complemento: textoOpcional(input.complemento),
+      bairro: textoOpcional(input.bairro),
+      estado: textoOpcional(input.estado),
+      cidade: textoOpcional(input.cidade),
+      fotoUrl:
+        input.foto_url !== undefined
+          ? (parseFotoUrlInput(input.foto_url) ?? null)
+          : null,
     })
     .returning(profSelect);
   if (!ins) throw new Error('Não foi possível criar o profissional');
@@ -347,4 +464,30 @@ export async function atualizarProfissional(
     .returning(profSelect);
   if (!upd) throw new Error('Profissional não encontrado');
   return mapRow(upd);
+}
+
+/** Atualiza `ordem` na sequência recebida (10, 20, 30…). */
+export async function reordenarProfissionais(
+  db: Db,
+  ids: number[],
+): Promise<void> {
+  const unique = [...new Set(ids)].filter((id) => Number.isFinite(id) && id > 0);
+  if (unique.length === 0) {
+    throw new Error('Lista de ids vazia');
+  }
+  const existentes = await db
+    .select({ id: profissionais.id })
+    .from(profissionais)
+    .where(inArray(profissionais.id, unique));
+  if (existentes.length !== unique.length) {
+    throw new Error('Um ou mais profissionais não foram encontrados');
+  }
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < unique.length; i++) {
+      await tx
+        .update(profissionais)
+        .set({ ordem: (i + 1) * 10 })
+        .where(eq(profissionais.id, unique[i]!));
+    }
+  });
 }

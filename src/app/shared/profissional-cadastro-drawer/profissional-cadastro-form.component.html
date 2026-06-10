@@ -4,28 +4,52 @@
   <div class="cliente-cadastro-form__cols">
     <main class="cliente-main">
       <div class="cliente-photo-block">
-        <div class="cliente-photo" aria-hidden="true">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-user-round-icon lucide-user-round"
-          >
-            <circle cx="12" cy="8" r="5" />
-            <path d="M20 21a8 8 0 0 0-16 0" />
-          </svg>
+        <div
+          class="cliente-photo"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="
+            d.cadastroFotoUrl
+              ? 'Alterar foto do profissional'
+              : 'Adicionar foto do profissional'
+          "
+          (click)="fotoInput.click()"
+          (keydown.enter)="fotoInput.click()"
+          (keydown.space)="$event.preventDefault(); fotoInput.click()"
+        >
+          @if (d.cadastroFotoUrl) {
+            <img [src]="d.cadastroFotoUrl" alt="" aria-hidden="true" />
+          } @else {
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-user-round-icon lucide-user-round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="8" r="5" />
+              <path d="M20 21a8 8 0 0 0-16 0" />
+            </svg>
+          }
         </div>
+        <input
+          #fotoInput
+          type="file"
+          accept="image/*"
+          class="cliente-photo-file-input"
+          (change)="d.onFotoSelecionada($event)"
+        />
         <div class="cliente-photo-actions">
           <button
             type="button"
             class="cliente-photo-btn cliente-photo-btn--primary"
-            disabled
+            (click)="fotoInput.click()"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -43,6 +67,15 @@
             </svg>
             Alterar
           </button>
+          @if (d.cadastroFotoUrl) {
+            <button
+              type="button"
+              class="cliente-photo-btn cliente-photo-btn--danger"
+              (click)="d.removerFotoSelecionada()"
+            >
+              Remover
+            </button>
+          }
         </div>
       </div>
 
@@ -100,12 +133,13 @@
               >
                 <input
                   type="tel"
+                  appCelularBrMask
                   [ngModel]="d.cadastroCelular"
                   (ngModelChange)="d.onCelularChange($event)"
                   name="prof_celular"
                   inputmode="numeric"
                   autocomplete="tel-national"
-                  maxlength="16"
+                  maxlength="15"
                   placeholder="(11) 99999-9999"
                   [disabled]="d.salvando"
                 />
@@ -291,30 +325,6 @@
               <p class="cliente-switch-block__hint">
                 Caso esteja desativado não será gerada agenda para este
                 profissional.
-              </p>
-            </div>
-          </div>
-
-          <div class="cliente-switch-block">
-            <div class="block-toggles block-toggles--inline" role="group">
-              <div class="toggle-switch toggle-switch--inline">
-                <span
-                  class="toggle toggle--liquid"
-                  role="switch"
-                  tabindex="0"
-                  [class.active]="d.recebeComissao"
-                  [class.toggle--liq-armed]="d.recebeComissaoToggleLiqArmed"
-                  [attr.aria-checked]="d.recebeComissao"
-                  aria-label="Recebe comissão"
-                  (click)="d.onRecebeComissaoToggleClick($event)"
-                  (keydown)="d.onRecebeComissaoToggleKeydown($event)"
-                ></span>
-              </div>
-            </div>
-            <div class="cliente-switch-block__labels">
-              <span class="cliente-switch-block__title">Recebe comissão</span>
-              <p class="cliente-switch-block__hint">
-                Desmarque se o profissional não recebe comissão.
               </p>
             </div>
           </div>

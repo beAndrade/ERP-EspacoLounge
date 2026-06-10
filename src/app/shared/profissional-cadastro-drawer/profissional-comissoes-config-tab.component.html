@@ -2,13 +2,158 @@
   <p class="cliente-tab-placeholder">Carregando…</p>
 } @else {
   <main class="cliente-main prof-comissoes-config">
-    <p class="prof-comissoes-intro">
-      Define como as comissões deste profissional aparecem em
-      <strong>Financeiro → Comissões</strong>. Alterações valem para novas
-      listagens; valores já gravados em atendimentos não são recalculados.
-    </p>
+    <div class="prof-comissoes-config__grid">
+      <div class="prof-comissoes-config__col">
+        <fieldset class="prof-comissoes-fieldset">
+          <legend class="prof-comissoes-fieldset__legend">Filtro por data</legend>
+          <label class="prof-comissoes-radio">
+            <input
+              type="radio"
+              name="comissao_listagem_modo"
+              value="competencia"
+              [(ngModel)]="d.comissaoListagemModo"
+              [disabled]="d.salvando"
+            />
+            <span>Data de competência</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input
+              type="radio"
+              name="comissao_listagem_modo"
+              value="pagamento_cliente"
+              [(ngModel)]="d.comissaoListagemModo"
+              [disabled]="d.salvando"
+            />
+            <span>Data de disponibilidade</span>
+          </label>
+        </fieldset>
 
-    <div class="cliente-switch-block">
+        <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--futuro">
+          <legend class="prof-comissoes-fieldset__legend">
+            Taxas
+            <span class="prof-comissoes-fieldset__badge">Em breve</span>
+          </legend>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled checked />
+            <span>Proporcional ao comissionamento</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Estabelecimento arca com 100%</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Profissional arca com 100%</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--futuro">
+          <legend class="prof-comissoes-fieldset__legend">
+            Custo adicional dos serviços
+            <span class="prof-comissoes-fieldset__badge">Em breve</span>
+          </legend>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Desconta</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled checked />
+            <span>Não desconta</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--futuro">
+          <legend class="prof-comissoes-fieldset__legend">
+            Produtos consumidos
+            <span class="prof-comissoes-fieldset__badge">Em breve</span>
+          </legend>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled checked />
+            <span>Não descontar</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Preço de custo</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Preço de venda</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Preço para profissional</span>
+          </label>
+        </fieldset>
+      </div>
+
+      <div class="prof-comissoes-config__col">
+        <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--futuro">
+          <legend class="prof-comissoes-fieldset__legend">Tipo de comanda</legend>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Todas as comandas</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled checked />
+            <span>Somente finalizadas</span>
+          </label>
+          <p class="prof-comissoes-fieldset__hint">
+            Padrão do sistema — comissão só em comandas finalizadas.
+          </p>
+        </fieldset>
+
+        <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--futuro">
+          <legend class="prof-comissoes-fieldset__legend">
+            Descontos
+            <span class="prof-comissoes-fieldset__badge">Em breve</span>
+          </legend>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Proporcional ao comissionamento</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled checked />
+            <span>Estabelecimento arca com 100%</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Profissional arca com 100%</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--futuro">
+          <legend class="prof-comissoes-fieldset__legend">
+            Descontar produtos consumidos
+            <span class="prof-comissoes-fieldset__badge">Em breve</span>
+          </legend>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled checked />
+            <span>Comissão do profissional</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Serviço</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--futuro">
+          <legend class="prof-comissoes-fieldset__legend">
+            Exibir valor bruto no relatório de comissões
+            <span class="prof-comissoes-fieldset__badge">Em breve</span>
+          </legend>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled />
+            <span>Sim</span>
+          </label>
+          <label class="prof-comissoes-radio">
+            <input type="radio" disabled checked />
+            <span>Não</span>
+          </label>
+        </fieldset>
+      </div>
+    </div>
+
+    <div class="cliente-switch-block prof-comissoes-config__recebe">
       <div class="block-toggles block-toggles--inline" role="group">
         <div class="toggle-switch toggle-switch--inline">
           <span
@@ -32,36 +177,30 @@
       </div>
     </div>
 
-    <fieldset class="prof-comissoes-fieldset">
+    <fieldset class="prof-comissoes-fieldset prof-comissoes-fieldset--recibo prof-comissoes-fieldset--futuro">
       <legend class="prof-comissoes-fieldset__legend">
-        Quando listar comissões (aba Detalhadas)
+        Recebimento de comissão
+        <span class="prof-comissoes-fieldset__badge">Em breve</span>
       </legend>
-      <label class="prof-comissoes-radio">
-        <input
-          type="radio"
-          name="comissao_listagem_modo"
-          value="pagamento_cliente"
-          [(ngModel)]="d.comissaoListagemModo"
-          [disabled]="d.salvando"
-        />
-        <span class="prof-comissoes-radio__text">
-          <strong>Após o cliente pagar</strong> (padrão) — só comandas com
-          pagamento do cliente confirmado, salvo «mostrar anteriores».
-        </span>
-      </label>
-      <label class="prof-comissoes-radio">
-        <input
-          type="radio"
-          name="comissao_listagem_modo"
-          value="competencia"
-          [(ngModel)]="d.comissaoListagemModo"
-          [disabled]="d.salvando"
-        />
-        <span class="prof-comissoes-radio__text">
-          <strong>Por data do atendimento</strong> — comandas finalizadas no
-          período, mesmo sem pagamento do cliente.
-        </span>
-      </label>
+      <textarea
+        class="prof-comissoes-recibo"
+        rows="4"
+        [(ngModel)]="d.comissaoTextoRecibo"
+        name="comissao_texto_recibo"
+        disabled
+        placeholder="Texto personalizado para recibo de comissão"
+      ></textarea>
+      <p class="prof-comissoes-recibo__hint">
+        Clique para inserir os termos abaixo em sua mensagem
+      </p>
+      <div class="prof-comissoes-recibo__chips">
+        <button type="button" class="prof-comissoes-recibo__chip" disabled>
+          Valor
+        </button>
+        <button type="button" class="prof-comissoes-recibo__chip" disabled>
+          Nome da empresa
+        </button>
+      </div>
     </fieldset>
   </main>
 }

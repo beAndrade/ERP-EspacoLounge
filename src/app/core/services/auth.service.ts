@@ -110,6 +110,64 @@ export class AuthService {
     }
   }
 
+  alterarEmail(
+    email: string,
+    senhaAtual: string,
+  ): Observable<AuthUser> {
+    return this.http
+      .patch<ApiResponse<{ user: AuthUser; token: string }>>(
+        `${this.baseUrl}/api/auth/me/email`,
+        { email, senha_atual: senhaAtual },
+      )
+      .pipe(
+        map((r) => {
+          if (!r.ok || !r.data) {
+            throw new Error(
+              extractApiErrorMessage(r) ??
+                'Não foi possível alterar o e-mail.',
+            );
+          }
+          return r.data;
+        }),
+        tap((data) => {
+          try {
+            localStorage.setItem(TOKEN_KEY, data.token);
+          } catch {
+            /* ignore */
+          }
+          this.persistUser(data.user);
+        }),
+        map((data) => data.user),
+      );
+  }
+
+  alterarSenha(
+    senhaAtual: string,
+    senhaNova: string,
+    senhaNovaConfirmacao: string,
+  ): Observable<void> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(
+        `${this.baseUrl}/api/auth/me/senha`,
+        {
+          senha_atual: senhaAtual,
+          senha_nova: senhaNova,
+          senha_nova_confirmacao: senhaNovaConfirmacao,
+        },
+      )
+      .pipe(
+        map((r) => {
+          if (!r.ok) {
+            throw new Error(
+              extractApiErrorMessage(r) ??
+                'Não foi possível alterar a senha.',
+            );
+          }
+        }),
+        tap(() => this.logout()),
+      );
+  }
+
   private persistUser(user: AuthUser): void {
     this.user.set(user);
     try {
@@ -117,6 +175,17 @@ export class AuthService {
     } catch {
       /* ignore */
     }
+  }
+
+  /** Atualiza foto no utilizador em sessão (ex.: após editar o próprio profissional). */
+  patchFotoUrl(fotoUrl: string | null): void {
+    const atual = this.user();
+    if (!atual) return;
+    const next: AuthUser = {
+      ...atual,
+      foto_url: fotoUrl?.trim() || null,
+    };
+    this.persistUser(next);
   }
 
   private readStoredUser(): AuthUser | null {

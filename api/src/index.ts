@@ -16,6 +16,7 @@ import {
   type ModoExclusaoComanda,
   finalizarCobrancaPorIdAtendimento,
   listAtendimentosRaw,
+  remarcarBlocoAgendamento,
 } from './services/atendimentos-domain';
 import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
@@ -60,6 +61,7 @@ import {
   criarProfissional,
   getProfissionalById,
   listProfissionaisForApi,
+  reordenarProfissionais,
   type ProfissionalWriteInput,
 } from './services/profissionais-domain';
 import {
@@ -106,6 +108,37 @@ const clienteCadastroBodySchema = t.Object({
   instagram: t.Optional(t.String()),
   facebook: t.Optional(t.String()),
 });
+
+/** Campos explícitos — `additionalProperties` sozinho não preserva `foto_url` no body parseado. */
+const profissionalCadastroBodySchema = t.Object({
+  nome: t.Optional(t.String()),
+  celular: t.Optional(t.String()),
+  apelido: t.Optional(t.Union([t.String(), t.Null()])),
+  profissao: t.Optional(t.Union([t.String(), t.Null()])),
+  aniversario: t.Optional(t.Union([t.String(), t.Null()])),
+  cpf_cnpj: t.Optional(t.Union([t.String(), t.Null()])),
+  cpfCnpj: t.Optional(t.Union([t.String(), t.Null()])),
+  rg: t.Optional(t.Union([t.String(), t.Null()])),
+  anotacoes: t.Optional(t.Union([t.String(), t.Null()])),
+  ativo: t.Optional(t.Boolean()),
+  disponivel_agendamento_online: t.Optional(t.Boolean()),
+  disponivelAgendamentoOnline: t.Optional(t.Boolean()),
+  gerar_agenda: t.Optional(t.Boolean()),
+  gerarAgenda: t.Optional(t.Boolean()),
+  recebe_comissao: t.Optional(t.Boolean()),
+  recebeComissao: t.Optional(t.Boolean()),
+  comissao_listagem_modo: t.Optional(t.String()),
+  cep: t.Optional(t.Union([t.String(), t.Null()])),
+  logradouro: t.Optional(t.Union([t.String(), t.Null()])),
+  endereco_numero: t.Optional(t.Union([t.String(), t.Null()])),
+  enderecoNumero: t.Optional(t.Union([t.String(), t.Null()])),
+  complemento: t.Optional(t.Union([t.String(), t.Null()])),
+  bairro: t.Optional(t.Union([t.String(), t.Null()])),
+  estado: t.Optional(t.Union([t.String(), t.Null()])),
+  cidade: t.Optional(t.Union([t.String(), t.Null()])),
+  foto_url: t.Optional(t.Union([t.String(), t.Null()])),
+  fotoUrl: t.Optional(t.Union([t.String(), t.Null()])),
+});
 import { requireAdminPin } from './lib/admin-pin';
 import {
   listFolhaPorPeriodoApi,
@@ -115,7 +148,10 @@ import {
 import { incrementarEstoqueProduto } from './services/estoque-domain';
 import { isPublicApiPath, authenticateRequest } from './lib/auth-guard';
 import {
+  alterarEmailUsuario,
+  alterarSenhaUsuario,
   ensureAdminBootstrap,
+  ensureAdminProfissionalLink,
   getUsuarioById,
   getUsuarioByProfissionalId,
   loginUsuario,
@@ -142,6 +178,7 @@ function corsOrigins(): string[] | true {
 
 await ensureSchemaPatches();
 await ensureAdminBootstrap(db);
+await ensureAdminProfissionalLink(db);
 
 const bodyFinalizar = t.Object({
   id_atendimento: t.String(),
@@ -214,6 +251,48 @@ function parseManterCabecalhoPedido(body: Record<string, unknown>): boolean {
     (typeof rawM === 'string' &&
       ['1', 'true', 'yes', 'sim'].includes(rawM.trim().toLowerCase()))
   );
+}
+
+async function execRemarcarAgendamento(body: {
+  id_atendimento?: string;
+  profissional_origem_id?: number;
+  profissional_destino_id?: number;
+  data?: string;
+  hora_inicio?: string;
+}) {
+  try {
+    const id = String(body.id_atendimento || '').trim();
+    if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
+    const profOrig = Number(body.profissional_origem_id);
+    const profDest = Number(body.profissional_destino_id);
+    if (!Number.isFinite(profOrig) || profOrig <= 0) {
+      return fail('VALIDATION', 'profissional_origem_id é obrigatório');
+    }
+    if (!Number.isFinite(profDest) || profDest <= 0) {
+      return fail('VALIDATION', 'profissional_destino_id é obrigatório');
+    }
+    const data = String(body.data || '').trim();
+    const horaInicio = String(body.hora_inicio || '').trim();
+    if (!data) return fail('VALIDATION', 'data é obrigatória');
+    if (!horaInicio) return fail('VALIDATION', 'hora_inicio é obrigatória');
+    const r = await remarcarBlocoAgendamento(db, {
+      id_atendimento: id,
+      profissional_origem_id: profOrig,
+      profissional_destino_id: profDest,
+      data,
+      hora_inicio: horaInicio,
+    });
+    if (!r.linhasAtualizadas) {
+      return fail('NOT_FOUND', 'Nenhuma linha foi atualizada');
+    }
+    return ok({ linhas_atualizadas: r.linhasAtualizadas });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/inválid|obrigatór|fora do expediente|não é possível/i.test(msg)) {
+      return fail('VALIDATION', msg);
+    }
+    return fail('SERVER', msg);
+  }
 }
 
 async function execExcluirAtendimento(body: {
@@ -426,6 +505,21 @@ function profissionalBodyFromRequest(body: unknown): ProfissionalWriteInput {
       | 'pagamento_cliente'
       | 'competencia';
   }
+  if (b.cep !== undefined) out.cep = String(b.cep ?? '');
+  if (b.logradouro !== undefined) out.logradouro = String(b.logradouro ?? '');
+  if (b.endereco_numero !== undefined || b.enderecoNumero !== undefined) {
+    out.endereco_numero = String(b.endereco_numero ?? b.enderecoNumero ?? '');
+  }
+  if (b.complemento !== undefined) {
+    out.complemento = String(b.complemento ?? '');
+  }
+  if (b.bairro !== undefined) out.bairro = String(b.bairro ?? '');
+  if (b.estado !== undefined) out.estado = String(b.estado ?? '');
+  if (b.cidade !== undefined) out.cidade = String(b.cidade ?? '');
+  if (b.foto_url !== undefined || b.fotoUrl !== undefined) {
+    const raw = b.foto_url ?? b.fotoUrl;
+    out.foto_url = raw === null ? null : String(raw ?? '');
+  }
   return out;
 }
 
@@ -483,6 +577,68 @@ const app = new Elysia({ adapter: node() })
     if (!item) return fail('NOT_FOUND', 'Usuário não encontrado');
     return ok({ user: item });
   })
+  .patch(
+    '/api/auth/me/email',
+    async ({ request, body }) => {
+      const auth = await authenticateRequest(request);
+      if (!auth.ok) return auth.response;
+      try {
+        const b = body as { email?: string; senha_atual?: string };
+        const result = await alterarEmailUsuario(db, auth.user.id, {
+          email: String(b.email ?? ''),
+          senha_atual: String(b.senha_atual ?? ''),
+        });
+        return ok(result);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|incorreta|em uso/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        email: t.String(),
+        senha_atual: t.String(),
+      }),
+    },
+  )
+  .patch(
+    '/api/auth/me/senha',
+    async ({ request, body }) => {
+      const auth = await authenticateRequest(request);
+      if (!auth.ok) return auth.response;
+      try {
+        const b = body as {
+          senha_atual?: string;
+          senha_nova?: string;
+          senha_nova_confirmacao?: string;
+        };
+        await alterarSenhaUsuario(db, auth.user.id, {
+          senha_atual: String(b.senha_atual ?? ''),
+          senha_nova: String(b.senha_nova ?? ''),
+          senha_nova_confirmacao: String(b.senha_nova_confirmacao ?? ''),
+        });
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (
+          /obrigatório|incorreta|coincide|caracteres/i.test(msg)
+        ) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        senha_atual: t.String(),
+        senha_nova: t.String(),
+        senha_nova_confirmacao: t.String(),
+      }),
+    },
+  )
   .get('/api/public/servicos', async () => {
     try {
       const items = await listServicosPublic(db);
@@ -888,13 +1044,13 @@ const app = new Elysia({ adapter: node() })
           }
         },
         {
-          body: t.Object(
-            {
+          body: t.Intersect([
+            t.Object({
               nome: t.String(),
               celular: t.String(),
-            },
-            { additionalProperties: true },
-          ),
+            }),
+            profissionalCadastroBodySchema,
+          ]),
         },
       )
       .get('/profissionais', async ({ query }) => {
@@ -917,6 +1073,35 @@ const app = new Elysia({ adapter: node() })
           return fail('SERVER', msg);
         }
       })
+      .patch(
+        '/profissionais/ordem',
+        async ({ body }) => {
+          try {
+            const b = body as { ids?: unknown };
+            const raw = b.ids;
+            if (!Array.isArray(raw) || raw.length === 0) {
+              return fail('VALIDATION', 'ids é obrigatório');
+            }
+            const ids = raw.map((x) => Number.parseInt(String(x), 10));
+            if (ids.some((id) => !Number.isFinite(id) || id <= 0)) {
+              return fail('VALIDATION', 'ids inválido');
+            }
+            await reordenarProfissionais(db, ids);
+            return ok({ ok: true });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (/vazia|não encontrado|inválido/i.test(msg)) {
+              return fail('VALIDATION', msg);
+            }
+            return fail('SERVER', msg);
+          }
+        },
+        {
+          body: t.Object({
+            ids: t.Array(t.Number()),
+          }),
+        },
+      )
       .get('/profissionais/:id', async ({ params }) => {
         try {
           const id = Number.parseInt(String(params.id).trim(), 10);
@@ -1074,7 +1259,7 @@ const app = new Elysia({ adapter: node() })
         },
         {
           params: t.Object({ id: t.String() }),
-          body: t.Object({}, { additionalProperties: true }),
+          body: profissionalCadastroBodySchema,
         },
       ),
   )
@@ -1594,6 +1779,7 @@ const app = new Elysia({ adapter: node() })
     const isConfirmarPagamento =
       qAcao === 'confirmar-pagamento' || bAcao === 'confirmar-pagamento';
     const isExcluir = qAcao === 'excluir' || bAcao === 'excluir';
+    const isRemarcar = qAcao === 'remarcar' || bAcao === 'remarcar';
     if (isFinalizar) {
       const idAt = String(
         b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
@@ -1624,6 +1810,20 @@ const app = new Elysia({ adapter: node() })
         manter_cabecalho_pedido: bRec['manter_cabecalho_pedido'] as
           | boolean
           | undefined,
+      });
+    }
+    if (isRemarcar) {
+      const bRec = b as Record<string, unknown>;
+      return execRemarcarAgendamento({
+        id_atendimento: String(
+          b.id_atendimento ??
+            (b as { idAtendimento?: string }).idAtendimento ??
+            '',
+        ).trim(),
+        profissional_origem_id: Number(bRec['profissional_origem_id']),
+        profissional_destino_id: Number(bRec['profissional_destino_id']),
+        data: String(bRec['data'] ?? '').trim(),
+        hora_inicio: String(bRec['hora_inicio'] ?? '').trim(),
       });
     }
     try {

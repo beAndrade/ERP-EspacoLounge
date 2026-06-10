@@ -324,8 +324,9 @@ export interface CabeloCatalogoItem {
 export interface ProfissionalListaItem {
   id: number;
   nome: string;
-  /** URL da foto de perfil; omitido até existir na API. */
+  /** URL da foto de perfil (`foto_url` na API). */
   fotoUrl?: string | null;
+  foto_url?: string | null;
   /** Omitido em respostas antigas; na API atual vem sempre preenchido. */
   ativo?: boolean;
   celular?: string | null;
@@ -340,6 +341,17 @@ export interface ProfissionalListaItem {
   recebe_comissao?: boolean;
   /** `pagamento_cliente` (padrão) ou `competencia` — listagem Financeiro → Comissões. */
   comissao_listagem_modo?: 'pagamento_cliente' | 'competencia';
+  cep?: string | null;
+  logradouro?: string | null;
+  endereco_numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  estado?: string | null;
+  cidade?: string | null;
+  /** Conta de acesso ligada (`usuarios.role`), quando existir. */
+  usuario_role?: 'admin' | 'profissional' | null;
+  /** Ordem de exibição na lista e na agenda. */
+  ordem?: number;
 }
 
 /** Override de comissão por profissional + serviço (`GET/PUT .../comissoes-servicos`). */
@@ -366,6 +378,14 @@ export type ProfissionalCadastroPayload = {
   gerar_agenda?: boolean;
   recebe_comissao?: boolean;
   comissao_listagem_modo?: 'pagamento_cliente' | 'competencia';
+  cep?: string | null;
+  logradouro?: string | null;
+  endereco_numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  estado?: string | null;
+  cidade?: string | null;
+  foto_url?: string | null;
 };
 
 /** Categoria do razão financeiro (`GET /api/categorias-financeiras`). */
