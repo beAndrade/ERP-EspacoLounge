@@ -7,16 +7,24 @@ export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  if (auth.isLoggedIn()) return true;
-
+  /** Valida o JWT com `/api/auth/me` antes de entrar na app (evita 401 na agenda com token antigo). */
   if (!auth.bootstrapped()) {
+    if (!auth.token) {
+      auth.bootstrapped.set(true);
+      return of(router.createUrlTree(['/login']));
+    }
     return auth.bootstrapSession().pipe(
-      map((ok) => {
-        if (ok) return true;
-        return router.createUrlTree(['/login']);
-      }),
+      map((ok) =>
+        ok
+          ? true
+          : router.createUrlTree(['/login'], {
+              queryParams: { motivo: 'sessao' },
+            }),
+      ),
     );
   }
 
-  return of(router.createUrlTree(['/login']));
+  return auth.isLoggedIn()
+    ? true
+    : of(router.createUrlTree(['/login']));
 };

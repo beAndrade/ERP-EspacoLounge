@@ -1,19 +1,16 @@
-<div class="hub-page">
+<div class="hub-page" [class.hub-page--compact]="layoutMobile">
   @if (erro) {
     <p class="alert" role="alert">{{ erro }}</p>
   }
-  @if (algumPainelHubAberto()) {
-    <button
-      type="button"
-      class="hub-panel-backdrop"
-      aria-label="Fechar painel"
-      (click)="fecharPaineisHub()"
-    ></button>
-  }
 
+  <div class="hub-scroll-port">
   <header class="hub-header list-head">
     <div class="hub-header__shell">
-      <div class="hub-header__row list-head__title-row">
+      <div
+        class="hub-header__row list-head__title-row"
+        [class.hub-header__row--compact]="layoutMobile"
+      >
+        @if (!layoutMobile) {
         <div class="hub-header__nav" aria-label="Navegação do dia">
           <button
             type="button"
@@ -68,8 +65,68 @@
             </svg>
           </button>
         </div>
+        }
 
-        <div class="hub-header__actions list-head__actions">
+        <div
+          class="hub-header__actions list-head__actions"
+          [class.hub-header__actions--footer]="layoutMobile"
+        >
+          @if (layoutMobile) {
+            <button
+              type="button"
+              class="hub-footer-btn"
+              (click)="abrirMenuAgenda()"
+              aria-label="Menu"
+            >
+              <svg
+                class="hub-footer-btn__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M4 5h16" />
+                <path d="M4 12h16" />
+                <path d="M4 19h16" />
+              </svg>
+              <span class="hub-footer-btn__label">Menu</span>
+            </button>
+            <button
+              type="button"
+              class="hub-footer-btn"
+              (click)="togglePainelCalendario()"
+              [attr.aria-expanded]="painelCalendarioAberto"
+              aria-haspopup="dialog"
+              aria-label="Calendário"
+            >
+              <svg
+                class="hub-footer-btn__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M8 2v4" />
+                <path d="M16 2v4" />
+                <rect width="18" height="18" x="3" y="4" rx="2" />
+                <path d="M3 10h18" />
+              </svg>
+              <span class="hub-footer-btn__label">Calendário</span>
+            </button>
+          }
+
+          @if (!layoutMobile) {
           <div
             class="hub-toolbar-menu"
             [class.hub-toolbar-menu--open]="hubMenuAberto === 'visualizacao'"
@@ -146,14 +203,17 @@
               </button>
             </div>
           </div>
+          }
 
           <div
             class="hub-toolbar-menu hub-toolbar-menu--wide"
             [class.hub-toolbar-menu--open]="hubMenuAberto === 'filtrar'"
+            [class.hub-toolbar-menu--footer-item]="layoutMobile"
           >
             <button
               type="button"
               class="list-head__toolbar-btn hub-toolbar-menu__trigger"
+              [class.hub-footer-btn]="layoutMobile"
               [class.list-head__toolbar-btn--filtro-on]="filtroHubAtivo()"
               [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
               (click)="toggleHubMenu('filtrar', $event)"
@@ -164,6 +224,7 @@
             >
               <svg
                 class="list-icon-sm list-icon-sm--funnel"
+                [class.hub-footer-btn__icon]="layoutMobile"
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
                 height="14"
@@ -179,7 +240,7 @@
                   d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
                 />
               </svg>
-              <span class="list-head__toolbar-label">Filtrar</span>
+              <span class="list-head__toolbar-label hub-footer-btn__label">{{ layoutMobile ? 'Filtros' : 'Filtrar' }}</span>
             </button>
             <div
               class="hub-toolbar-menu__panel hub-toolbar-menu__panel--filtros"
@@ -274,10 +335,12 @@
           <div
             class="hub-toolbar-menu"
             [class.hub-toolbar-menu--open]="hubMenuAberto === 'acoes'"
+            [class.hub-toolbar-menu--footer-item]="layoutMobile"
           >
             <button
               type="button"
               class="list-head__toolbar-btn hub-toolbar-menu__trigger"
+              [class.hub-footer-btn]="layoutMobile"
               [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarAcoes"
               (click)="toggleHubMenu('acoes', $event)"
               [attr.aria-expanded]="hubMenuAberto === 'acoes'"
@@ -287,6 +350,7 @@
             >
               <svg
                 class="list-icon-sm"
+                [class.hub-footer-btn__icon]="layoutMobile"
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
                 height="14"
@@ -300,7 +364,7 @@
               >
                 <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
               </svg>
-              <span class="list-head__toolbar-label">Ações</span>
+              <span class="list-head__toolbar-label hub-footer-btn__label">Ações</span>
             </button>
             <div
               class="hub-toolbar-menu__panel"
@@ -361,6 +425,31 @@
               </button>
             </div>
           </div>
+          @if (layoutMobile) {
+            <button
+              type="button"
+              class="hub-footer-btn hub-footer-btn--criar"
+              (click)="abrirNovoAtendimentoModal()"
+              aria-label="Criar agendamento"
+            >
+              <svg
+                class="hub-footer-btn__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+              </svg>
+              <span class="hub-footer-btn__label">Criar</span>
+            </button>
+          } @else {
           <button
             type="button"
             class="list-head__toolbar-btn list-head__toolbar-btn--link"
@@ -384,6 +473,7 @@
             </svg>
             <span>Novo</span>
           </button>
+          }
         </div>
       </div>
     </div>
@@ -394,36 +484,86 @@
     @if (modoVista === 'dia') {
     <div
       class="grid-wrap"
+      [class.grid-wrap--compact]="layoutMobile"
       [class.grid-wrap--loading]="carregandoVista()"
       role="region"
       aria-label="Horários por profissional"
     >
-      <div class="grid-head">
-        <div class="grid-head__corner" aria-hidden="true"></div>
-        <div
-          class="grid-x-pane"
-          (scroll)="aoScrollHorizontalGrelha($event, 'dia')"
-        >
-          <div class="grid-head__prof-track">
-            @for (p of profissionaisVisiveis(); track p.id) {
-              <button
-                type="button"
-                class="grid-head__prof"
-                [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
-                (click)="aoClicarCabecalhoProfissional(p)"
-                [attr.aria-label]="'Abrir perfil de ' + p.nome"
-                [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+      @if (layoutMobile) {
+      <div class="hub-mobile-sticky-head">
+        <ng-container *ngTemplateOutlet="hubNavCompacto" />
+      <div class="grid-head grid-head--in-chrome">
+        <div class="grid-head__prof-row">
+          <div class="grid-head__corner" aria-hidden="true"></div>
+          <div class="grid-head__scroll-zone">
+            <div
+              class="grid-x-pane grid-x-pane--head-sync"
+              (pointerdown)="aoPanGrelhaInicio($event, 'dia')"
+            >
+              <div
+                class="grid-head__prof-track"
+                [style.--hub-prof-count]="profissionaisVisiveis().length"
+                [style.transform]="transformGrelhaCols('dia')"
               >
-                <app-profissional-avatar
-                  variant="grid-head"
-                  [fotoUrl]="profissionalFotoUrl(p)"
-                />
-                <span class="grid-head__prof-nome">{{ p.nome }}</span>
-              </button>
-            }
+                @for (p of profissionaisVisiveis(); track p.id) {
+                  <button
+                    type="button"
+                    class="grid-head__prof"
+                    [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
+                    (click)="aoClicarCabecalhoProfissional(p)"
+                    [attr.aria-label]="'Abrir perfil de ' + p.nome"
+                    [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+                  >
+                    <app-profissional-avatar
+                      variant="grid-head"
+                      [fotoUrl]="profissionalFotoUrl(p)"
+                    />
+                    <span class="grid-head__prof-nome">{{ p.nome }}</span>
+                  </button>
+                }
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      </div>
+      } @else {
+      <div class="grid-head">
+        <div class="grid-head__prof-row">
+          <div class="grid-head__corner" aria-hidden="true"></div>
+          <div class="grid-head__scroll-zone">
+            <div
+              class="grid-x-pane"
+              (scroll)="aoScrollHorizontalGrelha($event, 'dia')"
+              (pointerdown)="aoPanGrelhaInicio($event, 'dia')"
+            >
+              <div
+                class="grid-head__prof-track"
+                [style.--hub-prof-count]="profissionaisVisiveis().length"
+                [style.transform]="transformGrelhaCols('dia')"
+              >
+                @for (p of profissionaisVisiveis(); track p.id) {
+                  <button
+                    type="button"
+                    class="grid-head__prof"
+                    [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
+                    (click)="aoClicarCabecalhoProfissional(p)"
+                    [attr.aria-label]="'Abrir perfil de ' + p.nome"
+                    [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+                  >
+                    <app-profissional-avatar
+                      variant="grid-head"
+                      [fotoUrl]="profissionalFotoUrl(p)"
+                    />
+                    <span class="grid-head__prof-nome">{{ p.nome }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
       <div class="grid-body">
         <div class="grid-body__times" aria-hidden="true">
           @for (slot of slotsHoras; track slot) {
@@ -437,10 +577,17 @@
           }
         </div>
         <div
-          class="grid-x-pane grid-x-pane--scrollbar"
+          class="grid-x-pane"
+          [class.grid-x-pane--scrollbar]="!layoutMobile"
+          [class.grid-x-pane--body]="layoutMobile"
+          [class.grid-x-pane--body-sync]="layoutMobile"
           (scroll)="aoScrollHorizontalGrelha($event, 'dia')"
         >
-          <div class="grid-body__cols">
+          <div
+            class="grid-body__cols"
+            [style.--hub-prof-count]="profissionaisVisiveis().length"
+            [style.transform]="transformGrelhaCols('dia')"
+          >
             @for (p of profissionaisVisiveis(); track p.id) {
               <div class="day-col" [attr.data-prof-id]="p.id" [attr.data-ymd]="diaYmd">
                 @for (slot of slotsHoras; track slot) {
@@ -506,33 +653,47 @@
     } @else if (modoVista === 'semana') {
     <div
       class="week-grid-wrap"
+      [class.grid-wrap--compact]="layoutMobile"
       [class.grid-wrap--loading]="carregandoVista()"
       role="region"
       aria-label="Horários semanais por profissional"
     >
-      <div class="grid-head week-grid-head week-grid-head--prof">
-        <div class="grid-head__corner" aria-hidden="true"></div>
-        <div
-          class="grid-x-pane"
-          (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
-        >
-          <div class="week-grid-head__prof-track">
-            @for (p of profissionaisVisiveis(); track p.id) {
-              <button
-                type="button"
-                class="grid-head__prof"
-                [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
-                (click)="aoClicarCabecalhoProfissional(p)"
-                [attr.aria-label]="'Abrir perfil de ' + p.nome"
-                [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+      @if (layoutMobile) {
+      <div class="hub-mobile-sticky-head">
+        <ng-container *ngTemplateOutlet="hubNavCompacto" />
+      <div
+        class="grid-head week-grid-head week-grid-head--prof grid-head--in-chrome"
+      >
+        <div class="grid-head__prof-row">
+          <div class="grid-head__corner" aria-hidden="true"></div>
+          <div class="grid-head__scroll-zone">
+            <div
+              class="grid-x-pane grid-x-pane--head-sync"
+              (pointerdown)="aoPanGrelhaInicio($event, 'semana')"
+            >
+              <div
+                class="week-grid-head__prof-track"
+                [style.--hub-prof-count]="profissionaisVisiveis().length"
+                [style.transform]="transformGrelhaCols('semana')"
               >
-                <app-profissional-avatar
-                  variant="grid-head"
-                  [fotoUrl]="profissionalFotoUrl(p)"
-                />
-                <span class="grid-head__prof-nome">{{ p.nome }}</span>
-              </button>
-            }
+                @for (p of profissionaisVisiveis(); track p.id) {
+                  <button
+                    type="button"
+                    class="grid-head__prof"
+                    [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
+                    (click)="aoClicarCabecalhoProfissional(p)"
+                    [attr.aria-label]="'Abrir perfil de ' + p.nome"
+                    [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+                  >
+                    <app-profissional-avatar
+                      variant="grid-head"
+                      [fotoUrl]="profissionalFotoUrl(p)"
+                    />
+                    <span class="grid-head__prof-nome">{{ p.nome }}</span>
+                  </button>
+                }
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -540,7 +701,81 @@
         <div class="grid-head__corner" aria-hidden="true"></div>
         <div
           class="grid-x-pane"
+          [class.grid-x-pane--body-sync]="layoutMobile"
           (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
+          (pointerdown)="aoPanGrelhaInicio($event, 'semana')"
+        >
+          <div
+            class="week-grid-head__days-track"
+            [style.transform]="transformGrelhaCols('semana')"
+          >
+            @for (p of profissionaisVisiveis(); track p.id) {
+              <div class="week-grid-head__prof-days">
+                @for (d of diasFaixaSemanal(); track d.ymd) {
+                  <div
+                    class="week-grid-head__day"
+                    [class.week-grid-head__day--hoje]="d.hoje"
+                    [class.week-grid-head__day--selected]="d.selecionado"
+                  >
+                    <span class="week-grid-head__day-dow">{{
+                      rotuloDowColunaSemana(d)
+                    }}</span>
+                    <span class="week-grid-head__day-num">{{
+                      rotuloNumColunaSemana(d)
+                    }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      </div>
+      } @else {
+      <div
+        class="grid-head week-grid-head week-grid-head--prof"
+      >
+        <div class="grid-head__prof-row">
+          <div class="grid-head__corner" aria-hidden="true"></div>
+          <div class="grid-head__scroll-zone">
+            <div
+              class="grid-x-pane"
+              (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
+              (pointerdown)="aoPanGrelhaInicio($event, 'semana')"
+            >
+              <div
+                class="week-grid-head__prof-track"
+                [style.--hub-prof-count]="profissionaisVisiveis().length"
+              >
+                @for (p of profissionaisVisiveis(); track p.id) {
+                  <button
+                    type="button"
+                    class="grid-head__prof"
+                    [class.grid-head__prof--ativo]="profCabecalhoAtivoId === p.id"
+                    (click)="aoClicarCabecalhoProfissional(p)"
+                    [attr.aria-label]="'Abrir perfil de ' + p.nome"
+                    [attr.aria-pressed]="profCabecalhoAtivoId === p.id"
+                  >
+                    <app-profissional-avatar
+                      variant="grid-head"
+                      [fotoUrl]="profissionalFotoUrl(p)"
+                    />
+                    <span class="grid-head__prof-nome">{{ p.nome }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+      @if (!layoutMobile) {
+      <div class="week-grid-head week-grid-head--days">
+        <div class="grid-head__corner" aria-hidden="true"></div>
+        <div
+          class="grid-x-pane"
+          (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
+          (pointerdown)="aoPanGrelhaInicio($event, 'semana')"
         >
           <div class="week-grid-head__days-track">
             @for (p of profissionaisVisiveis(); track p.id) {
@@ -564,6 +799,7 @@
           </div>
         </div>
       </div>
+      }
       <div class="week-grid-body">
         <div class="grid-body__times" aria-hidden="true">
           @for (slot of slotsHoras; track slot) {
@@ -577,10 +813,16 @@
           }
         </div>
         <div
-          class="grid-x-pane grid-x-pane--scrollbar"
+          class="grid-x-pane"
+          [class.grid-x-pane--scrollbar]="!layoutMobile"
+          [class.grid-x-pane--body]="layoutMobile"
+          [class.grid-x-pane--body-sync]="layoutMobile"
           (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
         >
-          <div class="week-grid-body__cols">
+          <div
+            class="week-grid-body__cols"
+            [style.transform]="transformGrelhaCols('semana')"
+          >
             @for (p of profissionaisVisiveis(); track p.id) {
               <div class="week-grid-body__prof-cols">
                 @for (d of diasFaixaSemanal(); track d.ymd) {
@@ -653,6 +895,11 @@
       </div>
     </div>
     } @else {
+    @if (layoutMobile) {
+      <div class="hub-mobile-sticky-head hub-mobile-sticky-head--mensal">
+        <ng-container *ngTemplateOutlet="hubNavCompacto" />
+      </div>
+    }
     <div
       class="month-grid-wrap"
       [class.grid-wrap--loading]="carregandoVista()"
@@ -713,8 +960,19 @@
     }
   </section>
   </div>
+  </div>
 
-  <div class="hub-cal-anchor">
+  @if (layoutMobile && painelCalendarioAberto) {
+    <button
+      type="button"
+      class="hub-panel-backdrop"
+      aria-label="Fechar calendário"
+      (click)="fecharPaineisHub()"
+    ></button>
+  }
+
+  <div class="hub-cal-anchor" [class.hub-cal-anchor--compact]="layoutMobile">
+    @if (!layoutMobile) {
     <button
       type="button"
       class="hub-cal-float"
@@ -744,50 +1002,265 @@
       </svg>
       <span>Calendário</span>
     </button>
+    }
 
     <div
-      class="hub-panel hub-panel--calendario hub-panel--calendario-float"
-      [class.hub-panel--open]="painelCalendarioAberto"
+      class="hub-float-cal"
+      [class.hub-float-cal--open]="painelCalendarioAberto"
+      [class.hub-float-cal--compact]="layoutMobile"
       role="dialog"
-      aria-label="Calendário"
+      [attr.aria-label]="layoutMobile ? 'Selecione uma data' : 'Calendário'"
       [attr.aria-hidden]="!painelCalendarioAberto"
       (click)="$event.stopPropagation()"
     >
-      <div class="mini-cal">
-        <div class="mini-cal__nav">
-          <button type="button" class="btn-icon" (click)="mesAnterior()">‹</button>
-          <span class="mini-cal__titulo">{{ tituloMes() }}</span>
-          <button type="button" class="btn-icon" (click)="mesSeguinte()">›</button>
-          <button type="button" class="btn-hoje" (click)="irParaHoje()">Hoje</button>
-        </div>
-        <div class="mini-cal__grid" role="grid">
-          @for (d of ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']; track d) {
-            <span class="mini-cal__dow">{{ d }}</span>
-          }
-          @for (c of celulas(); track $index) {
-            @if (c.dia === null) {
-              <span class="mini-cal__cell mini-cal__cell--empty"></span>
-            } @else {
+      @if (layoutMobile) {
+        <header class="hub-float-cal__dialog-head">
+          <h2 class="hub-float-cal__dialog-title">Selecione uma data</h2>
+          <button
+            type="button"
+            class="hub-float-cal__dialog-close"
+            (click)="fecharPaineisHub()"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+        </header>
+      }
+
+      <div class="hub-float-cal__months">
+        <section class="hub-float-cal__month" aria-label="Mês atual">
+          @if (layoutMobile) {
+            <div class="hub-float-cal__nav">
               <button
                 type="button"
-                class="mini-cal__cell"
-                [class.mini-cal__cell--selected]="c.ymd === diaYmd"
-                [class.mini-cal__cell--hoje]="c.ymd === hojeYmd()"
-                (click)="selecionarDiaCalendario(c.ymd)"
+                class="hub-float-cal__nav-btn"
+                (click)="calAnoAnterior()"
+                aria-label="Ano anterior"
               >
-                <span class="mini-cal__num">{{ c.dia }}</span>
-                @if (contagem(c.ymd) > 0) {
-                  <span class="mini-cal__badge">{{ contagem(c.ymd) }}</span>
-                }
+                «
               </button>
-            }
+              <button
+                type="button"
+                class="hub-float-cal__nav-btn"
+                (click)="mesAnterior()"
+                aria-label="Mês anterior"
+              >
+                ‹
+              </button>
+              <span class="hub-float-cal__title hub-float-cal__title--center">{{
+                tituloMes()
+              }}</span>
+              <button
+                type="button"
+                class="hub-float-cal__nav-btn"
+                (click)="mesSeguinte()"
+                aria-label="Mês seguinte"
+              >
+                ›
+              </button>
+              <button
+                type="button"
+                class="hub-float-cal__nav-btn"
+                (click)="calAnoSeguinte()"
+                aria-label="Ano seguinte"
+              >
+                »
+              </button>
+            </div>
+          } @else {
+            <h3 class="hub-float-cal__title hub-float-cal__title--left">
+              {{ tituloCalEsquerdo() }}
+            </h3>
           }
-        </div>
+          <div class="hub-float-cal__grid" role="grid">
+            @for (d of calDowLabels; track d) {
+              <span class="hub-float-cal__dow">{{ d }}</span>
+            }
+            @for (c of celulasMesEsquerdo(); track $index) {
+              @if (c.dia === null) {
+                <span class="hub-float-cal__cell hub-float-cal__cell--empty"></span>
+              } @else {
+                <button
+                  type="button"
+                  class="hub-float-cal__cell"
+                  [class.hub-float-cal__cell--fora]="c.foraDoMes"
+                  [class.hub-float-cal__cell--weekend]="isFimDeSemanaYmd(c.ymd)"
+                  [class.hub-float-cal__cell--selected]="c.ymd === diaYmd"
+                  [class.hub-float-cal__cell--hoje]="c.ymd === hojeYmd()"
+                  (click)="selecionarDiaCalendario(c.ymd)"
+                >
+                  {{ c.dia }}
+                </button>
+              }
+            }
+          </div>
+        </section>
+
+        @if (!layoutMobile) {
+        <div class="hub-float-cal__divider" aria-hidden="true"></div>
+
+        <section class="hub-float-cal__month" aria-label="Mês seguinte">
+          <div class="hub-float-cal__nav">
+            <button
+              type="button"
+              class="hub-float-cal__nav-btn"
+              (click)="calAnoAnterior()"
+              aria-label="Ano anterior"
+            >
+              «
+            </button>
+            <button
+              type="button"
+              class="hub-float-cal__nav-btn"
+              (click)="mesAnterior()"
+              aria-label="Mês anterior"
+            >
+              ‹
+            </button>
+            <span class="hub-float-cal__title hub-float-cal__title--right">{{
+              tituloCalDireito()
+            }}</span>
+            <button
+              type="button"
+              class="hub-float-cal__nav-btn"
+              (click)="mesSeguinte()"
+              aria-label="Mês seguinte"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              class="hub-float-cal__nav-btn"
+              (click)="calAnoSeguinte()"
+              aria-label="Ano seguinte"
+            >
+              »
+            </button>
+          </div>
+          <div class="hub-float-cal__grid" role="grid">
+            @for (d of calDowLabels; track d) {
+              <span class="hub-float-cal__dow">{{ d }}</span>
+            }
+            @for (c of celulasMesDireito(); track $index) {
+              @if (c.dia === null) {
+                <span class="hub-float-cal__cell hub-float-cal__cell--empty"></span>
+              } @else {
+                <button
+                  type="button"
+                  class="hub-float-cal__cell"
+                  [class.hub-float-cal__cell--fora]="c.foraDoMes"
+                  [class.hub-float-cal__cell--weekend]="isFimDeSemanaYmd(c.ymd)"
+                  [class.hub-float-cal__cell--selected]="c.ymd === diaYmd"
+                  [class.hub-float-cal__cell--hoje]="c.ymd === hojeYmd()"
+                  (click)="selecionarDiaCalendario(c.ymd)"
+                >
+                  {{ c.dia }}
+                </button>
+              }
+            }
+          </div>
+        </section>
+        }
       </div>
+
+      <footer
+        class="hub-float-cal__quick"
+        [class.hub-float-cal__quick--compact]="layoutMobile"
+      >
+        @if (layoutMobile) {
+          <div class="hub-float-cal__quick-row">
+            <button type="button" class="hub-float-cal__quick-btn" (click)="irParaOntem()">
+              Ontem
+            </button>
+            <button type="button" class="hub-float-cal__quick-btn" (click)="irParaHojeCal()">
+              Hoje
+            </button>
+          </div>
+          <button
+            type="button"
+            class="hub-float-cal__quick-btn hub-float-cal__quick-btn--full"
+            (click)="irParaAmanha()"
+          >
+            Amanhã
+          </button>
+        } @else {
+        <button type="button" class="hub-float-cal__quick-btn" (click)="irParaOntem()">
+          Ontem
+        </button>
+        <span class="hub-float-cal__quick-sep" aria-hidden="true">|</span>
+        <button type="button" class="hub-float-cal__quick-btn" (click)="irParaHojeCal()">
+          Hoje
+        </button>
+        <span class="hub-float-cal__quick-sep" aria-hidden="true">|</span>
+        <button type="button" class="hub-float-cal__quick-btn" (click)="irParaAmanha()">
+          Amanhã
+        </button>
+        }
+      </footer>
     </div>
   </div>
+
+  <ng-template #hubNavCompacto>
+    <div class="hub-header__nav hub-header__nav--compact" aria-label="Navegação do dia">
+      <button
+        type="button"
+        class="hub-header__nav-btn"
+        (click)="diaAnterior()"
+        aria-label="Dia anterior"
+      >
+        <svg
+          class="hub-header__nav-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="hub-header-compact__title"
+        (click)="togglePainelCalendario()"
+        [attr.aria-expanded]="painelCalendarioAberto"
+        aria-haspopup="dialog"
+        [attr.aria-label]="'Selecionar data: ' + rotuloNavegacaoDia()"
+      >
+        {{ rotuloNavegacaoDia() }}
+      </button>
+      <button
+        type="button"
+        class="hub-header__nav-btn"
+        (click)="diaSeguinte()"
+        aria-label="Dia seguinte"
+      >
+        <svg
+          class="hub-header__nav-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+    </div>
+  </ng-template>
 </div>
 
+@if (!layoutMobile) {
 <button
   type="button"
   class="hub-fab"
@@ -797,6 +1270,7 @@
 >
   <span class="hub-fab__icon" aria-hidden="true">+</span>
 </button>
+}
 
 @if (cardArrasteAtivo && cardArrasteBloco) {
   <div

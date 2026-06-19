@@ -3,6 +3,8 @@
 @use './app/styles/ui-tooltip';
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
+/* Breakpoints oficiais: `app/styles/_breakpoints.scss` + `app/styles/breakpoints.ts` */
+
 :root {
   --color-bg: #f8f8f8;
   --color-surface: #ffffff;
@@ -109,5 +111,28 @@ html.agenda-hub-scroll-lock {
   body {
     overflow: hidden;
     height: 100%;
+  }
+
+  /**
+   * Compacto (≤768px): coluna de horários no fluxo normal; cabeçalho sticky via `.hub-mobile-sticky-head`.
+   */
+  @media (max-width: 768px) {
+    .grid-body__times,
+    .grid-wrap--compact .grid-body__times {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      padding: 0 !important;
+    }
+
+    .grid-body__time,
+    .grid-wrap--compact .grid-body__time {
+      padding: 0 !important;
+    }
+
+    .grid-body__time-slot {
+      left: 0 !important;
+      right: 0 !important;
+    }
   }
 }

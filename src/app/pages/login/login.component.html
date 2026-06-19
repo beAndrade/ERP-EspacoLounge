@@ -56,3 +56,38 @@
     </form>
   </div>
 </div>
+
+@if (modalSessaoExpirada) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalSessaoExpirada()"
+  ></div>
+  <div
+    class="comandas-modal login-sessao-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="login-sessao-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h2 id="login-sessao-modal-title" class="comandas-modal__title login-sessao-modal__title">
+      Acesso expirado
+    </h2>
+    <p class="comandas-modal__text login-sessao-modal__text">
+      Sua sessão expirou por segurança. Informe novamente seu e-mail e senha
+      para continuar.
+    </p>
+    <div class="login-sessao-modal__actions">
+      <button
+        type="button"
+        class="login-sessao-modal__btn"
+        (click)="fecharModalSessaoExpirada()"
+      >
+        Entendi
+      </button>
+    </div>
+  </div>
+}

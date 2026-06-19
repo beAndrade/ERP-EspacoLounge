@@ -1,4 +1,4 @@
-﻿@if (d.aberto) {
+@if (d.aberto) {
     <div
       class="overlay overlay--cliente"
       [class.overlay--open]="d.panelOpen"
@@ -13,114 +13,9 @@
       [attr.aria-label]="d.ariaLabelDrawer()"
       (click)="$event.stopPropagation()"
     >
-      <div class="cliente-shell">
-        <header class="cliente-head">
-          <div class="cliente-head__title-wrap">
-            <div class="cliente-head__title-row">
-              @if (d.modo !== 'novo') {
-                <app-cliente-avatar variant="cabecalho" [fotoUrl]="d.cadastroFotoUrl" />
-              }
-              <h2 class="cliente-head__title">{{ d.tituloCabecalho() }}</h2>
-            </div>
-          </div>
-          <button
-            type="button"
-            class="cliente-head__close"
-            (click)="d.fechar()"
-            aria-label="Fechar"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="22"
-              height="22"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </header>
-        <div class="cliente-body-scroll" (scroll)="d.ocultarClienteNavLockTooltip()">
-          <div class="cliente-body">
-            <nav
-              class="cliente-nav"
-              aria-label="Secções da ficha"
-              [style.--cliente-nav-active-index]="d.abaAtivaIndex()"
-            >
-              <span class="cliente-nav__indicator" aria-hidden="true"></span>
-              @for (aba of d.abas; track aba) {
-                <button
-                  type="button"
-                  class="cliente-nav__item"
-                  [class.cliente-nav__item--active]="d.abaAtiva === aba"
-                  [class.cliente-nav__item--disabled]="d.abaDesabilitada(aba)"
-                  [attr.aria-disabled]="d.abaDesabilitada(aba) ? 'true' : null"
-                  [attr.aria-describedby]="
-                    d.abaDesabilitada(aba) && d.clienteNavLockTooltipVisible
-                      ? 'cliente-nav-lock-tooltip'
-                      : null
-                  "
-                  (click)="d.selecionarAba(aba)"
-                  (mouseenter)="d.onClienteNavTooltipEnter($event, aba)"
-                  (mouseleave)="d.onClienteNavTooltipLeave(aba)"
-                  (focusin)="d.onClienteNavTooltipEnter($event, aba, true)"
-                  (focusout)="d.onClienteNavTooltipLeave(aba)"
-                >
-                  <span class="cliente-nav__label">{{ aba }}</span>
-                </button>
-              }
-            </nav>
-            @if (d.abaAtiva === 'Cadastro') {
-              <app-cliente-cadastro-form [mostrarRodape]="false" />
-            } @else if (d.abaAtiva === 'Cashback') {
-              <app-cliente-cashback-tab />
-            } @else if (d.abaAtiva === 'Créditos') {
-              <app-cliente-creditos-tab
-                (abrirAtualizarCredito)="onAbrirAtualizarCreditoEmpilhado()"
-              />
-            } @else if (d.abaAtiva === 'Débitos') {
-              <app-cliente-debitos-tab
-              />
-            } @else if (d.abaAtiva === 'Agendamentos') {
-              <app-cliente-agendamentos-tab />
-            } @else if (d.abaAtiva === 'Vendas') {
-              <app-cliente-vendas-tab />
-            } @else {
-              <main class="cliente-main">
-                <p class="cliente-tab-placeholder">
-                  Conteúdo de «{{ d.abaAtiva }}» em desenvolvimento.
-                </p>
-              </main>
-            }
-          </div>
-        </div>
-        @if (d.abaAtiva === 'Cadastro') {
-        <footer class="cliente-drawer-footer">
-          @if (d.saveErro) {
-            <p class="cliente-save-hint cliente-save-hint--error" role="alert">{{ d.saveErro }}</p>
-          }
-          <button
-            type="button"
-            class="cliente-footer-btn cliente-footer-btn--ghost"
-            [disabled]="d.salvando"
-            (click)="d.fechar()"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            class="cliente-footer-btn cliente-footer-btn--primary"
-            [disabled]="d.salvando"
-            (click)="d.salvar()"
-          >
-            {{ d.salvando ? 'Salvando…' : 'Salvar' }}
-          </button>
-        </footer>
-        }
-      </div>
+      <app-cliente-drawer-shell
+        (abrirAtualizarCredito)="onAbrirAtualizarCreditoEmpilhado()"
+      />
     </div>
     @if (d.clienteNavLockTooltipVisible) {
       <span
@@ -162,83 +57,106 @@
           "
         />
       </div>
+    }
 
-      @if (atualizarCreditoAberto) {
-        <div
-          class="overlay overlay--cliente-credito-empilhada"
-          [class.overlay--open]="atualizarCreditoPanelOpen"
-          aria-hidden="true"
-          (click)="fecharAtualizarCreditoEmpilhado()"
-        ></div>
-        <div
-          class="app-drawer cliente-credito-empilhada"
-          [class.app-drawer--open]="atualizarCreditoPanelOpen"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Atualizar crédito"
-          (click)="$event.stopPropagation()"
-        >
-          <app-cliente-atualizar-credito-drawer
-            [clienteId]="d.clienteId!"
-            (salvo)="onAtualizarCreditoSalvo($event)"
-            (fechar)="fecharAtualizarCreditoEmpilhado()"
-          />
-        </div>
-      }
+    @if (editAgendamentoEmpilhadoAberto && editAgendamentoEmpilhadoCtx) {
+      <div
+        class="overlay overlay--cliente-edit-ag-empilhada"
+        [class.overlay--open]="editAgendamentoEmpilhadoPanelOpen"
+        aria-hidden="true"
+        (click)="fecharEditAgendamentoEmpilhado()"
+      ></div>
+      <div
+        class="app-drawer cliente-edit-ag-empilhada app-drawer--edit-agendamento"
+        [class.app-drawer--open]="editAgendamentoEmpilhadoPanelOpen"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar agendamento"
+        (click)="$event.stopPropagation()"
+      >
+        <app-agenda-novo
+          [modoModal]="true"
+          [fluxoSomenteComanda]="true"
+          [contextoSlot]="editAgendamentoEmpilhadoCtx"
+          (salvoComSucesso)="onSalvoEditAgendamentoEmpilhado()"
+          (cancelarModal)="fecharEditAgendamentoEmpilhado()"
+          (abrirCadastroCliente)="
+            onAbrirCadastroClienteDesdeComandaEmpilhada($event)
+          "
+        />
+      </div>
+    }
 
-      @if (faturarEmpilhadoAberto && faturarEmpilhadoCtx) {
-        <div
-          class="overlay overlay--cliente-faturar-empilhada"
-          [class.overlay--open]="faturarEmpilhadoPanelOpen"
-          aria-hidden="true"
-          (click)="fecharFaturarEmpilhado()"
-        ></div>
-        <div
-          class="app-drawer cliente-faturar-empilhada app-drawer--faturar"
-          [class.app-drawer--open]="faturarEmpilhadoPanelOpen"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Faturar comanda"
-          (click)="$event.stopPropagation()"
-        >
-          <app-faturar-drawer
-            [idAtendimento]="faturarEmpilhadoCtx.idAtendimento"
-            [resumoInicial]="faturarEmpilhadoCtx.resumo"
-            [creditoComandaAplicado]="faturarEmpilhadoCtx.creditoAUsar ?? 0"
-            [dataComanda]="comandaEmpilhadaDataYmd"
-            [modoVerPagamentos]="faturarEmpilhadoCtx.modoVerPagamentos ?? false"
-            (faturado)="onFaturaComandaEmpilhadaSucesso()"
-            (fechar)="fecharFaturarEmpilhado()"
-          />
-        </div>
-      }
+    @if (d.fichaEmpilhadaAberta) {
+      <div
+        class="overlay overlay--cliente-ficha-empilhada"
+        [class.overlay--open]="d.fichaEmpilhadaPanelOpen"
+        aria-hidden="true"
+        (click)="fecharFichaEmpilhada()"
+      ></div>
+      <div
+        class="app-drawer cliente-ficha-empilhada"
+        [class.app-drawer--open]="d.fichaEmpilhadaPanelOpen"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="d.ariaLabelDrawer()"
+        (click)="$event.stopPropagation()"
+      >
+        <app-cliente-drawer-shell
+          [empilhada]="true"
+          (fecharPainel)="fecharFichaEmpilhada()"
+          (abrirAtualizarCredito)="onAbrirAtualizarCreditoEmpilhado()"
+        />
+      </div>
+    }
 
-      @if (editAgendamentoEmpilhadoAberto && editAgendamentoEmpilhadoCtx) {
-        <div
-          class="overlay overlay--cliente-edit-ag-empilhada"
-          [class.overlay--open]="editAgendamentoEmpilhadoPanelOpen"
-          aria-hidden="true"
-          (click)="fecharEditAgendamentoEmpilhado()"
-        ></div>
-        <div
-          class="app-drawer cliente-edit-ag-empilhada app-drawer--edit-agendamento"
-          [class.app-drawer--open]="editAgendamentoEmpilhadoPanelOpen"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Editar agendamento"
-          (click)="$event.stopPropagation()"
-        >
-          <app-agenda-novo
-            [modoModal]="true"
-            [fluxoSomenteComanda]="true"
-            [contextoSlot]="editAgendamentoEmpilhadoCtx"
-            (salvoComSucesso)="onSalvoEditAgendamentoEmpilhado()"
-            (cancelarModal)="fecharEditAgendamentoEmpilhado()"
-            (abrirCadastroCliente)="
-              onAbrirCadastroClienteDesdeComandaEmpilhada($event)
-            "
-          />
-        </div>
-      }
+    @if (atualizarCreditoAberto) {
+      <div
+        class="overlay overlay--cliente-credito-empilhada"
+        [class.overlay--open]="atualizarCreditoPanelOpen"
+        aria-hidden="true"
+        (click)="fecharAtualizarCreditoEmpilhado()"
+      ></div>
+      <div
+        class="app-drawer cliente-credito-empilhada"
+        [class.app-drawer--open]="atualizarCreditoPanelOpen"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Atualizar crédito"
+        (click)="$event.stopPropagation()"
+      >
+        <app-cliente-atualizar-credito-drawer
+          [clienteId]="d.clienteId!"
+          (salvo)="onAtualizarCreditoSalvo($event)"
+          (fechar)="fecharAtualizarCreditoEmpilhado()"
+        />
+      </div>
+    }
+
+    @if (faturarEmpilhadoAberto && faturarEmpilhadoCtx) {
+      <div
+        class="overlay overlay--cliente-faturar-empilhada"
+        [class.overlay--open]="faturarEmpilhadoPanelOpen"
+        aria-hidden="true"
+        (click)="fecharFaturarEmpilhado()"
+      ></div>
+      <div
+        class="app-drawer cliente-faturar-empilhada app-drawer--faturar"
+        [class.app-drawer--open]="faturarEmpilhadoPanelOpen"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Faturar comanda"
+        (click)="$event.stopPropagation()"
+      >
+        <app-faturar-drawer
+          [idAtendimento]="faturarEmpilhadoCtx.idAtendimento"
+          [resumoInicial]="faturarEmpilhadoCtx.resumo"
+          [creditoComandaAplicado]="faturarEmpilhadoCtx.creditoAUsar ?? 0"
+          [dataComanda]="comandaEmpilhadaDataYmd"
+          [modoVerPagamentos]="faturarEmpilhadoCtx.modoVerPagamentos ?? false"
+          (faturado)="onFaturaComandaEmpilhadaSucesso()"
+          (fechar)="fecharFaturarEmpilhado()"
+        />
+      </div>
     }
   }

@@ -8,6 +8,8 @@ import {
 
   Input,
 
+  OnDestroy,
+
   ViewChild,
 
   inject,
@@ -94,13 +96,17 @@ interface ShortcutSection {
 
   standalone: true,
 
+  host: {
+    '[class.sidebar-novo-host--open]': 'menuAberto',
+  },
+
   templateUrl: './sidebar-novo-menu.component.html',
 
   styleUrl: './sidebar-novo-menu.component.scss',
 
 })
 
-export class SidebarNovoMenuComponent {
+export class SidebarNovoMenuComponent implements OnDestroy {
 
   private readonly router = inject(Router);
 
@@ -124,7 +130,9 @@ export class SidebarNovoMenuComponent {
 
   @ViewChild('novoBtn') novoBtn?: ElementRef<HTMLButtonElement>;
 
+  @ViewChild('novoPanel') novoPanel?: ElementRef<HTMLElement>;
 
+  private panelRestoreParent: (() => void) | null = null;
 
   menuAberto = false;
 
@@ -244,7 +252,12 @@ export class SidebarNovoMenuComponent {
 
     this.menuAberto = true;
 
-    requestAnimationFrame(() => this.atualizarPosicaoPanel());
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.portalizarPanel();
+        this.atualizarPosicaoPanel();
+      });
+    });
 
   }
 
@@ -256,7 +269,60 @@ export class SidebarNovoMenuComponent {
 
     this.menuAberto = false;
 
+    this.restaurarPanelPortal();
+
     this.flyout.release(() => this.fecharMenu());
+
+  }
+
+
+
+  ngOnDestroy(): void {
+
+    this.restaurarPanelPortal();
+
+  }
+
+
+
+  /** Painel em `body` para não ficar atrás da sidebar / conteúdo principal. */
+  private portalizarPanel(): void {
+
+    const el = this.novoPanel?.nativeElement;
+
+    if (!el || this.panelRestoreParent) return;
+
+    const parent = el.parentElement;
+
+    const next = el.nextSibling;
+
+    document.body.appendChild(el);
+
+    this.panelRestoreParent = () => {
+
+      if (!parent) return;
+
+      if (next && next.parentNode === parent) {
+
+        parent.insertBefore(el, next);
+
+      } else {
+
+        parent.appendChild(el);
+
+      }
+
+    };
+
+  }
+
+
+
+  private restaurarPanelPortal(): void {
+
+    this.panelRestoreParent?.();
+
+    this.panelRestoreParent = null;
 
   }
 
@@ -278,9 +344,29 @@ export class SidebarNovoMenuComponent {
 
     const r = btn.getBoundingClientRect();
 
-    this.panelTop = r.top;
+    const panel = this.novoPanel?.nativeElement;
 
-    this.panelLeft = r.right + 12;
+    const panelW = panel?.offsetWidth ?? 420;
+
+    const gap = 8;
+
+    let left = r.left;
+
+    const top = r.bottom + gap;
+
+    const margin = 8;
+
+    left = Math.max(
+
+      margin,
+
+      Math.min(left, window.innerWidth - panelW - margin),
+
+    );
+
+    this.panelTop = top;
+
+    this.panelLeft = left;
 
   }
 

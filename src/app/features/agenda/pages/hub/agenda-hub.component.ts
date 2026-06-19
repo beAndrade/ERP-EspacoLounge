@@ -1,12 +1,14 @@
 import {
   Component,
   DestroyRef,
+  ElementRef,
   inject,
   LOCALE_ID,
   OnDestroy,
   OnInit,
   ViewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -49,6 +51,8 @@ import {
 import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
+import { mediaQueryMax } from '../../../../styles/breakpoints';
+import { AppShellUiService } from '../../../../core/services/app-shell-ui.service';
 
 type CelulaCalendario = {
   dia: number;
@@ -100,6 +104,12 @@ const DRAWER_ANIM_MS = 520;
 /** Distância mínima (px) para distinguir arraste de clique no cartão. */
 const ARRASTE_CARD_LIMIAR_PX = 8;
 
+/** Tempo (ms) antes de ocultar o indicador horizontal após soltar o arraste. */
+const PROF_HEAD_SCROLLBAR_HIDE_MS = 900;
+
+/** Distância mínima (px) para distinguir pan horizontal de vertical na grelha (compacto). */
+const PAN_GRELHA_LIMIAR_PX = 5;
+
 /** Um cartão na grelha = mesmo `id` + mesmo profissional (várias linhas = um bloco). */
 type AgendaHubBloco = {
   trackKey: string;
@@ -114,6 +124,7 @@ type AgendaHubBloco = {
   standalone: true,
   imports: [
     FormsModule,
+    NgTemplateOutlet,
     AgendaNovoComponent,
     NovaComandaDrawerComponent,
     FaturarDrawerComponent,
@@ -127,6 +138,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private static readonly MAIN_AGENDA_CLASS = 'main--agenda-hub';
   private static readonly ROOT_SCROLL_LOCK_CLASS = 'agenda-hub-scroll-lock';
 
+  private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly api = inject(SheetsApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -134,6 +146,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
   readonly sessao = inject(SessaoUsuarioService);
+  private readonly shellUi = inject(AppShellUiService);
   readonly profissionalFotoUrl = profissionalFotoUrl;
 
   @ViewChild(AgendaNovoComponent)
@@ -164,6 +177,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   profissionalMobileId: number | null = null;
   buscaCliente = '';
   layoutMobile = false;
+  /** Deslocamento horizontal sincronizado (corpo da grelha usa transform, sem overflow). */
+  grelhaScrollXDia = 0;
+  grelhaScrollXSemana = 0;
 
   readonly statusFiltrosHub = HUB_STATUS_FILTROS;
   /** Status ocultos na grelha (vazio = todos visíveis). */
@@ -187,6 +203,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     'qui.',
     'sex.',
     'sáb.',
+  ] as const;
+  readonly calDowLabels = [
+    'DOM',
+    'SEG',
+    'TER',
+    'QUA',
+    'QUI',
+    'SEX',
+    'SÁB',
   ] as const;
   painelCalendarioAberto = false;
   /** Destaque visual no cabeçalho da coluna (clique no nome). */
@@ -280,6 +305,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const t = ev.target;
     if (!(t instanceof Element)) return;
     if (t.closest('.hub-toolbar-menu')) return;
+    if (this.painelCalendarioAberto && !t.closest('.hub-cal-anchor')) {
+      this.fecharPaineisHub();
+    }
     this.fecharMenusToolbar();
   };
 
@@ -325,6 +353,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.destroyRef.onDestroy(() => {
       window.removeEventListener('keydown', this.onDrawerKeydown);
       document.removeEventListener('click', this.onHubToolbarDocClick);
+      if (this.profHeadScrollbarHideTimer != null) {
+        clearTimeout(this.profHeadScrollbarHideTimer);
+        this.profHeadScrollbarHideTimer = null;
+      }
     });
     this.carregarProfissionais();
     this.recarregarVistaAtiva();
@@ -362,6 +394,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cancelarArrasteCard();
+    this.cancelarPanGrelha();
     this.desativarLayoutAgendaNoMain();
     if (this.timerAbrirNovaComandaDesdeLista != null) {
       clearTimeout(this.timerAbrirNovaComandaDesdeLista);
@@ -383,12 +416,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   profissionaisVisiveis(): ProfissionalListaItem[] {
-    const all = this.profissionais.filter((p) => !this.profOcultos.has(p.id));
-    if (!this.layoutMobile) return all;
-    const pid = this.profissionalAtivoMobile();
-    if (pid == null) return all.length ? [all[0]] : [];
-    const found = all.find((p) => p.id === pid);
-    return found ? [found] : all.length ? [all[0]] : [];
+    return this.profissionais.filter((p) => !this.profOcultos.has(p.id));
   }
 
   profissionalAtivoMobile(): number | null {
@@ -801,9 +829,22 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.fecharPaineisHub();
   }
 
+  abrirMenuAgenda(): void {
+    this.fecharMenusToolbar();
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia(mediaQueryMax('shellMobile')).matches
+    ) {
+      this.shellUi.requestToggleMobileNav();
+    } else {
+      this.shellUi.requestToggleSidebar();
+    }
+  }
+
   aoClicarCabecalhoProfissional(p: ProfissionalListaItem): void {
-    if (this.layoutMobile) {
-      this.profissionalMobileId = p.id;
+    if (this.suprimirClickProfCabecalho) {
+      this.suprimirClickProfCabecalho = false;
+      return;
     }
     this.profCabecalhoAtivoId = p.id;
     this.profissionalDrawer.abrirEdicao(p.id, {
@@ -848,22 +889,314 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   private gridScrollSyncLock = false;
+  private panGrelhaGrupo: 'dia' | 'semana' | null = null;
+  private panGrelhaPointerId = -1;
+  private panGrelhaStartX = 0;
+  private panGrelhaStartY = 0;
+  private panGrelhaStartScroll = 0;
+  private panGrelhaAxis: 'x' | 'y' | null = null;
+  private panGrelhaWrap: Element | null = null;
+  private panGrelhaCaptureEl: HTMLElement | null = null;
+  /** Evita abrir drawer ao soltar após arraste horizontal no cabeçalho. */
+  private suprimirClickProfCabecalho = false;
+  private profHeadScrollbarHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  transformGrelhaCols(grupo: 'dia' | 'semana'): string | null {
+    if (!this.layoutMobile) return null;
+    const x = grupo === 'dia' ? this.grelhaScrollXDia : this.grelhaScrollXSemana;
+    return `translateX(${-x}px)`;
+  }
+
+  aoPanGrelhaInicio(ev: PointerEvent, grupo: 'dia' | 'semana'): void {
+    if (!this.layoutMobile || ev.button !== 0) return;
+    const alvo = ev.target;
+    if (!(alvo instanceof Element)) return;
+    if (alvo.closest('.day-col__card')) return;
+    const pane = ev.currentTarget;
+    if (!(pane instanceof HTMLElement)) return;
+    /** Mobile: permite arrastar a partir dos botões de profissional no cabeçalho. */
+    if (
+      alvo.closest('.grid-head__prof') &&
+      !(this.layoutMobile && pane.closest('.grid-head'))
+    ) {
+      return;
+    }
+
+    /**
+     * No layout compacto, o hub-scroll-chrome está FORA do grid-wrap (a nível de hub-page).
+     * Usa `closest` primeiro; se falhar (pan vindo do chrome), procura no host do componente.
+     */
+    const wrap =
+      alvo.closest(grupo === 'semana' ? '.week-grid-wrap' : '.grid-wrap') ??
+      this.hostEl.querySelector<Element>(
+        grupo === 'semana' ? '.week-grid-wrap' : '.grid-wrap',
+      );
+    if (!wrap) return;
+
+    this.panGrelhaGrupo = grupo;
+    this.panGrelhaPointerId = ev.pointerId;
+    this.panGrelhaStartX = ev.clientX;
+    this.panGrelhaStartY = ev.clientY;
+    this.panGrelhaStartScroll =
+      grupo === 'dia' ? this.grelhaScrollXDia : this.grelhaScrollXSemana;
+    this.panGrelhaAxis = null;
+    this.panGrelhaWrap = wrap;
+    this.panGrelhaCaptureEl = pane;
+
+    /** Fase 1 (passive): detecta eixo sem bloquear scroll vertical em `main`. */
+    pane.addEventListener('pointermove', this.panGrelhaDetectMove, {
+      passive: true,
+    });
+    pane.addEventListener('pointerup', this.onPanGrelhaEnd);
+    pane.addEventListener('pointercancel', this.onPanGrelhaEnd);
+  }
+
+  /** Detecção de eixo com listener passive — não impede scroll nativo no eixo Y. */
+  private readonly panGrelhaDetectMove = (ev: PointerEvent): void => {
+    if (
+      this.panGrelhaGrupo == null ||
+      ev.pointerId !== this.panGrelhaPointerId ||
+      this.panGrelhaAxis != null
+    ) {
+      return;
+    }
+
+    const dx = ev.clientX - this.panGrelhaStartX;
+    const dy = ev.clientY - this.panGrelhaStartY;
+
+    if (
+      Math.abs(dx) < PAN_GRELHA_LIMIAR_PX &&
+      Math.abs(dy) < PAN_GRELHA_LIMIAR_PX
+    ) {
+      return;
+    }
+
+    this.removerPanGrelhaDetectorPassivo();
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      this.cancelarPanGrelha();
+      return;
+    }
+
+    this.panGrelhaAxis = 'x';
+    if (this.layoutMobile) {
+      this.setProfHeadScrollbarAtivo(true);
+    }
+    try {
+      this.panGrelhaCaptureEl?.setPointerCapture(ev.pointerId);
+    } catch {
+      /* ignorar */
+    }
+    this.panGrelhaCaptureEl?.addEventListener(
+      'pointermove',
+      this.onPanGrelhaMove,
+      { passive: false },
+    );
+    this.onPanGrelhaMove(ev);
+  };
+
+  private readonly onPanGrelhaMove = (ev: PointerEvent): void => {
+    if (
+      this.panGrelhaGrupo == null ||
+      ev.pointerId !== this.panGrelhaPointerId ||
+      this.panGrelhaAxis !== 'x' ||
+      !this.panGrelhaWrap ||
+      !this.panGrelhaGrupo
+    ) {
+      return;
+    }
+
+    const dx = ev.clientX - this.panGrelhaStartX;
+
+    ev.preventDefault();
+    const max = this.maxScrollHorizontalGrelha(
+      this.panGrelhaWrap,
+      this.panGrelhaCaptureEl,
+    );
+    const left = Math.min(
+      max,
+      Math.max(0, this.panGrelhaStartScroll - dx),
+    );
+    this.aplicarScrollHorizontalGrelha(
+      left,
+      this.panGrelhaWrap,
+      this.panGrelhaGrupo,
+    );
+  };
+
+  private readonly onPanGrelhaEnd = (ev: PointerEvent): void => {
+    if (
+      this.panGrelhaGrupo == null ||
+      ev.pointerId !== this.panGrelhaPointerId
+    ) {
+      return;
+    }
+    this.cancelarPanGrelha();
+  };
+
+  private removerPanGrelhaDetectorPassivo(): void {
+    this.panGrelhaCaptureEl?.removeEventListener(
+      'pointermove',
+      this.panGrelhaDetectMove,
+    );
+  }
+
+  private cancelarPanGrelha(): void {
+    if (this.panGrelhaAxis === 'x' && this.panGrelhaCaptureEl?.closest('.grid-head')) {
+      this.suprimirClickProfCabecalho = true;
+    }
+    this.setProfHeadScrollbarAtivo(false);
+    this.removerPanGrelhaDetectorPassivo();
+    this.panGrelhaCaptureEl?.removeEventListener(
+      'pointermove',
+      this.onPanGrelhaMove,
+    );
+    this.panGrelhaCaptureEl?.removeEventListener(
+      'pointerup',
+      this.onPanGrelhaEnd,
+    );
+    this.panGrelhaCaptureEl?.removeEventListener(
+      'pointercancel',
+      this.onPanGrelhaEnd,
+    );
+    try {
+      if (this.panGrelhaPointerId >= 0) {
+        this.panGrelhaCaptureEl?.releasePointerCapture?.(this.panGrelhaPointerId);
+      }
+    } catch {
+      /* ignorar */
+    }
+    this.panGrelhaGrupo = null;
+    this.panGrelhaPointerId = -1;
+    this.panGrelhaAxis = null;
+    this.panGrelhaWrap = null;
+    this.panGrelhaCaptureEl = null;
+  }
+
+  private get hostEl(): Element {
+    return this.elRef.nativeElement as unknown as Element;
+  }
+
+  /** Compacto: indicador horizontal visível durante o arraste e some após um breve delay. */
+  private setProfHeadScrollbarAtivo(ativo: boolean): void {
+    if (!this.layoutMobile) return;
+
+    if (ativo) {
+      if (this.profHeadScrollbarHideTimer != null) {
+        clearTimeout(this.profHeadScrollbarHideTimer);
+        this.profHeadScrollbarHideTimer = null;
+      }
+      this.toggleProfHeadScrollbarClass(true);
+      return;
+    }
+
+    if (this.profHeadScrollbarHideTimer != null) {
+      clearTimeout(this.profHeadScrollbarHideTimer);
+    }
+
+    this.profHeadScrollbarHideTimer = setTimeout(() => {
+      this.profHeadScrollbarHideTimer = null;
+      this.toggleProfHeadScrollbarClass(false);
+    }, PROF_HEAD_SCROLLBAR_HIDE_MS);
+  }
+
+  private toggleProfHeadScrollbarClass(ativo: boolean): void {
+    this.hostEl
+      .querySelectorAll<HTMLElement>(
+        '.hub-mobile-sticky-head .grid-head__scroll-zone',
+      )
+      .forEach((zone) => {
+        zone.classList.toggle('grid-head__scroll-zone--scrollbar-active', ativo);
+      });
+  }
+
+  private paneHorizontalGrelha(wrap: Element): HTMLElement | null {
+    return (
+      wrap.querySelector<HTMLElement>('.grid-head .grid-x-pane') ??
+      this.hostEl.querySelector<HTMLElement>('.grid-head .grid-x-pane')
+    );
+  }
+
+  private trilhoHorizontalGrelha(pane: HTMLElement): HTMLElement | null {
+    return pane.querySelector<HTMLElement>(
+      '.grid-head__prof-track, .week-grid-head__prof-track, .week-grid-head__days-track, .grid-body__cols, .week-grid-body__cols',
+    );
+  }
+
+  private maxScrollHorizontalGrelha(
+    wrap: Element,
+    panePreferido?: HTMLElement | null,
+  ): number {
+    const pane = panePreferido ?? this.paneHorizontalGrelha(wrap);
+    if (!pane) return 0;
+    const trilho = this.trilhoHorizontalGrelha(pane);
+    if (!trilho) return 0;
+    return Math.max(0, trilho.scrollWidth - pane.clientWidth);
+  }
+
+  private sincronizarIndicadorScrollGrelha(wrap: Element, left: number): void {
+    if (!this.layoutMobile) return;
+    const pane = this.paneHorizontalGrelha(wrap);
+    const trilho = pane ? this.trilhoHorizontalGrelha(pane) : null;
+    if (!pane || !trilho || trilho.scrollWidth <= 0) return;
+
+    const max = Math.max(0, trilho.scrollWidth - pane.clientWidth);
+    const host = this.hostEl as HTMLElement;
+    const thumbW = (pane.clientWidth / trilho.scrollWidth) * 100;
+    const thumbL = max > 0 ? (left / max) * (100 - thumbW) : 0;
+    host.style.setProperty('--hub-grelha-thumb-w', `${thumbW}%`);
+    host.style.setProperty('--hub-grelha-thumb-l', `${thumbL}%`);
+  }
+
+  private aplicarScrollHorizontalGrelha(
+    left: number,
+    wrap: Element,
+    grupo: 'dia' | 'semana',
+  ): void {
+    if (this.gridScrollSyncLock) return;
+    this.gridScrollSyncLock = true;
+
+    if (this.layoutMobile) {
+      if (grupo === 'dia') {
+        this.grelhaScrollXDia = left;
+      } else {
+        this.grelhaScrollXSemana = left;
+      }
+      this.sincronizarIndicadorScrollGrelha(wrap, left);
+    } else {
+      /**
+       * Desktop: sincroniza scrollLeft entre panes horizontais (chrome + grid-wrap).
+       */
+      this.hostEl
+        .querySelectorAll<HTMLElement>('.grid-x-pane:not(.grid-x-pane--body-sync)')
+        .forEach((pane: HTMLElement) => {
+          pane.scrollLeft = left;
+        });
+      if (grupo === 'dia') {
+        this.grelhaScrollXDia = left;
+      } else {
+        this.grelhaScrollXSemana = left;
+      }
+    }
+
+    this.gridScrollSyncLock = false;
+  }
 
   /** Sincroniza scroll horizontal entre cabeçalho e corpo da grelha. */
   aoScrollHorizontalGrelha(ev: Event, grupo: 'dia' | 'semana'): void {
-    if (this.gridScrollSyncLock) return;
+    if (this.layoutMobile) return;
     const source = ev.target as HTMLElement | null;
     if (!source) return;
-    const wrap = source.closest(
-      grupo === 'semana' ? '.week-grid-wrap' : '.grid-wrap',
-    );
+    /**
+     * No layout compacto, o chrome está fora do grid-wrap; usa fallback para encontrar o wrap.
+     */
+    const wrap =
+      source.closest(grupo === 'semana' ? '.week-grid-wrap' : '.grid-wrap') ??
+      this.hostEl.querySelector<Element>(
+        grupo === 'semana' ? '.week-grid-wrap' : '.grid-wrap',
+      );
     if (!wrap) return;
-    const left = source.scrollLeft;
-    this.gridScrollSyncLock = true;
-    wrap.querySelectorAll<HTMLElement>('.grid-x-pane').forEach((pane) => {
-      if (pane !== source) pane.scrollLeft = left;
-    });
-    this.gridScrollSyncLock = false;
+    this.aplicarScrollHorizontalGrelha(source.scrollLeft, wrap, grupo);
   }
 
   toggleProfissionalOculto(id: number): void {
@@ -875,8 +1208,22 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   celulas(): CelulaCalendario[] {
+    return this.celulasParaMes(this.mesRef);
+  }
+
+  celulasMesEsquerdo(): CelulaCalendario[] {
+    return this.celulasParaMes(this.mesRef);
+  }
+
+  celulasMesDireito(): CelulaCalendario[] {
     const y = this.mesRef.getFullYear();
     const m = this.mesRef.getMonth();
+    return this.celulasParaMes(new Date(y, m + 1, 1));
+  }
+
+  private celulasParaMes(ref: Date): CelulaCalendario[] {
+    const y = ref.getFullYear();
+    const m = ref.getMonth();
     const primeiroDow = new Date(y, m, 1).getDay();
     const diasNoMes = new Date(y, m + 1, 0).getDate();
     const diasMesAnterior = new Date(y, m, 0).getDate();
@@ -914,6 +1261,58 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
 
     return out;
+  }
+
+  tituloCalEsquerdo(): string {
+    const mes = this.mesRef.toLocaleDateString('pt-BR', { month: 'long' });
+    const ano = this.mesRef.getFullYear();
+    return `Esse mês - ${mes}, ${ano}`;
+  }
+
+  tituloCalDireito(): string {
+    const ref = new Date(
+      this.mesRef.getFullYear(),
+      this.mesRef.getMonth() + 1,
+      1,
+    );
+    const mes = ref.toLocaleDateString('pt-BR', { month: 'long' });
+    return `${mes} de ${ref.getFullYear()}`;
+  }
+
+  isFimDeSemanaYmd(ymd: string): boolean {
+    const dow = this.parseYmdLocal(ymd).getDay();
+    return dow === 0 || dow === 6;
+  }
+
+  calAnoAnterior(): void {
+    const y = this.mesRef.getFullYear();
+    const m = this.mesRef.getMonth();
+    this.mesRef = this.inicioDoMes(new Date(y - 1, m, 1));
+    this.carregarMes();
+  }
+
+  calAnoSeguinte(): void {
+    const y = this.mesRef.getFullYear();
+    const m = this.mesRef.getMonth();
+    this.mesRef = this.inicioDoMes(new Date(y + 1, m, 1));
+    this.carregarMes();
+  }
+
+  irParaOntem(): void {
+    const d = this.parseYmdLocal(this.hojeYmd());
+    d.setDate(d.getDate() - 1);
+    this.selecionarDiaCalendario(toYmd(d));
+  }
+
+  irParaHojeCal(): void {
+    this.irParaHoje();
+    this.fecharPaineisHub();
+  }
+
+  irParaAmanha(): void {
+    const d = this.parseYmdLocal(this.hojeYmd());
+    d.setDate(d.getDate() + 1);
+    this.selecionarDiaCalendario(toYmd(d));
   }
 
   private ymdFromPartes(year: number, month: number, day: number): string {
@@ -1839,9 +2238,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private setupLayoutMobile(): void {
     if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mq = window.matchMedia('(max-width: 768px)');
+    const mq = window.matchMedia(mediaQueryMax('agendaMobile'));
     const apply = (): void => {
       this.layoutMobile = mq.matches;
+      if (!mq.matches) {
+        this.grelhaScrollXDia = 0;
+        this.grelhaScrollXSemana = 0;
+      }
     };
     apply();
     mq.addEventListener('change', apply);

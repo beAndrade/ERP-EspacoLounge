@@ -1,3 +1,5 @@
+@use '../../../../styles/breakpoints' as bp;
+
 /**
  * Shell alinhado ao drawer de agendamento (`form-shell--modal` + cabeçalho/rodapé).
  * O painel `.app-drawer` no hub define `--drawer-pad-x`, `padding` e o mesmo rect
@@ -151,7 +153,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@include bp.bp-down(drawer-form) {
   .nc-drawer {
     display: flex;
     flex-direction: column;
@@ -335,7 +337,7 @@
   gap: 0.75rem 1rem;
 }
 
-@media (max-width: 768px) {
+@include bp.bp-down(agenda-mobile) {
   .nc-main__top {
     grid-template-columns: 1fr;
   }
@@ -499,7 +501,7 @@
   margin-left: auto;
 }
 
-@media (max-width: 480px) {
+@include bp.bp-down(comanda-col-xs) {
   .nc-itens__title-row {
     flex-wrap: wrap;
   }
@@ -1540,14 +1542,14 @@
   }
 }
 
-@media (max-width: 1480px) {
+@include bp.bp-down(comanda-col-xl) {
   :host {
     --comanda-col-tipo: 120px;
     --comanda-col-money: 110px;
   }
 }
 
-@media (max-width: 1280px) {
+@include bp.bp-down(comanda-col-lg) {
   :host {
     --comanda-col-tipo: 112px;
     --comanda-col-pro: 6.6rem;
@@ -1555,7 +1557,7 @@
   }
 }
 
-@media (max-width: 1120px) {
+@include bp.bp-down(comanda-col-md) {
   :host {
     --comanda-col-qtd: 52px;
     --comanda-col-tipo: 104px;
@@ -2012,7 +2014,7 @@
 }
 
 /** Em painéis estreitos a grelha pode precisar de scroll horizontal. */
-@media (max-width: 540px) {
+@include bp.bp-down(comanda-col-sm) {
   .nc-leitura__row--stack-money .nc-leitura__money--end {
     width: 100%;
     max-width: 100%;

@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import type { ApiResponse } from '../models/api.models';
 import type { AuthUser, LoginResponse } from '../models/auth.models';
@@ -18,6 +18,8 @@ export class AuthService {
 
   readonly user = signal<AuthUser | null>(this.readStoredUser());
   readonly bootstrapped = signal(false);
+  /** Exibir modal de sessão expirada na próxima visita ao login. */
+  private readonly sessaoExpiradaPendente = signal(false);
 
   get token(): string | null {
     try {
@@ -46,10 +48,7 @@ export class AuthService {
   bootstrapSession(): Observable<boolean> {
     if (!this.token) {
       this.bootstrapped.set(true);
-      return new Observable((sub) => {
-        sub.next(false);
-        sub.complete();
-      });
+      return of(false);
     }
     return this.http
       .get<ApiResponse<{ user: AuthUser }>>(`${this.baseUrl}/api/auth/me`)
@@ -62,18 +61,32 @@ export class AuthService {
           }
           return r.data.user;
         }),
-        tap({
-          next: (u) => {
-            this.persistUser(u);
-            this.bootstrapped.set(true);
-          },
-          error: () => {
-            this.clearSession();
-            this.bootstrapped.set(true);
-          },
+        tap((u) => {
+          this.persistUser(u);
+          this.bootstrapped.set(true);
         }),
         map(() => true),
+        catchError(() => {
+          this.marcarSessaoExpirada();
+          this.clearSession();
+          this.bootstrapped.set(true);
+          return of(false);
+        }),
       );
+  }
+
+  /** Marca que o utilizador deve ver o aviso de sessão expirada no login. */
+  marcarSessaoExpirada(): void {
+    this.sessaoExpiradaPendente.set(true);
+  }
+
+  /**
+   * Lê e limpa o aviso pendente (evita repetir o modal ao recarregar sem token).
+   */
+  consumirAvisoSessaoExpirada(): boolean {
+    if (!this.sessaoExpiradaPendente()) return false;
+    this.sessaoExpiradaPendente.set(false);
+    return true;
   }
 
   login(email: string, senha: string): Observable<AuthUser> {

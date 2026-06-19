@@ -181,6 +181,16 @@ export class ClienteCadastroDrawerService {
   comandaEmpilhadaPanelOpen = false;
   comandaEmpilhadaContexto: ComandaDrawerContextoAgenda | null = null;
   carregandoComandaEmpilhada = false;
+  /** Ficha do cliente empilhada (links da sidebar de comanda/agendamento). */
+  fichaEmpilhadaAberta = false;
+  fichaEmpilhadaPanelOpen = false;
+  private abaAtivaAntesFichaEmpilhada: ClienteCadastroAba = 'Cadastro';
+  private fichaEmpilhadaCallbacks: ClienteCadastroDrawerCallbacks | null = null;
+  private fichaEmpilhadaCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Host empilha drawer «Editar agendamento» (aba Agendamentos). */
+  editarAgendamentoHistoricoHandler:
+    | ((idAtendimento: string, dataYmd: string) => void)
+    | null = null;
   private comandaEmpilhadaCloseTimer: ReturnType<typeof setTimeout> | null =
     null;
   exibicao: ClienteCadastroExibicao = 'drawer';
@@ -274,9 +284,91 @@ export class ClienteCadastroDrawerService {
     payload: AbrirCadastroClientePayload = {},
     options?: ClienteCadastroDrawerAbrirEdicaoOptions,
   ): void {
+    const cid = clienteId.trim();
+    if (!cid) return;
+    if (this.aberto && this.clienteId?.trim() === cid) {
+      this.abrirFichaEmpilhadaPorSidebar(payload, options);
+      return;
+    }
     const abaInicial =
       this.resolverAbaInicial(payload.aba) ?? options?.abaInicial;
-    this.abrirEdicao(clienteId, { ...options, abaInicial });
+    this.abrirEdicao(cid, { ...options, abaInicial });
+  }
+
+  /**
+   * Abre a ficha do cliente empilhada (mantém comanda/agendamento por baixo).
+   */
+  abrirFichaEmpilhadaPorSidebar(
+    payload: AbrirCadastroClientePayload = {},
+    options?: ClienteCadastroDrawerAbrirEdicaoOptions,
+  ): void {
+    if (!this.aberto || !this.clienteId?.trim()) return;
+
+    const aba =
+      this.resolverAbaInicial(payload.aba) ??
+      options?.abaInicial ??
+      'Cadastro';
+
+    if (this.fichaEmpilhadaAberta) {
+      this.selecionarAba(aba);
+      return;
+    }
+
+    this.abaAtivaAntesFichaEmpilhada = this.abaAtiva as ClienteCadastroAba;
+    this.fichaEmpilhadaCallbacks = options?.callbacks ?? null;
+    this.selecionarAba(aba);
+    this.abrirPainelFichaEmpilhada();
+  }
+
+  fecharFichaEmpilhada(aposAnimacao?: () => void): void {
+    if (!this.fichaEmpilhadaAberta) {
+      aposAnimacao?.();
+      return;
+    }
+    this.fichaEmpilhadaPanelOpen = false;
+    if (this.fichaEmpilhadaCloseTimer != null) {
+      clearTimeout(this.fichaEmpilhadaCloseTimer);
+    }
+    this.fichaEmpilhadaCloseTimer = setTimeout(() => {
+      this.fichaEmpilhadaCloseTimer = null;
+      this.fichaEmpilhadaAberta = false;
+      this.fichaEmpilhadaCallbacks = null;
+      this.abaAtiva = this.abaAtivaAntesFichaEmpilhada;
+      aposAnimacao?.();
+      this.appRef.tick();
+    }, DRAWER_ANIM_MS);
+  }
+
+  fecharFichaEmpilhadaSincrono(): void {
+    if (this.fichaEmpilhadaCloseTimer != null) {
+      clearTimeout(this.fichaEmpilhadaCloseTimer);
+      this.fichaEmpilhadaCloseTimer = null;
+    }
+    this.fichaEmpilhadaPanelOpen = false;
+    this.fichaEmpilhadaAberta = false;
+    this.fichaEmpilhadaCallbacks = null;
+    if (this.aberto) {
+      this.abaAtiva = this.abaAtivaAntesFichaEmpilhada;
+    }
+  }
+
+  private abrirPainelFichaEmpilhada(): void {
+    this.fichaEmpilhadaAberta = true;
+    this.fichaEmpilhadaPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.fichaEmpilhadaPanelOpen = true;
+          this.appRef.tick();
+        });
+      });
+    });
+  }
+
+  private callbacksSidebarAtivos(): ClienteCadastroDrawerCallbacks | null {
+    return this.fichaEmpilhadaAberta
+      ? this.fichaEmpilhadaCallbacks
+      : this.callbacks;
   }
 
   /** Formulário de cadastro dentro do drawer de perfil (sem overlay). */
@@ -329,6 +421,7 @@ export class ClienteCadastroDrawerService {
       return;
     }
     if (!this.aberto) return;
+    this.fecharFichaEmpilhadaSincrono();
     this.fecharComandaEmpilhadaSincrono();
     this.saveSub?.unsubscribe();
     this.saveSub = null;
@@ -429,11 +522,41 @@ export class ClienteCadastroDrawerService {
     const idAt = String(idAtendimento ?? '').trim();
     const cid = this.clienteId?.trim();
     if (!idAt || !cid || !this.isAberto) return;
+    this.fecharFichaEmpilhadaSincrono();
     if (this.comandaEmpilhadaAberta) {
-      this.fecharComandaEmpilhada(() => this.carregarEAbrirComandaEmpilhada(idAt));
+      this.fecharComandaEmpilhada(() =>
+        this.carregarEAbrirComandaEmpilhada(idAt, { acessar: true }),
+      );
       return;
     }
-    this.carregarEAbrirComandaEmpilhada(idAt);
+    this.carregarEAbrirComandaEmpilhada(idAt, { acessar: true });
+  }
+
+  /** Abre «Nova comanda» para um agendamento ainda sem comanda global. */
+  criarComandaAgendamento(idAtendimento: string): void {
+    const idAt = String(idAtendimento ?? '').trim();
+    const cid = this.clienteId?.trim();
+    if (!idAt || !cid || !this.isAberto) return;
+    this.fecharFichaEmpilhadaSincrono();
+    if (this.comandaEmpilhadaAberta) {
+      this.fecharComandaEmpilhada(() =>
+        this.carregarEAbrirComandaEmpilhada(idAt, { acessar: false }),
+      );
+      return;
+    }
+    this.carregarEAbrirComandaEmpilhada(idAt, { acessar: false });
+  }
+
+  /** Abre drawer «Editar agendamento» empilhado (delegado ao host). */
+  editarAgendamentoHistorico(idAtendimento: string, dataYmd: string): void {
+    const idAt = String(idAtendimento ?? '').trim();
+    const ymd = String(dataYmd ?? '').trim().slice(0, 10);
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !this.isAberto) return;
+    this.editarAgendamentoHistoricoHandler?.(idAt, ymd);
+  }
+
+  temComandaAgendamento(row: ClienteAgendamentoHistoricoLinha): boolean {
+    return row.numeroComanda != null && row.numeroComanda > 0;
   }
 
   fecharComandaEmpilhada(aposAnimacao?: () => void): void {
@@ -481,12 +604,19 @@ export class ClienteCadastroDrawerService {
    * Páginas com listener global devem chamar isto **antes** de `fechar()` na ficha.
    */
   tratarEscapeComandaEmpilhadaNaFicha(): boolean {
+    if (this.fichaEmpilhadaAberta) {
+      this.fecharFichaEmpilhada();
+      return true;
+    }
     if (!this.comandaEmpilhadaAberta) return false;
     this.fecharComandaEmpilhada();
     return true;
   }
 
-  private carregarEAbrirComandaEmpilhada(idAtendimento: string): void {
+  private carregarEAbrirComandaEmpilhada(
+    idAtendimento: string,
+    opts: { acessar: boolean },
+  ): void {
     const idAt = idAtendimento.trim();
     const cid = this.clienteId?.trim();
     if (!idAt || !cid) return;
@@ -507,20 +637,25 @@ export class ClienteCadastroDrawerService {
           this.appRef.tick();
           return;
         }
+        const n = l0.numeroComanda;
+        const numeroComanda =
+          typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null;
+        if (opts.acessar && numeroComanda == null) {
+          this.carregandoComandaEmpilhada = false;
+          this.appRef.tick();
+          return;
+        }
         const cliente =
           clientes.find((c) => c.id === cid) ??
           ({
             id: cid,
             nome: this.cadastroNome?.trim() || '—',
           } as Cliente);
-        const n = l0.numeroComanda;
-        const numero =
-          typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 1;
         const dataYmd = (g.data || '').slice(0, 10);
         this.comandaEmpilhadaContexto = {
-          acessar: true,
+          acessar: opts.acessar,
           idAtendimento: idAt,
-          numeroComandaTitulo: numero,
+          numeroComandaTitulo: numeroComanda ?? 1,
           clienteId: cid,
           cliente,
           opcoesClientes: this.opcoesClientesParaComandaEmpilhada(clientes),
@@ -822,6 +957,11 @@ export class ClienteCadastroDrawerService {
       }
       if (salvo) {
         callbacksSalvar?.onSalvo?.(salvo);
+        this.callbacksSidebarAtivos()?.onSalvo?.(salvo);
+      }
+      if (this.fichaEmpilhadaAberta) {
+        this.fecharFichaEmpilhada();
+        return;
       }
       this.fechar();
     };
@@ -932,6 +1072,9 @@ export class ClienteCadastroDrawerService {
           this.carregarVendasHistorico(cid);
         }
         this.callbacks?.onClienteCarregado?.(
+          fotoRemovida ? { ...c, fotoUrl: null } : c,
+        );
+        this.callbacksSidebarAtivos()?.onClienteCarregado?.(
           fotoRemovida ? { ...c, fotoUrl: null } : c,
         );
       },

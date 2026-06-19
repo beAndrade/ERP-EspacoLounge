@@ -1,3 +1,5 @@
+@use '../../styles/breakpoints' as bp;
+
 /**
  * Empilhamento global: ficha do cliente acima de comanda/faturar das páginas
  * (transações, comandas, comissões — z-index até ~1105).
@@ -22,12 +24,14 @@ app-profissional-cadastro-drawer-host {
   --z-cliente-global-tooltip: 1283;
   --z-cliente-stack-overlay: 1284;
   --z-cliente-stack-drawer: 1285;
-  --z-cliente-stack-faturar-overlay: 1286;
-  --z-cliente-stack-faturar-drawer: 1287;
-  --z-cliente-stack-edit-overlay: 1288;
-  --z-cliente-stack-edit-drawer: 1289;
+  --z-cliente-stack-edit-overlay: 1286;
+  --z-cliente-stack-edit-drawer: 1287;
+  --z-cliente-stack-ficha-overlay: 1288;
+  --z-cliente-stack-ficha-drawer: 1289;
   --z-cliente-stack-credito-overlay: 1290;
   --z-cliente-stack-credito-drawer: 1291;
+  --z-cliente-stack-faturar-overlay: 1292;
+  --z-cliente-stack-faturar-drawer: 1293;
 }
 
 /* ViewEncapsulation.None — não usar `.app-drawer` sozinho (afeta outros módulos). */
@@ -35,7 +39,8 @@ app-profissional-cadastro-drawer-host {
 .cliente-comanda-empilhada.app-drawer,
 .cliente-credito-empilhada.app-drawer,
 .cliente-faturar-empilhada.app-drawer,
-.cliente-edit-ag-empilhada.app-drawer {
+.cliente-edit-ag-empilhada.app-drawer,
+.cliente-ficha-empilhada.app-drawer {
   --drawer-inset-x: 15px;
   --drawer-pad-x: var(--drawer-inset-x);
   position: fixed;
@@ -58,14 +63,9 @@ app-profissional-cadastro-drawer-host {
   }
 }
 
-@media (min-width: 1648px) {
-  .cliente-drawer.app-drawer {
-    left: auto;
-    right: 0;
-    width: min(1200px, 100vw);
-  }
+.cliente-drawer.app-drawer {
+  @include bp.drawer-anchor-fixed-width;
 }
-
 
 .overlay {
   position: fixed;
@@ -1716,7 +1716,7 @@ app-profissional-cadastro-drawer-host {
   }
 }
 
-@media (max-width: 1024px) {
+@include bp.bp-down(drawer-tablet) {
   .cliente-body {
     grid-template-columns: 140px minmax(0, max-content) minmax(220px, 300px);
   }
@@ -1730,7 +1730,7 @@ app-profissional-cadastro-drawer-host {
   }
 }
 
-@media (max-width: 860px) {
+@include bp.bp-down(ficha-stack) {
   .cliente-body {
     grid-template-columns: 1fr;
     min-height: auto;
@@ -1808,7 +1808,7 @@ app-profissional-cadastro-drawer-host {
 
 }
 
-@media (max-width: 560px) {
+@include bp.bp-down(form-narrow) {
   .cliente-form-grid {
     width: 100%;
   }
@@ -1907,6 +1907,69 @@ app-profissional-cadastro-drawer-host {
   z-index: var(--z-cliente-stack-edit-overlay);
 }
 
+.overlay--cliente-ficha-empilhada {
+  z-index: var(--z-cliente-stack-ficha-overlay);
+}
+
+/**
+ * O host (`pointer-events: none`) exige reativar cliques nos painéis empilhados;
+ * sem isto, botões/links da comanda ficam inertes (cliques caem na ficha por baixo).
+ */
+.cliente-comanda-empilhada.app-drawer,
+.cliente-credito-empilhada.app-drawer,
+.cliente-faturar-empilhada.app-drawer,
+.cliente-edit-ag-empilhada.app-drawer,
+.cliente-ficha-empilhada.app-drawer {
+  pointer-events: none;
+
+  &.app-drawer--open {
+    pointer-events: auto;
+  }
+}
+
+app-cliente-cadastro-drawer-host:has(
+    .cliente-comanda-empilhada.app-drawer--open,
+    .cliente-credito-empilhada.app-drawer--open,
+    .cliente-faturar-empilhada.app-drawer--open,
+    .cliente-edit-ag-empilhada.app-drawer--open,
+    .cliente-ficha-empilhada.app-drawer--open
+  )
+  .cliente-drawer.app-drawer--open {
+  pointer-events: none;
+}
+
+app-profissional-cadastro-drawer-host:has(
+    .cliente-comanda-empilhada.app-drawer--open,
+    .cliente-credito-empilhada.app-drawer--open,
+    .cliente-faturar-empilhada.app-drawer--open,
+    .cliente-edit-ag-empilhada.app-drawer--open,
+    .cliente-ficha-empilhada.app-drawer--open
+  )
+  .cliente-drawer.app-drawer--open {
+  pointer-events: none;
+}
+
+.cliente-ficha-empilhada.app-drawer {
+  z-index: var(--z-cliente-stack-ficha-drawer);
+  left: auto;
+  right: 0;
+  width: min(var(--cliente-drawer-shell-w, 1200px), 100vw);
+  padding: 0;
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+
+  > app-cliente-drawer-shell {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    width: 100%;
+  }
+
+  @include bp.drawer-anchor-fixed-width;
+}
+
 .cliente-comanda-empilhada.app-drawer {
   z-index: var(--z-cliente-stack-drawer);
   left: auto;
@@ -1974,11 +2037,7 @@ app-profissional-cadastro-drawer-host {
   }
 }
 
-@media (min-width: 1648px) {
-  .cliente-comanda-empilhada.app-drawer,
-  .cliente-edit-ag-empilhada.app-drawer {
-    left: max(320px, calc(100vw - 1400px));
-    width: auto;
-    right: 0;
-  }
+.cliente-comanda-empilhada.app-drawer,
+.cliente-edit-ag-empilhada.app-drawer {
+  @include bp.drawer-anchor-fluid;
 }

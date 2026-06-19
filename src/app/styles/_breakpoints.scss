@@ -1,0 +1,68 @@
+@use 'sass:map';
+
+/// Breakpoints oficiais (fonte única SCSS).
+/// TypeScript: `src/app/styles/breakpoints.ts` (manter valores iguais).
+$breakpoints: (
+  shell-mobile: 640px,
+  form-narrow: 560px,
+  ficha-stack: 860px,
+  drawer-form: 720px,
+  agenda-mobile: 768px,
+  drawer-sidebar-hide: 1336px,
+  drawer-tablet: 1024px,
+  comanda-col-xl: 1480px,
+  comanda-col-lg: 1280px,
+  comanda-col-md: 1120px,
+  comanda-col-sm: 540px,
+  comanda-col-xs: 480px,
+  drawer-wide: 1648px,
+) !default;
+
+/// Largura máxima do conteúdo em drawers «wide» (comanda/agenda).
+$drawer-wide-content-max: 1400px !default;
+/// Espaço mínimo reservado à sidebar em ecrãs wide.
+$drawer-wide-sidebar-min: 320px !default;
+/// Largura máxima da ficha do cliente.
+$cliente-drawer-max-width: 1200px !default;
+
+@function bp($name) {
+  @if not map.has-key($breakpoints, $name) {
+    @error 'Breakpoint "#{$name}" não definido em $breakpoints.';
+  }
+  @return map.get($breakpoints, $name);
+}
+
+/// `min-width` — a partir do breakpoint (inclusive).
+@mixin bp-up($name) {
+  @media (min-width: bp($name)) {
+    @content;
+  }
+}
+
+/// `max-width` — até ao breakpoint (inclusive).
+@mixin bp-down($name) {
+  @media (max-width: bp($name)) {
+    @content;
+  }
+}
+
+/// Ficha / drawer com largura fixa encostado à direita (≥ drawer-wide).
+@mixin drawer-anchor-fixed-width($max-width: $cliente-drawer-max-width) {
+  @include bp-up(drawer-wide) {
+    left: auto;
+    right: 0;
+    width: min($max-width, 100vw);
+  }
+}
+
+/// Drawer «wide» com `left` dinâmico (sidebar + painel ~1400px).
+@mixin drawer-anchor-fluid(
+  $content-max: $drawer-wide-content-max,
+  $sidebar-min: $drawer-wide-sidebar-min,
+) {
+  @include bp-up(drawer-wide) {
+    left: max($sidebar-min, calc(100vw - #{$content-max}));
+    width: auto;
+    right: 0;
+  }
+}

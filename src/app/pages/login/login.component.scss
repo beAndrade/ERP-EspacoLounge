@@ -96,3 +96,42 @@
   opacity: 0.65;
   cursor: not-allowed;
 }
+
+.login-sessao-modal {
+  text-align: center;
+  padding: 28px 28px 24px;
+}
+
+.login-sessao-modal__title {
+  font-size: 1.35rem;
+  margin-bottom: 12px;
+}
+
+.login-sessao-modal__text {
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.login-sessao-modal__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.login-sessao-modal__btn {
+  min-width: 120px;
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-sessao-modal__btn:hover {
+  background: #1d4ed8;
+}

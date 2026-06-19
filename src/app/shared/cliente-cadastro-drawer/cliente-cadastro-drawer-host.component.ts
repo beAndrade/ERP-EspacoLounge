@@ -10,24 +10,18 @@ import {
 } from '@angular/core';
 import { portalHostElementToBody } from '../drawer-body-portal';
 import { FormsModule } from '@angular/forms';
-import type { ComandaResumoPagamentos } from '../../core/models/api.models';
+import type { ComandaResumoPagamentos, Cliente } from '../../core/models/api.models';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { FaturarDrawerComponent } from '../../features/agenda/pages/hub/faturar-drawer.component';
 import { NovaComandaDrawerComponent } from '../../features/agenda/pages/hub/nova-comanda-drawer.component';
 import { AgendaNovoComponent } from '../../features/agenda/pages/novo/agenda-novo.component';
-import { ClienteAgendamentosTabComponent } from './cliente-agendamentos-tab.component';
-import { ClienteVendasTabComponent } from './cliente-vendas-tab.component';
-import { ClienteAvatarComponent } from '../cliente-avatar/cliente-avatar.component';
-import { ClienteCadastroFormComponent } from './cliente-cadastro-form.component';
 import {
   ClienteCadastroDrawerService,
   DRAWER_ANIM_MS,
   type AbrirCadastroClientePayload,
 } from './cliente-cadastro-drawer.service';
-import { ClienteCashbackTabComponent } from './cliente-cashback-tab.component';
 import { ClienteAtualizarCreditoDrawerComponent } from './cliente-atualizar-credito-drawer.component';
-import { ClienteCreditosTabComponent } from './cliente-creditos-tab.component';
-import { ClienteDebitosTabComponent } from './cliente-debitos-tab.component';
+import { ClienteDrawerShellComponent } from './cliente-drawer-shell.component';
 
 type FaturarEmpilhadoCtx = {
   idAtendimento: string;
@@ -42,14 +36,8 @@ type FaturarEmpilhadoCtx = {
   standalone: true,
   imports: [
     FormsModule,
-    ClienteCadastroFormComponent,
-    ClienteCashbackTabComponent,
-    ClienteCreditosTabComponent,
+    ClienteDrawerShellComponent,
     ClienteAtualizarCreditoDrawerComponent,
-    ClienteDebitosTabComponent,
-    ClienteAgendamentosTabComponent,
-    ClienteVendasTabComponent,
-    ClienteAvatarComponent,
     NovaComandaDrawerComponent,
     FaturarDrawerComponent,
     AgendaNovoComponent,
@@ -68,15 +56,15 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.restoreBodyPortal = portalHostElementToBody(this.hostEl);
+    this.d.editarAgendamentoHistoricoHandler = (idAt, ymd) =>
+      this.abrirEditAgendamentoEmpilhado(idAt, ymd);
   }
 
   ngOnDestroy(): void {
+    this.d.editarAgendamentoHistoricoHandler = null;
     this.restoreBodyPortal?.();
     this.restoreBodyPortal = null;
   }
-
-  @ViewChild(ClienteDebitosTabComponent)
-  private debitosTabRef?: ClienteDebitosTabComponent;
 
   @ViewChild(NovaComandaDrawerComponent)
   private comandaEmpilhadaRef?: NovaComandaDrawerComponent;
@@ -109,7 +97,9 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   > | null = null;
 
   ariaLabelComandaEmpilhada(): string {
-    const n = this.d.comandaEmpilhadaContexto?.numeroComandaTitulo;
+    const ctx = this.d.comandaEmpilhadaContexto;
+    if (ctx && !ctx.acessar) return 'Nova comanda';
+    const n = ctx?.numeroComandaTitulo;
     return typeof n === 'number' && n > 0
       ? `Visualizando comanda #${n}`
       : 'Visualizando comanda';
@@ -150,10 +140,16 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   }
 
   fecharComandaEmpilhada(): void {
+    this.d.fecharFichaEmpilhadaSincrono();
     this.fecharAtualizarCreditoEmpilhadoSincrono();
     this.fecharFaturarEmpilhadoSincrono();
     this.fecharEditAgendamentoEmpilhadoSincrono();
     this.d.fecharComandaEmpilhada();
+    this.recarregarAbaHistoricoClienteSeAberta();
+  }
+
+  fecharFichaEmpilhada(): void {
+    this.d.fecharFichaEmpilhada();
   }
 
   onAbrirAtualizarCreditoEmpilhado(): void {
@@ -217,6 +213,11 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
     const idAt = ctx?.idAtendimento?.trim();
     const ymd = (ctx?.dataYmd ?? '').trim();
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.abrirEditAgendamentoEmpilhado(idAt, ymd);
+  }
+
+  private abrirEditAgendamentoEmpilhado(idAt: string, ymd: string): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
     this.editAgendamentoEmpilhadoCtx = {
       data: ymd,
       profissional_id: 0,
@@ -250,6 +251,22 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
     this.fecharEditAgendamentoEmpilhado();
     if (comandaAberta) {
       setTimeout(() => this.comandaEmpilhadaRef?.recarregarDadosComanda(), 0);
+    }
+    if (this.d.abaAtiva === 'Agendamentos') {
+      this.d.aplicarFiltroAgendamentosHistorico();
+    }
+    if (this.d.abaAtiva === 'Vendas') {
+      this.d.aplicarFiltroVendasHistorico();
+    }
+  }
+
+  private recarregarAbaHistoricoClienteSeAberta(): void {
+    if (this.d.abaAtiva === 'Agendamentos') {
+      this.d.aplicarFiltroAgendamentosHistorico();
+      return;
+    }
+    if (this.d.abaAtiva === 'Vendas') {
+      this.d.aplicarFiltroVendasHistorico();
     }
   }
 
@@ -308,7 +325,6 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
         this.comandaEmpilhadaRef?.recarregarAposFaturar();
       }
       this.d.recarregarDebitosPainel();
-      this.debitosTabRef?.limparSelecaoDebitos();
     });
     if (modoVer) return;
     this.fecharComandaEmpilhada();
@@ -317,10 +333,36 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   onAbrirCadastroClienteDesdeComandaEmpilhada(
     payload: AbrirCadastroClientePayload,
   ): void {
-    const aba = payload.aba;
-    this.d.fecharComandaEmpilhada(() => {
-      if (aba) this.d.selecionarAba(aba);
+    this.d.abrirFichaEmpilhadaPorSidebar(payload, {
+      callbacks: this.callbacksSidebarComandaEmpilhada(),
     });
+  }
+
+  private callbacksSidebarComandaEmpilhada(): {
+    onClienteCarregado: (c: Cliente) => void;
+    onSalvo: (salvo: Cliente) => void;
+  } {
+    return {
+      onClienteCarregado: (c) => {
+        const ctx = this.d.comandaEmpilhadaContexto;
+        const cid = c.id?.trim();
+        if (!cid || ctx?.clienteId?.trim() !== cid) return;
+        this.d.comandaEmpilhadaContexto = { ...ctx, cliente: c };
+      },
+      onSalvo: (salvo) => {
+        const ctx = this.d.comandaEmpilhadaContexto;
+        const cid = salvo.id?.trim();
+        if (cid && ctx?.clienteId?.trim() === cid) {
+          this.d.comandaEmpilhadaContexto = { ...ctx, cliente: salvo };
+        }
+        if (cid) {
+          setTimeout(
+            () => this.comandaEmpilhadaRef?.recarregarClienteAposSalvarFicha(cid),
+            0,
+          );
+        }
+      },
+    };
   }
 
   private fecharFaturarEmpilhadoComCallback(apos?: () => void): void {

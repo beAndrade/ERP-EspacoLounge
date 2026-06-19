@@ -1,3 +1,5 @@
+@use '../../styles/breakpoints' as bp;
+
 @use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
 
 app-profissional-cadastro-drawer-host {
@@ -111,8 +113,6 @@ app-profissional-cadastro-drawer-host {
   z-index: var(--z-prof-vales-drawer);
 }
 
-@media (min-width: 1648px) {
-  .cliente-drawer.cliente-drawer--profissional.app-drawer {
-    width: 1200px;
-  }
+.cliente-drawer.cliente-drawer--profissional.app-drawer {
+  @include bp.drawer-anchor-fixed-width(bp.$cliente-drawer-max-width);
 }

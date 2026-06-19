@@ -1,5 +1,6 @@
 import { NgClass } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   NavigationEnd,
   Router,
@@ -13,6 +14,8 @@ import { ClienteCadastroDrawerHostComponent } from './shared/cliente-cadastro-dr
 import { ProfissionalCadastroDrawerHostComponent } from './shared/profissional-cadastro-drawer/profissional-cadastro-drawer-host.component';
 import { SessaoUsuarioService } from './core/services/sessao-usuario.service';
 import { SidebarProfileComponent } from './layout/sidebar-profile/sidebar-profile.component';
+import { mediaQueryMax } from './styles/breakpoints';
+import { AppShellUiService } from './core/services/app-shell-ui.service';
 import { SidebarNovoMenuComponent } from './layout/sidebar-novo-menu/sidebar-novo-menu.component';
 import { MinhaContaDrawerHostComponent } from './shared/minha-conta-drawer/minha-conta-drawer-host.component';
 
@@ -47,6 +50,7 @@ export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   readonly sessao = inject(SessaoUsuarioService);
+  private readonly shellUi = inject(AppShellUiService);
 
   readonly title = 'Espaço Lounge';
   isPublicRoute = false;
@@ -106,6 +110,7 @@ export class AppComponent implements OnInit {
       /* ignore */
     }
     this.setupMobileViewport();
+    this.setupShellUiRequests();
     this.syncNavExpandForActiveRoutes();
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
@@ -126,13 +131,22 @@ export class AppComponent implements OnInit {
     this.mobileNavOpen = !this.mobileNavOpen;
   }
 
+  private setupShellUiRequests(): void {
+    this.shellUi.onToggleMobileNav
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.toggleMobileNav());
+    this.shellUi.onToggleSidebar
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.toggleSidebar());
+  }
+
   closeMobileNav(): void {
     this.mobileNavOpen = false;
   }
 
   private setupMobileViewport(): void {
     if (typeof window === 'undefined' || !window.matchMedia) return;
-    this.mobileMq = window.matchMedia('(max-width: 640px)');
+    this.mobileMq = window.matchMedia(mediaQueryMax('shellMobile'));
     const apply = (): void => {
       this.isMobileViewport = this.mobileMq?.matches ?? false;
       if (this.isMobileViewport) {
