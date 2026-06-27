@@ -2434,12 +2434,19 @@ $month-num-fg-muted: #00000028;
 
     /** Sem linha entre nav e profissionais / entre colunas. */
     .grid-head__prof {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
       background: transparent;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
       box-shadow: none;
       filter: none;
       border-bottom: none;
+
+      app-profissional-avatar,
+      .grid-head__prof-nome {
+        pointer-events: none;
+      }
 
       &:hover,
       &--ativo {
@@ -2918,11 +2925,37 @@ $month-num-fg-muted: #00000028;
     max-height: min(90vh, 640px);
     overflow-y: auto;
     pointer-events: auto;
+    padding: 1rem 1.1rem 1.1rem;
     transform: translate(-50%, -50%) scale(0.97);
     transform-origin: center center;
 
     &.hub-float-cal--open {
       transform: translate(-50%, -50%) scale(1);
+    }
+
+    .hub-float-cal__dow {
+      padding: 0.15rem 0 0.4rem;
+      border-bottom: 1px dotted #bfbfbf;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #595959;
+    }
+
+    .hub-float-cal__cell {
+      min-height: 2.35rem;
+      border-radius: 2px;
+      font-size: 0.88rem;
+
+      &--selected {
+        border-radius: 2px;
+        background: var(--color-primary, #505afb);
+      }
+    }
+
+    .hub-float-cal__nav-btn {
+      color: #595959;
+      font-size: 1rem;
     }
   }
 
@@ -2980,7 +3013,7 @@ $month-num-fg-muted: #00000028;
   }
 
   .hub-float-cal__quick--compact .hub-float-cal__quick-btn {
-    padding: 0.65rem 1rem;
+    padding: 0.7rem 1rem;
     border: none;
     border-radius: 8px;
     background: var(--color-primary, #505afb);
@@ -2989,9 +3022,11 @@ $month-num-fg-muted: #00000028;
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
+    text-decoration: none;
 
     &:hover {
       filter: brightness(1.05);
+      text-decoration: none;
     }
   }
 

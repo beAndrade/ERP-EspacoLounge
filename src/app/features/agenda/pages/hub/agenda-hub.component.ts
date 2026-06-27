@@ -305,7 +305,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const t = ev.target;
     if (!(t instanceof Element)) return;
     if (t.closest('.hub-toolbar-menu')) return;
-    if (this.painelCalendarioAberto && !t.closest('.hub-cal-anchor')) {
+    if (
+      this.painelCalendarioAberto &&
+      !t.closest('.hub-cal-anchor') &&
+      !t.closest('.hub-header-compact__title')
+    ) {
       this.fecharPaineisHub();
     }
     this.fecharMenusToolbar();
@@ -767,6 +771,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   togglePainelCalendario(): void {
     const abrir = !this.painelCalendarioAberto;
     this.fecharMenusToolbar();
+    if (abrir) {
+      this.mesRef = this.inicioDoMes(this.parseYmdLocal(this.diaYmd));
+    }
     this.painelCalendarioAberto = abrir;
   }
 
@@ -899,6 +906,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private panGrelhaCaptureEl: HTMLElement | null = null;
   /** Evita abrir drawer ao soltar após arraste horizontal no cabeçalho. */
   private suprimirClickProfCabecalho = false;
+  private panGrelhaDistanciaMaxima = 0;
   private profHeadScrollbarHideTimer: ReturnType<typeof setTimeout> | null = null;
 
   transformGrelhaCols(grupo: 'dia' | 'semana'): string | null {
@@ -940,6 +948,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.panGrelhaStartScroll =
       grupo === 'dia' ? this.grelhaScrollXDia : this.grelhaScrollXSemana;
     this.panGrelhaAxis = null;
+    this.panGrelhaDistanciaMaxima = 0;
     this.panGrelhaWrap = wrap;
     this.panGrelhaCaptureEl = pane;
 
@@ -1007,6 +1016,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
 
     const dx = ev.clientX - this.panGrelhaStartX;
+    this.panGrelhaDistanciaMaxima = Math.max(
+      this.panGrelhaDistanciaMaxima,
+      Math.abs(dx),
+    );
 
     ev.preventDefault();
     const max = this.maxScrollHorizontalGrelha(
@@ -1042,9 +1055,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   private cancelarPanGrelha(): void {
-    if (this.panGrelhaAxis === 'x' && this.panGrelhaCaptureEl?.closest('.grid-head')) {
+    if (
+      this.panGrelhaAxis === 'x' &&
+      this.panGrelhaCaptureEl?.closest('.grid-head') &&
+      this.panGrelhaDistanciaMaxima >= PAN_GRELHA_LIMIAR_PX
+    ) {
       this.suprimirClickProfCabecalho = true;
     }
+    this.panGrelhaDistanciaMaxima = 0;
     this.setProfHeadScrollbarAtivo(false);
     this.removerPanGrelhaDetectorPassivo();
     this.panGrelhaCaptureEl?.removeEventListener(

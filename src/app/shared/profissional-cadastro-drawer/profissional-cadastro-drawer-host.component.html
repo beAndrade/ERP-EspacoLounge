@@ -16,7 +16,15 @@
     <div class="cliente-shell">
       <header class="cliente-head">
         <div class="cliente-head__title-wrap">
-          <h2 class="cliente-head__title">{{ d.tituloCabecalho() }}</h2>
+          <div class="cliente-head__title-row">
+            @if (d.modo !== 'novo') {
+              <app-profissional-avatar
+                variant="cabecalho"
+                [fotoUrl]="d.cadastroFotoUrl"
+              />
+            }
+            <h2 class="cliente-head__title">{{ d.tituloCabecalho() }}</h2>
+          </div>
         </div>
         <button
           type="button"
@@ -25,13 +33,88 @@
           aria-label="Fechar"
         ></button>
       </header>
+
       <div
         class="cliente-body-scroll"
         (scroll)="d.ocultarProfNavLockTooltip()"
       >
+      <nav class="prof-nav-mobile" aria-label="Secções do profissional">
+        <div
+          class="prof-nav-mobile__scroll"
+          (pointerdown)="aoProfNavPanInicio($event)"
+        >
+          <div class="prof-nav-mobile__track">
+            @for (aba of d.abasNavScroll; track aba) {
+              <button
+                type="button"
+                class="prof-nav-mobile__tab"
+                [class.prof-nav-mobile__tab--active]="d.abaAtiva === aba"
+                [class.prof-nav-mobile__tab--disabled]="d.abaDesabilitada(aba)"
+                [attr.aria-disabled]="d.abaDesabilitada(aba) ? 'true' : null"
+                (click)="selecionarAbaNav($event, aba)"
+              >
+                <span class="prof-nav-mobile__tab-label">{{ aba }}</span>
+              </button>
+            }
+          </div>
+        </div>
+        <div
+          class="prof-nav-mobile__overflow-wrap"
+          [class.prof-nav-mobile__overflow-wrap--open]="profNavOverflowAberto"
+        >
+          <button
+            type="button"
+            class="prof-nav-mobile__more"
+            [class.prof-nav-mobile__more--active]="
+              profNavOverflowAberto || d.abaAtivaNoOverflow()
+            "
+            [attr.aria-expanded]="profNavOverflowAberto"
+            aria-haspopup="menu"
+            aria-label="Mais secções"
+            (click)="toggleProfNavOverflow($event)"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="5" r="1.75" />
+              <circle cx="12" cy="12" r="1.75" />
+              <circle cx="12" cy="19" r="1.75" />
+            </svg>
+          </button>
+          <div
+            class="prof-nav-mobile__menu"
+            role="menu"
+            [class.prof-nav-mobile__menu--open]="profNavOverflowAberto"
+            (click)="$event.stopPropagation()"
+          >
+            @for (aba of d.abasNavOverflow; track aba) {
+              <button
+                type="button"
+                class="prof-nav-mobile__menu-item"
+                role="menuitem"
+                [class.prof-nav-mobile__menu-item--disabled]="
+                  d.abaOverflowDesabilitada(aba)
+                "
+                [attr.aria-disabled]="
+                  d.abaOverflowDesabilitada(aba) ? 'true' : null
+                "
+                (click)="selecionarAbaOverflow(aba)"
+              >
+                {{ aba }}
+              </button>
+            }
+          </div>
+        </div>
+      </nav>
+
         <div class="cliente-body">
           <nav
-            class="cliente-nav"
+            class="cliente-nav cliente-nav--desktop"
             aria-label="Secções do profissional"
             [style.--cliente-nav-active-index]="d.abaAtivaIndex()"
           >

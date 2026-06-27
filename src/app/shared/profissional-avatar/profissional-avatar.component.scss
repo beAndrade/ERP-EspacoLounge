@@ -37,3 +37,33 @@
     background: #f8f8f8;
   }
 }
+
+.profissional-avatar--cabecalho {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  color: #6b7280;
+  background: transparent;
+
+  .profissional-avatar__ico {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+  }
+
+  &.profissional-avatar--com-foto {
+    background: #f4f4f5;
+    border: 1px solid #e4e4e7;
+  }
+}
+
+:host-context(.hub-mobile-sticky-head) {
+  .profissional-avatar--grid-head {
+    background: transparent;
+
+    &.profissional-avatar--com-foto {
+      background: transparent;
+    }
+  }
+}

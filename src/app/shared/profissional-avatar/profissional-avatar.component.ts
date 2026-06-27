@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 /** Tamanhos/contextos padronizados do avatar do profissional. */
-export type ProfissionalAvatarVariant = 'grid-head';
+export type ProfissionalAvatarVariant = 'grid-head' | 'cabecalho';
 
 @Component({
   selector: 'app-profissional-avatar',

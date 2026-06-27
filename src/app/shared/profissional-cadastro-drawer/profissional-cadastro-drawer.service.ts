@@ -55,6 +55,16 @@ export const PROF_CADASTRO_ABAS_FUTURAS = [
 ] as const;
 
 export type ProfCadastroAba = (typeof PROF_CADASTRO_ABAS)[number];
+export type ProfCadastroAbaFutura = (typeof PROF_CADASTRO_ABAS_FUTURAS)[number];
+export type ProfCadastroAbaOverflow = ProfCadastroAba | ProfCadastroAbaFutura;
+
+/** Abas na barra horizontal (mobile) — todas as secções ativas; futuras ficam no menu ⋯. */
+export const PROF_CADASTRO_ABAS_NAV_SCROLL: readonly ProfCadastroAba[] =
+  PROF_CADASTRO_ABAS;
+
+/** Abas no menu «⋯» (mobile). */
+export const PROF_CADASTRO_ABAS_NAV_OVERFLOW: readonly ProfCadastroAbaFutura[] =
+  PROF_CADASTRO_ABAS_FUTURAS;
 
 /** Abas clicáveis (demais secções só após salvar o profissional). */
 export const PROF_CADASTRO_ABAS_ATIVAS: readonly ProfCadastroAba[] = [
@@ -84,6 +94,8 @@ export class ProfissionalCadastroDrawerService {
   profissionalId: number | null = null;
   abaAtiva: ProfCadastroAba = 'Cadastro';
   readonly abas = PROF_CADASTRO_ABAS;
+  readonly abasNavScroll = PROF_CADASTRO_ABAS_NAV_SCROLL;
+  readonly abasNavOverflow = PROF_CADASTRO_ABAS_NAV_OVERFLOW;
 
   cadastroNome = '';
   cadastroApelido = '';
@@ -160,7 +172,23 @@ export class ProfissionalCadastroDrawerService {
   private pageScrollLockAtivo = false;
 
   tituloCabecalho(): string {
-    return this.modo === 'novo' ? 'Novo profissional' : 'Editar profissional';
+    if (this.modo === 'novo') return 'Novo profissional';
+    return this.cadastroNome.trim() || 'Profissional';
+  }
+
+  isAbaFutura(aba: ProfCadastroAbaOverflow): aba is ProfCadastroAbaFutura {
+    return (PROF_CADASTRO_ABAS_FUTURAS as readonly string[]).includes(aba);
+  }
+
+  abaOverflowDesabilitada(aba: ProfCadastroAbaOverflow): boolean {
+    if (this.isAbaFutura(aba)) return true;
+    return this.abaDesabilitada(aba);
+  }
+
+  abaAtivaNoOverflow(): boolean {
+    return (PROF_CADASTRO_ABAS_FUTURAS as readonly string[]).includes(
+      this.abaAtiva,
+    );
   }
 
   abaDesabilitada(aba: ProfCadastroAba): boolean {
