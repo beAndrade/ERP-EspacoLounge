@@ -17,24 +17,34 @@
       (keydown.space)="onComboboxTriggerClick($event); $event.preventDefault()"
     >
       @if (panelOpen) {
-        <input
-          #triggerInput
-          type="search"
-          class="saas-select__trigger-input"
-          [value]="filterText"
-          (input)="onTriggerFilterInput($event)"
-          (click)="$event.stopPropagation()"
-          (keydown)="onTriggerFilterKeydown($event)"
-          [placeholder]="placeholder"
-          autocomplete="off"
-          [disabled]="isDisabled"
-        />
+        <span class="saas-select__value-row saas-select__value-row--editing">
+          <input
+            #triggerInput
+            type="search"
+            class="saas-select__trigger-input"
+            [value]="filterText"
+            (input)="onTriggerFilterInput($event)"
+            (click)="$event.stopPropagation()"
+            (keydown)="onTriggerFilterKeydown($event)"
+            [placeholder]="displayLabel || placeholder"
+            autocomplete="off"
+            [disabled]="isDisabled"
+          />
+          @if (displayHint) {
+            <span class="saas-select__hint">{{ displayHint }}</span>
+          }
+        </span>
       } @else {
         <span
-          class="saas-select__value"
-          [class.saas-select__value--placeholder]="!displayLabel"
+          class="saas-select__value-row"
+          [class.saas-select__value-row--placeholder]="!displayLabel"
         >
-          {{ displayLabel || placeholder }}
+          <span class="saas-select__value">
+            {{ displayLabel || placeholder }}
+          </span>
+          @if (displayHint) {
+            <span class="saas-select__hint">{{ displayHint }}</span>
+          }
         </span>
       }
       <span class="saas-select__icons" aria-hidden="true">
@@ -79,12 +89,37 @@
       [attr.aria-haspopup]="'listbox'"
       (click)="togglePanel($event)"
     >
-      <span
-        class="saas-select__value"
-        [class.saas-select__value--placeholder]="!displayLabel"
-      >
-        {{ displayLabel || placeholder }}
-      </span>
+      @if (panelOpen) {
+        <span class="saas-select__value-row saas-select__value-row--editing">
+          <input
+            #triggerInputBtn
+            type="search"
+            class="saas-select__trigger-input"
+            [value]="filterText"
+            (input)="onTriggerFilterInput($event)"
+            (click)="$event.stopPropagation()"
+            (keydown)="onTriggerFilterKeydown($event)"
+            [placeholder]="displayLabel || placeholder"
+            autocomplete="off"
+            [disabled]="isDisabled"
+          />
+          @if (displayHint) {
+            <span class="saas-select__hint">{{ displayHint }}</span>
+          }
+        </span>
+      } @else {
+        <span
+          class="saas-select__value-row"
+          [class.saas-select__value-row--placeholder]="!displayLabel"
+        >
+          <span class="saas-select__value">
+            {{ displayLabel || placeholder }}
+          </span>
+          @if (displayHint) {
+            <span class="saas-select__hint">{{ displayHint }}</span>
+          }
+        </span>
+      }
       <span class="saas-select__icons" aria-hidden="true">
         @if (panelOpen) {
           <svg
@@ -154,7 +189,12 @@
             [tabindex]="panelOpen ? 0 : -1"
             (click)="choose(opt, $event)"
           >
-            {{ opt.label }}
+            <span class="saas-select__option-row">
+              <span class="saas-select__option-label">{{ opt.label }}</span>
+              @if (opt.hint?.trim()) {
+                <span class="saas-select__option-hint">{{ opt.hint }}</span>
+              }
+            </span>
           </button>
         }
         @if (filteredOptions.length === 0) {

@@ -2,7 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import type { ApiResponse } from '../models/api.models';
 
 const API_HINT =
-  ' Confirme que a API está a correr na pasta `api` (`npm run dev`, porta 3000).';
+  ' Confirme: (1) terminal na pasta `api` com `npm start` — deve aparecer «API em http://0.0.0.0:3000»; ' +
+  '(2) terminal na raiz com `npm start` (Angular em http://localhost:4200); ' +
+  '(3) recarregue a página com Ctrl+Shift+R. ' +
+  'Este erro é da API do ERP, não da Evolution/WhatsApp.';
 
 function messageFromApiEnvelope(body: unknown): string | null {
   if (!body || typeof body !== 'object') return null;

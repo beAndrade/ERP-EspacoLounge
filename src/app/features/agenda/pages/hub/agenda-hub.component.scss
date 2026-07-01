@@ -973,6 +973,7 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   height: $agenda-timeline-h;
   min-height: $agenda-timeline-h;
   overflow: visible;
+  position: relative;
   background: var(--color-surface);
   border: none;
   border-right: 1px solid #e7e5e4;
@@ -983,6 +984,60 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
     flex: 1 1 auto;
     min-width: 0;
     height: 100%;
+  }
+}
+
+/** Traço vermelho da hora atual (vista dia / semana — hoje). */
+.grid-now-line {
+  --grid-now-marker-w: var(--hub-time-col-width, 3.5rem);
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  height: 0;
+  pointer-events: none;
+  transition: top 0.55s linear;
+
+  &__marker {
+    flex: 0 0 var(--grid-now-marker-w);
+    width: var(--grid-now-marker-w);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 2px;
+    box-sizing: border-box;
+  }
+
+  &__triangle {
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid #e53935;
+  }
+
+  &__bar {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 2px;
+    background: #e53935;
+  }
+
+  &--marker-only {
+    right: auto;
+    width: var(--grid-now-marker-w);
+  }
+
+  &--col {
+    left: 0;
+    right: 0;
+    width: auto;
+
+    .grid-now-line__bar {
+      width: 100%;
+    }
   }
 }
 
@@ -2903,6 +2958,160 @@ $month-num-fg-muted: #00000028;
     &--filtros {
       width: min(320px, calc(100vw - 1.5rem));
     }
+
+    &--mobile-sheet {
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: none;
+      max-height: none;
+      margin: 0;
+      padding: max(0.75rem, env(safe-area-inset-top, 0px)) 1rem
+        calc(1rem + env(safe-area-inset-bottom, 0px));
+      border-radius: 0;
+      transform: translateY(8px);
+      transform-origin: bottom center;
+      z-index: 950;
+      overflow-y: auto;
+      background: #f8f8f8;
+      box-shadow: none;
+
+      &.hub-toolbar-menu__panel--open {
+        transform: translateY(0);
+      }
+
+      .hub-filtros-sec {
+        background: #fff;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        margin-bottom: 0.85rem;
+
+        & + & {
+          margin-top: 0;
+          padding-top: 0.85rem;
+          border-top: none;
+        }
+      }
+
+      .hub-filtros-sec__title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #595959;
+      }
+
+      .hub-filtros-list__row,
+      .hub-filtros-list > li {
+        padding: 0.35rem 0;
+        border-bottom: 1px solid #f0f0f0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      .hub-filtros-check {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  }
+
+  .hub-toolbar-menu--acoes .hub-toolbar-menu__panel {
+    left: auto;
+    right: calc(
+      var(--hub-compact-footer-inset) +
+        (100vw - 2 * var(--hub-compact-footer-inset)) / 5 * 0.35
+    );
+    width: min(300px, calc(100vw - 2rem));
+    transform: translateY(8px) scale(0.98);
+    transform-origin: bottom right;
+
+    &.hub-toolbar-menu__panel--open {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .hub-toolbar-menu__group-label {
+    margin: 0.35rem 0 0.15rem;
+    padding: 0.45rem 0.65rem 0.15rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #8c8c8c;
+  }
+
+  .hub-toolbar-menu__divider {
+    height: 1px;
+    margin: 0.35rem 0.5rem;
+    background: #f0f0f0;
+  }
+
+  .hub-mobile-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.15rem 0.25rem 0.5rem;
+  }
+
+  .hub-mobile-sheet-head__title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #262626;
+  }
+
+  .hub-mobile-sheet-head__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #8c8c8c;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .hub-filtros-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 6.5rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .hub-panel-backdrop--sheet {
+    z-index: 940;
+  }
+
+  .hub-page--compact .app-drawer {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    max-width: none;
+    height: 100dvh !important;
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+
+    > app-agenda-novo {
+      background: #f8f8f8;
+    }
+  }
+
+  .hub-page--compact .overlay {
+    z-index: 1000;
   }
 
   .hub-cal-anchor--compact {
@@ -2914,24 +3123,18 @@ $month-num-fg-muted: #00000028;
     &:has(.hub-float-cal--open) {
       pointer-events: auto;
     }
+
+    &:has(.hub-float-cal--centered.hub-float-cal--open) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
   }
 
   .hub-float-cal--compact {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    bottom: auto;
-    width: min(360px, calc(100vw - 2rem));
-    max-height: min(90vh, 640px);
-    overflow-y: auto;
     pointer-events: auto;
-    padding: 1rem 1.1rem 1.1rem;
-    transform: translate(-50%, -50%) scale(0.97);
-    transform-origin: center center;
-
-    &.hub-float-cal--open {
-      transform: translate(-50%, -50%) scale(1);
-    }
 
     .hub-float-cal__dow {
       padding: 0.15rem 0 0.4rem;
@@ -2943,7 +3146,6 @@ $month-num-fg-muted: #00000028;
     }
 
     .hub-float-cal__cell {
-      min-height: 2.35rem;
       border-radius: 2px;
       font-size: 0.88rem;
 
@@ -2956,6 +3158,93 @@ $month-num-fg-muted: #00000028;
     .hub-float-cal__nav-btn {
       color: #595959;
       font-size: 1rem;
+    }
+  }
+
+  .hub-float-cal--compact.hub-float-cal--centered {
+    position: relative;
+    top: auto;
+    left: auto;
+    bottom: auto;
+    width: min(360px, 100%);
+    max-height: min(90vh, 640px);
+    overflow-y: auto;
+    padding: 1rem 1.1rem 1.1rem;
+    transform: scale(0.97);
+    transform-origin: center center;
+
+    &.hub-float-cal--open {
+      transform: scale(1);
+    }
+
+    .hub-float-cal__cell {
+      min-height: 2.35rem;
+    }
+  }
+
+  .hub-float-cal--compact.hub-float-cal--fullscreen {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: max(0.85rem, env(safe-area-inset-top, 0px)) 1.25rem
+      calc(1rem + env(safe-area-inset-bottom, 0px));
+    transform: translateY(12px);
+    transform-origin: center center;
+
+    &.hub-float-cal--open {
+      transform: translateY(0);
+    }
+
+    .hub-float-cal__dialog-head {
+      flex-shrink: 0;
+      margin-bottom: 0.5rem;
+    }
+
+    .hub-float-cal__months {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .hub-float-cal__month {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .hub-float-cal__nav {
+      flex-shrink: 0;
+    }
+
+    .hub-float-cal__grid {
+      flex: 1 1 auto;
+      align-content: start;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .hub-float-cal__cell {
+      min-height: 2.75rem;
+      font-size: 0.95rem;
+    }
+
+    .hub-float-cal__quick--compact {
+      flex-shrink: 0;
+      margin-top: auto;
+      padding-top: 1rem;
     }
   }
 

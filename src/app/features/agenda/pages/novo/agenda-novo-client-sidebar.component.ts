@@ -12,11 +12,18 @@ import { AtendimentoListaItem, Cliente } from '../../../../core/models/api.model
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { contagensSidebarParaCliente } from '../../../../core/utils/comanda-status.util';
 import {
+  telefoneClienteWhatsappDigitos,
+  telefoneClienteWhatsappExibicao,
+} from '../../../../core/utils/telefone-br';
+import {
   SaasSelectComponent,
   type SaasSelectOption,
 } from './saas-select.component';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
+import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
+import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import {
   Observable,
   Subject,
@@ -84,7 +91,7 @@ function linhaAniversarioFormatada(aniversarioRaw: string): string | null {
 @Component({
   selector: 'app-agenda-novo-client-sidebar',
   standalone: true,
-  imports: [SaasSelectComponent, ClienteAvatarComponent],
+  imports: [SaasSelectComponent, ClienteAvatarComponent, WhatsappEnviarModalComponent],
   templateUrl: './agenda-novo-client-sidebar.component.html',
   styleUrl: './agenda-novo-client-sidebar.component.scss',
 })
@@ -92,6 +99,11 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   @Input({ required: true }) clienteIdControl!: FormControl;
   @Input() opcoesClientes: SaasSelectOption[] = [];
   @Input() cliente: Cliente | null = null;
+  @Input() whatsappIdAtendimento: string | null = null;
+  @Input() whatsappDataFmt: string | null = null;
+  @Input() whatsappHora: string | null = null;
+  /** Só permite WhatsApp após o agendamento existir na base (já salvo). */
+  @Input() agendamentoSalvo = false;
 
   /**
    * Ex.: linhas da secção «Informações» — o ecrã de comandas abre o drawer da ficha (`abrirCadastroCliente`).
@@ -100,6 +112,10 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
 
   private readonly api = inject(SheetsApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(AppToastService);
+
+  whatsappModalAberto = false;
+  whatsappContexto: WhatsappEnviarContexto | null = null;
 
   /** Força novo GET `/api/atendimentos` para contagens e badge «cliente novo». */
   private readonly contagensRefresh$ = new Subject<void>();
@@ -205,8 +221,42 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   }
 
   telefoneExibicao(): string {
-    const t = (this.cliente?.telefone ?? '').trim();
-    return t || 'Sem telefone';
+    return telefoneClienteWhatsappExibicao(this.cliente);
+  }
+
+  podeConversarWhatsapp(): boolean {
+    return telefoneClienteWhatsappDigitos(this.cliente).length >= 10;
+  }
+
+  abrirWhatsapp(): void {
+    if (!this.agendamentoSalvo) {
+      this.toast.showWarning(
+        'Você precisa salvar o agendamento para enviar uma mensagem.',
+      );
+      return;
+    }
+    const digitos = telefoneClienteWhatsappDigitos(this.cliente);
+    if (digitos.length < 10) {
+      this.toast.show('Cliente sem telefone válido para WhatsApp.');
+      return;
+    }
+    this.whatsappContexto = {
+      telefone: digitos,
+      clienteId: this.cliente?.id ?? undefined,
+      clienteNome: this.cliente?.nome?.trim() || undefined,
+      idAtendimento: this.whatsappIdAtendimento?.trim() || undefined,
+      templateCodigo: 'confirmacao',
+      variaveis: {
+        cliente: this.cliente?.nome?.trim() ?? '',
+        data: this.whatsappDataFmt?.trim() ?? '',
+        hora: this.whatsappHora?.trim() ?? '',
+      },
+    };
+    this.whatsappModalAberto = true;
+  }
+
+  fecharWhatsappModal(): void {
+    this.whatsappModalAberto = false;
   }
 
   get temClienteSelecionado(): boolean {

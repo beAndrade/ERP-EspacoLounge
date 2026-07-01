@@ -7,6 +7,7 @@ import {
   input,
   OnInit,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -31,6 +32,10 @@ import {
 } from '../../../../core/utils/atendimento-display';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { telefoneBrDigitos } from '../../../../core/utils/telefone-br';
+import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
+import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
+import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 
 function formataMoedaBrl(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -115,6 +120,7 @@ const RESUMO_VAZIO: ComandaResumoPagamentos = {
     AgendaNovoClientSidebarComponent,
     ComandaResumoBarComponent,
     ReactiveFormsModule,
+    WhatsappEnviarModalComponent,
   ],
   templateUrl: './nova-comanda-drawer.component.html',
   styleUrl: './nova-comanda-drawer.component.scss',
@@ -184,6 +190,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   /** Opção escolhida no menu antes do modal de confirmação. */
   modoExclusaoConfirmar: 'somente_comanda' | 'completo' = 'completo';
   modalOutrosOpcao: 'imprimir' | 'historico' | null = null;
+  readonly whatsappModalAberto = signal(false);
+  readonly whatsappContexto = signal<WhatsappEnviarContexto | null>(null);
   excluindo = false;
   erroExcluir = '';
   /** Último GET `/api/clientes/:id` para `creditoSaldo` e sidebar. */
@@ -1050,6 +1058,47 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.modalOutrosOpcao = 'historico';
   }
 
+  onOutrosWhatsapp(): void {
+    this.fecharOutrosMenu();
+    const ctx = this.contexto();
+    const cliente = this.clienteMergedBruto();
+    const tel =
+      cliente?.celular?.trim() ||
+      cliente?.telefone?.trim() ||
+      '';
+    const digitos = telefoneBrDigitos(tel);
+    if (digitos.length < 10) return;
+
+    const linha = this.linhasAtendimentoApi[0];
+    const dataYmd = (linha?.data ?? ctx?.dataYmd ?? '').slice(0, 10);
+    let dataFmt = dataYmd;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dataYmd);
+    if (m) dataFmt = `${m[3]}/${m[2]}/${m[1]}`;
+
+    let hora = '';
+    const inicio = String(linha?.inicio ?? '').trim();
+    const hm = /(\d{2}):(\d{2})/.exec(inicio);
+    if (hm) hora = `${hm[1]}:${hm[2]}`;
+
+    this.whatsappContexto.set({
+      telefone: digitos,
+      clienteId: ctx?.clienteId,
+      clienteNome: cliente?.nome ?? ctx?.cliente?.nome ?? '',
+      idAtendimento: ctx?.idAtendimento ?? undefined,
+      templateCodigo: 'confirmacao',
+      variaveis: {
+        cliente: cliente?.nome ?? ctx?.cliente?.nome ?? '',
+        data: dataFmt,
+        hora,
+      },
+    });
+    this.whatsappModalAberto.set(true);
+  }
+
+  fecharWhatsappModal(): void {
+    this.whatsappModalAberto.set(false);
+  }
+
   fecharModalOutrosOpcao(): void {
     this.modalOutrosOpcao = null;
   }
@@ -1140,6 +1189,17 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '—';
     const p = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd);
     return p ? `${p[3]}/${p[2]}/${p[1]}` : ymd;
+  }
+
+  whatsappDataSidebarFmt(): string | null {
+    const d = this.dataComandaExibicao().trim();
+    return d && d !== '—' ? d : null;
+  }
+
+  whatsappHoraSidebar(): string | null {
+    return resolverHoraWhatsappAgendamento({
+      linhasInicio: this.linhasAtendimentoApi,
+    });
   }
 
   /** Data canónica da comanda para o sub-drawer Faturar (campo da UI ou contexto). */

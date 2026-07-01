@@ -1,0 +1,25 @@
+@use './whatsapp-config-shared';
+
+.wa-templates-tab__card {
+  .wa-card__head {
+    margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+  }
+}
+
+.wa-templates-tab__code {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  background: #f5f5f4;
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.75rem;
+  color: #57534e;
+}
+
+.wa-templates-tab__actions {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #f5f5f4;
+}

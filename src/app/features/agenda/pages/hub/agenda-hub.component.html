@@ -99,8 +99,8 @@
             <button
               type="button"
               class="hub-footer-btn"
-              (click)="togglePainelCalendario()"
-              [attr.aria-expanded]="painelCalendarioAberto"
+              (click)="togglePainelCalendario('fullscreen')"
+              [attr.aria-expanded]="painelCalendarioAberto && painelCalendarioModo === 'fullscreen'"
               aria-haspopup="dialog"
               aria-label="Calendário"
             >
@@ -245,10 +245,24 @@
             <div
               class="hub-toolbar-menu__panel hub-toolbar-menu__panel--filtros"
               [class.hub-toolbar-menu__panel--open]="hubMenuAberto === 'filtrar'"
+              [class.hub-toolbar-menu__panel--mobile-sheet]="layoutMobile"
               role="menu"
               aria-label="Filtros da grelha"
               (click)="$event.stopPropagation()"
             >
+              @if (layoutMobile) {
+                <header class="hub-mobile-sheet-head">
+                  <h2 class="hub-mobile-sheet-head__title">Filtros</h2>
+                  <button
+                    type="button"
+                    class="hub-mobile-sheet-head__close"
+                    (click)="fecharMenusToolbar()"
+                    aria-label="Fechar filtros"
+                  >
+                    ×
+                  </button>
+                </header>
+              }
               <section class="hub-filtros-sec">
                 <div class="hub-filtros-sec__head">
                   <h3 class="hub-filtros-sec__title">Profissionais</h3>
@@ -323,7 +337,14 @@
                           [checked]="statusFiltroVisivel(st.id)"
                           (change)="toggleStatusFiltro(st.id)"
                         />
-                        <span class="hub-filtros-check__label">{{ st.label }}</span>
+                        @if (layoutMobile && st.cor) {
+                          <span
+                            class="hub-filtros-status-badge"
+                            [style.background]="st.cor"
+                          >{{ st.label }}</span>
+                        } @else {
+                          <span class="hub-filtros-check__label">{{ st.label }}</span>
+                        }
                       </label>
                     </li>
                   }
@@ -336,6 +357,7 @@
             class="hub-toolbar-menu"
             [class.hub-toolbar-menu--open]="hubMenuAberto === 'acoes'"
             [class.hub-toolbar-menu--footer-item]="layoutMobile"
+            [class.hub-toolbar-menu--acoes]="layoutMobile"
           >
             <button
               type="button"
@@ -423,6 +445,142 @@
                 </svg>
                 Agrupar agendamentos
               </button>
+              <button
+                type="button"
+                class="hub-toolbar-menu__item"
+                role="menuitem"
+                [class.hub-toolbar-menu__item--pulse-once]="pulsoMenuItem === 'acao-whatsapp'"
+                (click)="acaoEnviarWhatsapp()"
+              >
+                <svg
+                  class="hub-toolbar-menu__item-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"
+                  />
+                </svg>
+                Enviar WhatsApp
+              </button>
+              @if (layoutMobile) {
+                <p class="hub-toolbar-menu__group-label">Visualização</p>
+                <button
+                  type="button"
+                  class="hub-toolbar-menu__item"
+                  role="menuitemradio"
+                  [class.hub-toolbar-menu__item--selected]="modoVista === 'dia'"
+                  [attr.aria-checked]="modoVista === 'dia'"
+                  (click)="selecionarModoVista('dia')"
+                >
+                  <svg
+                    class="hub-toolbar-menu__item-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                    />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Diário
+                </button>
+                <button
+                  type="button"
+                  class="hub-toolbar-menu__item"
+                  role="menuitemradio"
+                  [class.hub-toolbar-menu__item--selected]="modoVista === 'semana'"
+                  [attr.aria-checked]="modoVista === 'semana'"
+                  (click)="selecionarModoVista('semana')"
+                >
+                  <svg
+                    class="hub-toolbar-menu__item-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                    />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Semanal
+                </button>
+                <button
+                  type="button"
+                  class="hub-toolbar-menu__item"
+                  role="menuitemradio"
+                  [class.hub-toolbar-menu__item--selected]="modoVista === 'mensal'"
+                  [attr.aria-checked]="modoVista === 'mensal'"
+                  (click)="selecionarModoVista('mensal')"
+                >
+                  <svg
+                    class="hub-toolbar-menu__item-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                    />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Mensal
+                </button>
+                <div class="hub-toolbar-menu__divider" aria-hidden="true"></div>
+                <button
+                  type="button"
+                  class="hub-toolbar-menu__item"
+                  role="menuitem"
+                  (click)="acaoAbrirConfiguracoesAgenda()"
+                >
+                  <svg
+                    class="hub-toolbar-menu__item-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+                    />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Configurações
+                </button>
+              }
             </div>
           </div>
           @if (layoutMobile) {
@@ -565,6 +723,20 @@
       </div>
       }
       <div class="grid-body">
+        @if (
+          indicadorHoraAtualVisivel() && indicadorHoraAtualTopPct() !== null
+        ) {
+          <div
+            class="grid-now-line"
+            [style.top.%]="indicadorHoraAtualTopPct()!"
+            aria-hidden="true"
+          >
+            <div class="grid-now-line__marker">
+              <span class="grid-now-line__triangle"></span>
+            </div>
+            <div class="grid-now-line__bar"></div>
+          </div>
+        }
         <div class="grid-body__times" aria-hidden="true">
           @for (slot of slotsHoras; track slot) {
             <div
@@ -801,6 +973,19 @@
       </div>
       }
       <div class="week-grid-body">
+        @if (
+          indicadorHoraAtualVisivel() && indicadorHoraAtualTopPct() !== null
+        ) {
+          <div
+            class="grid-now-line grid-now-line--marker-only"
+            [style.top.%]="indicadorHoraAtualTopPct()!"
+            aria-hidden="true"
+          >
+            <div class="grid-now-line__marker">
+              <span class="grid-now-line__triangle"></span>
+            </div>
+          </div>
+        }
         <div class="grid-body__times" aria-hidden="true">
           @for (slot of slotsHoras; track slot) {
             <div
@@ -833,6 +1018,19 @@
                   [attr.data-prof-id]="p.id"
                   [attr.data-ymd]="d.ymd"
                 >
+                  @if (
+                    d.hoje &&
+                    indicadorHoraAtualVisivel() &&
+                    indicadorHoraAtualTopPct() !== null
+                  ) {
+                    <div
+                      class="grid-now-line grid-now-line--col"
+                      [style.top.%]="indicadorHoraAtualTopPct()!"
+                      aria-hidden="true"
+                    >
+                      <div class="grid-now-line__bar"></div>
+                    </div>
+                  }
                   @for (slot of slotsHoras; track slot) {
                     <button
                       type="button"
@@ -971,6 +1169,15 @@
     ></button>
   }
 
+  @if (layoutMobile && hubMenuAberto === 'filtrar') {
+    <button
+      type="button"
+      class="hub-panel-backdrop hub-panel-backdrop--sheet"
+      aria-label="Fechar filtros"
+      (click)="fecharMenusToolbar()"
+    ></button>
+  }
+
   <div class="hub-cal-anchor" [class.hub-cal-anchor--compact]="layoutMobile">
     @if (!layoutMobile) {
     <button
@@ -1008,6 +1215,8 @@
       class="hub-float-cal"
       [class.hub-float-cal--open]="painelCalendarioAberto"
       [class.hub-float-cal--compact]="layoutMobile"
+      [class.hub-float-cal--centered]="layoutMobile && painelCalendarioModo === 'centered'"
+      [class.hub-float-cal--fullscreen]="layoutMobile && painelCalendarioModo === 'fullscreen'"
       role="dialog"
       [attr.aria-label]="layoutMobile ? 'Selecione uma data' : 'Calendário'"
       [attr.aria-hidden]="!painelCalendarioAberto"
@@ -1227,8 +1436,8 @@
       <button
         type="button"
         class="hub-header-compact__title"
-        (click)="togglePainelCalendario()"
-        [attr.aria-expanded]="painelCalendarioAberto"
+        (click)="togglePainelCalendario('centered')"
+        [attr.aria-expanded]="painelCalendarioAberto && painelCalendarioModo === 'centered'"
         aria-haspopup="dialog"
         [attr.aria-label]="'Selecionar data: ' + rotuloNavegacaoDia()"
       >
@@ -1422,3 +1631,9 @@
     </div>
   }
 }
+
+<app-whatsapp-enviar-modal
+  [aberto]="whatsappModalAberto"
+  [contexto]="whatsappContexto"
+  (fechar)="fecharWhatsappModal()"
+/>

@@ -1,0 +1,114 @@
+@if (carregando()) {
+
+  <p class="wa-loading">A carregar templates…</p>
+
+} @else {
+
+  <aside class="wa-placeholders" aria-label="Placeholders disponíveis">
+
+    <p class="wa-placeholders__title">Placeholders disponíveis</p>
+
+    <div class="wa-placeholders__chips">
+
+      @for (ph of placeholders; track ph) {
+
+        <code class="wa-placeholders__chip">{{ placeholderExemplo(ph) }}</code>
+
+      }
+
+    </div>
+
+  </aside>
+
+
+
+  @for (tpl of templates(); track tpl.id) {
+
+    <section class="wa-card wa-templates-tab__card">
+
+      <header class="wa-card__head">
+
+        <div>
+
+          <h3 class="wa-card__title">{{ tpl.nome }}</h3>
+
+          <code class="wa-templates-tab__code">{{ tpl.codigo }}</code>
+
+        </div>
+
+        <label class="wa-toggle">
+
+          <input type="checkbox" [(ngModel)]="tpl.ativo" [name]="'ativo-' + tpl.id" />
+
+          <span>Ativo</span>
+
+        </label>
+
+      </header>
+
+
+
+      <label class="wa-field wa-field--textarea">
+
+        <span>Mensagem</span>
+
+        <textarea
+
+          [(ngModel)]="tpl.corpo"
+
+          [name]="'corpo-' + tpl.id"
+
+          rows="5"
+
+          spellcheck="true"
+
+        ></textarea>
+
+      </label>
+
+
+
+      <div class="wa-preview" aria-live="polite">
+
+        <span class="wa-preview__label">Pré-visualização</span>
+
+        <p class="wa-preview__text">{{ preview(tpl.corpo) }}</p>
+
+      </div>
+
+
+
+      <div class="wa-actions wa-templates-tab__actions">
+
+        <button
+
+          type="button"
+
+          class="wa-btn wa-btn--primary"
+
+          (click)="salvar(tpl)"
+
+          [disabled]="salvandoId() === tpl.id"
+
+        >
+
+          {{ salvandoId() === tpl.id ? 'A guardar…' : 'Salvar template' }}
+
+        </button>
+
+      </div>
+
+    </section>
+
+  }
+
+
+
+  @if (erro()) {
+
+    <p class="wa-alert" role="alert">{{ erro() }}</p>
+
+  }
+
+}
+

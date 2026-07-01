@@ -55,6 +55,10 @@
           [clienteIdControl]="clienteIdControl"
           [opcoesClientes]="opcoesClientesNomes()"
           [cliente]="clienteSelecionado()"
+          [whatsappIdAtendimento]="whatsappIdAtendimentoSidebar()"
+          [whatsappDataFmt]="whatsappDataSidebarFmt()"
+          [whatsappHora]="whatsappHoraSidebar()"
+          [agendamentoSalvo]="!!whatsappIdAtendimentoSidebar()"
           (abrirCadastroCliente)="abrirCadastroCliente.emit($event)"
         />
       }

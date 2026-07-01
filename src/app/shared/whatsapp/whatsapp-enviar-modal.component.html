@@ -1,0 +1,104 @@
+@if (aberto()) {
+  <div
+    class="wa-enviar-modal-overlay"
+    role="presentation"
+    (click)="onOverlayClick($event)"
+  ></div>
+
+  <div
+    class="wa-enviar-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="wa-enviar-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="wa-enviar-modal__head">
+      <h2 id="wa-enviar-modal-title" class="wa-enviar-modal__title">
+        Enviar WhatsApp
+      </h2>
+      <button
+        type="button"
+        class="wa-enviar-modal__close"
+        aria-label="Fechar"
+        (click)="fechar.emit()"
+      >
+        ×
+      </button>
+    </header>
+
+    <p class="wa-enviar-modal__meta">
+      Para: <strong>{{ contexto()?.clienteNome || 'Cliente' }}</strong>
+      · {{ telefoneExibicao() }}
+    </p>
+
+    <div class="wa-enviar-modal__modo">
+      <label>
+        <input
+          type="radio"
+          name="waModo"
+          value="template"
+          [(ngModel)]="modo"
+        />
+        Template
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="waModo"
+          value="manual"
+          [(ngModel)]="modo"
+        />
+        Texto livre
+      </label>
+    </div>
+
+    @if (modo === 'template') {
+      <label class="wa-enviar-modal__field">
+        <span>Template</span>
+        <select [(ngModel)]="templateCodigo" name="templateCodigo">
+          @for (tpl of templates(); track tpl.id) {
+            <option [value]="tpl.codigo">{{ tpl.nome }}</option>
+          }
+        </select>
+      </label>
+    } @else {
+      <label class="wa-enviar-modal__field">
+        <span>Mensagem</span>
+        <textarea
+          [(ngModel)]="textoManual"
+          name="textoManual"
+          rows="5"
+          placeholder="Escreva a mensagem…"
+        ></textarea>
+      </label>
+    }
+
+    <div class="wa-enviar-modal__preview">
+      <span class="wa-enviar-modal__preview-label">Pré-visualização</span>
+      <p>{{ preview() }}</p>
+    </div>
+
+    @if (erro()) {
+      <p class="wa-enviar-modal__alert" role="alert">{{ erro() }}</p>
+    }
+
+    <footer class="wa-enviar-modal__foot">
+      <button
+        type="button"
+        class="wa-enviar-modal__btn wa-enviar-modal__btn--ghost"
+        (click)="fechar.emit()"
+        [disabled]="enviando()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="wa-enviar-modal__btn wa-enviar-modal__btn--primary"
+        (click)="confirmar()"
+        [disabled]="enviando() || carregandoTemplates()"
+      >
+        {{ enviando() ? 'A enviar…' : 'Enviar' }}
+      </button>
+    </footer>
+  </div>
+}

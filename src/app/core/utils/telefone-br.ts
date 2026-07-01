@@ -67,3 +67,31 @@ export function isTelefoneBrCompleto(valor: string | null | undefined): boolean 
 export function isCelularBr11Digitos(valor: string | null | undefined): boolean {
   return telefoneBrDigitos(valor).length === 11;
 }
+
+type ClienteTelefoneLike = {
+  celular?: string | null;
+  telefone?: string | null;
+  telefoneFixo?: string | null;
+};
+
+/** Dígitos do melhor contacto WhatsApp do cliente (celular preferido). */
+export function telefoneClienteWhatsappDigitos(
+  cliente: ClienteTelefoneLike | null | undefined,
+): string {
+  const cel = telefoneBrDigitos(cliente?.celular);
+  const fixo = telefoneBrDigitos(cliente?.telefone ?? cliente?.telefoneFixo);
+  return cel.length >= 10 ? cel : fixo;
+}
+
+/** Ex.: `+55 (22) 99899-5484` para sidebar e select de cliente. */
+export function telefoneClienteWhatsappExibicao(
+  cliente: ClienteTelefoneLike | null | undefined,
+): string {
+  const digitos = telefoneClienteWhatsappDigitos(cliente);
+  if (digitos.length < 10) return 'Sem telefone';
+  const fmt =
+    digitos.length >= 11
+      ? formatarCelularBr(digitos)
+      : formatarTelefoneFixoBr(digitos);
+  return `+55 ${fmt}`;
+}

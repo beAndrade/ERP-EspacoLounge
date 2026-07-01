@@ -652,17 +652,4 @@
       </div>
     </div>
   }
-
-  @if (perfilDrawerAberto) {
-    <app-cliente-perfil-drawer
-      [panelOpen]="perfilDrawerPanelOpen"
-      [cliente]="perfilDrawerCliente"
-      [abaAtiva]="perfilDrawerAba"
-      [carregando]="perfilDrawerCarregando"
-      (fechar)="fecharPerfilCliente()"
-      (abaAtivaChange)="onPerfilDrawerAbaChange($event)"
-      (clienteAtualizado)="onPerfilClienteAtualizado($event)"
-      (salvoComSucesso)="onPerfilClienteSalvoComSucesso()"
-    />
-  }
 </div>

@@ -1,0 +1,126 @@
+.wa-enviar-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 12000;
+}
+
+.wa-enviar-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 12001;
+  width: min(520px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem 1.25rem 1.25rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.wa-enviar-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wa-enviar-modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.wa-enviar-modal__close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.wa-enviar-modal__meta {
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.wa-enviar-modal__modo {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.wa-enviar-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.wa-enviar-modal__field select,
+.wa-enviar-modal__field textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+}
+
+.wa-enviar-modal__preview {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.wa-enviar-modal__preview-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.35rem;
+}
+
+.wa-enviar-modal__preview p {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.875rem;
+}
+
+.wa-enviar-modal__alert {
+  color: #b91c1c;
+  font-size: 0.875rem;
+  margin: 0 0 0.75rem;
+}
+
+.wa-enviar-modal__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.wa-enviar-modal__btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wa-enviar-modal__btn--primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.wa-enviar-modal__btn--ghost {
+  background: #f3f4f6;
+}
+
+.wa-enviar-modal__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

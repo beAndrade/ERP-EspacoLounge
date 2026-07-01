@@ -10,6 +10,7 @@
 /node_modules
 api/node_modules
 api/.env
+.env.evolution
 npm-debug.log
 yarn-error.log
 

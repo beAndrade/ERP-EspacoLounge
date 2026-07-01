@@ -5,6 +5,10 @@ import { concatMap, EMPTY, from } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { telefoneBrDigitos } from '../../core/utils/telefone-br';
+import type { ClienteDebitoLinhaUi } from '../../core/utils/comanda-status.util';
+import type { WhatsappEnviarContexto } from '../../core/models/whatsapp.model';
+import { AppToastService } from '../app-toast/app-toast.service';
+import { WhatsappEnviarModalComponent } from '../whatsapp/whatsapp-enviar-modal.component';
 import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service';
 import {
   ClientePagarDebitosModalComponent,
@@ -14,18 +18,25 @@ import {
 @Component({
   selector: 'app-cliente-debitos-tab',
   standalone: true,
-  imports: [CurrencyPipe, ClientePagarDebitosModalComponent],
+  imports: [
+    CurrencyPipe,
+    ClientePagarDebitosModalComponent,
+    WhatsappEnviarModalComponent,
+  ],
   templateUrl: './cliente-debitos-tab.component.html',
   styleUrl: './cliente-debitos-tab.component.scss',
 })
 export class ClienteDebitosTabComponent {
   readonly d = inject(ClienteCadastroDrawerService);
   private readonly api = inject(SheetsApiService);
+  private readonly toast = inject(AppToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly debitosSelecionados = signal<ReadonlySet<string>>(new Set());
   readonly modalPagarAberto = signal(false);
   readonly modalPagarSalvando = signal(false);
+  readonly whatsappModalAberto = signal(false);
+  readonly whatsappContexto = signal<WhatsappEnviarContexto | null>(null);
 
   formatarData(data: string): string {
     const ymd = String(data ?? '').trim().slice(0, 10);
@@ -172,14 +183,34 @@ export class ClienteDebitosTabComponent {
     window.print();
   }
 
-  enviarWhatsappCliente(): void {
+  enviarWhatsappDebito(row: ClienteDebitoLinhaUi): void {
     const cel = telefoneBrDigitos(this.d.cadastroCelular);
     const fixo = telefoneBrDigitos(this.d.cadastroTelefone);
     const digitos = cel.length >= 10 ? cel : fixo;
-    if (digitos.length < 10) return;
-    const texto = encodeURIComponent(
-      'Olá! Entramos em contacto sobre o seu débito pendente.',
-    );
-    window.open(`https://wa.me/55${digitos}?text=${texto}`, '_blank', 'noopener');
+    if (digitos.length < 10) {
+      this.toast.show('Cliente sem telefone válido para WhatsApp.');
+      return;
+    }
+    const valor = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(row.valorReais);
+
+    this.whatsappContexto.set({
+      telefone: digitos,
+      clienteId: this.d.clienteId ?? undefined,
+      clienteNome: this.d.cadastroNome.trim() || undefined,
+      idAtendimento: row.idAtendimento,
+      templateCodigo: 'cobranca',
+      variaveis: {
+        cliente: this.d.cadastroNome.trim(),
+        valor,
+      },
+    });
+    this.whatsappModalAberto.set(true);
+  }
+
+  fecharWhatsappModal(): void {
+    this.whatsappModalAberto.set(false);
   }
 }

@@ -1916,18 +1916,19 @@ textarea {
     border-color: var(--drawer-field-border);
   }
 
-  ::ng-deep .saas-select__trigger .saas-select__value:not(.saas-select__value--placeholder) {
+  ::ng-deep .saas-select__trigger .saas-select__value-row:not(.saas-select__value-row--placeholder) .saas-select__value {
     color: var(--drawer-input-text-filled);
   }
 
   ::ng-deep
     app-saas-select.saas-select-host--open
     .saas-select__trigger
-    .saas-select__value:not(.saas-select__value--placeholder) {
+    .saas-select__value-row:not(.saas-select__value-row--placeholder)
+    .saas-select__value {
     color: var(--drawer-input-text-idle);
   }
 
-  ::ng-deep .saas-select__trigger .saas-select__value--placeholder {
+  ::ng-deep .saas-select__trigger .saas-select__value-row--placeholder .saas-select__value {
     color: var(--drawer-input-text-idle);
     font-weight: var(--drawer-input-font-weight);
   }

@@ -316,6 +316,13 @@
       "when": 1775697956000,
       "tag": "0044_profissionais_ordem",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1775697957000,
+      "tag": "0045_whatsapp_integration",
+      "breakpoints": true
     }
   ]
 }

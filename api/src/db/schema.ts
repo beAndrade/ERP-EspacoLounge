@@ -543,6 +543,93 @@ export const usuarios = pgTable(
   ],
 );
 
+export const whatsappProviderEnum = pgEnum('whatsapp_provider', [
+  'evolution',
+]);
+
+export const whatsappMessageTipoEnum = pgEnum('whatsapp_message_tipo', [
+  'confirmacao',
+  'lembrete',
+  'cobranca',
+  'aniversario',
+  'manual',
+]);
+
+export const whatsappLogStatusEnum = pgEnum('whatsapp_log_status', [
+  'pending',
+  'sent',
+  'failed',
+]);
+
+export const whatsappConnectionStatusEnum = pgEnum('whatsapp_connection_status', [
+  'unknown',
+  'open',
+  'close',
+  'connecting',
+  'error',
+]);
+
+/** Configuração singleton da integração WhatsApp (id = 1). */
+export const whatsappConfig = pgTable('whatsapp_config', {
+  id: serial('id').primaryKey(),
+  provider: whatsappProviderEnum('provider').notNull().default('evolution'),
+  apiBaseUrl: text('api_base_url'),
+  apiKey: text('api_key'),
+  instanceName: text('instance_name'),
+  numeroSalao: text('numero_salao'),
+  nomeEmpresa: text('nome_empresa'),
+  connectionStatus: whatsappConnectionStatusEnum('connection_status')
+    .notNull()
+    .default('unknown'),
+  connectionCheckedAt: timestamp('connection_checked_at', { withTimezone: true }),
+  ativo: boolean('ativo').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const whatsappTemplates = pgTable(
+  'whatsapp_templates',
+  {
+    id: serial('id').primaryKey(),
+    codigo: text('codigo').notNull(),
+    nome: text('nome').notNull(),
+    corpo: text('corpo').notNull(),
+    ativo: boolean('ativo').notNull().default(true),
+    ordem: integer('ordem').notNull().default(0),
+  },
+  (t) => [uniqueIndex('whatsapp_templates_codigo_uq').on(t.codigo)],
+);
+
+export const whatsappLogs = pgTable(
+  'whatsapp_logs',
+  {
+    id: serial('id').primaryKey(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    clienteId: text('cliente_id').references(() => clientes.idCliente, {
+      onDelete: 'set null',
+    }),
+    telefone: text('telefone').notNull(),
+    tipo: whatsappMessageTipoEnum('tipo').notNull(),
+    templateId: integer('template_id').references(() => whatsappTemplates.id, {
+      onDelete: 'set null',
+    }),
+    idAtendimento: text('id_atendimento').references(
+      () => atendimentosPedido.idAtendimento,
+      { onDelete: 'set null' },
+    ),
+    conteudo: text('conteudo').notNull(),
+    status: whatsappLogStatusEnum('status').notNull().default('pending'),
+    erro: text('erro'),
+    provider: whatsappProviderEnum('provider').notNull(),
+    providerMessageId: text('provider_message_id'),
+  },
+  (t) => [
+    index('whatsapp_logs_created_at_idx').on(t.createdAt),
+    index('whatsapp_logs_cliente_id_idx').on(t.clienteId),
+    index('whatsapp_logs_status_idx').on(t.status),
+  ],
+);
+
 export const despesas = pgTable(
   'despesas',
   {

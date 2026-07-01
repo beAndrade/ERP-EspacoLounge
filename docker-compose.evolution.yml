@@ -1,0 +1,106 @@
+# Evolution API — stack isolado do ERP (EspacoLounge).
+# Uso: docker compose -f docker-compose.evolution.yml --env-file .env.evolution up -d
+#
+# Portas expostas (evitam conflito com api/docker-compose.yml do ERP):
+#   8080 — Evolution API
+#   8081 — Evolution Manager (UI web)
+#   5434 — Postgres da Evolution (host)
+#   6380 — Redis da Evolution (host)
+
+name: espaco-lounge-evolution
+
+services:
+  evolution-api:
+    container_name: evolution_api
+    image: evoapicloud/evolution-api:latest
+    restart: unless-stopped
+    depends_on:
+      evolution-redis:
+        condition: service_started
+      evolution-postgres:
+        condition: service_healthy
+    ports:
+      - "${EVOLUTION_API_PORT:-8080}:8080"
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    env_file:
+      - .env.evolution
+    networks:
+      - evolution-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+
+  evolution-manager:
+    container_name: evolution_manager
+    image: evoapicloud/evolution-manager:latest
+    profiles: ["ui"]
+    restart: unless-stopped
+    depends_on:
+      evolution-api:
+        condition: service_started
+    ports:
+      - "${EVOLUTION_MANAGER_PORT:-8081}:80"
+    networks:
+      - evolution-net
+
+  evolution-redis:
+    container_name: evolution_redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --port 6379 --appendonly yes
+    ports:
+      - "${EVOLUTION_REDIS_PORT:-6380}:6379"
+    volumes:
+      - evolution_redis:/data
+    networks:
+      evolution-net:
+        aliases:
+          - evolution-redis
+
+  evolution-postgres:
+    container_name: evolution_postgres
+    image: postgres:15-alpine
+    restart: unless-stopped
+    env_file:
+      - .env.evolution
+    environment:
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - listen_addresses=*
+    ports:
+      - "${EVOLUTION_POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - evolution_postgres:/var/lib/postgresql/data
+    networks:
+      - evolution-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  evolution_instances:
+  evolution_store:
+  evolution_redis:
+  evolution_postgres:
+
+networks:
+  evolution-net:
+    name: evolution-net
+    driver: bridge

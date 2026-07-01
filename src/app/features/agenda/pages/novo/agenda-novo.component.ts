@@ -87,6 +87,8 @@ import {
   SaasSelectComponent,
   type SaasSelectOption,
 } from './saas-select.component';
+import { telefoneClienteWhatsappExibicao } from '../../../../core/utils/telefone-br';
+import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
 import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
 import {
@@ -1544,6 +1546,27 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return this.clientes.find((c) => c.id === id) ?? null;
   }
 
+  whatsappIdAtendimentoSidebar(): string | null {
+    return this.idAtendimentoEmEdicao?.trim() || null;
+  }
+
+  whatsappDataSidebarFmt(): string | null {
+    if (!this.modoModal) return null;
+    const d = this.dataExibicaoModal().trim();
+    return d && d !== '—' ? d : null;
+  }
+
+  whatsappHoraSidebar(): string | null {
+    if (!this.modoModal) return null;
+    const linhasInicio = this.linhasItensArray.controls.map((g) => ({
+      inicio: String(g.get('inicio')?.value ?? ''),
+    }));
+    return resolverHoraWhatsappAgendamento({
+      horaInicial: this.form.controls.hora_inicial.value,
+      linhasInicio,
+    });
+  }
+
   /** Exibição read-only na grelha do modal (linhas Serviço). */
   duracaoServicoLinhaExibicao(linhaIndex: number): string {
     const g = this.linhasItensArray.at(linhaIndex);
@@ -1725,7 +1748,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    * Modal: lista só com nomes (IDs iguais aos de `opcoesClientesSelect` — dados da base via `listClientes`).
    */
   opcoesClientesNomes(): SaasSelectOption[] {
-    return this.clientes.map((c) => ({ value: c.id, label: c.nome.trim() || '—' }));
+    return this.clientes.map((c) => {
+      const hintRaw = telefoneClienteWhatsappExibicao(c);
+      return {
+        value: c.id,
+        label: c.nome.trim() || '—',
+        hint: hintRaw === 'Sem telefone' ? undefined : hintRaw,
+      };
+    });
   }
 
   /** `cliente_id` + saas-select na coluna da esquerda do modal. */

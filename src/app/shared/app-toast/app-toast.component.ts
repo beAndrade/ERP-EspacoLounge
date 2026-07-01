@@ -12,20 +12,41 @@ import { AppToastService } from './app-toast.service';
         role="status"
         aria-live="polite"
       >
-        <span class="app-toast__icon" aria-hidden="true">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+        <span
+          class="app-toast__icon"
+          [class.app-toast__icon--warning]="t.variant === 'warning'"
+          aria-hidden="true"
+        >
+          @if (t.variant === 'warning') {
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
+          } @else {
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          }
         </span>
         <span class="app-toast__text">{{ t.message }}</span>
       </div>
@@ -78,8 +99,14 @@ import { AppToastService } from './app-toast.service';
         color: #fff;
       }
 
+      .app-toast__icon--warning {
+        background: #f59e0b;
+        color: #fff;
+      }
+
       .app-toast__text {
-        white-space: nowrap;
+        white-space: normal;
+        text-align: left;
       }
     `,
   ],

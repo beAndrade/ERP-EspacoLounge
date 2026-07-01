@@ -1,0 +1,75 @@
+@if (carregando()) {
+  <p class="wa-loading">A carregar histórico…</p>
+} @else {
+  <section class="wa-card">
+    <header class="wa-card__head">
+      <div>
+        <h2 class="wa-card__title">Histórico de envios</h2>
+        <p class="wa-card__meta">Registos de mensagens enviadas pela integração WhatsApp.</p>
+      </div>
+    </header>
+
+    <div class="wa-table-wrap">
+      <table class="wa-table">
+        <thead>
+          <tr>
+            <th>Data/hora</th>
+            <th>Cliente</th>
+            <th>Telefone</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th>Conteúdo</th>
+            <th>Erro</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (items().length === 0) {
+            <tr>
+              <td colspan="7">Nenhum envio registado.</td>
+            </tr>
+          } @else {
+            @for (row of items(); track row.id) {
+              <tr>
+                <td>{{ row.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ row.cliente_nome || '—' }}</td>
+                <td>{{ row.telefone }}</td>
+                <td>{{ row.tipo }}</td>
+                <td>
+                  <span [class]="classeStatus(row.status)">{{ row.status }}</span>
+                </td>
+                <td class="wa-logs-tab__conteudo">{{ row.conteudo }}</td>
+                <td>{{ row.erro || '—' }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="wa-logs-tab__pager wa-actions">
+      <button
+        type="button"
+        class="wa-btn wa-btn--ghost"
+        (click)="paginaAnterior()"
+        [disabled]="page() <= 1"
+      >
+        Anterior
+      </button>
+      <span class="wa-hint wa-logs-tab__pager-info">
+        Página {{ page() }} · {{ total() }} registos
+      </span>
+      <button
+        type="button"
+        class="wa-btn wa-btn--ghost"
+        (click)="proximaPagina()"
+        [disabled]="page() * pageSize >= total()"
+      >
+        Seguinte
+      </button>
+    </footer>
+  </section>
+
+  @if (erro()) {
+    <p class="wa-alert" role="alert">{{ erro() }}</p>
+  }
+}

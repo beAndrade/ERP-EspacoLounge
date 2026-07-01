@@ -157,6 +157,16 @@ import {
   loginUsuario,
   upsertUsuarioForProfissional,
 } from './services/auth-domain';
+import type { AuthUser } from './services/auth-domain';
+import {
+  getWhatsappConfigApi,
+  saveWhatsappConfigApi,
+  testWhatsappConnectionApi,
+  sendWhatsappMessageApi,
+  listWhatsappLogsApi,
+  listWhatsappTemplatesApi,
+  updateWhatsappTemplateApi,
+} from './services/whatsapp-domain';
 import {
   criarAgendamentoPublico,
   listProfissionaisPublic,
@@ -164,16 +174,34 @@ import {
   listSlotsDisponiveisPublic,
 } from './services/public-booking-domain';
 
+function requireAdminRole(
+  user: AuthUser,
+): ReturnType<typeof fail> | null {
+  if (user.role !== 'admin') {
+    return fail('FORBIDDEN', 'Acesso restrito a administradores.');
+  }
+  return null;
+}
+
+const DEV_CORS_ORIGINS = [
+  'http://localhost:4200',
+  'http://127.0.0.1:4200',
+  'http://[::1]:4200',
+];
+
 function corsOrigins(): string[] | true {
   const raw = process.env.CORS_ORIGINS?.trim();
   if (!raw || raw === '*') return true;
   try {
     const p = JSON.parse(raw) as unknown;
-    if (Array.isArray(p) && p.every((x) => typeof x === 'string')) return p;
+    if (Array.isArray(p) && p.every((x) => typeof x === 'string')) {
+      const merged = new Set([...p, ...DEV_CORS_ORIGINS]);
+      return [...merged];
+    }
   } catch {
     /* ignore */
   }
-  return ['http://localhost:4200'];
+  return DEV_CORS_ORIGINS;
 }
 
 await ensureSchemaPatches();
@@ -2113,6 +2141,265 @@ const app = new Elysia({ adapter: node() })
       }),
     },
   )
+  .get('/api/whatsapp/config', async ({ request }) => {
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const denied = requireAdminRole(auth.user);
+    if (denied) return denied;
+    try {
+      return ok({ config: await getWhatsappConfigApi(db) });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .put(
+    '/api/whatsapp/config',
+    async ({ request, body }) => {
+      const auth = await authenticateRequest(request);
+      if (!auth.ok) return auth.response;
+      const denied = requireAdminRole(auth.user);
+      if (denied) return denied;
+      try {
+        const b = body as Record<string, unknown>;
+        const config = await saveWhatsappConfigApi(db, {
+          provider: b.provider === 'evolution' ? 'evolution' : undefined,
+          api_base_url:
+            b.api_base_url !== undefined
+              ? String(b.api_base_url ?? '')
+              : b.apiBaseUrl !== undefined
+                ? String(b.apiBaseUrl ?? '')
+                : undefined,
+          api_key:
+            b.api_key !== undefined
+              ? String(b.api_key ?? '')
+              : b.apiKey !== undefined
+                ? String(b.apiKey ?? '')
+                : undefined,
+          instance_name:
+            b.instance_name !== undefined
+              ? String(b.instance_name ?? '')
+              : b.instanceName !== undefined
+                ? String(b.instanceName ?? '')
+                : undefined,
+          numero_salao:
+            b.numero_salao !== undefined
+              ? String(b.numero_salao ?? '')
+              : b.numeroSalao !== undefined
+                ? String(b.numeroSalao ?? '')
+                : undefined,
+          nome_empresa:
+            b.nome_empresa !== undefined
+              ? String(b.nome_empresa ?? '')
+              : b.nomeEmpresa !== undefined
+                ? String(b.nomeEmpresa ?? '')
+                : undefined,
+          ativo: b.ativo !== undefined ? Boolean(b.ativo) : undefined,
+        });
+        return ok({ config });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      body: t.Object({
+        provider: t.Optional(t.Literal('evolution')),
+        api_base_url: t.Optional(t.Union([t.String(), t.Null()])),
+        apiBaseUrl: t.Optional(t.Union([t.String(), t.Null()])),
+        api_key: t.Optional(t.Union([t.String(), t.Null()])),
+        apiKey: t.Optional(t.Union([t.String(), t.Null()])),
+        instance_name: t.Optional(t.Union([t.String(), t.Null()])),
+        instanceName: t.Optional(t.Union([t.String(), t.Null()])),
+        numero_salao: t.Optional(t.Union([t.String(), t.Null()])),
+        numeroSalao: t.Optional(t.Union([t.String(), t.Null()])),
+        nome_empresa: t.Optional(t.Union([t.String(), t.Null()])),
+        nomeEmpresa: t.Optional(t.Union([t.String(), t.Null()])),
+        ativo: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .post(
+    '/api/whatsapp/config/test-connection',
+    async ({ request, body }) => {
+      const auth = await authenticateRequest(request);
+      if (!auth.ok) return auth.response;
+      const denied = requireAdminRole(auth.user);
+      if (denied) return denied;
+      try {
+        const b = (body ?? {}) as Record<string, unknown>;
+        const result = await testWhatsappConnectionApi(db, {
+          api_base_url:
+            b.api_base_url !== undefined
+              ? String(b.api_base_url ?? '')
+              : b.apiBaseUrl !== undefined
+                ? String(b.apiBaseUrl ?? '')
+                : undefined,
+          api_key:
+            b.api_key !== undefined
+              ? String(b.api_key ?? '')
+              : b.apiKey !== undefined
+                ? String(b.apiKey ?? '')
+                : undefined,
+          instance_name:
+            b.instance_name !== undefined
+              ? String(b.instance_name ?? '')
+              : b.instanceName !== undefined
+                ? String(b.instanceName ?? '')
+                : undefined,
+        });
+        return ok(result);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Optional(
+        t.Object({
+          api_base_url: t.Optional(t.Union([t.String(), t.Null()])),
+          apiBaseUrl: t.Optional(t.Union([t.String(), t.Null()])),
+          api_key: t.Optional(t.Union([t.String(), t.Null()])),
+          apiKey: t.Optional(t.Union([t.String(), t.Null()])),
+          instance_name: t.Optional(t.Union([t.String(), t.Null()])),
+          instanceName: t.Optional(t.Union([t.String(), t.Null()])),
+        }),
+      ),
+    },
+  )
+  .get('/api/whatsapp/templates', async ({ request }) => {
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const denied = requireAdminRole(auth.user);
+    if (denied) return denied;
+    try {
+      return ok({ items: await listWhatsappTemplatesApi(db) });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .patch(
+    '/api/whatsapp/templates/:id',
+    async ({ request, params, body }) => {
+      const auth = await authenticateRequest(request);
+      if (!auth.ok) return auth.response;
+      const denied = requireAdminRole(auth.user);
+      if (denied) return denied;
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as { corpo?: string; ativo?: boolean; nome?: string };
+        await updateWhatsappTemplateApi(db, id, {
+          corpo: b.corpo,
+          ativo: b.ativo,
+          nome: b.nome,
+        });
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('não encontrado')) return fail('NOT_FOUND', msg);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        corpo: t.Optional(t.String()),
+        ativo: t.Optional(t.Boolean()),
+        nome: t.Optional(t.String()),
+      }),
+    },
+  )
+  .post(
+    '/api/whatsapp/messages/send',
+    async ({ request, body }) => {
+      const auth = await authenticateRequest(request);
+      if (!auth.ok) return auth.response;
+      try {
+        const b = body as Record<string, unknown>;
+        const result = await sendWhatsappMessageApi(
+          db,
+          {
+          telefone: String(b.telefone ?? ''),
+          cliente_id:
+            b.cliente_id !== undefined
+              ? String(b.cliente_id ?? '')
+              : b.clienteId !== undefined
+                ? String(b.clienteId ?? '')
+                : undefined,
+          template_codigo:
+            b.template_codigo !== undefined
+              ? String(b.template_codigo ?? '')
+              : b.templateCodigo !== undefined
+                ? String(b.templateCodigo ?? '')
+                : undefined,
+          variaveis: (b.variaveis ?? b.variables) as
+            | Record<string, string>
+            | undefined,
+          texto:
+            b.texto !== undefined
+              ? String(b.texto ?? '')
+              : b.text !== undefined
+                ? String(b.text ?? '')
+                : undefined,
+          id_atendimento:
+            b.id_atendimento !== undefined
+              ? String(b.id_atendimento ?? '')
+              : b.idAtendimento !== undefined
+                ? String(b.idAtendimento ?? '')
+                : undefined,
+        },
+          { nomeRemetente: auth.user.nome_exibicao },
+        );
+        return ok(result);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      body: t.Object({
+        telefone: t.String(),
+        cliente_id: t.Optional(t.String()),
+        clienteId: t.Optional(t.String()),
+        template_codigo: t.Optional(t.String()),
+        templateCodigo: t.Optional(t.String()),
+        variaveis: t.Optional(t.Record(t.String(), t.String())),
+        variables: t.Optional(t.Record(t.String(), t.String())),
+        texto: t.Optional(t.String()),
+        text: t.Optional(t.String()),
+        id_atendimento: t.Optional(t.String()),
+        idAtendimento: t.Optional(t.String()),
+      }),
+    },
+  )
+  .get('/api/whatsapp/logs', async ({ request, query }) => {
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const denied = requireAdminRole(auth.user);
+    if (denied) return denied;
+    try {
+      const q = query as Record<string, string | undefined>;
+      const page = Number.parseInt(String(q.page ?? '1'), 10);
+      const pageSize = Number.parseInt(
+        String(q.page_size ?? q.pageSize ?? '25'),
+        10,
+      );
+      const data = await listWhatsappLogsApi(db, {
+        page: Number.isFinite(page) ? page : 1,
+        pageSize: Number.isFinite(pageSize) ? pageSize : 25,
+        clienteId: q.cliente_id ?? q.clienteId,
+        tipo: q.tipo,
+      });
+      return ok(data);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
   .listen(
     {
       port: Number(process.env.PORT) || 3000,

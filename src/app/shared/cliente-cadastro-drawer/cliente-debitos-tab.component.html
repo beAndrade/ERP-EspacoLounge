@@ -212,7 +212,7 @@
                             type="button"
                             class="drawer-table__icon-btn drawer-table__icon-btn--whatsapp"
                             aria-label="Enviar mensagem ao cliente"
-                            (click)="enviarWhatsappCliente()"
+                            (click)="enviarWhatsappDebito(row)"
                           >
                             <svg
                               class="bi bi-whatsapp"
@@ -608,5 +608,11 @@
   [salvando]="modalPagarSalvando()"
   (fechar)="fecharModalPagar()"
   (confirmar)="confirmarModalPagar($event)"
+/>
+
+<app-whatsapp-enviar-modal
+  [aberto]="whatsappModalAberto()"
+  [contexto]="whatsappContexto()"
+  (fechar)="fecharWhatsappModal()"
 />
 

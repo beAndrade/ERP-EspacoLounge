@@ -10,10 +10,6 @@ import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { Cliente } from '../../../../core/models/api.models';
-import {
-  ClientePerfilAba,
-  ClientePerfilDrawerComponent,
-} from '../../../../shared/cliente-perfil-drawer/cliente-perfil-drawer.component';
 import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
 import {
@@ -25,15 +21,12 @@ import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-d
 
 type OrdenacaoNome = 'asc' | 'desc';
 
-const DRAWER_ANIM_MS = 430;
-
 @Component({
   selector: 'app-clientes',
   standalone: true,
   imports: [
     FormsModule,
     CurrencyPipe,
-    ClientePerfilDrawerComponent,
     ClienteAvatarComponent,
   ],
   templateUrl: './clientes.component.html',
@@ -79,14 +72,6 @@ export class ClientesComponent implements OnInit, OnDestroy {
   nomeSortTipVisivel = false;
   private nomeSortTipSuprimida = false;
   private nomeSortTipShowTimer: ReturnType<typeof setTimeout> | null = null;
-  perfilDrawerAberto = false;
-  perfilDrawerPanelOpen = false;
-  perfilDrawerCliente: Cliente | null = null;
-  perfilDrawerAba: ClientePerfilAba = 'Painel';
-  perfilDrawerCarregando = false;
-  private perfilDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
-  private bodyScrollPreDrawer = 0;
-  private pageScrollLockAtivo = false;
   selecionados = new Set<string>();
   excluindoId: string | null = null;
   excluirModalAberto = false;
@@ -99,10 +84,6 @@ export class ClientesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearNomeSortTipShowTimer();
-    if (this.perfilDrawerCloseTimer != null) {
-      clearTimeout(this.perfilDrawerCloseTimer);
-    }
-    this.desbloquearScrollPagina();
   }
 
   carregar(): void {
@@ -275,8 +256,8 @@ export class ClientesComponent implements OnInit, OnDestroy {
         this.excluirModalAberto = false;
         this.clientePendenteExclusao = null;
         this.selecionados.delete(id);
-        if (this.perfilDrawerCliente?.id === id) {
-          this.fecharPerfilCliente();
+        if (this.cadastroDrawer.clienteId === id) {
+          this.cadastroDrawer.fechar();
         }
         this.carregar();
       },
@@ -295,57 +276,17 @@ export class ClientesComponent implements OnInit, OnDestroy {
     const id = cliente.id?.trim();
     if (!id) return;
 
-    this.perfilDrawerCliente = cliente;
-    this.perfilDrawerAba = 'Painel';
-    this.perfilDrawerCarregando = true;
-    this.abrirPerfilDrawerAnimacao();
-
-    this.api.getCliente(id).subscribe({
-      next: (c) => {
-        if (this.perfilDrawerCliente?.id !== id) return;
-        this.perfilDrawerCliente = c;
-        this.perfilDrawerCarregando = false;
-        const ix = this.itens.findIndex((item) => item.id === id);
-        if (ix >= 0) {
-          const next = [...this.itens];
-          next[ix] = c;
-          this.itens = next;
-        }
-      },
-      error: () => {
-        if (this.perfilDrawerCliente?.id === id) {
-          this.perfilDrawerCarregando = false;
-        }
+    this.cadastroDrawer.abrirEdicao(id, {
+      nomeLista: cliente.nome?.trim() ?? '',
+      fotoUrlInicial: cliente.fotoUrl,
+      callbacks: {
+        onSalvo: (c) => this.atualizarClienteNaLista(c),
+        onClienteCarregado: (c) => this.atualizarClienteNaLista(c),
       },
     });
   }
 
-  fecharPerfilCliente(): void {
-    if (!this.perfilDrawerAberto) return;
-    if (this.cadastroDrawer.embutidoAtivo) {
-      this.cadastroDrawer.desanexarEmbutido();
-    }
-    this.perfilDrawerPanelOpen = false;
-    if (this.perfilDrawerCloseTimer != null) {
-      clearTimeout(this.perfilDrawerCloseTimer);
-      this.perfilDrawerCloseTimer = null;
-    }
-    this.perfilDrawerCloseTimer = setTimeout(() => {
-      this.perfilDrawerCloseTimer = null;
-      this.perfilDrawerAberto = false;
-      this.perfilDrawerCliente = null;
-      this.perfilDrawerCarregando = false;
-      this.perfilDrawerAba = 'Painel';
-      this.desbloquearScrollPagina();
-    }, DRAWER_ANIM_MS);
-  }
-
-  onPerfilDrawerAbaChange(aba: ClientePerfilAba): void {
-    this.perfilDrawerAba = aba;
-  }
-
-  onPerfilClienteAtualizado(c: Cliente): void {
-    this.perfilDrawerCliente = c;
+  private atualizarClienteNaLista(c: Cliente): void {
     const id = c.id?.trim();
     if (!id) return;
     const ix = this.itens.findIndex((item) => item.id === id);
@@ -354,52 +295,6 @@ export class ClientesComponent implements OnInit, OnDestroy {
       next[ix] = c;
       this.itens = next;
     }
-  }
-
-  onPerfilClienteSalvoComSucesso(): void {
-    this.fecharPerfilCliente();
-  }
-
-  private abrirPerfilDrawerAnimacao(): void {
-    this.perfilDrawerAberto = true;
-    this.bloquearScrollPagina();
-    this.perfilDrawerPanelOpen = false;
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.perfilDrawerPanelOpen = true;
-        });
-      });
-    });
-  }
-
-  private bloquearScrollPagina(): void {
-    if (this.pageScrollLockAtivo) return;
-    this.bodyScrollPreDrawer = window.scrollY || 0;
-    const gutter = window.innerWidth - document.documentElement.clientWidth;
-    const body = document.body;
-    body.style.position = 'fixed';
-    body.style.top = `-${this.bodyScrollPreDrawer}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-    if (gutter > 0) {
-      body.style.paddingRight = `${gutter}px`;
-    }
-    this.pageScrollLockAtivo = true;
-  }
-
-  private desbloquearScrollPagina(): void {
-    if (!this.pageScrollLockAtivo) return;
-    const body = document.body;
-    body.style.position = '';
-    body.style.top = '';
-    body.style.left = '';
-    body.style.right = '';
-    body.style.width = '';
-    body.style.paddingRight = '';
-    window.scrollTo(0, this.bodyScrollPreDrawer);
-    this.pageScrollLockAtivo = false;
   }
 
   onSortNomeMouseEnter(): void {
@@ -650,11 +545,6 @@ export class ClientesComponent implements OnInit, OnDestroy {
     if (this.cadastroDrawer.isAberto) {
       ev.preventDefault();
       this.cadastroDrawer.fechar();
-      return;
-    }
-    if (this.perfilDrawerAberto) {
-      ev.preventDefault();
-      this.fecharPerfilCliente();
       return;
     }
     if (this.filtrosAbertos) {

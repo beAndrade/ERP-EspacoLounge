@@ -21,7 +21,7 @@ import {
 } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
-export type SaasSelectOption = { value: string; label: string };
+export type SaasSelectOption = { value: string; label: string; hint?: string };
 
 @Component({
   selector: 'app-saas-select',
@@ -51,6 +51,8 @@ export class SaasSelectComponent
   private readonly triggerBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('triggerInput')
   private readonly triggerInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('triggerInputBtn')
+  private readonly triggerInputBtn?: ElementRef<HTMLInputElement>;
 
   /** Busca digitada no gatilho (layout sidebar / combobox). */
   get inlineSearchInTrigger(): boolean {
@@ -138,6 +140,14 @@ export class SaasSelectComponent
     return hit?.label ?? '';
   }
 
+  get displayHint(): string {
+    if (this.inner === '') return '';
+    const hit = this.options.find(
+      (o) => String(o.value) === String(this.inner),
+    );
+    return hit?.hint?.trim() ?? '';
+  }
+
   /** Compara valor da opção com o interno (evita falha número vs string). */
   optionIsSelected(opt: SaasSelectOption): boolean {
     if (this.inner === '') return false;
@@ -147,7 +157,11 @@ export class SaasSelectComponent
   get filteredOptions(): SaasSelectOption[] {
     const q = this.filterText.trim().toLowerCase();
     if (!q) return this.options;
-    return this.options.filter((o) => o.label.toLowerCase().includes(q));
+    return this.options.filter((o) => {
+      const label = o.label.toLowerCase();
+      const hint = (o.hint ?? '').toLowerCase();
+      return label.includes(q) || hint.includes(q);
+    });
   }
 
   writeValue(v: unknown): void {
@@ -239,8 +253,11 @@ export class SaasSelectComponent
       });
       this.attachFixedPanelScrollListeners();
     }
-    if (this.inlineSearchInTrigger) {
-      queueMicrotask(() => this.triggerInput?.nativeElement?.focus());
+    if (this.inlineSearchInTrigger || this.panelOpen) {
+      queueMicrotask(() => {
+        this.triggerInput?.nativeElement?.focus();
+        this.triggerInputBtn?.nativeElement?.focus();
+      });
     }
   }
 
@@ -294,8 +311,9 @@ export class SaasSelectComponent
 
   private focusTriggerSoon(): void {
     queueMicrotask(() => {
-      if (this.inlineSearchInTrigger && this.panelOpen) {
+      if (this.panelOpen) {
         this.triggerInput?.nativeElement?.focus();
+        this.triggerInputBtn?.nativeElement?.focus();
         return;
       }
       this.triggerBtn?.nativeElement?.focus();

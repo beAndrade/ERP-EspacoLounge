@@ -16,6 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AtendimentoListaItem,
   ProfissionalListaItem,
+  Cliente,
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.service';
@@ -53,6 +54,11 @@ import { ProfissionalAvatarComponent } from '../../../../shared/profissional-ava
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
 import { mediaQueryMax } from '../../../../styles/breakpoints';
 import { AppShellUiService } from '../../../../core/services/app-shell-ui.service';
+import { telefoneBrDigitos } from '../../../../core/utils/telefone-br';
+import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
+import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
+import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 
 type CelulaCalendario = {
   dia: number;
@@ -129,6 +135,7 @@ type AgendaHubBloco = {
     NovaComandaDrawerComponent,
     FaturarDrawerComponent,
     ProfissionalAvatarComponent,
+    WhatsappEnviarModalComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda-hub.component.html',
@@ -147,6 +154,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
   readonly sessao = inject(SessaoUsuarioService);
   private readonly shellUi = inject(AppShellUiService);
+  private readonly toast = inject(AppToastService);
   readonly profissionalFotoUrl = profissionalFotoUrl;
 
   @ViewChild(AgendaNovoComponent)
@@ -214,6 +222,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     'SÁB',
   ] as const;
   painelCalendarioAberto = false;
+  /** Compacto: «Hoje» = modal centrado; rodapé «Calendário» = tela cheia. */
+  painelCalendarioModo: 'centered' | 'fullscreen' = 'centered';
   /** Destaque visual no cabeçalho da coluna (clique no nome). */
   profCabecalhoAtivoId: number | null = null;
 
@@ -292,6 +302,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Data da comanda (`AAAA-MM-DD`) — alinha «Data do pagamento» / «Atrasado» no Faturar. */
   comandaDataYmdParaFaturar: string | null = null;
 
+  whatsappModalAberto = false;
+  whatsappContexto: WhatsappEnviarContexto | null = null;
+
   @ViewChild(NovaComandaDrawerComponent)
   private comandaDrawerRef?: NovaComandaDrawerComponent;
 
@@ -352,6 +365,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
     this.slotsHoras = this.gerarSlots();
     this.setupLayoutMobile();
+    this.setupRelogioGrelha();
     window.addEventListener('keydown', this.onDrawerKeydown);
     document.addEventListener('click', this.onHubToolbarDocClick);
     this.destroyRef.onDestroy(() => {
@@ -455,8 +469,16 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   toggleHubMenu(menu: HubMenuToolbar, ev?: Event): void {
     ev?.stopPropagation();
+    if (this.painelCalendarioAberto) {
+      this.fecharPaineisHub();
+    }
     this.hubMenuAberto = this.hubMenuAberto === menu ? null : menu;
     this.dispararPulsoToolbar(menu);
+  }
+
+  acaoAbrirConfiguracoesAgenda(): void {
+    this.fecharMenusToolbar();
+    void this.router.navigate(['/profissionais']);
   }
 
   private dispararPulsoToolbar(which: HubMenuToolbar): void {
@@ -768,13 +790,19 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.fecharMenusToolbar();
   }
 
-  togglePainelCalendario(): void {
-    const abrir = !this.painelCalendarioAberto;
+  abrirPainelCalendario(modo: 'centered' | 'fullscreen'): void {
     this.fecharMenusToolbar();
-    if (abrir) {
-      this.mesRef = this.inicioDoMes(this.parseYmdLocal(this.diaYmd));
+    this.painelCalendarioModo = modo;
+    this.mesRef = this.inicioDoMes(this.parseYmdLocal(this.diaYmd));
+    this.painelCalendarioAberto = true;
+  }
+
+  togglePainelCalendario(modo: 'centered' | 'fullscreen' = 'centered'): void {
+    if (this.painelCalendarioAberto && this.painelCalendarioModo === modo) {
+      this.fecharPaineisHub();
+      return;
     }
-    this.painelCalendarioAberto = abrir;
+    this.abrirPainelCalendario(modo);
   }
 
   filtroHubAtivo(): boolean {
@@ -817,6 +845,69 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.dispararPulsoMenuItem('acao-agrupar');
     this.fecharMenusToolbar();
     this.abrirNovoAtendimentoModal();
+  }
+
+  acaoEnviarWhatsapp(): void {
+    this.dispararPulsoMenuItem('acao-whatsapp');
+    this.fecharMenusToolbar();
+
+    const ctx = this.comandaDrawerContexto;
+    let cliente: Cliente | null = ctx?.cliente ?? null;
+    let clienteId = ctx?.clienteId?.trim() ?? '';
+    let idAtendimento = ctx?.idAtendimento?.trim() ?? '';
+    let dataYmd = ctx?.dataYmd ?? this.diaYmd;
+
+    if (!cliente) {
+      const ag = this.agendaDrawerRef?.clienteSelecionado();
+      if (ag?.id?.trim()) {
+        clienteId = ag.id.trim();
+        cliente = {
+          id: clienteId,
+          nome: String(ag.nome ?? '').trim(),
+          telefone: ag.telefone ?? null,
+          celular: ag.celular ?? null,
+        };
+      }
+    }
+
+    const tel = cliente?.celular?.trim() || cliente?.telefone?.trim() || '';
+    const digitos = telefoneBrDigitos(tel);
+    if (digitos.length < 10) {
+      this.toast.show('Selecione um agendamento com cliente e telefone válido.');
+      return;
+    }
+
+    const linhas = idAtendimento
+      ? this.linhasDia.filter((l) => l.id === idAtendimento)
+      : this.linhasDia.filter((l) => l.idCliente === clienteId);
+    const linha = linhas[0];
+    if (linha?.id && !idAtendimento) idAtendimento = linha.id;
+
+    const ymd = (linha?.data ?? dataYmd ?? '').slice(0, 10);
+    let dataFmt = ymd;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+    if (m) dataFmt = `${m[3]}/${m[2]}/${m[1]}`;
+
+    let hora =
+      resolverHoraWhatsappAgendamento({ linhasInicio: linhas }) ?? '';
+
+    this.whatsappContexto = {
+      telefone: digitos,
+      clienteId: clienteId || undefined,
+      clienteNome: cliente?.nome ?? '',
+      idAtendimento: idAtendimento || undefined,
+      templateCodigo: 'confirmacao',
+      variaveis: {
+        cliente: cliente?.nome ?? '',
+        data: dataFmt,
+        hora,
+      },
+    };
+    this.whatsappModalAberto = true;
+  }
+
+  fecharWhatsappModal(): void {
+    this.whatsappModalAberto = false;
   }
 
   abrirConfigProfissional(_p: ProfissionalListaItem, ev: Event): void {
@@ -2723,6 +2814,36 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   slotAlturaPct(): number {
     return 100 / Math.max(1, this.slotsHoras.length);
+  }
+
+  /** Atualizado a cada minuto — posiciona o traço vermelho da hora atual na grelha. */
+  agoraGrelhaTick = 0;
+
+  indicadorHoraAtualVisivel(): boolean {
+    if (this.modoVista === 'dia') {
+      return this.diaYmd === this.hojeYmd();
+    }
+    if (this.modoVista === 'semana') {
+      return this.diasFaixaSemanal().some((d) => d.hoje);
+    }
+    return false;
+  }
+
+  indicadorHoraAtualTopPct(): number | null {
+    void this.agoraGrelhaTick;
+    const agora = new Date();
+    const min = agora.getHours() * 60 + agora.getMinutes();
+    if (min < GRID_START_MIN || min >= GRID_END_MIN) return null;
+    return ((min - GRID_START_MIN) / GRID_RANGE) * 100;
+  }
+
+  private setupRelogioGrelha(): void {
+    const tick = (): void => {
+      this.agoraGrelhaTick = Date.now();
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    this.destroyRef.onDestroy(() => clearInterval(id));
   }
 
   private inicioDoMes(d: Date): Date {

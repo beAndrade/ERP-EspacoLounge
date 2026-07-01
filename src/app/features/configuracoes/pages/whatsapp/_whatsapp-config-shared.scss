@@ -1,0 +1,491 @@
+@use '../../../../styles/list-page-shell';
+
+/* Tokens locais */
+$wa-border: #e7e5e4;
+$wa-muted: #78716c;
+$wa-text: #1c1917;
+$wa-surface: #fafaf9;
+$wa-radius: 12px;
+$wa-input-h: 42px;
+
+.wa-config-page__head {
+  margin-bottom: 0;
+}
+
+.wa-config-page__sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: $wa-muted;
+  line-height: 1.45;
+  max-width: 42rem;
+}
+
+.wa-config-page__tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border-bottom: 1px solid #efefef;
+}
+
+.wa-config-page__tab {
+  position: relative;
+  margin: 0;
+  padding: 0.65rem 1.1rem 0.8rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: $wa-muted;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: transparent;
+    border-radius: 2px 2px 0 0;
+  }
+
+  &:hover {
+    color: #44403c;
+  }
+
+  &--active {
+    color: var(--color-primary, #505afb);
+
+    &::after {
+      background: var(--color-primary, #505afb);
+    }
+  }
+}
+
+.wa-config-page__body {
+  margin-top: 1.25rem;
+  max-width: 960px;
+}
+
+.wa-config-page__body--wide {
+  max-width: none;
+}
+
+.wa-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid $wa-border;
+  border-radius: $wa-radius;
+  padding: 1.35rem 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.wa-card + .wa-card {
+  margin-top: 1rem;
+}
+
+.wa-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.wa-card__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: $wa-text;
+  line-height: 1.3;
+}
+
+.wa-card__meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: $wa-muted;
+}
+
+.wa-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+.wa-form-grid__full {
+  grid-column: 1 / -1;
+}
+
+.wa-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.wa-field > span:first-child {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #57534e;
+}
+
+.wa-field input,
+.wa-field select,
+.wa-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d6d3d1;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: $wa-text;
+  background: #fff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: #a8a29e;
+  }
+
+  &:hover {
+    border-color: #a8a29e;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary, #505afb);
+    box-shadow: 0 0 0 3px rgba(80, 90, 251, 0.12);
+  }
+}
+
+.wa-field input,
+.wa-field select {
+  min-height: $wa-input-h;
+}
+
+.wa-field textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.wa-field--textarea textarea {
+  min-height: 160px;
+}
+
+.wa-form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.35rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f5f5f4;
+}
+
+.wa-form-footer__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.wa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.5rem 1.1rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.wa-btn--primary {
+  background: var(--color-primary, #505afb);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.96);
+  }
+}
+
+.wa-btn--ghost {
+  background: #fff;
+  border-color: #d6d3d1;
+  color: #44403c;
+
+  &:hover:not(:disabled) {
+    background: #fafaf9;
+    border-color: #a8a29e;
+  }
+}
+
+.wa-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wa-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.wa-status--open {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.wa-status--close,
+.wa-status--error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.wa-status--unknown,
+.wa-status--connecting {
+  background: #f5f5f4;
+  color: #57534e;
+}
+
+.wa-alert {
+  margin: 1rem 0 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.wa-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: $wa-muted;
+  line-height: 1.45;
+}
+
+.wa-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #44403c;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--color-primary, #505afb);
+    cursor: pointer;
+  }
+}
+
+.wa-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  background: $wa-surface;
+}
+
+.wa-toggle-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.wa-toggle-row__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $wa-text;
+}
+
+.wa-placeholders {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #e7e5e4;
+  border-radius: $wa-radius;
+  background: $wa-surface;
+}
+
+.wa-placeholders__title {
+  margin: 0 0 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $wa-muted;
+}
+
+.wa-placeholders__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.wa-placeholders__chip {
+  display: inline-block;
+  padding: 0.28rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #e7e5e4;
+  background: #fff;
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.8125rem;
+  color: #44403c;
+}
+
+.wa-preview {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px dashed #d6d3d1;
+  background: #fff;
+}
+
+.wa-preview__label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $wa-muted;
+}
+
+.wa-preview__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: $wa-text;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wa-table-wrap {
+  overflow: auto;
+  margin: -0.25rem;
+  padding: 0.25rem;
+}
+
+.wa-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.wa-table th,
+.wa-table td {
+  border-bottom: 1px solid #f5f5f4;
+  padding: 0.75rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.wa-table th {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $wa-muted;
+  background: $wa-surface;
+}
+
+.wa-table tbody tr:hover td {
+  background: #fafaf9;
+}
+
+.wa-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.wa-badge--sent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.wa-badge--failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.wa-badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.wa-loading {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: $wa-muted;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 768px) {
+  .wa-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wa-form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wa-actions {
+    width: 100%;
+
+    .wa-btn {
+      flex: 1 1 auto;
+    }
+  }
+
+  .wa-card {
+    padding: 1.1rem 1rem;
+  }
+}

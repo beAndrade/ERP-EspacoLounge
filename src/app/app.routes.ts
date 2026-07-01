@@ -16,6 +16,8 @@ import { FinanceiroPainelComponent } from './features/financeiro/pages/painel/fi
 import { FinanceiroTransacoesComponent } from './features/financeiro/pages/transacoes/financeiro-transacoes.component';
 import { FinanceiroCadastrosComponent } from './features/financeiro/pages/cadastros/financeiro-cadastros.component';
 import { EmBreveComponent } from './pages/em-breve/em-breve.component';
+import { ConfiguracoesShellComponent } from './features/configuracoes/pages/shell/configuracoes-shell.component';
+import { ConfiguracoesWhatsappComponent } from './features/configuracoes/pages/whatsapp/configuracoes-whatsapp.component';
 import { EstoqueComponent } from './features/estoque/pages/main/estoque.component';
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
 import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
@@ -137,9 +139,12 @@ export const routes: Routes = [
   },
   {
     path: 'configuracoes',
-    component: EmBreveComponent,
+    component: ConfiguracoesShellComponent,
     canActivate: [authGuard, adminGuard],
-    data: { titulo: 'Configurações' },
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'whatsapp' },
+      { path: 'whatsapp', component: ConfiguracoesWhatsappComponent },
+    ],
   },
   {
     path: 'financeiro',

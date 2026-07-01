@@ -1,0 +1,244 @@
+@if (carregando()) {
+
+  <p class="wa-loading">A carregar configuração…</p>
+
+} @else {
+
+  <section class="wa-card">
+
+    <header class="wa-card__head">
+
+      <div>
+
+        <h2 class="wa-card__title">Evolution API</h2>
+
+        <p class="wa-card__meta">Credenciais e estado da instância WhatsApp.</p>
+
+      </div>
+
+      @if (config) {
+
+        <span [class]="classeStatus(config.connection_status)">
+
+          {{ rotuloStatus(config.connection_status) }}
+
+        </span>
+
+      }
+
+    </header>
+
+
+
+    <div class="wa-form-grid">
+
+      <label class="wa-field wa-form-grid__full">
+
+        <span>URL da Evolution API</span>
+
+        <input
+
+          type="url"
+
+          [(ngModel)]="apiBaseUrl"
+
+          name="apiBaseUrl"
+
+          placeholder="https://sua-evolution.exemplo.com"
+
+          autocomplete="off"
+
+        />
+
+      </label>
+
+
+
+      <label class="wa-field wa-form-grid__full">
+
+        <span>API Key</span>
+
+        <input
+
+          type="password"
+
+          [(ngModel)]="apiKey"
+
+          name="apiKey"
+
+          [placeholder]="config?.api_key_masked ? ('Mantém ' + config!.api_key_masked) : 'Chave da API'"
+
+          autocomplete="new-password"
+
+        />
+
+        <p class="wa-hint">Deixe em branco para manter a chave atual.</p>
+
+      </label>
+
+
+
+      <label class="wa-field">
+
+        <span>Instância (nome)</span>
+
+        <input
+
+          type="text"
+
+          [(ngModel)]="instanceName"
+
+          name="instanceName"
+
+          placeholder="minha-instancia"
+
+          autocomplete="off"
+
+        />
+
+      </label>
+
+
+
+      <label class="wa-field">
+
+        <span>Número do salão</span>
+
+        <input
+
+          type="text"
+
+          [(ngModel)]="numeroSalao"
+
+          name="numeroSalao"
+
+          placeholder="(11) 99999-9999"
+
+          autocomplete="off"
+
+        />
+
+      </label>
+
+
+
+      <label class="wa-field wa-form-grid__full">
+
+        <span>Nome da empresa</span>
+
+        <input
+
+          type="text"
+
+          [(ngModel)]="nomeEmpresa"
+
+          name="nomeEmpresa"
+
+          placeholder="Espaço Lounge"
+
+          autocomplete="organization"
+
+        />
+
+        <p class="wa-hint">Usado nos templates de mensagem (ex.: nome da empresa).</p>
+
+      </label>
+
+
+
+      <div class="wa-form-grid__full">
+
+        <div class="wa-toggle-row">
+
+          <div class="wa-toggle-row__text">
+
+            <span class="wa-toggle-row__label">Integração ativa</span>
+
+            <span class="wa-hint">Quando desativada, envios pelo ERP ficam bloqueados.</span>
+
+          </div>
+
+          <label class="wa-toggle" aria-label="Integração ativa">
+            <input type="checkbox" [(ngModel)]="ativo" name="ativo" />
+          </label>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <footer class="wa-form-footer">
+
+      <div class="wa-form-footer__meta">
+
+        @if (config?.connection_checked_at) {
+
+          <p class="wa-hint">
+
+            Último teste:
+
+            {{ config!.connection_checked_at | date: 'dd/MM/yyyy HH:mm' }}
+
+          </p>
+
+        } @else {
+
+          <p class="wa-hint">Ainda não foi testada a conexão com a Evolution.</p>
+
+        }
+
+      </div>
+
+      <div class="wa-actions">
+
+        <button
+
+          type="button"
+
+          class="wa-btn wa-btn--ghost"
+
+          (click)="testarConexao()"
+
+          [disabled]="testando()"
+
+        >
+
+          {{ testando() ? 'A testar…' : 'Testar conexão' }}
+
+        </button>
+
+        <button
+
+          type="button"
+
+          class="wa-btn wa-btn--primary"
+
+          (click)="salvar()"
+
+          [disabled]="salvando()"
+
+        >
+
+          {{ salvando() ? 'A guardar…' : 'Salvar' }}
+
+        </button>
+
+      </div>
+
+    </footer>
+
+
+
+    @if (erro()) {
+
+      <p class="wa-alert" role="alert">{{ erro() }}</p>
+
+    }
+
+  </section>
+
+}
+
