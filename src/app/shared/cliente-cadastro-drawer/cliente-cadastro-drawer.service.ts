@@ -47,6 +47,10 @@ import {
   ymdInicioFiltroVendasPadrao,
   type ClienteVendaHistoricoLinha,
 } from './cliente-vendas.util';
+import {
+  calcularPainelCliente,
+  type ClientePainelResumo,
+} from './cliente-painel.util';
 import { UI_TIP_SHOW_DELAY_MS } from '../ui-tip-trigger/ui-tip-delay';
 import { AppToastService } from '../app-toast/app-toast.service';
 
@@ -157,6 +161,8 @@ export class ClienteCadastroDrawerService {
   notificacoesAtivo = true;
 
   clienteId: string | null = null;
+  painelResumo: ClientePainelResumo | null = null;
+  carregandoPainel = false;
   cashbackSaldo = 0;
   cashbackMovimentos: ClienteCashbackMovimento[] = [];
   carregandoCashbackHistorico = false;
@@ -434,6 +440,8 @@ export class ClienteCadastroDrawerService {
       this.descontoDropdownAberto = false;
       this.modo = 'perfil';
       this.clienteId = null;
+      this.painelResumo = null;
+      this.carregandoPainel = false;
       this.cashbackSaldo = 0;
       this.cashbackMovimentos = [];
       this.carregandoCashbackHistorico = false;
@@ -486,6 +494,9 @@ export class ClienteCadastroDrawerService {
   selecionarAba(aba: string): void {
     if (this.abaDesabilitada(aba)) return;
     this.abaAtiva = aba;
+    if (aba === 'Painel' && this.clienteId) {
+      this.carregarPainel(this.clienteId);
+    }
     if (aba === 'Cashback' && this.clienteId) {
       this.carregarCashbackHistorico(this.clienteId);
     }
@@ -1056,6 +1067,9 @@ export class ClienteCadastroDrawerService {
           this.cadastroFotoRemovida = true;
         }
         this.carregandoFormulario = false;
+        if (this.abaAtiva === 'Painel') {
+          this.carregarPainel(cid);
+        }
         if (this.abaAtiva === 'Cashback') {
           this.carregarCashbackHistorico(cid);
         }
@@ -1196,6 +1210,35 @@ export class ClienteCadastroDrawerService {
     this.cashbackMovimentos = [];
     this.carregandoCashbackHistorico = false;
     this.appRef.tick();
+  }
+
+  recarregarPainel(): void {
+    const cid = String(this.clienteId ?? '').trim();
+    if (!cid) return;
+    this.carregarPainel(cid);
+  }
+
+  private carregarPainel(clienteId: string): void {
+    const cid = clienteId.trim();
+    if (!cid || this.clienteId !== cid) return;
+    this.carregandoPainel = true;
+    this.painelResumo = null;
+    this.api.listAgendamentos().subscribe({
+      next: (items) => {
+        if (this.clienteId !== cid || this.abaAtiva !== 'Painel') return;
+        this.painelResumo = calcularPainelCliente(cid, items, {
+          nomeCliente: this.cadastroNome,
+        });
+        this.carregandoPainel = false;
+        this.appRef.tick();
+      },
+      error: () => {
+        if (this.clienteId !== cid) return;
+        this.painelResumo = null;
+        this.carregandoPainel = false;
+        this.appRef.tick();
+      },
+    });
   }
 
   recarregarDebitosPainel(): void {

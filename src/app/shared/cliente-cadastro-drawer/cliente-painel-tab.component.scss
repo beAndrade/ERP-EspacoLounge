@@ -1,0 +1,242 @@
+@use '../../styles/cliente-drawer-table';
+
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  grid-column: 2 / -1;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+.cliente-painel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 20px 24px 28px;
+  border-right: 1px solid hsl(220, 13%, 91%);
+  box-sizing: border-box;
+}
+
+.cliente-painel__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* ---- Cartões de destaque (topo) ---- */
+.painel-destaques {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.painel-destaque {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 108px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.painel-destaque__ico {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.painel-destaque__valor {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel-destaque__valor--texto {
+  font-size: 26px;
+}
+
+.painel-destaque__label {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.painel-destaque--roxo {
+  background: #edecfe;
+  color: #2e2b6b;
+
+  .painel-destaque__ico {
+    background: #dcd9fb;
+    color: #6b5ce7;
+  }
+  .painel-destaque__label {
+    color: #6f6b9e;
+    opacity: 1;
+  }
+}
+
+.painel-destaque--azul {
+  background: #3f7dfb;
+  color: #fff;
+
+  .painel-destaque__ico {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+  }
+}
+
+.painel-destaque--verde {
+  background: #23b26d;
+  color: #fff;
+
+  .painel-destaque__ico {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+  }
+}
+
+/* ---- Cartões pequenos (grid) ---- */
+.painel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.painel-mini {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 86px;
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid hsl(220, 13%, 91%);
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+.painel-mini__ico {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.painel-mini__valor {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #1f2937;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel-mini__label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.painel-mini__ico--roxo {
+  background: #ede9fe;
+  color: #7c5cf0;
+}
+.painel-mini__ico--indigo {
+  background: #e0e7ff;
+  color: #4f6ef7;
+}
+.painel-mini__ico--verde {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.painel-mini__ico--teal {
+  background: #ccfbf1;
+  color: #0d9488;
+}
+.painel-mini__ico--vermelho {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.painel-mini__ico--ambar {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+/* ---- Últimos serviços ---- */
+.painel-servicos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.painel-servicos__titulo {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.painel-servicos__link {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+col.drawer-table__col-desc-wide {
+  width: 46%;
+}
+
+col.drawer-table__col-prof {
+  width: 30%;
+}
+
+col.drawer-table__col-data {
+  width: 24%;
+}
+
+.drawer-table--painel-servicos .col-desc,
+.drawer-table--painel-servicos .col-prof {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-table--painel-servicos .col-data {
+  white-space: nowrap;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 720px) {
+  .painel-destaques,
+  .painel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

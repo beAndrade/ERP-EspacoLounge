@@ -60,6 +60,8 @@
       </nav>
       @if (d.abaAtiva === 'Cadastro') {
         <app-cliente-cadastro-form [mostrarRodape]="false" />
+      } @else if (d.abaAtiva === 'Painel') {
+        <app-cliente-painel-tab />
       } @else if (d.abaAtiva === 'Cashback') {
         <app-cliente-cashback-tab />
       } @else if (d.abaAtiva === 'Créditos') {

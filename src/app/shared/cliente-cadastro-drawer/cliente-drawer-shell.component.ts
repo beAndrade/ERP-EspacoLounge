@@ -7,6 +7,7 @@ import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service'
 import { ClienteCashbackTabComponent } from './cliente-cashback-tab.component';
 import { ClienteCreditosTabComponent } from './cliente-creditos-tab.component';
 import { ClienteDebitosTabComponent } from './cliente-debitos-tab.component';
+import { ClientePainelTabComponent } from './cliente-painel-tab.component';
 
 /**
  * Corpo reutilizável da ficha do cliente (nav + abas + rodapé cadastro).
@@ -20,6 +21,7 @@ import { ClienteDebitosTabComponent } from './cliente-debitos-tab.component';
     ClienteCashbackTabComponent,
     ClienteCreditosTabComponent,
     ClienteDebitosTabComponent,
+    ClientePainelTabComponent,
     ClienteAgendamentosTabComponent,
     ClienteVendasTabComponent,
     ClienteAvatarComponent,

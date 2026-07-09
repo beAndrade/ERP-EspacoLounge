@@ -1,0 +1,186 @@
+<main class="cliente-painel" aria-label="Painel do cliente">
+  @if (d.carregandoPainel) {
+    <p class="cliente-painel__hint">A carregar painel…</p>
+  } @else {
+    @let r = d.painelResumo;
+
+    <section class="painel-destaques">
+      <article class="painel-destaque painel-destaque--roxo">
+        <span class="painel-destaque__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h12M6 21h12M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9s8 5 8 9" />
+          </svg>
+        </span>
+        <span class="painel-destaque__valor">{{ r?.diasSemVir ?? '—' }}</span>
+        <span class="painel-destaque__label">
+          {{ r?.diasSemVir != null ? diasLabel(r!.diasSemVir) + ' sem vir' : 'Nunca veio' }}
+        </span>
+      </article>
+
+      <article class="painel-destaque painel-destaque--azul">
+        <span class="painel-destaque__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L4.5 9.7l5.9-.9L12 3.5z" />
+          </svg>
+        </span>
+        <span class="painel-destaque__valor painel-destaque__valor--texto">Sem avaliação</span>
+        <span class="painel-destaque__label">Última avaliação</span>
+      </article>
+
+      <article class="painel-destaque painel-destaque--verde">
+        <span class="painel-destaque__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M16.5 6.5c0-1.7-2-3-4.5-3S7.5 4.8 7.5 6.5 9.5 9.5 12 9.5s4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3" />
+          </svg>
+        </span>
+        <span class="painel-destaque__valor painel-destaque__valor--texto">
+          {{ (r?.faturamento ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+        </span>
+        <span class="painel-destaque__label">Faturamento</span>
+      </article>
+    </section>
+
+    <section class="painel-grid">
+      <article class="painel-mini">
+        <span class="painel-mini__ico painel-mini__ico--roxo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 3h10a1 1 0 0 1 1 1v17l-2.5-1.5L13 21l-2.5-1.5L8 21l-2.5-1.5L5 21V4a1 1 0 0 1 1-1z" />
+            <path d="M8.5 8h7M8.5 12h7" />
+          </svg>
+        </span>
+        <span class="painel-mini__valor">
+          {{ (r?.debitosTotal ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+        </span>
+        <span class="painel-mini__label">Débitos</span>
+      </article>
+
+      <article class="painel-mini">
+        <span class="painel-mini__ico painel-mini__ico--indigo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="6" height="6" rx="1.2" />
+            <rect x="14" y="4" width="6" height="6" rx="1.2" />
+            <rect x="4" y="14" width="6" height="6" rx="1.2" />
+            <rect x="14" y="14" width="6" height="6" rx="1.2" />
+          </svg>
+        </span>
+        <span class="painel-mini__valor">{{ r?.pacotesAberto ?? 0 }}</span>
+        <span class="painel-mini__label">Pacotes em aberto</span>
+      </article>
+
+      <article class="painel-mini">
+        <span class="painel-mini__ico painel-mini__ico--verde" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M12 7.5v9M14.3 9.4c0-1-1-1.6-2.3-1.6s-2.3.7-2.3 1.6 1 1.5 2.3 1.5 2.3.7 2.3 1.6-1 1.6-2.3 1.6-2.3-.7-2.3-1.6" />
+          </svg>
+        </span>
+        <span class="painel-mini__valor">
+          {{ d.creditoSaldo | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+        </span>
+        <span class="painel-mini__label">Crédito</span>
+      </article>
+
+      <article class="painel-mini">
+        <span class="painel-mini__ico painel-mini__ico--teal" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9a8 8 0 0 1 13.7-4.5M20 15A8 8 0 0 1 6.3 19.5" />
+            <path d="M17.5 3.5V8H13M6.5 20.5V16H11" />
+          </svg>
+        </span>
+        <span class="painel-mini__valor">
+          {{ d.cashbackSaldo | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+        </span>
+        <span class="painel-mini__label">Cashback</span>
+      </article>
+
+      <article class="painel-mini">
+        <span class="painel-mini__ico painel-mini__ico--vermelho" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7l6 6 4-4 6 6" />
+            <path d="M20 15v-4h-4" />
+          </svg>
+        </span>
+        <span class="painel-mini__valor">
+          {{ percentualLabel(r?.taxaCancelamentoPct ?? 0) }}
+        </span>
+        <span class="painel-mini__label">Taxa de cancelamento</span>
+      </article>
+
+      <article class="painel-mini">
+        <span class="painel-mini__ico painel-mini__ico--ambar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M12 7.5V12l3 2" />
+          </svg>
+        </span>
+        <span class="painel-mini__valor">{{ diasLabel(r?.tempoComoClienteDias ?? null) }}</span>
+        <span class="painel-mini__label">Tempo como cliente</span>
+      </article>
+
+      <article class="painel-mini">
+        <span class="painel-mini__ico painel-mini__ico--verde" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 17l6-6 4 4 6-6" />
+            <path d="M20 9V13h-4" />
+          </svg>
+        </span>
+        <span class="painel-mini__valor">{{ diasLabel(r?.taxaRetornoDias ?? null) }}</span>
+        <span class="painel-mini__label">Taxa de retorno</span>
+      </article>
+    </section>
+
+    <section class="painel-servicos" aria-labelledby="painel-servicos-titulo">
+      <h3 class="painel-servicos__titulo" id="painel-servicos-titulo">
+        Últimos serviços
+      </h3>
+
+      @if (!r || r.ultimosServicos.length === 0) {
+        <p class="cliente-painel__hint">Nenhum serviço registado.</p>
+      } @else {
+        <div class="drawer-table-card" role="region" aria-label="Últimos serviços">
+          <div class="drawer-table-wrap">
+            <table class="drawer-table drawer-table--painel-servicos">
+              <colgroup>
+                <col class="drawer-table__col-desc-wide" />
+                <col class="drawer-table__col-prof" />
+                <col class="drawer-table__col-data" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="col-desc" scope="col">Descrição</th>
+                  <th class="col-prof" scope="col">Profissional</th>
+                  <th class="col-data" scope="col">Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of r.ultimosServicos; track row.idAtendimento) {
+                  <tr>
+                    <td class="col-desc">
+                      @if (row.numeroComanda != null) {
+                        <button
+                          type="button"
+                          class="drawer-table__link-ticket painel-servicos__link"
+                          (click)="verComanda(row.idAtendimento)"
+                          [attr.aria-label]="
+                            'Visualizar comanda ' + rotuloComanda(row.numeroComanda)
+                          "
+                        >
+                          {{ row.descricao }}
+                        </button>
+                      } @else {
+                        {{ row.descricao }}
+                      }
+                    </td>
+                    <td class="col-prof">{{ row.profissional }}</td>
+                    <td class="col-data">{{ row.dataExibicao }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="drawer-table-foot" aria-hidden="true"></div>
+        </div>
+      }
+    </section>
+  }
+</main>

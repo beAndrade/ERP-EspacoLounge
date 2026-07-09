@@ -1,0 +1,173 @@
+# Stack completa para Dokploy (ERP + WhatsApp Evolution).
+# No painel: Compose → caminho deste ficheiro → variáveis na aba Environment.
+#
+# Domínios (recomendado: aba Domains do Dokploy):
+#   web            → app.seudominio.com.br  (Angular + proxy /api)
+#   evolution-api  → evolution.seudominio.com.br  (opcional; QR / Manager)
+
+name: espaco-lounge
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: espaco_lounge
+    volumes:
+      - espaco_lounge_pg:/var/lib/postgresql/data
+    networks:
+      - espaco-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d espaco_lounge']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://espacolounge:${POSTGRES_PASSWORD}@espacoloungedb-etzdoz:5432/espacolounge
+      PORT: 3000
+      NODE_ENV: production
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NOME: ${ADMIN_NOME:-Administrador}
+      ADMIN_PROFISSIONAL_NOME: ${ADMIN_PROFISSIONAL_NOME:-}
+      ADMIN_PIN: ${ADMIN_PIN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["https://app.seudominio.com.br"]}
+    expose:
+      - '3000'
+    networks:
+      - espaco-net
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    expose:
+      - '80'
+    networks:
+      - espaco-net
+
+  evolution-postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${EVOLUTION_POSTGRES_DB:-evolution}
+      POSTGRES_USER: ${EVOLUTION_POSTGRES_USER:-evolution}
+      POSTGRES_PASSWORD: ${EVOLUTION_POSTGRES_PASSWORD:?defina EVOLUTION_POSTGRES_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - listen_addresses=*
+    volumes:
+      - evolution_postgres:/var/lib/postgresql/data
+    networks:
+      - espaco-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  evolution-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --port 6379 --appendonly yes
+    volumes:
+      - evolution_redis:/data
+    networks:
+      - espaco-net
+
+  evolution-api:
+    image: evoapicloud/evolution-api:latest
+    restart: unless-stopped
+    depends_on:
+      evolution-redis:
+        condition: service_started
+      evolution-postgres:
+        condition: service_healthy
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-https://evolution.seudominio.com.br}
+      SERVER_PORT: 8080
+      SERVER_TYPE: http
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?defina EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: 'true'
+      DATABASE_ENABLED: 'true'
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${EVOLUTION_POSTGRES_USER:-evolution}:${EVOLUTION_POSTGRES_PASSWORD}@evolution-postgres:5432/${EVOLUTION_POSTGRES_DB:-evolution}?schema=evolution_api
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_espaco_lounge
+      DATABASE_SAVE_DATA_INSTANCE: 'true'
+      DATABASE_SAVE_DATA_NEW_MESSAGE: 'true'
+      DATABASE_SAVE_MESSAGE_UPDATE: 'true'
+      DATABASE_SAVE_DATA_CONTACTS: 'true'
+      DATABASE_SAVE_DATA_CHATS: 'true'
+      DATABASE_SAVE_DATA_LABELS: 'true'
+      DATABASE_SAVE_DATA_HISTORIC: 'true'
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_URI: redis://evolution-redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution_espaco
+      CACHE_REDIS_SAVE_INSTANCES: 'false'
+      CACHE_LOCAL_ENABLED: 'false'
+      CONFIG_SESSION_PHONE_CLIENT: ${EVOLUTION_SESSION_CLIENT:-Espaco Lounge}
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      DEL_INSTANCE: 'false'
+      QRCODE_LIMIT: '30'
+      LOG_LEVEL: ERROR,WARN,DEBUG,INFO,LOG,VERBOSE,DARK,WEBHOOKS
+      LOG_COLOR: 'true'
+      LOG_BAILEYS: error
+    expose:
+      - '8080'
+    networks:
+      - espaco-net
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1 || exit 1',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+
+  evolution-manager:
+    image: evoapicloud/evolution-manager:latest
+    profiles: ['manager']
+    restart: unless-stopped
+    depends_on:
+      evolution-api:
+        condition: service_started
+    expose:
+      - '80'
+    networks:
+      - espaco-net
+
+volumes:
+  espaco_lounge_pg:
+  evolution_postgres:
+  evolution_redis:
+  evolution_instances:
+  evolution_store:
+
+networks:
+  espaco-net:
+    driver: bridge

@@ -75,7 +75,10 @@ npm test          # Karma / unitários do Angular
 npm run build     # artefatos em dist/
 ```
 
-Para produção, configure `src/environments/environment.production.ts` com a **URL pública da API** (sem barra no final) e faça o deploy do front e da API separadamente.
+## Deploy em produção
+
+- **Dokploy (recomendado):** guia completo em [`docs/DOKPLOY.md`](docs/DOKPLOY.md) — stack com front, API, Postgres e Evolution.
+- **VPS manual:** [`docs/DEPLOY.md`](docs/DEPLOY.md)
 
 ---
 

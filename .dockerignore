@@ -1,0 +1,16 @@
+node_modules
+dist
+.angular
+.git
+.cursor
+.vscode
+api
+apps-script
+docs
+scripts
+*.md
+.env*
+!.env.dokploy.example
+docker-compose*.yml
+Dockerfile
+api/Dockerfile

@@ -2,6 +2,8 @@
 
 Guia mínimo para a sua mãe usar o app no celular (internet + HTTPS).
 
+**Dokploy (stack completa Docker):** ver [`DOKPLOY.md`](DOKPLOY.md).
+
 ## Pré-requisitos
 
 1. Servidor com Docker (VPS) **ou** PaaS (Railway, Render) + Postgres gerido (Neon, Supabase).
