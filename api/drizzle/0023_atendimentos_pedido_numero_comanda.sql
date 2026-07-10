@@ -25,10 +25,11 @@ WHERE p.id_atendimento = ordem.id_atendimento
 
 CREATE SEQUENCE IF NOT EXISTS "atendimentos_pedido_numero_comanda_seq";
 
+-- setval não aceita 0 (mínimo 1). BD vazia → próximo nextval = 1 (is_called=false).
 SELECT setval(
   'atendimentos_pedido_numero_comanda_seq',
-  COALESCE((SELECT MAX("numero_comanda") FROM "atendimentos_pedido"), 0),
-  true
+  COALESCE((SELECT MAX("numero_comanda") FROM "atendimentos_pedido"), 1),
+  (SELECT COALESCE(MAX("numero_comanda"), 0) FROM "atendimentos_pedido") > 0
 );
 
 ALTER TABLE "atendimentos_pedido"
