@@ -12,7 +12,9 @@ RUN npm run build -- --configuration docker
 
 FROM nginx:1.27-alpine AS runner
 
-COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+# Template → envsubst no entrypoint gera /etc/nginx/conf.d/default.conf
+ENV API_HOST=api
+COPY deploy/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist/espaco-lounge/browser /usr/share/nginx/html
 
 EXPOSE 80

@@ -88,6 +88,20 @@ postgresql://postgres:${POSTGRES_PASSWORD}@${DB_HOST}:5432/espaco_lounge
    ```
 3. Confirme que o serviço `db` está **Running** antes da API.
 
+#### Erro nginx: `host not found in upstream "api"`
+
+O front (nginx) faz proxy de `/api` e `/health` para o serviço `api`. Com `proxy_pass` estático o nginx resolve o host **no arranque** e aborta se a API ainda não estiver no DNS.
+
+O `deploy/nginx.conf` usa o DNS do Docker (`127.0.0.11`) e resolve em cada pedido; o compose só sobe o `web` depois da API healthy.
+
+1. Redeploy com esta correção (rebuild da imagem `web`).
+2. Confirme que o serviço `api` está **Running** / healthy.
+3. Se o DNS `api` continuar inacessível no Dokploy → Environment:
+   ```text
+   API_HOST=espaco-lounge-api
+   ```
+   ou o **nome real** do container da API (menu Docker), como em `DB_HOST`.
+
 ## Pós-deploy
 
 1. **Health** — `https://app.seudominio.com.br/health` deve responder JSON.
