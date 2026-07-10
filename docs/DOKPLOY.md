@@ -66,6 +66,20 @@ Crie registos **A** (ou CNAME) apontando para o IP do servidor Dokploy:
 
 Recomendadas: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGINS`, `ADMIN_PIN`.
 
+### `DATABASE_URL` (API)
+
+O compose define automaticamente:
+
+```text
+postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/espaco_lounge
+```
+
+- Host **`db`** = nome do serviço Postgres neste compose (rede Docker interna).
+- **Não** uses `localhost` / `127.0.0.1` (é o próprio container da API).
+- **Não** uses um hostname externo tipo `espacoloungedb-…` salvo se a BD for **fora** deste compose.
+
+Se na aba Environment do Dokploy existir `DATABASE_URL` manual, tem de coincidir com o acima (ou remove-a e deixa o compose).
+
 ## Pós-deploy
 
 1. **Health** — `https://app.seudominio.com.br/health` deve responder JSON.
