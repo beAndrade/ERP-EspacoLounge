@@ -1,10 +1,22 @@
 #!/bin/sh
 set -e
 
+# Dokploy por vezes não injeta DATABASE_URL interpolada do compose.
+# Preferimos montar a partir de POSTGRES_PASSWORD + host do serviço `db`.
+DB_HOST="${DB_HOST:-db}"
+DB_PORT="${DB_PORT:-5432}"
+DB_USER="${DB_USER:-postgres}"
+DB_NAME="${DB_NAME:-espaco_lounge}"
+
 if [ -z "${DATABASE_URL:-}" ]; then
-  echo "ERRO: DATABASE_URL não está definida. No Compose Dokploy deve ser:"
-  echo "  postgresql://postgres:\${POSTGRES_PASSWORD}@db:5432/espaco_lounge"
-  exit 1
+  if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+    echo "ERRO: DATABASE_URL e POSTGRES_PASSWORD estão vazias."
+    echo "No Dokploy (Environment) defina pelo menos POSTGRES_PASSWORD."
+    echo "URL esperada: postgresql://postgres:SENHA@db:5432/espaco_lounge"
+    exit 1
+  fi
+  export DATABASE_URL="postgresql://${DB_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+  echo "DATABASE_URL montada a partir de POSTGRES_PASSWORD (host=${DB_HOST})."
 fi
 
 case "${DATABASE_URL}" in

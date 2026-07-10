@@ -33,8 +33,14 @@ services:
       db:
         condition: service_healthy
     environment:
-      # Host = nome do serviço Compose (`db`), não localhost nem hostname externo do Dokploy.
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/espaco_lounge
+      # Preferir POSTGRES_PASSWORD: o entrypoint monta DATABASE_URL se faltar
+      # (Dokploy por vezes não interpola ${POSTGRES_PASSWORD} em DATABASE_URL).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      DB_HOST: db
+      DB_PORT: '5432'
+      DB_USER: postgres
+      DB_NAME: espaco_lounge
+      DATABASE_URL: ${DATABASE_URL:-}
       PORT: 3000
       NODE_ENV: production
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
