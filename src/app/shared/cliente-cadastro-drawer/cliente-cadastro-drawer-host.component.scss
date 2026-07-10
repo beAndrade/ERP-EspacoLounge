@@ -1584,6 +1584,9 @@ app-profissional-cadastro-drawer-host {
 .cliente-nav-lock-tooltip {
   position: fixed;
   z-index: var(--z-cliente-global-tooltip);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   width: max-content;
   max-width: min(260px, calc(100vw - 40px));
   padding: 8px 12px;
@@ -1600,6 +1603,11 @@ app-profissional-cadastro-drawer-host {
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 8px));
   animation: clienteNavLockTooltipIn 0.2s ease;
+
+  &__icon {
+    flex: 0 0 auto;
+    opacity: 0.95;
+  }
 
   &::after {
     content: '';

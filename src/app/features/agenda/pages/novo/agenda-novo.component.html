@@ -34,13 +34,6 @@
 }
 
 @if (!carregandoListas && (!erro || modoModal)) {
-  @if (clientes.length === 0) {
-    <p class="hint">
-      Nenhum cliente com nome preenchido.
-      <a routerLink="/clientes/novo">Cadastrar cliente</a>
-    </p>
-  }
-
   <form
     [formGroup]="form"
     (ngSubmit)="salvar()"

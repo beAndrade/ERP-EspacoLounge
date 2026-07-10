@@ -2094,6 +2094,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDataYmdParaFaturar = ymd;
   }
 
+  /** Abre o drawer de cadastro vazio (botão «Criar cliente» no agendamento). */
+  abrirClienteDrawerNovo(): void {
+    this.cadastroDrawer.abrirNovo('', {
+      onSalvo: (salvo) => {
+        this.agendaDrawerRef?.aplicarClienteAposCriacao(salvo);
+      },
+    });
+  }
+
   /**
    * Links «Informações» da sidebar (cashback, crédito, débitos, aniversário, etc.)
    * no drawer de agendamento ou de comanda.
