@@ -12,12 +12,12 @@ flowchart LR
     WEB[web :80]
     EVO[evolution-api :8080]
   end
-  subgraph interno [dokploy-network]
+  subgraph interno [espaco-internal]
     API[api :3000]
-    DB[(db Postgres)]
     EDB[(evolution-postgres)]
     REDIS[(evolution-redis)]
   end
+  DB[(espacoloungedb-etzdoz)]
   User((Utilizador)) --> WEB
   WEB -->|/api/*| API
   API --> DB
@@ -29,8 +29,8 @@ flowchart LR
 | Serviço | Função | Expor no Dokploy |
 |---------|--------|------------------|
 | `web` | Angular estático + proxy `/api` → API | **Sim** — domínio principal |
-| `api` | API Elysia + migrações no arranque | Não (só rede interna) |
-| `db` | PostgreSQL do ERP | Não |
+| `api` | API Elysia + migrações no arranque | Não (rede interna + dokploy-network) |
+| Postgres Dokploy | `espacoloungedb-etzdoz` (fora deste compose) | Serviço Database no projeto |
 | `evolution-api` | WhatsApp (Baileys) | **Opcional** — subdomínio para QR/Manager |
 | `evolution-postgres` / `evolution-redis` | Dados da Evolution | Não |
 | `evolution-manager` | UI web da Evolution | Perfil `manager` (opcional) |
@@ -66,27 +66,24 @@ Crie registos **A** (ou CNAME) apontando para o IP do servidor Dokploy:
 
 Recomendadas: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGINS`, `ADMIN_PIN`.
 
-### Rede e `DATABASE_URL` (API)
+### Rede e Postgres (API)
 
-Todos os serviços usam a rede externa **`dokploy-network`** (DNS entre containers + Traefik).
+O Postgres do ERP é o **serviço Dokploy** (não um container neste compose):
 
-**Não defina `DATABASE_URL` no Environment.** Basta `POSTGRES_PASSWORD` (+ `DB_HOST` se preciso). O entrypoint monta sempre:
+| Campo | Valor |
+|-------|--------|
+| Host | `espacoloungedb-etzdoz` (`DB_HOST`) |
+| User / DB | `espacolounge` / `espacolounge` |
+| Senha | `POSTGRES_PASSWORD` (a mesma do serviço Postgres no Dokploy) |
 
-```text
-postgresql://postgres:${POSTGRES_PASSWORD}@${DB_HOST}:5432/espaco_lounge
-```
+A API tem de estar na **`dokploy-network`** para resolver esse hostname.
 
-- Se a chave `DATABASE_URL` existir no painel (mesmo vazia ou com host `db`), **apague-a** — senão pode confundir deploys antigos.
-- Nos logs da API deve aparecer: `DATABASE_URL → user=postgres host=...` com o host que definiu.
+| Rede | Função |
+|------|--------|
+| `dokploy-network` | Traefik + Postgres Dokploy (`espacoloungedb-etzdoz`) |
+| `espaco-internal` | DNS entre `api`, `web` e Evolution |
 
-#### Erro `getaddrinfo ENOTFOUND db`
-
-1. Redeploy com o compose atualizado (aliases `db` / `espaco-lounge-db` na `dokploy-network`).
-2. Se persistir: Dokploy → menu **Docker** → copie o **nome real** do container Postgres → Environment:
-   ```text
-   DB_HOST=<nome-real-do-container-postgres>
-   ```
-3. Confirme que o serviço `db` está **Running** antes da API.
+Não é preciso `DATABASE_URL` — o entrypoint monta a URL a partir de `DB_HOST` + `POSTGRES_PASSWORD`.
 
 #### Erro nginx: `host not found in upstream "api"`
 
