@@ -39,16 +39,15 @@ services:
         condition: service_healthy
     hostname: api
     environment:
-      # Preferir POSTGRES_PASSWORD: o entrypoint monta DATABASE_URL se faltar.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
-      # Host DNS do Postgres neste compose (alias na dokploy-network).
-      # Se ENOTFOUND, no Dokploy → Docker veja o nome real do container Postgres
-      # e defina DB_HOST=<esse-nome> no Environment.
+      # Host DNS do Postgres. No Dokploy → Docker, use o nome real do container
+      # se "db" der ENOTFOUND (ex.: espaco-lounge-db-xxxxx).
       DB_HOST: ${DB_HOST:-db}
       DB_PORT: ${DB_PORT:-5432}
       DB_USER: ${DB_USER:-postgres}
       DB_NAME: ${DB_NAME:-espaco_lounge}
-      DATABASE_URL: ${DATABASE_URL:-}
+      # Não defina DATABASE_URL no painel: o entrypoint monta a partir de DB_* .
+      # Se existir DATABASE_URL vazia/antiga no Environment, APAGUE a chave.
       PORT: 3000
       NODE_ENV: production
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}

@@ -70,15 +70,14 @@ Recomendadas: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGINS`, `ADMIN_PIN`.
 
 Todos os serviços usam a rede externa **`dokploy-network`** (DNS entre containers + Traefik).
 
-**Não é obrigatório** definir `DATABASE_URL`. Basta `POSTGRES_PASSWORD`: o entrypoint monta:
+**Não defina `DATABASE_URL` no Environment.** Basta `POSTGRES_PASSWORD` (+ `DB_HOST` se preciso). O entrypoint monta sempre:
 
 ```text
-postgresql://postgres:${POSTGRES_PASSWORD}@${DB_HOST:-db}:5432/espaco_lounge
+postgresql://postgres:${POSTGRES_PASSWORD}@${DB_HOST}:5432/espaco_lounge
 ```
 
-- Host default **`db`** = alias DNS do serviço Postgres neste compose.
-- **Não** uses `localhost` / `127.0.0.1`.
-- Se `DATABASE_URL` estiver **vazia** no painel, **apague** a chave (env vazia sobrescreve o compose).
+- Se a chave `DATABASE_URL` existir no painel (mesmo vazia ou com host `db`), **apague-a** — senão pode confundir deploys antigos.
+- Nos logs da API deve aparecer: `DATABASE_URL → user=postgres host=...` com o host que definiu.
 
 #### Erro `getaddrinfo ENOTFOUND db`
 
