@@ -85,29 +85,29 @@ A API tem de estar na **`dokploy-network`** para resolver esse hostname.
 
 Não é preciso `DATABASE_URL` — o entrypoint monta a URL a partir de `DB_HOST` + `POSTGRES_PASSWORD`.
 
-#### Erro nginx: `host not found in upstream "api"`
+#### Erro 502 em `/api` ou `/health`
 
-O front (nginx) faz proxy de `/api` e `/health` para o serviço `api`. Com `proxy_pass` estático o nginx resolve o host **no arranque** e aborta se a API ainda não estiver no DNS.
+O domínio público aponta para o serviço **`web`**. O nginx faz proxy para `API_HOST` (default `api`) na porta 3000.
 
-O `deploy/nginx.conf` usa o DNS do Docker (`127.0.0.11`) e resolve em cada pedido; o compose só sobe o `web` depois da API healthy.
-
-1. Redeploy com esta correção (rebuild da imagem `web`).
-2. Confirme que o serviço `api` está **Running** / healthy.
-3. Se o DNS `api` continuar inacessível no Dokploy → Environment:
+1. Domínio no Dokploy → serviço **`web`** (não `api`).
+2. Serviço `api` **Running** (log: `API em http://0.0.0.0:3000`).
+3. Teste `https://app.espacolounge.com.br/health` — deve devolver JSON.
+4. Se o nginx não resolver `api`, no Environment:
    ```text
-   API_HOST=espaco-lounge-api
+   API_HOST=<nome-real-do-container-api>
    ```
-   ou o **nome real** do container da API (menu Docker), como em `DB_HOST`.
+   (Dokploy → Docker) e **redeploy do `web` com rebuild**.
+5. Confirme `CORS_ORIGINS=["https://app.espacolounge.com.br"]`.
 
 ## Pós-deploy
 
-1. **Health** — `https://app.seudominio.com.br/health` deve responder JSON.
-2. **Login** — `https://app.seudominio.com.br/login` com `ADMIN_EMAIL` (criado se `usuarios` estiver vazio).
+1. **Health** — `https://app.espacolounge.com.br/health` deve responder JSON.
+2. **Login** — `https://app.espacolounge.com.br/login` com `ADMIN_EMAIL` (criado se `usuarios` estiver vazio).
 3. **WhatsApp** — em Configurações → WhatsApp:
    - URL: `EVOLUTION_SERVER_URL`
    - API Key: `EVOLUTION_API_KEY`
    - Criar instância (ex. `espaco-lounge`) e ler QR no Manager ou painel Evolution.
-4. **Agendamento público** — `https://app.seudominio.com.br/agendar`
+4. **Agendamento público** — `https://app.espacolounge.com.br/agendar`
 
 ## Migrações e seed
 
