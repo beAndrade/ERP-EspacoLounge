@@ -22,7 +22,8 @@ fi
 case "${DATABASE_URL}" in
   *localhost*|*127.0.0.1*|*"::1"*)
     echo "ERRO: DATABASE_URL aponta para localhost (${DATABASE_URL})."
-    echo "Dentro do container use o host do serviço Compose: db"
+    echo "Dentro do container use o host DNS do Postgres (ex.: db)."
+    echo "Se ENOTFOUND: no Dokploy → Docker, copie o nome do container Postgres e defina DB_HOST=<nome>."
     exit 1
     ;;
 esac

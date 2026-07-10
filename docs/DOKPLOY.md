@@ -12,7 +12,7 @@ flowchart LR
     WEB[web :80]
     EVO[evolution-api :8080]
   end
-  subgraph interno [rede espaco-net]
+  subgraph interno [dokploy-network]
     API[api :3000]
     DB[(db Postgres)]
     EDB[(evolution-postgres)]
@@ -66,18 +66,28 @@ Crie registos **A** (ou CNAME) apontando para o IP do servidor Dokploy:
 
 Recomendadas: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CORS_ORIGINS`, `ADMIN_PIN`.
 
-### `DATABASE_URL` (API)
+### Rede e `DATABASE_URL` (API)
 
-**Não é obrigatório** definir `DATABASE_URL` no Dokploy. Basta `POSTGRES_PASSWORD`: o `docker-entrypoint.sh` da API monta:
+Todos os serviços usam a rede externa **`dokploy-network`** (DNS entre containers + Traefik).
+
+**Não é obrigatório** definir `DATABASE_URL`. Basta `POSTGRES_PASSWORD`: o entrypoint monta:
 
 ```text
-postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/espaco_lounge
+postgresql://postgres:${POSTGRES_PASSWORD}@${DB_HOST:-db}:5432/espaco_lounge
 ```
 
-- Host **`db`** = nome do serviço Postgres neste compose (rede Docker interna).
-- **Não** uses `localhost` / `127.0.0.1` (é o próprio container da API).
-- Se definir `DATABASE_URL` manualmente no Environment, tem de apontar para `db` (não para hostname externo tipo `espacoloungedb-…`, salvo BD fora deste compose).
-- Se `DATABASE_URL` estiver **vazia** no painel, apague a chave — uma variável vazia pode sobrescrever o compose.
+- Host default **`db`** = alias DNS do serviço Postgres neste compose.
+- **Não** uses `localhost` / `127.0.0.1`.
+- Se `DATABASE_URL` estiver **vazia** no painel, **apague** a chave (env vazia sobrescreve o compose).
+
+#### Erro `getaddrinfo ENOTFOUND db`
+
+1. Redeploy com o compose atualizado (aliases `db` / `espaco-lounge-db` na `dokploy-network`).
+2. Se persistir: Dokploy → menu **Docker** → copie o **nome real** do container Postgres → Environment:
+   ```text
+   DB_HOST=<nome-real-do-container-postgres>
+   ```
+3. Confirme que o serviço `db` está **Running** antes da API.
 
 ## Pós-deploy
 

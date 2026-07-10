@@ -4,13 +4,15 @@
 # Domínios (recomendado: aba Domains do Dokploy):
 #   web            → app.seudominio.com.br  (Angular + proxy /api)
 #   evolution-api  → evolution.seudominio.com.br  (opcional; QR / Manager)
-
-name: espaco-lounge
+#
+# Rede: todos os serviços usam dokploy-network (DNS entre containers).
+# Não defina container_name — o Dokploy/Traefik e os logs quebram com isso.
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    hostname: db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
@@ -18,7 +20,10 @@ services:
     volumes:
       - espaco_lounge_pg:/var/lib/postgresql/data
     networks:
-      - espaco-net
+      dokploy-network:
+        aliases:
+          - db
+          - espaco-lounge-db
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d espaco_lounge']
       interval: 5s
@@ -32,14 +37,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    hostname: api
     environment:
-      # Preferir POSTGRES_PASSWORD: o entrypoint monta DATABASE_URL se faltar
-      # (Dokploy por vezes não interpola ${POSTGRES_PASSWORD} em DATABASE_URL).
+      # Preferir POSTGRES_PASSWORD: o entrypoint monta DATABASE_URL se faltar.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
-      DB_HOST: db
-      DB_PORT: '5432'
-      DB_USER: postgres
-      DB_NAME: espaco_lounge
+      # Host DNS do Postgres neste compose (alias na dokploy-network).
+      # Se ENOTFOUND, no Dokploy → Docker veja o nome real do container Postgres
+      # e defina DB_HOST=<esse-nome> no Environment.
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_NAME: ${DB_NAME:-espaco_lounge}
       DATABASE_URL: ${DATABASE_URL:-}
       PORT: 3000
       NODE_ENV: production
@@ -54,7 +62,10 @@ services:
     expose:
       - '3000'
     networks:
-      - espaco-net
+      dokploy-network:
+        aliases:
+          - api
+          - espaco-lounge-api
 
   web:
     build:
@@ -62,16 +73,16 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     expose:
       - '80'
     networks:
-      - espaco-net
+      - dokploy-network
 
   evolution-postgres:
     image: postgres:15-alpine
     restart: unless-stopped
+    hostname: evolution-postgres
     environment:
       POSTGRES_DB: ${EVOLUTION_POSTGRES_DB:-evolution}
       POSTGRES_USER: ${EVOLUTION_POSTGRES_USER:-evolution}
@@ -85,7 +96,9 @@ services:
     volumes:
       - evolution_postgres:/var/lib/postgresql/data
     networks:
-      - espaco-net
+      dokploy-network:
+        aliases:
+          - evolution-postgres
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 5s
@@ -95,11 +108,14 @@ services:
   evolution-redis:
     image: redis:7-alpine
     restart: unless-stopped
+    hostname: evolution-redis
     command: redis-server --port 6379 --appendonly yes
     volumes:
       - evolution_redis:/data
     networks:
-      - espaco-net
+      dokploy-network:
+        aliases:
+          - evolution-redis
 
   evolution-api:
     image: evoapicloud/evolution-api:latest
@@ -144,7 +160,9 @@ services:
     expose:
       - '8080'
     networks:
-      - espaco-net
+      dokploy-network:
+        aliases:
+          - evolution-api
     healthcheck:
       test:
         [
@@ -166,7 +184,7 @@ services:
     expose:
       - '80'
     networks:
-      - espaco-net
+      - dokploy-network
 
 volumes:
   espaco_lounge_pg:
@@ -176,5 +194,5 @@ volumes:
   evolution_store:
 
 networks:
-  espaco-net:
-    driver: bridge
+  dokploy-network:
+    external: true
