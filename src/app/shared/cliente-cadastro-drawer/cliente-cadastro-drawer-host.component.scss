@@ -110,7 +110,6 @@ app-profissional-cadastro-drawer-host {
     --cliente-form-col-gap: 16px;
     --cliente-field-input-max: 421.78px;
     --cliente-accent: #505afb;
-    overflow-x: hidden;
     left: auto;
     right: 0;
     width: min(var(--cliente-drawer-shell-w), 100vw);
@@ -119,19 +118,25 @@ app-profissional-cadastro-drawer-host {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
 
+    > app-cliente-drawer-shell,
     > .cliente-shell {
-      flex: 1 1 auto;
       display: flex;
+      flex: 1 1 auto;
       flex-direction: column;
       min-height: 0;
+      max-height: 100%;
       width: 100%;
     }
   }
 }
 
 .cliente-shell {
+  flex: 1 1 auto;
+  min-height: 0;
   height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -1166,41 +1171,46 @@ app-profissional-cadastro-drawer-host {
 }
 
 .cliente-footer-btn {
+  box-sizing: border-box;
   min-width: 96px;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  height: 32px;
+  padding: 0 15px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition:
     background-color 0.15s ease,
     color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.15s ease;
 
   &--ghost {
-    border: 1px solid transparent;
-    background: transparent;
-    color: #52525b;
+    border: 1px solid #f1f1f1;
+    background: #ffffff;
+    color: #000000bf;
+    font-weight: 400;
 
-    &:hover {
-      background: #fafafa;
-      color: #18181b;
+    &:hover:not(:disabled) {
+      color: #7a88ff;
+      border-color: #7a88ff;
+      background: #ffffff;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(113, 113, 122, 0.25);
+      box-shadow: 0 0 0 2px rgba(122, 136, 255, 0.35);
     }
   }
 
   &--primary {
-    border: none;
-    background: var(--cliente-accent);
+    border: 1px solid #505afb;
+    background: #505afb;
     color: #fff;
 
-    &:hover {
-      filter: brightness(1.05);
+    &:hover:not(:disabled) {
+      background: #7a88ff;
+      border-color: #7a88ff;
+      color: #fff;
     }
 
     &:focus-visible {
@@ -1447,10 +1457,12 @@ app-profissional-cadastro-drawer-host {
 
   &__opt {
     display: block;
-    width: 100%;
+    box-sizing: border-box;
+    width: calc(100% - 10px);
+    margin: 0 5px;
     padding: 10px 12px;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     background: transparent;
     font: inherit;
     font-size: 13px;

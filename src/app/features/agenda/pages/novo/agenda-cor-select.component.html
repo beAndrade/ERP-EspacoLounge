@@ -1,0 +1,92 @@
+<div class="agenda-cor-select">
+  <button
+    type="button"
+    class="agenda-cor-select__trigger"
+    [disabled]="disabled"
+    [attr.aria-label]="ariaFieldLabel || 'Cor'"
+    [attr.aria-expanded]="panelOpen"
+    aria-haspopup="listbox"
+    (click)="togglePanel()"
+  >
+    @if (opcaoAtual.cor) {
+      <span
+        class="agenda-cor-select__swatch"
+        [style.background]="opcaoAtual.cor"
+        aria-hidden="true"
+      ></span>
+    }
+    <span
+      class="agenda-cor-select__label"
+      [class.agenda-cor-select__label--padrao]="!opcaoAtual.cor"
+    >{{ opcaoAtual.label }}</span>
+    <span class="agenda-cor-select__chev" aria-hidden="true"></span>
+  </button>
+
+  <div
+    class="agenda-cor-select__panel"
+    role="listbox"
+    [attr.aria-hidden]="!panelOpen"
+  >
+    @for (o of opcoesDropdown; track trackById($index, o)) {
+      <button
+        type="button"
+        role="option"
+        class="agenda-cor-select__opt"
+        [class.agenda-cor-select__opt--active]="o.id === inner"
+        [attr.aria-selected]="o.id === inner"
+        (click)="escolher(o.id)"
+      >
+        @if (o.cor) {
+          <span
+            class="agenda-cor-select__swatch agenda-cor-select__swatch--opt"
+            [style.background]="o.cor"
+            aria-hidden="true"
+          ></span>
+        }
+        <span
+          class="agenda-cor-select__opt-label"
+          [class.agenda-cor-select__opt-label--padrao]="!o.cor"
+        >{{ o.label }}</span>
+      </button>
+    }
+
+    <div class="agenda-cor-select__divider" aria-hidden="true"></div>
+
+    @if (!criando) {
+      <button
+        type="button"
+        class="agenda-cor-select__criar"
+        (click)="abrirCriar($event)"
+      >
+        <span class="agenda-cor-select__criar-ico" aria-hidden="true">+</span>
+        Criar cor
+      </button>
+    } @else {
+      <div class="agenda-cor-select__criar-form" (click)="$event.stopPropagation()">
+        <input
+          #nomeCriar
+          type="text"
+          class="agenda-cor-select__criar-nome"
+          placeholder="Nome da cor"
+          [(ngModel)]="novoNome"
+          (keydown.enter)="confirmarCriar()"
+          (keydown.escape)="cancelarCriar()"
+        />
+        <input
+          type="color"
+          class="agenda-cor-select__criar-cor"
+          [(ngModel)]="novaCorHex"
+          aria-label="Escolher cor"
+        />
+        <button
+          type="button"
+          class="agenda-cor-select__criar-ok"
+          [disabled]="!podeConfirmarCriar"
+          (click)="confirmarCriar()"
+        >
+          Ok
+        </button>
+      </div>
+    }
+  </div>
+</div>

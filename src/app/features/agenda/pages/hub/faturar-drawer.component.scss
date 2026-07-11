@@ -417,13 +417,13 @@ input[type='number'].fat-field__input {
   top: calc(100% + 4px);
   z-index: 1200;
   box-sizing: border-box;
-  padding: 0.35rem;
+  padding: 5px;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow:
     0 10px 25px rgba(15, 23, 42, 0.12),
     0 4px 8px rgba(15, 23, 42, 0.06);
@@ -442,7 +442,7 @@ input[type='number'].fat-field__input {
   color: var(--fat-fg);
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   text-align: left;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -831,7 +831,8 @@ input[type='number'].fat-field__input {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 40px;
+  min-height: 32px;
+  height: 32px;
   padding: 0 1rem;
   font-size: 0.9rem;
   font-weight: 600;
