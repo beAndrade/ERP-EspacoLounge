@@ -670,9 +670,9 @@ tbody td.col-ticket {
   white-space: nowrap;
 
   &--aviso {
-    color: var(--drawer-badge-pendente-fg, #d46b08);
-    background: var(--drawer-badge-pendente-bg, #fff7e6);
-    border-color: var(--drawer-badge-pendente-border, #ffd591);
+    color: var(--drawer-badge-pendente-fg, #d4380d);
+    background: var(--drawer-badge-pendente-bg, #fff2e8);
+    border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
 
   &--info {
@@ -720,9 +720,9 @@ tbody td.col-ticket {
 
   &--sub {
     margin-top: 4px;
-    color: var(--drawer-badge-pendente-fg, #d46b08);
-    background: var(--drawer-badge-pendente-bg, #fff7e6);
-    border-color: var(--drawer-badge-pendente-border, #ffd591);
+    color: var(--drawer-badge-pendente-fg, #d4380d);
+    background: var(--drawer-badge-pendente-bg, #fff2e8);
+    border-color: var(--drawer-badge-pendente-border, #ffbb96);
     line-height: 18px;
     font-size: 11px;
     display: inline-block;
