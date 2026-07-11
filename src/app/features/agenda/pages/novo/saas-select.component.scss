@@ -259,7 +259,7 @@
 
 .saas-select__criar {
   box-sizing: border-box;
-  display: flex;
+  display: inline-flex;
   width: calc(100% - 10px);
   margin: 0 5px 5px;
   align-items: center;
@@ -272,7 +272,8 @@
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #2563eb;
+  line-height: 1;
+  color: var(--color-primary, #505afb);
   cursor: pointer;
   text-align: left;
   transition: background 0.12s ease;
@@ -282,7 +283,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--color-primary, #505afb);
     outline-offset: -2px;
   }
 }
@@ -290,6 +291,9 @@
 .saas-select__criar-ico {
   display: block;
   flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
 }
 
 .saas-select--disabled .saas-select__trigger {
