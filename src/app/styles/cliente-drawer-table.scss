@@ -172,8 +172,12 @@
   white-space: nowrap;
 }
 
-.drawer-table:not(.drawer-table--debitos) thead th.col-acoes,
-.drawer-table:not(.drawer-table--debitos) tbody td.col-acoes {
+.drawer-table:not(.drawer-table--debitos):not(.drawer-table--comandas-aberto)
+  thead
+  th.col-acoes,
+.drawer-table:not(.drawer-table--debitos):not(.drawer-table--comandas-aberto)
+  tbody
+  td.col-acoes {
   text-align: right;
 }
 
@@ -472,7 +476,7 @@
 
     &:hover {
       background: transparent;
-      color: #2563eb;
+      color: color-mix(in srgb, #2563eb 78%, #fff);
     }
   }
 
@@ -482,7 +486,7 @@
 
     &:hover {
       background: transparent;
-      color: #dc2626;
+      color: color-mix(in srgb, #dc2626 78%, #fff);
     }
   }
 
