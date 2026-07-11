@@ -457,7 +457,8 @@
     gap: 0;
   }
 
-  .block-context__field--status-modal app-agenda-status-select {
+  .block-context__field--status-modal app-agenda-status-select,
+  .block-context__field--cor-modal app-agenda-cor-select {
     display: block;
     width: 100%;
     min-width: 0;
@@ -467,15 +468,6 @@
     min-width: 0;
     width: 100%;
     max-width: 100%;
-  }
-
-  .block-context__field--cor-modal:has(.block-context__cor-select:disabled) {
-    cursor: not-allowed;
-  }
-
-  .block-context__cor-select {
-    width: 100%;
-    cursor: not-allowed;
   }
 
   .block-context__field--hora-slots app-agenda-horario-slots {
@@ -1209,8 +1201,8 @@ textarea {
 /** Footer do modal/drawer: alinhamento à direita já em `.agenda-modal__footer`; aqui cores e radius (especificidade > `.btn`). */
 .agenda-modal__footer .btn.btn-footer {
   box-sizing: border-box;
-  min-height: 40px;
-  height: 40px;
+  min-height: 32px;
+  height: 32px;
   padding: 0 15px;
   border-radius: 14px;
   font-size: 14px;
@@ -1937,6 +1929,11 @@ textarea {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-idle);
     border-color: var(--drawer-field-border);
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  ::ng-deep .agenda-status-select__trigger:hover:not(:disabled) {
+    border-color: var(--el-drawer-field-border-hover);
   }
 
   ::ng-deep .agenda-status-select__trigger .agenda-status-select__label {
@@ -1949,6 +1946,40 @@ textarea {
     .agenda-status-select__trigger
     .agenda-status-select__label {
     color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .agenda-cor-select__trigger {
+    font-weight: var(--drawer-input-font-weight);
+    color: var(--drawer-input-text-idle);
+    border-color: var(--drawer-field-border);
+    transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  ::ng-deep .agenda-cor-select__trigger:hover:not(:disabled) {
+    border-color: var(--el-drawer-field-border-hover);
+  }
+
+  ::ng-deep .agenda-cor-select__trigger .agenda-cor-select__label {
+    color: var(--drawer-input-text-filled);
+    font-weight: var(--drawer-input-font-weight);
+  }
+
+  ::ng-deep .agenda-cor-select__trigger .agenda-cor-select__label--padrao {
+    color: rgba(0, 0, 0, 0.75);
+  }
+
+  ::ng-deep
+    app-agenda-cor-select.agenda-cor-select--open
+    .agenda-cor-select__trigger
+    .agenda-cor-select__label {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep
+    app-agenda-cor-select.agenda-cor-select--open
+    .agenda-cor-select__trigger
+    .agenda-cor-select__label--padrao {
+    color: rgba(0, 0, 0, 0.75);
   }
 
   ::ng-deep .ahs__trigger {

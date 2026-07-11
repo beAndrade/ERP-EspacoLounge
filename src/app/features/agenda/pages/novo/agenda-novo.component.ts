@@ -68,6 +68,7 @@ import {
   type IntervaloMinutosDia,
 } from './agenda-horario-slots.component';
 import { AgendaStatusSelectComponent } from './agenda-status-select.component';
+import { AgendaCorSelectComponent } from './agenda-cor-select.component';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   expandirDatasRepeticao,
@@ -119,6 +120,11 @@ import {
   inferirAgendaStatusPorCorHex,
   normalizarAgendaStatusId,
 } from '../../../../core/utils/agenda-status-card';
+import {
+  AGENDA_COR_PADRAO_ID,
+  corHexPorAgendaCorId,
+  resolverAgendaCorIdPorHex,
+} from '../../../../core/utils/agenda-cor-card';
 
 /** Valor de `<input type="date">`: AAAA-MM-DD válido. */
 function normalizarDataIso(s: string): string | null {
@@ -203,6 +209,7 @@ function parseQuantidadeFromDescricao(s: string): number {
     AgendaModalCalendarComponent,
     AgendaHorarioSlotsComponent,
     AgendaStatusSelectComponent,
+    AgendaCorSelectComponent,
     ComandaResumoBarComponent,
   ],
   templateUrl: './agenda-novo.component.html',
@@ -472,6 +479,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     hora_inicial: [''],
     /** Estado visual dos cartões na agenda (hub). */
     agenda_status: ['confirmado'],
+    /** Cor nomeada do cartão; «padrao» = herda a cor do status. */
+    agenda_cor: [AGENDA_COR_PADRAO_ID],
     /** Cada linha: tipo + campos específicos (Serviço, Mega, Pacote, Cabelo, Produto). */
     linhasItens: this.fb.array<FormGroup>([]),
   });
@@ -724,15 +733,24 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * O `app-drawer` do hub faz `stopPropagation` nos cliques; o menu «Excluir» fecha
-   * aqui (bolha até `app-agenda-novo` antes do drawer).
+   * O `app-drawer` do hub faz `stopPropagation` nos cliques; o menu «Excluir» e o
+   * calendário fecham aqui (bolha até `app-agenda-novo` antes do drawer).
    */
   @HostListener('click', ['$event'])
-  onHostClickFecharMenuExcluir(ev: MouseEvent): void {
-    if (!this.excluirMenuAberto) return;
+  onHostClickFecharOverlaysDrawer(ev: MouseEvent): void {
     const el = ev.target as HTMLElement | null;
-    if (el && !el.closest('.agenda-modal__excluir-wrap')) {
+    if (!el) return;
+
+    if (this.excluirMenuAberto && !el.closest('.agenda-modal__excluir-wrap')) {
       this.fecharExcluirMenu();
+    }
+
+    if (
+      this.modoModal &&
+      this.modalDataPickerOpen &&
+      !el.closest('.data-field--modal-picker-root')
+    ) {
+      this.modalDataPickerOpen = false;
     }
   }
 
@@ -743,12 +761,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       this.fecharExcluirMenu();
     }
     if (!this.modoModal || !this.modalDataPickerOpen) return;
-    const t = ev.target;
-    if (!(t instanceof Node)) return;
-    const w = (ev.target as HTMLElement | null)?.closest(
-      '.data-field--modal-picker-root',
-    );
-    if (w) return;
+    if (!(ev.target instanceof Node)) return;
+    if (el?.closest('.data-field--modal-picker-root')) return;
     this.modalDataPickerOpen = false;
   }
 
@@ -3119,6 +3133,21 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return 'confirmado';
   }
 
+  /** Id da cor nomeada; «padrao» se o hex for o do status ou estiver vazio. */
+  private agendaCorParaEdicao(
+    rows: AtendimentoListaItem[],
+    agendaStatusId: string,
+  ): string {
+    const src = rows.find((r) => (r.inicio || '').trim()) ?? rows[0];
+    const hex = String(src?.agenda_cor ?? '').trim();
+    if (!hex) return AGENDA_COR_PADRAO_ID;
+    const statusHex = corHexAgendaPorStatus(agendaStatusId);
+    if (statusHex && statusHex.toLowerCase() === hex.toLowerCase()) {
+      return AGENDA_COR_PADRAO_ID;
+    }
+    return resolverAgendaCorIdPorHex(hex);
+  }
+
   /**
    * Busca o item da pivot (`itens_catalogo`) associado a uma linha `atendimentos`.
    * Para Serviço: match por `servico_id` (+ tamanho quando ambíguo).
@@ -3510,6 +3539,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         hora_inicial: horaInicial,
         observacao,
         agenda_status: agendaStEd,
+        agenda_cor: this.agendaCorParaEdicao(sorted, agendaStEd),
       },
       { emitEvent: false },
     );
@@ -4415,8 +4445,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           const agenda_status = normalizarAgendaStatusId(
             String(raw['agenda_status'] ?? ''),
           );
+          const corCustom = corHexPorAgendaCorId(
+            String(raw['agenda_cor'] ?? ''),
+          );
           const agenda_cor =
-            corHexAgendaPorStatus(agenda_status) ?? '#32C787';
+            corCustom ?? corHexAgendaPorStatus(agenda_status) ?? '#32C787';
           return { agenda_status, agenda_cor };
         })();
 
