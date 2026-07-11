@@ -3407,3 +3407,156 @@ $month-num-fg-muted: #00000028;
     font-size: 0.8rem;
   }
 }
+
+/** Tooltip de hover nos cartões (delay 1.8s). */
+.hub-card-tip {
+  position: fixed;
+  z-index: 1400;
+  box-sizing: border-box;
+  width: 280px;
+  padding: 14px 14px 10px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.16),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+  color: #1c1917;
+  pointer-events: auto;
+  animation: hubCardTipIn 0.18s ease;
+}
+
+.hub-card-tip__arrow {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: #fff;
+  transform: rotate(45deg);
+  box-shadow: -2px -2px 4px rgba(15, 23, 42, 0.06);
+}
+
+.hub-card-tip__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.hub-card-tip__head-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.hub-card-tip__nome {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #111827;
+}
+
+.hub-card-tip__fone {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.hub-card-tip__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.hub-card-tip__meta-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  line-height: 1.35;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: #9ca3af;
+  }
+}
+
+.hub-card-tip__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+}
+
+.hub-card-tip__action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 4px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+
+  > span:not(.hub-card-tip__swatch) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.hub-card-tip__swatch {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.hub-card-tip__chev,
+.hub-card-tip__plus {
+  color: #a1a1aa;
+}
+
+.hub-card-tip__action--servico {
+  color: #505afb;
+}
+
+.hub-card-tip__action--status {
+  color: #16a34a;
+}
+
+.hub-card-tip__action--cor {
+  color: #ef4444;
+}
+
+.hub-card-tip__action--comanda {
+  color: #505afb;
+}
+
+.hub-card-tip__action--excluir {
+  color: #ef4444;
+}
+
+@keyframes hubCardTipIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

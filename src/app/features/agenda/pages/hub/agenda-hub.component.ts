@@ -23,6 +23,7 @@ import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.s
 import { minutosMeiaNoiteEmBrasilia } from '../../../../core/utils/brasilia-time';
 import { diffMinutesEntreHorarios } from '../../../../core/utils/sql-local-datetime';
 import {
+  dataDdMmBarraAaaa,
   horaInicialMenorDasLinhasAtendimento,
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
@@ -54,11 +55,16 @@ import { ProfissionalAvatarComponent } from '../../../../shared/profissional-ava
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
 import { mediaQueryMax } from '../../../../styles/breakpoints';
 import { AppShellUiService } from '../../../../core/services/app-shell-ui.service';
-import { telefoneBrDigitos } from '../../../../core/utils/telefone-br';
+import { telefoneBrDigitos, telefoneClienteWhatsappExibicao } from '../../../../core/utils/telefone-br';
+import {
+  listarOpcoesCorAgenda,
+  resolverAgendaCorIdPorHex,
+} from '../../../../core/utils/agenda-cor-card';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
 
 type CelulaCalendario = {
   dia: number;
@@ -122,6 +128,24 @@ type AgendaHubBloco = {
   linhas: AtendimentoListaItem[];
 };
 
+type AgendaCardHoverTip = {
+  trackKey: string;
+  left: number;
+  top: number;
+  nome: string;
+  telefone: string;
+  fotoUrl: string;
+  intervalo: string;
+  dataLabel: string;
+  servico: string;
+  statusLabel: string;
+  statusCor: string;
+  corLabel: string;
+  corHex: string;
+};
+
+const CARD_HOVER_TIP_DELAY_MS = 1800;
+
 @Component({
   selector: 'app-agenda-hub',
   host: {
@@ -136,6 +160,7 @@ type AgendaHubBloco = {
     FaturarDrawerComponent,
     ProfissionalAvatarComponent,
     WhatsappEnviarModalComponent,
+    ClienteAvatarComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './agenda-hub.component.html',
@@ -263,6 +288,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.onCardArrasteMove(e);
   private readonly onDocPointerUp = (e: PointerEvent) =>
     this.onCardArrasteUp(e);
+
+  /** Tooltip de hover nos cartões da grelha (delay 1.8s). */
+  cardHoverTip: AgendaCardHoverTip | null = null;
+  private cardHoverShowTimer: ReturnType<typeof setTimeout> | null = null;
+  private cardHoverHideTimer: ReturnType<typeof setTimeout> | null = null;
+  private cardHoverSuppressed = false;
+  private readonly clienteTipCache = new Map<string, Cliente>();
 
   modalAberto = false;
   modalContexto: {
@@ -414,6 +446,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.cancelarArrasteCard();
     this.cancelarPanGrelha();
     this.desativarLayoutAgendaNoMain();
+    this.fecharCardHoverTip();
     if (this.timerAbrirNovaComandaDesdeLista != null) {
       clearTimeout(this.timerAbrirNovaComandaDesdeLista);
       this.timerAbrirNovaComandaDesdeLista = null;
@@ -1604,6 +1637,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     profId: number,
     ymd?: string,
   ): void {
+    this.fecharCardHoverTip();
+    this.cardHoverSuppressed = true;
     if (!this.podeArrastarBloco(bloco)) return;
     if (ev.button !== 0) return;
     if (this.remarcarModalAberto || this.modalAberto) return;
@@ -1820,6 +1855,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   /** Abre o drawer em modo edição (sem saltar para a receção). */
   abrirDrawerEdicaoBloco(b: AgendaHubBloco, e: Event): void {
+    this.fecharCardHoverTip();
+    this.cardHoverSuppressed = true;
     if (this.cardArrasteSuprimirClick) {
       this.cardArrasteSuprimirClick = false;
       e.stopPropagation();
@@ -2801,6 +2838,145 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   idAtendimentoBloco(b: AgendaHubBloco): string {
     return String(b.linhas[0]?.id || '').trim();
+  }
+
+  onCardHoverEnter(
+    ev: MouseEvent,
+    bloco: AgendaHubBloco,
+    ymdCtx?: string,
+  ): void {
+    if (this.layoutMobile || this.cardArrasteAtivo || this.cardHoverSuppressed) {
+      return;
+    }
+    const slot = (ev.currentTarget as HTMLElement | null) ?? null;
+    if (!slot) return;
+    this.clearCardHoverHideTimer();
+    this.clearCardHoverShowTimer();
+    this.cardHoverShowTimer = setTimeout(() => {
+      this.cardHoverShowTimer = null;
+      if (this.cardArrasteAtivo || this.cardHoverSuppressed) return;
+      void this.abrirCardHoverTip(bloco, slot, ymdCtx);
+    }, CARD_HOVER_TIP_DELAY_MS);
+  }
+
+  onCardHoverLeave(): void {
+    this.clearCardHoverShowTimer();
+    this.cardHoverSuppressed = false;
+    this.scheduleCardHoverHide();
+  }
+
+  onCardHoverTipEnter(): void {
+    this.clearCardHoverHideTimer();
+  }
+
+  onCardHoverTipLeave(): void {
+    this.scheduleCardHoverHide();
+  }
+
+  private scheduleCardHoverHide(): void {
+    this.clearCardHoverHideTimer();
+    this.cardHoverHideTimer = setTimeout(() => {
+      this.cardHoverHideTimer = null;
+      this.cardHoverTip = null;
+    }, 120);
+  }
+
+  private clearCardHoverShowTimer(): void {
+    if (this.cardHoverShowTimer != null) {
+      clearTimeout(this.cardHoverShowTimer);
+      this.cardHoverShowTimer = null;
+    }
+  }
+
+  private clearCardHoverHideTimer(): void {
+    if (this.cardHoverHideTimer != null) {
+      clearTimeout(this.cardHoverHideTimer);
+      this.cardHoverHideTimer = null;
+    }
+  }
+
+  fecharCardHoverTip(): void {
+    this.clearCardHoverShowTimer();
+    this.clearCardHoverHideTimer();
+    this.cardHoverTip = null;
+    this.cardHoverSuppressed = false;
+  }
+
+  private async abrirCardHoverTip(
+    bloco: AgendaHubBloco,
+    slotEl: HTMLElement,
+    ymdCtx?: string,
+  ): Promise<void> {
+    const card =
+      (slotEl.querySelector('.day-col__card') as HTMLElement | null) ?? slotEl;
+    const rect = card.getBoundingClientRect();
+    const tipW = 280;
+    const tipH = 320;
+    const gap = 10;
+    let left = rect.left + rect.width / 2 - tipW / 2;
+    left = Math.max(12, Math.min(left, window.innerWidth - tipW - 12));
+    let top = rect.bottom + gap;
+    if (top + tipH > window.innerHeight - 12) {
+      top = Math.max(12, rect.top - tipH - gap);
+    }
+
+    const linha = bloco.linhas[0];
+    const cid = String(linha?.idCliente ?? '').trim();
+    let cliente: Cliente | null = this.clienteTipCache.get(cid) ?? null;
+    if (cid && !cliente) {
+      try {
+        cliente = await new Promise<Cliente | null>((resolve) => {
+          this.api.getCliente(cid).subscribe({
+            next: (c) => resolve(c),
+            error: () => resolve(null),
+          });
+        });
+        if (cliente) this.clienteTipCache.set(cid, cliente);
+      } catch {
+        cliente = null;
+      }
+    }
+
+    const statusId = normalizarAgendaStatusId(linha?.agenda_status);
+    const statusMeta =
+      AGENDA_STATUS_META.find((s) => s.id === statusId) ?? AGENDA_STATUS_META[0];
+    const corHex = String(linha?.agenda_cor ?? '').trim();
+    const corId = resolverAgendaCorIdPorHex(corHex || null);
+    const corOpt = listarOpcoesCorAgenda().find((o) => o.id === corId);
+    const ymd =
+      String(ymdCtx ?? linha?.data ?? this.diaYmd).trim() || this.diaYmd;
+    const intervalo = this.intervaloHHmmBloco(bloco, ymd) || this.horaBloco(bloco, ymd);
+    const itens = this.itensResumoBloco(bloco);
+
+    this.cardHoverTip = {
+      trackKey: bloco.trackKey,
+      left,
+      top,
+      nome: this.nomeClienteBloco(bloco),
+      telefone: telefoneClienteWhatsappExibicao(cliente),
+      fotoUrl: (cliente?.fotoUrl ?? '').trim(),
+      intervalo,
+      dataLabel: this.formatarDataHoraCardTip(ymd, intervalo),
+      servico: itens[0] ?? '—',
+      statusLabel: statusMeta.label,
+      statusCor: statusMeta.cor,
+      corLabel: corOpt?.label?.trim() || 'Padrão',
+      corHex: corOpt?.cor || corHex || statusMeta.cor,
+    };
+  }
+
+  private formatarDataHoraCardTip(ymd: string, intervalo: string): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
+    const hora = (intervalo.split('-')[0] ?? '').trim() || '—';
+    if (!m) return `${dataDdMmBarraAaaa(ymd)} ${hora}`.trim();
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const dataFmt = new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(d);
+    return `${dataFmt} ${hora}`;
   }
 
   private gerarSlots(): string[] {

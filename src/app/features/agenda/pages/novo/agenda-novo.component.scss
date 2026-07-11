@@ -1202,8 +1202,8 @@ textarea {
 /** Footer do modal/drawer: alinhamento à direita já em `.agenda-modal__footer`; aqui cores e radius (especificidade > `.btn`). */
 .agenda-modal__footer .btn.btn-footer {
   box-sizing: border-box;
-  min-height: 32px;
-  height: 32px;
+  min-height: 40px;
+  height: 40px;
   padding: 0 15px;
   border-radius: 14px;
   font-size: 14px;
