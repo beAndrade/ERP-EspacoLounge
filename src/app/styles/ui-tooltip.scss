@@ -57,12 +57,15 @@
     visibility 0s linear 0.16s;
   transition-delay: 0s, 0s;
 
+  /* Triângulo 14px: margin -7px centra a seta no balão (e no botão). */
   &::after {
     content: '';
     position: absolute;
     top: 100%;
     left: 50%;
-    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    margin-left: -7px;
     border: 7px solid transparent;
     border-top-color: rgba(0, 0, 0, 0.82);
   }
@@ -87,10 +90,11 @@
   right: 0;
   transform: none;
 
+  /* Seta no centro do botão (trigger 2rem), não na borda do balão. */
   &::after {
     left: auto;
-    right: 3px;
-    transform: none;
+    right: calc(1rem - 7px);
+    margin-left: 0;
   }
 }
 
@@ -101,9 +105,9 @@
   transform: none;
 
   &::after {
-    left: 3px;
+    left: calc(1rem - 7px);
     right: auto;
-    transform: none;
+    margin-left: 0;
   }
 }
 
@@ -165,6 +169,7 @@
     left: 50%;
     width: 0;
     height: 0;
+    margin-left: -7px;
     border: 7px solid transparent;
     border-top-color: rgba(0, 0, 0, 0.82);
   }
