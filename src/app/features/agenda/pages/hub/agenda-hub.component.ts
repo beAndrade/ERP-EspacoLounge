@@ -147,7 +147,7 @@ type AgendaCardHoverTip = {
   corHex: string;
 };
 
-const CARD_HOVER_TIP_DELAY_MS = 1000;
+const CARD_HOVER_TIP_DELAY_MS = 800;
 const CARD_HOVER_TIP_GAP_PX = 14;
 const CARD_HOVER_TIP_FADE_MS = 220;
 
@@ -369,6 +369,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+    // Ficha/pilha do cliente: ESC é só do host global (um nível por vez).
+    if (this.cadastroDrawer.isAberto) return;
     if (this.hubMenuAberto) {
       ev.preventDefault();
       this.fecharMenusToolbar();

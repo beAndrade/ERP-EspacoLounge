@@ -1501,13 +1501,8 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       this.fecharModalTotais();
       return;
     }
-    if (this.cadastroDrawer.tratarEscapeComandaEmpilhadaNaFicha()) {
-      ev.preventDefault();
-      return;
-    }
     if (this.cadastroDrawer.isAberto) {
-      ev.preventDefault();
-      this.cadastroDrawer.fechar();
+      // ESC da ficha/pilha: app-cliente-cadastro-drawer-host (um nível por vez).
       return;
     }
     if (this.faturarDrawerAberto) {

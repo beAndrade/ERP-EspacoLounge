@@ -193,6 +193,11 @@ export class FaturarDrawerComponent implements OnInit {
    * Crédito indicado no drawer da comanda (só exibido no resumo; aplica na API ao «Faturar»).
    */
   readonly creditoComandaAplicado = input(0);
+  /**
+   * Quando false, o ESC é gerido pelo pai (ex.: pilha do drawer de cliente).
+   * Evita fechar dois níveis no mesmo Escape.
+   */
+  readonly gerenciarEscape = input(true);
 
   readonly fechar = output<void>();
   /** Após gravar com sucesso na API (pai fecha drawers e actualiza a lista). */
@@ -958,6 +963,8 @@ export class FaturarDrawerComponent implements OnInit {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEsc(ev: KeyboardEvent): void {
+    if (!this.gerenciarEscape()) return;
+    if (ev.defaultPrevented) return;
     if (this.trocoAberto) {
       ev.preventDefault();
       this.fecharCalcularTroco();

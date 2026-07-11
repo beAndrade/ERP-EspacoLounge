@@ -109,29 +109,35 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   onEscape(ev: KeyboardEvent): void {
     if (this.d.escapeModalExclusaoComandaDebitos?.()) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       return;
     }
     if (this.atualizarCreditoAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharAtualizarCreditoEmpilhado();
       return;
     }
     if (this.faturarEmpilhadoAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharFaturarEmpilhado();
       return;
     }
     if (this.editAgendamentoEmpilhadoAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharEditAgendamentoEmpilhado();
       return;
     }
     if (this.d.tratarEscapeComandaEmpilhadaNaFicha()) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       return;
     }
     if (!this.d.aberto) return;
     ev.preventDefault();
+    ev.stopImmediatePropagation();
     this.d.fechar();
   }
 
