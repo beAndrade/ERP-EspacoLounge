@@ -144,7 +144,7 @@ type AgendaCardHoverTip = {
   corHex: string;
 };
 
-const CARD_HOVER_TIP_DELAY_MS = 1800;
+const CARD_HOVER_TIP_DELAY_MS = 400;
 
 @Component({
   selector: 'app-agenda-hub',
