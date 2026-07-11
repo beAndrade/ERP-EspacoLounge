@@ -294,7 +294,18 @@
 
 .cliente-debitos__sec--comandas {
   padding-top: 0.5rem;
-  border-top: 1px dotted #d1d5db;
+  border-top: none;
+  /* Pontos um pouco mais longos que o `dotted` nativo. */
+  background-image: repeating-linear-gradient(
+    to right,
+    #d1d5db 0,
+    #d1d5db 5px,
+    transparent 5px,
+    transparent 10px
+  );
+  background-size: 100% 1px;
+  background-repeat: repeat-x;
+  background-position: left top;
 }
 
 /** Acima do drawer de cliente (z ~1282). */
