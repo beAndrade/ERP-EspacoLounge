@@ -116,10 +116,10 @@
                   #clienteSelectModal
                   formControlName="cliente_id"
                   [options]="opcoesClientesNomes()"
-                  placeholder="Selecione…"
-                  aria-label="Cliente"
+                  placeholder="Busque por um cliente"
                   [showFilter]="false"
                   [showCriarCliente]="true"
+                  triggerIcon="search"
                   (criarCliente)="irCriarCliente()"
                   (painelAberto)="onClienteSelectPainelAbriu()"
                 />
@@ -235,14 +235,11 @@
               />
             </div>
             <div class="block-context__field block-context__field--cor-modal">
-              <span>Cor</span>
-              <select
-                class="block-context__cor-select"
-                disabled
+              <span class="block-context__label">Cor</span>
+              <app-agenda-cor-select
+                formControlName="agenda_cor"
                 aria-label="Cor"
-              >
-                <option selected>Padrão</option>
-              </select>
+              />
             </div>
           }
         </div>

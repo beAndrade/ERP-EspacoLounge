@@ -1908,6 +1908,25 @@ textarea {
     border-color: var(--drawer-field-border);
   }
 
+  ::ng-deep .saas-select__trigger .saas-select__icons {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep
+    .saas-select__trigger:has(
+      .saas-select__value-row:not(.saas-select__value-row--placeholder):not(
+          .saas-select__value-row--editing
+        )
+    )
+    .saas-select__icons {
+    color: var(--drawer-input-text-filled);
+  }
+
+  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger,
+  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger .saas-select__icons {
+    color: var(--drawer-input-text-idle);
+  }
+
   ::ng-deep .saas-select__trigger .saas-select__value-row:not(.saas-select__value-row--placeholder) .saas-select__value {
     color: var(--drawer-input-text-filled);
   }
@@ -1925,9 +1944,23 @@ textarea {
     font-weight: var(--drawer-input-font-weight);
   }
 
+  ::ng-deep .saas-select__trigger .saas-select__trigger-input,
+  ::ng-deep .saas-select__trigger .saas-select__trigger-input:focus,
+  ::ng-deep .saas-select__trigger .saas-select__trigger-input:not(:placeholder-shown),
+  ::ng-deep
+    .saas-select__trigger
+    .saas-select__trigger-input:not(:focus):not(:placeholder-shown) {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .saas-select__trigger .saas-select__trigger-input::placeholder {
+    color: var(--drawer-input-text-idle);
+    opacity: 1;
+  }
+
   ::ng-deep .agenda-status-select__trigger {
     font-weight: var(--drawer-input-font-weight);
-    color: var(--drawer-input-text-idle);
+    color: var(--drawer-input-text-filled);
     border-color: var(--drawer-field-border);
     transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -1943,6 +1976,12 @@ textarea {
 
   ::ng-deep
     app-agenda-status-select.agenda-status-select--open
+    .agenda-status-select__trigger {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep
+    app-agenda-status-select.agenda-status-select--open
     .agenda-status-select__trigger
     .agenda-status-select__label {
     color: var(--drawer-input-text-idle);
@@ -1950,7 +1989,7 @@ textarea {
 
   ::ng-deep .agenda-cor-select__trigger {
     font-weight: var(--drawer-input-font-weight);
-    color: var(--drawer-input-text-idle);
+    color: var(--drawer-input-text-filled);
     border-color: var(--drawer-field-border);
     transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -1965,7 +2004,18 @@ textarea {
   }
 
   ::ng-deep .agenda-cor-select__trigger .agenda-cor-select__label--padrao {
-    color: rgba(0, 0, 0, 0.75);
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep
+    .agenda-cor-select__trigger:has(.agenda-cor-select__label--padrao) {
+    color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep
+    app-agenda-cor-select.agenda-cor-select--open
+    .agenda-cor-select__trigger {
+    color: var(--drawer-input-text-idle);
   }
 
   ::ng-deep
@@ -1979,13 +2029,17 @@ textarea {
     app-agenda-cor-select.agenda-cor-select--open
     .agenda-cor-select__trigger
     .agenda-cor-select__label--padrao {
-    color: rgba(0, 0, 0, 0.75);
+    color: var(--drawer-input-text-idle);
   }
 
   ::ng-deep .ahs__trigger {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-idle);
     border-color: var(--drawer-field-border);
+  }
+
+  ::ng-deep .ahs__trigger:has(.ahs__value:not(.ahs__value--ph)) {
+    color: var(--drawer-input-text-filled);
   }
 
   ::ng-deep .ahs__trigger .ahs__value:not(.ahs__value--ph) {
@@ -1998,8 +2052,16 @@ textarea {
     font-weight: var(--drawer-input-font-weight);
   }
 
+  ::ng-deep app-agenda-horario-slots.ahs-host--open .ahs__trigger {
+    color: var(--drawer-input-text-idle);
+  }
+
   ::ng-deep app-agenda-horario-slots.ahs-host--open .ahs__trigger .ahs__value {
     color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep .arpc__chev {
+    color: currentColor;
   }
 }
 
@@ -2681,6 +2743,11 @@ textarea {
     border-color: var(--el-drawer-field-border-hover);
   }
 
+  app-saas-select.saas-select-host--open .saas-select__trigger,
+  app-saas-select.saas-select-host--open .saas-select__trigger:hover:not(:disabled) {
+    border-color: var(--color-primary, #505afb);
+  }
+
   .servico-row--drawer.servico-row--layout-produto-drawer
     > .servico-row__field--produto-catalogo
     app-saas-select {
@@ -2832,7 +2899,7 @@ textarea {
     border-radius: var(--radius, 8px);
     border: 1px solid var(--drawer-field-border, #e7e5e4);
     background: #fff;
-    color: var(--color-text, #1c1917);
+    color: var(--drawer-input-text-filled);
     font: inherit;
     box-shadow: none;
     transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2845,6 +2912,21 @@ textarea {
     flex: 1 1 auto;
     min-width: 0;
     text-align: left;
+    color: inherit;
+  }
+
+  .itens-atendimento--modal
+    .arpc-modal-row__cascade
+    app-agenda-repetir-cascade
+    .arpc__trigger-text--placeholder {
+    color: var(--drawer-input-text-idle);
+  }
+
+  .itens-atendimento--modal
+    .arpc-modal-row__cascade
+    app-agenda-repetir-cascade
+    .arpc__trigger:has(.arpc__trigger-text--placeholder) {
+    color: var(--drawer-input-text-idle);
   }
 
   .itens-atendimento--modal
@@ -2861,13 +2943,14 @@ textarea {
     .arpc__trigger {
     border-color: var(--el-drawer-field-border-hover);
     box-shadow: none;
+    color: var(--drawer-input-text-idle);
   }
 
   .itens-atendimento--modal
     .arpc-modal-row__cascade
     app-agenda-repetir-cascade
     .arpc__chev {
-    color: var(--color-muted, #78716c);
+    color: currentColor;
     opacity: 1;
   }
 

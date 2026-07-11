@@ -48,7 +48,7 @@
         </span>
       }
       <span class="saas-select__icons" aria-hidden="true">
-        @if (panelOpen) {
+        @if (panelOpen || triggerIcon === 'search') {
           <svg
             class="saas-select__icon"
             xmlns="http://www.w3.org/2000/svg"
@@ -121,7 +121,7 @@
         </span>
       }
       <span class="saas-select__icons" aria-hidden="true">
-        @if (panelOpen) {
+        @if (panelOpen || triggerIcon === 'search') {
           <svg
             class="saas-select__icon"
             xmlns="http://www.w3.org/2000/svg"

@@ -65,11 +65,11 @@
   flex: 0 0 auto;
   width: 0.45rem;
   height: 0.45rem;
-  border-right: 2px solid #78716c;
-  border-bottom: 2px solid #78716c;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
   transform: rotate(45deg) translateY(-2px);
   margin-left: 0.15rem;
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .agenda-status-select__panel {
@@ -83,9 +83,7 @@
   list-style: none;
   background: #fff;
   border-radius: 10px;
-  box-shadow:
-    0 4px 18px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-4px);
@@ -105,6 +103,22 @@
   transform: translateY(0);
   pointer-events: auto;
   max-height: 16rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 .agenda-status-select__opt {

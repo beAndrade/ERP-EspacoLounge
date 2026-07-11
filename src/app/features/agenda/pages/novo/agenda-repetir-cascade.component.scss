@@ -165,7 +165,7 @@
 
   flex-shrink: 0;
 
-  color: #78716c;
+  color: currentColor;
 
   pointer-events: none;
 
@@ -241,7 +241,7 @@
 
   border-radius: inherit;
 
-  border: 1px solid #e2e8f0;
+  border: none;
 
   background: #fff;
 
@@ -268,6 +268,23 @@
   max-height: 22rem;
 
   border-right: none;
+
+  scrollbar-width: thin;
+
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
 }
 
@@ -539,6 +556,23 @@
   -webkit-overflow-scrolling: touch;
 
   max-height: 18.5rem;
+
+  scrollbar-width: thin;
+
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
 }
 

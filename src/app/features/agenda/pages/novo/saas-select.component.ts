@@ -34,6 +34,7 @@ export type SaasSelectOption = { value: string; label: string; hint?: string };
     '[class.saas-select-host--open]': 'panelOpen',
     '[class.saas-select-host--layout-sidebar]': 'layout === "sidebar"',
     '[class.saas-select-host--trigger-cursor-text]': 'triggerCursor === "text"',
+    '[class.saas-select-host--icon-search]': 'triggerIcon === "search"',
   },
   providers: [
     {
@@ -78,6 +79,8 @@ export class SaasSelectComponent
   @Input() criarButtonLabel = 'Criar cliente';
   /** Coluna esquerda do hub modal (busca). O “Cliente” da grelha usa o estilo padrão. */
   @Input() layout: 'default' | 'sidebar' = 'default';
+  /** Ícone à direita do gatilho (`search` no campo Cliente do drawer). */
+  @Input() triggerIcon: 'chevron' | 'search' = 'chevron';
   /** Cursor do gatilho (`text` na sidebar de comissões). */
   @Input() triggerCursor: 'pointer' | 'text' = 'pointer';
   /** Acessibilidade: nome do campo (evita depender de `<label>` a envolver o gatilho). */
