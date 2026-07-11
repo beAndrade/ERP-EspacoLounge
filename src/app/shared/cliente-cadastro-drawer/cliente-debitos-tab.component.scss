@@ -293,13 +293,13 @@
 }
 
 .cliente-debitos__sec--comandas {
-  padding-top: 0.5rem;
+  padding-top: 0.85rem;
   border-top: none;
   /* Pontos um pouco mais longos que o `dotted` nativo. */
   background-image: repeating-linear-gradient(
     to right,
-    #d1d5db 0,
-    #d1d5db 3px,
+    #e5e7eb 0,
+    #e5e7eb 3px,
     transparent 3px,
     transparent 6px
   );
