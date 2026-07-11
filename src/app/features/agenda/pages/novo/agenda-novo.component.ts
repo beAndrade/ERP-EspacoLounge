@@ -88,7 +88,6 @@ import {
   SaasSelectComponent,
   type SaasSelectOption,
 } from './saas-select.component';
-import { telefoneClienteWhatsappExibicao } from '../../../../core/utils/telefone-br';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
 import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
@@ -1762,14 +1761,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    * Modal: lista só com nomes (IDs iguais aos de `opcoesClientesSelect` — dados da base via `listClientes`).
    */
   opcoesClientesNomes(): SaasSelectOption[] {
-    return this.clientes.map((c) => {
-      const hintRaw = telefoneClienteWhatsappExibicao(c);
-      return {
-        value: c.id,
-        label: c.nome.trim() || '—',
-        hint: hintRaw === 'Sem telefone' ? undefined : hintRaw,
-      };
-    });
+    return this.clientes.map((c) => ({
+      value: c.id,
+      label: c.nome.trim() || '—',
+    }));
   }
 
   /** `cliente_id` + saas-select na coluna da esquerda do modal. */
