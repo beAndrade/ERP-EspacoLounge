@@ -469,11 +469,21 @@
   &--edit:not(:disabled) {
     color: #2563eb;
     opacity: 1;
+
+    &:hover {
+      background: transparent;
+      color: #2563eb;
+    }
   }
 
   &--delete:not(:disabled) {
     color: #dc2626;
     opacity: 1;
+
+    &:hover {
+      background: transparent;
+      color: #dc2626;
+    }
   }
 
   &--print {
