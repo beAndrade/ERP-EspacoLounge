@@ -202,7 +202,7 @@ export class UiTipTriggerComponent implements OnDestroy {
     if (!panel) return;
 
     const triggerRect = this.triggerRect();
-    const gap = 10;
+    const gap = 10; // = --ui-tip-gap (ui-tooltip.scss)
     const margin = 12;
 
     panel.style.display = 'block';
