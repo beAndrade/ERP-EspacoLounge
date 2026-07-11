@@ -242,6 +242,12 @@
     flex-shrink: 0;
     margin: 0;
   }
+
+  /* Botão 32px com ícone 16px: puxa o trigger para o divisor bater
+     visualmente com o mesmo gap do badge. */
+  .drawer-table__tip-trigger {
+    margin-inline-start: calc((2rem - 16px) / -2);
+  }
 }
 
 .drawer-table__status-sep {
@@ -249,7 +255,6 @@
   flex-shrink: 0;
   width: 1px;
   height: 14px;
-  margin-inline: 2px;
   background: #e7e5e4;
   align-self: center;
 }
