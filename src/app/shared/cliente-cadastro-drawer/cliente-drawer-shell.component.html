@@ -16,19 +16,23 @@
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="22"
-        height="22"
-        fill="none"
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
+        fill="none"
         stroke="currentColor"
         stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="lucide lucide-x"
         aria-hidden="true"
       >
-        <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
       </svg>
     </button>
   </header>
-  <div class="cliente-body-scroll" (scroll)="d.ocultarClienteNavLockTooltip()">
+  <div class="cliente-body-scroll">
     <div class="cliente-body">
       <nav
         class="cliente-nav"
@@ -43,16 +47,7 @@
             [class.cliente-nav__item--active]="d.abaAtiva === aba"
             [class.cliente-nav__item--disabled]="d.abaDesabilitada(aba)"
             [attr.aria-disabled]="d.abaDesabilitada(aba) ? 'true' : null"
-            [attr.aria-describedby]="
-              d.abaDesabilitada(aba) && d.clienteNavLockTooltipVisible
-                ? 'cliente-nav-lock-tooltip'
-                : null
-            "
             (click)="d.selecionarAba(aba)"
-            (mouseenter)="d.onClienteNavTooltipEnter($event, aba)"
-            (mouseleave)="d.onClienteNavTooltipLeave(aba)"
-            (focusin)="d.onClienteNavTooltipEnter($event, aba, true)"
-            (focusout)="d.onClienteNavTooltipLeave(aba)"
           >
             <span class="cliente-nav__label">{{ aba }}</span>
           </button>
@@ -85,11 +80,6 @@
   </div>
   @if (d.abaAtiva === 'Cadastro') {
     <footer class="cliente-drawer-footer">
-      @if (d.saveErro) {
-        <p class="cliente-save-hint cliente-save-hint--error" role="alert">
-          {{ d.saveErro }}
-        </p>
-      }
       <button
         type="button"
         class="cliente-footer-btn cliente-footer-btn--ghost"
