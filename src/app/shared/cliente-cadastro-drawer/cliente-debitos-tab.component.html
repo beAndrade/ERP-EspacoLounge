@@ -539,45 +539,26 @@
                         </button>
 
                         <button
-
                           type="button"
-
                           class="drawer-table__icon-btn drawer-table__icon-btn--delete"
-
-                          aria-label="Excluir comanda (em breve)"
-
-                          disabled
-
+                          aria-label="Excluir comanda"
+                          [disabled]="excluindoComanda()"
+                          (click)="pedirExcluirComanda(row)"
                         >
-
                           <svg
-
                             xmlns="http://www.w3.org/2000/svg"
-
                             width="18"
-
                             height="18"
-
                             viewBox="0 0 24 24"
-
                             fill="none"
-
                             stroke="currentColor"
-
                             stroke-width="2"
-
                             aria-hidden="true"
-
                           >
-
                             <path d="M3 6h18" />
-
                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-
                             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-
                           </svg>
-
                         </button>
 
                       </div>
@@ -616,3 +597,43 @@
   (fechar)="fecharWhatsappModal()"
 />
 
+@if (excluirComandaModalAberto() && comandaPendenteExclusao(); as gExcluir) {
+  <div
+    class="comandas-modal-overlay cliente-debitos-exclusao-overlay"
+    aria-hidden="true"
+    (click)="fecharModalExcluirComanda()"
+  ></div>
+  <div
+    class="comandas-modal cliente-debitos-exclusao-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmação de exclusão"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir a comanda
+      {{ rotuloComanda(gExcluir.numeroComanda) }}?
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="excluindoComanda()"
+        (click)="fecharModalExcluirComanda()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="excluindoComanda()"
+        (click)="confirmarExcluirComanda()"
+      >
+        {{ excluindoComanda() ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
+    </div>
+  </div>
+}

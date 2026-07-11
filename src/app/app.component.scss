@@ -758,13 +758,22 @@
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: auto;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
     -webkit-overflow-scrolling: touch;
 
     &::-webkit-scrollbar {
-      width: 0;
+      width: 6px;
       height: 0;
-      display: none;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
     }
 
     > app-agenda-hub {
@@ -847,13 +856,22 @@
   }
 
   .main.main--agenda-hub {
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
     -webkit-overflow-scrolling: touch;
 
     &::-webkit-scrollbar {
-      display: none;
-      width: 0;
+      width: 6px;
       height: 0;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
     }
   }
 }
@@ -875,12 +893,21 @@
     overflow-y: auto;
     display: block;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 
     &::-webkit-scrollbar {
-      width: 0;
+      width: 6px;
       height: 0;
-      display: none;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
     }
 
     > app-agenda-hub {

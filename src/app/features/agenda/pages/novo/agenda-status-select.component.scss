@@ -93,8 +93,7 @@
   transition:
     opacity 0.2s ease,
     visibility 0.2s ease,
-    transform 0.2s ease,
-    max-height 0.25s ease;
+    transform 0.2s ease;
 }
 
 :host.agenda-status-select--open .agenda-status-select__panel {
@@ -102,23 +101,10 @@
   visibility: visible;
   transform: translateY(0);
   pointer-events: auto;
-  max-height: 16rem;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 999px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  max-height: none;
+  /* Sem overflow-y:auto: a lista é curta; auto + animação de max-height
+     fazia a scrollbar piscar ao abrir. */
+  overflow: hidden;
 }
 
 .agenda-status-select__opt {

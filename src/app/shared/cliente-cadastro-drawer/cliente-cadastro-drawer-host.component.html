@@ -49,7 +49,7 @@
     @if (d.comandaEmpilhadaAberta && d.comandaEmpilhadaContexto) {
       <div
         class="overlay overlay--cliente-comanda-empilhada"
-        [class.overlay--open]="d.comandaEmpilhadaPanelOpen"
+        [class.overlay--open]="d.comandaEmpilhadaAberta"
         aria-hidden="true"
         (click)="fecharComandaEmpilhada()"
       ></div>

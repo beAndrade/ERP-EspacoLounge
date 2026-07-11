@@ -197,6 +197,11 @@ export class ClienteCadastroDrawerService {
   editarAgendamentoHistoricoHandler:
     | ((idAtendimento: string, dataYmd: string) => void)
     | null = null;
+  /**
+   * Aba Débitos: ESC no modal de exclusão de comanda em aberto.
+   * Devolve `true` se consumiu o ESC.
+   */
+  escapeModalExclusaoComandaDebitos: (() => boolean) | null = null;
   private comandaEmpilhadaCloseTimer: ReturnType<typeof setTimeout> | null =
     null;
   exibicao: ClienteCadastroExibicao = 'drawer';
@@ -346,6 +351,7 @@ export class ClienteCadastroDrawerService {
   }
 
   fecharFichaEmpilhadaSincrono(): void {
+    const estavaAberta = this.fichaEmpilhadaAberta;
     if (this.fichaEmpilhadaCloseTimer != null) {
       clearTimeout(this.fichaEmpilhadaCloseTimer);
       this.fichaEmpilhadaCloseTimer = null;
@@ -353,7 +359,7 @@ export class ClienteCadastroDrawerService {
     this.fichaEmpilhadaPanelOpen = false;
     this.fichaEmpilhadaAberta = false;
     this.fichaEmpilhadaCallbacks = null;
-    if (this.aberto) {
+    if (estavaAberta && this.aberto) {
       this.abaAtiva = this.abaAtivaAntesFichaEmpilhada;
     }
   }

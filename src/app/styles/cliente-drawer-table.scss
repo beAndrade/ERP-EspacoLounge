@@ -18,7 +18,8 @@
   overflow: visible;
 
   > .drawer-table-wrap {
-    overflow-x: hidden;
+    /* `clip` no eixo X não força o Y a `auto` (ao contrário de `hidden`). */
+    overflow-x: clip;
     overflow-y: visible;
   }
 }
@@ -31,6 +32,18 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+}
+
+.drawer-table thead {
+  position: relative;
+  z-index: 1;
+}
+
+/** Tooltip da linha por cima do thead / células vizinhas. */
+.drawer-table tbody tr:has(.drawer-table__tip-trigger:hover),
+.drawer-table tbody tr:has(.drawer-table__tip-trigger:focus-within) {
+  position: relative;
+  z-index: 20;
 }
 
 .drawer-table thead th {

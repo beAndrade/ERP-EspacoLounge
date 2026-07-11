@@ -68,31 +68,41 @@
 }
 
 .cliente-perfil-drawer .cliente-footer-btn {
+  box-sizing: border-box;
   min-width: 96px;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  height: 32px;
+  padding: 0 15px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 
   &--ghost {
-    border: 1px solid transparent;
-    background: transparent;
-    color: #52525b;
+    border: 1px solid #f1f1f1;
+    background: #ffffff;
+    color: #000000bf;
+    font-weight: 400;
 
     &:hover:not(:disabled) {
-      background: #fafafa;
+      color: #7a88ff;
+      border-color: #7a88ff;
+      background: #ffffff;
     }
   }
 
   &--primary {
-    border: none;
-    background: var(--cliente-accent);
+    border: 1px solid #505afb;
+    background: #505afb;
     color: #fff;
 
     &:hover:not(:disabled) {
-      filter: brightness(1.05);
+      background: #7a88ff;
+      border-color: #7a88ff;
+      color: #fff;
     }
   }
 

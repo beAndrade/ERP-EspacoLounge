@@ -107,6 +107,10 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (this.d.escapeModalExclusaoComandaDebitos?.()) {
+      ev.preventDefault();
+      return;
+    }
     if (this.atualizarCreditoAberto) {
       ev.preventDefault();
       this.fecharAtualizarCreditoEmpilhado();

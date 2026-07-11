@@ -5,7 +5,10 @@ import { concatMap, EMPTY, from } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { telefoneBrDigitos } from '../../core/utils/telefone-br';
-import type { ClienteDebitoLinhaUi } from '../../core/utils/comanda-status.util';
+import type {
+  ClienteComandaAbertaLinhaUi,
+  ClienteDebitoLinhaUi,
+} from '../../core/utils/comanda-status.util';
 import type { WhatsappEnviarContexto } from '../../core/models/whatsapp.model';
 import { AppToastService } from '../app-toast/app-toast.service';
 import { WhatsappEnviarModalComponent } from '../whatsapp/whatsapp-enviar-modal.component';
@@ -38,6 +41,24 @@ export class ClienteDebitosTabComponent {
   readonly whatsappModalAberto = signal(false);
   readonly whatsappContexto = signal<WhatsappEnviarContexto | null>(null);
 
+  readonly excluirComandaModalAberto = signal(false);
+  readonly excluindoComanda = signal(false);
+  readonly comandaPendenteExclusao =
+    signal<ClienteComandaAbertaLinhaUi | null>(null);
+
+  constructor() {
+    this.d.escapeModalExclusaoComandaDebitos = () => {
+      if (!this.excluirComandaModalAberto()) return false;
+      this.fecharModalExcluirComanda();
+      return true;
+    };
+    this.destroyRef.onDestroy(() => {
+      if (this.d.escapeModalExclusaoComandaDebitos) {
+        this.d.escapeModalExclusaoComandaDebitos = null;
+      }
+    });
+  }
+
   formatarData(data: string): string {
     const ymd = String(data ?? '').trim().slice(0, 10);
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
@@ -51,6 +72,43 @@ export class ClienteDebitosTabComponent {
 
   verComanda(idAtendimento: string): void {
     this.d.visualizarComandaAgendamento(idAtendimento);
+  }
+
+  pedirExcluirComanda(row: ClienteComandaAbertaLinhaUi): void {
+    if (this.excluindoComanda()) return;
+    this.comandaPendenteExclusao.set(row);
+    this.excluirComandaModalAberto.set(true);
+  }
+
+  fecharModalExcluirComanda(): void {
+    if (this.excluindoComanda()) return;
+    this.excluirComandaModalAberto.set(false);
+    this.comandaPendenteExclusao.set(null);
+  }
+
+  confirmarExcluirComanda(): void {
+    const row = this.comandaPendenteExclusao();
+    const idAt = String(row?.idAtendimento ?? '').trim();
+    if (!idAt || this.excluindoComanda()) {
+      this.fecharModalExcluirComanda();
+      return;
+    }
+    this.excluindoComanda.set(true);
+    this.api.excluirAtendimento(idAt).subscribe({
+      next: () => {
+        this.excluindoComanda.set(false);
+        this.excluirComandaModalAberto.set(false);
+        this.comandaPendenteExclusao.set(null);
+        this.d.recarregarDebitosPainel();
+        this.toast.show('Comanda excluída.');
+      },
+      error: (e: Error) => {
+        this.excluindoComanda.set(false);
+        this.toast.show(
+          e.message || 'Não foi possível excluir. Tente novamente.',
+        );
+      },
+    });
   }
 
   debitoSelecionado(idAtendimento: string): boolean {
