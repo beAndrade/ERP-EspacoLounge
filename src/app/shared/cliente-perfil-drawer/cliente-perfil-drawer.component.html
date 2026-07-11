@@ -168,11 +168,6 @@
     </div>
     @if (abaAtiva === 'Cadastro') {
       <footer class="cliente-drawer-footer cliente-drawer-footer--embutido">
-        @if (cadastro.saveErro) {
-          <p class="cliente-save-hint cliente-save-hint--error" role="alert">
-            {{ cadastro.saveErro }}
-          </p>
-        }
         <button type="button" class="cliente-footer-btn cliente-footer-btn--ghost" [disabled]="cadastro.salvando" (click)="onVoltarDoCadastro()">Voltar</button>
         <button type="button" class="cliente-footer-btn cliente-footer-btn--primary" [disabled]="cadastro.salvando || cadastro.carregandoFormulario" (click)="cadastro.salvar()">{{ cadastro.salvando ? 'Salvando…' : 'Salvar' }}</button>
       </footer>

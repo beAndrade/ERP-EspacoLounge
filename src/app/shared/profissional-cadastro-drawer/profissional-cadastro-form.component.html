@@ -166,7 +166,10 @@
         </div>
 
         <div class="cliente-form-row cliente-form-row--pair">
-          <div class="cliente-field">
+          <div
+            class="cliente-field"
+            [class.cliente-field--error]="d.erroAniversario()"
+          >
             <label class="cliente-field__inner">
               <span class="cliente-field-label">Aniversário</span>
               <input
@@ -180,6 +183,9 @@
                 autocomplete="bday"
                 [disabled]="d.salvando"
               />
+              @if (d.erroAniversario(); as errAn) {
+                <span class="cliente-field__error-msg" role="alert">{{ errAn }}</span>
+              }
             </label>
           </div>
           <div class="cliente-field">

@@ -169,11 +169,6 @@
         d.abaAtiva === 'Usuário'
       ) {
         <footer class="cliente-drawer-footer">
-          @if (d.saveErro && d.abaAtiva !== 'Usuário') {
-            <p class="cliente-save-hint cliente-save-hint--error" role="alert">
-              {{ d.saveErro }}
-            </p>
-          }
           <button
             type="button"
             class="cliente-footer-btn cliente-footer-btn--ghost"

@@ -114,7 +114,7 @@
 
 .agenda-modal__title {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.25;
   color: var(--color-text);
@@ -2090,7 +2090,7 @@ textarea {
   --drawer-label-strong: #000000bf;
   --drawer-label-weight: 500;
   --drawer-label-base-weight: 500;
-  --drawer-field-font-size: 15px;
+  --drawer-field-font-size: 14px;
   /**
    * Uma referência: respiro rótulo → campo. Não alterar de forma ad-hoc noutros sítios
    * sem alinhar com este token (8px em todo o hub do drawer).
@@ -2098,7 +2098,7 @@ textarea {
   --drawer-label-below: 8px;
 
   .agenda-modal__title {
-    font-size: 24px;
+    font-size: 26px;
     line-height: 1.25;
     color: #404040;
     padding: 30px 0 10px;

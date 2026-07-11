@@ -479,15 +479,22 @@ export class ProfissionalCadastroDrawerService {
   }
 
   erroNome(): string | null {
-    if (!this.cadastroSubmetido && !this.cadastroNome.trim()) return null;
-    return this.cadastroNome.trim() ? null : 'Nome é obrigatório';
+    if (!this.cadastroSubmetido) return null;
+    return this.cadastroNome.trim() ? null : 'Campo obrigatório';
   }
 
   erroCelular(): string | null {
-    if (!this.cadastroSubmetido && !this.cadastroCelular.trim()) return null;
+    if (!this.cadastroSubmetido) return null;
     return isCelularBr11Digitos(this.cadastroCelular)
       ? null
       : 'Celular é obrigatório (11 dígitos)';
+  }
+
+  erroAniversario(): string | null {
+    if (!this.cadastroSubmetido) return null;
+    const aniv = this.cadastroAniversario.trim();
+    if (!aniv) return null;
+    return dataDdMmYyyyValida(aniv) ? null : 'Data inválida';
   }
 
   salvar(): void {
@@ -496,18 +503,15 @@ export class ProfissionalCadastroDrawerService {
     const nome = this.cadastroNome.trim();
     const celular = telefoneBrDigitos(this.cadastroCelular);
     if (!nome) {
-      this.saveErro = 'Nome é obrigatório';
       return;
     }
     if (!isCelularBr11Digitos(celular)) {
-      this.saveErro = 'Celular é obrigatório (11 dígitos)';
       return;
     }
     let aniversarioIso: string | null = null;
     const aniv = this.cadastroAniversario.trim();
     if (aniv) {
       if (!dataDdMmYyyyValida(aniv)) {
-        this.saveErro = 'Aniversário inválido';
         return;
       }
       const [dd, mm, yyyy] = aniv.split('/');

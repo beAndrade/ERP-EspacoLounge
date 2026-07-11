@@ -223,7 +223,7 @@
 /** = `agenda-modal__title` (drawer): alinhado ao agendamento / Faturar. */
 .nc-modal-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.25;
   font-weight: 700;
   color: #404040;
@@ -302,7 +302,7 @@
 
   &.agenda-novo--drawer {
     --drawer-label-size: 15px;
-    --drawer-field-font-size: 15px;
+    --drawer-field-font-size: 14px;
     --drawer-stroke: #ececec;
   }
 
@@ -398,11 +398,12 @@
   border: 1px solid var(--drawer-field-stroke);
   background: #fff;
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
   color: #292524;
 
   &::placeholder {
     color: rgba(0, 0, 0, 0.38);
+    font-size: 14px;
   }
 
   transition:
@@ -1604,9 +1605,9 @@
     font-weight: 600;
     line-height: 1;
     letter-spacing: 0.02em;
-    color: var(--drawer-badge-pendente-fg, #d46b08);
-    background: var(--drawer-badge-pendente-bg, #fff7e6);
-    border-color: var(--drawer-badge-pendente-border, #ffd591);
+    color: var(--drawer-badge-pendente-fg, #d4380d);
+    background: var(--drawer-badge-pendente-bg, #fff2e8);
+    border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
 
   &.badge--ok {
@@ -1616,9 +1617,9 @@
   }
 
   &.badge--warn {
-    color: var(--drawer-badge-pendente-fg, #d46b08);
-    background: var(--drawer-badge-pendente-bg, #fff7e6);
-    border-color: var(--drawer-badge-pendente-border, #ffd591);
+    color: var(--drawer-badge-pendente-fg, #d4380d);
+    background: var(--drawer-badge-pendente-bg, #fff2e8);
+    border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
 }
 

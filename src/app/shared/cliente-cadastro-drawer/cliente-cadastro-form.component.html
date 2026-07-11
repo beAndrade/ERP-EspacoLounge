@@ -568,9 +568,6 @@
 }
 @if (mostrarRodape) {
   <footer class="cliente-drawer-footer">
-    @if (d.saveErro) {
-      <p class="cliente-save-hint cliente-save-hint--error" role="alert">{{ d.saveErro }}</p>
-    }
     <button type="button" class="cliente-footer-btn cliente-footer-btn--ghost" [disabled]="d.salvando" (click)="onCancelar()">
       {{ d.exibicao === 'embutido' ? 'Voltar' : 'Cancelar' }}
     </button>

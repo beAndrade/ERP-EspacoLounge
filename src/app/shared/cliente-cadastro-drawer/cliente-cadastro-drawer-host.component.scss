@@ -1,10 +1,10 @@
 ﻿@use '../../styles/breakpoints' as bp;
 
 /**
- * Empilhamento global: ficha do cliente acima de comanda/faturar das páginas
- * (transações, comandas, comissões — z-index até ~1105).
+ * Empilhamento global: ficha do cliente acima de comanda/faturar das p├íginas
+ * (transa├º├╡es, comandas, comiss├╡es ΓÇö z-index at├⌐ ~1105).
  *
- * Não usar `:host` aqui — com ViewEncapsulation.None o pseudo não casa no DOM real.
+ * N├úo usar `:host` aqui ΓÇö com ViewEncapsulation.None o pseudo n├úo casa no DOM real.
  */
 app-cliente-cadastro-drawer-host,
 app-profissional-cadastro-drawer-host {
@@ -21,7 +21,6 @@ app-profissional-cadastro-drawer-host {
   pointer-events: none;
   --z-cliente-global-overlay: 1280;
   --z-cliente-global-drawer: 1282;
-  --z-cliente-global-tooltip: 1283;
   --z-cliente-stack-overlay: 1284;
   --z-cliente-stack-drawer: 1285;
   --z-cliente-stack-edit-overlay: 1286;
@@ -34,7 +33,7 @@ app-profissional-cadastro-drawer-host {
   --z-cliente-stack-faturar-drawer: 1293;
 }
 
-/* ViewEncapsulation.None — não usar `.app-drawer` sozinho (afeta outros módulos). */
+/* ViewEncapsulation.None ΓÇö n├úo usar `.app-drawer` sozinho (afeta outros m├│dulos). */
 .cliente-drawer.app-drawer,
 .cliente-comanda-empilhada.app-drawer,
 .cliente-credito-empilhada.app-drawer,
@@ -103,7 +102,7 @@ app-profissional-cadastro-drawer-host {
 
   &.app-drawer {
     z-index: var(--z-cliente-global-drawer, 1282);
-    /* Encostado à direita. Máx. 1200px em ecrãs grandes. */
+    /* Encostado ├á direita. M├íx. 1200px em ecr├ús grandes. */
     --drawer-inset-x: 0;
     --drawer-pad-x: 0;
     --cliente-drawer-shell-w: 1200px;
@@ -196,7 +195,7 @@ app-profissional-cadastro-drawer-host {
 .cliente-head__title {
   margin: 0;
   padding: 0;
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.2;
   color: #000000bf;
@@ -246,7 +245,7 @@ app-profissional-cadastro-drawer-host {
 
 .cliente-body-scroll {
   /*
-    REGRA DE CONTRATO (não alterar sem pedido explícito):
+    REGRA DE CONTRATO (n├úo alterar sem pedido expl├¡cito):
     manter scroll apenas no eixo Y para impedir barra horizontal no drawer.
   */
   flex: 1 1 auto;
@@ -271,7 +270,7 @@ app-profissional-cadastro-drawer-host {
   box-sizing: border-box;
   display: grid;
   /*
-    Nav | main só com a largura do formulário (max-content) | aside.
+    Nav | main s├│ com a largura do formul├írio (max-content) | aside.
     Evita faixa vazia enorme entre inputs e o separador vertical.
   */
   grid-template-columns:
@@ -317,7 +316,7 @@ app-profissional-cadastro-drawer-host {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.2;
   padding-bottom: 8px;
@@ -365,7 +364,7 @@ app-profissional-cadastro-drawer-host {
   }
 }
 
-/* Ajuda em campo (ex.: Apelido) — hit area = ícone 14×14; tooltip fora do botão */
+/* Ajuda em campo (ex.: Apelido) ΓÇö hit area = ├¡cone 14├ù14; tooltip fora do bot├úo */
 .cliente-field-help {
   position: relative;
   display: inline-flex;
@@ -410,7 +409,7 @@ app-profissional-cadastro-drawer-host {
 .cliente-field-help-tooltip {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + var(--ui-tip-gap, 10px));
   z-index: 50;
   min-width: max-content;
   max-width: min(320px, calc(100vw - 32px));
@@ -439,8 +438,10 @@ app-profissional-cadastro-drawer-host {
     position: absolute;
     top: 100%;
     left: 50%;
-    transform: translateX(-50%);
-    border: 7px solid transparent;
+    width: 0;
+    height: 0;
+    margin-left: calc(var(--ui-tip-arrow-size, 7px) * -1);
+    border: var(--ui-tip-arrow-size, 7px) solid transparent;
     border-top-color: rgba(0, 0, 0, 0.82);
   }
 }
@@ -469,10 +470,10 @@ app-profissional-cadastro-drawer-host {
 
 .cliente-nav {
   /*
-    REGRA DE CONTRATO (não alterar sem pedido explícito):
-    1) espaço da 1ª aba vem de `gap`, não de `margin-top`;
+    REGRA DE CONTRATO (n├úo alterar sem pedido expl├¡cito):
+    1) espa├ºo da 1┬¬ aba vem de `gap`, n├úo de `margin-top`;
     2) indicador lateral usa `--cliente-nav-active-index` + `.cliente-nav__indicator`
-       (não voltar para `::after` por aba).
+       (n├úo voltar para `::after` por aba).
   */
   --cliente-nav-item-h: 35px;
   --cliente-nav-gap: 16px;
@@ -522,7 +523,7 @@ app-profissional-cadastro-drawer-host {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: #52525b;
   cursor: pointer;
@@ -717,7 +718,7 @@ app-profissional-cadastro-drawer-host {
   }
 }
 
-/* Só inputs de texto diretos — não interfere com `input` dentro de `.cliente-phone-input`. */
+/* S├│ inputs de texto diretos ΓÇö n├úo interfere com `input` dentro de `.cliente-phone-input`. */
 .cliente-form-grid .cliente-field__inner > input {
   height: 32px;
   width: 100%;
@@ -725,12 +726,13 @@ app-profissional-cadastro-drawer-host {
   border: 1px solid #f1f1f1;
   border-radius: 8px;
   padding: 4px 11px;
-  font-size: 13px;
+  font-size: 14px;
   color: #18181b;
   background: #fff;
   transition: all 0.2s linear;
 
   &::placeholder {
+    font-size: 14px;
     color: #a1a1aa;
   }
 
@@ -814,7 +816,7 @@ app-profissional-cadastro-drawer-host {
     gap: 6px;
     flex-shrink: 0;
     padding: 0 11px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     color: #52525b;
     background: #fafafa;
@@ -822,7 +824,7 @@ app-profissional-cadastro-drawer-host {
   }
 
   &__flag {
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
   }
 
@@ -834,8 +836,13 @@ app-profissional-cadastro-drawer-host {
     padding: 4px 11px;
     border: none;
     border-radius: 0;
-    font-size: 13px;
+    font-size: 14px;
     box-shadow: none;
+
+    &::placeholder {
+      font-size: 14px;
+      color: #a1a1aa;
+    }
 
     &:focus {
       outline: none;
@@ -989,11 +996,12 @@ app-profissional-cadastro-drawer-host {
     border: 1px solid #f1f1f1;
     border-radius: 12px;
     padding: 4px 11px;
-    font-size: 13px;
+    font-size: 14px;
     color: #3f3f46;
     transition: all 0.2s linear;
 
     &::placeholder {
+      font-size: 14px;
       color: #a1a1aa;
     }
 
@@ -1040,7 +1048,7 @@ app-profissional-cadastro-drawer-host {
   justify-content: flex-start;
   gap: 12px;
 
-  /* Mesmo padrão visual do toggle líquido do agenda-novo. */
+  /* Mesmo padr├úo visual do toggle l├¡quido do agenda-novo. */
   .block-toggles.block-toggles--inline {
     padding-left: 0;
     padding-right: 0;
@@ -1223,7 +1231,7 @@ app-profissional-cadastro-drawer-host {
   display: grid;
   width: 100%;
   max-width: 460px;
-  /* 12 colunas: 3-6-3 (CEP / Rua / Número). */
+  /* 12 colunas: 3-6-3 (CEP / Rua / N├║mero). */
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 10px;
 
@@ -1586,61 +1594,6 @@ app-profissional-cadastro-drawer-host {
   }
 }
 
-/**
- * Balão das abas bloqueadas — irmão do drawer, `position: fixed` no viewport
- * (não é cortado por overflow/transform do painel).
- */
-.cliente-nav-lock-tooltip {
-  position: fixed;
-  z-index: var(--z-cliente-global-tooltip);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: max-content;
-  max-width: min(260px, calc(100vw - 40px));
-  padding: 8px 12px;
-  border: none;
-  border-radius: 12px;
-  background: rgba(24, 24, 27, 0.88);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-  color: #fafafa;
-  text-align: center;
-  font-size: 13px;
-  line-height: 1.35;
-  font-weight: 500;
-  white-space: nowrap;
-  pointer-events: none;
-  transform: translate(-50%, calc(-100% - 8px));
-  animation: clienteNavLockTooltipIn 0.2s ease;
-
-  &__icon {
-    flex: 0 0 auto;
-    opacity: 0.95;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: -6px;
-    transform: translateX(-50%);
-    border-width: 6px 6px 0;
-    border-style: solid;
-    border-color: rgba(24, 24, 27, 0.88) transparent transparent transparent;
-  }
-}
-
-@keyframes clienteNavLockTooltipIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, calc(-100% - 4px));
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, calc(-100% - 8px));
-  }
-}
-
 .cliente-info-btn--discount {
   position: relative;
   color: #71717a;
@@ -1929,8 +1882,8 @@ app-profissional-cadastro-drawer-host {
 }
 
 /**
- * O host (`pointer-events: none`) exige reativar cliques nos painéis empilhados;
- * sem isto, botões/links da comanda ficam inertes (cliques caem na ficha por baixo).
+ * O host (`pointer-events: none`) exige reativar cliques nos pain├⌐is empilhados;
+ * sem isto, bot├╡es/links da comanda ficam inertes (cliques caem na ficha por baixo).
  */
 .cliente-comanda-empilhada.app-drawer,
 .cliente-credito-empilhada.app-drawer,
