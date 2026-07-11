@@ -10,10 +10,10 @@ export const AGENDA_COR_PADRAO_ID = 'padrao';
 
 export const AGENDA_COR_META_BASE: readonly AgendaCorOpcao[] = [
   { id: AGENDA_COR_PADRAO_ID, label: 'Padrão', cor: '' },
-  { id: 'cliente_vip', label: 'Cliente VIP', cor: '#9C27B0' },
-  { id: 'check_in', label: 'Check In', cor: '#4CAF50' },
-  { id: 'em_atendimento', label: 'Em atendimento', cor: '#E91E63' },
-  { id: 'retrabalho', label: 'Retrabalho', cor: '#FF7043' },
+  { id: 'cliente_vip', label: 'Cliente VIP', cor: '#673AB7' },
+  { id: 'check_in', label: 'Check In', cor: '#32C787' },
+  { id: 'em_atendimento', label: 'Em atendimento', cor: '#D066E2' },
+  { id: 'retrabalho', label: 'Retrabalho', cor: '#FF6B68' },
 ] as const;
 
 const LS_KEY = 'espaco-lounge.agenda-cores-custom';
