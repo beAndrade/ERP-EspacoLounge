@@ -431,11 +431,11 @@
   align-items: start;
   display: grid;
   grid-template-columns:
-    minmax(16.25rem, 1.78fr)
-    minmax(9.5rem, 0.86fr)
-    minmax(6.5rem, 0.44fr)
-    minmax(10rem, 0.92fr)
-    minmax(8.35rem, 0.72fr);
+    minmax(13.5rem, 1.35fr)
+    minmax(9.5rem, 0.9fr)
+    minmax(6.5rem, 0.5fr)
+    minmax(9rem, 0.85fr)
+    minmax(9rem, 0.85fr);
   min-width: 0;
 
   .block-context__field--cliente-modal,
@@ -507,11 +507,11 @@
 
   @media (min-width: 721px) and (max-width: 1100px) {
     grid-template-columns:
-      minmax(15rem, 1.72fr)
-      minmax(8.9rem, 0.8fr)
-      minmax(6.25rem, 0.42fr)
-      minmax(9.35rem, 0.88fr)
-      minmax(8rem, 0.72fr);
+      minmax(12.5rem, 1.3fr)
+      minmax(8.9rem, 0.85fr)
+      minmax(6.25rem, 0.5fr)
+      minmax(8.5rem, 0.8fr)
+      minmax(8.5rem, 0.8fr);
   }
 
   @media (max-width: 960px) {
