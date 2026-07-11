@@ -124,6 +124,10 @@ export class ClienteCadastroDrawerService {
   aberto = false;
   panelOpen = false;
 
+  clienteNavLockTooltipVisible = false;
+  clienteNavLockTooltipX = 0;
+  clienteNavLockTooltipY = 0;
+
   modo: 'perfil' | 'novo' = 'perfil';
   drawerNome = '';
   abaAtiva = 'Cadastro';
@@ -221,6 +225,7 @@ export class ClienteCadastroDrawerService {
 
   private callbacks: ClienteCadastroDrawerCallbacks | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private navLockTooltipTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
   private saveSub: Subscription | null = null;
@@ -432,6 +437,7 @@ export class ClienteCadastroDrawerService {
     this.fecharComandaEmpilhadaSincrono();
     this.saveSub?.unsubscribe();
     this.saveSub = null;
+    this.ocultarClienteNavLockTooltip();
     this.panelOpen = false;
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
@@ -708,13 +714,37 @@ export class ClienteCadastroDrawerService {
     });
   }
 
+  onClienteNavTooltipEnter(event: Event, aba: string, imediato = false): void {
+    if (!this.abaDesabilitada(aba)) return;
+    const btn = event.currentTarget as HTMLElement;
+    this.limparClienteNavLockTooltipTimer();
+    const mostrar = (): void => this.posicionarClienteNavLockTooltip(btn);
+    if (imediato) {
+      mostrar();
+      return;
+    }
+    this.navLockTooltipTimer = setTimeout(
+      mostrar,
+      CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS,
+    );
+  }
+
+  onClienteNavTooltipLeave(aba: string): void {
+    if (!this.abaDesabilitada(aba)) return;
+    this.ocultarClienteNavLockTooltip();
+  }
+
+  ocultarClienteNavLockTooltip(): void {
+    this.limparClienteNavLockTooltipTimer();
+    this.clienteNavLockTooltipVisible = false;
+  }
+
   blurCadastro(campo: CadastroClienteTouchKey): void {
     this.cadastroTouch[campo] = true;
   }
 
   erroCampo(campo: CadastroClienteTouchKey): string | null {
-    /** Erros de campo só após tentativa de salvar (não no blur). */
-    if (!this.cadastroSubmetido) return null;
+    if (!this.cadastroTouch[campo] && !this.cadastroSubmetido) return null;
     if (this.duplicadoCampo === campo) {
       return this.saveErro || 'Valor já cadastrado para outro cliente';
     }
@@ -867,6 +897,7 @@ export class ClienteCadastroDrawerService {
       'rg',
     ];
     if (campos.some((k) => this.erroCampo(k) != null)) {
+      this.saveErro = 'Corrija os campos destacados antes de salvar.';
       return;
     }
 
@@ -1451,6 +1482,22 @@ export class ClienteCadastroDrawerService {
       cpf: false,
       rg: false,
     };
+  }
+
+  private posicionarClienteNavLockTooltip(btn: HTMLElement): void {
+    const label = btn.querySelector<HTMLElement>('.cliente-nav__label');
+    if (!label) return;
+    const r = label.getBoundingClientRect();
+    this.clienteNavLockTooltipX = r.left + r.width / 2;
+    this.clienteNavLockTooltipY = r.top;
+    this.clienteNavLockTooltipVisible = true;
+  }
+
+  private limparClienteNavLockTooltipTimer(): void {
+    if (this.navLockTooltipTimer != null) {
+      clearTimeout(this.navLockTooltipTimer);
+      this.navLockTooltipTimer = null;
+    }
   }
 
   private pulseToggleVisual(ev: Event): void {
