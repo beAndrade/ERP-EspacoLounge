@@ -31,7 +31,7 @@
   border-radius: 12px;
   background: #fff;
   color: var(--color-primary, #2563eb);
-  font-size: 0.9375rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
@@ -50,8 +50,14 @@
 }
 
 .sidebar-novo__plus {
-  font-size: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .sidebar-novo__panel {
