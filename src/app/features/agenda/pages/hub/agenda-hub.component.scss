@@ -3408,7 +3408,7 @@ $month-num-fg-muted: #00000028;
   }
 }
 
-/** Tooltip de hover nos cartões (delay 1.8s). */
+/** Tooltip de hover nos cartões da grelha. */
 .hub-card-tip {
   position: fixed;
   z-index: 1400;
@@ -3422,19 +3422,43 @@ $month-num-fg-muted: #00000028;
     0 2px 8px rgba(15, 23, 42, 0.08);
   color: #1c1917;
   pointer-events: auto;
-  animation: hubCardTipIn 0.18s ease;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+
+  &--open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  &--above {
+    transform: translateY(-8px) scale(0.98);
+
+    &.hub-card-tip--open {
+      transform: translateY(0) scale(1);
+    }
+  }
 }
 
 .hub-card-tip__arrow {
   position: absolute;
-  top: -7px;
+  top: -6px;
   left: 50%;
-  width: 14px;
-  height: 14px;
-  margin-left: -7px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
   background: #fff;
   transform: rotate(45deg);
   box-shadow: -2px -2px 4px rgba(15, 23, 42, 0.06);
+}
+
+.hub-card-tip--above .hub-card-tip__arrow {
+  top: auto;
+  bottom: -6px;
+  box-shadow: 2px 2px 4px rgba(15, 23, 42, 0.06);
 }
 
 .hub-card-tip__head {
@@ -3547,16 +3571,5 @@ $month-num-fg-muted: #00000028;
 
 .hub-card-tip__action--excluir {
   color: #ef4444;
-}
-
-@keyframes hubCardTipIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 

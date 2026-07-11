@@ -132,6 +132,9 @@ type AgendaCardHoverTip = {
   trackKey: string;
   left: number;
   top: number;
+  /** Distância da seta ao canto esquerdo do tip (centro do cartão da grelha). */
+  arrowLeft: number;
+  placement: 'below' | 'above';
   nome: string;
   telefone: string;
   fotoUrl: string;
@@ -145,6 +148,8 @@ type AgendaCardHoverTip = {
 };
 
 const CARD_HOVER_TIP_DELAY_MS = 1000;
+const CARD_HOVER_TIP_GAP_PX = 14;
+const CARD_HOVER_TIP_FADE_MS = 220;
 
 @Component({
   selector: 'app-agenda-hub',
@@ -291,8 +296,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   /** Tooltip de hover nos cartões da grelha (delay 1.8s). */
   cardHoverTip: AgendaCardHoverTip | null = null;
+  cardHoverTipVisible = false;
   private cardHoverShowTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverHideTimer: ReturnType<typeof setTimeout> | null = null;
+  private cardHoverFadeTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverSuppressed = false;
   private readonly clienteTipCache = new Map<string, Cliente>();
 
@@ -2877,7 +2884,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.clearCardHoverHideTimer();
     this.cardHoverHideTimer = setTimeout(() => {
       this.cardHoverHideTimer = null;
-      this.cardHoverTip = null;
+      this.iniciarFadeOutCardHoverTip();
     }, 120);
   }
 
@@ -2895,9 +2902,28 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
   }
 
+  private clearCardHoverFadeTimer(): void {
+    if (this.cardHoverFadeTimer != null) {
+      clearTimeout(this.cardHoverFadeTimer);
+      this.cardHoverFadeTimer = null;
+    }
+  }
+
+  private iniciarFadeOutCardHoverTip(): void {
+    if (!this.cardHoverTip) return;
+    this.cardHoverTipVisible = false;
+    this.clearCardHoverFadeTimer();
+    this.cardHoverFadeTimer = setTimeout(() => {
+      this.cardHoverFadeTimer = null;
+      this.cardHoverTip = null;
+    }, CARD_HOVER_TIP_FADE_MS);
+  }
+
   fecharCardHoverTip(): void {
     this.clearCardHoverShowTimer();
     this.clearCardHoverHideTimer();
+    this.clearCardHoverFadeTimer();
+    this.cardHoverTipVisible = false;
     this.cardHoverTip = null;
     this.cardHoverSuppressed = false;
   }
@@ -2912,13 +2938,23 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const rect = card.getBoundingClientRect();
     const tipW = 280;
     const tipH = 320;
-    const gap = 10;
-    let left = rect.left + rect.width / 2 - tipW / 2;
+    const gap = CARD_HOVER_TIP_GAP_PX;
+    const cardCenterX = rect.left + rect.width / 2;
+
+    let left = cardCenterX - tipW / 2;
     left = Math.max(12, Math.min(left, window.innerWidth - tipW - 12));
+
+    let placement: 'below' | 'above' = 'below';
     let top = rect.bottom + gap;
     if (top + tipH > window.innerHeight - 12) {
+      placement = 'above';
       top = Math.max(12, rect.top - tipH - gap);
     }
+
+    const arrowLeft = Math.max(
+      16,
+      Math.min(cardCenterX - left, tipW - 16),
+    );
 
     const linha = bloco.linhas[0];
     const cid = String(linha?.idCliente ?? '').trim();
@@ -2948,10 +2984,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const intervalo = this.intervaloHHmmBloco(bloco, ymd) || this.horaBloco(bloco, ymd);
     const itens = this.itensResumoBloco(bloco);
 
+    this.clearCardHoverFadeTimer();
+    this.cardHoverTipVisible = false;
     this.cardHoverTip = {
       trackKey: bloco.trackKey,
       left,
       top,
+      arrowLeft,
+      placement,
       nome: this.nomeClienteBloco(bloco),
       telefone: telefoneClienteWhatsappExibicao(cliente),
       fotoUrl: (cliente?.fotoUrl ?? '').trim(),
@@ -2963,6 +3003,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       corLabel: corOpt?.label?.trim() || 'Padrão',
       corHex: corOpt?.cor || corHex || statusMeta.cor,
     };
+    // Próximo frame: dispara a transição de fade-in.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (this.cardHoverTip?.trackKey === bloco.trackKey) {
+          this.cardHoverTipVisible = true;
+        }
+      });
+    });
   }
 
   private formatarDataHoraCardTip(ymd: string, intervalo: string): string {

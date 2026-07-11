@@ -1646,13 +1646,19 @@
 @if (cardHoverTip; as tip) {
   <div
     class="hub-card-tip"
+    [class.hub-card-tip--open]="cardHoverTipVisible"
+    [class.hub-card-tip--above]="tip.placement === 'above'"
     role="tooltip"
     [style.left.px]="tip.left"
     [style.top.px]="tip.top"
     (mouseenter)="onCardHoverTipEnter()"
     (mouseleave)="onCardHoverTipLeave()"
   >
-    <div class="hub-card-tip__arrow" aria-hidden="true"></div>
+    <div
+      class="hub-card-tip__arrow"
+      aria-hidden="true"
+      [style.left.px]="tip.arrowLeft"
+    ></div>
     <div class="hub-card-tip__head">
       <app-cliente-avatar variant="lista" [fotoUrl]="tip.fotoUrl" />
       <div class="hub-card-tip__head-text">
