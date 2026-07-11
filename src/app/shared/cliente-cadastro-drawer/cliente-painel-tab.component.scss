@@ -206,8 +206,9 @@
 
 .painel-servicos__titulo {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
+  padding: 0 0 10px;
+  font-size: 20px;
+  font-weight: 500;
   color: #000000bf;
 }
 
@@ -216,6 +217,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  &:hover {
+    text-decoration: none;
+  }
 }
 
 .painel-servicos .drawer-table-card {
