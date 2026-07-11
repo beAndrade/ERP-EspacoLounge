@@ -50,13 +50,9 @@
 }
 
 .sidebar-novo__plus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 14px;
   height: 14px;
-  font-size: 14px;
-  line-height: 1;
   flex-shrink: 0;
 }
 

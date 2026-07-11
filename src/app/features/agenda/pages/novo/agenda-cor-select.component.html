@@ -27,28 +27,30 @@
     role="listbox"
     [attr.aria-hidden]="!panelOpen"
   >
-    @for (o of opcoesDropdown; track trackById($index, o)) {
-      <button
-        type="button"
-        role="option"
-        class="agenda-cor-select__opt"
-        [class.agenda-cor-select__opt--active]="o.id === inner"
-        [attr.aria-selected]="o.id === inner"
-        (click)="escolher(o.id)"
-      >
-        @if (o.cor) {
+    <div class="agenda-cor-select__list">
+      @for (o of opcoesDropdown; track trackById($index, o)) {
+        <button
+          type="button"
+          role="option"
+          class="agenda-cor-select__opt"
+          [class.agenda-cor-select__opt--active]="o.id === inner"
+          [attr.aria-selected]="o.id === inner"
+          (click)="escolher(o.id)"
+        >
+          @if (o.cor) {
+            <span
+              class="agenda-cor-select__swatch agenda-cor-select__swatch--opt"
+              [style.background]="o.cor"
+              aria-hidden="true"
+            ></span>
+          }
           <span
-            class="agenda-cor-select__swatch agenda-cor-select__swatch--opt"
-            [style.background]="o.cor"
-            aria-hidden="true"
-          ></span>
-        }
-        <span
-          class="agenda-cor-select__opt-label"
-          [class.agenda-cor-select__opt-label--padrao]="!o.cor"
-        >{{ o.label }}</span>
-      </button>
-    }
+            class="agenda-cor-select__opt-label"
+            [class.agenda-cor-select__opt-label--padrao]="!o.cor"
+          >{{ o.label }}</span>
+        </button>
+      }
+    </div>
 
     <div class="agenda-cor-select__divider" aria-hidden="true"></div>
 
@@ -58,7 +60,22 @@
         class="agenda-cor-select__criar"
         (click)="abrirCriar($event)"
       >
-        <span class="agenda-cor-select__criar-ico" aria-hidden="true">+</span>
+        <svg
+          class="agenda-cor-select__criar-ico"
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
         Criar cor
       </button>
     } @else {

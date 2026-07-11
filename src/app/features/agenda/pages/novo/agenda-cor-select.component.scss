@@ -90,11 +90,11 @@
   pointer-events: none;
   max-height: 0;
   overflow: hidden;
+  /* Sem animar max-height: evitava scrollbar a piscar no open. */
   transition:
     opacity 0.2s ease,
     visibility 0.2s ease,
-    transform 0.2s ease,
-    max-height 0.25s ease;
+    transform 0.2s ease;
 }
 
 :host.agenda-cor-select--open .agenda-cor-select__panel {
@@ -102,8 +102,15 @@
   visibility: visible;
   transform: translateY(0);
   pointer-events: auto;
-  max-height: 20rem;
+  max-height: none;
+  overflow: hidden;
+}
+
+.agenda-cor-select__list {
+  max-height: 14rem;
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 
@@ -162,7 +169,7 @@
 }
 
 .agenda-cor-select__criar {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   box-sizing: border-box;
@@ -175,20 +182,18 @@
   font: inherit;
   font-size: 0.88rem;
   font-weight: 500;
+  line-height: 1;
   color: var(--color-primary, #505afb);
   cursor: pointer;
   text-align: left;
 }
 
 .agenda-cor-select__criar-ico {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1rem;
-  height: 1rem;
-  font-size: 1rem;
-  line-height: 1;
-  font-weight: 600;
+  display: block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
 }
 
 .agenda-cor-select__criar-form {
