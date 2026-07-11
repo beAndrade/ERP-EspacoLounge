@@ -112,27 +112,43 @@
             @if (modoModal) {
               <div class="block-context__field block-context__field--cliente-modal">
                 <span>Cliente</span>
-                <app-saas-select
-                  #clienteSelectModal
-                  formControlName="cliente_id"
-                  [options]="opcoesClientesNomes()"
-                  placeholder="Busque por um cliente"
-                  [showFilter]="false"
-                  [showCriarCliente]="true"
-                  triggerIcon="search"
-                  (criarCliente)="irCriarCliente()"
-                  (painelAberto)="onClienteSelectPainelAbriu()"
-                />
+                <div class="block-context__field-control">
+                  @if (avisoClienteObrigatorio) {
+                    <div class="agenda-field-tip" role="alert">
+                      <span class="agenda-field-tip__icon" aria-hidden="true">!</span>
+                      <span>Selecionar cliente</span>
+                    </div>
+                  }
+                  <app-saas-select
+                    #clienteSelectModal
+                    formControlName="cliente_id"
+                    [options]="opcoesClientesNomes()"
+                    placeholder="Busque por um cliente"
+                    [showFilter]="false"
+                    [showCriarCliente]="true"
+                    triggerIcon="search"
+                    (criarCliente)="irCriarCliente()"
+                    (painelAberto)="onClienteSelectPainelAbriu()"
+                  />
+                </div>
               </div>
             } @else {
               <div class="block-context__field">
                 <span>Cliente</span>
-                <app-saas-select
-                  formControlName="cliente_id"
-                  [options]="opcoesClientesSelect()"
-                  placeholder="Selecione…"
-                  aria-label="Cliente"
-                />
+                <div class="block-context__field-control">
+                  @if (avisoClienteObrigatorio) {
+                    <div class="agenda-field-tip" role="alert">
+                      <span class="agenda-field-tip__icon" aria-hidden="true">!</span>
+                      <span>Selecionar cliente</span>
+                    </div>
+                  }
+                  <app-saas-select
+                    formControlName="cliente_id"
+                    [options]="opcoesClientesSelect()"
+                    placeholder="Selecione…"
+                    aria-label="Cliente"
+                  />
+                </div>
               </div>
             }
 
@@ -1544,7 +1560,6 @@
               [disabled]="
                 salvando ||
                 excluindo ||
-                form.invalid ||
                 clientes.length === 0 ||
                 profissionaisObrigatoriosSemLista ||
                 salvarBloqueadoPorCatalogo()
@@ -1632,7 +1647,6 @@
           [disabled]="
             salvando ||
             excluindo ||
-            form.invalid ||
             clientes.length === 0 ||
             profissionaisObrigatoriosSemLista ||
             salvarBloqueadoPorCatalogo()

@@ -355,6 +355,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Destaca campos obrigatórios inválidos (borda vermelha) após Salvar / Criar comanda. */
   validacaoFormularioVisivel = false;
 
+  /** Tip flutuante «Selecionar cliente» acima do campo Cliente. */
+  avisoClienteObrigatorio = false;
+
   /** Apenas UI — não entram no `FormGroup` nem no payload. */
   enviarLembreteUi = false;
   /**
@@ -585,7 +588,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         distinctUntilChanged(),
         takeUntil(this.destroy$),
       )
-      .subscribe(() => {
+      .subscribe((v) => {
+        if (String(v ?? '').trim()) {
+          this.avisoClienteObrigatorio = false;
+        }
         if (!this.modoModal || this.carregandoListas || this.prefillEmCurso) {
           return;
         }
@@ -2579,6 +2585,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.aplicarValidadoresLinhas();
     this.sincronizarValorCabeloCalculadoNasLinhas();
 
+    if (!String(this.form.get('cliente_id')?.value ?? '').trim()) {
+      this.mostrarAvisoClienteObrigatorio();
+      return null;
+    }
+    this.avisoClienteObrigatorio = false;
+
     if (!this.form.valid) {
       return this.registrarFalhaValidacao();
     }
@@ -2605,6 +2617,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   private static readonly MSG_CAMPOS_OBRIGATORIOS =
     'Preencha os campos obrigatórios destacados em vermelho.';
+
+  /** Tip acima do select Cliente (Salvar / Criar comanda sem cliente). */
+  private mostrarAvisoClienteObrigatorio(): void {
+    this.avisoClienteObrigatorio = true;
+    this.validacaoFormularioVisivel = true;
+    this.form.get('cliente_id')?.markAsTouched();
+    this.erro = '';
+    queueMicrotask(() => {
+      const trigger = document.querySelector<HTMLElement>(
+        '.form--modal .block-context__field--cliente-modal .saas-select__trigger, ' +
+          '.form--modal .block-context__field .saas-select__trigger',
+      );
+      trigger?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      trigger?.focus();
+    });
+  }
 
   /** Marca campos, mostra alerta e destaca obrigatórios em vermelho. */
   private registrarFalhaValidacao(mensagem?: string): null {

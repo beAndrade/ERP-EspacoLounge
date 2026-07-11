@@ -270,6 +270,60 @@
   flex-shrink: 0;
 }
 
+.block-context__field-control {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.agenda-field-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: min(100%, 280px);
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.14);
+  color: #292524;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border: 6px solid transparent;
+    border-top-color: #fff;
+    filter: drop-shadow(0 2px 1px rgba(15, 23, 42, 0.06));
+  }
+}
+
+.agenda-field-tip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #faad14;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 :host.agenda-novo--drawer .agenda-modal__header {
   align-items: flex-start;
   justify-content: space-between;
