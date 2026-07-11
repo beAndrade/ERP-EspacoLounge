@@ -22,6 +22,14 @@
     overflow-x: clip;
     overflow-y: visible;
   }
+
+  /* Tooltip na última coluna não pode ficar preso no clip horizontal. */
+  &:has(.drawer-table__tip-trigger:hover) > .drawer-table-wrap,
+  &:has(.drawer-table__tip-trigger:focus-within) > .drawer-table-wrap {
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+  }
 }
 
 .drawer-table-wrap {
@@ -39,11 +47,29 @@
   z-index: 1;
 }
 
-/** Tooltip da linha por cima do thead / células vizinhas. */
+/** Tooltip da linha por cima do thead / células vizinhas / secções seguintes. */
 .drawer-table tbody tr:has(.drawer-table__tip-trigger:hover),
 .drawer-table tbody tr:has(.drawer-table__tip-trigger:focus-within) {
   position: relative;
   z-index: 20;
+}
+
+.drawer-table tbody td:has(.drawer-table__tip-trigger:hover),
+.drawer-table tbody td:has(.drawer-table__tip-trigger:focus-within) {
+  z-index: 30;
+}
+
+.drawer-table-card:has(.drawer-table__tip-trigger:hover),
+.drawer-table-card:has(.drawer-table__tip-trigger:focus-within) {
+  position: relative;
+  z-index: 6;
+}
+
+.drawer-table thead th.col-acoes,
+.drawer-table tbody td.col-acoes,
+.drawer-table thead th.col-status,
+.drawer-table tbody td.col-status {
+  overflow: visible;
 }
 
 .drawer-table thead th {
@@ -237,16 +263,30 @@
   justify-content: center;
   gap: 0.5rem;
   max-width: 100%;
+  overflow: visible;
 
   .badge {
     flex-shrink: 0;
     margin: 0;
   }
 
-  /* Botão 32px com ícone 16px: puxa o trigger para o divisor bater
-     visualmente com o mesmo gap do badge. */
-  .drawer-table__tip-trigger {
-    margin-inline-start: calc((2rem - 16px) / -2);
+  /* Ícone encostado à caixa de layout para o gap ao divisor
+     igualar o do badge; hit-area expandida sem cortar o SVG. */
+  .drawer-table__icon-btn--whatsapp {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    overflow: visible;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+    }
+
+    svg {
+      overflow: visible;
+    }
   }
 }
 

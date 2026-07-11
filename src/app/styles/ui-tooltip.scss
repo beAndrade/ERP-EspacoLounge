@@ -81,7 +81,8 @@
   z-index: 3200;
 }
 
-.ui-tip-trigger--align-end .ui-tip {
+.ui-tip-trigger--align-end .ui-tip,
+.drawer-table__tip-trigger--align-end .drawer-table__tip {
   left: auto;
   right: 0;
   transform: none;
@@ -93,7 +94,8 @@
   }
 }
 
-.ui-tip-trigger--align-start .ui-tip {
+.ui-tip-trigger--align-start .ui-tip,
+.drawer-table__tip-trigger--align-start .drawer-table__tip {
   left: 0;
   right: auto;
   transform: none;
