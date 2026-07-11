@@ -11,6 +11,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Title } from '@angular/platform-browser';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -174,12 +175,15 @@ const CARD_HOVER_TIP_FADE_MS = 220;
 export class AgendaHubComponent implements OnInit, OnDestroy {
   private static readonly MAIN_AGENDA_CLASS = 'main--agenda-hub';
   private static readonly ROOT_SCROLL_LOCK_CLASS = 'agenda-hub-scroll-lock';
+  private static readonly TITULO_APP = 'Espaço Lounge';
+  private static readonly TITULO_APP_DEFAULT = 'Espaço Lounge — ERP';
 
   private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly api = inject(SheetsApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly title = inject(Title);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
   readonly sessao = inject(SessaoUsuarioService);
@@ -456,6 +460,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.cancelarPanGrelha();
     this.desativarLayoutAgendaNoMain();
     this.fecharCardHoverTip();
+    this.restaurarTituloAba();
     if (this.timerAbrirNovaComandaDesdeLista != null) {
       clearTimeout(this.timerAbrirNovaComandaDesdeLista);
       this.timerAbrirNovaComandaDesdeLista = null;
@@ -596,6 +601,20 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (diff === -1) return 'Ontem';
     if (diff === 2) return this.nomeDiaSemanaLongo(this.diaYmd);
     return this.formatarDiaCabecalhoCompleto(this.diaYmd);
+  }
+
+  /** Título da aba: «Hoje | Espaço Lounge» (segue o rótulo do header). */
+  private atualizarTituloAba(): void {
+    const rotulo = this.rotuloNavegacaoDia().trim();
+    this.title.setTitle(
+      rotulo
+        ? `${rotulo} | ${AgendaHubComponent.TITULO_APP}`
+        : AgendaHubComponent.TITULO_APP_DEFAULT,
+    );
+  }
+
+  private restaurarTituloAba(): void {
+    this.title.setTitle(AgendaHubComponent.TITULO_APP_DEFAULT);
   }
 
   rotuloDowColunaSemana(d: { label: string }): string {
@@ -773,6 +792,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const d = this.parseYmdLocal(this.semanaGridInicioYmd);
     d.setDate(d.getDate() + deltaDias);
     this.semanaGridInicioYmd = toYmd(d);
+    this.atualizarTituloAba();
     this.carregarSemana();
   }
 
@@ -1439,6 +1459,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const y = this.mesRef.getFullYear();
     const m = this.mesRef.getMonth();
     this.mesRef = this.inicioDoMes(new Date(y - 1, m, 1));
+    this.atualizarTituloAba();
     this.carregarMes();
   }
 
@@ -1446,6 +1467,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const y = this.mesRef.getFullYear();
     const m = this.mesRef.getMonth();
     this.mesRef = this.inicioDoMes(new Date(y + 1, m, 1));
+    this.atualizarTituloAba();
     this.carregarMes();
   }
 
@@ -1499,6 +1521,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const y = this.mesRef.getFullYear();
     const m = this.mesRef.getMonth();
     this.mesRef = this.inicioDoMes(new Date(y, m - 1, 1));
+    this.atualizarTituloAba();
     this.carregarMes();
   }
 
@@ -1506,11 +1529,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const y = this.mesRef.getFullYear();
     const m = this.mesRef.getMonth();
     this.mesRef = this.inicioDoMes(new Date(y, m + 1, 1));
+    this.atualizarTituloAba();
     this.carregarMes();
   }
 
   irMesAtual(): void {
     this.mesRef = this.inicioDoMes(new Date());
+    this.atualizarTituloAba();
     this.carregarMes();
   }
 
@@ -2333,6 +2358,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   private recarregarVistaAtiva(): void {
+    this.atualizarTituloAba();
     this.carregarMes();
     if (this.modoVista === 'semana') {
       this.carregarSemana();
