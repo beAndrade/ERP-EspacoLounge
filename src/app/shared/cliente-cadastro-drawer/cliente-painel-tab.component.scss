@@ -196,11 +196,19 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding: 16px 16px 0;
+  border: 1px solid hsl(220, 13%, 91%);
+  border-radius: 14px;
+  background: #fff;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .painel-servicos__titulo {
   margin: 0;
   font-size: 1.125rem;
+  font-weight: 700;
+  color: #000000bf;
 }
 
 .painel-servicos__link {
@@ -208,6 +216,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.painel-servicos .drawer-table-card {
+  border-radius: 0;
+}
+
+.painel-servicos .drawer-table-empty {
+  padding-block: 2.25rem 2.5rem;
 }
 
 col.drawer-table__col-desc-wide {
