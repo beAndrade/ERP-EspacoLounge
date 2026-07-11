@@ -309,7 +309,8 @@
   min-width: 60px;
   min-height: 60px;
   margin: 0;
-  margin-right: calc(-1 * var(--drawer-pad-x, 15px));
+  /* Compensa o `padding-inline: 15px` de `.form-shell__flow--modal`. */
+  margin-right: -15px;
   padding: 0;
   border: 0;
   border-radius: 6px;
