@@ -1653,10 +1653,11 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
 }
 
 /**
- * Painel lateral: encostado à direita (`right: 0`).
- * Abaixo de 1648px: tela toda. A partir de 1648px: `left` dinâmico — a largura segue
- * (escorrega à esquerda ao reduzir a viewport) até o mínimo ~320px a partir
- * do sidebar, largura ~1400px em telas muito largas.
+ * Painel lateral ancorado à direita.
+ * Largura preferida = sidebar 359px + fluxo 1290px = 1649px.
+ * Viewport maior: drawer fica 1649px à direita (escorrega para a esquerda ao
+ * reduzir a janela). Quando a borda esquerda encosta em 0, a largura passa a
+ * ser 100% da viewport e o conteúdo interno adapta-se — sem “pulo”.
  * Fechado: translateX(100%); aberto: translateX(0).
  */
 .app-drawer {
@@ -1673,17 +1674,19 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
    * `.form-shell--modal` 0 (eixo X) → cabeçalho modal só `padding: 20px 0` → rodapé modal
    * no drawer usa `var(--drawer-pad-x)` em `agenda-novo.component.scss`.
    */
+  --drawer-preferred-w: 1649px;
   --drawer-inset-x: 0;
   --drawer-pad-x: 0;
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
+  left: max(0px, calc(100vw - var(--drawer-preferred-w)));
   z-index: 1001;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: 100vw;
+  width: auto;
+  max-width: 100vw;
   height: 100vh;
   min-height: 0;
   background: #ffffff;
@@ -1737,6 +1740,9 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   &--faturar {
     z-index: 1005;
     background: #ffffff;
+    /* Largura própria; não herda o preferred de 1649px do painel principal. */
+    --drawer-preferred-w: 480px;
+    left: max(0px, calc(100vw - var(--drawer-preferred-w)));
 
     & > app-faturar-drawer {
       display: flex;
@@ -1750,17 +1756,7 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
 
 @media (min-width: 1024px) {
   .app-drawer.app-drawer--faturar {
-    width: min(480px, 100vw);
-    left: auto;
-    right: 0;
-  }
-}
-
-@media (min-width: 1648px) {
-  .app-drawer.app-drawer--faturar {
-    width: min(480px, 100vw);
-    left: auto;
-    right: 0;
+    --drawer-preferred-w: 480px;
   }
 }
 
@@ -2164,14 +2160,6 @@ $month-num-fg-muted: #00000028;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@media (min-width: 1648px) {
-  .app-drawer {
-    right: 0;
-    width: auto;
-    left: max(320px, calc(100vw - 1400px));
-  }
 }
 
 @media (max-width: 768px) {
@@ -3100,8 +3088,9 @@ $month-num-fg-muted: #00000028;
   .hub-page--compact .app-drawer {
     left: 0 !important;
     right: 0 !important;
-    width: 100vw !important;
+    width: auto !important;
     max-width: none;
+    --drawer-preferred-w: 100vw;
     height: 100dvh !important;
     --drawer-inset-x: 0;
     --drawer-pad-x: 0;

@@ -13,7 +13,7 @@
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
-  --modal-sidebar-w: 299px;
+  --modal-sidebar-w: 359px;
   --modal-col-gap: 1.25rem;
   --drawer-stroke: #ececec;
   --touch-min: 40px;
@@ -33,7 +33,7 @@
 
 .nc-drawer {
   display: grid;
-  grid-template-columns: var(--modal-sidebar-w) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 359fr) minmax(0, 1290fr);
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0 var(--modal-col-gap);
   flex: 1 1 auto;

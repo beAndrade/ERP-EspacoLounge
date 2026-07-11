@@ -227,7 +227,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return this.modoModal;
   }
 
-  /** Conteúdo extra na edição: espaçador leva Observações junto do footer, como no novo. */
+  /** Edição de agendamento existente no drawer (vs. novo). */
   @HostBinding('class.agenda-novo--edicao')
   get isEdicaoNoDrawer(): boolean {
     return this.modoModal && !!this.idAtendimentoEmEdicao?.trim();

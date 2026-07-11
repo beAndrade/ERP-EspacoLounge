@@ -88,7 +88,7 @@
   max-width: 42rem;
 
   &--modal {
-    max-width: none;
+    max-width: 100%;
     width: 100%;
     gap: 0;
     min-width: 0;
@@ -151,24 +151,35 @@
   min-width: 0;
 
   &--modal {
-    --modal-sidebar-w: 299px;
+    /**
+     * Proporção ideal 359 : 1290 (= drawer preferido 1649px).
+     * As duas colunas encolhem juntas quando o drawer afunila — sem min-width
+     * rígido que corte o conteúdo à direita.
+     */
+    --modal-sidebar-w: 359px;
     --modal-col-gap: 1.25rem;
     /** Só o rodapé: linha superior à largura total do drawer (pseudo). */
     --drawer-bleed-l: 0px;
     --drawer-bleed-r: 0px;
     display: grid;
-    grid-template-columns: var(--modal-sidebar-w) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 359fr) minmax(0, 1290fr);
     gap: 0 var(--modal-col-gap);
     align-items: stretch;
     padding-bottom: 0.5rem;
     flex: 1 1 auto;
     min-height: min(100%, calc(100dvh - 5.5rem));
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 
     @media (max-width: 720px) {
       display: flex;
       flex-direction: column;
       gap: 0;
       min-height: 0;
+      min-width: 0;
+      grid-template-columns: minmax(0, 1fr);
 
       .form-shell__client {
         order: 0;
@@ -176,6 +187,10 @@
 
       .form-shell__main--modal {
         order: 1;
+      }
+
+      .form-shell__flow--modal {
+        min-width: 0;
       }
     }
   }
@@ -196,16 +211,15 @@
 }
 
 /**
- * Quando o viewport afunila no desktop/tablet:
- * - remove a sidebar do cliente para priorizar os itens;
- * - impede o “arrasto” da grelha para a esquerda;
- * - mantém a coluna principal em largura total.
+ * Em viewports estreitos (mobile): sidebar do cliente em overlay.
+ * Em desktop o grid fr mantém as duas colunas a encolher de forma fluida.
  */
-@media (max-width: 1336px) {
+@media (max-width: 720px) {
   :host.agenda-novo--drawer .form-shell.form-shell--modal {
-    display: block;
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 0;
+    min-width: 0;
     --drawer-bleed-l: var(--drawer-pad-x, 0px);
   }
 
@@ -221,6 +235,7 @@
     inset: 0;
     z-index: 40;
     max-width: 100vw;
+    min-width: 0;
     overflow-y: auto;
     background: #fff;
     padding: 1rem var(--drawer-pad-x, 1rem) 2rem;
@@ -232,6 +247,12 @@
     .form-shell__main--modal {
     min-width: 0;
     width: 100%;
+  }
+
+  :host.agenda-novo--drawer
+    .form-shell.form-shell--modal
+    .form-shell__flow--modal {
+    min-width: 0;
   }
 }
 
@@ -259,7 +280,7 @@
   }
 }
 
-@media (min-width: 1337px) {
+@media (min-width: 721px) {
   .agenda-modal__cliente-btn {
     display: none;
   }
@@ -368,6 +389,7 @@
   &--modal {
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -391,22 +413,15 @@
     .block-obs {
       order: 4;
     }
-
-    .form-shell__flow-spacer {
-      order: 3;
-      flex: 1 0 auto;
-      min-height: 0;
-      width: 100%;
-    }
   }
 }
 
 :host(.agenda-novo--drawer.agenda-novo--edicao) .form.form--modal .form-shell__flow--modal > .block-obs {
-  margin-top: 0;
+  margin-top: auto;
 }
 
 :host.agenda-novo--drawer.agenda-novo--somente-comanda .form-shell__flow--modal > .block-obs {
-  margin-top: 0;
+  margin-top: auto;
 }
 
 .block-context {
@@ -431,12 +446,15 @@
   align-items: start;
   display: grid;
   grid-template-columns:
-    minmax(13.5rem, 1.35fr)
-    minmax(9.5rem, 0.9fr)
-    minmax(6.5rem, 0.5fr)
-    minmax(9rem, 0.85fr)
-    minmax(9rem, 0.85fr);
+    minmax(0, 1.35fr)
+    minmax(0, 0.9fr)
+    minmax(0, 0.5fr)
+    minmax(0, 0.85fr)
+    minmax(0, 0.85fr);
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 
   .block-context__field--cliente-modal,
   .data-field--modal-stretch,
@@ -1821,7 +1839,9 @@ textarea {
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   /**
    * Inset horizontal vem do pai `.app-drawer` (`--drawer-pad-x`). Não acrescentar
@@ -2360,7 +2380,7 @@ textarea {
   /* Glow no próprio trilho (não em pseudo interno) para não ser cortado pelo overflow. */
 
   /**
-   * Observações colada ao footer: `margin-top: auto` (novo) ou `form-shell__flow-spacer` (edição).
+   * Observações perto do rodapé, com respiro (não colada).
    */
   .form-shell__flow--modal > .block-obs {
     flex-shrink: 0;
@@ -2368,8 +2388,7 @@ textarea {
     margin-top: auto;
     padding-top: 0.25rem;
     padding-bottom: 0;
-    /** Um pouco mais acima do rodapé. */
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     background: #fff;
     position: relative;
     z-index: 1;
@@ -2637,10 +2656,9 @@ textarea {
   }
 
   /**
-   * Sem sidebar (<=1336): reduz ligeiramente colunas fixas para manter
-   * leitura equilibrada sem quebrar visual.
+   * Em viewports mais estreitos: colunas um pouco mais compactas.
    */
-  @media (max-width: 1336px) {
+  @media (max-width: 1200px) {
     --drawer-tipo-linha-col: 150px;
     --drawer-pro-col: 150px;
     --drawer-tamanho-col: 150px;

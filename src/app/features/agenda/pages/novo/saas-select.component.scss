@@ -302,11 +302,22 @@
 
 /** Busca na coluna esquerda do modal. */
 :host.saas-select-host--layout-sidebar {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  .saas-select {
+    width: 100%;
+  }
+
   .saas-select__trigger,
   .saas-select__trigger--combobox {
     border-color: var(--drawer-field-border, #e7e5e4);
     background: #fff;
     min-height: 41px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .saas-select__panel-elev {
