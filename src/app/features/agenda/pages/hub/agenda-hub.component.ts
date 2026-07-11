@@ -144,7 +144,7 @@ type AgendaCardHoverTip = {
   corHex: string;
 };
 
-const CARD_HOVER_TIP_DELAY_MS = 400;
+const CARD_HOVER_TIP_DELAY_MS = 1000;
 
 @Component({
   selector: 'app-agenda-hub',
@@ -1567,13 +1567,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (this.timerAbrirNovaComandaDesdeLista != null) {
       clearTimeout(this.timerAbrirNovaComandaDesdeLista);
     }
-    this.timerAbrirNovaComandaDesdeLista = window.setTimeout(() => {
+    this.timerAbrirNovaComandaDesdeLista = setTimeout(() => {
       this.timerAbrirNovaComandaDesdeLista = null;
       const ag = this.agendaDrawerRef;
       if (ag) {
         ag.abrirComandaRodapeIgualAoBotaoFooter();
       } else {
-        this.timerAbrirNovaComandaDesdeLista = window.setTimeout(() => {
+        this.timerAbrirNovaComandaDesdeLista = setTimeout(() => {
           this.timerAbrirNovaComandaDesdeLista = null;
           this.agendaDrawerRef?.abrirComandaRodapeIgualAoBotaoFooter();
           this.limparQueryAbrirNovaComanda();
