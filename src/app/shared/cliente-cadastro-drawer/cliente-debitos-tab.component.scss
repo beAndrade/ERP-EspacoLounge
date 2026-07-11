@@ -179,45 +179,36 @@
 
 
 .drawer-table--comandas-aberto {
-
   col.drawer-table__col-comanda {
-
-    width: 14%;
-
+    width: 182px;
   }
-
-
 
   col.drawer-table__col-data {
-
-    width: 14%;
-
+    width: 203px;
   }
-
-
 
   col.drawer-table__col-valor {
-
-    width: 14%;
-
+    width: 203px;
   }
-
-
 
   col.drawer-table__col-status {
-
-    width: 12%;
-
+    width: 223px;
   }
-
-
 
   col.drawer-table__col-acoes-wide {
-
-    width: 6.5rem;
-
+    width: 142px;
   }
 
+  thead th.col-status,
+  thead th.col-acoes,
+  tbody td.col-status,
+  tbody td.col-acoes {
+    text-align: center;
+  }
+
+  .drawer-table__acoes {
+    justify-content: center;
+  }
 }
 
 
