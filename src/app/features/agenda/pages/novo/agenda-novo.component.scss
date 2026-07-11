@@ -2070,12 +2070,14 @@ textarea {
 :host.agenda-novo--drawer .form.form--modal {
   /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
   padding-inline: 0;
-  /** Coluna «Tipo de linha»: compacta para abrir espaço de leitura. */
-  --drawer-tipo-linha-col: 120px;
+  /** Coluna «Tipo de linha» / Tamanho / Profissional: 150px. */
+  --drawer-tipo-linha-col: 150px;
   /** Descrição (Serviço/Produto) ocupa a área livre da linha. */
   --drawer-descricao-col: auto;
   /** Profissional em Serviço. */
-  --drawer-pro-col: 140px;
+  --drawer-pro-col: 150px;
+  /** Tamanho (Serviço). */
+  --drawer-tamanho-col: 150px;
   /** Campos monetários (V.Unit, Desconto, Total): largura fixa para simetria visual. */
   --drawer-money-col: 140px;
   /** Padrão do drawer: inputs com 38px de altura. */
@@ -2518,14 +2520,18 @@ textarea {
     }
 
     .servico-row__field--descricao {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       width: auto;
       min-width: 0;
       max-width: none;
     }
 
     .servico-row__field--tamanho {
-      flex: 0 0 clamp(7.25rem, 10%, 8.5rem);
+      flex: 0 0 var(--drawer-tamanho-col);
+      width: var(--drawer-tamanho-col);
+      min-width: var(--drawer-tamanho-col);
+      max-width: var(--drawer-tamanho-col);
+      box-sizing: border-box;
     }
 
     .servico-row__field--pro {
@@ -2587,14 +2593,18 @@ textarea {
 
     .servico-row__field--produto-catalogo,
     .servico-row__field--descricao {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       width: auto;
       min-width: 0;
       max-width: none;
     }
 
     .servico-row__field--tamanho {
-      flex: 0 0 clamp(7.25rem, 10%, 8.5rem);
+      flex: 0 0 var(--drawer-tamanho-col);
+      width: var(--drawer-tamanho-col);
+      min-width: var(--drawer-tamanho-col);
+      max-width: var(--drawer-tamanho-col);
+      box-sizing: border-box;
     }
 
     .servico-row__field--pro {
@@ -2631,8 +2641,9 @@ textarea {
    * leitura equilibrada sem quebrar visual.
    */
   @media (max-width: 1336px) {
-    --drawer-tipo-linha-col: 107px;
-    --drawer-pro-col: 124px;
+    --drawer-tipo-linha-col: 150px;
+    --drawer-pro-col: 150px;
+    --drawer-tamanho-col: 150px;
     --drawer-money-col: 128px;
   }
 

@@ -139,8 +139,8 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
     this.panelOpen = false;
   }
 
-  @HostListener('document:click', ['$event'])
-  onDocClick(ev: MouseEvent): void {
+  @HostListener('document:pointerdown', ['$event'])
+  onDocPointer(ev: PointerEvent): void {
     if (!this.panelOpen) return;
     const t = ev.target;
     if (!(t instanceof Node)) return;
