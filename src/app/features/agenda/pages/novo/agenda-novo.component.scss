@@ -2368,8 +2368,8 @@ textarea {
     margin-top: auto;
     padding-top: 0.25rem;
     padding-bottom: 0;
-    /** Igual ao drawer de comanda: observações ↔ resumo / footer. */
-    margin-bottom: var(--nc-obs-resumo-gap, 1rem);
+    /** Um pouco mais acima do rodapé. */
+    margin-bottom: 1.5rem;
     background: #fff;
     position: relative;
     z-index: 1;
@@ -2384,7 +2384,7 @@ textarea {
     margin-bottom: 0;
     justify-content: flex-end;
     padding: 10px 15px;
-    border-top: none;
+    border-top: 1px solid hsl(220, 13%, 91%);
 
     &::before {
       display: none;
