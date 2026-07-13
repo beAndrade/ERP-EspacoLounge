@@ -1906,12 +1906,14 @@ textarea {
   .data-field--modal-match-saas .data-field__display {
     color: var(--drawer-input-text-idle);
     font-weight: var(--drawer-input-font-weight);
+    font-size: var(--drawer-field-font-size);
     border-color: var(--drawer-field-border);
   }
 
   .data-field--modal-match-saas .data-field__value-text {
     color: var(--drawer-input-text-filled);
     font-weight: var(--drawer-input-font-weight);
+    font-size: var(--drawer-field-font-size);
   }
 
   .data-field--modal-match-saas .data-field__display--placeholder .data-field__value-text {
@@ -2110,7 +2112,7 @@ textarea {
   --drawer-label-strong: #000000bf;
   --drawer-label-weight: 500;
   --drawer-label-base-weight: 500;
-  --drawer-field-font-size: 14px;
+  --drawer-field-font-size: 15px;
   /**
    * Uma referência: respiro rótulo → campo. Não alterar de forma ad-hoc noutros sítios
    * sem alinhar com este token (8px em todo o hub do drawer).
@@ -2191,6 +2193,11 @@ textarea {
     font-weight: var(--drawer-label-weight);
     color: var(--drawer-label-strong);
     margin-bottom: var(--drawer-label-below);
+  }
+
+  .block-obs__textarea,
+  .block-obs__textarea::placeholder {
+    font-size: var(--drawer-field-font-size);
   }
 
   /**
@@ -3207,6 +3214,99 @@ textarea {
 
     &:hover {
       background: #4f46e5;
+    }
+  }
+}
+
+/** Modal exclusão: voa do botão Excluir → centro e volta no cancelar/fora. */
+.agenda-excluir-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: #00000073;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+
+  &--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.agenda-excluir-confirm {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1201;
+  width: min(416px, calc(100vw - 32px));
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+  padding: 22px 24px 20px;
+  text-align: center;
+  opacity: 0;
+  transform: translate(
+      calc(-50% + var(--ex-ox, 0px)),
+      calc(-50% + var(--ex-oy, 0px))
+    )
+    scale(0.28);
+  transform-origin: center center;
+  pointer-events: none;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.26s ease;
+
+  &--open {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+  }
+
+  .comandas-modal__title {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  .comandas-modal__text {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .comandas-modal__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    min-width: 112px;
+    padding: 0 15px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1;
+    text-align: center;
+    background: #ffffff;
+  }
+
+  .comandas-modal__btn--cancel {
+    border-color: #ebedf0;
+    color: #4b4e57;
+
+    &:hover:not(:disabled) {
+      color: #7a88ff;
+      border-color: #7a88ff;
+      background: #ffffff;
+    }
+  }
+
+  .comandas-modal__btn--confirm {
+    border-color: #ff4d4f;
+    color: #ff4d4f;
+    background: #ffffff;
+
+    &:hover:not(:disabled) {
+      color: #ff7875;
+      border-color: #ffa39e;
+      background: #ffffff;
     }
   }
 }

@@ -407,10 +407,6 @@
   gap: 0.2rem;
 }
 
-/**
- * Hover full-bleed à direita até ao divisor do contentor pai.
- * À esquerda mantém o mesmo alinhamento do título “Informações”.
- */
 .sidebar-block--informacoes .sidebar-block__link-list {
   width: 100%;
   margin-right: 0;
@@ -421,33 +417,6 @@
   margin: 0;
   display: block;
   width: 100%;
-}
-
-/**
- * Faixa de hover full-bleed (bordas do painel / divisor) sem mover o hit-area do botão.
- * `--drawer-pad-x` herda do `.app-drawer` no hub.
- */
-.sidebar-block--informacoes .sidebar-block__link-list li {
-  position: relative;
-  isolation: isolate;
-}
-
-.sidebar-block--informacoes .sidebar-block__link-list li::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(-1 * var(--drawer-pad-x, 0px));
-  right: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: transparent;
-  transition: background-color 0.12s ease;
-}
-
-.sidebar-block--informacoes .sidebar-block__link-list li:has(.sidebar-block__linklike:hover)::before,
-.sidebar-block--informacoes .sidebar-block__link-list li:has(.sidebar-block__linklike:focus-visible)::before {
-  background: #f3f4f6;
 }
 
 .sidebar-block__linklike {
@@ -474,10 +443,32 @@
   box-sizing: border-box;
 }
 
+/**
+ * Hover full-bleed: cobre toda a largura do nav (inclui o padding-inline do :host).
+ * O texto/ícone mantém o alinhamento do título «Informações».
+ */
+:host-context(.agenda-novo--drawer) {
+  --sidebar-info-pad-x: 25px;
+
+  .sidebar-block--informacoes .sidebar-block__linklike {
+    width: calc(100% + 2 * var(--sidebar-info-pad-x));
+    margin-inline: calc(-1 * var(--sidebar-info-pad-x));
+    padding-inline: var(--sidebar-info-pad-x);
+    padding-block: 0.5rem;
+    background-color: transparent;
+    transition: background-color 0.12s ease;
+
+    &:hover,
+    &:focus-visible {
+      background-color: #f3f4f6;
+    }
+  }
+}
+
 .sidebar-block--informacoes .sidebar-block__linklike {
   position: relative;
   z-index: 1;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 /** Ícones mais leves; o título «Informações» mantém peso em `.sidebar-block__titulo--info`. */

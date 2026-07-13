@@ -16,6 +16,10 @@ import type {
   WhatsappTemplate,
 } from '../../core/models/whatsapp.model';
 import { telefoneBrDigitos } from '../../core/utils/telefone-br';
+import {
+  abrirWhatsappSendUrl,
+  buildWhatsappSendUrl,
+} from '../../core/utils/whatsapp-deep-link';
 import { AppToastService } from '../app-toast/app-toast.service';
 
 @Component({
@@ -124,39 +128,28 @@ export class WhatsappEnviarModalComponent {
       return;
     }
 
+    const texto = this.preview().trim();
+    if (!texto) {
+      this.erro.set(
+        this.modo === 'manual'
+          ? 'Escreva a mensagem antes de enviar.'
+          : 'Selecione um template com conteúdo válido.',
+      );
+      return;
+    }
+
+    const url = buildWhatsappSendUrl(telefone, texto);
+    if (!url.includes('wa.me/')) {
+      this.erro.set('Não foi possível montar o link do WhatsApp.');
+      return;
+    }
+
     this.enviando.set(true);
     this.erro.set(null);
-
-    const payload =
-      this.modo === 'manual'
-        ? {
-            telefone,
-            cliente_id: ctx?.clienteId,
-            id_atendimento: ctx?.idAtendimento,
-            texto: this.textoManual.trim(),
-          }
-        : {
-            telefone,
-            cliente_id: ctx?.clienteId,
-            id_atendimento: ctx?.idAtendimento,
-            template_codigo: this.templateCodigo,
-            variaveis: this.variaveisMescladas(),
-          };
-
-    this.wa
-      .sendMessage(payload)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.enviando.set(false);
-          this.toast.show('Mensagem WhatsApp enviada.');
-          this.enviado.emit();
-          this.fechar.emit();
-        },
-        error: (e: Error) => {
-          this.enviando.set(false);
-          this.erro.set(WhatsappService.errorMessage(e));
-        },
-      });
+    abrirWhatsappSendUrl(url);
+    this.enviando.set(false);
+    this.toast.show('Abrindo WhatsApp...');
+    this.enviado.emit();
+    this.fechar.emit();
   }
 }

@@ -144,7 +144,7 @@ export class WhatsappService {
   }
 
   /**
-   * Monta URL api.whatsapp.com com template configurado (ex.: cobrança).
+   * Monta URL wa.me com template configurado (ex.: cobrança).
    */
   resolverUrlChatComTemplate(
     telefone: string,
@@ -179,7 +179,7 @@ export class WhatsappService {
   }
 
   /**
-   * Abre WhatsApp no browser/app com mensagem do template (link wa.me / api.whatsapp.com).
+   * Abre WhatsApp no browser/app com mensagem do template (link wa.me).
    */
   abrirChatComTemplate(
     telefone: string,

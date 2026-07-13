@@ -1453,25 +1453,31 @@
                 <button
                   type="button"
                   class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
-                  (click)="toggleExcluirMenu(); $event.stopPropagation()"
+                  (click)="onExcluirTriggerClick($event)"
                   [disabled]="salvando || excluindo"
-                  [attr.aria-expanded]="excluirMenuAberto"
-                  aria-haspopup="menu"
+                  [attr.aria-expanded]="
+                    mostrarMenuExcluirSerie() ? excluirMenuAberto : null
+                  "
+                  [attr.aria-haspopup]="
+                    mostrarMenuExcluirSerie() ? 'menu' : null
+                  "
                 >
                   {{ excluindo ? 'Excluindo…' : 'Excluir' }}
-                  <span
-                    class="agenda-modal__excluir-chev"
-                    aria-hidden="true"
-                  ></span>
+                  @if (mostrarMenuExcluirSerie()) {
+                    <span
+                      class="agenda-modal__excluir-chev"
+                      aria-hidden="true"
+                    ></span>
+                  }
                 </button>
-                @if (excluirMenuAberto) {
+                @if (excluirMenuAberto && mostrarMenuExcluirSerie()) {
                   <ul class="agenda-modal__excluir-panel" role="menu">
                     <li role="none">
                       <button
                         type="button"
                         class="agenda-modal__excluir-opt"
                         role="menuitem"
-                        (click)="excluirSomente()"
+                        (click)="pedirExcluirSomente()"
                         [disabled]="salvando || excluindo"
                       >
                         <svg
@@ -1498,39 +1504,37 @@
                         }}
                       </button>
                     </li>
-                    @if (temAgendamentosFuturosNaSerieSalva()) {
-                      <li role="none">
-                        <button
-                          type="button"
-                          class="agenda-modal__excluir-opt"
-                          role="menuitem"
-                          (click)="excluirEsteEProximosSerie()"
-                          [disabled]="salvando || excluindo"
+                    <li role="none">
+                      <button
+                        type="button"
+                        class="agenda-modal__excluir-opt"
+                        role="menuitem"
+                        (click)="pedirExcluirSerie()"
+                        [disabled]="salvando || excluindo"
+                      >
+                        <svg
+                          class="agenda-modal__excluir-opt-ico"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
                         >
-                          <svg
-                            class="agenda-modal__excluir-opt-ico"
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M3 5h.01" />
-                            <path d="M3 12h.01" />
-                            <path d="M3 19h.01" />
-                            <path d="M8 5h13" />
-                            <path d="M8 12h13" />
-                            <path d="M8 19h13" />
-                          </svg>
-                          Excluir este e os próximos
-                        </button>
-                      </li>
-                    }
+                          <path d="M3 5h.01" />
+                          <path d="M3 12h.01" />
+                          <path d="M3 19h.01" />
+                          <path d="M8 5h13" />
+                          <path d="M8 12h13" />
+                          <path d="M8 19h13" />
+                        </svg>
+                        Excluir todos os futuros
+                      </button>
+                    </li>
                   </ul>
                 }
               </div>
@@ -1616,7 +1620,7 @@
           <button
             type="button"
             class="btn danger"
-            (click)="excluirSomente()"
+            (click)="pedirExcluirSomente()"
             [disabled]="salvando || excluindo"
           >
             {{ excluindo ? 'Excluindo…' : 'Excluir atendimento' }}
@@ -1638,4 +1642,51 @@
       </div>
     }
   </form>
+}
+
+@if (excluirConfirmModalDom) {
+  <div
+    class="agenda-excluir-confirm-overlay"
+    [class.agenda-excluir-confirm-overlay--open]="excluirConfirmModalOpen"
+    aria-hidden="true"
+    (click)="fecharExcluirConfirmModal()"
+  ></div>
+  <div
+    class="agenda-excluir-confirm"
+    [class.agenda-excluir-confirm--open]="excluirConfirmModalOpen"
+    [style.--ex-ox.px]="excluirConfirmOrigin.x"
+    [style.--ex-oy.px]="excluirConfirmOrigin.y"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="agenda-excluir-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 id="agenda-excluir-modal-title" class="comandas-modal__title">
+      Atenção
+    </h3>
+    <p class="comandas-modal__text">
+      {{ textoExcluirConfirmModal() }}
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="excluindo"
+        (click)="fecharExcluirConfirmModal()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="excluindo"
+        (click)="confirmarExcluirModal()"
+      >
+        {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
+    </div>
+  </div>
 }

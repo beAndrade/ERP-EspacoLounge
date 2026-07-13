@@ -34,16 +34,21 @@ export class AppToastService {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const cur = this.toast();
-        if (cur) this.toast.set({ ...cur, visible: true });
+        if (!cur || cur.message !== message) return;
+        this.toast.set({ ...cur, visible: true });
+        this.hideTimer = setTimeout(() => this.dismiss(), durationMs);
       });
     });
-    this.hideTimer = setTimeout(() => this.dismiss(), durationMs);
   }
 
   dismiss(): void {
     const cur = this.toast();
-    if (!cur?.visible) return;
+    if (!cur) return;
     this.clearTimers();
+    if (!cur.visible) {
+      this.toast.set(null);
+      return;
+    }
     this.toast.set({ ...cur, visible: false });
     this.removeTimer = setTimeout(() => {
       this.removeTimer = null;

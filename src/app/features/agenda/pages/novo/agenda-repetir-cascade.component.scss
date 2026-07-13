@@ -139,7 +139,7 @@
 
   &--placeholder {
 
-    font-size: 16px;
+    font-size: var(--drawer-field-font-size, 15px);
 
     font-weight: 300;
 

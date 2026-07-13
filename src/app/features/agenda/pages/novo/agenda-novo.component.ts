@@ -1,5 +1,6 @@
 import {
   Component,
+  ElementRef,
   EventEmitter,
   HostBinding,
   HostListener,
@@ -84,6 +85,11 @@ import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar
 import { formataMoedaBrlResumo } from '../../../../shared/comanda-resumo-bar/comanda-resumo.utils';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { WhatsappService } from '../../../../core/services/whatsapp/whatsapp.service';
+import { telefoneClienteWhatsappDigitos } from '../../../../core/utils/telefone-br';
+import {
+  abrirWhatsappSendUrl,
+} from '../../../../core/utils/whatsapp-deep-link';
 import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.component';
 import {
   SaasSelectComponent,
@@ -221,6 +227,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(AppToastService);
+  private readonly wa = inject(WhatsappService);
+  private readonly hostEl = inject(ElementRef<HTMLElement>);
 
   @HostBinding('class.agenda-novo--drawer')
   get isDrawerMode(): boolean {
@@ -454,8 +462,22 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Drawer: propagar alterações às ocorrências seguintes da repetição. */
   aplicarAlteracoesProximos = false;
 
-  /** Menu Excluir (dropdown). */
+  /** Menu Excluir (dropdown) — só com série / futuros. */
   excluirMenuAberto = false;
+
+  /**
+   * Modal in-app de confirmação (substitui `window.confirm`).
+   * `somente` = este agendamento; `serie` = este e os próximos.
+   */
+  excluirConfirmModal: null | 'somente' | 'serie' = null;
+  /** Mantém o DOM durante a animação de saída. */
+  excluirConfirmModalDom = false;
+  /** Classe `--open` (centro); false = origem no botão Excluir. */
+  excluirConfirmModalOpen = false;
+  /** Offset do centro do botão relativamente ao centro da viewport (px). */
+  excluirConfirmOrigin = { x: 0, y: 0 };
+  private excluirConfirmAnimTimer: ReturnType<typeof setTimeout> | null = null;
+  private excluirConfirmRaf = 0;
 
   /**
    * Modal: no dia do formulário, cliente tem pelo menos um pedido com cobrança ainda não finalizada
@@ -1277,6 +1299,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.slotFormSub?.unsubscribe();
+    this.limparAnimacaoExcluirConfirm();
   }
 
   /**
@@ -2891,6 +2914,47 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           : criar$;
 
     this.salvando = true;
+
+    /** Abrir aba no gesto do «Salvar» (evita bloqueio de pop-up após o HTTP). */
+    let lembretePopup: Window | null = null;
+    let lembreteCtx: {
+      telefone: string;
+      clienteNome: string;
+      datasYmd: string[];
+      hora: string;
+      profissional: string;
+    } | null = null;
+
+    if (this.enviarLembreteUi && !this.isFluxoSomenteComanda()) {
+      const cliente = this.clienteSelecionado();
+      const telefone = telefoneClienteWhatsappDigitos(cliente);
+      if (telefone.length < 10) {
+        this.toast.showWarning(
+          'Lembrete WhatsApp: selecione um cliente com telefone válido.',
+        );
+      } else {
+        const hora =
+          resolverHoraWhatsappAgendamento({
+            horaInicial: String(raw['hora_inicial'] ?? ''),
+            linhasInicio: this.linhasItensArray.controls.map((g) => ({
+              inicio: String(g.get('inicio')?.value ?? ''),
+            })),
+          }) ?? '';
+        lembreteCtx = {
+          telefone,
+          clienteNome: String(cliente?.nome ?? '').trim(),
+          datasYmd: [...datas],
+          hora,
+          profissional: this.nomeProfissionalWhatsappDasLinhas(),
+        };
+        lembretePopup = window.open(
+          'about:blank',
+          '_blank',
+          'noopener,noreferrer',
+        );
+      }
+    }
+
     salvar$.subscribe({
       next: () => {
         this.salvando = false;
@@ -2902,6 +2966,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.aplicarAlteracoesProximos = false;
         this.datasSerieOcorrenciasSalvas = [];
         this.yminSerieOcorrenciasSalvas = null;
+        this.enviarLembreteUi = false;
+
+        if (lembreteCtx) {
+          this.concluirLembreteWhatsappAposSalvar(lembretePopup, lembreteCtx);
+        }
+
         if (this.modoModal) {
           this.salvoComSucesso.emit();
         } else {
@@ -2909,6 +2979,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         }
       },
       error: (e: Error) => {
+        lembretePopup?.close();
         this.avisoItensDuplicados = '';
         this.erro =
           e.message ||
@@ -2918,23 +2989,202 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  /** Remove o atendimento na API sem recriar linhas (só em modo edição). */
-  excluirSomente(): void {
-    const id = this.idAtendimentoEmEdicao?.trim();
-    if (!id || this.salvando || this.excluindo) return;
-    this.fecharExcluirMenu();
-    if (
-      !confirm(
-        'Excluir este atendimento? Esta ação não pode ser anulada.',
-      )
-    ) {
+  /**
+   * Lista datas para `{{data}}` no template de lembrete
+   * (uma ocorrência ou série recorrente numa só mensagem).
+   */
+  private formatarListaDatasWhatsapp(ymds: string[]): string {
+    const fmts = ymds
+      .map((ymd) => this.formatarDataBadgePt(ymd))
+      .filter((s) => s.length > 0);
+    if (fmts.length <= 1) return fmts[0] ?? '';
+    if (fmts.length === 2) return `${fmts[0]} e ${fmts[1]}`;
+    return `${fmts.slice(0, -1).join(', ')} e ${fmts[fmts.length - 1]}`;
+  }
+
+  private nomeProfissionalWhatsappDasLinhas(): string {
+    for (const g of this.linhasItensArray.controls) {
+      const pid = Number(g.get('profissional')?.value ?? g.get('profissional_cabelo')?.value);
+      if (!Number.isFinite(pid) || pid <= 0) continue;
+      const nome = this.profissionais.find((p) => p.id === pid)?.nome?.trim();
+      if (nome) return nome;
+    }
+    return '';
+  }
+
+  private concluirLembreteWhatsappAposSalvar(
+    popup: Window | null,
+    ctx: {
+      telefone: string;
+      clienteNome: string;
+      datasYmd: string[];
+      hora: string;
+      profissional: string;
+    },
+  ): void {
+    const dataFmt = this.formatarListaDatasWhatsapp(ctx.datasYmd);
+    this.wa
+      .resolverUrlChatComTemplate(ctx.telefone, 'lembrete', {
+        cliente: ctx.clienteNome,
+        data: dataFmt,
+        hora: ctx.hora,
+        profissional: ctx.profissional,
+      })
+      .subscribe({
+        next: (url) => {
+          if (popup && !popup.closed) {
+            try {
+              popup.location.href = url;
+            } catch {
+              popup.close();
+              abrirWhatsappSendUrl(url);
+            }
+          } else {
+            abrirWhatsappSendUrl(url);
+          }
+          this.toast.show('Abrindo WhatsApp...');
+        },
+        error: (e: unknown) => {
+          popup?.close();
+          const msg =
+            e instanceof Error
+              ? e.message
+              : 'Não foi possível abrir o lembrete no WhatsApp.';
+          this.toast.showWarning(msg);
+        },
+      });
+  }
+
+  /**
+   * Clique no botão Excluir do rodapé:
+   * - série com futuros → abre menu (chevron);
+   * - caso contrário → modal de confirmação (só este).
+   */
+  onExcluirTriggerClick(ev?: Event): void {
+    ev?.stopPropagation();
+    if (this.salvando || this.excluindo) return;
+    if (this.temAgendamentosFuturosNaSerieSalva()) {
+      this.toggleExcluirMenu();
       return;
     }
+    this.pedirExcluirSomente();
+  }
+
+  /** Abre o modal «Atenção» para excluir só o agendamento atual. */
+  pedirExcluirSomente(): void {
+    if (!this.idAtendimentoEmEdicao?.trim() || this.salvando || this.excluindo) {
+      return;
+    }
+    this.abrirExcluirConfirmModal('somente');
+  }
+
+  /** Abre o modal «Atenção» para excluir este e os próximos da série. */
+  pedirExcluirSerie(): void {
+    if (!this.idAtendimentoEmEdicao?.trim() || this.salvando || this.excluindo) {
+      return;
+    }
+    this.abrirExcluirConfirmModal('serie');
+  }
+
+  fecharExcluirConfirmModal(): void {
+    if (this.excluindo || !this.excluirConfirmModalDom) return;
+    this.excluirConfirmOrigin = this.medirOrigemBotaoExcluir();
+    this.excluirConfirmModalOpen = false;
+    this.limparAnimacaoExcluirConfirm();
+    this.excluirConfirmAnimTimer = setTimeout(() => {
+      this.excluirConfirmAnimTimer = null;
+      this.excluirConfirmModal = null;
+      this.excluirConfirmModalDom = false;
+    }, 320);
+  }
+
+  textoExcluirConfirmModal(): string {
+    if (this.excluirConfirmModal === 'serie') {
+      return 'Tem certeza que deseja excluir este agendamento e os próximos da repetição?';
+    }
+    return this.isFluxoSomenteComanda()
+      ? 'Tem certeza que deseja excluir esta comanda?'
+      : 'Tem certeza que deseja excluir este agendamento?';
+  }
+
+  confirmarExcluirModal(): void {
+    const modo = this.excluirConfirmModal;
+    if (!modo || this.salvando || this.excluindo) return;
+    if (modo === 'serie') {
+      this.executarExcluirEsteEProximosSerie();
+      return;
+    }
+    this.executarExcluirSomente();
+  }
+
+  private abrirExcluirConfirmModal(modo: 'somente' | 'serie'): void {
+    this.fecharExcluirMenu();
+    this.limparAnimacaoExcluirConfirm();
+    this.excluirConfirmOrigin = this.medirOrigemBotaoExcluir();
+    this.excluirConfirmModal = modo;
+    this.excluirConfirmModalDom = true;
+    this.excluirConfirmModalOpen = false;
+    this.excluirConfirmRaf = requestAnimationFrame(() => {
+      this.excluirConfirmRaf = requestAnimationFrame(() => {
+        this.excluirConfirmRaf = 0;
+        this.excluirConfirmModalOpen = true;
+      });
+    });
+  }
+
+  /** Offset do centro do botão Excluir → centro da viewport (para a animação). */
+  private medirOrigemBotaoExcluir(): { x: number; y: number } {
+    const root = this.hostEl.nativeElement;
+    const btn =
+      (root.querySelector(
+        '.agenda-modal__excluir-trigger',
+      ) as HTMLElement | null) ??
+      (root.querySelector(
+        '.form-page__actions .btn.danger',
+      ) as HTMLElement | null);
+    if (!btn) return { x: 0, y: 0 };
+    const r = btn.getBoundingClientRect();
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    return {
+      x: r.left + r.width / 2 - cx,
+      y: r.top + r.height / 2 - cy,
+    };
+  }
+
+  private limparAnimacaoExcluirConfirm(): void {
+    if (this.excluirConfirmAnimTimer != null) {
+      clearTimeout(this.excluirConfirmAnimTimer);
+      this.excluirConfirmAnimTimer = null;
+    }
+    if (this.excluirConfirmRaf) {
+      cancelAnimationFrame(this.excluirConfirmRaf);
+      this.excluirConfirmRaf = 0;
+    }
+  }
+
+  /** Fecha o modal sem animação de retorno (após exclusão bem-sucedida). */
+  private descartarExcluirConfirmModal(): void {
+    this.limparAnimacaoExcluirConfirm();
+    this.excluirConfirmModalOpen = false;
+    this.excluirConfirmModal = null;
+    this.excluirConfirmModalDom = false;
+  }
+
+  /** Remove o atendimento na API sem recriar linhas (só em modo edição). */
+  excluirSomente(): void {
+    this.pedirExcluirSomente();
+  }
+
+  private executarExcluirSomente(): void {
+    const id = this.idAtendimentoEmEdicao?.trim();
+    if (!id || this.salvando || this.excluindo) return;
     this.erro = '';
     this.excluindo = true;
     this.api.excluirAtendimento(id).subscribe({
       next: () => {
         this.excluindo = false;
+        this.descartarExcluirConfirmModal();
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
         if (this.modoModal) {
@@ -2954,21 +3204,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Exclui o pedido atual e tenta apagar ocorrências nas datas da repetição (mesmo cliente e horário). */
   excluirEsteEProximosSerie(): void {
+    this.pedirExcluirSerie();
+  }
+
+  private executarExcluirEsteEProximosSerie(): void {
     const id = this.idAtendimentoEmEdicao?.trim();
     if (!id || this.salvando || this.excluindo) return;
-    this.fecharExcluirMenu();
-    if (
-      !confirm(
-        'Excluir este agendamento e as ocorrências nas datas seguintes da repetição (mesmo cliente e horário)?',
-      )
-    ) {
-      return;
-    }
     const dataBase = normalizarDataIso(
       String(this.form.get('data')?.value ?? ''),
     );
     if (!dataBase) {
       this.erro = 'Data inválida.';
+      this.descartarExcluirConfirmModal();
       return;
     }
     const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
@@ -2977,6 +3224,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
     if (!clienteId || !hi) {
       this.erro = 'Cliente e horário são necessários para a exclusão em série.';
+      this.descartarExcluirConfirmModal();
       return;
     }
     let datas: string[] = [dataBase];
@@ -2989,6 +3237,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.repetirAgendamento.vezes,
         this.repetirAgendamento.frequencia,
       );
+    } else if (this.datasSerieOcorrenciasSalvas.length >= 2) {
+      datas = this.datasSerieGravadaDesde(dataBase);
+      if (datas.length === 0) datas = [dataBase];
     }
     this.erro = '';
     this.excluindo = true;
@@ -3017,6 +3268,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       .subscribe({
         next: () => {
           this.excluindo = false;
+          this.descartarExcluirConfirmModal();
           this.idAtendimentoEmEdicao = null;
           this.slotAgenda = null;
           if (this.modoModal) {
@@ -3994,6 +4246,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   fecharExcluirMenu(): void {
     this.excluirMenuAberto = false;
+  }
+
+  /** Chevron + dropdown só quando há ocorrências futuras na série salva. */
+  mostrarMenuExcluirSerie(): boolean {
+    return this.temAgendamentosFuturosNaSerieSalva();
   }
 
   /**

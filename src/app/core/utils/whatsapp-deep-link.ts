@@ -1,6 +1,6 @@
 import { telefoneBrDigitos } from './telefone-br';
 
-/** Dígitos E.164 para wa.me / api.whatsapp.com (BR: prefixo 55). */
+/** Dígitos E.164 para wa.me (BR: prefixo 55). */
 export function telefoneWhatsappInternacional(
   valor: string | null | undefined,
 ): string {
@@ -17,7 +17,7 @@ export function buildWhatsappSendUrl(
 ): string {
   const phone = telefoneWhatsappInternacional(telefone);
   const text = encodeURIComponent(texto.trim());
-  return `https://api.whatsapp.com/send?phone=${phone}&text=${text}`;
+  return `https://wa.me/${phone}?text=${text}`;
 }
 
 export function abrirWhatsappSendUrl(url: string): void {
