@@ -185,6 +185,11 @@
   .fin-painel__card-arrow {
     color: rgba(255, 255, 255, 0.85);
   }
+
+  &--banco {
+    background: var(--fin-orange);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.28);
+  }
 }
 
 .fin-painel__metric-card {
@@ -296,6 +301,67 @@
 .fin-painel__periodo-ico {
   display: inline-flex;
   color: #6b7280;
+}
+
+.fin-painel__periodo-wrap {
+  position: relative;
+  max-width: min(100%, 280px);
+  min-width: 0;
+
+  app-cliente-drawer-periodo-filtro {
+    display: block;
+    width: 100%;
+  }
+
+  ::ng-deep .periodo-filtro__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.55rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  ::ng-deep .periodo-filtro--bar-ativo .periodo-filtro__bar {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+
+  ::ng-deep .periodo-filtro__inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  ::ng-deep .periodo-filtro__input {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #374151;
+    padding: 0;
+    min-width: 0;
+    width: 5.6rem;
+  }
+
+  ::ng-deep .periodo-filtro__sep {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    padding: 0 0.1rem;
+  }
+
+  ::ng-deep .periodo-filtro__cal-btn {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    color: #6b7280;
+  }
+
+  ::ng-deep .periodo-filtro__underline {
+    display: none;
+  }
 }
 
 .fin-painel__block--chart {

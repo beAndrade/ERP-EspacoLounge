@@ -38,9 +38,18 @@
 }
 
 .fin-fluxo__grid {
-  stroke: #eef1f5;
+  stroke: #d1d5db;
   stroke-width: 1;
+  stroke-dasharray: 3 4;
   vector-effect: non-scaling-stroke;
+}
+
+.fin-fluxo__zero-line {
+  stroke: #3b82f6;
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.85;
 }
 
 .fin-fluxo__tick {

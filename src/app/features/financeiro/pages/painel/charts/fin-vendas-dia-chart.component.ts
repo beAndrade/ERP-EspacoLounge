@@ -16,6 +16,7 @@ import type { VendasDiaPonto } from './fin-painel-charts.model';
 import { FinPainelChartTooltipComponent } from './fin-painel-chart-tooltip.component';
 import { FinPainelChartTooltipService } from './fin-painel-chart-tooltip.service';
 import {
+  formatEixo,
   formatMoedaCurta,
   layoutVendasBars,
   mediaPeriodo,
@@ -74,9 +75,22 @@ export class FinVendasDiaChartComponent implements AfterViewInit, OnDestroy {
     const span = g.yMax || 1;
     return g.ticks.map((t) => ({
       value: t,
-      label: formatMoedaCurta(t),
+      label: formatEixo(t),
       y: this.pad.t + g.innerH - (t / span) * g.innerH,
     }));
+  });
+
+  readonly verticalGrid = computed(() => {
+    const g = this.geom();
+    if (!g.bars.length) {
+      const n = 6;
+      const out: { x: number }[] = [];
+      for (let i = 0; i <= n; i++) {
+        out.push({ x: this.pad.l + (g.innerW * i) / n });
+      }
+      return out;
+    }
+    return g.bars.map((b) => ({ x: b.x + b.w / 2 }));
   });
 
   readonly xLabels = computed(() => {

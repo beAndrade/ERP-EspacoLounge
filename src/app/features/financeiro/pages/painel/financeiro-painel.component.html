@@ -52,7 +52,10 @@
         <ul class="fin-painel__contas-list">
           @for (conta of contas(); track conta.id) {
             <li>
-              <div class="fin-painel__conta-card">
+              <div
+                class="fin-painel__conta-card"
+                [class.fin-painel__conta-card--banco]="conta.id === 'banco'"
+              >
                 <span class="fin-painel__card-arrow" aria-hidden="true">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -91,32 +94,16 @@
               <span class="fin-painel__foco-badge">{{ dia }}</span>
             }
           </h2>
-          <button
-            type="button"
-            class="fin-painel__periodo"
-            aria-label="Período dos totais"
-            disabled
-          >
-            <span class="fin-painel__periodo-text">{{
-              periodoLabel(periodoTotaisInicio(), periodoTotaisFim())
-            }}</span>
-            <span class="fin-painel__periodo-ico" aria-hidden="true">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-            </span>
-          </button>
+          <div class="fin-painel__periodo-wrap">
+            <app-cliente-drawer-periodo-filtro
+              [painelFlutuante]="true"
+              [semBackdropEscuro]="true"
+              [mostrarBotaoCalendario]="true"
+              [(inicioYmd)]="periodoTotaisInicioYmd"
+              [(fimYmd)]="periodoTotaisFimYmd"
+              (periodoAlterado)="onPeriodoTotaisAlterado()"
+            />
+          </div>
         </div>
         <ul class="fin-painel__totais-grid">
           @for (card of totais(); track card.id) {
@@ -163,32 +150,16 @@
       >
         <div class="fin-painel__block-head">
           <h2 id="fin-painel-fluxo-title" class="fin-painel__block-title">Fluxo de caixa</h2>
-          <button
-            type="button"
-            class="fin-painel__periodo"
-            aria-label="Período do fluxo de caixa"
-            disabled
-          >
-            <span class="fin-painel__periodo-text">{{
-              periodoLabel(periodoFluxoInicio(), periodoFluxoFim())
-            }}</span>
-            <span class="fin-painel__periodo-ico" aria-hidden="true">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-            </span>
-          </button>
+          <div class="fin-painel__periodo-wrap">
+            <app-cliente-drawer-periodo-filtro
+              [painelFlutuante]="true"
+              [semBackdropEscuro]="true"
+              [mostrarBotaoCalendario]="true"
+              [(inicioYmd)]="periodoFluxoInicioYmd"
+              [(fimYmd)]="periodoFluxoFimYmd"
+              (periodoAlterado)="onPeriodoFluxoAlterado()"
+            />
+          </div>
         </div>
         <app-fin-fluxo-caixa-chart
           [series]="serieFluxo()"
@@ -203,32 +174,16 @@
       >
         <div class="fin-painel__block-head">
           <h2 id="fin-painel-vendas-title" class="fin-painel__block-title">Vendas por dia</h2>
-          <button
-            type="button"
-            class="fin-painel__periodo"
-            aria-label="Período de vendas por dia"
-            disabled
-          >
-            <span class="fin-painel__periodo-text">{{
-              periodoLabel(periodoVendasInicio(), periodoVendasFim())
-            }}</span>
-            <span class="fin-painel__periodo-ico" aria-hidden="true">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-            </span>
-          </button>
+          <div class="fin-painel__periodo-wrap">
+            <app-cliente-drawer-periodo-filtro
+              [painelFlutuante]="true"
+              [semBackdropEscuro]="true"
+              [mostrarBotaoCalendario]="true"
+              [(inicioYmd)]="periodoVendasInicioYmd"
+              [(fimYmd)]="periodoVendasFimYmd"
+              (periodoAlterado)="onPeriodoVendasAlterado()"
+            />
+          </div>
         </div>
         <app-fin-vendas-dia-chart
           [series]="serieVendas()"

@@ -16,7 +16,7 @@ import type { FluxoDiaPonto } from './fin-painel-charts.model';
 import { FinPainelChartTooltipComponent } from './fin-painel-chart-tooltip.component';
 import { FinPainelChartTooltipService } from './fin-painel-chart-tooltip.service';
 import {
-  formatMoedaCurta,
+  formatEixo,
   layoutFluxoBars,
   pathAreaSobLinha,
   pathLinhaMonotone,
@@ -76,9 +76,29 @@ export class FinFluxoCaixaChartComponent implements AfterViewInit, OnDestroy {
     const span = g.yMax - g.yMin || 1;
     return g.ticks.map((t) => ({
       value: t,
-      label: formatMoedaCurta(t),
+      label: formatEixo(t),
       y: this.pad.t + g.innerH - ((t - g.yMin) / span) * g.innerH,
     }));
+  });
+
+  readonly verticalGrid = computed(() => {
+    const g = this.geom();
+    if (!g.bars.length) {
+      /** Sem série: grades verticais uniformes no plot. */
+      const n = 6;
+      const out: { x: number }[] = [];
+      for (let i = 0; i <= n; i++) {
+        out.push({ x: this.pad.l + (g.innerW * i) / n });
+      }
+      return out;
+    }
+    return g.bars.map((b) => ({ x: b.cx }));
+  });
+
+  readonly zeroLineY = computed(() => {
+    const g = this.geom();
+    const span = g.yMax - g.yMin || 1;
+    return this.pad.t + g.innerH - ((0 - g.yMin) / span) * g.innerH;
   });
 
   readonly xLabels = computed(() => {

@@ -429,6 +429,18 @@ export function formatMoedaCurta(n: number): string {
   }).format(n);
 }
 
+/** Eixo Y dos gráficos (números limpos, como no padrão Belasis). */
+export function formatEixo(n: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    maximumFractionDigits: Math.abs(n) >= 1000 ? 0 : n % 1 === 0 ? 0 : 2,
+  }).format(n);
+}
+
+/** Domínio placeholder quando não há movimentação no período. */
+export function dominioVazioTicks(): number[] {
+  return [0, 1, 2, 3, 4];
+}
+
 export function formatMoeda(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -457,12 +469,13 @@ export function layoutFluxoBars(
   const plotBottom = pad.t + innerH;
 
   if (!serie.length) {
+    const ticks = dominioVazioTicks();
     return {
       bars: [],
       linePoints: [],
       yMin: 0,
-      yMax: 1,
-      ticks: [0, 1],
+      yMax: 4,
+      ticks,
       innerH,
       innerW,
       plotBottom,
@@ -475,10 +488,11 @@ export function layoutFluxoBars(
   );
   const saldos = serie.map((p) => p.saldoAcumulado);
   const minSaldo = Math.min(...saldos, 0);
-  const maxSaldo = Math.max(...saldos, maxBar, 1);
-  const yMin = Math.min(0, minSaldo);
-  const yMax = Math.max(maxSaldo, maxBar, 1);
-  const ticks = niceTicks(yMin, yMax, 4);
+  const maxSaldo = Math.max(...saldos, 0);
+  const vazio = maxBar === 0 && maxSaldo === 0 && minSaldo === 0;
+  const yMin = vazio ? 0 : Math.min(0, minSaldo);
+  const yMax = vazio ? 4 : Math.max(maxSaldo, maxBar, 1);
+  const ticks = vazio ? dominioVazioTicks() : niceTicks(yMin, yMax, 4);
   const domainMin = ticks[0] ?? yMin;
   const domainMax = ticks[ticks.length - 1] ?? yMax;
   const span = domainMax - domainMin || 1;
@@ -539,6 +553,7 @@ export function layoutVendasBars(
   yMax: number;
   mediaY: number | null;
   innerH: number;
+  innerW: number;
   plotBottom: number;
 } {
   const { width, height, pad } = layout;
@@ -549,17 +564,21 @@ export function layoutVendasBars(
   if (!serie.length) {
     return {
       bars: [],
-      ticks: [0, 1],
-      yMax: 1,
+      ticks: dominioVazioTicks(),
+      yMax: 4,
       mediaY: null,
       innerH,
+      innerW,
       plotBottom,
     };
   }
 
-  const maxRec = Math.max(...serie.map((p) => p.receita), media, 1);
-  const ticks = niceTicks(0, maxRec, 4);
-  const yMax = ticks[ticks.length - 1] ?? maxRec;
+  const maxRec = Math.max(...serie.map((p) => p.receita), 0);
+  const vazio = maxRec === 0;
+  const ticks = vazio
+    ? dominioVazioTicks()
+    : niceTicks(0, Math.max(maxRec, media, 1), 4);
+  const yMax = ticks[ticks.length - 1] ?? (vazio ? 4 : maxRec);
   const span = yMax || 1;
   const gap = Math.max(2, innerW / serie.length / 8);
   const slot = innerW / serie.length;
@@ -582,7 +601,7 @@ export function layoutVendasBars(
 
   const mediaY = media > 0 ? pad.t + innerH - (media / span) * innerH : null;
 
-  return { bars, ticks, yMax, mediaY, innerH, plotBottom };
+  return { bars, ticks, yMax, mediaY, innerH, innerW, plotBottom };
 }
 
 /**

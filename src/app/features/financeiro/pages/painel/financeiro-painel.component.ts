@@ -2,6 +2,7 @@ import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import {
   Component,
+  DestroyRef,
   HostListener,
   LOCALE_ID,
   OnInit,
@@ -10,21 +11,20 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { Subscription, catchError, forkJoin, of } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
 import {
   mapFinTransacaoItemToUi,
   type FinTransacaoLinhaUi,
 } from '../transacoes/fin-transacoes.mapper';
 import {
-  ddMmYyyyToYmdFiltro,
-  filtroPadraoTransacoes,
-  primeiroDiaMesYmdFiltro,
   queryParamsCardPainel,
   valorCardVisao,
   valorCardVisaoPeriodo,
   ymdHojeFiltro,
   ymdToDdMmYyyyFiltro,
+  primeiroDiaMesYmdFiltro,
   type FinTransacoesVisaoPreset,
 } from '../transacoes/fin-transacoes-filtro.util';
 import { FinFluxoCaixaChartComponent } from './charts/fin-fluxo-caixa-chart.component';
@@ -70,6 +70,7 @@ export interface FinPainelContaCard {
   imports: [
     CurrencyPipe,
     RouterLink,
+    ClienteDrawerPeriodoFiltroComponent,
     FinFluxoCaixaChartComponent,
     FinVendasDiaChartComponent,
   ],
@@ -79,24 +80,18 @@ export interface FinPainelContaCard {
 })
 export class FinanceiroPainelComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly carregando = signal(true);
   readonly erro = signal<string | null>(null);
 
-  readonly periodoTotaisInicio = signal(
-    ymdToDdMmYyyyFiltro(primeiroDiaMesYmdFiltro()),
-  );
-  readonly periodoTotaisFim = signal(ymdToDdMmYyyyFiltro(ymdHojeFiltro()));
-
-  readonly periodoFluxoInicio = signal(
-    ymdToDdMmYyyyFiltro(primeiroDiaMesYmdFiltro()),
-  );
-  readonly periodoFluxoFim = signal(ymdToDdMmYyyyFiltro(ymdHojeFiltro()));
-
-  readonly periodoVendasInicio = signal(
-    ymdToDdMmYyyyFiltro(primeiroDiaMesYmdFiltro()),
-  );
-  readonly periodoVendasFim = signal(ymdToDdMmYyyyFiltro(ymdHojeFiltro()));
+  /** Períodos em YMD — binding do `app-cliente-drawer-periodo-filtro`. */
+  periodoTotaisInicioYmd = primeiroDiaMesYmdFiltro();
+  periodoTotaisFimYmd = ymdHojeFiltro();
+  periodoFluxoInicioYmd = primeiroDiaMesYmdFiltro();
+  periodoFluxoFimYmd = ymdHojeFiltro();
+  periodoVendasInicioYmd = primeiroDiaMesYmdFiltro();
+  periodoVendasFimYmd = ymdHojeFiltro();
 
   readonly resumoHoje = signal<FinPainelResumoCard[]>([
     {
@@ -154,16 +149,16 @@ export class FinanceiroPainelComponent implements OnInit {
   readonly serieFluxo = signal<FluxoDiaPonto[]>([]);
   readonly serieVendas = signal<VendasDiaPonto[]>([]);
 
-  /** Linhas do período (vencimento) para recalcular totais no cross-hover. */
+  /** Linhas do período de totais (para cross-hover). */
   private readonly linhasPeriodo = signal<FinTransacaoLinhaUi[]>([]);
 
-  /** Dia em foco (cross-hover entre gráficos). */
   readonly activeDayYmd = signal<string | null>(null);
 
-  /**
-   * Totais exibidos: período completo ou agregados do dia em foco.
-   * `queryParams` / navegação permanecem os do período base.
-   */
+  private loadSub: Subscription | null = null;
+  private totaisSub: Subscription | null = null;
+  private fluxoSub: Subscription | null = null;
+  private vendasSub: Subscription | null = null;
+
   readonly totais = computed(() => {
     const base = this.totaisBase();
     const ymd = this.activeDayYmd();
@@ -199,7 +194,13 @@ export class FinanceiroPainelComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.carregarResumo();
+    this.destroyRef.onDestroy(() => {
+      this.loadSub?.unsubscribe();
+      this.totaisSub?.unsubscribe();
+      this.fluxoSub?.unsubscribe();
+      this.vendasSub?.unsubscribe();
+    });
+    this.carregarTudo();
   }
 
   @HostListener('document:keydown.escape')
@@ -207,127 +208,73 @@ export class FinanceiroPainelComponent implements OnInit {
     this.activeDayYmd.set(null);
   }
 
-  periodoLabel(inicio: string, fim: string): string {
-    return `${this.ymdParaDdMm(inicio)} — ${this.ymdParaDdMm(fim)}`;
-  }
-
   onChartHoverDay(ymd: string | null): void {
     this.activeDayYmd.set(ymd);
   }
 
-  private carregarResumo(): void {
-    const hoje = ymdHojeFiltro();
-    const padrao = filtroPadraoTransacoes();
-    const diTotais = ddMmYyyyToYmdFiltro(padrao.dataInicio) ?? primeiroDiaMesYmdFiltro();
-    const dfTotais = ddMmYyyyToYmdFiltro(padrao.dataFim) ?? ymdHojeFiltro();
-    /** Gráficos: do dia 1 do mês até hoje (não o fim do mês futuro). */
-    const diCharts = primeiroDiaMesYmdFiltro();
-    const dfCharts = hoje;
+  onPeriodoTotaisAlterado(): void {
+    this.activeDayYmd.set(null);
+    this.carregarTotais();
+  }
 
+  onPeriodoFluxoAlterado(): void {
+    this.activeDayYmd.set(null);
+    this.carregarFluxo();
+  }
+
+  onPeriodoVendasAlterado(): void {
+    this.activeDayYmd.set(null);
+    this.carregarVendas();
+  }
+
+  private carregarTudo(): void {
     this.carregando.set(true);
     this.erro.set(null);
     this.activeDayYmd.set(null);
+    this.loadSub?.unsubscribe();
 
-    forkJoin({
-      hoje: this.api.listTransacoesFinanceiras({
-        dataInicio: hoje,
-        dataFim: hoje,
-      }),
-      periodo: this.api.listTransacoesFinanceiras({
-        dataInicio: diTotais,
-        dataFim: dfTotais,
-      }),
+    const hoje = ymdHojeFiltro();
+    const diTotais = this.periodoTotaisInicioYmd;
+    const dfTotais = this.periodoTotaisFimYmd;
+    const diFluxo = this.periodoFluxoInicioYmd;
+    const dfFluxo = this.periodoFluxoFimYmd;
+    const diVendas = this.periodoVendasInicioYmd;
+    const dfVendas = this.periodoVendasFimYmd;
+
+    this.loadSub = forkJoin({
+      hoje: this.api
+        .listTransacoesFinanceiras({ dataInicio: hoje, dataFim: hoje })
+        .pipe(catchError(() => of([]))),
+      periodo: this.api
+        .listTransacoesFinanceiras({
+          dataInicio: diTotais,
+          dataFim: dfTotais,
+        })
+        .pipe(catchError(() => of([]))),
       fluxo: this.api
         .listTransacoesFinanceiras({
-          dataInicio: diCharts,
-          dataFim: dfCharts,
+          dataInicio: diFluxo,
+          dataFim: dfFluxo,
           tipoData: 'pagamento',
         })
         .pipe(catchError(() => of([]))),
       vendas: this.api
-        .listAgendamentos(diCharts, dfCharts)
+        .listAgendamentos(diVendas, dfVendas)
         .pipe(catchError(() => of([]))),
     }).subscribe({
-      next: ({ hoje: itemsHoje, periodo: itemsPeriodo, fluxo, vendas }) => {
-        const linhasHoje = itemsHoje.map(mapFinTransacaoItemToUi);
-        const linhasPeriodo = itemsPeriodo.map(mapFinTransacaoItemToUi);
-        const linhasFluxo = fluxo.map(mapFinTransacaoItemToUi);
-        const periodoQuery = {
-          dataInicio: padrao.dataInicio,
-          dataFim: padrao.dataFim,
-        };
-
-        this.linhasPeriodo.set(linhasPeriodo);
-
-        this.resumoHoje.set([
-          {
-            id: 'receber-hoje',
-            titulo: 'A receber hoje',
-            valor: valorCardVisao(linhasHoje, 'receber-hoje'),
-            tema: 'receber',
-            queryParams: queryParamsCardPainel('receber-hoje'),
-          },
-          {
-            id: 'pagar-hoje',
-            titulo: 'A pagar hoje',
-            valor: valorCardVisao(linhasHoje, 'pagar-hoje'),
-            tema: 'pagar',
-            queryParams: queryParamsCardPainel('pagar-hoje'),
-          },
-        ]);
-
-        this.totaisBase.set([
-          {
-            id: 'recebidos',
-            titulo: 'Recebidos',
-            valor: valorCardVisaoPeriodo(linhasPeriodo, 'recebidos'),
-            tema: 'recebidos',
-            queryParams: queryParamsCardPainel('recebidos', periodoQuery),
-          },
-          {
-            id: 'a-receber',
-            titulo: 'A Receber',
-            valor: valorCardVisaoPeriodo(linhasPeriodo, 'a-receber'),
-            tema: 'a-receber',
-            queryParams: queryParamsCardPainel('a-receber', periodoQuery),
-          },
-          {
-            id: 'pagos',
-            titulo: 'Pagos',
-            valor: valorCardVisaoPeriodo(linhasPeriodo, 'pagos'),
-            tema: 'pagos',
-            queryParams: queryParamsCardPainel('pagos', periodoQuery),
-          },
-          {
-            id: 'a-pagar',
-            titulo: 'A Pagar',
-            valor: valorCardVisaoPeriodo(linhasPeriodo, 'a-pagar'),
-            tema: 'a-pagar',
-            queryParams: queryParamsCardPainel('a-pagar', periodoQuery),
-          },
-        ]);
-
-        this.serieFluxo.set(
-          construirSerieFluxo(linhasFluxo, {
-            inicioYmd: diCharts,
-            fimYmd: dfCharts,
-          }),
+      next: ({ hoje: itemsHoje, periodo, fluxo, vendas }) => {
+        this.aplicarResumoHoje(itemsHoje.map(mapFinTransacaoItemToUi));
+        this.aplicarTotais(
+          periodo.map(mapFinTransacaoItemToUi),
+          diTotais,
+          dfTotais,
         );
-        this.serieVendas.set(
-          construirSerieVendas(vendas, {
-            inicioYmd: diCharts,
-            fimYmd: dfCharts,
-          }),
+        this.aplicarFluxo(
+          fluxo.map(mapFinTransacaoItemToUi),
+          diFluxo,
+          dfFluxo,
         );
-
-        const diDdMm = ymdToDdMmYyyyFiltro(diCharts);
-        const dfDdMm = ymdToDdMmYyyyFiltro(dfCharts);
-        this.periodoTotaisInicio.set(padrao.dataInicio);
-        this.periodoTotaisFim.set(padrao.dataFim);
-        this.periodoFluxoInicio.set(diDdMm);
-        this.periodoFluxoFim.set(dfDdMm);
-        this.periodoVendasInicio.set(diDdMm);
-        this.periodoVendasFim.set(dfDdMm);
+        this.aplicarVendas(vendas, diVendas, dfVendas);
         this.carregando.set(false);
       },
       error: (e: Error) => {
@@ -339,11 +286,142 @@ export class FinanceiroPainelComponent implements OnInit {
     });
   }
 
-  private ymdParaDdMm(ymdOrDdMm: string): string {
-    const ddMm = /^(\d{2})-(\d{2})-(\d{4})$/.exec(ymdOrDdMm.trim());
-    if (ddMm) return `${ddMm[1]}/${ddMm[2]}/${ddMm[3]}`;
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymdOrDdMm.trim().slice(0, 10));
-    if (!m) return ymdOrDdMm;
-    return `${m[3]}/${m[2]}/${m[1]}`;
+  private carregarTotais(): void {
+    const di = this.periodoTotaisInicioYmd;
+    const df = this.periodoTotaisFimYmd;
+    this.totaisSub?.unsubscribe();
+    this.totaisSub = this.api
+      .listTransacoesFinanceiras({ dataInicio: di, dataFim: df })
+      .pipe(catchError(() => of([])))
+      .subscribe({
+        next: (items) => {
+          this.aplicarTotais(items.map(mapFinTransacaoItemToUi), di, df);
+        },
+        error: (e: Error) => {
+          this.erro.set(e.message || 'Erro ao carregar totais.');
+        },
+      });
+  }
+
+  private carregarFluxo(): void {
+    const di = this.periodoFluxoInicioYmd;
+    const df = this.periodoFluxoFimYmd;
+    this.fluxoSub?.unsubscribe();
+    this.fluxoSub = this.api
+      .listTransacoesFinanceiras({
+        dataInicio: di,
+        dataFim: df,
+        tipoData: 'pagamento',
+      })
+      .pipe(catchError(() => of([])))
+      .subscribe({
+        next: (items) => {
+          this.aplicarFluxo(items.map(mapFinTransacaoItemToUi), di, df);
+        },
+        error: (e: Error) => {
+          this.erro.set(e.message || 'Erro ao carregar fluxo de caixa.');
+        },
+      });
+  }
+
+  private carregarVendas(): void {
+    const di = this.periodoVendasInicioYmd;
+    const df = this.periodoVendasFimYmd;
+    this.vendasSub?.unsubscribe();
+    this.vendasSub = this.api
+      .listAgendamentos(di, df)
+      .pipe(catchError(() => of([])))
+      .subscribe({
+        next: (items) => {
+          this.aplicarVendas(items, di, df);
+        },
+        error: (e: Error) => {
+          this.erro.set(e.message || 'Erro ao carregar vendas.');
+        },
+      });
+  }
+
+  private aplicarResumoHoje(linhasHoje: FinTransacaoLinhaUi[]): void {
+    this.resumoHoje.set([
+      {
+        id: 'receber-hoje',
+        titulo: 'A receber hoje',
+        valor: valorCardVisao(linhasHoje, 'receber-hoje'),
+        tema: 'receber',
+        queryParams: queryParamsCardPainel('receber-hoje'),
+      },
+      {
+        id: 'pagar-hoje',
+        titulo: 'A pagar hoje',
+        valor: valorCardVisao(linhasHoje, 'pagar-hoje'),
+        tema: 'pagar',
+        queryParams: queryParamsCardPainel('pagar-hoje'),
+      },
+    ]);
+  }
+
+  private aplicarTotais(
+    linhas: FinTransacaoLinhaUi[],
+    diYmd: string,
+    dfYmd: string,
+  ): void {
+    const periodoQuery = {
+      dataInicio: ymdToDdMmYyyyFiltro(diYmd),
+      dataFim: ymdToDdMmYyyyFiltro(dfYmd),
+    };
+    this.linhasPeriodo.set(linhas);
+    this.totaisBase.set([
+      {
+        id: 'recebidos',
+        titulo: 'Recebidos',
+        valor: valorCardVisaoPeriodo(linhas, 'recebidos'),
+        tema: 'recebidos',
+        queryParams: queryParamsCardPainel('recebidos', periodoQuery),
+      },
+      {
+        id: 'a-receber',
+        titulo: 'A Receber',
+        valor: valorCardVisaoPeriodo(linhas, 'a-receber'),
+        tema: 'a-receber',
+        queryParams: queryParamsCardPainel('a-receber', periodoQuery),
+      },
+      {
+        id: 'pagos',
+        titulo: 'Pagos',
+        valor: valorCardVisaoPeriodo(linhas, 'pagos'),
+        tema: 'pagos',
+        queryParams: queryParamsCardPainel('pagos', periodoQuery),
+      },
+      {
+        id: 'a-pagar',
+        titulo: 'A Pagar',
+        valor: valorCardVisaoPeriodo(linhas, 'a-pagar'),
+        tema: 'a-pagar',
+        queryParams: queryParamsCardPainel('a-pagar', periodoQuery),
+      },
+    ]);
+  }
+
+  private aplicarFluxo(
+    linhas: FinTransacaoLinhaUi[],
+    diYmd: string,
+    dfYmd: string,
+  ): void {
+    this.serieFluxo.set(
+      construirSerieFluxo(linhas, { inicioYmd: diYmd, fimYmd: dfYmd }),
+    );
+  }
+
+  private aplicarVendas(
+    atendimentos: Parameters<typeof construirSerieVendas>[0],
+    diYmd: string,
+    dfYmd: string,
+  ): void {
+    this.serieVendas.set(
+      construirSerieVendas(atendimentos, {
+        inicioYmd: diYmd,
+        fimYmd: dfYmd,
+      }),
+    );
   }
 }
