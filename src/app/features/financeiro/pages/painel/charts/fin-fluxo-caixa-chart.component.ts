@@ -83,6 +83,7 @@ export class FinFluxoCaixaChartComponent implements AfterViewInit, OnDestroy {
 
   readonly verticalGrid = computed(() => {
     const g = this.geom();
+    const right = this.width() - this.pad.r;
     if (!g.bars.length) {
       /** Sem série: grades verticais uniformes no plot. */
       const n = 6;
@@ -92,7 +93,12 @@ export class FinFluxoCaixaChartComponent implements AfterViewInit, OnDestroy {
       }
       return out;
     }
-    return g.bars.map((b) => ({ x: b.cx }));
+    /** Fecha o gráfico com as bordas esquerda e direita pontilhadas. */
+    return [
+      { x: this.pad.l },
+      ...g.bars.map((b) => ({ x: b.cx })),
+      { x: right },
+    ];
   });
 
   readonly zeroLineY = computed(() => {

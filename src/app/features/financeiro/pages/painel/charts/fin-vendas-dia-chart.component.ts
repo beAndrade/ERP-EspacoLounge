@@ -82,6 +82,7 @@ export class FinVendasDiaChartComponent implements AfterViewInit, OnDestroy {
 
   readonly verticalGrid = computed(() => {
     const g = this.geom();
+    const right = this.width() - this.pad.r;
     if (!g.bars.length) {
       const n = 6;
       const out: { x: number }[] = [];
@@ -90,7 +91,12 @@ export class FinVendasDiaChartComponent implements AfterViewInit, OnDestroy {
       }
       return out;
     }
-    return g.bars.map((b) => ({ x: b.x + b.w / 2 }));
+    /** Fecha o gráfico com as bordas esquerda e direita pontilhadas. */
+    return [
+      { x: this.pad.l },
+      ...g.bars.map((b) => ({ x: b.x + b.w / 2 })),
+      { x: right },
+    ];
   });
 
   readonly xLabels = computed(() => {
