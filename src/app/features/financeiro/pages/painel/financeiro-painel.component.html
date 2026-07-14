@@ -85,7 +85,12 @@
         aria-labelledby="fin-painel-totais-title"
       >
         <div class="fin-painel__block-head">
-          <h2 id="fin-painel-totais-title" class="fin-painel__block-title">Totais</h2>
+          <h2 id="fin-painel-totais-title" class="fin-painel__block-title">
+            Totais
+            @if (focoDiaLabel(); as dia) {
+              <span class="fin-painel__foco-badge">{{ dia }}</span>
+            }
+          </h2>
           <button
             type="button"
             class="fin-painel__periodo"
@@ -122,6 +127,7 @@
                 [class.fin-painel__metric-card--a-receber]="card.tema === 'a-receber'"
                 [class.fin-painel__metric-card--pagos]="card.tema === 'pagos'"
                 [class.fin-painel__metric-card--a-pagar]="card.tema === 'a-pagar'"
+                [class.fin-painel__metric-card--foco]="!!activeDayYmd()"
                 routerLink="/financeiro/transacoes"
                 [queryParams]="card.queryParams"
                 [attr.aria-label]="card.titulo + ' — ver transações'"
@@ -184,63 +190,11 @@
             </span>
           </button>
         </div>
-        <div
-          class="fin-painel__chart fin-painel__chart--fluxo"
-          role="img"
-          aria-label="Gráfico de fluxo de caixa (placeholder)"
-        >
-          <div class="fin-painel__chart-y" aria-hidden="true">
-            <span>600</span>
-            <span>450</span>
-            <span>300</span>
-            <span>150</span>
-            <span>0</span>
-          </div>
-          <div class="fin-painel__chart-plot">
-            <div class="fin-painel__chart-bars">
-              @for (bar of fluxoBarras; track bar.label) {
-                <div class="fin-painel__chart-col">
-                  <div
-                    class="fin-painel__chart-bar fin-painel__chart-bar--entrada"
-                    [style.height.%]="bar.entrada"
-                  ></div>
-                  <div
-                    class="fin-painel__chart-line-dot"
-                    [style.bottom.%]="bar.saldoPct"
-                  ></div>
-                </div>
-              }
-            </div>
-            <svg
-              class="fin-painel__chart-line"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <polyline
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                vector-effect="non-scaling-stroke"
-                points="6,62 18,48 30,52 42,58 54,70 66,74 78,78 90,82"
-              />
-            </svg>
-            <ul class="fin-painel__chart-x" aria-hidden="true">
-              @for (bar of fluxoBarras; track bar.label) {
-                <li>{{ bar.label }}</li>
-              }
-            </ul>
-          </div>
-        </div>
-        <ul class="fin-painel__chart-legend" aria-hidden="true">
-          <li>
-            <span class="fin-painel__legend-sq fin-painel__legend-sq--entrada"></span> Entrada
-          </li>
-          <li>
-            <span class="fin-painel__legend-sq fin-painel__legend-sq--saida"></span> Saída
-          </li>
-          <li><span class="fin-painel__legend-line"></span> Saldo acumulado</li>
-        </ul>
+        <app-fin-fluxo-caixa-chart
+          [series]="serieFluxo()"
+          [activeDay]="activeDayYmd()"
+          (hoverDay)="onChartHoverDay($event)"
+        />
       </section>
 
       <section
@@ -276,36 +230,11 @@
             </span>
           </button>
         </div>
-        <div
-          class="fin-painel__chart fin-painel__chart--vendas"
-          role="img"
-          aria-label="Gráfico de vendas por dia (placeholder)"
-        >
-          <div class="fin-painel__chart-y" aria-hidden="true">
-            <span>240</span>
-            <span>180</span>
-            <span>120</span>
-            <span>60</span>
-            <span>0</span>
-          </div>
-          <div class="fin-painel__chart-plot">
-            <div class="fin-painel__chart-bars fin-painel__chart-bars--vendas">
-              @for (bar of vendasBarras; track bar.label) {
-                <div class="fin-painel__chart-col">
-                  <div
-                    class="fin-painel__chart-bar fin-painel__chart-bar--vendas"
-                    [style.height.%]="(bar.entrada / 240) * 100"
-                  ></div>
-                </div>
-              }
-            </div>
-            <ul class="fin-painel__chart-x" aria-hidden="true">
-              @for (bar of vendasBarras; track bar.label) {
-                <li>{{ bar.label }}</li>
-              }
-            </ul>
-          </div>
-        </div>
+        <app-fin-vendas-dia-chart
+          [series]="serieVendas()"
+          [activeDay]="activeDayYmd()"
+          (hoverDay)="onChartHoverDay($event)"
+        />
       </section>
     </div>
   </div>

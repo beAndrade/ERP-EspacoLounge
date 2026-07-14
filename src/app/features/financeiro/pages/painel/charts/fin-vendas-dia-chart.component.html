@@ -1,0 +1,102 @@
+<div
+  class="fin-vendas"
+  [class.fin-vendas--animated]="animated()"
+  [class.fin-vendas--empty]="!hasData()"
+>
+  <div #plot class="fin-vendas__plot">
+    @if (!hasData()) {
+      <p class="fin-vendas__empty">Sem vendas confirmadas no período.</p>
+    } @else {
+      <svg
+        class="fin-vendas__svg"
+        [attr.viewBox]="'0 0 ' + width() + ' ' + height()"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label="Gráfico de vendas por dia"
+        (mouseleave)="onLeave()"
+      >
+        @for (g of gridLines(); track g.value) {
+          <line
+            class="fin-vendas__grid"
+            [attr.x1]="pad.l"
+            [attr.x2]="width() - pad.r"
+            [attr.y1]="g.y"
+            [attr.y2]="g.y"
+          />
+          <text
+            class="fin-vendas__tick"
+            [attr.x]="pad.l - 8"
+            [attr.y]="g.y + 3"
+            text-anchor="end"
+          >
+            {{ g.label }}
+          </text>
+        }
+
+        @if (geom().mediaY != null) {
+          <line
+            class="fin-vendas__media"
+            [attr.x1]="pad.l"
+            [attr.x2]="width() - pad.r"
+            [attr.y1]="geom().mediaY"
+            [attr.y2]="geom().mediaY"
+          />
+          @if (mediaLabel(); as ml) {
+            <text
+              class="fin-vendas__media-label"
+              [attr.x]="width() - pad.r"
+              [attr.y]="(geom().mediaY ?? 0) - 6"
+              text-anchor="end"
+            >
+              {{ ml }}
+            </text>
+          }
+        }
+
+        <g class="fin-vendas__bars">
+          @for (b of geom().bars; track trackYmd($index, b)) {
+            <rect
+              class="fin-vendas__bar"
+              [class.fin-vendas__bar--above]="b.acimaDaMedia"
+              [class.fin-vendas__bar--active]="isActive(b.ymd)"
+              [class.fin-vendas__bar--dim]="isDimmed(b.ymd)"
+              [attr.x]="b.x"
+              [attr.y]="b.y"
+              [attr.width]="b.w"
+              [attr.height]="b.h"
+              rx="5"
+              ry="5"
+              (mouseenter)="onEnter($event, b.i)"
+              (mousemove)="onMove($event)"
+            />
+          }
+        </g>
+
+        @for (xl of xLabels(); track xl.x) {
+          <text
+            class="fin-vendas__xlabel"
+            [attr.x]="xl.x"
+            [attr.y]="height() - 10"
+            text-anchor="middle"
+          >
+            {{ xl.label }}
+          </text>
+        }
+      </svg>
+    }
+  </div>
+
+  <ul class="fin-vendas__legend" aria-hidden="true">
+    <li class="fin-vendas__chip">
+      <span class="fin-vendas__sq"></span> Receita do dia
+    </li>
+    <li class="fin-vendas__chip">
+      <span class="fin-vendas__sq fin-vendas__sq--above"></span> Acima da média
+    </li>
+    <li class="fin-vendas__chip">
+      <span class="fin-vendas__media-swatch"></span> Média do período
+    </li>
+  </ul>
+
+  <app-fin-painel-chart-tooltip />
+</div>

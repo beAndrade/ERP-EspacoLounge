@@ -16,6 +16,7 @@
   --fin-red-dark: #dc2626;
   --fin-card-radius: 12px;
   --fin-side-w: min(280px, 32vw);
+  --fin-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   width: 100%;
   max-width: none;
@@ -75,6 +76,23 @@
   font-size: 1rem;
   font-weight: 700;
   color: #374151;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fin-painel__foco-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  animation: finFocoIn 220ms var(--fin-ease) both;
 }
 
 .fin-painel__block-head {
@@ -181,12 +199,18 @@
     cursor: pointer;
     transition:
       transform 0.12s ease,
-      box-shadow 0.15s ease;
+      box-shadow 0.15s ease,
+      filter 260ms var(--fin-ease);
 
     &:hover {
       transform: translateY(-1px);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
+  }
+
+  &--foco {
+    filter: brightness(1.04);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
   }
 
   .fin-painel__card-label {
@@ -200,10 +224,7 @@
     font-size: 1.35rem;
     font-weight: 700;
     color: #fff;
-  }
-
-  .fin-painel__card-arrow {
-    color: rgba(255, 255, 255, 0.9);
+    transition: opacity 220ms var(--fin-ease);
   }
 
   &--recebidos {
@@ -277,154 +298,19 @@
   color: #6b7280;
 }
 
-.fin-painel__chart {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.5rem 0.75rem;
-  min-height: 220px;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: var(--fin-card-radius);
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  box-sizing: border-box;
-}
-
-.fin-painel__chart-y {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 0.25rem 0 1.75rem;
-  font-size: 0.7rem;
-  color: #9ca3af;
-  text-align: right;
-  min-width: 2rem;
-}
-
-.fin-painel__chart-plot {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 180px;
+.fin-painel__block--chart {
   min-width: 0;
 }
 
-.fin-painel__chart-bars {
-  position: absolute;
-  inset: 0 0 1.5rem;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.35rem;
-  padding: 0 0.25rem;
-  pointer-events: none;
-}
-
-.fin-painel__chart-col {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.fin-painel__chart-bar {
-  width: min(28px, 80%);
-  border-radius: 4px 4px 0 0;
-  min-height: 2px;
-
-  &--entrada {
-    background: var(--fin-green);
-    opacity: 0.85;
+@keyframes finFocoIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
   }
-
-  &--vendas {
-    width: min(32px, 85%);
-    background: var(--fin-blue);
-    opacity: 0.9;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-}
-
-.fin-painel__chart-line-dot {
-  position: absolute;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  margin-left: -4px;
-  border-radius: 50%;
-  background: var(--fin-blue);
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px var(--fin-blue);
-  z-index: 2;
-}
-
-.fin-painel__chart-line {
-  position: absolute;
-  inset: 0 0 1.5rem;
-  width: 100%;
-  height: calc(100% - 1.5rem);
-  color: var(--fin-blue);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.fin-painel__chart-x {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.25rem;
-  margin: auto 0 0;
-  padding: 0.35rem 0 0;
-  list-style: none;
-  font-size: 0.7rem;
-  color: #9ca3af;
-
-  li {
-    flex: 1 1 0;
-    min-width: 0;
-    text-align: center;
-  }
-}
-
-.fin-painel__chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem 1.25rem;
-  margin: 0.65rem 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.8rem;
-  color: #6b7280;
-
-  li {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-}
-
-.fin-painel__legend-sq {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-
-  &--entrada {
-    background: var(--fin-green);
-  }
-
-  &--saida {
-    background: var(--fin-red);
-  }
-}
-
-.fin-painel__legend-line {
-  display: inline-block;
-  width: 18px;
-  height: 2px;
-  background: var(--fin-blue);
-  border-radius: 1px;
 }
 
 @media (max-width: 1100px) {
@@ -437,6 +323,20 @@
   }
 }
 
+@media (max-width: 900px) {
+  .fin-painel {
+    padding: 1.1rem 1.1rem 1.75rem;
+  }
+
+  .fin-painel__col-main {
+    gap: 1rem;
+  }
+
+  .fin-painel__block-head {
+    margin-bottom: 0.65rem;
+  }
+}
+
 @media (max-width: 640px) {
   .fin-painel {
     padding: 1rem;
@@ -444,5 +344,15 @@
 
   .fin-painel__totais-grid {
     grid-template-columns: 1fr;
+  }
+
+  .fin-painel__block--chart {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fin-painel__foco-badge {
+    animation: none;
   }
 }

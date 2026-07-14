@@ -1,11 +1,20 @@
 import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
-import { Component, LOCALE_ID, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  LOCALE_ID,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   mapFinTransacaoItemToUi,
+  type FinTransacaoLinhaUi,
 } from '../transacoes/fin-transacoes.mapper';
 import {
   ddMmYyyyToYmdFiltro,
@@ -18,6 +27,18 @@ import {
   ymdToDdMmYyyyFiltro,
   type FinTransacoesVisaoPreset,
 } from '../transacoes/fin-transacoes-filtro.util';
+import { FinFluxoCaixaChartComponent } from './charts/fin-fluxo-caixa-chart.component';
+import type {
+  FluxoDiaPonto,
+  VendasDiaPonto,
+} from './charts/fin-painel-charts.model';
+import {
+  construirSerieFluxo,
+  construirSerieVendas,
+  filtrarLinhasDoDia,
+  totaisDeLinhas,
+} from './charts/fin-painel-charts.util';
+import { FinVendasDiaChartComponent } from './charts/fin-vendas-dia-chart.component';
 
 registerLocaleData(localePt);
 
@@ -43,18 +64,15 @@ export interface FinPainelContaCard {
   valor: number;
 }
 
-/** Placeholder de barras no gráfico (0–100). */
-export interface FinPainelChartBar {
-  label: string;
-  entrada: number;
-  saida: number;
-  saldoPct: number;
-}
-
 @Component({
   selector: 'app-financeiro-painel',
   standalone: true,
-  imports: [CurrencyPipe, RouterLink],
+  imports: [
+    CurrencyPipe,
+    RouterLink,
+    FinFluxoCaixaChartComponent,
+    FinVendasDiaChartComponent,
+  ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro-painel.component.html',
   styleUrl: './financeiro-painel.component.scss',
@@ -97,7 +115,7 @@ export class FinanceiroPainelComponent implements OnInit {
     },
   ]);
 
-  readonly totais = signal<FinPainelMetricaCard[]>([
+  readonly totaisBase = signal<FinPainelMetricaCard[]>([
     {
       id: 'recebidos',
       titulo: 'Recebidos',
@@ -133,44 +151,82 @@ export class FinanceiroPainelComponent implements OnInit {
     { id: 'banco', titulo: 'Banco', valor: 0 },
   ]);
 
-  readonly fluxoBarras: FinPainelChartBar[] = [
-    { label: '07/05', entrada: 42, saida: 8, saldoPct: 38 },
-    { label: '09/05', entrada: 55, saida: 12, saldoPct: 48 },
-    { label: '11/05', entrada: 28, saida: 18, saldoPct: 52 },
-    { label: '13/05', entrada: 72, saida: 10, saldoPct: 58 },
-    { label: '15/05', entrada: 48, saida: 22, saldoPct: 62 },
-    { label: '17/05', entrada: 65, saida: 14, saldoPct: 70 },
-    { label: '19/05', entrada: 38, saida: 16, saldoPct: 74 },
-    { label: '21/05', entrada: 52, saida: 9, saldoPct: 78 },
-  ];
+  readonly serieFluxo = signal<FluxoDiaPonto[]>([]);
+  readonly serieVendas = signal<VendasDiaPonto[]>([]);
 
-  readonly vendasBarras: FinPainelChartBar[] = [
-    { label: '07/05', entrada: 120, saida: 0, saldoPct: 0 },
-    { label: '09/05', entrada: 85, saida: 0, saldoPct: 0 },
-    { label: '11/05', entrada: 200, saida: 0, saldoPct: 0 },
-    { label: '13/05', entrada: 160, saida: 0, saldoPct: 0 },
-    { label: '15/05', entrada: 95, saida: 0, saldoPct: 0 },
-    { label: '17/05', entrada: 180, saida: 0, saldoPct: 0 },
-    { label: '19/05', entrada: 140, saida: 0, saldoPct: 0 },
-    { label: '21/05', entrada: 210, saida: 0, saldoPct: 0 },
-  ];
+  /** Linhas do período (vencimento) para recalcular totais no cross-hover. */
+  private readonly linhasPeriodo = signal<FinTransacaoLinhaUi[]>([]);
+
+  /** Dia em foco (cross-hover entre gráficos). */
+  readonly activeDayYmd = signal<string | null>(null);
+
+  /**
+   * Totais exibidos: período completo ou agregados do dia em foco.
+   * `queryParams` / navegação permanecem os do período base.
+   */
+  readonly totais = computed(() => {
+    const base = this.totaisBase();
+    const ymd = this.activeDayYmd();
+    if (!ymd) return base;
+
+    const t = totaisDeLinhas(filtrarLinhasDoDia(this.linhasPeriodo(), ymd));
+    return base.map((card) => {
+      let valor = card.valor;
+      switch (card.id) {
+        case 'recebidos':
+          valor = t.recebidos;
+          break;
+        case 'a-receber':
+          valor = t.aReceber;
+          break;
+        case 'pagos':
+          valor = t.pagos;
+          break;
+        case 'a-pagar':
+          valor = t.aPagar;
+          break;
+      }
+      return { ...card, valor };
+    });
+  });
+
+  readonly focoDiaLabel = computed(() => {
+    const ymd = this.activeDayYmd();
+    if (!ymd) return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+    if (!m) return ymd;
+    return `${m[3]}/${m[2]}/${m[1]}`;
+  });
 
   ngOnInit(): void {
     this.carregarResumo();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.activeDayYmd.set(null);
   }
 
   periodoLabel(inicio: string, fim: string): string {
     return `${this.ymdParaDdMm(inicio)} — ${this.ymdParaDdMm(fim)}`;
   }
 
+  onChartHoverDay(ymd: string | null): void {
+    this.activeDayYmd.set(ymd);
+  }
+
   private carregarResumo(): void {
     const hoje = ymdHojeFiltro();
     const padrao = filtroPadraoTransacoes();
-    const diTotais = ddMmYyyyToYmdFiltro(padrao.dataInicio) ?? ymdHojeFiltro();
+    const diTotais = ddMmYyyyToYmdFiltro(padrao.dataInicio) ?? primeiroDiaMesYmdFiltro();
     const dfTotais = ddMmYyyyToYmdFiltro(padrao.dataFim) ?? ymdHojeFiltro();
+    /** Gráficos: do dia 1 do mês até hoje (não o fim do mês futuro). */
+    const diCharts = primeiroDiaMesYmdFiltro();
+    const dfCharts = hoje;
 
     this.carregando.set(true);
     this.erro.set(null);
+    this.activeDayYmd.set(null);
 
     forkJoin({
       hoje: this.api.listTransacoesFinanceiras({
@@ -181,14 +237,27 @@ export class FinanceiroPainelComponent implements OnInit {
         dataInicio: diTotais,
         dataFim: dfTotais,
       }),
+      fluxo: this.api
+        .listTransacoesFinanceiras({
+          dataInicio: diCharts,
+          dataFim: dfCharts,
+          tipoData: 'pagamento',
+        })
+        .pipe(catchError(() => of([]))),
+      vendas: this.api
+        .listAgendamentos(diCharts, dfCharts)
+        .pipe(catchError(() => of([]))),
     }).subscribe({
-      next: ({ hoje: itemsHoje, periodo: itemsPeriodo }) => {
+      next: ({ hoje: itemsHoje, periodo: itemsPeriodo, fluxo, vendas }) => {
         const linhasHoje = itemsHoje.map(mapFinTransacaoItemToUi);
         const linhasPeriodo = itemsPeriodo.map(mapFinTransacaoItemToUi);
+        const linhasFluxo = fluxo.map(mapFinTransacaoItemToUi);
         const periodoQuery = {
           dataInicio: padrao.dataInicio,
           dataFim: padrao.dataFim,
         };
+
+        this.linhasPeriodo.set(linhasPeriodo);
 
         this.resumoHoje.set([
           {
@@ -207,7 +276,7 @@ export class FinanceiroPainelComponent implements OnInit {
           },
         ]);
 
-        this.totais.set([
+        this.totaisBase.set([
           {
             id: 'recebidos',
             titulo: 'Recebidos',
@@ -238,8 +307,27 @@ export class FinanceiroPainelComponent implements OnInit {
           },
         ]);
 
+        this.serieFluxo.set(
+          construirSerieFluxo(linhasFluxo, {
+            inicioYmd: diCharts,
+            fimYmd: dfCharts,
+          }),
+        );
+        this.serieVendas.set(
+          construirSerieVendas(vendas, {
+            inicioYmd: diCharts,
+            fimYmd: dfCharts,
+          }),
+        );
+
+        const diDdMm = ymdToDdMmYyyyFiltro(diCharts);
+        const dfDdMm = ymdToDdMmYyyyFiltro(dfCharts);
         this.periodoTotaisInicio.set(padrao.dataInicio);
         this.periodoTotaisFim.set(padrao.dataFim);
+        this.periodoFluxoInicio.set(diDdMm);
+        this.periodoFluxoFim.set(dfDdMm);
+        this.periodoVendasInicio.set(diDdMm);
+        this.periodoVendasFim.set(dfDdMm);
         this.carregando.set(false);
       },
       error: (e: Error) => {

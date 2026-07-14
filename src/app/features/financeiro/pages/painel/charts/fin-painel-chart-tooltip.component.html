@@ -1,0 +1,90 @@
+@if (visible() && payload(); as tip) {
+  <div
+    class="fin-chart-tip"
+    role="tooltip"
+    [style.left]="style()['left']"
+    [style.top]="style()['top']"
+  >
+    @if (tip.kind === 'fluxo') {
+      <div class="fin-chart-tip__date">{{ labelData(tip.ponto.ymd) }}</div>
+      <dl class="fin-chart-tip__rows">
+        <div class="fin-chart-tip__row">
+          <dt>Entradas</dt>
+          <dd class="fin-chart-tip__pos">
+            {{ tip.ponto.entradas | currency: 'BRL' : 'symbol' : '1.2-2' }}
+          </dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Saídas</dt>
+          <dd class="fin-chart-tip__neg">
+            {{ tip.ponto.saidas | currency: 'BRL' : 'symbol' : '1.2-2' }}
+          </dd>
+        </div>
+        <div class="fin-chart-tip__row fin-chart-tip__row--accent">
+          <dt>Saldo acumulado</dt>
+          <dd>
+            {{ tip.ponto.saldoAcumulado | currency: 'BRL' : 'symbol' : '1.2-2' }}
+          </dd>
+        </div>
+        <div class="fin-chart-tip__sep" aria-hidden="true"></div>
+        <div class="fin-chart-tip__row">
+          <dt>Movimentações</dt>
+          <dd>{{ tip.ponto.qtdMovimentacoes }}</dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Recebido PIX</dt>
+          <dd>{{ tip.ponto.recebidoPix | currency: 'BRL' : 'symbol' : '1.2-2' }}</dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Recebido Cartão</dt>
+          <dd>
+            {{ tip.ponto.recebidoCartao | currency: 'BRL' : 'symbol' : '1.2-2' }}
+          </dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Recebido Dinheiro</dt>
+          <dd>
+            {{ tip.ponto.recebidoDinheiro | currency: 'BRL' : 'symbol' : '1.2-2' }}
+          </dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Recebimentos</dt>
+          <dd>{{ tip.ponto.qtdRecebimentos }}</dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Pagamentos</dt>
+          <dd>{{ tip.ponto.qtdPagamentos }}</dd>
+        </div>
+      </dl>
+    } @else {
+      <div class="fin-chart-tip__date">{{ labelData(tip.ponto.ymd) }}</div>
+      <dl class="fin-chart-tip__rows">
+        <div class="fin-chart-tip__row fin-chart-tip__row--accent">
+          <dt>Receita</dt>
+          <dd>
+            {{ tip.ponto.receita | currency: 'BRL' : 'symbol' : '1.2-2' }}
+          </dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Quantidade de vendas</dt>
+          <dd>{{ tip.ponto.qtdVendas }}</dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Ticket médio</dt>
+          <dd>
+            {{ tip.ponto.ticketMedio | currency: 'BRL' : 'symbol' : '1.2-2' }}
+          </dd>
+        </div>
+        <div class="fin-chart-tip__sep" aria-hidden="true"></div>
+        <div class="fin-chart-tip__row">
+          <dt>Melhor profissional</dt>
+          <dd>{{ tip.ponto.melhorProfissional || '—' }}</dd>
+        </div>
+        <div class="fin-chart-tip__row">
+          <dt>Serviço mais vendido</dt>
+          <dd>{{ tip.ponto.servicoMaisVendido || '—' }}</dd>
+        </div>
+      </dl>
+    }
+  </div>
+}

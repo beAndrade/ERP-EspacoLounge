@@ -1,0 +1,267 @@
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.fin-fluxo {
+  --fin-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fin-green: #22a06b;
+  --fin-red: #ef4444;
+  --fin-blue: #3b82f6;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.fin-fluxo__plot {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+  padding: 0.5rem 0.35rem 0.25rem;
+  border: 1px solid #e8eaef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-sizing: border-box;
+}
+
+.fin-fluxo__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 200px;
+  cursor: crosshair;
+  overflow: visible;
+}
+
+.fin-fluxo__grid {
+  stroke: #eef1f5;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.fin-fluxo__tick {
+  fill: #9ca3af;
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.fin-fluxo__xlabel {
+  fill: #9ca3af;
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.fin-fluxo__bar {
+  transform-origin: center bottom;
+  transform-box: fill-box;
+  transition:
+    opacity 280ms var(--fin-ease),
+    filter 280ms var(--fin-ease);
+
+  &--entrada {
+    fill: var(--fin-green);
+  }
+
+  &--saida {
+    fill: var(--fin-red);
+  }
+}
+
+.fin-fluxo--animated .fin-fluxo__bar {
+  animation: finBarGrow 700ms var(--fin-ease) both;
+}
+
+.fin-fluxo__col {
+  transition: opacity 280ms var(--fin-ease);
+
+  &--dim {
+    opacity: 0.28;
+  }
+
+  &--active {
+    opacity: 1;
+
+    .fin-fluxo__bar {
+      filter: brightness(1.05);
+    }
+  }
+}
+
+.fin-fluxo__line-wrap {
+  pointer-events: none;
+  transition: opacity 280ms var(--fin-ease);
+
+  &--dim {
+    opacity: 0.45;
+  }
+}
+
+.fin-fluxo__area {
+  opacity: 0;
+}
+
+.fin-fluxo--animated .fin-fluxo__area {
+  animation: finFadeIn 600ms var(--fin-ease) 180ms both;
+}
+
+.fin-fluxo__line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fin-fluxo--animated .fin-fluxo__line {
+  stroke-dasharray: 2400;
+  stroke-dashoffset: 2400;
+  animation: finDrawLine 1100ms var(--fin-ease) 80ms both;
+}
+
+.fin-fluxo__crosshair {
+  stroke: #94a3b8;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.fin-fluxo__marker {
+  fill: #fff;
+  stroke: var(--fin-blue);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.35));
+  transition: r 200ms var(--fin-ease);
+}
+
+.fin-fluxo__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-fluxo__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.fin-fluxo__sq {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+
+  &--entrada {
+    background: var(--fin-green);
+  }
+
+  &--saida {
+    background: var(--fin-red);
+  }
+}
+
+.fin-fluxo__line-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--fin-blue);
+}
+
+.fin-fluxo__empty {
+  margin: 0;
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+@keyframes finBarGrow {
+  from {
+    transform: scaleY(0);
+    opacity: 0.4;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes finDrawLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes finFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .fin-fluxo__plot {
+    padding: 0.35rem 0.15rem 0.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .fin-fluxo__plot {
+    border-radius: 12px;
+    padding: 0.25rem 0;
+  }
+
+  .fin-fluxo__legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.45rem;
+    padding-bottom: 0.15rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .fin-fluxo__chip {
+    flex: 0 0 auto;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    font-size: 0.72rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fin-fluxo--animated .fin-fluxo__bar,
+  .fin-fluxo--animated .fin-fluxo__line,
+  .fin-fluxo--animated .fin-fluxo__area {
+    animation: none;
+  }
+
+  .fin-fluxo--animated .fin-fluxo__line {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+
+  .fin-fluxo--animated .fin-fluxo__area {
+    opacity: 1;
+  }
+}

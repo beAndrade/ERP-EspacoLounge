@@ -1,0 +1,195 @@
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.fin-vendas {
+  --fin-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fin-blue: #3b82f6;
+  --fin-blue-deep: #2563eb;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.fin-vendas__plot {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  padding: 0.5rem 0.35rem 0.25rem;
+  border: 1px solid #e8eaef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-sizing: border-box;
+}
+
+.fin-vendas__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 180px;
+  overflow: visible;
+}
+
+.fin-vendas__grid {
+  stroke: #eef1f5;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.fin-vendas__tick,
+.fin-vendas__xlabel {
+  fill: #9ca3af;
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.fin-vendas__media {
+  stroke: #94a3b8;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.fin-vendas__media-label {
+  fill: #64748b;
+  font-size: 9.5px;
+  font-weight: 600;
+  font-family: inherit;
+  pointer-events: none;
+}
+
+.fin-vendas__bar {
+  fill: var(--fin-blue);
+  opacity: 0.9;
+  cursor: pointer;
+  transform-origin: center bottom;
+  transform-box: fill-box;
+  transition:
+    transform 260ms var(--fin-ease),
+    fill 260ms var(--fin-ease),
+    opacity 260ms var(--fin-ease),
+    filter 260ms var(--fin-ease);
+
+  &--above {
+    fill: var(--fin-blue-deep);
+    opacity: 1;
+  }
+
+  &--dim {
+    opacity: 0.28;
+  }
+
+  &--active {
+    opacity: 1;
+    fill: #1d4ed8;
+    transform: scaleY(1.04) scaleX(1.06);
+    filter: drop-shadow(0 6px 10px rgba(37, 99, 235, 0.28));
+  }
+}
+
+.fin-vendas--animated .fin-vendas__bar {
+  animation: finVendasGrow 700ms var(--fin-ease) both;
+}
+
+.fin-vendas__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-vendas__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.fin-vendas__sq {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--fin-blue);
+
+  &--above {
+    background: var(--fin-blue-deep);
+  }
+}
+
+.fin-vendas__media-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 0;
+  border-top: 2px dashed #94a3b8;
+}
+
+.fin-vendas__empty {
+  margin: 0;
+  padding: 3rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+@keyframes finVendasGrow {
+  from {
+    transform: scaleY(0);
+    opacity: 0.35;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 0.9;
+  }
+}
+
+@media (max-width: 900px) {
+  .fin-vendas__plot {
+    padding: 0.35rem 0.15rem 0.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .fin-vendas__plot {
+    border-radius: 12px;
+    padding: 0.25rem 0;
+  }
+
+  .fin-vendas__legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.45rem;
+    padding-bottom: 0.15rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .fin-vendas__chip {
+    flex: 0 0 auto;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    font-size: 0.72rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fin-vendas--animated .fin-vendas__bar {
+    animation: none;
+  }
+}
