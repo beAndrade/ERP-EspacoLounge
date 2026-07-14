@@ -82,19 +82,6 @@
   flex-wrap: wrap;
 }
 
-.fin-painel__foco-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #1d4ed8;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  animation: finFocoIn 220ms var(--fin-ease) both;
-}
-
 .fin-painel__block-head {
   display: flex;
   flex-wrap: wrap;
@@ -317,16 +304,11 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.35rem 0.55rem;
-    border: 1px solid #e5e7eb;
+    padding: 0.35rem 0.15rem;
+    border: none;
     border-radius: 8px;
-    background: #fff;
+    background: transparent;
     box-shadow: none;
-  }
-
-  ::ng-deep .periodo-filtro--bar-ativo .periodo-filtro__bar {
-    border-color: #93c5fd;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
   }
 
   ::ng-deep .periodo-filtro__inputs {

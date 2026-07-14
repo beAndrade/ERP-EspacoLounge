@@ -185,14 +185,6 @@ export class FinanceiroPainelComponent implements OnInit {
     });
   });
 
-  readonly focoDiaLabel = computed(() => {
-    const ymd = this.activeDayYmd();
-    if (!ymd) return null;
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
-    if (!m) return ymd;
-    return `${m[3]}/${m[2]}/${m[1]}`;
-  });
-
   ngOnInit(): void {
     this.destroyRef.onDestroy(() => {
       this.loadSub?.unsubscribe();

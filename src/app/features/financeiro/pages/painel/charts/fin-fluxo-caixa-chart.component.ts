@@ -128,13 +128,6 @@ export class FinFluxoCaixaChartComponent implements AfterViewInit, OnDestroy {
     return this.geom().bars[i]?.cx ?? null;
   });
 
-  readonly activeMarker = computed(() => {
-    const i = this.activeIndex();
-    if (i == null) return null;
-    const pt = this.geom().linePoints[i];
-    return pt ?? null;
-  });
-
   readonly hasData = computed(() =>
     this.series().some(
       (p) => p.entradas > 0 || p.saidas > 0 || p.qtdMovimentacoes > 0,
@@ -182,14 +175,11 @@ export class FinFluxoCaixaChartComponent implements AfterViewInit, OnDestroy {
     const g = this.geom();
     if (!g.bars.length) return;
 
+    /** Dia ativo = última linha (cx) à esquerda do cursor. */
     let best = 0;
-    let bestDist = Infinity;
     for (const b of g.bars) {
-      const d = Math.abs(b.cx - x);
-      if (d < bestDist) {
-        bestDist = d;
-        best = b.i;
-      }
+      if (b.cx <= x) best = b.i;
+      else break;
     }
 
     const ponto = serie[best];

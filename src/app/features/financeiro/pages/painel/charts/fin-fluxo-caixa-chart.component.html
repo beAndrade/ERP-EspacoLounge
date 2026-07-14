@@ -106,24 +106,6 @@
           />
         </g>
 
-        <!-- Crosshair + marker -->
-        @if (crosshairX() != null) {
-          <line
-            class="fin-fluxo__crosshair"
-            [attr.x1]="crosshairX()"
-            [attr.x2]="crosshairX()"
-            [attr.y1]="pad.t"
-            [attr.y2]="geom().plotBottom"
-          />
-        }
-        @if (activeMarker(); as mk) {
-          <circle
-            class="fin-fluxo__marker"
-            [attr.cx]="mk.x"
-            [attr.cy]="mk.y"
-            r="6"
-          />
-        }
       } @else if (zeroLineY() != null) {
         <!-- Linha de saldo em zero quando não há movimentação -->
         <line
@@ -132,6 +114,23 @@
           [attr.x2]="width() - pad.r"
           [attr.y1]="zeroLineY()"
           [attr.y2]="zeroLineY()"
+        />
+      }
+
+      <!-- Crosshair sólido + marcador na base (com ou sem movimentação) -->
+      @if (crosshairX() != null) {
+        <line
+          class="fin-fluxo__crosshair"
+          [attr.x1]="crosshairX()"
+          [attr.x2]="crosshairX()"
+          [attr.y1]="pad.t"
+          [attr.y2]="geom().plotBottom"
+        />
+        <circle
+          class="fin-fluxo__marker"
+          [attr.cx]="crosshairX()"
+          [attr.cy]="geom().plotBottom"
+          r="5"
         />
       }
 
