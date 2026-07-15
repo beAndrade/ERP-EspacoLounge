@@ -52,6 +52,49 @@ function periodoPadraoUltimos15Dias(): { inicio: string; fim: string } {
   return { inicio: toYmd(inicio), fim: toYmd(fim) };
 }
 
+/**
+ * Local do salão para o clima (Open-Meteo, sem chave de API).
+ * Ajuste `cidade`/`latitude`/`longitude` se o salão mudar de endereço.
+ */
+const SALAO_LOCAL = {
+  cidade: 'Rio das Ostras',
+  latitude: -22.5269,
+  longitude: -41.945,
+} as const;
+
+interface PainelClimaVm {
+  tempC: number;
+  emoji: string;
+  descricao: string;
+}
+
+interface PainelSaudacaoVm {
+  emoji: string;
+  texto: string;
+}
+
+/** Saudação por faixa horária (05–11:59 manhã, 12–17:59 tarde, resto noite). */
+function saudacaoPorHora(hora: number): PainelSaudacaoVm {
+  if (hora >= 5 && hora < 12) return { emoji: '🌅', texto: 'Bom dia' };
+  if (hora >= 12 && hora < 18) return { emoji: '☀️', texto: 'Boa tarde' };
+  return { emoji: '🌙', texto: 'Boa noite' };
+}
+
+/** Traduz o `weather_code` (WMO) do Open-Meteo em emoji + descrição PT-BR. */
+function descreverClimaWmo(code: number): { emoji: string; descricao: string } {
+  if (code === 0) return { emoji: '☀️', descricao: 'Céu limpo' };
+  if (code === 1 || code === 2) return { emoji: '🌤️', descricao: 'Parcialmente nublado' };
+  if (code === 3) return { emoji: '☁️', descricao: 'Nublado' };
+  if (code === 45 || code === 48) return { emoji: '🌫️', descricao: 'Neblina' };
+  if (code >= 51 && code <= 57) return { emoji: '🌦️', descricao: 'Garoa' };
+  if (code >= 61 && code <= 67) return { emoji: '🌧️', descricao: 'Chuva' };
+  if (code >= 71 && code <= 77) return { emoji: '🌨️', descricao: 'Neve' };
+  if (code >= 80 && code <= 82) return { emoji: '🌧️', descricao: 'Pancadas de chuva' };
+  if (code >= 85 && code <= 86) return { emoji: '🌨️', descricao: 'Pancadas de neve' };
+  if (code >= 95) return { emoji: '⛈️', descricao: 'Tempestade' };
+  return { emoji: '🌡️', descricao: 'Tempo estável' };
+}
+
 @Component({
   selector: 'app-painel',
   standalone: true,
@@ -77,7 +120,6 @@ export class PainelComponent implements OnInit {
   readonly sessao = inject(SessaoUsuarioService);
   readonly ctx = inject(PainelDashboardContextService);
 
-  readonly filtroAberto = signal(false);
   readonly carregandoCards = signal(false);
 
   readonly faturamento = signal<PainelFaturamentoCardVm>(emptyFaturamentoCardVm());
@@ -101,6 +143,38 @@ export class PainelComponent implements OnInit {
   private loadSub: Subscription | null = null;
   private skipNextNavReload = true;
 
+  /** Relógio "ao vivo": atualizado só quando o minuto muda (evita CD por segundo). */
+  readonly relogio = signal(new Date());
+  readonly clima = signal<PainelClimaVm | null>(null);
+  readonly cidadeLocal = SALAO_LOCAL.cidade;
+
+  private relogioTimer: ReturnType<typeof setInterval> | null = null;
+  private climaTimer: ReturnType<typeof setInterval> | null = null;
+
+  readonly saudacao = computed(() => saudacaoPorHora(this.relogio().getHours()));
+
+  readonly horaLabel = computed(() =>
+    new Intl.DateTimeFormat('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(this.relogio()),
+  );
+
+  readonly dataCompletaLabel = computed(() => {
+    const texto = new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(this.relogio());
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  });
+
+  readonly primeiroNome = computed(() => {
+    const nome = this.sessao.nomeExibicao().trim();
+    return nome.split(/\s+/)[0] || nome;
+  });
+
   readonly focoLabel = computed(() => {
     const ymd = this.ctx.highlightedYmd();
     if (!ymd) return '';
@@ -110,7 +184,11 @@ export class PainelComponent implements OnInit {
   readonly contextoAtivo = computed(() => !!this.ctx.highlightedYmd());
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.loadSub?.unsubscribe());
+    this.destroyRef.onDestroy(() => {
+      this.loadSub?.unsubscribe();
+      if (this.relogioTimer) clearInterval(this.relogioTimer);
+      if (this.climaTimer) clearInterval(this.climaTimer);
+    });
   }
 
   @HostListener('document:keydown.escape')
@@ -120,6 +198,10 @@ export class PainelComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregarCards();
+    this.iniciarRelogio();
+    this.carregarClima();
+    /** Atualiza o clima a cada 15 min. */
+    this.climaTimer = setInterval(() => this.carregarClima(), 15 * 60 * 1000);
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -135,24 +217,44 @@ export class PainelComponent implements OnInit {
       });
   }
 
-  nomeUsuario(): string {
-    return this.sessao.nomeExibicao();
+  /** Verifica o relógio a cada segundo, mas só emite quando o minuto muda. */
+  private iniciarRelogio(): void {
+    let ultimoMinuto = this.horaLabel();
+    this.relogioTimer = setInterval(() => {
+      const agora = new Date();
+      const label = new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(agora);
+      if (label !== ultimoMinuto) {
+        ultimoMinuto = label;
+        this.relogio.set(agora);
+      }
+    }, 1000);
   }
 
-  labelPeriodoFiltro(): string {
-    const a = ymdExibicaoBelasis(this.periodoInicio);
-    const b = ymdExibicaoBelasis(this.periodoFim);
-    if (!a || !b) return 'Selecionar período';
-    return `${a} ➔ ${b}`;
-  }
-
-  hojeLabel(): string {
-    const texto = new Intl.DateTimeFormat('pt-BR', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-    }).format(new Date());
-    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  /** Busca a temperatura atual no Open-Meteo (API pública, sem chave). */
+  private async carregarClima(): Promise<void> {
+    const { latitude, longitude } = SALAO_LOCAL;
+    const url =
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}` +
+      `&longitude=${longitude}&current=temperature_2m,weather_code&timezone=auto`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const temp = data?.current?.temperature_2m;
+      const code = data?.current?.weather_code;
+      if (typeof temp !== 'number') return;
+      const meta = descreverClimaWmo(Number(code));
+      this.clima.set({
+        tempC: Math.round(temp),
+        emoji: meta.emoji,
+        descricao: meta.descricao,
+      });
+    } catch {
+      /** Silencioso: clima é informativo e não deve quebrar o painel. */
+    }
   }
 
   formatMoeda(valor: number): string {
@@ -162,21 +264,15 @@ export class PainelComponent implements OnInit {
     }).format(valor);
   }
 
-  toggleFiltro(): void {
-    this.filtroAberto.update((v) => !v);
-  }
-
-  abrirFiltro(): void {
-    this.filtroAberto.set(true);
-  }
-
   atualizar(): void {
     this.carregarCards();
   }
 
   onPeriodoAlterado(): void {
-    /** Período guardado para séries futuras; reload dos cards de hoje. */
-    this.carregarCards();
+    /**
+     * Período controla apenas a seção "Análise do período" (séries dos gráficos).
+     * Os cards de cima continuam sempre no dia de hoje, então não recarregam aqui.
+     */
   }
 
   /**

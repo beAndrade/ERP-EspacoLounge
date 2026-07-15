@@ -119,19 +119,22 @@
 
 .painel-smart-card__icon {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.15rem;
-  height: 2.15rem;
+  display: grid;
+  place-items: center;
+  place-content: center;
+  width: 40px;
+  height: 40px;
+  line-height: 0;
   border-radius: 999px;
   color: var(--psc-blue);
   background: #eef0ff;
 
-  :ng-deep svg {
+  ::ng-deep svg {
     display: block;
-    width: 16px;
-    height: 16px;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    margin: 0;
   }
 }
 

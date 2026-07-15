@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
 import { AuthService } from './auth.service';
 
 /**
@@ -8,8 +8,19 @@ import { AuthService } from './auth.service';
 export class SessaoUsuarioService {
   private readonly auth = inject(AuthService);
 
+  /** Nome completo para exibição — reativo à sessão (`auth.user`). */
+  readonly nomeExibicaoSignal = computed(
+    () => this.auth.user()?.nome_exibicao?.trim() || 'usuário',
+  );
+
+  /** Primeiro nome do utilizador logado. */
+  readonly primeiroNome = computed(() => {
+    const nome = this.nomeExibicaoSignal();
+    return nome.split(/\s+/)[0] || nome;
+  });
+
   nomeExibicao(): string {
-    return this.auth.user()?.nome_exibicao?.trim() || 'usuário';
+    return this.nomeExibicaoSignal();
   }
 
   role(): 'admin' | 'profissional' | null {

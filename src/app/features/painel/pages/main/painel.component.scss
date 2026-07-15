@@ -40,7 +40,97 @@
   margin-left: auto;
 }
 
-.painel-head__btn-atualizar {
+/* ── Cabeçalho de boas-vindas ─────────────────────────────── */
+.painel-welcome {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.painel-welcome__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.painel-welcome__hello {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.painel-welcome__emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.painel-welcome__date {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--painel-muted, #6b7280);
+}
+
+.painel-welcome__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.painel-welcome__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--painel-border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel-welcome__chip-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.painel-welcome__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .painel-welcome {
+    padding: 1rem 1.1rem;
+  }
+
+  .painel-welcome__hello {
+    font-size: 1.35rem;
+  }
+}
+
+/** Precisa bater a especificidade de `.list-head__toolbar-btn:hover:not(...)` do shell. */
+.list-head__toolbar-btn.painel-head__btn-atualizar {
   border-color: var(--painel-blue);
   background: var(--painel-blue);
   color: #fff;
@@ -50,9 +140,9 @@
     color: #fff;
   }
 
-  &:hover:not(:disabled) {
-    border-color: #7b82fc;
-    background: #7b82fc;
+  &:hover:not(:disabled):not(.list-head__toolbar-btn--filtro-on):not(.list-head__toolbar-btn--link) {
+    border-color: #7a88ff;
+    background: #7a88ff;
     color: #fff;
 
     svg {
@@ -89,19 +179,6 @@
   gap: 0.2rem;
 }
 
-.painel-section-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.15rem;
-}
-
-.painel-section-kicker__date {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #9ca3af;
-}
-
 .painel-section-title {
   margin: 0;
   font-size: 1.15rem;
@@ -110,120 +187,13 @@
   letter-spacing: -0.01em;
 }
 
-.painel-section-hint {
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #9ca3af;
-  max-width: 36rem;
-}
+.painel-periodo-wrap {
+  /** Sublinhado deslizante azul, filtro inline sem card/aside (igual ao Painel Financeiro). */
+  --color-primary: var(--painel-blue, #505afb);
+  --periodo-field-line: 3.5px;
 
-.painel-today-chip {
+  position: relative;
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: var(--painel-blue-soft, #eef0ff);
-  color: var(--painel-blue, #505afb);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.painel-periodo-chip-label {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: #f3f4f6;
-  color: #6b7280;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.painel-periodo-chip {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--painel-border, #f1f2f9);
-  border-radius: 10px;
-  background: #fff;
-  color: #374151;
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: var(--painel-shadow, 0 0 10px 2px #f3f3f3);
-  transition:
-    border-color 0.25s ease,
-    box-shadow 0.25s ease,
-    color 0.25s ease;
-
-  &:hover {
-    border-color: var(--painel-border-hover, #e4e7f5);
-    box-shadow: var(--painel-shadow-hover);
-    color: var(--painel-blue, #505afb);
-  }
-}
-
-.painel-periodo-chip__icon {
-  flex: 0 0 auto;
-  color: var(--painel-blue, #505afb);
-}
-
-.painel-periodo-chip__text {
-  white-space: nowrap;
-}
-
-.painel-info {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  flex: 0 0 auto;
-}
-
-.painel-filtros {
-  align-self: stretch;
-  min-height: 100%;
-  background: #fff;
-}
-
-.painel-filtros__card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding: 0.85rem 0.9rem 1rem;
-  border: 1px solid #f1f2f9;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 0 10px 2px #f3f3f3;
-  overflow: hidden;
-}
-
-.painel-filtros__card-head {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.painel-filtros__card-title {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #374151;
-}
-
-.painel-filtros__periodo {
-  width: 100%;
   min-width: 0;
 
   app-cliente-drawer-periodo-filtro {
@@ -231,30 +201,68 @@
     width: 100%;
   }
 
-  ::ng-deep .periodo-filtro--belasis {
-    .periodo-filtro__field--inicio,
-    .periodo-filtro__field--fim {
-      &::before {
-        display: block;
-        margin-bottom: 0.2rem;
-        font-size: 0.72rem;
-        font-weight: 600;
-        color: #9ca3af;
-        letter-spacing: 0.01em;
-      }
-    }
+  ::ng-deep .periodo-filtro__underline-slide {
+    transition:
+      left 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.24s ease,
+      background-color 0.22s ease;
+  }
 
-    .periodo-filtro__field--inicio::before {
-      content: 'Data inicial';
-    }
+  ::ng-deep .periodo-filtro__bar {
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    padding: 0.1rem 0.15rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
 
-    .periodo-filtro__field--fim::before {
-      content: 'Data final';
-    }
+  ::ng-deep .periodo-filtro__inputs {
+    --periodo-input-w: 6.1rem;
+    --periodo-sep-w: 1.6rem;
+    --periodo-gap: 0.25rem;
 
-    .periodo-filtro__inputs {
-      gap: 0.85rem;
-    }
+    align-items: center;
+    align-self: center;
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: 0;
+  }
+
+  ::ng-deep .periodo-filtro__field {
+    flex: 0 0 var(--periodo-input-w);
+    width: var(--periodo-input-w);
+    padding-bottom: 0.2rem;
+  }
+
+  ::ng-deep .periodo-filtro__input {
+    width: 100%;
+    padding: 0.1rem 0 0.2rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #374151;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  ::ng-deep .periodo-filtro__sep {
+    align-self: center;
+    margin-bottom: 0.2rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  ::ng-deep .periodo-filtro__cal-btn {
+    flex: 0 0 auto;
+    align-self: center;
+    width: 26px;
+    height: 26px;
+    margin-bottom: 0.2rem;
+    color: #6b7280;
   }
 }
 
