@@ -64,47 +64,85 @@
 .painel-section {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1rem;
   min-width: 0;
+}
+
+.painel-section--periodo {
+  margin-top: 0.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e8eaf3;
 }
 
 .painel-section-head {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
 .painel-section-head__titles {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.painel-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+
+.painel-section-kicker__date {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #9ca3af;
 }
 
 .painel-section-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: #374151;
+  color: #1f2937;
+  letter-spacing: -0.01em;
 }
 
 .painel-section-hint {
-  margin: 0.1rem 0 0;
-  font-size: 0.8rem;
+  margin: 0;
+  font-size: 0.82rem;
   font-weight: 500;
   color: #9ca3af;
+  max-width: 36rem;
 }
 
 .painel-today-chip {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
   background: var(--painel-blue-soft, #eef0ff);
   color: var(--painel-blue, #505afb);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.painel-periodo-chip-label {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -112,31 +150,33 @@
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   margin: 0;
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 0.9rem;
   border: 1px solid var(--painel-border, #f1f2f9);
-  border-radius: 999px;
+  border-radius: 10px;
   background: #fff;
-  color: #6b7280;
+  color: #374151;
   font: inherit;
   font-size: 0.88rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: var(--painel-shadow, 0 0 10px 2px #f3f3f3);
   transition:
     border-color 0.25s ease,
     box-shadow 0.25s ease,
     color 0.25s ease;
 
   &:hover {
-    color: #374151;
     border-color: var(--painel-border-hover, #e4e7f5);
-    box-shadow: var(--painel-shadow, 0 0 10px 2px #f3f3f3);
-
-    .painel-info {
-      color: var(--painel-blue);
-    }
+    box-shadow: var(--painel-shadow-hover);
+    color: var(--painel-blue, #505afb);
   }
+}
+
+.painel-periodo-chip__icon {
+  flex: 0 0 auto;
+  color: var(--painel-blue, #505afb);
 }
 
 .painel-periodo-chip__text {
@@ -221,9 +261,9 @@
 .painel-body {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 2rem;
   min-width: 0;
-  padding-top: 0.5rem;
+  padding-top: 0.35rem;
 }
 
 .painel-smart-grid {

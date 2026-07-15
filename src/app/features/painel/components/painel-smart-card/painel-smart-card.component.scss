@@ -7,8 +7,9 @@
 .painel-smart-card {
   --psc-blue: var(--painel-blue, #505afb);
   --psc-collapsed-h: 168px;
-  --psc-ease: var(--painel-ease, cubic-bezier(0.22, 1, 0.36, 1));
-  --psc-dur: var(--painel-dur, 420ms);
+  /* Ease que comeca suave (sem “pop” no inicio). */
+  --psc-ease: cubic-bezier(0.33, 0.1, 0.25, 1);
+  --psc-dur: 520ms;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -20,34 +21,29 @@
   background: #fff;
   border: 1px solid var(--painel-border, #f1f2f9);
   box-shadow: var(--painel-shadow, 0 0 10px 2px #f3f3f3);
+  /* Mantem overflow hidden sempre — troca hidden↔visible causa “pop”. */
   overflow: hidden;
   cursor: pointer;
   transition:
-    transform var(--psc-dur) var(--psc-ease),
     box-shadow var(--psc-dur) var(--psc-ease),
     border-color var(--psc-dur) var(--psc-ease);
-  will-change: transform;
 
   &:hover,
   &:focus-within {
-    transform: translateY(-4px) scale(1.01);
     border-color: var(--painel-border-hover, #e4e7f5);
     box-shadow: var(--painel-shadow-hover);
     z-index: 5;
-    overflow: visible;
 
     .painel-smart-card__reveal {
       grid-template-rows: 1fr;
       opacity: 1;
       pointer-events: auto;
       margin-top: 0.55rem;
+      padding-bottom: 0.15rem;
     }
 
     .painel-smart-card__spark {
-      grid-template-rows: 0fr;
-      opacity: 0;
-      margin: 0;
-      pointer-events: none;
+      opacity: 0.35;
     }
   }
 
@@ -155,19 +151,10 @@
   position: relative;
   z-index: 2;
   margin-top: auto;
-  display: grid;
-  grid-template-rows: 1fr;
+  min-height: 2.5rem;
   opacity: 1;
-  transition:
-    opacity var(--psc-dur) var(--psc-ease),
-    grid-template-rows var(--psc-dur) var(--psc-ease),
-    margin var(--psc-dur) var(--psc-ease);
+  transition: opacity var(--psc-dur) var(--psc-ease);
   pointer-events: auto;
-
-  > * {
-    min-height: 0;
-    overflow: hidden;
-  }
 }
 
 .painel-smart-card__reveal {
@@ -177,11 +164,12 @@
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
+  margin-top: 0;
   pointer-events: none;
   transition:
-    opacity var(--psc-dur) var(--psc-ease),
     grid-template-rows var(--psc-dur) var(--psc-ease),
-    margin var(--psc-dur) var(--psc-ease);
+    opacity calc(var(--psc-dur) * 0.7) var(--psc-ease),
+    margin-top var(--psc-dur) var(--psc-ease);
 }
 
 .painel-smart-card__reveal-inner {
@@ -225,19 +213,17 @@
 @media (prefers-reduced-motion: reduce) {
   .painel-smart-card {
     transition:
-      border-color var(--psc-dur) var(--psc-ease),
-      box-shadow var(--psc-dur) var(--psc-ease);
-
-    &:hover,
-    &:focus-within {
-      transform: none;
-    }
+      border-color 120ms ease,
+      box-shadow 120ms ease;
   }
 
   .painel-smart-card__reveal,
   .painel-smart-card__spark {
-    transition:
-      opacity var(--psc-dur) var(--psc-ease),
-      grid-template-rows var(--psc-dur) var(--psc-ease);
+    transition: none;
+  }
+
+  .painel-smart-card:hover .painel-smart-card__reveal,
+  .painel-smart-card:focus-within .painel-smart-card__reveal {
+    opacity: 1;
   }
 }

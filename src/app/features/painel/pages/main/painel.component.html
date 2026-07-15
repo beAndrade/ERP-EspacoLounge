@@ -7,10 +7,10 @@
         <div class="list-filtros-drawer__inner">
           <div class="painel-filtros__card">
             <div class="painel-filtros__card-head">
-              <h2 class="painel-filtros__card-title">Período</h2>
+              <h2 class="painel-filtros__card-title">Período dos gráficos</h2>
               <span
                 class="painel-info"
-                title="Intervalo reservado às séries dos gráficos (API futura). Agenda e caixa usam o dia de hoje nesta fase."
+                title="Este intervalo controla apenas a seção Análise do período. Os cards de cima continuam mostrando o dia de hoje."
                 aria-label="Sobre o período"
               >
                 <svg
@@ -58,34 +58,6 @@
             <div class="list-head__actions painel-head__actions">
               <button
                 type="button"
-                class="list-head__toolbar-btn"
-                [class.list-head__toolbar-btn--filtro-on]="filtroAberto()"
-                (click)="toggleFiltro()"
-                aria-label="Filtrar"
-                [attr.aria-expanded]="filtroAberto()"
-                title="Filtrar"
-              >
-                <svg
-                  class="list-icon-sm list-icon-sm--funnel"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-                  />
-                </svg>
-                <span class="list-head__toolbar-label">Filtrar</span>
-              </button>
-              <button
-                type="button"
                 class="list-head__toolbar-btn painel-head__btn-atualizar"
                 (click)="atualizar()"
                 aria-label="Atualizar"
@@ -115,13 +87,18 @@
       </div>
 
       <div class="painel-body">
-        <section class="painel-section" aria-label="Resumo de hoje">
+        <section class="painel-section painel-section--hoje" aria-label="Resumo de hoje">
           <header class="painel-section-head">
             <div class="painel-section-head__titles">
-              <h2 class="painel-section-title">Resumo de hoje</h2>
-              <p class="painel-section-hint">{{ hojeLabel() }}</p>
+              <div class="painel-section-kicker">
+                <span class="painel-today-chip">Hoje</span>
+                <span class="painel-section-kicker__date">{{ hojeLabel() }}</span>
+              </div>
+              <h2 class="painel-section-title">Resumo operacional</h2>
+              <p class="painel-section-hint">
+                Valores do dia atual — independentes do período dos gráficos
+              </p>
             </div>
-            <span class="painel-today-chip">Hoje</span>
           </header>
 
           <div class="painel-smart-grid" aria-label="Resumo operacional">
@@ -449,12 +426,15 @@
           </div>
         </section>
 
-        <section class="painel-section" aria-label="Análise do período">
+        <section class="painel-section painel-section--periodo" aria-label="Análise do período">
           <header class="painel-section-head">
             <div class="painel-section-head__titles">
+              <div class="painel-section-kicker">
+                <span class="painel-periodo-chip-label">Período</span>
+              </div>
               <h2 class="painel-section-title">Análise do período</h2>
               <p class="painel-section-hint">
-                Séries e gráficos do intervalo selecionado
+                Gráficos e séries do intervalo selecionado abaixo
               </p>
             </div>
             <button
@@ -464,24 +444,25 @@
               [attr.aria-expanded]="filtroAberto()"
               title="Alterar período dos gráficos"
             >
+              <svg
+                class="painel-periodo-chip__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                <line x1="16" x2="16" y1="2" y2="6" />
+                <line x1="8" x2="8" y1="2" y2="6" />
+                <line x1="3" x2="21" y1="10" y2="10" />
+              </svg>
               <span class="painel-periodo-chip__text">{{ labelPeriodoFiltro() }}</span>
-              <span class="painel-info" aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4" />
-                  <path d="M12 8h.01" />
-                </svg>
-              </span>
             </button>
           </header>
 
