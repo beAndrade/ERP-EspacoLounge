@@ -22,6 +22,7 @@ import { EstoqueComponent } from './features/estoque/pages/main/estoque.componen
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
 import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
 import { ComandasComponent } from './features/comandas/pages/main/comandas.component';
+import { PainelComponent } from './features/painel/pages/main/painel.component';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 
@@ -31,7 +32,7 @@ export const routes: Routes = [
   { path: '', component: HomeComponent, canActivate: [authGuard] },
   {
     path: 'painel',
-    component: EmBreveComponent,
+    component: PainelComponent,
     canActivate: [authGuard],
     data: { titulo: 'Painel' },
   },

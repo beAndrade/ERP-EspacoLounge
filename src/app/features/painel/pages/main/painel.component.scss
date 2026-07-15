@@ -1,0 +1,367 @@
+@use '../../../../styles/list-page-shell';
+@use '../../styles/painel-dashboard.tokens';
+
+.painel {
+  width: 100%;
+  min-width: 0;
+}
+
+.painel-layout {
+  align-items: flex-start;
+  min-height: min(92vh, 1200px);
+}
+
+.painel-layout__main {
+  padding-bottom: 2.75rem;
+}
+
+.painel-head__row {
+  min-height: 54px;
+  padding-top: 5px;
+  padding-bottom: 15px;
+  box-sizing: border-box;
+}
+
+.painel-head__hello {
+  margin: 0;
+  color: #585858;
+  font-size: 24px;
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.painel-head__actions {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.painel-head__btn-atualizar {
+  border-color: var(--painel-blue);
+  background: var(--painel-blue);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(80, 90, 251, 0.25);
+
+  svg {
+    color: #fff;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: #7b82fc;
+    background: #7b82fc;
+    color: #fff;
+
+    svg {
+      color: #fff;
+    }
+  }
+}
+
+.painel-head__periodo-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.15rem 0 8px;
+  padding: 8px 0;
+  border-radius: 12px;
+  border: 1px solid #f1f2f9;
+  background: #ffffff;
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.painel-periodo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.15rem 0.2rem;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    color: #374151;
+
+    .painel-info {
+      color: var(--painel-blue);
+    }
+  }
+}
+
+.painel-periodo-chip__text {
+  white-space: nowrap;
+}
+
+.painel-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  flex: 0 0 auto;
+}
+
+.painel-filtros {
+  align-self: stretch;
+  min-height: 100%;
+  background: #fff;
+}
+
+.painel-filtros__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.85rem 0.9rem 1rem;
+  border: 1px solid #f1f2f9;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 0 10px 2px #f3f3f3;
+  overflow: hidden;
+}
+
+.painel-filtros__card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.painel-filtros__card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.painel-filtros__periodo {
+  width: 100%;
+  min-width: 0;
+
+  app-cliente-drawer-periodo-filtro {
+    display: block;
+    width: 100%;
+  }
+
+  ::ng-deep .periodo-filtro--belasis {
+    .periodo-filtro__field--inicio,
+    .periodo-filtro__field--fim {
+      &::before {
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #9ca3af;
+        letter-spacing: 0.01em;
+      }
+    }
+
+    .periodo-filtro__field--inicio::before {
+      content: 'Data inicial';
+    }
+
+    .periodo-filtro__field--fim::before {
+      content: 'Data final';
+    }
+
+    .periodo-filtro__inputs {
+      gap: 0.85rem;
+    }
+  }
+}
+
+.painel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  min-width: 0;
+  padding-top: 0.5rem;
+}
+
+.painel-smart-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1.15rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.painel-card-metric-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.5rem;
+  min-width: 0;
+}
+
+.painel-card-metric-unit {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.painel-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.painel-reveal__divider {
+  height: 1px;
+  margin: 0.2rem 0;
+  background: #f1f2f9;
+}
+
+.painel-reveal__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 13px;
+  color: #6b7280;
+
+  strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &--dots {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: end;
+    gap: 0.35rem;
+  }
+}
+
+.painel-reveal__dots {
+  border-bottom: 1px dotted #d1d5db;
+  min-width: 0.75rem;
+  margin-bottom: 0.2rem;
+}
+
+.painel-reveal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.painel-reveal__list li {
+  display: grid;
+  grid-template-columns: 3.1rem minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: baseline;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.painel-reveal__hora {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #111827;
+}
+
+.painel-reveal__nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.painel-reveal__ok {
+  color: #059669;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.painel-reveal__empty {
+  margin: 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.painel-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.painel-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border-radius: var(--painel-radius);
+  background: #fff;
+  border: 1px solid var(--painel-border);
+  box-shadow: var(--painel-shadow);
+  box-sizing: border-box;
+  /** Painéis grandes NÃO expandem — só elementos internos. */
+  overflow: hidden;
+}
+
+.painel-panel--wide {
+  grid-column: span 3;
+}
+
+.painel-panel__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.painel-panel__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.painel-panel__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+@media (max-width: 1400px) {
+  .painel-smart-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .painel-smart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .painel-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .painel-panel--wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .painel-smart-grid {
+    grid-template-columns: 1fr;
+  }
+}

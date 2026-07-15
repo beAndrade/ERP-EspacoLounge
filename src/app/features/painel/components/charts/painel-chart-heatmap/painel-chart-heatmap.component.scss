@@ -1,0 +1,47 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.painel-chart-heatmap__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+  gap: 4px;
+  min-height: 160px;
+  align-content: start;
+}
+
+.painel-chart-heatmap__cell {
+  aspect-ratio: 1;
+  min-height: 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: color-mix(
+    in srgb,
+    #505afb calc(var(--heat, 0) * 100%),
+    #eef0ff
+  );
+  transition:
+    transform 160ms ease,
+    filter 160ms ease,
+    background 160ms ease;
+
+  &--active {
+    transform: scale(1.12);
+    filter: brightness(1.08);
+  }
+}
+
+.painel-chart__empty {
+  margin: 0;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}

@@ -1,0 +1,18 @@
+<div class="painel-chart painel-chart-pie" (mouseleave)="onLeave()">
+  @if (hasData()) {
+    <svg viewBox="0 0 160 160" class="painel-chart__svg" role="img" aria-label="Gráfico de pizza">
+      @for (s of slices(); track s.i) {
+        <path
+          class="painel-chart-pie__slice"
+          [class.painel-chart-pie__slice--active]="activeIndex() === s.i"
+          [attr.d]="s.d"
+          [attr.fill]="s.color"
+          (mouseenter)="onEnter($event, s.i)"
+          (mousemove)="onMove($event)"
+        />
+      }
+    </svg>
+  } @else {
+    <p class="painel-chart__empty">Sem dados no período</p>
+  }
+</div>

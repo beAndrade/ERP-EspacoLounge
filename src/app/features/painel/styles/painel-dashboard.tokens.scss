@@ -1,0 +1,41 @@
+/** Tokens e utilitários visuais do dashboard premium. */
+:root,
+.painel {
+  --painel-blue: #505afb;
+  --painel-blue-soft: #eef0ff;
+  --painel-purple: #7c6bf0;
+  --painel-radius: 12px;
+  --painel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --painel-dur: 280ms;
+  --painel-shadow: 0 0 10px 2px #f3f3f3;
+  --painel-shadow-hover:
+    0 14px 32px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(80, 90, 251, 0.08);
+  --painel-border: #f1f2f9;
+  --painel-border-hover: #e4e7f5;
+  --painel-text: #111827;
+  --painel-muted: #6b7280;
+  --painel-up: #059669;
+  --painel-down: #dc2626;
+}
+
+.painel-enter {
+  animation: painelEnter var(--painel-dur) var(--painel-ease) both;
+  animation-delay: calc(var(--painel-i, 0) * 50ms);
+}
+
+@keyframes painelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .painel-enter {
+    animation: none;
+  }
+}

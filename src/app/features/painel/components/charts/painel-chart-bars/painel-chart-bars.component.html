@@ -1,0 +1,29 @@
+<div class="painel-chart painel-chart-bars" (mouseleave)="onLeave()">
+  @if (hasData()) {
+    <svg
+      class="painel-chart__svg"
+      [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
+      role="img"
+      aria-label="Gráfico de barras"
+    >
+      @for (b of bars(); track b.i) {
+        <rect
+          class="painel-chart-bars__bar"
+          [class.painel-chart-bars__bar--dim]="
+            activeIndex() != null && activeIndex() !== b.i
+          "
+          [attr.x]="b.x"
+          [attr.y]="b.y"
+          [attr.width]="b.w"
+          [attr.height]="b.h"
+          [attr.fill]="color()"
+          rx="4"
+          (mouseenter)="onEnter($event, b.i)"
+          (mousemove)="onMove($event)"
+        />
+      }
+    </svg>
+  } @else {
+    <p class="painel-chart__empty">Sem dados no período</p>
+  }
+</div>

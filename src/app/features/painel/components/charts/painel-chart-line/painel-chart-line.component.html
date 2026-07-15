@@ -1,0 +1,41 @@
+<div class="painel-chart painel-chart-line" (mouseleave)="onLeave()">
+  @if (hasData()) {
+    <svg
+      class="painel-chart__svg"
+      [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
+      role="img"
+      aria-label="Gráfico de linha"
+    >
+      <polyline
+        class="painel-chart-line__path"
+        fill="none"
+        [attr.stroke]="color()"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        [attr.points]="polyline()"
+      />
+      @for (pt of plot(); track pt.i) {
+        <circle
+          class="painel-chart-line__hit"
+          [attr.cx]="pt.x"
+          [attr.cy]="pt.y"
+          r="10"
+          fill="transparent"
+          (mouseenter)="onEnter($event, pt.i)"
+          (mousemove)="onMove($event)"
+        />
+        <circle
+          class="painel-chart-line__dot"
+          [class.painel-chart-line__dot--active]="activeIndex() === pt.i"
+          [attr.cx]="pt.x"
+          [attr.cy]="pt.y"
+          [attr.r]="activeIndex() === pt.i ? 5 : 3"
+          [attr.fill]="color()"
+        />
+      }
+    </svg>
+  } @else {
+    <p class="painel-chart__empty">Sem dados no período</p>
+  }
+</div>

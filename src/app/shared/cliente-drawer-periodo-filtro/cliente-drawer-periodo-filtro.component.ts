@@ -74,7 +74,8 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   /** `belasis`: `27 mai, 2026` + barra só com borda inferior. */
   exibicaoFormato = input<'padrao' | 'belasis'>('padrao');
 
-  periodoAlterado = output<void>();
+  /** Emite o intervalo confirmado (YMD) para o pai não depender só do two-way binding. */
+  periodoAlterado = output<{ inicioYmd: string; fimYmd: string }>();
 
   /** Posição viewport do painel flutuante (`top`/`left` em px). */
   panelPos: { top: number; left: number } | null = null;
@@ -214,7 +215,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     this.presetHoverId = null;
     this.hoverYmd = null;
     this.ancorarMesesNoIntervalo();
-    this.periodoAlterado.emit();
+    this.emitPeriodoAlterado();
     this.fecharPainel();
   }
 
@@ -273,7 +274,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     const norm = normalizarIntervaloYmd(ini, fim);
     this.inicioYmd.set(norm.inicioYmd);
     this.fimYmd.set(norm.fimYmd);
-    this.periodoAlterado.emit();
+    this.emitPeriodoAlterado();
     this.fecharPainel();
   }
 
@@ -519,5 +520,13 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
       return;
     }
     this.mesEsquerda = inicioDoMes(new Date());
+  }
+
+  private emitPeriodoAlterado(): void {
+    const norm = normalizarIntervaloYmd(this.inicioYmd(), this.fimYmd());
+    this.periodoAlterado.emit({
+      inicioYmd: norm.inicioYmd,
+      fimYmd: norm.fimYmd,
+    });
   }
 }

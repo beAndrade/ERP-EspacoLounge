@@ -1,0 +1,61 @@
+<div class="painel-sparkline" [style.--spark-color]="color()">
+  @if (hasSeries()) {
+    <svg
+      class="painel-sparkline__svg"
+      [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
+      preserveAspectRatio="none"
+      role="img"
+      aria-label="Tendência no período"
+    >
+      <polyline
+        class="painel-sparkline__line"
+        fill="none"
+        [attr.stroke]="'currentColor'"
+        stroke-width="2.25"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        [attr.points]="polylinePoints()"
+      />
+      @for (p of plot(); track p.point.ymd + '-' + $index) {
+        <circle
+          class="painel-sparkline__hit"
+          [attr.cx]="p.cx"
+          [attr.cy]="p.cy"
+          r="6"
+          fill="transparent"
+          (mouseenter)="onPointEnter($event, p)"
+          (mousemove)="onPointMove($event)"
+          (mouseleave)="onPointLeave()"
+        />
+        <circle
+          class="painel-sparkline__dot"
+          [attr.cx]="p.cx"
+          [attr.cy]="p.cy"
+          r="2.25"
+          fill="currentColor"
+          aria-hidden="true"
+        />
+      }
+    </svg>
+  } @else {
+    <div class="painel-sparkline__empty" aria-hidden="true">
+      <svg
+        class="painel-sparkline__svg"
+        [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
+        preserveAspectRatio="none"
+      >
+        <line
+          class="painel-sparkline__baseline"
+          [attr.x1]="padX"
+          [attr.x2]="vbW - padX"
+          [attr.y1]="vbH / 2"
+          [attr.y2]="vbH / 2"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-dasharray="3 4"
+        />
+      </svg>
+    </div>
+  }
+</div>

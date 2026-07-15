@@ -1,0 +1,243 @@
+:host {
+  display: block;
+  min-width: 0;
+  height: auto;
+}
+
+.painel-smart-card {
+  --psc-blue: var(--painel-blue, #505afb);
+  --psc-collapsed-h: 168px;
+  --psc-ease: var(--painel-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  --psc-dur: var(--painel-dur, 280ms);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: auto;
+  min-height: var(--psc-collapsed-h);
+  max-height: var(--psc-collapsed-h);
+  padding: 1.1rem 1.15rem 0.95rem;
+  border-radius: var(--painel-radius, 12px);
+  background: #fff;
+  border: 1px solid var(--painel-border, #f1f2f9);
+  box-shadow: var(--painel-shadow, 0 0 10px 2px #f3f3f3);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform var(--psc-dur) var(--psc-ease),
+    box-shadow var(--psc-dur) var(--psc-ease),
+    border-color var(--psc-dur) var(--psc-ease),
+    max-height var(--psc-dur) var(--psc-ease);
+  will-change: transform, max-height;
+
+  &:hover,
+  &:focus-within {
+    transform: translateY(-4px) scale(1.01);
+    border-color: var(--painel-border-hover, #e4e7f5);
+    box-shadow: var(--painel-shadow-hover);
+    z-index: 5;
+    max-height: 420px;
+    overflow: visible;
+
+    .painel-smart-card__reveal {
+      opacity: 1;
+      max-height: 220px;
+      transform: translateY(0);
+      pointer-events: auto;
+      margin-top: 0.55rem;
+    }
+
+    .painel-smart-card__spark {
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      pointer-events: none;
+    }
+  }
+
+  &--contexto {
+    border-color: color-mix(in srgb, var(--psc-blue) 45%, #f1f2f9);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--psc-blue) 18%, transparent),
+      var(--painel-shadow);
+  }
+
+  &--disabled {
+    cursor: default;
+    opacity: 0.72;
+    pointer-events: none;
+  }
+
+  &--link:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--psc-blue) 45%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+.painel-smart-card__hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+
+.painel-smart-card__head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  pointer-events: none;
+}
+
+.painel-smart-card__titles {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.painel-smart-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #374151;
+}
+
+.painel-smart-card__subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #9ca3af;
+  line-height: 1.3;
+}
+
+.painel-smart-card__foco {
+  display: inline-flex;
+  margin-top: 0.25rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: var(--painel-blue-soft, #eef0ff);
+  color: var(--psc-blue);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.painel-smart-card__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 999px;
+  color: var(--psc-blue);
+  background: #eef0ff;
+
+  :ng-deep svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.painel-smart-card__value {
+  position: relative;
+  z-index: 2;
+  margin-top: 0.85rem;
+  min-height: 2.15rem;
+  pointer-events: none;
+
+  :ng-deep .painel-metric-value {
+    font-size: 1.85rem;
+  }
+}
+
+.painel-smart-card__spark {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  min-height: 2.5rem;
+  max-height: 2.5rem;
+  overflow: hidden;
+  transition:
+    opacity var(--psc-dur) var(--psc-ease),
+    max-height var(--psc-dur) var(--psc-ease),
+    margin var(--psc-dur) var(--psc-ease);
+  pointer-events: auto;
+}
+
+.painel-smart-card__reveal {
+  position: relative;
+  z-index: 3;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition:
+    opacity var(--psc-dur) var(--psc-ease),
+    transform var(--psc-dur) var(--psc-ease),
+    max-height var(--psc-dur) var(--psc-ease),
+    margin var(--psc-dur) var(--psc-ease);
+}
+
+.painel-smart-card__reveal-body {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #4b5563;
+}
+
+.painel-smart-card__cta {
+  position: relative;
+  z-index: 4;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--psc-blue);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    color: #7a88ff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .painel-smart-card {
+    transition:
+      border-color var(--psc-dur) var(--psc-ease),
+      box-shadow var(--psc-dur) var(--psc-ease),
+      max-height var(--psc-dur) var(--psc-ease);
+
+    &:hover,
+    &:focus-within {
+      transform: none;
+    }
+  }
+
+  .painel-smart-card__reveal,
+  .painel-smart-card__spark {
+    transition: opacity var(--psc-dur) var(--psc-ease), max-height var(--psc-dur) var(--psc-ease);
+  }
+
+  .painel-smart-card:hover .painel-smart-card__reveal,
+  .painel-smart-card:focus-within .painel-smart-card__reveal {
+    transform: none;
+  }
+}

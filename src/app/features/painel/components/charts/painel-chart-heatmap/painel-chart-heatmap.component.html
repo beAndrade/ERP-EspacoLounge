@@ -1,0 +1,19 @@
+<div class="painel-chart painel-chart-heatmap" (mouseleave)="onLeave()">
+  @if (hasData()) {
+    <div class="painel-chart-heatmap__grid">
+      @for (c of cells(); track c.key) {
+        <button
+          type="button"
+          class="painel-chart-heatmap__cell"
+          [class.painel-chart-heatmap__cell--active]="activeKey() === c.key"
+          [style.--heat]="c.intensity"
+          (mouseenter)="onEnter($event, c.key, c.i)"
+          (mousemove)="onMove($event)"
+          [attr.aria-label]="c.dia + ' ' + c.hora"
+        ></button>
+      }
+    </div>
+  } @else {
+    <p class="painel-chart__empty">Sem dados no período</p>
+  }
+</div>

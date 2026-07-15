@@ -729,7 +729,7 @@
   max-height: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 0 12px 0 8px;
+  padding: 0 15px;
   box-sizing: border-box;
   overflow-x: clip;
   overflow-y: auto;
@@ -952,7 +952,7 @@
   }
 
   .main {
-    padding: 0 8px 0.5rem 6px;
+    padding: 0 15px 0.5rem;
 
     &.main--agenda-hub {
       --hub-main-pad-left: 0;

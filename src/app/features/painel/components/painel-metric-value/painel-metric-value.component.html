@@ -1,0 +1,9 @@
+<span
+  class="painel-metric-value"
+  [class.painel-metric-value--updating]="isUpdating()"
+  [class.painel-metric-value--up]="flashTone() === 'up'"
+  [class.painel-metric-value--down]="flashTone() === 'down'"
+  [attr.aria-label]="displayText()"
+>
+  {{ displayText() }}
+</span>

@@ -1,0 +1,17 @@
+@if (visible() && payload(); as tip) {
+  <div
+    class="painel-chart-tooltip"
+    role="tooltip"
+    [style.left]="style()['left']"
+    [style.top]="style()['top']"
+  >
+    <div class="painel-chart-tooltip__date">{{ tip.dataLabel }}</div>
+    <div class="painel-chart-tooltip__value">{{ tip.valorLabel }}</div>
+    @if (tip.deltaLabel) {
+      <div class="painel-chart-tooltip__delta">{{ tip.deltaLabel }}</div>
+    }
+    @if (tip.nota) {
+      <div class="painel-chart-tooltip__nota">{{ tip.nota }}</div>
+    }
+  </div>
+}

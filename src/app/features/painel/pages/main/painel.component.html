@@ -1,0 +1,521 @@
+<div class="painel list-page">
+  <app-painel-chart-tooltip />
+
+  <div class="list-layout painel-layout">
+    @if (filtroAberto()) {
+      <aside class="list-filtros-drawer painel-filtros" aria-label="Filtros do painel">
+        <div class="list-filtros-drawer__inner">
+          <div class="painel-filtros__card">
+            <div class="painel-filtros__card-head">
+              <h2 class="painel-filtros__card-title">Período</h2>
+              <span
+                class="painel-info"
+                title="Intervalo reservado às séries dos gráficos (API futura). Agenda e caixa usam o dia de hoje nesta fase."
+                aria-label="Sobre o período"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+              </span>
+            </div>
+            <div class="painel-filtros__periodo">
+              <app-cliente-drawer-periodo-filtro
+                exibicaoFormato="belasis"
+                [painelFlutuante]="true"
+                [semBackdropEscuro]="true"
+                [(inicioYmd)]="periodoInicio"
+                [(fimYmd)]="periodoFim"
+                (periodoAlterado)="onPeriodoAlterado()"
+              />
+            </div>
+          </div>
+        </div>
+      </aside>
+    }
+
+    <div class="list-layout__main painel-layout__main">
+      <div class="list-page__lead">
+        <header class="list-head painel-head">
+          <div class="list-head__title-row painel-head__row">
+            <div class="list-head__left">
+              <h1 class="list-head__title painel-head__hello">
+                Olá, {{ nomeUsuario() }}
+              </h1>
+            </div>
+            <div class="list-head__actions painel-head__actions">
+              <button
+                type="button"
+                class="list-head__toolbar-btn"
+                [class.list-head__toolbar-btn--filtro-on]="filtroAberto()"
+                (click)="toggleFiltro()"
+                aria-label="Filtrar"
+                [attr.aria-expanded]="filtroAberto()"
+                title="Filtrar"
+              >
+                <svg
+                  class="list-icon-sm list-icon-sm--funnel"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+                  />
+                </svg>
+                <span class="list-head__toolbar-label">Filtrar</span>
+              </button>
+              <button
+                type="button"
+                class="list-head__toolbar-btn painel-head__btn-atualizar"
+                (click)="atualizar()"
+                aria-label="Atualizar"
+                title="Atualizar"
+              >
+                <svg
+                  class="list-icon-sm"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                <span class="list-head__toolbar-label">Atualizar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="painel-head__periodo-row">
+            <button
+              type="button"
+              class="painel-periodo-chip"
+              (click)="abrirFiltro()"
+              [attr.aria-expanded]="filtroAberto()"
+              title="Alterar período do filtro"
+            >
+              <span class="painel-periodo-chip__text">{{ labelPeriodoFiltro() }}</span>
+              <span class="painel-info" aria-hidden="true">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </header>
+      </div>
+
+      <div class="painel-body">
+        <section class="painel-smart-grid" aria-label="Resumo operacional">
+          <!-- Receitas -->
+          <app-painel-smart-card
+            class="painel-enter"
+            style="--painel-i: 0"
+            title="Receitas"
+            subtitle="Hoje"
+            link="/financeiro/painel"
+            ctaLabel="Ver financeiro"
+            ctaLink="/financeiro/painel"
+            [contextoAtivo]="contextoAtivo()"
+            [focoLabel]="focoLabel()"
+          >
+            <svg
+              painelCardIcon
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" x2="12" y1="2" y2="22" />
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+            <app-painel-metric-value
+              painelCardValue
+              [value]="faturamento().total"
+              format="currency"
+              [delta]="faturamento().vsOntemPct"
+            />
+            <app-painel-sparkline
+              painelCardSpark
+              [points]="faturamento().spark"
+              color="#505afb"
+            />
+            <div painelCardReveal class="painel-reveal">
+              <div class="painel-reveal__row">
+                <span>Receita</span>
+                <strong>{{
+                  faturamento().total != null
+                    ? formatMoeda(faturamento().total!)
+                    : '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Despesas</span>
+                <strong>{{
+                  faturamento().despesas != null
+                    ? formatMoeda(faturamento().despesas!)
+                    : '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Lucro</span>
+                <strong>{{
+                  faturamento().lucro != null
+                    ? formatMoeda(faturamento().lucro!)
+                    : '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Ticket médio</span>
+                <strong>{{
+                  faturamento().ticketMedio != null
+                    ? formatMoeda(faturamento().ticketMedio!)
+                    : '—'
+                }}</strong>
+              </div>
+              @if (faturamento().metodos.length > 0) {
+                <div class="painel-reveal__divider"></div>
+                @for (m of faturamento().metodos; track m.rotulo) {
+                  <div class="painel-reveal__row painel-reveal__row--dots">
+                    <span>{{ m.rotulo }}</span>
+                    <span class="painel-reveal__dots" aria-hidden="true"></span>
+                    <strong>{{ formatMoeda(m.valor) }}</strong>
+                  </div>
+                }
+              }
+            </div>
+          </app-painel-smart-card>
+
+          <!-- Agenda -->
+          <app-painel-smart-card
+            class="painel-enter"
+            style="--painel-i: 1"
+            title="Agenda de hoje"
+            subtitle="Próximos atendimentos"
+            link="/agenda"
+            ctaLabel="Ver agenda"
+            ctaLink="/agenda"
+            [contextoAtivo]="contextoAtivo()"
+            [focoLabel]="focoLabel()"
+          >
+            <svg
+              painelCardIcon
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+              <line x1="16" x2="16" y1="2" y2="6" />
+              <line x1="8" x2="8" y1="2" y2="6" />
+              <line x1="3" x2="21" y1="10" y2="10" />
+            </svg>
+            <div painelCardValue class="painel-card-metric-wrap">
+              <app-painel-metric-value
+                [value]="agenda().total"
+                format="integer"
+              />
+              @if (agenda().total != null) {
+                <span class="painel-card-metric-unit">{{
+                  agenda().total === 1 ? 'atendimento' : 'atendimentos'
+                }}</span>
+              }
+            </div>
+            <app-painel-sparkline
+              painelCardSpark
+              [points]="agenda().spark"
+              color="#7c6bf0"
+            />
+            <div painelCardReveal class="painel-reveal">
+              @if (agenda().proximos.length > 0) {
+                <ul class="painel-reveal__list">
+                  @for (item of agenda().proximos; track item.hora + item.nome) {
+                    <li>
+                      <span class="painel-reveal__hora">{{ item.hora }}</span>
+                      <span class="painel-reveal__nome">{{ item.nome }}</span>
+                      @if (item.confirmado) {
+                        <span class="painel-reveal__ok" aria-label="Confirmado"
+                          >✔</span
+                        >
+                      }
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="painel-reveal__empty">Nenhum atendimento</p>
+              }
+            </div>
+          </app-painel-smart-card>
+
+          <!-- Clientes -->
+          <app-painel-smart-card
+            class="painel-enter"
+            style="--painel-i: 2"
+            title="Clientes"
+            subtitle="Relacionamento"
+            link="/clientes"
+            ctaLabel="Ver clientes"
+            ctaLink="/clientes"
+            [contextoAtivo]="contextoAtivo()"
+            [focoLabel]="focoLabel()"
+          >
+            <svg
+              painelCardIcon
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <app-painel-metric-value
+              painelCardValue
+              [value]="clientes().total"
+              format="integer"
+            />
+            <app-painel-sparkline
+              painelCardSpark
+              [points]="clientes().spark"
+              color="#505afb"
+            />
+            <div painelCardReveal class="painel-reveal">
+              <div class="painel-reveal__row">
+                <span>Clientes novos</span>
+                <strong>{{
+                  clientes().novosSemana != null ? clientes().novosSemana : '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Aniversariantes</span>
+                <strong>{{
+                  clientes().aniversariosHoje != null
+                    ? clientes().aniversariosHoje
+                    : '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Inativos</span>
+                <strong>{{
+                  clientes().inativos != null ? clientes().inativos : '—'
+                }}</strong>
+              </div>
+            </div>
+          </app-painel-smart-card>
+
+          <!-- Profissionais -->
+          <app-painel-smart-card
+            class="painel-enter"
+            style="--painel-i: 3"
+            title="Profissionais"
+            subtitle="Ranking"
+            link="/profissionais"
+            ctaLabel="Ver profissionais"
+            ctaLink="/profissionais"
+            [contextoAtivo]="contextoAtivo()"
+            [focoLabel]="focoLabel()"
+          >
+            <svg
+              painelCardIcon
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <polyline points="16 11 18 13 22 9" />
+            </svg>
+            <app-painel-metric-value
+              painelCardValue
+              [value]="profissionais().total"
+              format="integer"
+            />
+            <app-painel-sparkline
+              painelCardSpark
+              [points]="profissionais().spark"
+              color="#7c6bf0"
+            />
+            <div painelCardReveal class="painel-reveal">
+              <div class="painel-reveal__row">
+                <span>Maior faturamento</span>
+                <strong>{{
+                  profissionais().maiorFaturamentoLabel || '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Maior comissão</span>
+                <strong>{{ profissionais().maiorComissaoLabel || '—' }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Mais atendimentos</span>
+                <strong>{{
+                  profissionais().maisAtendimentosLabel || '—'
+                }}</strong>
+              </div>
+            </div>
+          </app-painel-smart-card>
+
+          <!-- Estoque -->
+          <app-painel-smart-card
+            class="painel-enter"
+            style="--painel-i: 4"
+            title="Estoque"
+            subtitle="Produtos"
+            link="/estoque"
+            ctaLabel="Ver estoque"
+            ctaLink="/estoque"
+            [contextoAtivo]="contextoAtivo()"
+            [focoLabel]="focoLabel()"
+          >
+            <svg
+              painelCardIcon
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m7.5 4.27 9 5.15" />
+              <path
+                d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+              />
+              <path d="m3.3 7 8.7 5 8.7-5" />
+              <path d="M12 22V12" />
+            </svg>
+            <app-painel-metric-value
+              painelCardValue
+              [value]="estoque().total"
+              format="integer"
+            />
+            <app-painel-sparkline
+              painelCardSpark
+              [points]="estoque().spark"
+              color="#7c6bf0"
+            />
+            <div painelCardReveal class="painel-reveal">
+              <div class="painel-reveal__row">
+                <span>Produtos críticos</span>
+                <strong>{{
+                  estoque().criticos != null ? estoque().criticos : '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Acabando</span>
+                <strong>{{
+                  estoque().alertaBaixo != null ? estoque().alertaBaixo : '—'
+                }}</strong>
+              </div>
+              <div class="painel-reveal__row">
+                <span>Mais vendido</span>
+                <strong>{{ estoque().maisVendidosLabel || '—' }}</strong>
+              </div>
+            </div>
+          </app-painel-smart-card>
+        </section>
+
+        <section class="painel-charts-grid" aria-label="Análises">
+          <article class="painel-panel painel-enter" style="--painel-i: 5">
+            <header class="painel-panel__head">
+              <h2 class="painel-panel__title">Tendência</h2>
+              <p class="painel-panel__hint">Agendamentos no período</p>
+            </header>
+            <app-painel-chart-line [series]="charts().tendencia" />
+          </article>
+
+          <article class="painel-panel painel-enter" style="--painel-i: 6">
+            <header class="painel-panel__head">
+              <h2 class="painel-panel__title">Status</h2>
+              <p class="painel-panel__hint">Distribuição</p>
+            </header>
+            <app-painel-chart-pie [series]="charts().status" />
+          </article>
+
+          <article class="painel-panel painel-enter" style="--painel-i: 7">
+            <header class="painel-panel__head">
+              <h2 class="painel-panel__title">Funil</h2>
+              <p class="painel-panel__hint">Conversão operacional</p>
+            </header>
+            <app-painel-chart-funnel [series]="charts().funil" />
+          </article>
+
+          <article
+            class="painel-panel painel-panel--wide painel-enter"
+            style="--painel-i: 8"
+          >
+            <header class="painel-panel__head">
+              <h2 class="painel-panel__title">Ocupação</h2>
+              <p class="painel-panel__hint">Heatmap dia × horário</p>
+            </header>
+            <app-painel-chart-heatmap [series]="charts().heatmap" />
+          </article>
+
+          <article
+            class="painel-panel painel-panel--wide painel-enter"
+            style="--painel-i: 9"
+          >
+            <header class="painel-panel__head">
+              <h2 class="painel-panel__title">Profissionais</h2>
+              <p class="painel-panel__hint">Ranking por atendimento</p>
+            </header>
+            <app-painel-chart-bars [series]="charts().rankingProfissionais" />
+          </article>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>

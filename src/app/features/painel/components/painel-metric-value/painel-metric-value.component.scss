@@ -1,0 +1,27 @@
+.painel-metric-value {
+  display: inline-block;
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #111827;
+  transition: color 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &--updating {
+    color: #505afb;
+  }
+
+  &--updating.painel-metric-value--up {
+    color: #059669;
+  }
+
+  &--updating.painel-metric-value--down {
+    color: #dc2626;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .painel-metric-value {
+    transition: none;
+  }
+}

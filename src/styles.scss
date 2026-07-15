@@ -55,6 +55,29 @@
   box-sizing: border-box;
 }
 
+/**
+ * Scrollbar padrão de toda a aplicação: fino e discreto.
+ * Firefox via `scrollbar-*`; Chromium/WebKit via `::-webkit-scrollbar`.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+}
+
 html {
   width: 100%;
   margin: 0;
