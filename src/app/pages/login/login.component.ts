@@ -26,7 +26,7 @@ export class LoginComponent implements OnInit {
   ngOnInit(): void {
     this.avaliarModalSessaoExpirada();
     if (this.auth.bootstrapped() && this.auth.isLoggedIn()) {
-      void this.router.navigate(['/agenda']);
+      void this.router.navigate(['/painel']);
     }
   }
 
@@ -47,7 +47,7 @@ export class LoginComponent implements OnInit {
     this.auth.login(email, senha).subscribe({
       next: () => {
         this.carregando = false;
-        void this.router.navigate(['/agenda']);
+        void this.router.navigate(['/painel']);
       },
       error: (e: unknown) => {
         this.carregando = false;

@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './pages/home/home.component';
 import { LoginComponent } from './pages/login/login.component';
 import { AgendaComponent } from './features/agenda/pages/main/agenda.component';
 import { AgendaHubComponent } from './features/agenda/pages/hub/agenda-hub.component';
@@ -29,7 +28,7 @@ import { adminGuard } from './core/guards/admin.guard';
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'agendar', component: AgendarPublicoComponent },
-  { path: '', component: HomeComponent, canActivate: [authGuard] },
+  { path: '', pathMatch: 'full', redirectTo: 'painel' },
   {
     path: 'painel',
     component: PainelComponent,
@@ -159,5 +158,5 @@ export const routes: Routes = [
       { path: 'cadastros', component: FinanceiroCadastrosComponent },
     ],
   },
-  { path: '**', redirectTo: '' },
+  { path: '**', redirectTo: 'painel' },
 ];

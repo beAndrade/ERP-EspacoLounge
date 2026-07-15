@@ -1,0 +1,98 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.painel-ticket__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+}
+
+.painel-ticket__label {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.painel-ticket__value {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.15;
+}
+
+.painel-ticket__vs {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.painel-ticket__delta {
+  font-weight: 600;
+  color: #111827;
+
+  &--up {
+    color: #059669;
+  }
+
+  &--down {
+    color: #dc2626;
+  }
+
+  &--muted {
+    color: #9ca3af;
+    font-weight: 500;
+  }
+}
+
+.painel-ticket__chart-wrap {
+  border-top: 1px solid #f1f2f9;
+  padding-top: 0.85rem;
+}
+
+.painel-ticket__chart-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.painel-ticket__chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.painel-ticket__tick {
+  font-size: 9px;
+  fill: #9ca3af;
+}
+
+.painel-ticket__bar {
+  fill: #e5e7eb;
+
+  &--atual {
+    fill: #34d399;
+  }
+}
+
+.painel-ticket__bar-label {
+  font-size: 9px;
+  fill: #6b7280;
+}
+
+.painel-ticket__empty {
+  margin: 0;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}

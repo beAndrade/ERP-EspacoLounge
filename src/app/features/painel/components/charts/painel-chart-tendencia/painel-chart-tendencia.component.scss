@@ -1,0 +1,82 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+
+.painel-tend {
+  height: 100%;
+}
+
+.painel-tend__plot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  box-sizing: border-box;
+}
+
+.painel-tend__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.painel-tend__grid {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.painel-tend__axis {
+  stroke: #d1d5db;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.painel-tend__tick,
+.painel-tend__xlabel {
+  fill: #9ca3af;
+  font-size: 11px;
+  font-family: inherit;
+}
+
+.painel-tend__band {
+  fill: transparent;
+  cursor: pointer;
+
+  &--active {
+    fill: #f3f4f6;
+  }
+}
+
+.painel-tend__bar {
+  opacity: 0.92;
+  pointer-events: none;
+  transform-origin: center bottom;
+  transform-box: fill-box;
+  transition:
+    opacity 200ms ease,
+    filter 200ms ease;
+
+  &--active {
+    opacity: 1;
+    filter: drop-shadow(0 4px 8px rgba(80, 90, 251, 0.28));
+  }
+}
+
+.painel-tend__empty {
+  margin: 0;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}

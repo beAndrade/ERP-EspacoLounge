@@ -15,9 +15,26 @@ import { AppToastService } from './app-toast.service';
         <span
           class="app-toast__icon"
           [class.app-toast__icon--warning]="t.variant === 'warning'"
+          [class.app-toast__icon--info]="t.variant === 'info'"
           aria-hidden="true"
         >
-          @if (t.variant === 'warning') {
+          @if (t.variant === 'info') {
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" x2="12" y1="8" y2="12" />
+              <line x1="12" x2="12.01" y1="16" y2="16" />
+            </svg>
+          } @else if (t.variant === 'warning') {
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="14"
@@ -101,6 +118,11 @@ import { AppToastService } from './app-toast.service';
 
       .app-toast__icon--warning {
         background: #f59e0b;
+        color: #fff;
+      }
+
+      .app-toast__icon--info {
+        background: #505afb;
         color: #fff;
       }
 

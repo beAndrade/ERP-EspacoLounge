@@ -1,0 +1,87 @@
+<div class="painel-tend" (mouseleave)="onLeave()">
+  <div #plot class="painel-tend__plot">
+    @if (hasData()) {
+      <svg
+        class="painel-tend__svg"
+        [attr.viewBox]="'0 0 ' + width() + ' ' + height()"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label="Tendência de agendamentos por dia"
+      >
+        @for (g of gridLines(); track g.value) {
+          <line
+            class="painel-tend__grid"
+            [attr.x1]="pad.l"
+            [attr.x2]="width() - pad.r"
+            [attr.y1]="g.y"
+            [attr.y2]="g.y"
+          />
+          <text
+            class="painel-tend__tick"
+            [attr.x]="pad.l - 8"
+            [attr.y]="g.y + 4"
+            text-anchor="end"
+          >
+            {{ g.value }}
+          </text>
+        }
+
+        <line
+          class="painel-tend__axis"
+          [attr.x1]="pad.l"
+          [attr.x2]="pad.l"
+          [attr.y1]="pad.t"
+          [attr.y2]="plotBottom()"
+        />
+        <line
+          class="painel-tend__axis"
+          [attr.x1]="pad.l"
+          [attr.x2]="width() - pad.r"
+          [attr.y1]="plotBottom()"
+          [attr.y2]="plotBottom()"
+        />
+
+        <g class="painel-tend__bars">
+          @for (b of bars(); track b.i) {
+            <rect
+              class="painel-tend__band"
+              [class.painel-tend__band--active]="activeIndex() === b.i"
+              [attr.x]="b.slotX"
+              [attr.y]="pad.t"
+              [attr.width]="b.slotW"
+              [attr.height]="innerH()"
+              (mouseenter)="onEnter($event, b.i)"
+              (mousemove)="onMove($event)"
+            />
+            @if (b.h > 0) {
+              <rect
+                class="painel-tend__bar"
+                [class.painel-tend__bar--active]="activeIndex() === b.i"
+                [attr.x]="b.x"
+                [attr.y]="b.y"
+                [attr.width]="b.w"
+                [attr.height]="b.h"
+                rx="4"
+                ry="4"
+                [attr.fill]="color()"
+              />
+            }
+          }
+        </g>
+
+        @for (xl of xLabels(); track xl.x) {
+          <text
+            class="painel-tend__xlabel"
+            [attr.x]="xl.x"
+            [attr.y]="height() - 8"
+            text-anchor="middle"
+          >
+            {{ xl.label }}
+          </text>
+        }
+      </svg>
+    } @else {
+      <p class="painel-tend__empty">Sem dados no período</p>
+    }
+  </div>
+</div>

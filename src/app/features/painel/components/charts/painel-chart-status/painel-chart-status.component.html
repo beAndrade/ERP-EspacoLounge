@@ -1,0 +1,50 @@
+<div class="painel-status" (mouseleave)="onLeave()">
+  @if (hasData()) {
+    <div class="painel-status__donut">
+      <svg viewBox="0 0 160 160" role="img" aria-label="Agendamentos por status">
+        <circle
+          class="painel-status__track"
+          [attr.cx]="cx"
+          [attr.cy]="cy"
+          [attr.r]="r"
+          fill="none"
+          [attr.stroke-width]="stroke"
+        />
+        <g [attr.transform]="'rotate(-90 ' + cx + ' ' + cy + ')'">
+          @for (a of arcs(); track a.i) {
+            <circle
+              class="painel-status__arc"
+              [class.painel-status__arc--active]="activeIndex() === a.i"
+              [attr.cx]="cx"
+              [attr.cy]="cy"
+              [attr.r]="r"
+              fill="none"
+              [attr.stroke]="a.color"
+              [attr.stroke-width]="stroke"
+              stroke-linecap="round"
+              [attr.stroke-dasharray]="a.dash"
+              [attr.stroke-dashoffset]="a.offset"
+              (mouseenter)="onEnter($event, a.i)"
+              (mousemove)="onMove($event)"
+            />
+          }
+        </g>
+        <text class="painel-status__center" [attr.x]="cx" [attr.y]="cy + 4" text-anchor="middle">
+          Total: {{ total() }}
+        </text>
+      </svg>
+    </div>
+
+    <ul class="painel-status__legend">
+      @for (item of legend(); track item.p.label) {
+        <li class="painel-status__legend-item">
+          <span class="painel-status__dot" [style.background]="item.cor"></span>
+          <span class="painel-status__legend-name">{{ item.p.label }}</span>
+          <span class="painel-status__legend-value">{{ item.p.value }} ({{ item.pct }}%)</span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="painel-status__empty">Sem agendamentos no período</p>
+  }
+</div>

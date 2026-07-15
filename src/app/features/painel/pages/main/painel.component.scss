@@ -66,8 +66,8 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  color: #1f2937;
-  font-size: 1.6rem;
+  color: #585858;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.15;
@@ -117,6 +117,11 @@
   align-items: center;
   gap: 0.5rem;
   flex: 0 0 auto;
+
+  app-ui-tip-trigger,
+  .ui-tip-trigger {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 640px) {
@@ -125,7 +130,7 @@
   }
 
   .painel-welcome__hello {
-    font-size: 1.35rem;
+    font-size: 20px;
   }
 }
 
@@ -148,6 +153,27 @@
     svg {
       color: #fff;
     }
+  }
+
+  &--busy {
+    pointer-events: none;
+  }
+}
+
+.painel-head__btn-atualizar-icon--spin {
+  animation: painelAtualizarSpin 0.75s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes painelAtualizarSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .painel-head__btn-atualizar-icon--spin {
+    animation: none;
   }
 }
 
@@ -181,9 +207,9 @@
 
 .painel-section-title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 20px;
   font-weight: 700;
-  color: #1f2937;
+  color: #585858;
   letter-spacing: -0.01em;
 }
 
@@ -386,9 +412,17 @@
 
 .painel-charts-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1.25rem;
   min-width: 0;
+
+  > .painel-panel:not(.painel-panel--wide):not(.painel-panel--half) {
+    grid-column: span 2;
+  }
+}
+
+.painel-panel--half {
+  grid-column: span 3;
 }
 
 .painel-panel {
@@ -407,7 +441,124 @@
 }
 
 .painel-panel--wide {
-  grid-column: span 3;
+  grid-column: 1 / -1;
+}
+
+.painel-combo {
+  height: 404px;
+}
+
+.painel-combo__tabs {
+  display: flex;
+  gap: 1.75rem;
+  /** Borda inferior que não chega às pontas do card (espaço no início/fim). */
+  margin: 0 0.25rem 0.75rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid var(--painel-border);
+}
+
+.painel-combo__tab {
+  position: relative;
+  padding: 0 0.15rem 0.7rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 180ms ease;
+
+  /** Sublinhado azul (aba ativa), sobreposto à borda do contêiner. */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: transparent;
+    transition: background 180ms ease;
+  }
+
+  &:hover {
+    color: #6b7280;
+  }
+
+  &--active {
+    color: #505afb;
+
+    &::after {
+      background: #505afb;
+    }
+  }
+}
+
+.painel-combo__grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 1.4rem;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.painel-combo__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.painel-combo__col--status {
+  min-width: 0;
+}
+
+.painel-combo__body--status {
+  justify-content: flex-start;
+  padding-top: 0.25rem;
+}
+
+.painel-combo__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+
+  > * {
+    width: 100%;
+  }
+}
+
+.painel-combo__body--center {
+  justify-content: center;
+}
+
+.painel-panel__head--row {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.painel-panel__info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  flex-shrink: 0;
+  cursor: help;
 }
 
 .painel-panel__head {
@@ -446,8 +597,21 @@
     grid-template-columns: 1fr;
   }
 
-  .painel-panel--wide {
+  .painel-charts-grid > .painel-panel {
     grid-column: auto;
+  }
+
+  .painel-combo {
+    height: auto;
+  }
+
+  .painel-combo__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .painel-combo__col--status {
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--painel-border);
   }
 }
 

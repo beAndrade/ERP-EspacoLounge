@@ -2,14 +2,30 @@ import type { AtendimentoListaItem, CaixaDiaResumo } from '../../../core/models/
 import {
   horaInicialMenorDasLinhasAtendimento,
   pedidoTemPosicaoNaGrelhaAgenda,
+  toYmd,
   valorMonetarioParaNumero,
 } from '../../../core/utils/atendimento-display';
-import { normalizarAgendaStatusId } from '../../../core/utils/agenda-status-card';
+import {
+  AGENDA_STATUS_META,
+  normalizarAgendaStatusId,
+  type AgendaStatusId,
+} from '../../../core/utils/agenda-status-card';
+import {
+  agruparAtendimentosEmComandas,
+  comandaQuitadaNasCifrasGrupo,
+} from '../../../core/utils/comanda-status.util';
 import type {
   PainelAgendaCardVm,
   PainelAgendaProximoItem,
+  PainelChartsVm,
+  PainelChartPoint,
   PainelFaturamentoCardVm,
   PainelFaturamentoMetodoLinha,
+  PainelProfissionaisPeriodoVm,
+  PainelSparkPoint,
+  PainelTicketMedioVm,
+  PainelVendasCategoriaLinha,
+  PainelVendasCategoriaVm,
 } from '../models/painel-dashboard.models';
 
 /** Agrupa linhas de atendimento pelo id do pedido. */
@@ -113,5 +129,352 @@ export function mapCaixaDiaParaFaturamentoCardVm(
     vsOntemPct: null,
     metodos,
     spark: [],
+  };
+}
+
+const HEATMAP_HORAS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
+const HEATMAP_DIAS_SEMANA = [
+  'segunda-feira',
+  'terça-feira',
+  'quarta-feira',
+  'quinta-feira',
+  'sexta-feira',
+  'sábado',
+  'domingo',
+] as const;
+
+const TOP_PROFISSIONAIS = 8;
+
+const STATUS_DISPLAY_ORDER: AgendaStatusId[] = [
+  'aguardando',
+  'confirmado',
+  'cancelado',
+  'nao_confirmado',
+];
+
+const COR_META_POR_STATUS = new Map(
+  AGENDA_STATUS_META.map((m) => [m.id, m] as const),
+);
+
+function ymdNoIntervalo(ymd: string, inicio: string, fim: string): boolean {
+  const d = ymd.trim().slice(0, 10);
+  return d >= inicio && d <= fim;
+}
+
+function parseYmdLocal(ymd: string): Date {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Lista cada dia YYYY-MM-DD entre início e fim (inclusive). */
+export function enumerarDiasYmd(inicio: string, fim: string): string[] {
+  const di = parseYmdLocal(inicio);
+  const df = parseYmdLocal(fim);
+  const out: string[] = [];
+  const cur = new Date(di);
+  while (cur <= df) {
+    out.push(toYmd(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
+/** Período anterior com a mesma duração (dia anterior ao início como fim). */
+export function periodoAnteriorSimetrico(
+  inicio: string,
+  fim: string,
+): { inicio: string; fim: string } {
+  const dias = enumerarDiasYmd(inicio, fim).length;
+  const di = parseYmdLocal(inicio);
+  const prevFim = new Date(di);
+  prevFim.setDate(prevFim.getDate() - 1);
+  const prevInicio = new Date(prevFim);
+  prevInicio.setDate(prevInicio.getDate() - (dias - 1));
+  return { inicio: toYmd(prevInicio), fim: toYmd(prevFim) };
+}
+
+function pctVariacao(
+  atual: number | null,
+  anterior: number | null,
+): number | null {
+  if (atual == null || anterior == null || anterior === 0) return null;
+  return Math.round(((atual - anterior) / anterior) * 100);
+}
+
+function statusAgendaDoPedido(rows: AtendimentoListaItem[]): AgendaStatusId {
+  const raw = rows
+    .map((r) => r.agenda_status)
+    .find((s) => s != null && String(s).trim());
+  return normalizarAgendaStatusId(raw);
+}
+
+function pedidosNoIntervalo(
+  linhas: AtendimentoListaItem[],
+  inicio: string,
+  fim: string,
+): AtendimentoListaItem[][] {
+  const grupos = agruparAtendimentosPorPedido(linhas);
+  const out: AtendimentoListaItem[][] = [];
+  for (const [, rows] of grupos) {
+    const data = (rows[0]?.data ?? '').slice(0, 10);
+    if (ymdNoIntervalo(data, inicio, fim)) out.push(rows);
+  }
+  return out;
+}
+
+function comandasNoIntervalo(
+  linhas: AtendimentoListaItem[],
+  inicio: string,
+  fim: string,
+) {
+  return agruparAtendimentosEmComandas(linhas).filter((g) =>
+    ymdNoIntervalo(g.data, inicio, fim),
+  );
+}
+
+function ticketMedioComandasFaturadas(
+  comandas: ReturnType<typeof agruparAtendimentosEmComandas>,
+): number | null {
+  const faturadas = comandas.filter((g) => comandaQuitadaNasCifrasGrupo(g));
+  if (!faturadas.length) return null;
+  let sum = 0;
+  for (const g of faturadas) {
+    sum += g.valorTotal ?? 0;
+  }
+  return Math.round((sum / faturadas.length) * 100) / 100;
+}
+
+function labelDiaCurto(ymd: string): string {
+  const d = parseYmdLocal(ymd);
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+  }).format(d);
+}
+
+/** Índice 0 = segunda-feira … 6 = domingo. */
+function indiceDiaSemanaSegunda(ymd: string): number {
+  const d = parseYmdLocal(ymd).getDay();
+  return d === 0 ? 6 : d - 1;
+}
+
+function horaBucketHeatmap(rows: AtendimentoListaItem[], dataYmd: string): number | null {
+  const hhmm = horaInicialMenorDasLinhasAtendimento(rows, dataYmd);
+  if (!hhmm) return null;
+  const h = parseInt(hhmm.split(':')[0] ?? '', 10);
+  if (!Number.isFinite(h) || h < HEATMAP_HORAS[0] || h > HEATMAP_HORAS[HEATMAP_HORAS.length - 1]) {
+    return null;
+  }
+  return h;
+}
+
+const CATEGORIA_META: readonly { label: string; cor: string }[] = [
+  { label: 'Serviços', cor: '#3b82f6' },
+  { label: 'Produtos', cor: '#34d399' },
+  { label: 'Pacotes', cor: '#f59e0b' },
+  { label: 'Outros', cor: '#a78bfa' },
+];
+
+/** Mapeia o `tipo` da linha para uma categoria comercial amigável. */
+function categoriaDaLinha(l: AtendimentoListaItem): string {
+  const t = String(l.tipo ?? '').trim().toLowerCase();
+  if (t === 'produto') return 'Produtos';
+  if (t === 'pacote' || t === 'mega') return 'Pacotes';
+  if (t === 'servico' || t === 'serviço' || t === 'cabelo') return 'Serviços';
+  return 'Outros';
+}
+
+export type PainelPeriodoAgregadoVm = {
+  charts: PainelChartsVm;
+  ticketMedio: PainelTicketMedioVm;
+  profissionais: PainelProfissionaisPeriodoVm;
+  vendasCategoria: PainelVendasCategoriaVm;
+};
+
+/**
+ * Agrega atendimentos do período (e opcionalmente do período anterior) para os painéis grandes.
+ */
+export function mapAtendimentosParaPainelPeriodo(
+  linhas: AtendimentoListaItem[],
+  inicio: string,
+  fim: string,
+): PainelPeriodoAgregadoVm {
+  const prev = periodoAnteriorSimetrico(inicio, fim);
+  const pedidos = pedidosNoIntervalo(linhas, inicio, fim);
+  const pedidosAnterior = pedidosNoIntervalo(linhas, prev.inicio, prev.fim);
+  const comandas = comandasNoIntervalo(linhas, inicio, fim);
+  const comandasAnterior = comandasNoIntervalo(linhas, prev.inicio, prev.fim);
+
+  const tendencia: PainelChartPoint[] = enumerarDiasYmd(inicio, fim).map((ymd) => {
+    const count = pedidos.filter(
+      (rows) => (rows[0]?.data ?? '').slice(0, 10) === ymd,
+    ).length;
+    return { label: labelDiaCurto(ymd), value: count, ymd };
+  });
+
+  const statusCounts = new Map<AgendaStatusId, number>();
+  for (const rows of pedidos) {
+    const st = statusAgendaDoPedido(rows);
+    statusCounts.set(st, (statusCounts.get(st) ?? 0) + 1);
+  }
+  const status: PainelChartPoint[] = STATUS_DISPLAY_ORDER.map((id) => {
+    const meta = COR_META_POR_STATUS.get(id)!;
+    const count = statusCounts.get(id) ?? 0;
+    const pct =
+      pedidos.length > 0 ? Math.round((count / pedidos.length) * 100) : 0;
+    return {
+      label: meta.label,
+      value: count,
+      meta: { pct, cor: meta.cor },
+    };
+  });
+
+  const todos = pedidos.length;
+  const confirmados = pedidos.filter(
+    (rows) => statusAgendaDoPedido(rows) === 'confirmado',
+  ).length;
+  const faturados = pedidos.filter((rows) => {
+    const g = comandas.find(
+      (c) => String(c.linhas[0]?.id ?? '') === String(rows[0]?.id ?? ''),
+    );
+    return g ? comandaQuitadaNasCifrasGrupo(g) : false;
+  }).length;
+
+  const pctOf = (n: number) => (todos > 0 ? Math.round((n / todos) * 100) : 0);
+  const funil: PainelChartPoint[] =
+    todos > 0
+      ? [
+          {
+            label: 'Todos',
+            value: todos,
+            meta: { pctTotal: 100, display: `Todos: ${todos} (100%)` },
+          },
+          {
+            label: 'Confirmados',
+            value: confirmados,
+            meta: {
+              pctTotal: pctOf(confirmados),
+              display: `Confirmados: ${confirmados} (${pctOf(confirmados)}%)`,
+            },
+          },
+          {
+            label: 'Faturados',
+            value: faturados,
+            meta: {
+              pctTotal: pctOf(faturados),
+              display: `Faturados: ${faturados} (${pctOf(faturados)}%)`,
+            },
+          },
+        ]
+      : [];
+
+  const heatmapCounts = new Map<string, number>();
+  for (const rows of pedidos) {
+    const data = (rows[0]?.data ?? '').slice(0, 10);
+    const diaIdx = indiceDiaSemanaSegunda(data);
+    const hora = horaBucketHeatmap(rows, data);
+    if (hora == null) continue;
+    const key = `${diaIdx}-${hora}`;
+    heatmapCounts.set(key, (heatmapCounts.get(key) ?? 0) + 1);
+  }
+  const heatmap: PainelChartPoint[] = [];
+  for (let d = 0; d < HEATMAP_DIAS_SEMANA.length; d++) {
+    for (const h of HEATMAP_HORAS) {
+      const key = `${d}-${h}`;
+      const value = heatmapCounts.get(key) ?? 0;
+      heatmap.push({
+        label: HEATMAP_DIAS_SEMANA[d],
+        value,
+        meta: { dia: HEATMAP_DIAS_SEMANA[d], hora: `${h}h`, diaIdx: d, horaIdx: h },
+      });
+    }
+  }
+
+  const ticketAtual = ticketMedioComandasFaturadas(comandas);
+  const ticketAnterior = ticketMedioComandasFaturadas(comandasAnterior);
+  const ticketMedio: PainelTicketMedioVm = {
+    ticketAtual,
+    vsAnteriorPct: pctVariacao(ticketAtual, ticketAnterior),
+    periodoAnterior: ticketAnterior,
+    periodoAtual: ticketAtual,
+  };
+
+  const profMap = new Map<
+    string,
+    { nome: string; servicos: number; faturamento: number }
+  >();
+  for (const g of comandas) {
+    const faturada = comandaQuitadaNasCifrasGrupo(g);
+    for (const linha of g.linhas) {
+      const nome = String(linha.profissional ?? '').trim() || 'Sem profissional';
+      const key = nome.toLowerCase();
+      const acc = profMap.get(key) ?? { nome, servicos: 0, faturamento: 0 };
+      acc.servicos += 1;
+      if (faturada) {
+        acc.faturamento += valorMonetarioParaNumero(linha.valor) ?? 0;
+      }
+      profMap.set(key, acc);
+    }
+  }
+  const profLinhas = [...profMap.values()]
+    .sort((a, b) => b.servicos - a.servicos || b.faturamento - a.faturamento)
+    .slice(0, TOP_PROFISSIONAIS)
+    .map((p, i) => ({
+      rank: i + 1,
+      nome: p.nome,
+      servicos: p.servicos,
+      valorMedio:
+        p.servicos > 0 && p.faturamento > 0
+          ? Math.round((p.faturamento / p.servicos) * 100) / 100
+          : null,
+    }));
+
+  const spark: PainelSparkPoint[] = tendencia.map((p) => ({
+    ymd: p.ymd ?? '',
+    value: p.value,
+  }));
+
+  const totalAtual = pedidos.length;
+  const totalAnterior = pedidosAnterior.length;
+  const profissionais: PainelProfissionaisPeriodoVm = {
+    totalAtendimentos: totalAtual,
+    vsAnteriorPct: pctVariacao(totalAtual, totalAnterior),
+    spark,
+    linhas: profLinhas,
+  };
+
+  const catMap = new Map<string, number>();
+  for (const g of comandas) {
+    if (!comandaQuitadaNasCifrasGrupo(g)) continue;
+    for (const linha of g.linhas) {
+      const cat = categoriaDaLinha(linha);
+      const valor = valorMonetarioParaNumero(linha.valor) ?? 0;
+      if (valor <= 0) continue;
+      catMap.set(cat, (catMap.get(cat) ?? 0) + valor);
+    }
+  }
+  const catTotal = [...catMap.values()].reduce((s, v) => s + v, 0);
+  const vendasLinhas: PainelVendasCategoriaLinha[] = CATEGORIA_META.filter(
+    (m) => (catMap.get(m.label) ?? 0) > 0,
+  ).map((m) => {
+    const valor = Math.round((catMap.get(m.label) ?? 0) * 100) / 100;
+    return {
+      label: m.label,
+      valor,
+      pct: catTotal > 0 ? Math.round((valor / catTotal) * 100) : 0,
+      cor: m.cor,
+    };
+  });
+  vendasLinhas.sort((a, b) => b.valor - a.valor);
+  const vendasCategoria: PainelVendasCategoriaVm = {
+    total: Math.round(catTotal * 100) / 100,
+    linhas: vendasLinhas,
+  };
+
+  return {
+    charts: { tendencia, status, funil, heatmap },
+    ticketMedio,
+    profissionais,
+    vendasCategoria,
   };
 }

@@ -5,8 +5,12 @@
     [style.left]="style()['left']"
     [style.top]="style()['top']"
   >
-    <div class="painel-chart-tooltip__date">{{ tip.dataLabel }}</div>
-    <div class="painel-chart-tooltip__value">{{ tip.valorLabel }}</div>
+    @if (tip.dataLabel) {
+      <div class="painel-chart-tooltip__date">{{ tip.dataLabel }}</div>
+    }
+    @if (tip.valorLabel) {
+      <div class="painel-chart-tooltip__value">{{ tip.valorLabel }}</div>
+    }
     @if (tip.deltaLabel) {
       <div class="painel-chart-tooltip__delta">{{ tip.deltaLabel }}</div>
     }

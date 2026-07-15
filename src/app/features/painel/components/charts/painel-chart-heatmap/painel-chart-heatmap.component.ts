@@ -8,7 +8,18 @@ import {
 } from '@angular/core';
 import type { PainelChartPoint } from '../../../models/painel-dashboard.models';
 import { PainelChartTooltipService } from '../../../services/painel-chart-tooltip.service';
-import { PainelDashboardContextService } from '../../../services/painel-dashboard-context.service';
+
+const DIAS = [
+  'segunda-feira',
+  'terça-feira',
+  'quarta-feira',
+  'quinta-feira',
+  'sexta-feira',
+  'sábado',
+  'domingo',
+] as const;
+
+const HORAS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
 
 @Component({
   selector: 'app-painel-chart-heatmap',
@@ -18,35 +29,57 @@ import { PainelDashboardContextService } from '../../../services/painel-dashboar
 })
 export class PainelChartHeatmapComponent {
   private readonly tip = inject(PainelChartTooltipService);
-  private readonly ctx = inject(PainelDashboardContextService);
 
   readonly series = input<PainelChartPoint[]>([]);
   readonly pointHover = output<PainelChartPoint | null>();
   readonly activeKey = signal<string | null>(null);
-  readonly hasData = computed(() => this.series().length > 0);
 
-  readonly cells = computed(() => {
-    const pts = this.series();
-    const max = Math.max(...pts.map((p) => p.value), 1);
-    return pts.map((p, i) => {
-      const intensity = Math.min(1, p.value / max);
-      const dia = String(p.meta?.['dia'] ?? p.label);
-      const hora = String(p.meta?.['hora'] ?? '');
-      return { p, i, intensity, dia, hora, key: `${p.ymd ?? i}-${hora}` };
-    });
+  readonly dias = DIAS;
+  readonly horas = HORAS;
+
+  readonly hasData = computed(() => this.series().some((p) => p.value > 0));
+
+  readonly grid = computed(() => {
+    const map = new Map<string, PainelChartPoint>();
+    for (const p of this.series()) {
+      const d = p.meta?.['diaIdx'];
+      const h = p.meta?.['horaIdx'];
+      if (typeof d === 'number' && typeof h === 'number') {
+        map.set(`${d}-${h}`, p);
+      }
+    }
+    const max = Math.max(...this.series().map((p) => p.value), 1);
+    return HORAS.map((hora) => ({
+      hora,
+      horaLabel: `${hora}h`,
+      cells: DIAS.map((dia, diaIdx) => {
+        const p = map.get(`${diaIdx}-${hora}`) ?? {
+          label: dia,
+          value: 0,
+          meta: { dia, hora: `${hora}h`, diaIdx, horaIdx: hora },
+        };
+        const intensity = p.value > 0 ? Math.min(1, p.value / max) : 0;
+        return {
+          p,
+          dia,
+          diaIdx,
+          hora,
+          key: `${diaIdx}-${hora}`,
+          intensity,
+          active: p.value > 0,
+        };
+      }),
+    }));
   });
 
-  onEnter(ev: MouseEvent, key: string, i: number): void {
-    const c = this.cells()[i];
-    if (!c) return;
+  onEnter(ev: MouseEvent, key: string, p: PainelChartPoint): void {
     this.activeKey.set(key);
-    this.pointHover.emit(c.p);
-    if (c.p.ymd) this.ctx.setDay(c.p.ymd);
+    this.pointHover.emit(p);
     this.tip.show({
-      dataLabel: c.dia,
-      valorLabel: `${c.p.value} atendimentos`,
-      deltaLabel: c.hora || null,
-      nota: c.p.nota ?? null,
+      dataLabel: String(p.meta?.['dia'] ?? p.label),
+      valorLabel: `${p.value} atendimento${p.value === 1 ? '' : 's'}`,
+      deltaLabel: String(p.meta?.['hora'] ?? ''),
+      nota: p.nota ?? null,
       x: ev.clientX,
       y: ev.clientY,
     });
@@ -59,7 +92,6 @@ export class PainelChartHeatmapComponent {
   onLeave(): void {
     this.activeKey.set(null);
     this.pointHover.emit(null);
-    this.ctx.clear();
     this.tip.hide();
   }
 }

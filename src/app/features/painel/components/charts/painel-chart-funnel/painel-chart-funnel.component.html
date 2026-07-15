@@ -7,11 +7,11 @@
           class="painel-chart-funnel__step"
           [class.painel-chart-funnel__step--active]="activeIndex() === s.i"
           [style.width.%]="s.widthPct"
+          [style.background]="s.color"
           (mouseenter)="onEnter($event, s.i)"
           (mousemove)="onMove($event)"
         >
-          <span class="painel-chart-funnel__label">{{ s.p.label }}</span>
-          <strong>{{ s.p.value }}</strong>
+          <span class="painel-chart-funnel__label">{{ s.display }}</span>
         </button>
       }
     </div>

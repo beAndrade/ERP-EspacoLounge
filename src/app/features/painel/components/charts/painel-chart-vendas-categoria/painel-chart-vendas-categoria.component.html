@@ -1,0 +1,54 @@
+<div class="painel-vcat" (mouseleave)="onLeave()">
+  @if (hasData()) {
+    <div class="painel-vcat__donut">
+      <svg viewBox="0 0 160 160" role="img" aria-label="Vendas por categoria">
+        <circle
+          class="painel-vcat__track"
+          [attr.cx]="cx"
+          [attr.cy]="cy"
+          [attr.r]="r"
+          fill="none"
+          [attr.stroke-width]="stroke"
+        />
+        <g [attr.transform]="'rotate(-90 ' + cx + ' ' + cy + ')'">
+          @for (a of arcs(); track a.i) {
+            <circle
+              class="painel-vcat__arc"
+              [class.painel-vcat__arc--active]="activeIndex() === a.i"
+              [attr.cx]="cx"
+              [attr.cy]="cy"
+              [attr.r]="r"
+              fill="none"
+              [attr.stroke]="a.color"
+              [attr.stroke-width]="stroke"
+              [attr.stroke-dasharray]="a.dash"
+              [attr.stroke-dashoffset]="a.offset"
+              (mouseenter)="onEnter($event, a.i)"
+              (mousemove)="onMove($event)"
+            />
+          }
+        </g>
+        <text class="painel-vcat__center-label" [attr.x]="cx" [attr.y]="cy - 4" text-anchor="middle">
+          Total
+        </text>
+        <text class="painel-vcat__center-value" [attr.x]="cx" [attr.y]="cy + 12" text-anchor="middle">
+          {{ formatMoeda(vm().total) }}
+        </text>
+      </svg>
+    </div>
+
+    <ul class="painel-vcat__legend">
+      @for (l of vm().linhas; track l.label) {
+        <li class="painel-vcat__legend-item">
+          <span class="painel-vcat__dot" [style.background]="l.cor"></span>
+          <span class="painel-vcat__legend-name">{{ l.label }}</span>
+          <span class="painel-vcat__legend-value">
+            {{ formatMoeda(l.valor) }} ({{ l.pct }}%)
+          </span>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="painel-vcat__empty">Sem vendas no período</p>
+  }
+</div>

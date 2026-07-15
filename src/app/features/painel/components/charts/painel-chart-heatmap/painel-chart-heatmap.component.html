@@ -1,17 +1,39 @@
 <div class="painel-chart painel-chart-heatmap" (mouseleave)="onLeave()">
   @if (hasData()) {
-    <div class="painel-chart-heatmap__grid">
-      @for (c of cells(); track c.key) {
-        <button
-          type="button"
-          class="painel-chart-heatmap__cell"
-          [class.painel-chart-heatmap__cell--active]="activeKey() === c.key"
-          [style.--heat]="c.intensity"
-          (mouseenter)="onEnter($event, c.key, c.i)"
-          (mousemove)="onMove($event)"
-          [attr.aria-label]="c.dia + ' ' + c.hora"
-        ></button>
-      }
+    <div class="painel-chart-heatmap__scroll">
+      <table class="painel-chart-heatmap__table">
+        <thead>
+          <tr>
+            <th class="painel-chart-heatmap__corner" scope="col"></th>
+            @for (dia of dias; track dia) {
+              <th scope="col" class="painel-chart-heatmap__day">{{ dia }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of grid(); track row.hora) {
+            <tr>
+              <th scope="row" class="painel-chart-heatmap__hour">{{ row.horaLabel }}</th>
+              @for (c of row.cells; track c.key) {
+                <td>
+                  <button
+                    type="button"
+                    class="painel-chart-heatmap__cell"
+                    [class.painel-chart-heatmap__cell--active]="c.active"
+                    [class.painel-chart-heatmap__cell--hover]="activeKey() === c.key"
+                    [style.--heat]="c.intensity"
+                    (mouseenter)="onEnter($event, c.key, c.p)"
+                    (mousemove)="onMove($event)"
+                    [attr.aria-label]="c.dia + ' ' + row.horaLabel + ': ' + c.p.value"
+                  >
+                    {{ c.p.value }}
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
   } @else {
     <p class="painel-chart__empty">Sem dados no período</p>

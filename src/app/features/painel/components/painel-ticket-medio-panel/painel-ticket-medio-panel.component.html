@@ -1,0 +1,71 @@
+<div class="painel-ticket">
+  @if (hasData()) {
+    <div class="painel-ticket__summary">
+      <p class="painel-ticket__label">Ticket médio — Período atual</p>
+      <p class="painel-ticket__value">{{ formatMoeda(vm().ticketAtual) }}</p>
+      <p class="painel-ticket__vs">
+        Versus período anterior:
+        @if (vm().vsAnteriorPct != null) {
+          <span
+            class="painel-ticket__delta"
+            [class.painel-ticket__delta--up]="vm().vsAnteriorPct! > 0"
+            [class.painel-ticket__delta--down]="vm().vsAnteriorPct! < 0"
+          >
+            @if (vm().vsAnteriorPct! > 0) {
+              <span aria-hidden="true">↑</span>
+            } @else if (vm().vsAnteriorPct! < 0) {
+              <span aria-hidden="true">↓</span>
+            }
+            {{ formatPct(vm().vsAnteriorPct) }}
+          </span>
+        } @else {
+          <span class="painel-ticket__delta painel-ticket__delta--muted">—</span>
+        }
+      </p>
+    </div>
+
+    <div class="painel-ticket__chart-wrap">
+      <p class="painel-ticket__chart-title">Comparação entre períodos</p>
+      <svg
+        class="painel-ticket__chart"
+        [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
+        role="img"
+        aria-label="Comparação de ticket médio entre períodos"
+      >
+        @for (tick of yTicks(); track tick) {
+          <text
+            class="painel-ticket__tick"
+            [attr.x]="pad.l - 6"
+            [attr.y]="
+              pad.t + (vbH - pad.t - pad.b) * (1 - tick / niceMax()) + 4
+            "
+            text-anchor="end"
+          >
+            {{ formatMoeda(tick) }}
+          </text>
+        }
+        @for (b of bars(); track b.label) {
+          <rect
+            class="painel-ticket__bar"
+            [class.painel-ticket__bar--atual]="b.label === 'Período atual'"
+            [attr.x]="b.x"
+            [attr.y]="b.y"
+            [attr.width]="b.w"
+            [attr.height]="b.h"
+            rx="4"
+          />
+          <text
+            class="painel-ticket__bar-label"
+            [attr.x]="b.x + b.w / 2"
+            [attr.y]="vbH - 8"
+            text-anchor="middle"
+          >
+            {{ b.label }}
+          </text>
+        }
+      </svg>
+    </div>
+  } @else {
+    <p class="painel-ticket__empty">Sem comandas faturadas no período</p>
+  }
+</div>

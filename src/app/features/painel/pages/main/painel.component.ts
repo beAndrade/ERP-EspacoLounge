@@ -14,17 +14,21 @@ import { filter } from 'rxjs/operators';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.service';
 import { toYmd } from '../../../../core/utils/atendimento-display';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
 import { ymdExibicaoBelasis } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-periodo-filtro.util';
-import { PainelChartBarsComponent } from '../../components/charts/painel-chart-bars/painel-chart-bars.component';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { PainelChartFunnelComponent } from '../../components/charts/painel-chart-funnel/painel-chart-funnel.component';
 import { PainelChartHeatmapComponent } from '../../components/charts/painel-chart-heatmap/painel-chart-heatmap.component';
-import { PainelChartLineComponent } from '../../components/charts/painel-chart-line/painel-chart-line.component';
-import { PainelChartPieComponent } from '../../components/charts/painel-chart-pie/painel-chart-pie.component';
+import { PainelChartStatusComponent } from '../../components/charts/painel-chart-status/painel-chart-status.component';
+import { PainelChartTendenciaComponent } from '../../components/charts/painel-chart-tendencia/painel-chart-tendencia.component';
+import { PainelChartVendasCategoriaComponent } from '../../components/charts/painel-chart-vendas-categoria/painel-chart-vendas-categoria.component';
 import { PainelChartTooltipComponent } from '../../components/painel-chart-tooltip/painel-chart-tooltip.component';
 import { PainelMetricValueComponent } from '../../components/painel-metric-value/painel-metric-value.component';
+import { PainelProfissionaisPeriodoPanelComponent } from '../../components/painel-profissionais-periodo-panel/painel-profissionais-periodo-panel.component';
 import { PainelSmartCardComponent } from '../../components/painel-smart-card/painel-smart-card.component';
 import { PainelSparklineComponent } from '../../components/painel-sparkline/painel-sparkline.component';
+import { PainelTicketMedioPanelComponent } from '../../components/painel-ticket-medio-panel/painel-ticket-medio-panel.component';
 import {
   emptyAgendaCardVm,
   emptyChartsVm,
@@ -32,17 +36,25 @@ import {
   emptyEstoqueCardVm,
   emptyFaturamentoCardVm,
   emptyProfissionaisCardVm,
+  emptyProfissionaisPeriodoVm,
+  emptyTicketMedioVm,
+  emptyVendasCategoriaVm,
   type PainelAgendaCardVm,
   type PainelChartsVm,
   type PainelClientesCardVm,
   type PainelEstoqueCardVm,
   type PainelFaturamentoCardVm,
   type PainelProfissionaisCardVm,
+  type PainelProfissionaisPeriodoVm,
+  type PainelTicketMedioVm,
+  type PainelVendasCategoriaVm,
 } from '../../models/painel-dashboard.models';
 import { PainelDashboardContextService } from '../../services/painel-dashboard-context.service';
 import {
   mapAtendimentosParaAgendaCardVm,
+  mapAtendimentosParaPainelPeriodo,
   mapCaixaDiaParaFaturamentoCardVm,
+  periodoAnteriorSimetrico,
 } from '../../utils/painel-dashboard.util';
 
 function periodoPadraoUltimos15Dias(): { inicio: string; fim: string } {
@@ -51,6 +63,24 @@ function periodoPadraoUltimos15Dias(): { inicio: string; fim: string } {
   inicio.setDate(inicio.getDate() - 14);
   return { inicio: toYmd(inicio), fim: toYmd(fim) };
 }
+
+/** Texto relativo em PT-BR desde a última atualização do painel. */
+function relativoDesde(ms: number, agoraMs: number): string {
+  const sec = Math.max(0, Math.floor((agoraMs - ms) / 1000));
+  if (sec < 45) return 'há poucos segundos';
+  const min = Math.floor(sec / 60);
+  if (min <= 1) return 'há 1 minuto';
+  if (min < 60) return `há ${min} minutos`;
+  const h = Math.floor(min / 60);
+  if (h === 1) return 'há 1 hora';
+  if (h < 24) return `há ${h} horas`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return 'há 1 dia';
+  return `há ${d} dias`;
+}
+
+/** Intervalo mínimo entre atualizações manuais do painel. */
+const ATUALIZAR_COOLDOWN_MS = 10 * 60 * 1000;
 
 /**
  * Local do salão para o clima (Open-Meteo, sem chave de API).
@@ -100,15 +130,18 @@ function descreverClimaWmo(code: number): { emoji: string; descricao: string } {
   standalone: true,
   imports: [
     ClienteDrawerPeriodoFiltroComponent,
+    UiTipTriggerComponent,
     PainelSmartCardComponent,
     PainelMetricValueComponent,
     PainelSparklineComponent,
     PainelChartTooltipComponent,
-    PainelChartLineComponent,
-    PainelChartBarsComponent,
-    PainelChartPieComponent,
+    PainelChartTendenciaComponent,
+    PainelChartStatusComponent,
     PainelChartFunnelComponent,
     PainelChartHeatmapComponent,
+    PainelChartVendasCategoriaComponent,
+    PainelTicketMedioPanelComponent,
+    PainelProfissionaisPeriodoPanelComponent,
   ],
   templateUrl: './painel.component.html',
   styleUrl: './painel.component.scss',
@@ -117,10 +150,18 @@ export class PainelComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(AppToastService);
   readonly sessao = inject(SessaoUsuarioService);
   readonly ctx = inject(PainelDashboardContextService);
 
   readonly carregandoCards = signal(false);
+  readonly carregandoPeriodo = signal(false);
+  /** true só durante refresh manual (gira o ícone). */
+  readonly atualizando = signal(false);
+  /** Incrementado a cada refresh manual — remonta os painéis de gráfico. */
+  readonly chartsAnimKey = signal(0);
+  /** Aba ativa no card de tendência (Agendamentos | Comandas). */
+  readonly abaTendencia = signal<'agendamentos' | 'comandas'>('agendamentos');
 
   readonly faturamento = signal<PainelFaturamentoCardVm>(emptyFaturamentoCardVm());
   readonly agenda = signal<PainelAgendaCardVm>(emptyAgendaCardVm());
@@ -129,19 +170,36 @@ export class PainelComponent implements OnInit {
     emptyProfissionaisCardVm(),
   );
   readonly estoque = signal<PainelEstoqueCardVm>(emptyEstoqueCardVm());
-  /**
-   * Séries dos painéis grandes — vazias até haver API agregada.
-   * O filtro de período (`periodoInicio`/`periodoFim`) fica reservado para essas séries.
-   * Agenda e Caixa continuam no recorte de **hoje** nesta fase.
-   */
   readonly charts = signal<PainelChartsVm>(emptyChartsVm());
+  readonly ticketMedio = signal<PainelTicketMedioVm>(emptyTicketMedioVm());
+  readonly profissionaisPeriodo = signal<PainelProfissionaisPeriodoVm>(
+    emptyProfissionaisPeriodoVm(),
+  );
+  readonly vendasCategoria = signal<PainelVendasCategoriaVm>(
+    emptyVendasCategoriaVm(),
+  );
 
   private readonly padrao = periodoPadraoUltimos15Dias();
   periodoInicio = this.padrao.inicio;
   periodoFim = this.padrao.fim;
 
   private loadSub: Subscription | null = null;
+  private periodoSub: Subscription | null = null;
   private skipNextNavReload = true;
+
+  /** Instantâneo da última carga bem-sucedida (tooltip). */
+  readonly ultimaAtualizacaoEm = signal(Date.now());
+  /** Último clique bem-sucedido em Atualizar (cooldown de 10 min). */
+  private ultimaAtualizacaoManualEm: number | null = null;
+  /** Callback opcional: contagem de loads pendentes num refresh manual. */
+  private loadsManuaisPendentes = 0;
+  private readonly agoraTick = signal(Date.now());
+  private atualizacaoTickTimer: ReturnType<typeof setInterval> | null = null;
+
+  readonly tipUltimaAtualizacao = computed(
+    () =>
+      `Última atualização ${relativoDesde(this.ultimaAtualizacaoEm(), this.agoraTick())}`,
+  );
 
   /** Relógio "ao vivo": atualizado só quando o minuto muda (evita CD por segundo). */
   readonly relogio = signal(new Date());
@@ -186,8 +244,10 @@ export class PainelComponent implements OnInit {
   constructor() {
     this.destroyRef.onDestroy(() => {
       this.loadSub?.unsubscribe();
+      this.periodoSub?.unsubscribe();
       if (this.relogioTimer) clearInterval(this.relogioTimer);
       if (this.climaTimer) clearInterval(this.climaTimer);
+      if (this.atualizacaoTickTimer) clearInterval(this.atualizacaoTickTimer);
     });
   }
 
@@ -198,7 +258,9 @@ export class PainelComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregarCards();
+    this.carregarPeriodo();
     this.iniciarRelogio();
+    this.iniciarTickAtualizacao();
     this.carregarClima();
     /** Atualiza o clima a cada 15 min. */
     this.climaTimer = setInterval(() => this.carregarClima(), 15 * 60 * 1000);
@@ -214,6 +276,7 @@ export class PainelComponent implements OnInit {
           return;
         }
         this.carregarCards();
+        this.carregarPeriodo();
       });
   }
 
@@ -231,6 +294,13 @@ export class PainelComponent implements OnInit {
         this.relogio.set(agora);
       }
     }, 1000);
+  }
+
+  /** Atualiza o texto relativo do tooltip a cada 15s. */
+  private iniciarTickAtualizacao(): void {
+    this.atualizacaoTickTimer = setInterval(() => {
+      this.agoraTick.set(Date.now());
+    }, 15_000);
   }
 
   /** Busca a temperatura atual no Open-Meteo (API pública, sem chave). */
@@ -265,21 +335,47 @@ export class PainelComponent implements OnInit {
   }
 
   atualizar(): void {
-    this.carregarCards();
+    if (this.atualizando()) return;
+
+    const agora = Date.now();
+    if (
+      this.ultimaAtualizacaoManualEm != null &&
+      agora - this.ultimaAtualizacaoManualEm < ATUALIZAR_COOLDOWN_MS
+    ) {
+      this.toast.showInfo('Você pode atualizar os dados a cada 10 minutos');
+      return;
+    }
+
+    this.atualizando.set(true);
+    this.loadsManuaisPendentes = 2;
+    this.carregarCards(true);
+    this.carregarPeriodo(true);
   }
 
   onPeriodoAlterado(): void {
-    /**
-     * Período controla apenas a seção "Análise do período" (séries dos gráficos).
-     * Os cards de cima continuam sempre no dia de hoje, então não recarregam aqui.
-     */
+    if (this.atualizando()) {
+      this.atualizando.set(false);
+      this.loadsManuaisPendentes = 0;
+    }
+    this.carregarPeriodo();
+  }
+
+  private concluirLoadManual(): void {
+    if (!this.atualizando()) return;
+    this.loadsManuaisPendentes -= 1;
+    if (this.loadsManuaisPendentes > 0) return;
+
+    const agora = Date.now();
+    this.atualizando.set(false);
+    this.ultimaAtualizacaoManualEm = agora;
+    this.chartsAnimKey.update((k) => k + 1);
   }
 
   /**
    * Carrega Agenda (hoje) e Receitas/caixa (hoje).
    * Clientes / Profissionais / Estoque / charts grandes ficam vazios até API.
    */
-  private carregarCards(): void {
+  private carregarCards(manual = false): void {
     const hoje = toYmd(new Date());
     this.loadSub?.unsubscribe();
     this.carregandoCards.set(true);
@@ -290,7 +386,15 @@ export class PainelComponent implements OnInit {
         .pipe(catchError(() => of([]))),
       caixa: this.api.getCaixaDia(hoje).pipe(catchError(() => of(null))),
     })
-      .pipe(finalize(() => this.carregandoCards.set(false)))
+      .pipe(
+        finalize(() => {
+          this.carregandoCards.set(false);
+          const agora = Date.now();
+          this.ultimaAtualizacaoEm.set(agora);
+          this.agoraTick.set(agora);
+          if (manual) this.concluirLoadManual();
+        }),
+      )
       .subscribe(({ atendimentos, caixa }) => {
         this.agenda.set(mapAtendimentosParaAgendaCardVm(atendimentos, hoje));
         if (caixa) {
@@ -298,6 +402,33 @@ export class PainelComponent implements OnInit {
         } else {
           this.faturamento.set(emptyFaturamentoCardVm());
         }
+      });
+  }
+
+  /** Agendamentos do período selecionado (+ período anterior para comparações). */
+  private carregarPeriodo(manual = false): void {
+    const inicio = this.periodoInicio;
+    const fim = this.periodoFim;
+    const prev = periodoAnteriorSimetrico(inicio, fim);
+
+    this.periodoSub?.unsubscribe();
+    this.carregandoPeriodo.set(true);
+
+    this.periodoSub = this.api
+      .listAgendamentos(prev.inicio, fim)
+      .pipe(
+        catchError(() => of([])),
+        finalize(() => {
+          this.carregandoPeriodo.set(false);
+          if (manual) this.concluirLoadManual();
+        }),
+      )
+      .subscribe((linhas) => {
+        const agregado = mapAtendimentosParaPainelPeriodo(linhas, inicio, fim);
+        this.charts.set(agregado.charts);
+        this.ticketMedio.set(agregado.ticketMedio);
+        this.profissionaisPeriodo.set(agregado.profissionais);
+        this.vendasCategoria.set(agregado.vendasCategoria);
       });
   }
 }

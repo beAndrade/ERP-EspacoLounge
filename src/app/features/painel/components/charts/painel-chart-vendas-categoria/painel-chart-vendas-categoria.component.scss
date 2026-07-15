@@ -1,0 +1,105 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.painel-vcat {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  min-height: 160px;
+}
+
+.painel-vcat__donut {
+  flex: 0 0 160px;
+  max-width: 160px;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}
+
+.painel-vcat__track {
+  stroke: #eef0f5;
+}
+
+.painel-vcat__arc {
+  cursor: pointer;
+  transition:
+    stroke-width 160ms ease,
+    filter 160ms ease;
+
+  &--active {
+    filter: drop-shadow(0 2px 5px rgba(15, 23, 42, 0.22));
+    stroke-width: 27;
+  }
+}
+
+.painel-vcat__center-label {
+  fill: #9ca3af;
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.painel-vcat__center-value {
+  fill: #111827;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.painel-vcat__legend {
+  flex: 1 1 12rem;
+  min-width: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.painel-vcat__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #4b5563;
+  min-width: 0;
+}
+
+.painel-vcat__dot {
+  flex: 0 0 0.6rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+}
+
+.painel-vcat__legend-name {
+  color: #374151;
+  font-weight: 500;
+}
+
+.painel-vcat__legend-value {
+  margin-left: auto;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.painel-vcat__empty {
+  margin: 0;
+  min-height: 160px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}

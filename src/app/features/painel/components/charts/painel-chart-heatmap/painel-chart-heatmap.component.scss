@@ -3,33 +3,68 @@
   width: 100%;
 }
 
-.painel-chart-heatmap__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
-  gap: 4px;
-  min-height: 160px;
-  align-content: start;
+.painel-chart-heatmap__scroll {
+  overflow-x: auto;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.painel-chart-heatmap__table {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: separate;
+  border-spacing: 0.28rem;
+  font-size: 0.75rem;
+}
+
+.painel-chart-heatmap__corner {
+  width: 2.5rem;
+}
+
+.painel-chart-heatmap__day {
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+  padding: 0.15rem 0.25rem 0.45rem;
+  white-space: nowrap;
+}
+
+.painel-chart-heatmap__hour {
+  font-weight: 600;
+  color: #9ca3af;
+  text-align: right;
+  padding-right: 0.35rem;
+  white-space: nowrap;
 }
 
 .painel-chart-heatmap__cell {
-  aspect-ratio: 1;
-  min-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 2.1rem;
+  min-height: 1.85rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
-  background: color-mix(
-    in srgb,
-    #505afb calc(var(--heat, 0) * 100%),
-    #eef0ff
-  );
   transition:
-    transform 160ms ease,
-    filter 160ms ease,
-    background 160ms ease;
+    transform 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
 
   &--active {
-    transform: scale(1.12);
-    filter: brightness(1.08);
+    background: #505afb;
+    color: #fff;
+  }
+
+  &--hover {
+    transform: scale(1.06);
+    filter: brightness(1.05);
   }
 }
 

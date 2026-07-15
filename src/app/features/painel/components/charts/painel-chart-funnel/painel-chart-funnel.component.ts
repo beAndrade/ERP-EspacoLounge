@@ -26,16 +26,28 @@ export class PainelChartFunnelComponent {
   readonly stages = computed(() => {
     const pts = this.series();
     if (!pts.length) return [];
-    const max = Math.max(...pts.map((p) => p.value), 1);
+    const base = pts[0].value || 1;
+    const colors = ['#5d5fef', '#8c8dff', '#c7c8ff'];
     return pts.map((p, i) => {
-      const prev = i === 0 ? p.value : pts[i - 1].value;
-      const conversao = prev > 0 ? Math.round((p.value / prev) * 100) : 0;
-      const perdaAcum =
-        pts[0].value > 0
-          ? Math.round(((pts[0].value - p.value) / pts[0].value) * 100)
-          : 0;
-      const widthPct = Math.max(28, (p.value / max) * 100);
-      return { p, i, conversao, perdaAcum, widthPct, taxa: conversao };
+      const pctTotal =
+        typeof p.meta?.['pctTotal'] === 'number'
+          ? (p.meta['pctTotal'] as number)
+          : base > 0
+            ? Math.round((p.value / base) * 100)
+            : 0;
+      const display =
+        typeof p.meta?.['display'] === 'string'
+          ? (p.meta['display'] as string)
+          : `${p.label}: ${p.value} (${pctTotal}%)`;
+      const widthPct = Math.max(32, pctTotal);
+      return {
+        p,
+        i,
+        pctTotal,
+        display,
+        widthPct,
+        color: colors[i % colors.length],
+      };
     });
   });
 
@@ -45,10 +57,10 @@ export class PainelChartFunnelComponent {
     this.activeIndex.set(i);
     this.pointHover.emit(st.p);
     this.tip.show({
-      dataLabel: st.p.label,
-      valorLabel: `${st.p.value} · conversão ${st.conversao}%`,
-      deltaLabel: `Perda acumulada ${st.perdaAcum}%`,
-      nota: `Taxa da etapa ${st.taxa}%`,
+      dataLabel: st.display,
+      valorLabel: `${st.p.value} agendamentos`,
+      deltaLabel: `${st.pctTotal}% do total criado no período`,
+      nota: st.p.nota ?? null,
       x: ev.clientX,
       y: ev.clientY,
     });

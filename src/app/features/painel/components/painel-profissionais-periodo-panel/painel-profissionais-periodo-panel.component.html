@@ -1,0 +1,52 @@
+<div class="painel-prof-rank">
+  @if (hasData()) {
+    <div class="painel-prof-rank__summary">
+      <div class="painel-prof-rank__metric">
+        <p class="painel-prof-rank__label">Atendimentos</p>
+        <div class="painel-prof-rank__value-row">
+          <strong class="painel-prof-rank__value">{{ vm().totalAtendimentos }}</strong>
+          <span
+            class="painel-prof-rank__pct"
+            [class.painel-prof-rank__pct--up]="(vm().vsAnteriorPct ?? 0) > 0"
+            [class.painel-prof-rank__pct--down]="(vm().vsAnteriorPct ?? 0) < 0"
+          >
+            {{ formatPct(vm().vsAnteriorPct) }}
+          </span>
+        </div>
+      </div>
+      @if (vm().spark.length > 1) {
+        <app-painel-sparkline
+          class="painel-prof-rank__spark"
+          [points]="vm().spark"
+          color="#505afb"
+        />
+      }
+    </div>
+
+    <div class="painel-prof-rank__table-wrap">
+      <table class="painel-prof-rank__table">
+        <thead>
+          <tr>
+            <th scope="col">Profissional</th>
+            <th scope="col">Serviços</th>
+            <th scope="col">Valor médio por atendimento</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (linha of vm().linhas; track linha.nome) {
+            <tr>
+              <td>
+                <span class="painel-prof-rank__badge">{{ linha.rank }}</span>
+                {{ linha.nome }}
+              </td>
+              <td>{{ linha.servicos }}</td>
+              <td>{{ formatMoeda(linha.valorMedio) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="painel-prof-rank__empty">Sem atendimentos no período</p>
+  }
+</div>

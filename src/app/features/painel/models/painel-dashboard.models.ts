@@ -76,13 +76,48 @@ export type PainelEstoqueCardVm = {
   spark: PainelSparkPoint[];
 };
 
+export type PainelProfissionalRankingLinha = {
+  rank: number;
+  nome: string;
+  servicos: number;
+  valorMedio: number | null;
+};
+
+/** Ranking de profissionais na seção «Análise do período». */
+export type PainelProfissionaisPeriodoVm = {
+  totalAtendimentos: number;
+  vsAnteriorPct: number | null;
+  spark: PainelSparkPoint[];
+  linhas: PainelProfissionalRankingLinha[];
+};
+
+/** Ticket médio de comandas faturadas no período. */
+export type PainelTicketMedioVm = {
+  ticketAtual: number | null;
+  vsAnteriorPct: number | null;
+  periodoAnterior: number | null;
+  periodoAtual: number | null;
+};
+
+export type PainelVendasCategoriaLinha = {
+  label: string;
+  valor: number;
+  pct: number;
+  cor: string;
+};
+
+/** Vendas por categoria (comandas faturadas no período). */
+export type PainelVendasCategoriaVm = {
+  total: number;
+  linhas: PainelVendasCategoriaLinha[];
+};
+
 /** Séries dos painéis de gráfico (vazias até API). */
 export type PainelChartsVm = {
   tendencia: PainelChartPoint[];
   status: PainelChartPoint[];
   funil: PainelChartPoint[];
   heatmap: PainelChartPoint[];
-  rankingProfissionais: PainelChartPoint[];
 };
 
 /** VMs vazias — estrutura pronta sem dados fictícios. */
@@ -143,6 +178,30 @@ export function emptyChartsVm(): PainelChartsVm {
     status: [],
     funil: [],
     heatmap: [],
-    rankingProfissionais: [],
+  };
+}
+
+export function emptyTicketMedioVm(): PainelTicketMedioVm {
+  return {
+    ticketAtual: null,
+    vsAnteriorPct: null,
+    periodoAnterior: null,
+    periodoAtual: null,
+  };
+}
+
+export function emptyProfissionaisPeriodoVm(): PainelProfissionaisPeriodoVm {
+  return {
+    totalAtendimentos: 0,
+    vsAnteriorPct: null,
+    spark: [],
+    linhas: [],
+  };
+}
+
+export function emptyVendasCategoriaVm(): PainelVendasCategoriaVm {
+  return {
+    total: 0,
+    linhas: [],
   };
 }
