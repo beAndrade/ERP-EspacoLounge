@@ -33,18 +33,20 @@
   </div>
 
   <div class="painel-smart-card__reveal" aria-live="polite">
-    <div class="painel-smart-card__reveal-body">
-      <ng-content select="[painelCardReveal]" />
+    <div class="painel-smart-card__reveal-inner">
+      <div class="painel-smart-card__reveal-body">
+        <ng-content select="[painelCardReveal]" />
+      </div>
+      @if (ctaLabel() && ctaLink()) {
+        <a
+          class="painel-smart-card__cta"
+          [routerLink]="ctaLink()"
+          (click)="$event.stopPropagation()"
+        >
+          {{ ctaLabel() }}
+          <span aria-hidden="true">→</span>
+        </a>
+      }
     </div>
-    @if (ctaLabel() && ctaLink()) {
-      <a
-        class="painel-smart-card__cta"
-        [routerLink]="ctaLink()"
-        (click)="$event.stopPropagation()"
-      >
-        {{ ctaLabel() }}
-        <span aria-hidden="true">→</span>
-      </a>
-    }
   </div>
 </article>

@@ -8,14 +8,13 @@
   --psc-blue: var(--painel-blue, #505afb);
   --psc-collapsed-h: 168px;
   --psc-ease: var(--painel-ease, cubic-bezier(0.22, 1, 0.36, 1));
-  --psc-dur: var(--painel-dur, 280ms);
+  --psc-dur: var(--painel-dur, 420ms);
   position: relative;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   height: auto;
   min-height: var(--psc-collapsed-h);
-  max-height: var(--psc-collapsed-h);
   padding: 1.1rem 1.15rem 0.95rem;
   border-radius: var(--painel-radius, 12px);
   background: #fff;
@@ -26,9 +25,8 @@
   transition:
     transform var(--psc-dur) var(--psc-ease),
     box-shadow var(--psc-dur) var(--psc-ease),
-    border-color var(--psc-dur) var(--psc-ease),
-    max-height var(--psc-dur) var(--psc-ease);
-  will-change: transform, max-height;
+    border-color var(--psc-dur) var(--psc-ease);
+  will-change: transform;
 
   &:hover,
   &:focus-within {
@@ -36,20 +34,18 @@
     border-color: var(--painel-border-hover, #e4e7f5);
     box-shadow: var(--painel-shadow-hover);
     z-index: 5;
-    max-height: 420px;
     overflow: visible;
 
     .painel-smart-card__reveal {
+      grid-template-rows: 1fr;
       opacity: 1;
-      max-height: 220px;
-      transform: translateY(0);
       pointer-events: auto;
       margin-top: 0.55rem;
     }
 
     .painel-smart-card__spark {
+      grid-template-rows: 0fr;
       opacity: 0;
-      max-height: 0;
       margin: 0;
       pointer-events: none;
     }
@@ -159,33 +155,41 @@
   position: relative;
   z-index: 2;
   margin-top: auto;
-  min-height: 2.5rem;
-  max-height: 2.5rem;
-  overflow: hidden;
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
   transition:
     opacity var(--psc-dur) var(--psc-ease),
-    max-height var(--psc-dur) var(--psc-ease),
+    grid-template-rows var(--psc-dur) var(--psc-ease),
     margin var(--psc-dur) var(--psc-ease);
   pointer-events: auto;
+
+  > * {
+    min-height: 0;
+    overflow: hidden;
+  }
 }
 
 .painel-smart-card__reveal {
   position: relative;
   z-index: 3;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  max-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  overflow: hidden;
-  transform: translateY(6px);
   pointer-events: none;
   transition:
     opacity var(--psc-dur) var(--psc-ease),
-    transform var(--psc-dur) var(--psc-ease),
-    max-height var(--psc-dur) var(--psc-ease),
+    grid-template-rows var(--psc-dur) var(--psc-ease),
     margin var(--psc-dur) var(--psc-ease);
+}
+
+.painel-smart-card__reveal-inner {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 .painel-smart-card__reveal-body {
@@ -222,8 +226,7 @@
   .painel-smart-card {
     transition:
       border-color var(--psc-dur) var(--psc-ease),
-      box-shadow var(--psc-dur) var(--psc-ease),
-      max-height var(--psc-dur) var(--psc-ease);
+      box-shadow var(--psc-dur) var(--psc-ease);
 
     &:hover,
     &:focus-within {
@@ -233,11 +236,8 @@
 
   .painel-smart-card__reveal,
   .painel-smart-card__spark {
-    transition: opacity var(--psc-dur) var(--psc-ease), max-height var(--psc-dur) var(--psc-ease);
-  }
-
-  .painel-smart-card:hover .painel-smart-card__reveal,
-  .painel-smart-card:focus-within .painel-smart-card__reveal {
-    transform: none;
+    transition:
+      opacity var(--psc-dur) var(--psc-ease),
+      grid-template-rows var(--psc-dur) var(--psc-ease);
   }
 }
