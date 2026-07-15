@@ -56,21 +56,6 @@
                 class="fin-painel__conta-card"
                 [class.fin-painel__conta-card--banco]="conta.id === 'banco'"
               >
-                <span class="fin-painel__card-arrow" aria-hidden="true">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
-                </span>
                 <span class="fin-painel__card-label">{{ conta.titulo }}</span>
                 <strong class="fin-painel__card-value">{{
                   conta.valor | currency: 'BRL' : 'symbol' : '1.2-2'
@@ -96,6 +81,7 @@
               [painelFlutuante]="true"
               [semBackdropEscuro]="true"
               [mostrarBotaoCalendario]="true"
+              [sublinhadoDeslizante]="true"
               [(inicioYmd)]="periodoTotaisInicioYmd"
               [(fimYmd)]="periodoTotaisFimYmd"
               (periodoAlterado)="onPeriodoTotaisAlterado()"
@@ -152,6 +138,7 @@
               [painelFlutuante]="true"
               [semBackdropEscuro]="true"
               [mostrarBotaoCalendario]="true"
+              [sublinhadoDeslizante]="true"
               [(inicioYmd)]="periodoFluxoInicioYmd"
               [(fimYmd)]="periodoFluxoFimYmd"
               (periodoAlterado)="onPeriodoFluxoAlterado()"
@@ -176,6 +163,7 @@
               [painelFlutuante]="true"
               [semBackdropEscuro]="true"
               [mostrarBotaoCalendario]="true"
+              [sublinhadoDeslizante]="true"
               [(inicioYmd)]="periodoVendasInicioYmd"
               [(fimYmd)]="periodoVendasFimYmd"
               (periodoAlterado)="onPeriodoVendasAlterado()"
@@ -191,3 +179,4 @@
     </div>
   </div>
 </div>
+

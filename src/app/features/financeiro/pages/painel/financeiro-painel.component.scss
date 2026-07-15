@@ -30,11 +30,11 @@
 
 .fin-painel__title {
   margin: 0;
-  padding: 5px 0 10px;
-  font-size: 1.75rem;
+  padding: 10px 0 0;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
-  color: #1f2937;
+  color: #585858;
 }
 
 .fin-painel__erro {
@@ -76,9 +76,9 @@
 
 .fin-painel__block-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 20px;
   font-weight: 700;
-  color: #374151;
+  color: #000000bf;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -91,8 +91,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1rem;
-  padding-top: 0;
-  padding-bottom: 0;
+  padding: 0;
   margin-bottom: 0.35rem;
 }
 
@@ -154,12 +153,29 @@
     }
   }
 
+  .fin-painel__card-arrow {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
   &--receber {
     border-left: 4px solid var(--fin-green);
+
+    .fin-painel__card-arrow,
+    .fin-painel__card-label,
+    .fin-painel__card-value {
+      color: rgb(92, 184, 92);
+    }
   }
 
   &--pagar {
     border-left: 4px solid var(--fin-red);
+
+    .fin-painel__card-arrow,
+    .fin-painel__card-label,
+    .fin-painel__card-value {
+      color: rgb(199, 61, 61);
+    }
   }
 }
 
@@ -211,17 +227,21 @@
   }
 
   .fin-painel__card-label {
-    font-size: 0.9rem;
+    font-size: 18px;
     font-weight: 600;
     opacity: 0.95;
     color: #fff;
   }
 
   .fin-painel__card-value {
-    font-size: 1.35rem;
+    font-size: 24px;
     font-weight: 700;
     color: #fff;
     transition: opacity 220ms var(--fin-ease);
+  }
+
+  .fin-painel__card-arrow {
+    color: #fff;
   }
 
   &--recebidos {
@@ -250,13 +270,13 @@
 }
 
 .fin-painel__card-label {
-  font-size: 0.875rem;
+  font-size: 18px;
   font-weight: 500;
   color: #4b5563;
 }
 
 .fin-painel__card-value {
-  font-size: 1.125rem;
+  font-size: 24px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #111827;
@@ -296,8 +316,10 @@
 }
 
 .fin-painel__periodo-wrap {
+  /** Sublinhado deslizante azul, alinhado aos gráficos. */
+  --color-primary: #3b82f6;
+
   position: relative;
-  max-width: min(100%, 280px);
   min-width: 0;
 
   app-cliente-drawer-periodo-filtro {
@@ -306,48 +328,59 @@
   }
 
   ::ng-deep .periodo-filtro__bar {
-    display: flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.15rem;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    padding: 0.1rem 0.15rem;
     border: none;
     border-radius: 8px;
     background: transparent;
     box-shadow: none;
+    overflow: visible;
   }
 
   ::ng-deep .periodo-filtro__inputs {
-    display: flex;
+    --periodo-input-w: 6.1rem;
+    --periodo-sep-w: 1.6rem;
+    --periodo-gap: 0.25rem;
+
     align-items: center;
-    gap: 0.25rem;
+    align-self: center;
+    flex: 0 0 auto;
+    width: max-content;
     min-width: 0;
-    flex: 1 1 auto;
+  }
+
+  ::ng-deep .periodo-filtro__field {
+    flex: 0 0 var(--periodo-input-w);
+    width: var(--periodo-input-w);
+    padding-bottom: 0.2rem;
   }
 
   ::ng-deep .periodo-filtro__input {
+    width: 100%;
+    padding: 0.1rem 0.1rem 0.2rem;
     font-size: 0.8125rem;
-    font-weight: 500;
+    font-weight: 600;
     color: #374151;
-    padding: 0;
-    min-width: 0;
-    width: 5.6rem;
+    text-align: center;
+    cursor: pointer;
   }
 
   ::ng-deep .periodo-filtro__sep {
+    align-self: center;
+    margin-bottom: 0.2rem;
     font-size: 0.75rem;
     color: #9ca3af;
-    padding: 0 0.1rem;
   }
 
   ::ng-deep .periodo-filtro__cal-btn {
     flex: 0 0 auto;
-    width: 28px;
-    height: 28px;
+    align-self: center;
+    width: 26px;
+    height: 26px;
+    margin-bottom: 0.2rem;
     color: #6b7280;
-  }
-
-  ::ng-deep .periodo-filtro__underline {
-    display: none;
   }
 }
 
