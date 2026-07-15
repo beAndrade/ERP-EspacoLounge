@@ -41,6 +41,18 @@
   vector-effect: non-scaling-stroke;
 }
 
+.fin-fluxo__axis {
+  stroke: #9ca3af;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.fin-fluxo__axis-tick {
+  stroke: #9ca3af;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
 .fin-fluxo__zero-line {
   stroke: #3b82f6;
   stroke-width: 2;
@@ -51,13 +63,13 @@
 
 .fin-fluxo__tick {
   fill: #9ca3af;
-  font-size: 10px;
+  font-size: 12px;
   font-family: inherit;
 }
 
 .fin-fluxo__xlabel {
   fill: #9ca3af;
-  font-size: 10px;
+  font-size: 12px;
   font-family: inherit;
 }
 
@@ -159,7 +171,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: 14px;
   font-weight: 500;
   color: #6b7280;
 }
@@ -192,6 +204,13 @@
   text-align: center;
   font-size: 0.875rem;
   color: #9ca3af;
+}
+
+.fin-fluxo__empty-label {
+  fill: #9ca3af;
+  font-size: 12px;
+  font-family: inherit;
+  pointer-events: none;
 }
 
 @keyframes finBarGrow {

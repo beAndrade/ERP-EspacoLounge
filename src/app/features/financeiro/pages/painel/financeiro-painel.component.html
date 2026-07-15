@@ -25,8 +25,8 @@
                 <span class="fin-painel__card-arrow" aria-hidden="true">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -84,7 +84,7 @@
               [sublinhadoDeslizante]="true"
               [(inicioYmd)]="periodoTotaisInicioYmd"
               [(fimYmd)]="periodoTotaisFimYmd"
-              (periodoAlterado)="onPeriodoTotaisAlterado()"
+              (periodoAlterado)="onPeriodoTotaisAlterado($event)"
             />
           </div>
         </div>
@@ -105,8 +105,8 @@
                 <span class="fin-painel__card-arrow" aria-hidden="true">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -141,7 +141,7 @@
               [sublinhadoDeslizante]="true"
               [(inicioYmd)]="periodoFluxoInicioYmd"
               [(fimYmd)]="periodoFluxoFimYmd"
-              (periodoAlterado)="onPeriodoFluxoAlterado()"
+              (periodoAlterado)="onPeriodoFluxoAlterado($event)"
             />
           </div>
         </div>
@@ -166,7 +166,7 @@
               [sublinhadoDeslizante]="true"
               [(inicioYmd)]="periodoVendasInicioYmd"
               [(fimYmd)]="periodoVendasFimYmd"
-              (periodoAlterado)="onPeriodoVendasAlterado()"
+              (periodoAlterado)="onPeriodoVendasAlterado($event)"
             />
           </div>
         </div>

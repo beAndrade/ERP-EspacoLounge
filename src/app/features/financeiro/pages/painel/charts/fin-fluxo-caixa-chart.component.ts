@@ -181,11 +181,15 @@ export class FinFluxoCaixaChartComponent implements AfterViewInit, OnDestroy {
     const g = this.geom();
     if (!g.bars.length) return;
 
-    /** Dia ativo = última linha (cx) à esquerda do cursor. */
+    /** Dia ativo = linha (cx) mais próxima do cursor. */
     let best = 0;
+    let bestDist = Infinity;
     for (const b of g.bars) {
-      if (b.cx <= x) best = b.i;
-      else break;
+      const d = Math.abs(b.cx - x);
+      if (d < bestDist) {
+        bestDist = d;
+        best = b.i;
+      }
     }
 
     const ponto = serie[best];

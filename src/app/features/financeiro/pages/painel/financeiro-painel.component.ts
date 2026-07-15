@@ -204,17 +204,29 @@ export class FinanceiroPainelComponent implements OnInit {
     this.activeDayYmd.set(ymd);
   }
 
-  onPeriodoTotaisAlterado(): void {
+  onPeriodoTotaisAlterado(periodo?: { inicioYmd: string; fimYmd: string }): void {
+    if (periodo?.inicioYmd && periodo?.fimYmd) {
+      this.periodoTotaisInicioYmd = periodo.inicioYmd;
+      this.periodoTotaisFimYmd = periodo.fimYmd;
+    }
     this.activeDayYmd.set(null);
     this.carregarTotais();
   }
 
-  onPeriodoFluxoAlterado(): void {
+  onPeriodoFluxoAlterado(periodo?: { inicioYmd: string; fimYmd: string }): void {
+    if (periodo?.inicioYmd && periodo?.fimYmd) {
+      this.periodoFluxoInicioYmd = periodo.inicioYmd;
+      this.periodoFluxoFimYmd = periodo.fimYmd;
+    }
     this.activeDayYmd.set(null);
     this.carregarFluxo();
   }
 
-  onPeriodoVendasAlterado(): void {
+  onPeriodoVendasAlterado(periodo?: { inicioYmd: string; fimYmd: string }): void {
+    if (periodo?.inicioYmd && periodo?.fimYmd) {
+      this.periodoVendasInicioYmd = periodo.inicioYmd;
+      this.periodoVendasFimYmd = periodo.fimYmd;
+    }
     this.activeDayYmd.set(null);
     this.carregarVendas();
   }

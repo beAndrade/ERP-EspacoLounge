@@ -50,6 +50,44 @@
         />
       }
 
+      <!-- Eixos: borda esquerda (Y) e inferior (X), mais escuras -->
+      <line
+        class="fin-fluxo__axis"
+        [attr.x1]="pad.l"
+        [attr.x2]="pad.l"
+        [attr.y1]="pad.t"
+        [attr.y2]="geom().plotBottom"
+      />
+      <line
+        class="fin-fluxo__axis"
+        [attr.x1]="pad.l"
+        [attr.x2]="width() - pad.r"
+        [attr.y1]="geom().plotBottom"
+        [attr.y2]="geom().plotBottom"
+      />
+
+      <!-- Tracinhos (ticks) no eixo Y -->
+      @for (g of gridLines(); track g.value) {
+        <line
+          class="fin-fluxo__axis-tick"
+          [attr.x1]="pad.l - 5"
+          [attr.x2]="pad.l"
+          [attr.y1]="g.y"
+          [attr.y2]="g.y"
+        />
+      }
+
+      <!-- Tracinhos (ticks) no eixo X -->
+      @for (v of verticalGrid(); track v.x) {
+        <line
+          class="fin-fluxo__axis-tick"
+          [attr.x1]="v.x"
+          [attr.x2]="v.x"
+          [attr.y1]="geom().plotBottom"
+          [attr.y2]="geom().plotBottom + 5"
+        />
+      }
+
       @if (hasData()) {
         <!-- Barras -->
         <g class="fin-fluxo__bars">
@@ -100,7 +138,7 @@
             [attr.d]="linePath()"
             fill="none"
             stroke="#3b82f6"
-            stroke-width="2.75"
+            stroke-width="1.75"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
@@ -115,6 +153,14 @@
           [attr.y1]="zeroLineY()"
           [attr.y2]="zeroLineY()"
         />
+        <text
+          class="fin-fluxo__empty-label"
+          [attr.x]="pad.l + geom().innerW / 2"
+          [attr.y]="pad.t + geom().innerH / 2"
+          text-anchor="middle"
+        >
+          Sem movimentações pagas neste período
+        </text>
       }
 
       <!-- Crosshair sólido + marcador na base (com ou sem movimentação) -->

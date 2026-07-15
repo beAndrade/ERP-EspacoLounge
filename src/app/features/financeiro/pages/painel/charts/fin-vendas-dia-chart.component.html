@@ -42,6 +42,44 @@
         />
       }
 
+      <!-- Eixos: borda esquerda (Y) e inferior (X), mais escuras -->
+      <line
+        class="fin-vendas__axis"
+        [attr.x1]="pad.l"
+        [attr.x2]="pad.l"
+        [attr.y1]="pad.t"
+        [attr.y2]="geom().plotBottom"
+      />
+      <line
+        class="fin-vendas__axis"
+        [attr.x1]="pad.l"
+        [attr.x2]="width() - pad.r"
+        [attr.y1]="geom().plotBottom"
+        [attr.y2]="geom().plotBottom"
+      />
+
+      <!-- Tracinhos (ticks) no eixo Y -->
+      @for (g of gridLines(); track g.value) {
+        <line
+          class="fin-vendas__axis-tick"
+          [attr.x1]="pad.l - 5"
+          [attr.x2]="pad.l"
+          [attr.y1]="g.y"
+          [attr.y2]="g.y"
+        />
+      }
+
+      <!-- Tracinhos (ticks) no eixo X -->
+      @for (v of verticalGrid(); track v.x) {
+        <line
+          class="fin-vendas__axis-tick"
+          [attr.x1]="v.x"
+          [attr.x2]="v.x"
+          [attr.y1]="geom().plotBottom"
+          [attr.y2]="geom().plotBottom + 5"
+        />
+      }
+
       @if (hasData() && geom().mediaY != null) {
         <line
           class="fin-vendas__media"

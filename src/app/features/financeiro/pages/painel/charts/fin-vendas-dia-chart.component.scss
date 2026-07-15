@@ -39,10 +39,22 @@
   vector-effect: non-scaling-stroke;
 }
 
+.fin-vendas__axis {
+  stroke: #9ca3af;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.fin-vendas__axis-tick {
+  stroke: #9ca3af;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
 .fin-vendas__tick,
 .fin-vendas__xlabel {
   fill: #9ca3af;
-  font-size: 10px;
+  font-size: 12px;
   font-family: inherit;
 }
 

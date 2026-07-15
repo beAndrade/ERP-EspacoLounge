@@ -6,14 +6,14 @@
 }
 
 .fin-painel {
-  --fin-green: #22a06b;
-  --fin-green-dark: #1f8f5f;
-  --fin-blue: #3b82f6;
-  --fin-blue-dark: #2563eb;
-  --fin-orange: #f59e0b;
-  --fin-orange-dark: #d97706;
-  --fin-red: #ef4444;
-  --fin-red-dark: #dc2626;
+  --fin-green: #5cb85c;
+  --fin-green-dark: #4cae4c;
+  --fin-blue: #2196f3;
+  --fin-blue-dark: #1e88e5;
+  --fin-orange: #f5a139;
+  --fin-orange-dark: #e6912a;
+  --fin-red: #c73d3d;
+  --fin-red-dark: #b33535;
   --fin-card-radius: 12px;
   --fin-side-w: min(280px, 32vw);
   --fin-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -183,7 +183,7 @@
   background: var(--fin-green);
   color: #fff;
   border: none;
-  box-shadow: 0 2px 8px rgba(34, 160, 107, 0.25);
+  box-shadow: 0 2px 8px rgba(92, 184, 92, 0.28);
 
   .fin-painel__card-label,
   .fin-painel__card-value {
@@ -196,7 +196,7 @@
 
   &--banco {
     background: var(--fin-orange);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.28);
+    box-shadow: 0 2px 8px rgba(245, 161, 57, 0.3);
   }
 }
 
@@ -207,6 +207,11 @@
   color: #fff;
   border: none;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+
+  .fin-painel__card-arrow {
+    top: 50%;
+    transform: translateY(-50%);
+  }
 
   &--link {
     cursor: pointer;
@@ -318,9 +323,18 @@
 .fin-painel__periodo-wrap {
   /** Sublinhado deslizante azul, alinhado aos gráficos. */
   --color-primary: #3b82f6;
+  --periodo-field-line: 3.5px;
 
   position: relative;
   min-width: 0;
+
+  ::ng-deep .periodo-filtro__underline-slide {
+    transition:
+      left 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.24s ease,
+      background-color 0.22s ease;
+  }
 
   app-cliente-drawer-periodo-filtro {
     display: block;
@@ -359,7 +373,7 @@
 
   ::ng-deep .periodo-filtro__input {
     width: 100%;
-    padding: 0.1rem 0.1rem 0.2rem;
+    padding: 0.1rem 0 0.2rem;
     font-size: 0.8125rem;
     font-weight: 600;
     color: #374151;
