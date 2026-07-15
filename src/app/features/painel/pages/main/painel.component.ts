@@ -146,6 +146,15 @@ export class PainelComponent implements OnInit {
     return `${a} ➔ ${b}`;
   }
 
+  hojeLabel(): string {
+    const texto = new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+    }).format(new Date());
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  }
+
   formatMoeda(valor: number): string {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
