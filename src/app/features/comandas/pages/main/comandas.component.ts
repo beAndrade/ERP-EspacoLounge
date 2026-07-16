@@ -202,6 +202,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
   @ViewChild(AgendaNovoComponent)
   private agendaEditComandaRef?: AgendaNovoComponent;
 
+  @ViewChild(FaturarDrawerComponent)
+  private faturarDrawerRef?: FaturarDrawerComponent;
+
   /** Sub-drawer Faturar (pagamentos da comanda). */
   faturarDrawerAberto = false;
   faturarDrawerPanelOpen = false;
@@ -308,8 +311,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   fecharBuscaAoEscape(ev: KeyboardEvent): void {
+    if (ev.defaultPrevented) return;
     if (this.excluirItemModalAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       if (!this.excluindoItemModal) {
         this.fecharModalExcluirItem();
       }
@@ -317,6 +322,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }
     if (this.excluirMassaModalAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       if (!this.excluindoEmMassa) {
         this.fecharModalExcluirEmMassa();
       }
@@ -328,21 +334,30 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }
     if (this.faturarDrawerAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
+      if (this.faturarDrawerRef?.tratarEscapeInterno()) return;
+      if (this.faturarDrawerRef && !this.faturarDrawerRef.podeFecharDrawer()) {
+        return;
+      }
       this.fecharFaturarDrawer();
       return;
     }
     if (this.editAgendamentoAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
+      if (this.agendaEditComandaRef?.tratarEscapeInterno()) return;
       this.fecharEditAgendamento();
       return;
     }
     if (this.comandaPainelAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharComandaDrawer();
       return;
     }
     if (this.novoAgendamentoAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharNovoAgendamento();
       return;
     }

@@ -6,7 +6,12 @@
   [attr.aria-label]="title()"
 >
   @if (link() && !disabled()) {
-    <a class="painel-smart-card__hit" [routerLink]="link()" [attr.aria-label]="title()"></a>
+    <a
+      class="painel-smart-card__hit"
+      [routerLink]="link()"
+      tabindex="-1"
+      aria-hidden="true"
+    ></a>
   }
 
   <header class="painel-smart-card__head">

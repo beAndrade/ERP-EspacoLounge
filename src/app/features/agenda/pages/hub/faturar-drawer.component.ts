@@ -31,12 +31,12 @@ import type {
 import { dataYmdAnteriorAHoje } from '../../../../core/utils/comanda-status.util';
 
 function formataMoedaBrl(n: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
+  const num = n.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(n);
+  });
+  /** Espaço explícito entre «R$» e o valor (evita NBSP apertado / placeholder sem gap). */
+  return `R$ ${num}`;
 }
 
 function parsePtDecimal(s: string): number {
@@ -58,7 +58,7 @@ function formatarInputPt(n: number): string {
   });
 }
 
-const PLACEHOLDER_MOEDA = 'R$0,00';
+const PLACEHOLDER_MOEDA = 'R$ 0,00';
 
 /** Máscara por dígitos (centavos), igual aos outros campos de valor do sistema. */
 function moedaAPartirDosDigitos(raw: string): string {
@@ -233,6 +233,11 @@ export class FaturarDrawerComponent implements OnInit {
 
   /** Calendário «Data do pagamento» (reutiliza `app-agenda-modal-calendar`). */
   pagamentoDataPickerOpen = false;
+  /** Calendário por linha da lista (`a-{id}` / `r-{idLocal}`). */
+  linhaDataPickerKey: string | null = null;
+  /** Preview YMD enquanto o rato passa nas células do calendário da linha. */
+  linhaDataPreviewYmd: string | null = null;
+  salvandoDataLinhaKey: string | null = null;
 
   readonly placeholderMoeda = PLACEHOLDER_MOEDA;
 
@@ -325,7 +330,8 @@ export class FaturarDrawerComponent implements OnInit {
    * O resumo da API pode vir com `desconto` 0 quando o desconto ainda só existe
    * nos campos do drawer da comanda (`descontoResumoCtrl`). Ao abrir Faturar,
    * o pai envia `resumoInicial` alinhado a essa UI — mantemos desconto e totais
-   * da comanda a partir dali e só `total_pago` / `status` vindos da API.
+   * da comanda a partir dali; `total_pago`, `saldo`, `status` e `cobranca_status`
+   * vêm sempre da API (evita saldo stale após excluir pagamentos).
    */
   private mesclarResumoComInicial(api: ComandaResumoPagamentos): ComandaResumoPagamentos {
     const ini = this.resumoInicial();
@@ -337,10 +343,10 @@ export class FaturarDrawerComponent implements OnInit {
     const totalBruto = ini.total_bruto;
     const desconto = ini.desconto;
     const cred = this.creditoComandaAplicado();
-    const saldoIni = ini.saldo;
+    const saldoApi = api.saldo;
     const saldo =
-      saldoIni != null && Number.isFinite(saldoIni)
-        ? Math.max(0, Math.round(saldoIni * 100) / 100)
+      saldoApi != null && Number.isFinite(saldoApi)
+        ? Math.max(0, Math.round(saldoApi * 100) / 100)
         : Math.max(
             0,
             Math.round((total - totalPago - cred) * 100) / 100,
@@ -350,9 +356,10 @@ export class FaturarDrawerComponent implements OnInit {
       total_bruto: totalBruto,
       desconto,
       total,
+      total_pago: totalPago,
       saldo,
       status: api.status,
-      cobranca_status: api.cobranca_status ?? ini.cobranca_status,
+      cobranca_status: api.cobranca_status,
     };
   }
 
@@ -455,6 +462,13 @@ export class FaturarDrawerComponent implements OnInit {
     ) {
       this.pagamentoDataPickerOpen = false;
     }
+    if (
+      this.linhaDataPickerKey &&
+      el &&
+      !el.closest('.fat-pag-data-row')
+    ) {
+      this.fecharLinhaDataPicker();
+    }
     if (this.cartaoDropdownAberto) {
       const wrap = this.cartaoWrap()?.nativeElement;
       if (wrap && !wrap.contains(ev.target as Node)) {
@@ -468,6 +482,7 @@ export class FaturarDrawerComponent implements OnInit {
       this.fecharCartaoDropdown();
     }
     this.pagamentoDataPickerOpen = false;
+    this.fecharLinhaDataPicker();
   }
 
   dataPagamentoYmd(): string {
@@ -489,12 +504,85 @@ export class FaturarDrawerComponent implements OnInit {
     }
     ev.preventDefault();
     this.fecharCartaoDropdown();
+    this.fecharLinhaDataPicker();
     this.pagamentoDataPickerOpen = !this.pagamentoDataPickerOpen;
   }
 
   onPagamentoDataPicked(ymd: string): void {
     this.dataCtrl.setValue(ymdToDdMmYyyy(ymd), { emitEvent: false });
     this.pagamentoDataPickerOpen = false;
+  }
+
+  chaveLinha(l: PagamentoLinhaUi): string {
+    return this.trackPagamentoLinha(0, l);
+  }
+
+  dataYmdLinha(l: PagamentoLinhaUi): string {
+    const y = l.row.data_pagamento.trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : ymdHoje();
+  }
+
+  linhaDataPickerAberto(l: PagamentoLinhaUi): boolean {
+    return this.linhaDataPickerKey === this.chaveLinha(l);
+  }
+
+  private fecharLinhaDataPicker(): void {
+    this.linhaDataPickerKey = null;
+    this.linhaDataPreviewYmd = null;
+  }
+
+  toggleLinhaDataPicker(ev: Event, l: PagamentoLinhaUi): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.fecharCartaoDropdown();
+    this.pagamentoDataPickerOpen = false;
+    const key = this.chaveLinha(l);
+    if (this.linhaDataPickerKey === key) {
+      this.fecharLinhaDataPicker();
+      return;
+    }
+    this.linhaDataPreviewYmd = null;
+    this.linhaDataPickerKey = key;
+  }
+
+  onLinhaDataHover(ymd: string | null): void {
+    this.linhaDataPreviewYmd = ymd;
+  }
+
+  onLinhaDataPicked(l: PagamentoLinhaUi, ymd: string): void {
+    const y = String(ymd ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return;
+
+    if (l.kind === 'rasc') {
+      const idLocal = l.row.idLocal;
+      this.rascunho = this.rascunho.map((r) =>
+        r.idLocal === idLocal ? { ...r, data_pagamento: y } : r,
+      );
+      this.fecharLinhaDataPicker();
+      return;
+    }
+
+    const key = this.chaveLinha(l);
+    const pagId = l.row.id;
+    this.salvandoDataLinhaKey = key;
+    this.erro = '';
+    this.api
+      .atualizarDataComandaPagamento(this.idAtendimento(), pagId, y)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ pagamento, resumo }) => {
+          this.pagamentos = this.pagamentos.map((p) =>
+            p.id === pagamento.id ? pagamento : p,
+          );
+          this.resumo = resumo;
+          this.salvandoDataLinhaKey = null;
+          this.fecharLinhaDataPicker();
+        },
+        error: (e: Error) => {
+          this.salvandoDataLinhaKey = null;
+          this.erro = e.message || 'Não foi possível actualizar a data.';
+        },
+      });
   }
 
   onValorMoedaInput(ev: Event): void {
@@ -669,6 +757,9 @@ export class FaturarDrawerComponent implements OnInit {
   }
 
   dataExibicaoLinha(l: PagamentoLinhaUi): string {
+    if (this.linhaDataPickerAberto(l) && this.linhaDataPreviewYmd) {
+      return ymdToDdMmYyyy(this.linhaDataPreviewYmd);
+    }
     return l.kind === 'api'
       ? this.dataExibicao(l.row)
       : ymdToDdMmYyyy(l.row.data_pagamento);
@@ -698,6 +789,7 @@ export class FaturarDrawerComponent implements OnInit {
 
   podeMostrarFaturar(): boolean {
     if (this.salvando) return false;
+    if (this.excluindoPagamentoId !== null) return false;
     const credComanda = this.creditoComandaAplicado();
     if (this.rascunho.length === 0 && credComanda <= 0.001) return false;
     const temComanda = this.rascunho.some((r) => r.destino === 'comanda');
@@ -718,10 +810,21 @@ export class FaturarDrawerComponent implements OnInit {
   }
 
   rotuloBotaoConfirmar(): string {
+    const verPag = this.modoVerPagamentos();
     if (this.salvando) {
-      return 'A faturar…';
+      return verPag ? 'A gravar…' : 'A faturar…';
     }
-    return 'Faturar';
+    return verPag ? 'Gravar' : 'Faturar';
+  }
+
+  /** Bloqueia fecho enquanto um DELETE de pagamento ainda corre. */
+  podeFecharDrawer(): boolean {
+    return this.excluindoPagamentoId === null && !this.salvando;
+  }
+
+  pedirFechar(): void {
+    if (!this.podeFecharDrawer()) return;
+    this.fechar.emit();
   }
 
   adicionarAoRascunho(metodo: MetodoPagamentoComanda): void {
@@ -901,10 +1004,13 @@ export class FaturarDrawerComponent implements OnInit {
           this.excluindoPagamentoId = null;
           this.pagamentos = this.pagamentos.filter((x) => x.id !== p.id);
           this.resumo = this.mesclarResumoComInicial(r.resumo);
-          if (this.resumo.saldo > 0) {
-            this.valorCtrl.setValue(formataMoedaBrl(this.resumo.saldo), {
+          const saldo = this.resumo.saldo;
+          if (saldo > 0.001) {
+            this.valorCtrl.setValue(formataMoedaBrl(saldo), {
               emitEvent: false,
             });
+          } else {
+            this.valorCtrl.setValue('', { emitEvent: false });
           }
         },
         error: (e: Error) => {
@@ -961,26 +1067,47 @@ export class FaturarDrawerComponent implements OnInit {
     }
   }
 
-  @HostListener('document:keydown.escape', ['$event'])
-  onEsc(ev: KeyboardEvent): void {
-    if (!this.gerenciarEscape()) return;
-    if (ev.defaultPrevented) return;
+  /**
+   * Fecha overlays internos (troco, dropdown, calendário).
+   * Devolve true se consumiu o ESC — o pai não deve fechar o drawer.
+   */
+  tratarEscapeInterno(): boolean {
     if (this.trocoAberto) {
-      ev.preventDefault();
       this.fecharCalcularTroco();
-      return;
+      return true;
     }
     if (this.cartaoDropdownAberto) {
-      ev.preventDefault();
       this.fecharCartaoDropdown();
-      return;
+      return true;
     }
     if (this.pagamentoDataPickerOpen) {
-      ev.preventDefault();
       this.pagamentoDataPickerOpen = false;
+      return true;
+    }
+    if (this.linhaDataPickerKey) {
+      this.fecharLinhaDataPicker();
+      return true;
+    }
+    return false;
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEsc(ev: KeyboardEvent): void {
+    if (ev.defaultPrevented) return;
+    if (this.tratarEscapeInterno()) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      return;
+    }
+    /** Pai (hub / comandas / host cliente) gere a pilha de drawers. */
+    if (!this.gerenciarEscape()) return;
+    if (!this.podeFecharDrawer()) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
       return;
     }
     ev.preventDefault();
-    this.fechar.emit();
+    ev.stopImmediatePropagation();
+    this.pedirFechar();
   }
 }

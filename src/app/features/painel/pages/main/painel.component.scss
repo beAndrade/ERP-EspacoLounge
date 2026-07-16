@@ -161,11 +161,15 @@
 }
 
 .painel-head__btn-atualizar-icon--spin {
-  animation: painelAtualizarSpin 0.75s linear infinite;
-  transform-origin: center;
+  animation: painelAtualizarSpin 0.7s linear infinite;
+  transform-origin: 50% 50%;
+  transform-box: view-box;
 }
 
 @keyframes painelAtualizarSpin {
+  from {
+    transform: rotate(0deg);
+  }
   to {
     transform: rotate(360deg);
   }
@@ -352,6 +356,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition: color 200ms ease;
+
+    &.painel-reveal__val--up {
+      color: #059669;
+    }
+
+    &.painel-reveal__val--down {
+      color: #dc2626;
+    }
+
+    &.painel-reveal__val--zero {
+      color: #9ca3af;
+    }
   }
 
   &--dots {
@@ -507,18 +524,32 @@
 .painel-combo__col {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 0.85rem;
   min-width: 0;
   min-height: 0;
+
+  > .painel-panel__head {
+    align-self: stretch;
+    width: 100%;
+    text-align: left;
+  }
+
+  > .painel-panel__head .painel-panel__title {
+    text-align: left;
+    margin: 0;
+  }
 }
 
 .painel-combo__col--status {
   min-width: 0;
 }
 
-.painel-combo__body--status {
-  justify-content: flex-start;
-  padding-top: 0.25rem;
+.painel-combo__chart {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .painel-combo__body {
@@ -533,32 +564,39 @@
   }
 }
 
-.painel-combo__body--center {
-  justify-content: center;
-}
-
 .painel-panel__head--row {
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  width: 100%;
+
+  .painel-panel__title {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+  }
+
+  app-painel-rich-tip,
+  app-ui-tip-trigger {
+    flex-shrink: 0;
+  }
 }
 
 .painel-panel__info {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 999px;
-  border: 1px solid #d1d5db;
-  color: #6b7280;
-  font-size: 0.68rem;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 1;
   flex-shrink: 0;
+  color: #9ca3af;
   cursor: help;
+  line-height: 0;
+
+  svg {
+    display: block;
+    width: 1.125rem;
+    height: 1.125rem;
+  }
 }
 
 .painel-panel__head {
@@ -566,6 +604,11 @@
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
+
+  &.painel-panel__head--row {
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
 .painel-panel__title {
@@ -620,3 +663,83 @@
     grid-template-columns: 1fr;
   }
 }
+
+/** Conteúdo rico do tip de Ticket médio (e reutilizável). */
+.painel-tip-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.painel-tip-doc__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.painel-tip-doc__text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.painel-tip-doc__formula {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #1f2937;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.painel-tip-doc__example {
+  padding: 0.75rem 0.85rem;
+  border-radius: 8px;
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.painel-tip-doc__example-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.painel-tip-doc__list,
+.painel-tip-doc__steps {
+  margin: 0 0 0.75rem;
+  padding-left: 1.15rem;
+  color: #374151;
+  font-size: 0.78rem;
+  line-height: 1.55;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  li + li {
+    margin-top: 0.2rem;
+  }
+}
+
+.painel-tip-doc__list {
+  list-style: disc;
+}
+
+.painel-tip-doc__steps {
+  list-style: decimal;
+}
+
+.painel-tip-doc__result {
+  font-weight: 700;
+  color: #2563eb;
+}
+

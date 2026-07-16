@@ -19,6 +19,29 @@ function labelDataCompleta(ymd: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/** Barra com base reta e só os cantos superiores arredondados. */
+function barraTopoArredondada(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): string {
+  const rr = Math.min(r, w / 2, h);
+  if (rr <= 0) {
+    return `M ${x} ${y + h} H ${x + w} V ${y} H ${x} Z`;
+  }
+  return [
+    `M ${x} ${y + h}`,
+    `L ${x} ${y + rr}`,
+    `Q ${x} ${y} ${x + rr} ${y}`,
+    `L ${x + w - rr} ${y}`,
+    `Q ${x + w} ${y} ${x + w} ${y + rr}`,
+    `L ${x + w} ${y + h}`,
+    'Z',
+  ].join(' ');
+}
+
 @Component({
   selector: 'app-painel-chart-tendencia',
   standalone: true,
@@ -75,22 +98,25 @@ export class PainelChartTendenciaComponent implements AfterViewInit, OnDestroy {
     if (!pts.length) return [];
     const max = this.niceMax() || 1;
     const slot = this.innerW() / pts.length;
-    /** Barra um pouco mais estreita que a faixa de hover (slot inteiro). */
+    /** Barra; hover cinza um pouco mais largo, mas bem mais estreito que o slot. */
     const bw = Math.min(40, slot * 0.78);
+    const bandW = Math.min(slot * 0.92, Math.max(bw + 10, bw * 1.28));
     return pts.map((p, i) => {
       const cx = this.pad.l + slot * (i + 0.5);
       const h = p.value > 0 ? (p.value / max) * this.innerH() : 0;
       const y = this.pad.t + this.innerH() - h;
+      const x = cx - bw / 2;
       return {
         p,
         i,
         cx,
-        x: cx - bw / 2,
+        x,
         y,
         w: bw,
         h,
-        slotX: this.pad.l + slot * i,
-        slotW: slot,
+        path: h > 0 ? barraTopoArredondada(x, y, bw, h, 7) : '',
+        bandX: cx - bandW / 2,
+        bandW,
       };
     });
   });

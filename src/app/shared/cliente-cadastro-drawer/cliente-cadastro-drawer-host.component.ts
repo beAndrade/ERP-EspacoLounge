@@ -72,6 +72,9 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   @ViewChild(AgendaNovoComponent)
   private editAgendamentoEmpilhadoRef?: AgendaNovoComponent;
 
+  @ViewChild(FaturarDrawerComponent)
+  private faturarEmpilhadoRef?: FaturarDrawerComponent;
+
   comandaEmpilhadaDataYmd: string | null = null;
 
   atualizarCreditoAberto = false;
@@ -121,12 +124,20 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
     if (this.faturarEmpilhadoAberto) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
+      if (this.faturarEmpilhadoRef?.tratarEscapeInterno()) return;
+      if (
+        this.faturarEmpilhadoRef &&
+        !this.faturarEmpilhadoRef.podeFecharDrawer()
+      ) {
+        return;
+      }
       this.fecharFaturarEmpilhado();
       return;
     }
     if (this.editAgendamentoEmpilhadoAberto) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
+      if (this.editAgendamentoEmpilhadoRef?.tratarEscapeInterno()) return;
       this.fecharEditAgendamentoEmpilhado();
       return;
     }

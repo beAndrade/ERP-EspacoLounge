@@ -298,7 +298,8 @@
   align-self: stretch;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--drawer-stroke, #ececec);
+  /** Borda só no sidebar (`:host-context(.agenda-novo--drawer)`); evita linha dupla. */
+  border-right: none;
 
   &.agenda-novo--drawer {
     --drawer-label-size: 15px;
@@ -328,6 +329,8 @@
     flex-direction: column;
     overflow: hidden;
     padding-bottom: 0;
+    padding-right: 15px;
+    box-sizing: border-box;
   }
 }
 
@@ -463,11 +466,11 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0 0 0.5rem;
+  padding: 0 15px 0.5rem 0;
   margin-top: 1rem;
   border-top: 1px solid var(--drawer-stroke, #ececec);
   background: #fff;
-  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.04);
+  box-shadow: none;
 }
 
 .nc-itens__title {
@@ -912,7 +915,7 @@
   flex: 0 0 auto;
   margin-top: 0;
   margin-bottom: 0;
-  padding: 10px 0 10px var(--drawer-pad-x, 15px);
+  padding: 10px 15px 10px var(--drawer-pad-x, 15px);
   background: #fff;
   position: relative;
   z-index: 2;
@@ -1066,8 +1069,8 @@
 
 .btn-footer {
   box-sizing: border-box;
-  min-height: 32px;
-  height: 32px;
+  min-height: 40px;
+  height: 40px;
   padding: 0 15px;
   border-radius: 14px;
   font-size: 14px;
@@ -1335,7 +1338,7 @@
   }
 
   .servico-row__actions--comanda {
-    flex: 0 0 calc(2.5rem * 2 + 0.4rem);
+    flex: 0 0 calc(38px * 2 + 0.4rem);
   }
 }
 
@@ -1431,8 +1434,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 38px;
+  height: 38px;
   min-height: 0;
   margin-top: 0;
   padding: 0;
@@ -1472,8 +1475,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 38px;
+  height: 38px;
   min-height: 0;
   margin-top: 0;
   padding: 0;

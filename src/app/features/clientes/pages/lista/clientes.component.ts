@@ -531,8 +531,10 @@ export class ClientesComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (ev.defaultPrevented) return;
     if (this.excluirModalAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       if (!this.excluindoClienteModal) {
         this.fecharModalExcluirCliente();
       }
@@ -544,16 +546,19 @@ export class ClientesComponent implements OnInit, OnDestroy {
     }
     if (this.filtrosAbertos) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.filtrosAbertos = false;
       return;
     }
     if (this.perPageMenuAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.perPageMenuAberto = false;
       return;
     }
     if (this.buscaAberta) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharPainelBusca();
     }
   }

@@ -22,6 +22,7 @@
   font-weight: 700;
   color: #111827;
   line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 
 .painel-ticket__vs {
@@ -54,7 +55,7 @@
 }
 
 .painel-ticket__chart-title {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.35rem;
   font-size: 0.82rem;
   font-weight: 600;
   color: #374151;
@@ -66,17 +67,31 @@
   display: block;
 }
 
+.painel-ticket__grid {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
 .painel-ticket__tick {
   font-size: 9px;
   fill: #9ca3af;
+  font-variant-numeric: tabular-nums;
 }
 
 .painel-ticket__bar {
-  fill: #e5e7eb;
+  fill: #d1d5db;
 
   &--atual {
     fill: #34d399;
   }
+}
+
+.painel-ticket__bar-value {
+  font-size: 9px;
+  font-weight: 600;
+  fill: #6b7280;
+  font-variant-numeric: tabular-nums;
 }
 
 .painel-ticket__bar-label {

@@ -365,7 +365,44 @@
           </section>
 
           <section class="fin-filtros-card">
-            <h3 class="fin-filtros-card__title">Status</h3>
+            <h3 class="fin-filtros-card__title">
+              <span class="fin-filtros-card__title-label">Status</span>
+              <app-fin-filtros-floating-tip panelModifier="fin-status-parcelas-tip">
+                <button
+                  finFiltrosTipTrigger
+                  type="button"
+                  class="fin-filtros-card__title-tip"
+                  aria-describedby="fin-tip-status-parcelas"
+                >
+                  ?
+                </button>
+                <div finFiltrosTipBody id="fin-tip-status-parcelas">
+                  <p>
+                    <strong>Como funcionam as parcelas?</strong><br />
+                    Quando o atendimento é parcelado, o sistema cria as parcelas
+                    futuras com data de vencimento. Ele não marca sozinho que o
+                    dinheiro entrou — isso é feito ao dar baixa.
+                  </p>
+                  <p>
+                    <strong>Regra de ouro:</strong> parcelamento = o sistema marca
+                    o vencimento. Dinheiro na mão = você dá baixa. Sem baixa,
+                    fica Em aberto ou Atrasado.
+                  </p>
+                  <p>
+                    <strong>Em aberto:</strong> parcela ainda não paga (no prazo
+                    ou no dia).<br />
+                    <strong>Atrasado:</strong> passou do vencimento sem baixa.<br />
+                    <strong>Pago:</strong> baixa feita — valor no financeiro.
+                  </p>
+                  <p>
+                    <strong>No dia a dia:</strong> dê baixa na hora em que
+                    receber; confira Em aberto e Atrasado no fim do dia; se
+                    pagou em outro dia, ainda assim dê baixa e ajuste a data se
+                    precisar.
+                  </p>
+                </div>
+              </app-fin-filtros-floating-tip>
+            </h3>
             <ul class="fin-filtros-check-list">
               <li>
                 <label class="fin-filtros-check">

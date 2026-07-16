@@ -8,7 +8,8 @@
       <button
         type="button"
         class="fat-close"
-        (click)="fechar.emit()"
+        (click)="pedirFechar()"
+        [disabled]="!podeFecharDrawer()"
         aria-label="Fechar"
       >
         <svg
@@ -273,9 +274,11 @@
       </button>
     </div>
 
-    <hr class="fat-sep" />
-
-    <h2 class="fat-h2">Pagamentos</h2>
+    <div class="fat-h2-row">
+      <hr class="fat-sep fat-sep--lead" aria-hidden="true" />
+      <h2 class="fat-h2">Pagamentos</h2>
+      <hr class="fat-sep fat-sep--trail" aria-hidden="true" />
+    </div>
     @if (carregando) {
       <p class="fat-hint">Carregando…</p>
     } @else if (pagamentos.length === 0 && rascunho.length === 0) {
@@ -319,18 +322,69 @@
                   <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 </svg>
               </button>
-              <span class="fat-pag-metodo">
-                <span class="fat-pag-metodo__label">
-                  {{ rotuloMetodoPrincipal(l) }}
-                  @if (parcelaRotuloSufixo(l); as px) {
-                    <span class="fat-pag-metodo__parcela">{{ px }}</span>
+              <div class="fat-pag-info__text">
+                <span class="fat-pag-metodo">
+                  <span class="fat-pag-metodo__label">
+                    {{ rotuloMetodoPrincipal(l) }}
+                    @if (parcelaRotuloSufixo(l); as px) {
+                      <span class="fat-pag-metodo__parcela">{{ px }}</span>
+                    }
+                  </span>
+                </span>
+                <span class="fat-pag-data-row">
+                  <span
+                    class="fat-pag-data"
+                    [class.fat-pag-data--preview]="linhaDataPickerAberto(l)"
+                  >
+                    {{ dataExibicaoLinha(l) }}
+                  </span>
+                  <button
+                    type="button"
+                    class="fat-pag-data-edit"
+                    [attr.aria-label]="'Editar data do pagamento'"
+                    [attr.aria-expanded]="linhaDataPickerAberto(l)"
+                    [disabled]="salvandoDataLinhaKey === chaveLinha(l)"
+                    (click)="toggleLinhaDataPicker($event, l)"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide lucide-square-pen-icon lucide-square-pen"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                      />
+                      <path
+                        d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                      />
+                    </svg>
+                  </button>
+                  @if (linhaDataPickerAberto(l)) {
+                    <div
+                      class="fat-pag-data__calendar-pop"
+                      (click)="$event.stopPropagation()"
+                    >
+                      <app-agenda-modal-calendar
+                        [ymd]="dataYmdLinha(l)"
+                        [selectedYmd]="dataYmdLinha(l)"
+                        (ymdPicked)="onLinhaDataPicked(l, $event)"
+                        (ymdHover)="onLinhaDataHover($event)"
+                      />
+                    </div>
                   }
                 </span>
-              </span>
-              <span class="fat-pag-data">{{ dataExibicaoLinha(l) }}</span>
-              @if (l.kind === 'api' && l.row.observacao) {
-                <span class="fat-pag-obs">{{ l.row.observacao }}</span>
-              }
+                @if (l.kind === 'api' && l.row.observacao) {
+                  <span class="fat-pag-obs">{{ l.row.observacao }}</span>
+                }
+              </div>
             </div>
             <div class="fat-pag-actions">
               <div class="fat-pag-valor-wrap">
@@ -380,9 +434,11 @@
       </ul>
     }
 
-    <hr class="fat-sep" />
-
-    <h2 class="fat-h2">Resumo da compra</h2>
+    <div class="fat-h2-row">
+      <hr class="fat-sep fat-sep--lead" aria-hidden="true" />
+      <h2 class="fat-h2">Resumo da compra</h2>
+      <hr class="fat-sep fat-sep--trail" aria-hidden="true" />
+    </div>
     <div class="fat-resumo">
       <div class="fat-resumo__row">
         <span>Descontos</span>
@@ -419,18 +475,20 @@
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
+        width="24"
+        height="24"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
+        class="lucide lucide-circle-dollar-sign-icon lucide-circle-dollar-sign"
         aria-hidden="true"
       >
-        <circle cx="12" cy="12" r="9" />
-        <path d="M14.5 8.5h-3a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-3" />
+        <circle cx="12" cy="12" r="10" />
+        <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+        <path d="M12 18V6" />
       </svg>
       Calcular troco
     </button>
@@ -447,7 +505,8 @@
       <button
         type="button"
         class="fat-btn fat-btn--primary"
-        (click)="fechar.emit()"
+        [disabled]="!podeFecharDrawer()"
+        (click)="pedirFechar()"
       >
         Voltar
       </button>

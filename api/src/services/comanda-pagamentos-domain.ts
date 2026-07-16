@@ -881,6 +881,8 @@ export async function aplicarCreditoClientePorExcessoEmTx(
 
 /**
  * Alinha `atendimentos.pagamento_status` com o resumo e com linhas `pendente` (dívida).
+ * Se não restar nenhum pagamento e a cobrança estava finalizada, reabre
+ * (`cobranca_status` / `pagamento_status` → null) — alinhado ao card «comanda aberta».
  */
 export async function sincronizarPagamentoStatusAtendimento(
   db: Db,
@@ -888,6 +890,31 @@ export async function sincronizarPagamentoStatusAtendimento(
 ): Promise<void> {
   const id = String(idAtendimento || '').trim();
   if (!id) return;
+
+  const [countRow] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(comandaPagamentos)
+    .where(eq(comandaPagamentos.idAtendimento, id));
+  const qtdPagamentos = Number(countRow?.n ?? 0);
+
+  const [linha] = await db
+    .select({ cobrancaStatus: atendimentos.cobrancaStatus })
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, id))
+    .limit(1);
+  const finalizada =
+    String(linha?.cobrancaStatus ?? '').trim().toLowerCase() === 'finalizada';
+
+  if (qtdPagamentos === 0 && finalizada) {
+    await db
+      .update(atendimentos)
+      .set({
+        cobrancaStatus: null,
+        pagamentoStatus: null,
+      })
+      .where(eq(atendimentos.idAtendimento, id));
+    return;
+  }
 
   const [pendRow] = await db
     .select({ id: comandaPagamentos.id })
@@ -903,13 +930,6 @@ export async function sincronizarPagamentoStatusAtendimento(
 
   const resumo = await getResumoComanda(db, id);
 
-  const [linha] = await db
-    .select({ cobrancaStatus: atendimentos.cobrancaStatus })
-    .from(atendimentos)
-    .where(eq(atendimentos.idAtendimento, id))
-    .limit(1);
-  const finalizada =
-    String(linha?.cobrancaStatus ?? '').trim().toLowerCase() === 'finalizada';
   if (!finalizada) return;
 
   let pagamentoStatus: string;
@@ -1066,5 +1086,64 @@ export async function excluirPagamentoComanda(
   }
 
   return { idAtendimento };
+}
+
+/**
+ * Actualiza a data de um pagamento da comanda e, se existir, a movimentação ligada.
+ */
+export async function atualizarDataPagamentoComanda(
+  db: Db,
+  idAtendimento: string,
+  pagamentoId: number,
+  dataPagamentoYmd: string,
+): Promise<{
+  pagamento: PagamentoComandaDTO;
+  resumo: ResumoComanda;
+}> {
+  const idAt = String(idAtendimento ?? '').trim();
+  if (!idAt) throw new Error('idAtendimento é obrigatório');
+  if (!Number.isFinite(pagamentoId) || pagamentoId <= 0) {
+    throw new Error('id de pagamento inválido');
+  }
+  const data = normalizarYmd(dataPagamentoYmd);
+  if (!data) {
+    throw new Error('data_pagamento inválida; use YYYY-MM-DD');
+  }
+
+  await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(comandaPagamentos)
+      .where(eq(comandaPagamentos.id, pagamentoId))
+      .limit(1);
+    if (!row) throw new Error('Pagamento não encontrado');
+    if (String(row.idAtendimento ?? '').trim() !== idAt) {
+      throw new Error('Pagamento não pertence a esta comanda');
+    }
+
+    await tx
+      .update(comandaPagamentos)
+      .set({ dataPagamento: data })
+      .where(eq(comandaPagamentos.id, pagamentoId));
+
+    if (row.movimentacaoId != null) {
+      await tx
+        .update(movimentacoes)
+        .set({
+          dataMov: data,
+          pagoEm: data,
+        })
+        .where(eq(movimentacoes.id, row.movimentacaoId));
+    }
+  });
+
+  await sincronizarPagamentoStatusAtendimento(db, idAt);
+  await recalcularFolhaAposMudancaAtendimento(db, idAt).catch(() => {});
+
+  const items = await listarPagamentosPorAtendimento(db, idAt);
+  const pagamento = items.find((p) => p.id === pagamentoId);
+  if (!pagamento) throw new Error('Pagamento não encontrado após actualizar');
+  const resumo = await getResumoComanda(db, idAt);
+  return { pagamento, resumo };
 }
 

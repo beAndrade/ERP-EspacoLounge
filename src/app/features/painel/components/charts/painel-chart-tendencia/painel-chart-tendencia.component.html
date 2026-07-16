@@ -46,23 +46,18 @@
             <rect
               class="painel-tend__band"
               [class.painel-tend__band--active]="activeIndex() === b.i"
-              [attr.x]="b.slotX"
+              [attr.x]="b.bandX"
               [attr.y]="pad.t"
-              [attr.width]="b.slotW"
+              [attr.width]="b.bandW"
               [attr.height]="innerH()"
               (mouseenter)="onEnter($event, b.i)"
               (mousemove)="onMove($event)"
             />
             @if (b.h > 0) {
-              <rect
+              <path
                 class="painel-tend__bar"
                 [class.painel-tend__bar--active]="activeIndex() === b.i"
-                [attr.x]="b.x"
-                [attr.y]="b.y"
-                [attr.width]="b.w"
-                [attr.height]="b.h"
-                rx="4"
-                ry="4"
+                [attr.d]="b.path"
                 [attr.fill]="color()"
               />
             }

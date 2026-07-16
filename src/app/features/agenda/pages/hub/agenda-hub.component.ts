@@ -38,6 +38,7 @@ import {
   normalizarAgendaStatusId,
   type AgendaStatusId,
 } from '../../../../core/utils/agenda-status-card';
+import { particionarLinhasPedidoEmCartoesAgenda } from '../../../../core/utils/agenda-cartao-particao';
 import {
   cobrancaFinalizadaItem,
   comandaQuitadaNasCifrasItem,
@@ -351,6 +352,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   @ViewChild(NovaComandaDrawerComponent)
   private comandaDrawerRef?: NovaComandaDrawerComponent;
 
+  @ViewChild(FaturarDrawerComponent)
+  private faturarDrawerRef?: FaturarDrawerComponent;
+
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -371,37 +375,69 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.fecharMenusToolbar();
   };
 
+  /**
+   * ESC: um nível por vez (pagamentos → comanda → agendamento).
+   * Usa `*Aberto` (não `*PanelOpen`) para não saltar níveis no mesmo keypress
+   * enquanto a animação de fecho corre.
+   */
   private readonly onDrawerKeydown = (ev: KeyboardEvent): void => {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
-    // Ficha/pilha do cliente: ESC é só do host global (um nível por vez).
+    if (ev.defaultPrevented) return;
+
+    // Ficha/pilha do cliente ou profissional: ESC é só do host global.
     if (this.cadastroDrawer.isAberto) return;
+    if (this.profissionalDrawer.aberto) return;
+
     if (this.hubMenuAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharMenusToolbar();
       return;
     }
     if (this.algumPainelHubAberto()) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharPaineisHub();
       return;
     }
-    if (
-      !this.modalAberto &&
-      !this.comandaPainelAberto &&
-      !this.faturarDrawerAberto
-    ) {
+    if (this.remarcarModalAberto) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      if (!this.remarcarSalvando) {
+        this.fecharModalRemarcar();
+      }
       return;
     }
-    ev.preventDefault();
-    if (this.faturarDrawerAberto && this.faturarDrawerPanelOpen) {
+    if (this.whatsappModalAberto) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      this.fecharWhatsappModal();
+      return;
+    }
+
+    if (this.faturarDrawerAberto) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      if (this.faturarDrawerRef?.tratarEscapeInterno()) return;
+      if (this.faturarDrawerRef && !this.faturarDrawerRef.podeFecharDrawer()) {
+        return;
+      }
       this.fecharFaturarDrawer();
       return;
     }
-    if (this.comandaPainelAberto && this.comandaDrawerPanelOpen) {
+    if (this.comandaPainelAberto) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.fecharComandaDrawer();
       return;
     }
-    this.fecharModal();
+    if (this.modalAberto) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      if (this.agendaDrawerRef?.tratarEscapeInterno()) return;
+      this.fecharModal();
+      return;
+    }
   };
 
   ngOnInit(): void {
@@ -2273,6 +2309,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   fecharFaturarDrawer(opts?: { recarregarComanda?: boolean }): void {
     if (!this.faturarDrawerAberto) return;
+    if (this.faturarDrawerRef && !this.faturarDrawerRef.podeFecharDrawer()) {
+      return;
+    }
     const recarregarComanda = opts?.recarregarComanda !== false;
     this.faturarDrawerPanelOpen = false;
     if (this.faturarDrawerCloseTimer != null) {
@@ -2286,6 +2325,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         this.comandaDrawerRef?.recarregarAposFaturar();
       }
       this.recarregarVistaAtiva();
+      if (this.modalAberto) {
+        this.agendaDrawerRef?.atualizarDetecaoComandaAposFaturar();
+      }
     }, DRAWER_ANIM_MS);
   }
 
@@ -2330,7 +2372,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const out: AgendaHubBloco[] = [];
     for (const [trackKey, linhas] of map) {
       ordenarLinhasAtendimentoInPlace(linhas);
-      out.push({ trackKey, linhas });
+      for (const part of particionarLinhasPedidoEmCartoesAgenda(
+        linhas,
+        ymd,
+        trackKey,
+      )) {
+        out.push({ trackKey: part.trackKey, linhas: part.linhas });
+      }
     }
     out.sort((a, b) => {
       const ea = this.extentMinutosBloco(a, ymd);
@@ -2370,9 +2418,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /**
    * Linhas agrupadas por atendimento (`id`) no mesmo profissional — um bloco visual
    * do início mais cedo ao fim mais tarde (ex.: 3 linhas de 30 min = 1h30 num só cartão).
+   * Se o mesmo `id` misturar status ou horários sem continuidade (legado / reuso),
+   * parte em cartões distintos.
    */
   blocosNaColuna(profId: number, ymd?: string): AgendaHubBloco[] {
     const rows = this.eventosNaColuna(profId, ymd);
+    const dia = (ymd ?? this.diaYmd).trim().slice(0, 10);
     const map = new Map<string, AtendimentoListaItem[]>();
     let legacySeq = 0;
     for (const r of rows) {
@@ -2386,7 +2437,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const out: AgendaHubBloco[] = [];
     for (const [trackKey, linhas] of map) {
       ordenarLinhasAtendimentoInPlace(linhas);
-      out.push({ trackKey, linhas });
+      for (const part of particionarLinhasPedidoEmCartoesAgenda(
+        linhas,
+        dia,
+        trackKey,
+      )) {
+        out.push({ trackKey: part.trackKey, linhas: part.linhas });
+      }
     }
     out.sort((a, b) => {
       const ea = this.extentMinutosBloco(a);
@@ -3113,18 +3170,20 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   /**
    * Mini-calendário: só conta pedidos que teriam cartão na grelha (com horário no dia).
+   * Conta cartões visuais (status/horário distintos do mesmo id contam separado).
    */
   private contagemAgendamentosVisiveisNaGrelhaPorDia(
     items: AtendimentoListaItem[],
   ): Map<string, number> {
     const buckets = new Map<string, AtendimentoListaItem[]>();
+    let legacySeq = 0;
     for (const a of items) {
       const ymd = (a.data || '').slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) continue;
       const idAt = String(a.id || '').trim();
       const grupKey = idAt
         ? `id:${idAt}`
-        : `nome:${(a.nomeCliente || '').trim().toLowerCase()}`;
+        : `linha:${a.linha_id ?? legacySeq++}`;
       const bucketKey = `${ymd}\u0001${grupKey}`;
       const arr = buckets.get(bucketKey) ?? [];
       arr.push(a);
@@ -3136,8 +3195,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       const ymd = bucketKey.slice(0, sep);
       const grupKey = bucketKey.slice(sep + 1);
       if (!pedidoTemPosicaoNaGrelhaAgenda(linhas, ymd)) continue;
-      if (!porDiaSets.has(ymd)) porDiaSets.set(ymd, new Set());
-      porDiaSets.get(ymd)!.add(grupKey);
+      for (const part of particionarLinhasPedidoEmCartoesAgenda(
+        linhas,
+        ymd,
+        grupKey,
+      )) {
+        if (!pedidoTemPosicaoNaGrelhaAgenda(part.linhas, ymd)) continue;
+        if (!porDiaSets.has(ymd)) porDiaSets.set(ymd, new Set());
+        porDiaSets.get(ymd)!.add(part.trackKey);
+      }
     }
     const out = new Map<string, number>();
     for (const [ymd, set] of porDiaSets) {

@@ -210,17 +210,21 @@ export class ProfissionalCadastroDrawerHostComponent implements OnInit, OnDestro
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
     if (!this.d.aberto) return;
+    if (ev.defaultPrevented) return;
     if (this.profNavOverflowAberto) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.profNavOverflowAberto = false;
       return;
     }
     if (this.d.fecharDrawerSecundarioAtivo()) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       return;
     }
     if (this.d.salvando || this.d.usuarioSalvando) return;
     ev.preventDefault();
+    ev.stopImmediatePropagation();
     this.d.fechar();
   }
 }

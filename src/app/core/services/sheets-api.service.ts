@@ -1019,6 +1019,30 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  /** Actualiza a data de 1 pagamento (+ movimentação ligada, se houver). */
+  atualizarDataComandaPagamento(
+    idAtendimento: string,
+    pagamentoId: number,
+    dataPagamento: string,
+  ): Observable<{
+    pagamento: ComandaPagamentoItem;
+    resumo: ComandaResumoPagamentos;
+  }> {
+    return this.http
+      .patch<
+        ApiResponse<{
+          pagamento: ComandaPagamentoItem;
+          resumo: ComandaResumoPagamentos;
+        }>
+      >(
+        this.url(
+          `/api/comandas/${encodeURIComponent(idAtendimento)}/pagamentos/${pagamentoId}`,
+        ),
+        { data_pagamento: dataPagamento },
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
   private normalizeAtendimento(raw: Record<string, unknown>): AtendimentoListaItem {
     const descricaoApi = String(raw['Descrição'] ?? raw['Descricao'] ?? '').trim();
     const descManual = String(

@@ -480,8 +480,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private excluirConfirmRaf = 0;
 
   /**
-   * Modal: no dia do formulário, cliente tem pelo menos um pedido com cobrança ainda não finalizada
-   * (`cobranca_status` ≠ finalizada) → «Acessar comanda»; caso contrário → «Criar comanda».
+   * Modal: cliente/dia tem comanda a aceder (não finalizada, finalizada com saldo,
+   * ou o atendimento em edição já tem pedido) → «Acessar comanda»; senão → «Criar comanda».
    */
   comandaAbertaParaClienteNoDia = false;
   /** `id` do pedido (mesmo em todas as linhas) para abrir a comanda existente. */
@@ -799,6 +799,26 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.horaPendenteConflito = null;
   }
 
+  /**
+   * ESC dentro do drawer de agendamento: fecha overlays internos
+   * (conflito de horário, confirmação de exclusão) sem fechar o drawer.
+   */
+  tratarEscapeInterno(): boolean {
+    if (this.modalConflitoHorario) {
+      this.fecharAvisoConflitoHorario();
+      return true;
+    }
+    if (this.excluirConfirmModalDom) {
+      this.fecharExcluirConfirmModal();
+      return true;
+    }
+    if (this.excluirMenuAberto) {
+      this.fecharExcluirMenu();
+      return true;
+    }
+    return false;
+  }
+
   private atualizarOcupacaoDia(ymd: string): void {
     if (!this.modoModal || this.isFluxoSomenteComanda()) return;
     this.api
@@ -897,6 +917,44 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return m;
   }
 
+  /**
+   * Hub: após fechar Faturar / Ver pagamentos, refresca ocupação e o rótulo
+   * Criar vs Acessar comanda enquanto o drawer de agendamento continua aberto.
+   */
+  atualizarDetecaoComandaAposFaturar(): void {
+    if (!this.modoModal) return;
+    const ymd = normalizarDataIso(
+      String(this.form.get('data')?.value ?? ''),
+    );
+    if (!ymd) return;
+    this.atualizarOcupacaoDia(ymd);
+  }
+
+  private itemDoClienteNoDia(
+    it: AtendimentoListaItem,
+    ymd: string,
+    cid: string,
+  ): boolean {
+    return (
+      it.data === ymd && String(it.idCliente ?? '').trim() === cid
+    );
+  }
+
+  /** Finalizada mas ainda com saldo / não quitada → continua «Acessar». */
+  private cobrancaFinalizadaComSaldo(it: AtendimentoListaItem): boolean {
+    if (!this.cobrancaEstaFinalizada(it.cobrancaStatus)) return false;
+    const st = String(it.status_cobranca ?? '')
+      .trim()
+      .toLowerCase();
+    if (st === 'pago') return false;
+    if (st === 'parcial' || st === 'pendente' || st === 'aberto') return true;
+    const saldo = Number(it.saldo);
+    if (Number.isFinite(saldo) && saldo > 0.005) return true;
+    const totalPago = Number(it.total_pago);
+    if (Number.isFinite(totalPago) && totalPago <= 0.005) return true;
+    return false;
+  }
+
   private aplicarDetecaoComandaAberta(
     items: AtendimentoListaItem[],
     ymd: string,
@@ -912,27 +970,46 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (dataForm !== ymd) {
       return;
     }
+
+    /**
+     * Edição de agendamento existente (ex.: clique no card): o pedido já tem
+     * `id` — sempre «Acessar comanda», sem depender da listagem do dia
+     * (idCliente/data podem não bater e caíamos em «Criar» / drawer «Nova comanda»).
+     */
+    const cur = this.idAtendimentoEmEdicao?.trim();
+    if (cur) {
+      this.comandaAbertaParaClienteNoDia = true;
+      this.idComandaPedidoAberto = cur;
+      return;
+    }
+
     const cid = String(this.form.get('cliente_id')?.value ?? '').trim();
     if (!cid) {
       this.comandaAbertaParaClienteNoDia = false;
       this.idComandaPedidoAberto = null;
       return;
     }
-    const abertas = items.filter(
-      (it) =>
-        it.data === ymd &&
-        String(it.idCliente ?? '').trim() === cid &&
-        !this.cobrancaEstaFinalizada(it.cobrancaStatus),
+    const doCliente = items.filter((it) =>
+      this.itemDoClienteNoDia(it, ymd, cid),
+    );
+    const abertas = doCliente.filter(
+      (it) => !this.cobrancaEstaFinalizada(it.cobrancaStatus),
     );
     if (abertas.length > 0) {
       this.comandaAbertaParaClienteNoDia = true;
-      const cur = this.idAtendimentoEmEdicao?.trim();
-      this.idComandaPedidoAberto =
-        cur && abertas.some((x) => x.id === cur) ? cur : abertas[0].id;
-    } else {
-      this.comandaAbertaParaClienteNoDia = false;
-      this.idComandaPedidoAberto = null;
+      this.idComandaPedidoAberto = abertas[0].id;
+      return;
     }
+    const comSaldo = doCliente.filter((it) =>
+      this.cobrancaFinalizadaComSaldo(it),
+    );
+    if (comSaldo.length > 0) {
+      this.comandaAbertaParaClienteNoDia = true;
+      this.idComandaPedidoAberto = comSaldo[0].id;
+      return;
+    }
+    this.comandaAbertaParaClienteNoDia = false;
+    this.idComandaPedidoAberto = null;
   }
 
   /** Modal: com cliente e data válidos para usar comanda. */
@@ -1182,21 +1259,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const ymd =
       normalizarDataIso(String(this.form.get('data')?.value ?? '')) ?? '';
     const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const idAtendimento =
+      this.idAtendimentoEmEdicao?.trim() ||
+      this.idComandaPedidoAberto?.trim() ||
+      null;
+    const acessar =
+      this.comandaAbertaParaClienteNoDia || Boolean(idAtendimento);
     const itemsParaTitulo =
       this.ultimoYmdListagemModal === ymd ? this.ultimosItensDiaModal : [];
     const numeroComandaTitulo = this.numeroComandaParaTituloModal(
       itemsParaTitulo,
       ymd,
       clienteId,
-      this.comandaAbertaParaClienteNoDia,
-      this.idComandaPedidoAberto,
+      acessar,
+      idAtendimento,
     );
-    const idAtendimento =
-      this.idAtendimentoEmEdicao?.trim() ||
-      this.idComandaPedidoAberto?.trim() ||
-      null;
     this.abrirComanda.emit({
-      acessar: this.comandaAbertaParaClienteNoDia,
+      acessar,
       idAtendimento,
       numeroComandaTitulo,
       clienteId,
@@ -4214,6 +4293,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         next: (items) => {
           if (items.length > 0) {
             this.aplicarEdicaoNoForm(items);
+            this.comandaAbertaParaClienteNoDia = true;
+            this.idComandaPedidoAberto = trimmed;
             const ymd = normalizarDataIso(
               String(this.form.get('data')?.value ?? ''),
             );

@@ -56,6 +56,8 @@ export class AgendaModalCalendarComponent {
     }
   }
   @Output() ymdPicked = new EventEmitter<string>();
+  /** Preview ao passar o rato numa célula (null ao sair da grelha). */
+  @Output() ymdHover = new EventEmitter<string | null>();
   @Output() closeRequest = new EventEmitter<void>();
 
   viewYear = new Date().getFullYear();
@@ -119,6 +121,10 @@ export class AgendaModalCalendarComponent {
 
   escolher(ymd: string): void {
     this.ymdPicked.emit(ymd);
+  }
+
+  preview(ymd: string | null): void {
+    this.ymdHover.emit(ymd);
   }
 
   irHoje(): void {

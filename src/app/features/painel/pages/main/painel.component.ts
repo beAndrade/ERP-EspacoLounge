@@ -26,6 +26,7 @@ import { PainelChartVendasCategoriaComponent } from '../../components/charts/pai
 import { PainelChartTooltipComponent } from '../../components/painel-chart-tooltip/painel-chart-tooltip.component';
 import { PainelMetricValueComponent } from '../../components/painel-metric-value/painel-metric-value.component';
 import { PainelProfissionaisPeriodoPanelComponent } from '../../components/painel-profissionais-periodo-panel/painel-profissionais-periodo-panel.component';
+import { PainelRichTipComponent } from '../../components/painel-rich-tip/painel-rich-tip.component';
 import { PainelSmartCardComponent } from '../../components/painel-smart-card/painel-smart-card.component';
 import { PainelSparklineComponent } from '../../components/painel-sparkline/painel-sparkline.component';
 import { PainelTicketMedioPanelComponent } from '../../components/painel-ticket-medio-panel/painel-ticket-medio-panel.component';
@@ -142,6 +143,7 @@ function descreverClimaWmo(code: number): { emoji: string; descricao: string } {
     PainelChartVendasCategoriaComponent,
     PainelTicketMedioPanelComponent,
     PainelProfissionaisPeriodoPanelComponent,
+    PainelRichTipComponent,
   ],
   templateUrl: './painel.component.html',
   styleUrl: './painel.component.scss',
@@ -193,6 +195,11 @@ export class PainelComponent implements OnInit {
   private ultimaAtualizacaoManualEm: number | null = null;
   /** Callback opcional: contagem de loads pendentes num refresh manual. */
   private loadsManuaisPendentes = 0;
+  /** Momento em que o giro começou (para garantir tempo mínimo visível). */
+  private atualizandoDesde = 0;
+  private atualizandoOffTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Giro mínimo perceptível mesmo quando a carga é instantânea. */
+  private static readonly SPIN_MIN_MS = 800;
   private readonly agoraTick = signal(Date.now());
   private atualizacaoTickTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -248,6 +255,7 @@ export class PainelComponent implements OnInit {
       if (this.relogioTimer) clearInterval(this.relogioTimer);
       if (this.climaTimer) clearInterval(this.climaTimer);
       if (this.atualizacaoTickTimer) clearInterval(this.atualizacaoTickTimer);
+      if (this.atualizandoOffTimer) clearTimeout(this.atualizandoOffTimer);
     });
   }
 
@@ -334,6 +342,23 @@ export class PainelComponent implements OnInit {
     }).format(valor);
   }
 
+  /**
+   * Tom visual do valor no hover dos smart cards.
+   * - ganho/saldo: verde se > 0, vermelho se < 0
+   * - custo/alerta: vermelho se > 0 (despesas, críticos…)
+   */
+  revealValorTone(
+    valor: number | null | undefined,
+    modo: 'ganho' | 'saldo' | 'custo' | 'alerta',
+  ): 'up' | 'down' | 'zero' | 'neutral' {
+    if (valor == null || Number.isNaN(valor)) return 'neutral';
+    if (valor === 0) return 'zero';
+    if (modo === 'custo' || modo === 'alerta') return 'down';
+    if (valor > 0) return 'up';
+    if (valor < 0) return 'down';
+    return 'neutral';
+  }
+
   atualizar(): void {
     if (this.atualizando()) return;
 
@@ -346,7 +371,12 @@ export class PainelComponent implements OnInit {
       return;
     }
 
+    if (this.atualizandoOffTimer) {
+      clearTimeout(this.atualizandoOffTimer);
+      this.atualizandoOffTimer = null;
+    }
     this.atualizando.set(true);
+    this.atualizandoDesde = Date.now();
     this.loadsManuaisPendentes = 2;
     this.carregarCards(true);
     this.carregarPeriodo(true);
@@ -354,7 +384,7 @@ export class PainelComponent implements OnInit {
 
   onPeriodoAlterado(): void {
     if (this.atualizando()) {
-      this.atualizando.set(false);
+      this.pararGiro();
       this.loadsManuaisPendentes = 0;
     }
     this.carregarPeriodo();
@@ -366,9 +396,28 @@ export class PainelComponent implements OnInit {
     if (this.loadsManuaisPendentes > 0) return;
 
     const agora = Date.now();
-    this.atualizando.set(false);
     this.ultimaAtualizacaoManualEm = agora;
     this.chartsAnimKey.update((k) => k + 1);
+
+    /** Mantém a seta girando por um tempo mínimo, mesmo com carga instantânea. */
+    const restante =
+      PainelComponent.SPIN_MIN_MS - (agora - this.atualizandoDesde);
+    if (restante > 0) {
+      this.atualizandoOffTimer = setTimeout(() => {
+        this.atualizandoOffTimer = null;
+        this.atualizando.set(false);
+      }, restante);
+    } else {
+      this.atualizando.set(false);
+    }
+  }
+
+  private pararGiro(): void {
+    if (this.atualizandoOffTimer) {
+      clearTimeout(this.atualizandoOffTimer);
+      this.atualizandoOffTimer = null;
+    }
+    this.atualizando.set(false);
   }
 
   /**

@@ -7,9 +7,11 @@ import {
 } from '../../../core/utils/atendimento-display';
 import {
   AGENDA_STATUS_META,
+  inferirAgendaStatusPorCorHex,
   normalizarAgendaStatusId,
   type AgendaStatusId,
 } from '../../../core/utils/agenda-status-card';
+import { particionarLinhasPedidoEmCartoesAgenda } from '../../../core/utils/agenda-cartao-particao';
 import {
   agruparAtendimentosEmComandas,
   comandaQuitadaNasCifrasGrupo,
@@ -201,23 +203,49 @@ function pctVariacao(
   return Math.round(((atual - anterior) / anterior) * 100);
 }
 
-function statusAgendaDoPedido(rows: AtendimentoListaItem[]): AgendaStatusId {
+function statusAgendaDoCartao(rows: AtendimentoListaItem[]): AgendaStatusId {
   const raw = rows
     .map((r) => r.agenda_status)
     .find((s) => s != null && String(s).trim());
-  return normalizarAgendaStatusId(raw);
+  if (raw != null && String(raw).trim()) {
+    return normalizarAgendaStatusId(raw);
+  }
+  const cor = rows
+    .map((r) => r.agenda_cor)
+    .find((c) => c != null && String(c).trim());
+  return inferirAgendaStatusPorCorHex(cor) ?? 'confirmado';
 }
 
-function pedidosNoIntervalo(
+/**
+ * Cartões como na grelha da agenda: mesmo pedido parte por status/horário;
+ * só entram linhas com posição na grelha (têm horário no dia).
+ */
+function cartoesAgendaNoIntervalo(
   linhas: AtendimentoListaItem[],
   inicio: string,
   fim: string,
-): AtendimentoListaItem[][] {
+): { data: string; status: AgendaStatusId; linhas: AtendimentoListaItem[] }[] {
   const grupos = agruparAtendimentosPorPedido(linhas);
-  const out: AtendimentoListaItem[][] = [];
+  const out: {
+    data: string;
+    status: AgendaStatusId;
+    linhas: AtendimentoListaItem[];
+  }[] = [];
   for (const [, rows] of grupos) {
     const data = (rows[0]?.data ?? '').slice(0, 10);
-    if (ymdNoIntervalo(data, inicio, fim)) out.push(rows);
+    if (!ymdNoIntervalo(data, inicio, fim)) continue;
+    for (const part of particionarLinhasPedidoEmCartoesAgenda(
+      rows,
+      data,
+      'cartao',
+    )) {
+      if (!pedidoTemPosicaoNaGrelhaAgenda(part.linhas, data)) continue;
+      out.push({
+        data,
+        status: statusAgendaDoCartao(part.linhas),
+        linhas: part.linhas,
+      });
+    }
   }
   return out;
 }
@@ -300,28 +328,25 @@ export function mapAtendimentosParaPainelPeriodo(
   fim: string,
 ): PainelPeriodoAgregadoVm {
   const prev = periodoAnteriorSimetrico(inicio, fim);
-  const pedidos = pedidosNoIntervalo(linhas, inicio, fim);
-  const pedidosAnterior = pedidosNoIntervalo(linhas, prev.inicio, prev.fim);
+  const cartoes = cartoesAgendaNoIntervalo(linhas, inicio, fim);
+  const cartoesAnterior = cartoesAgendaNoIntervalo(linhas, prev.inicio, prev.fim);
   const comandas = comandasNoIntervalo(linhas, inicio, fim);
   const comandasAnterior = comandasNoIntervalo(linhas, prev.inicio, prev.fim);
 
   const tendencia: PainelChartPoint[] = enumerarDiasYmd(inicio, fim).map((ymd) => {
-    const count = pedidos.filter(
-      (rows) => (rows[0]?.data ?? '').slice(0, 10) === ymd,
-    ).length;
+    const count = cartoes.filter((c) => c.data === ymd).length;
     return { label: labelDiaCurto(ymd), value: count, ymd };
   });
 
   const statusCounts = new Map<AgendaStatusId, number>();
-  for (const rows of pedidos) {
-    const st = statusAgendaDoPedido(rows);
-    statusCounts.set(st, (statusCounts.get(st) ?? 0) + 1);
+  for (const c of cartoes) {
+    statusCounts.set(c.status, (statusCounts.get(c.status) ?? 0) + 1);
   }
+  const statusTotal = cartoes.length;
   const status: PainelChartPoint[] = STATUS_DISPLAY_ORDER.map((id) => {
     const meta = COR_META_POR_STATUS.get(id)!;
     const count = statusCounts.get(id) ?? 0;
-    const pct =
-      pedidos.length > 0 ? Math.round((count / pedidos.length) * 100) : 0;
+    const pct = statusTotal > 0 ? Math.round((count / statusTotal) * 100) : 0;
     return {
       label: meta.label,
       value: count,
@@ -329,13 +354,12 @@ export function mapAtendimentosParaPainelPeriodo(
     };
   });
 
-  const todos = pedidos.length;
-  const confirmados = pedidos.filter(
-    (rows) => statusAgendaDoPedido(rows) === 'confirmado',
-  ).length;
-  const faturados = pedidos.filter((rows) => {
+  const todos = cartoes.length;
+  const confirmados = cartoes.filter((c) => c.status === 'confirmado').length;
+  const faturados = cartoes.filter((c) => {
+    const id = String(c.linhas[0]?.id ?? '');
     const g = comandas.find(
-      (c) => String(c.linhas[0]?.id ?? '') === String(rows[0]?.id ?? ''),
+      (cmd) => String(cmd.linhas[0]?.id ?? '') === id,
     );
     return g ? comandaQuitadaNasCifrasGrupo(g) : false;
   }).length;
@@ -369,10 +393,9 @@ export function mapAtendimentosParaPainelPeriodo(
       : [];
 
   const heatmapCounts = new Map<string, number>();
-  for (const rows of pedidos) {
-    const data = (rows[0]?.data ?? '').slice(0, 10);
-    const diaIdx = indiceDiaSemanaSegunda(data);
-    const hora = horaBucketHeatmap(rows, data);
+  for (const c of cartoes) {
+    const diaIdx = indiceDiaSemanaSegunda(c.data);
+    const hora = horaBucketHeatmap(c.linhas, c.data);
     if (hora == null) continue;
     const key = `${diaIdx}-${hora}`;
     heatmapCounts.set(key, (heatmapCounts.get(key) ?? 0) + 1);
@@ -434,8 +457,8 @@ export function mapAtendimentosParaPainelPeriodo(
     value: p.value,
   }));
 
-  const totalAtual = pedidos.length;
-  const totalAnterior = pedidosAnterior.length;
+  const totalAtual = cartoes.length;
+  const totalAnterior = cartoesAnterior.length;
   const profissionais: PainelProfissionaisPeriodoVm = {
     totalAtendimentos: totalAtual,
     vsAnteriorPct: pctVariacao(totalAtual, totalAnterior),

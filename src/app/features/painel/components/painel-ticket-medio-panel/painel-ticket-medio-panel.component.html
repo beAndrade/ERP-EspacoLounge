@@ -1,7 +1,7 @@
 <div class="painel-ticket">
   @if (hasData()) {
     <div class="painel-ticket__summary">
-      <p class="painel-ticket__label">Ticket médio — Período atual</p>
+      <p class="painel-ticket__label">Ticket médio - Período</p>
       <p class="painel-ticket__value">{{ formatMoeda(vm().ticketAtual) }}</p>
       <p class="painel-ticket__vs">
         Versus período anterior:
@@ -32,32 +32,46 @@
         role="img"
         aria-label="Comparação de ticket médio entre períodos"
       >
-        @for (tick of yTicks(); track tick) {
+        @for (g of gridLines(); track g.value) {
+          <line
+            class="painel-ticket__grid"
+            [attr.x1]="pad.l"
+            [attr.x2]="vbW - pad.r"
+            [attr.y1]="g.y"
+            [attr.y2]="g.y"
+          />
           <text
             class="painel-ticket__tick"
-            [attr.x]="pad.l - 6"
-            [attr.y]="
-              pad.t + (vbH - pad.t - pad.b) * (1 - tick / niceMax()) + 4
-            "
+            [attr.x]="pad.l - 8"
+            [attr.y]="g.y + 3"
             text-anchor="end"
           >
-            {{ formatMoeda(tick) }}
+            {{ formatMoedaCurta(g.value) }}
           </text>
         }
+
         @for (b of bars(); track b.label) {
-          <rect
-            class="painel-ticket__bar"
-            [class.painel-ticket__bar--atual]="b.label === 'Período atual'"
-            [attr.x]="b.x"
-            [attr.y]="b.y"
-            [attr.width]="b.w"
-            [attr.height]="b.h"
-            rx="4"
-          />
+          @if (b.path) {
+            <path
+              class="painel-ticket__bar"
+              [class.painel-ticket__bar--atual]="b.atual"
+              [attr.d]="b.path"
+            />
+          }
+          @if (b.value > 0) {
+            <text
+              class="painel-ticket__bar-value"
+              [attr.x]="b.x + b.w / 2"
+              [attr.y]="b.y - 6"
+              text-anchor="middle"
+            >
+              {{ formatMoeda(b.value) }}
+            </text>
+          }
           <text
             class="painel-ticket__bar-label"
             [attr.x]="b.x + b.w / 2"
-            [attr.y]="vbH - 8"
+            [attr.y]="vbH - 10"
             text-anchor="middle"
           >
             {{ b.label }}

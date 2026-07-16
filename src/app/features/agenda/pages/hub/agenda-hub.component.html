@@ -1630,6 +1630,7 @@
         [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
         [dataComanda]="comandaDataYmdParaFaturar"
         [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
+        [gerenciarEscape]="false"
         (faturado)="onFaturaComandaSucesso()"
         (fechar)="fecharFaturarDrawer()"
       />

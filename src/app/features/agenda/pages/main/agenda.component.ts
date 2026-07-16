@@ -95,11 +95,12 @@ export class AgendaComponent implements OnInit {
     const key = this.diaSelecionado;
     const items = this.itensMes.filter((a) => (a.data || '').slice(0, 10) === key);
     const map = new Map<string, AtendimentoListaItem[]>();
+    let legacySeq = 0;
     for (const a of items) {
       const idAt = String(a.id || '').trim();
       const grupKey = idAt
         ? `id:${idAt}`
-        : `nome:${(a.nomeCliente || '').trim().toLowerCase()}`;
+        : `linha:${a.linha_id ?? legacySeq++}`;
       if (!map.has(grupKey)) map.set(grupKey, []);
       map.get(grupKey)!.push(a);
     }
@@ -184,13 +185,14 @@ export class AgendaComponent implements OnInit {
       next: (items) => {
         this.itensMes = items;
         const map = new Map<string, Set<string>>();
+        let legacySeq = 0;
         for (const a of items) {
           const key = (a.data || '').slice(0, 10);
           if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
           const idAt = String(a.id || '').trim();
           const grupKey = idAt
             ? `id:${idAt}`
-            : `nome:${(a.nomeCliente || '').trim().toLowerCase()}`;
+            : `linha:${a.linha_id ?? legacySeq++}`;
           if (!map.has(key)) map.set(key, new Set());
           map.get(key)!.add(grupKey);
         }

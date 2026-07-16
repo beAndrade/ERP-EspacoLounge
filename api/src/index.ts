@@ -22,6 +22,7 @@ import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
 import { faturarComandaComRascunho } from './services/comanda-faturar-batch';
 import {
+  atualizarDataPagamentoComanda,
   criarPagamentoComanda,
   excluirPagamentoComanda,
   getResumoComanda,
@@ -2138,6 +2139,49 @@ const app = new Elysia({ adapter: node() })
       params: t.Object({
         idAtendimento: t.String(),
         pagamentoId: t.String(),
+      }),
+    },
+  )
+  .patch(
+    '/api/comandas/:idAtendimento/pagamentos/:pagamentoId',
+    async ({ params, body }) => {
+      try {
+        const idAt = String(params.idAtendimento || '').trim();
+        const pagId = Number.parseInt(
+          String(params.pagamentoId || '').trim(),
+          10,
+        );
+        if (!idAt) return fail('VALIDATION', 'idAtendimento é obrigatório');
+        if (!Number.isFinite(pagId) || pagId <= 0) {
+          return fail('VALIDATION', 'pagamentoId inválido');
+        }
+        const dataPagamento = String(
+          (body as { data_pagamento?: string }).data_pagamento ?? '',
+        ).trim();
+        const r = await atualizarDataPagamentoComanda(
+          db,
+          idAt,
+          pagId,
+          dataPagamento,
+        );
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (
+          /obrigatório|inválid|não encontrad|não pertence/i.test(msg)
+        ) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({
+        idAtendimento: t.String(),
+        pagamentoId: t.String(),
+      }),
+      body: t.Object({
+        data_pagamento: t.String(),
       }),
     },
   )

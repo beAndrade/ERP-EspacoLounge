@@ -236,43 +236,6 @@ function sqlDataAtendimentoIgual(dataSql: string) {
 }
 
 /**
- * Comanda ainda agregável no mesmo dia: igual ao critério da agenda no front
- * (`cobrancaEstaFinalizada`) — só exclui quando a cobrança já foi `finalizada`.
- */
-function sqlComandaAbertaParaReusoAgenda() {
-  return sql`lower(trim(coalesce(${atendimentos.cobrancaStatus}, ''))) <> 'finalizada'`;
-}
-
-/**
- * Se existir linha de atendimento do mesmo cliente na mesma data com comanda
- * ainda aberta, reutiliza esse `id_atendimento` para novos itens no mesmo dia.
- */
-async function findIdAtendimentoAbertoMesmoDiaCliente(
-  db: Db,
-  dataStr: string,
-  clienteId: string,
-): Promise<string | null> {
-  const cid = String(clienteId ?? '').trim();
-  if (!cid) return null;
-  const dataSql = parseDataSql(dataStr);
-
-  const [row] = await db
-    .select({ idAtendimento: atendimentos.idAtendimento })
-    .from(atendimentos)
-    .where(
-      and(
-        eq(atendimentos.idCliente, cid),
-        sqlDataAtendimentoIgual(dataSql),
-        sqlComandaAbertaParaReusoAgenda(),
-      ),
-    )
-    .limit(1);
-
-  const id = String(row?.idAtendimento ?? '').trim();
-  return id || null;
-}
-
-/**
  * Novo id sem sufixo aleatório: `YYYYMMDD-idCliente` (ex.: `20260514-CL0005`).
  * Só gera sufixo se esse id canónico já existir no dia para o cliente (comanda
  * anterior já encerrada — ver {@link makeIdAtendimentoOcorrencia}).
@@ -327,10 +290,14 @@ async function resolveIdAtendimentoCriacao(
   dataStr: string,
   clienteId: string,
 ): Promise<string> {
+  /**
+   * Só reutiliza pedido quando o cliente envia `id_atendimento` explícito
+   * (edição / «adicionar à comanda»). Novos agendamentos no mesmo dia — mesmo
+   * com comanda ainda aberta — geram id próprio, para não fundir horários/
+   * status distintos num único cartão da grelha.
+   */
   const idExpl = String((p as Record<string, unknown>)['id_atendimento'] ?? '').trim();
   if (idExpl) return idExpl;
-  const existente = await findIdAtendimentoAbertoMesmoDiaCliente(db, dataStr, clienteId);
-  if (existente) return existente;
   return novoIdAtendimentoFallbackSemSufixoDesnecessario(db, dataStr, clienteId);
 }
 

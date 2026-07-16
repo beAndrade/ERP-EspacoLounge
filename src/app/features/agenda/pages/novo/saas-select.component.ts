@@ -231,6 +231,7 @@ export class SaasSelectComponent
   onTriggerFilterKeydown(ev: KeyboardEvent): void {
     if (ev.key === 'Escape') {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
       this.closePanel();
       return;
     }

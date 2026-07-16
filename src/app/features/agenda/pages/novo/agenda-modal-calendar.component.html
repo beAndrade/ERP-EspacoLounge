@@ -44,7 +44,7 @@
       <div class="am-cal__wcell">{{ w }}</div>
     }
   </div>
-  <div class="am-cal__grid">
+  <div class="am-cal__grid" (mouseleave)="preview(null)">
     @for (c of cells; track c.ymd + $index) {
       <button
         type="button"
@@ -52,12 +52,21 @@
         [class.am-cal__day--out]="!c.inMonth"
         [class.am-cal__day--sel]="selecionadoYmd(c.ymd)"
         (click)="escolher(c.ymd)"
+        (mouseenter)="preview(c.ymd)"
       >
         {{ c.d }}
       </button>
     }
   </div>
   <div class="am-cal__footer">
-    <button type="button" class="am-cal__hoje" (click)="irHoje()">Hoje</button>
+    <button
+      type="button"
+      class="am-cal__hoje"
+      (click)="irHoje()"
+      (mouseenter)="preview(hojeYmd())"
+      (mouseleave)="preview(null)"
+    >
+      Hoje
+    </button>
   </div>
 </div>

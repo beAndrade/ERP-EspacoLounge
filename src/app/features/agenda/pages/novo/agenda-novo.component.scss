@@ -1299,8 +1299,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 38px;
+  height: 38px;
   min-height: 0;
   margin-top: 0;
   padding: 0;
@@ -1339,8 +1339,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 38px;
+  height: 38px;
   min-height: 0;
   margin-top: 0;
   padding: 0;
@@ -1403,7 +1403,7 @@ textarea {
 
   &--modal-cabecalho {
     --servico-cabecalho-col-gap: 0.55rem;
-    --servico-cabecalho-actions-w: calc(2.5rem * 2 + 0.4rem);
+    --servico-cabecalho-actions-w: calc(38px * 2 + 0.4rem);
     /** Mesma largura que `.servico-row__field--mega-cabecalho` (Tipo de linha). */
     --mega-etapas-col-w: calc(
       (100% - var(--servico-cabecalho-actions-w) - 2 * var(--servico-cabecalho-col-gap)) / 2
@@ -1411,8 +1411,8 @@ textarea {
   }
 
   &__rail {
-    flex: 0 0 var(--servico-cabecalho-actions-w, calc(2.5rem * 2 + 0.4rem));
-    width: var(--servico-cabecalho-actions-w, calc(2.5rem * 2 + 0.4rem));
+    flex: 0 0 var(--servico-cabecalho-actions-w, calc(38px * 2 + 0.4rem));
+    width: var(--servico-cabecalho-actions-w, calc(38px * 2 + 0.4rem));
     min-height: 0.25rem;
     box-sizing: border-box;
     flex-shrink: 0;
@@ -1589,7 +1589,7 @@ textarea {
 
 .servico-row__actions--cabelo-rodape {
   flex: 0 0 auto;
-  min-width: calc(2.5rem * 2 + 0.4rem);
+  min-width: calc(38px * 2 + 0.4rem);
   align-self: flex-end;
 }
 
@@ -1650,7 +1650,7 @@ textarea {
   justify-content: flex-end;
   gap: 0.4rem;
   flex: 0 0 auto;
-  min-width: calc(2.5rem * 2 + 0.4rem);
+  min-width: calc(38px * 2 + 0.4rem);
   box-sizing: border-box;
 
   &--etapas {
@@ -1663,8 +1663,8 @@ textarea {
 
   &__spacer {
     display: block;
-    flex: 0 0 2.5rem;
-    width: 2.5rem;
+    flex: 0 0 38px;
+    width: 38px;
     min-height: 1px;
     pointer-events: none;
   }
@@ -1772,7 +1772,7 @@ textarea {
   &--drawer {
     flex: 0 0 auto;
     flex-shrink: 0;
-    min-width: calc(2.5rem * 2 + 0.4rem);
+    min-width: calc(38px * 2 + 0.4rem);
     gap: 0.4rem;
   }
 }
@@ -2576,7 +2576,7 @@ textarea {
     }
 
     .servico-row__actions--drawer {
-      flex: 0 0 calc(2.5rem * 2 + 0.4rem);
+      flex: 0 0 calc(38px * 2 + 0.4rem);
       margin-left: auto;
     }
   }
@@ -2641,7 +2641,7 @@ textarea {
     }
 
     .servico-row__actions--drawer {
-      flex: 0 0 calc(2.5rem * 2 + 0.4rem);
+      flex: 0 0 calc(38px * 2 + 0.4rem);
       margin-left: auto;
     }
   }
@@ -2700,6 +2700,9 @@ textarea {
 
 
   .btn.btn--icon-danger {
+    width: 38px;
+    height: 38px;
+
     svg {
       display: block;
       flex-shrink: 0;
@@ -2709,6 +2712,8 @@ textarea {
   }
 
   .btn.btn--icon-line-add {
+    width: 38px;
+    height: 38px;
     flex-shrink: 0;
     border-color: var(--drawer-stroke);
   }

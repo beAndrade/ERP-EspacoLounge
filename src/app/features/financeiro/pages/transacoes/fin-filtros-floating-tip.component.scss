@@ -13,6 +13,7 @@ app-fin-filtros-floating-tip {
 }
 
 .fin-filtros-tip-panel--portal {
+  --fin-filtros-tip-surface: rgba(15, 15, 15, 0.96);
   position: fixed;
   z-index: 10050;
   width: max-content;
@@ -24,9 +25,9 @@ app-fin-filtros-floating-tip {
   line-height: var(--ui-tip-line-height);
   color: #fff;
   text-align: center;
-  background: rgba(0, 0, 0, 0.82);
+  background: var(--fin-filtros-tip-surface);
   border-radius: var(--ui-tip-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -74,14 +75,14 @@ app-fin-filtros-floating-tip {
     width: 0;
     height: 0;
     border: 7px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.82);
+    border-top-color: var(--fin-filtros-tip-surface);
   }
 
   &.fin-filtros-tip-panel--below .fin-filtros-tip-panel__arrow {
     top: auto;
     bottom: 100%;
     border-top-color: transparent;
-    border-bottom-color: rgba(0, 0, 0, 0.82);
+    border-bottom-color: var(--fin-filtros-tip-surface);
   }
 }
 
@@ -95,5 +96,27 @@ app-fin-filtros-floating-tip {
   .fin-filtros-tip-panel__body,
   .fin-filtros-tip-panel__body p {
     line-height: 1.5;
+  }
+}
+
+/** Tooltip Status / parcelas (Transações). */
+.fin-filtros-tip-panel--portal.fin-status-parcelas-tip {
+  min-width: 18rem;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  font-weight: 400;
+
+  .fin-filtros-tip-panel__body,
+  .fin-filtros-tip-panel__body p {
+    line-height: 1.45;
+  }
+
+  .fin-filtros-tip-panel__body p + p {
+    margin-top: 0.65rem;
+  }
+
+  strong {
+    font-weight: 600;
   }
 }

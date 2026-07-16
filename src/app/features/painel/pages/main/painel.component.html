@@ -117,7 +117,17 @@
             <div painelCardReveal class="painel-reveal">
               <div class="painel-reveal__row">
                 <span>Receita</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--up]="
+                    revealValorTone(faturamento().total, 'ganho') === 'up'
+                  "
+                  [class.painel-reveal__val--down]="
+                    revealValorTone(faturamento().total, 'ganho') === 'down'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(faturamento().total, 'ganho') === 'zero'
+                  "
+                >{{
                   faturamento().total != null
                     ? formatMoeda(faturamento().total!)
                     : '—'
@@ -125,7 +135,14 @@
               </div>
               <div class="painel-reveal__row">
                 <span>Despesas</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--down]="
+                    revealValorTone(faturamento().despesas, 'custo') === 'down'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(faturamento().despesas, 'custo') === 'zero'
+                  "
+                >{{
                   faturamento().despesas != null
                     ? formatMoeda(faturamento().despesas!)
                     : '—'
@@ -133,7 +150,17 @@
               </div>
               <div class="painel-reveal__row">
                 <span>Lucro</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--up]="
+                    revealValorTone(faturamento().lucro, 'saldo') === 'up'
+                  "
+                  [class.painel-reveal__val--down]="
+                    revealValorTone(faturamento().lucro, 'saldo') === 'down'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(faturamento().lucro, 'saldo') === 'zero'
+                  "
+                >{{
                   faturamento().lucro != null
                     ? formatMoeda(faturamento().lucro!)
                     : '—'
@@ -141,7 +168,17 @@
               </div>
               <div class="painel-reveal__row">
                 <span>Ticket médio</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--up]="
+                    revealValorTone(faturamento().ticketMedio, 'ganho') === 'up'
+                  "
+                  [class.painel-reveal__val--down]="
+                    revealValorTone(faturamento().ticketMedio, 'ganho') === 'down'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(faturamento().ticketMedio, 'ganho') === 'zero'
+                  "
+                >{{
                   faturamento().ticketMedio != null
                     ? formatMoeda(faturamento().ticketMedio!)
                     : '—'
@@ -153,7 +190,14 @@
                   <div class="painel-reveal__row painel-reveal__row--dots">
                     <span>{{ m.rotulo }}</span>
                     <span class="painel-reveal__dots" aria-hidden="true"></span>
-                    <strong>{{ formatMoeda(m.valor) }}</strong>
+                    <strong
+                      [class.painel-reveal__val--up]="
+                        revealValorTone(m.valor, 'ganho') === 'up'
+                      "
+                      [class.painel-reveal__val--zero]="
+                        revealValorTone(m.valor, 'ganho') === 'zero'
+                      "
+                    >{{ formatMoeda(m.valor) }}</strong>
                   </div>
                 }
               }
@@ -263,13 +307,27 @@
             <div painelCardReveal class="painel-reveal">
               <div class="painel-reveal__row">
                 <span>Clientes novos</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--up]="
+                    revealValorTone(clientes().novosSemana, 'ganho') === 'up'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(clientes().novosSemana, 'ganho') === 'zero'
+                  "
+                >{{
                   clientes().novosSemana != null ? clientes().novosSemana : '—'
                 }}</strong>
               </div>
               <div class="painel-reveal__row">
                 <span>Aniversariantes</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--up]="
+                    revealValorTone(clientes().aniversariosHoje, 'ganho') === 'up'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(clientes().aniversariosHoje, 'ganho') === 'zero'
+                  "
+                >{{
                   clientes().aniversariosHoje != null
                     ? clientes().aniversariosHoje
                     : '—'
@@ -277,7 +335,14 @@
               </div>
               <div class="painel-reveal__row">
                 <span>Inativos</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--down]="
+                    revealValorTone(clientes().inativos, 'alerta') === 'down'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(clientes().inativos, 'alerta') === 'zero'
+                  "
+                >{{
                   clientes().inativos != null ? clientes().inativos : '—'
                 }}</strong>
               </div>
@@ -384,13 +449,27 @@
             <div painelCardReveal class="painel-reveal">
               <div class="painel-reveal__row">
                 <span>Produtos críticos</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--down]="
+                    revealValorTone(estoque().criticos, 'alerta') === 'down'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(estoque().criticos, 'alerta') === 'zero'
+                  "
+                >{{
                   estoque().criticos != null ? estoque().criticos : '—'
                 }}</strong>
               </div>
               <div class="painel-reveal__row">
                 <span>Acabando</span>
-                <strong>{{
+                <strong
+                  [class.painel-reveal__val--down]="
+                    revealValorTone(estoque().alertaBaixo, 'alerta') === 'down'
+                  "
+                  [class.painel-reveal__val--zero]="
+                    revealValorTone(estoque().alertaBaixo, 'alerta') === 'zero'
+                  "
+                >{{
                   estoque().alertaBaixo != null ? estoque().alertaBaixo : '—'
                 }}</strong>
               </div>
@@ -464,40 +543,78 @@
                 <header class="painel-panel__head painel-panel__head--row">
                   <h2 class="painel-panel__title">Agendamentos por status</h2>
                 </header>
-                <div class="painel-combo__body painel-combo__body--status">
-                  <app-painel-chart-status [series]="charts().status" />
-                </div>
+                <app-painel-chart-status
+                  class="painel-combo__chart"
+                  [series]="charts().status"
+                />
               </div>
             </div>
           </article>
 
           <article class="painel-panel painel-panel--half painel-enter" style="--painel-i: 7">
             <header class="painel-panel__head painel-panel__head--row">
-              <div>
-                <h2 class="painel-panel__title">Ticket médio</h2>
-                <p class="painel-panel__hint">Comandas faturadas no período</p>
-              </div>
-              <app-ui-tip-trigger
-                tip="O Ticket Médio representa o valor médio gasto por comanda no período selecionado. Este cálculo considera todas as comandas faturadas, incluindo itens de pacotes e assinaturas consumidos no período. Ticket Médio = Valor Total das Comandas ÷ Número Total de Comandas."
-                align="end"
-              >
-                <span class="painel-panel__info" aria-label="Informação">i</span>
-              </app-ui-tip-trigger>
+              <h2 class="painel-panel__title">Ticket médio</h2>
+              <app-painel-rich-tip>
+                <div class="painel-tip-doc">
+                  <h3 class="painel-tip-doc__title">Como o Ticket Médio é calculado?</h3>
+                  <p class="painel-tip-doc__text">
+                    O Ticket Médio representa o valor médio gasto por comanda no período
+                    selecionado. Este cálculo considera todas as comandas faturadas,
+                    incluindo itens de pacotes e assinaturas consumidos no período.
+                  </p>
+                  <pre class="painel-tip-doc__formula">Ticket Médio = Valor Total das Comandas ÷ Número Total de Comandas</pre>
+                  <div class="painel-tip-doc__example">
+                    <p class="painel-tip-doc__example-title">Exemplo:</p>
+                    <ul class="painel-tip-doc__list">
+                      <li>Comanda 1: R$ 130,00 (hidratação + escova)</li>
+                      <li>Comanda 2: R$ 60,00 (escova)</li>
+                      <li>Comanda 3: R$ 200,00 (item de assinatura - 1 sessão)</li>
+                      <li>Comanda 4: R$ 120,00 (item de pacote - 1 sessão)</li>
+                    </ul>
+                    <p class="painel-tip-doc__example-title">Cálculo:</p>
+                    <ol class="painel-tip-doc__steps">
+                      <li>Total de comandas: 4</li>
+                      <li>
+                        Valor total: R$ 130,00 + R$ 60,00 + R$ 200,00 + R$ 120,00 =
+                        R$ 510,00
+                      </li>
+                      <li>Divisão: R$ 510,00 ÷ 4 comandas = R$ 127,50</li>
+                      <li class="painel-tip-doc__result">
+                        Ticket Médio: R$ 127,50 por comanda
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              </app-painel-rich-tip>
             </header>
             <app-painel-ticket-medio-panel [vm]="ticketMedio()" />
           </article>
 
           <article class="painel-panel painel-panel--half painel-enter" style="--painel-i: 8">
             <header class="painel-panel__head painel-panel__head--row">
-              <div>
-                <h2 class="painel-panel__title">Atendimentos por profissional</h2>
-                <p class="painel-panel__hint">Top por atendimentos</p>
-              </div>
+              <h2 class="painel-panel__title">Atendimentos por profissional</h2>
               <app-ui-tip-trigger
                 tip="Ranking dos profissionais com mais atendimentos no período, com quantidade de serviços e valor médio por atendimento."
                 align="end"
               >
-                <span class="painel-panel__info" aria-label="Informação">i</span>
+                <span class="painel-panel__info" aria-label="Informação">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </span>
               </app-ui-tip-trigger>
             </header>
             <app-painel-profissionais-periodo-panel [vm]="profissionaisPeriodo()" />
@@ -505,15 +622,29 @@
 
           <article class="painel-panel painel-panel--half painel-enter" style="--painel-i: 9">
             <header class="painel-panel__head painel-panel__head--row">
-              <div>
-                <h2 class="painel-panel__title">Vendas por categoria</h2>
-                <p class="painel-panel__hint">Faturamento por tipo no período</p>
-              </div>
+              <h2 class="painel-panel__title">Vendas por categoria</h2>
               <app-ui-tip-trigger
                 tip="Distribuição do faturamento das comandas faturadas no período por categoria (Serviços, Produtos, Pacotes)."
                 align="end"
               >
-                <span class="painel-panel__info" aria-label="Informação">i</span>
+                <span class="painel-panel__info" aria-label="Informação">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </span>
               </app-ui-tip-trigger>
             </header>
             <app-painel-chart-vendas-categoria [vm]="vendasCategoria()" />
@@ -521,15 +652,29 @@
 
           <article class="painel-panel painel-panel--half painel-enter" style="--painel-i: 10">
             <header class="painel-panel__head painel-panel__head--row">
-              <div>
-                <h2 class="painel-panel__title">Funil de agendamentos</h2>
-                <p class="painel-panel__hint">Conversão até faturamento</p>
-              </div>
+              <h2 class="painel-panel__title">Funil de agendamentos</h2>
               <app-ui-tip-trigger
                 tip="O gráfico abaixo mostra a porcentagem de quantos dos agendamentos criados do período informado foram faturados."
                 align="end"
               >
-                <span class="painel-panel__info" aria-label="Informação">i</span>
+                <span class="painel-panel__info" aria-label="Informação">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </span>
               </app-ui-tip-trigger>
             </header>
             <app-painel-chart-funnel [series]="charts().funil" />
@@ -540,15 +685,29 @@
             style="--painel-i: 11"
           >
             <header class="painel-panel__head painel-panel__head--row">
-              <div>
-                <h2 class="painel-panel__title">Mapa de calor de agendamentos</h2>
-                <p class="painel-panel__hint">Dia da semana × horário</p>
-              </div>
+              <h2 class="painel-panel__title">Mapa de calor de agendamentos</h2>
               <app-ui-tip-trigger
                 tip="Os agendamentos são agrupados conforme os horários e dias da semana de acordo com o período selecionado."
                 align="end"
               >
-                <span class="painel-panel__info" aria-label="Informação">i</span>
+                <span class="painel-panel__info" aria-label="Informação">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </span>
               </app-ui-tip-trigger>
             </header>
             <app-painel-chart-heatmap [series]="charts().heatmap" />

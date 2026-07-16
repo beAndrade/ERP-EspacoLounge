@@ -46,10 +46,11 @@
 
 .fat-title {
   margin: 0;
-  font-size: 26px;
+  text-align: left;
+  font-size: 20px;
   line-height: 1.25;
   font-weight: 700;
-  color: var(--fat-fg);
+  color: #000000bf;
   flex: 1 1 auto;
   min-width: 0;
   padding: 30px 0 10px;
@@ -136,7 +137,8 @@
   height: var(--drawer-field-h);
   width: 100%;
   padding: 0 15px;
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 1.5;
   font-weight: 500;
   color: var(--fat-fg);
   -webkit-text-fill-color: var(--fat-fg);
@@ -155,7 +157,8 @@
     -webkit-text-fill-color: #000000bf;
     opacity: 1;
     font-weight: 400;
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1.5;
   }
 
   &:hover {
@@ -312,7 +315,8 @@ input[type='number'].fat-field__input {
     min-height: var(--drawer-field-h);
     padding: 0 15px;
     padding-right: 2.5rem;
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1.5;
     font-weight: 400;
     color: var(--fat-fg);
     -webkit-text-fill-color: var(--fat-fg);
@@ -334,6 +338,8 @@ input[type='number'].fat-field__input {
   .fat-data-field__value-text {
     flex: 1 1 auto;
     min-width: 0;
+    font-size: 16px;
+    line-height: 1.5;
     font-weight: 400;
     font-variant-numeric: tabular-nums;
   }
@@ -529,18 +535,44 @@ input[type='number'].fat-field__input {
   }
 }
 
-/* Separador / títulos */
+/* Separador / títulos — linha na mesma altura do h2 (traço curto + texto + linha até o fim). */
+.fat-h2-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+  padding-top: 1.5rem;
+}
+
 .fat-sep {
   border: 0;
-  border-top: 1px solid #e5e7eb;
-  margin: 0.35rem 0;
+  border-top: 1px solid #f0f1f4;
+  margin: 0;
+  height: 0;
+  align-self: center;
+  filter: blur(0.35px);
+  opacity: 0.85;
+
+  &--lead {
+    flex: 0 0 1.5rem;
+    width: 1.5rem;
+  }
+
+  &--trail {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 
 .fat-h2 {
   margin: 0;
+  flex: 0 0 auto;
   font-size: 16px;
-  font-weight: 400;
-  color: var(--fat-fg);
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.75);
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .fat-hint {
@@ -584,9 +616,9 @@ input[type='number'].fat-field__input {
 .fat-pag-info {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: flex-start;
-  gap: 0.15rem;
+  gap: 0;
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
@@ -595,43 +627,121 @@ input[type='number'].fat-field__input {
   color: var(--fat-fg);
 }
 
+.fat-pag-info__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .fat-pag-data {
   font-weight: 400;
   font-size: 14px;
+  line-height: 1;
   color: var(--fat-fg);
   opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease, opacity 0.15s ease;
+
+  &--preview {
+    color: #9ca3af;
+    opacity: 1;
+  }
 }
 
-/** Método + excluir: ícone sempre visível; rótulo com margem fixa à esquerda. */
+.fat-pag-data-row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 100%;
+  line-height: 1;
+}
+
+.fat-pag-data-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0;
+  line-height: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: #505afb;
+  cursor: pointer;
+  flex-shrink: 0;
+  /* Compensa o peso visual do square-pen (parece mais baixo). */
+  transform: translateY(-1px);
+
+  svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: wait;
+  }
+}
+
+.fat-pag-data__calendar-pop {
+  position: absolute;
+  z-index: 60;
+  left: 0;
+  top: calc(100% + 6px);
+  max-width: calc(100vw - 1.5rem);
+}
+
 .fat-pag-metodo {
   display: inline-block;
   box-sizing: border-box;
   max-width: 100%;
   min-height: 1.5rem;
-  padding-left: 28px;
   color: var(--fat-fg);
 }
 
+/**
+ * Lixeira fora do fluxo (não empurra data/obs).
+ * Tamanho = ícone (sem “padding” interno do 24×24); alinhada ao método.
+ * Só o label desliza — transform, sem animar width.
+ */
 .fat-pag-info .fat-pag-del {
   position: absolute;
+  /* Centro vertical na linha do método (18px × 1.25). */
+  top: calc((18px * 1.25 - 16px) / 2);
   left: 0;
-  top: 0;
   z-index: 1;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  width: 24px;
-  height: 24px;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
   margin: 0;
   padding: 0;
   border: 0;
-  opacity: 1;
-  pointer-events: auto;
+  line-height: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  pointer-events: none;
   border-radius: 0;
   background: transparent;
   color: #e57373;
   cursor: pointer;
+  /* Saída rápida (estado base). */
+  transition: opacity 0.08s ease;
 
   svg {
     display: block;
@@ -650,12 +760,35 @@ input[type='number'].fat-field__input {
   }
 }
 
+.fat-pag-item:hover .fat-pag-del,
+.fat-pag-info:focus-within .fat-pag-del {
+  opacity: 1;
+  pointer-events: auto;
+  /* Entrada um pouco mais suave. */
+  transition: opacity 0.16s ease;
+}
+
 .fat-pag-metodo__label {
   display: inline-block;
   font-weight: 400;
   font-size: 18px;
   line-height: 1.25;
   white-space: nowrap;
+  transform: translateX(0);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fat-pag-item:hover .fat-pag-metodo__label,
+.fat-pag-info:focus-within .fat-pag-metodo__label {
+  /* Ícone 16px + folga. */
+  transform: translateX(22px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fat-pag-info .fat-pag-del,
+  .fat-pag-metodo__label {
+    transition: none;
+  }
 }
 
 .fat-pag-metodo__parcela {
@@ -696,9 +829,9 @@ input[type='number'].fat-field__input {
 }
 
 .fat-pag-valor {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--fat-fg);
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.75);
   line-height: 1.25;
 }
 
@@ -754,14 +887,21 @@ input[type='number'].fat-field__input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
   padding: 0;
   border: 0;
+  line-height: 0;
+  appearance: none;
+  -webkit-appearance: none;
   background: transparent;
   color: #e57373;
   cursor: pointer;
   transition: color 0.15s ease;
 
   svg {
+    display: block;
     flex-shrink: 0;
     width: 16px;
     height: 16px;
@@ -788,13 +928,19 @@ input[type='number'].fat-field__input {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 400;
   color: var(--fat-fg);
 
   span {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 400;
+  }
+
+  > span:last-child {
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.75);
   }
 
   &.fat-resumo__row--strong {
@@ -806,6 +952,7 @@ input[type='number'].fat-field__input {
 
     span:last-child {
       font-weight: 700;
+      color: rgba(0, 0, 0, 0.75);
     }
   }
 }
@@ -814,7 +961,9 @@ input[type='number'].fat-field__input {
 .fat-footer {
   display: flex;
   gap: 0.5rem;
-  padding: 0.85rem var(--fat-body-pad-x, 30px);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 16px;
   border-top: 1px solid #e5e7eb;
   background: #ffffff;
   flex: 0 0 auto;
@@ -822,8 +971,35 @@ input[type='number'].fat-field__input {
   .fat-btn {
     flex: 1 1 0;
     min-width: 0;
-    width: auto;
+    width: 50%;
     margin-left: 0;
+    font-size: 14px;
+    font-weight: 400;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 15px;
+    border-radius: 14px;
+
+    svg {
+      display: block;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+  }
+
+  .fat-btn--ghost {
+    color: #000000bf;
+    font-weight: 400;
+
+    svg {
+      color: inherit;
+      stroke: currentColor;
+    }
+  }
+
+  .fat-btn--primary {
+    font-weight: 400;
   }
 }
 
@@ -832,12 +1008,12 @@ input[type='number'].fat-field__input {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 32px;
-  height: 32px;
-  padding: 0 1rem;
-  font-size: 0.9rem;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 15px;
+  font-size: 16px;
   font-weight: 600;
-  border-radius: 10px;
+  border-radius: 14px;
   border: 1px solid transparent;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -873,8 +1049,6 @@ input[type='number'].fat-field__input {
     background: var(--drawer-btn-faturar-bg, #70c040);
     color: var(--drawer-btn-faturar-fg, #ffffff);
     border-color: var(--drawer-btn-faturar-border, #70c040);
-    min-height: 44px;
-    padding: 0 1.25rem;
 
     &:hover:not(:disabled) {
       background: var(--drawer-btn-faturar-hover-bg, #85c94f);
