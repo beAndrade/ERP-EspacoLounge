@@ -5,6 +5,8 @@ import {
   EventEmitter,
   forwardRef,
   HostListener,
+  Injector,
+  afterNextRender,
   inject,
   Input,
   OnChanges,
@@ -48,12 +50,15 @@ export class SaasSelectComponent
   implements AfterViewInit, ControlValueAccessor, OnChanges, OnDestroy
 {
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly injector = inject(Injector);
   @ViewChild('triggerBtn', { static: true })
   private readonly triggerBtn?: ElementRef<HTMLButtonElement>;
   @ViewChild('triggerInput')
   private readonly triggerInput?: ElementRef<HTMLInputElement>;
   @ViewChild('triggerInputBtn')
   private readonly triggerInputBtn?: ElementRef<HTMLInputElement>;
+  @ViewChild('panelFilterInput')
+  private readonly panelFilterInput?: ElementRef<HTMLInputElement>;
 
   /** Busca digitada no gatilho (layout sidebar / combobox). */
   get inlineSearchInTrigger(): boolean {
@@ -212,6 +217,18 @@ export class SaasSelectComponent
     this.openPanel();
   }
 
+  /**
+   * Evita que o `<button>` roube o foco no 1.º clique — o input de pesquisa
+   * (filho do gatilho) só existe depois de abrir o painel.
+   */
+  onTriggerMouseDown(ev: MouseEvent): void {
+    if (this.isDisabled || this.panelOpen) return;
+    if ((ev.target as HTMLElement).closest('.saas-select__trigger-input')) {
+      return;
+    }
+    ev.preventDefault();
+  }
+
   onComboboxTriggerClick(ev: Event): void {
     ev.stopPropagation();
     if (this.isDisabled) return;
@@ -257,12 +274,29 @@ export class SaasSelectComponent
       });
       this.attachFixedPanelScrollListeners();
     }
-    if (this.inlineSearchInTrigger || this.panelOpen) {
-      queueMicrotask(() => {
-        this.triggerInput?.nativeElement?.focus();
-        this.triggerInputBtn?.nativeElement?.focus();
-      });
-    }
+    this.focusSearchFieldAfterOpen();
+  }
+
+  /**
+   * O input de pesquisa só existe no DOM depois do `@if (panelOpen)` renderizar.
+   * `queueMicrotask` sozinho falha no 1.º clique — o utilizador tinha de clicar de novo.
+   */
+  private focusSearchFieldAfterOpen(): void {
+    afterNextRender(
+      () => {
+        if (!this.panelOpen || this.isDisabled) return;
+        const el =
+          this.triggerInput?.nativeElement ??
+          this.triggerInputBtn?.nativeElement ??
+          this.panelFilterInput?.nativeElement ??
+          (this.host.nativeElement.querySelector(
+            '.saas-select__trigger-input, .saas-select__filter-input',
+          ) as HTMLInputElement | null);
+        if (!el) return;
+        el.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
   }
 
   private closePanel(): void {
@@ -316,8 +350,7 @@ export class SaasSelectComponent
   private focusTriggerSoon(): void {
     queueMicrotask(() => {
       if (this.panelOpen) {
-        this.triggerInput?.nativeElement?.focus();
-        this.triggerInputBtn?.nativeElement?.focus();
+        this.focusSearchFieldAfterOpen();
         return;
       }
       this.triggerBtn?.nativeElement?.focus();

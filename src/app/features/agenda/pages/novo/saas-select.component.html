@@ -87,6 +87,7 @@
       [attr.aria-label]="ariaFieldLabel || placeholder"
       [attr.aria-expanded]="panelOpen"
       [attr.aria-haspopup]="'listbox'"
+      (mousedown)="onTriggerMouseDown($event)"
       (click)="togglePanel($event)"
     >
       @if (panelOpen) {
@@ -164,6 +165,7 @@
       @if (showFilter && !inlineSearchInTrigger) {
         <div class="saas-select__filter">
           <input
+            #panelFilterInput
             type="search"
             class="saas-select__filter-input"
             [value]="filterText"
