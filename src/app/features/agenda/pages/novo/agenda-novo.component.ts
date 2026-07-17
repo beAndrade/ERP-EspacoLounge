@@ -4780,6 +4780,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    * (Serviço usa `slotsSequenciaisParaPayloadServico`; demais tipos usam isto).
    * Mega/Pacote: `duracaoSlotMinutos` = duração da 1.ª etapa em Regras Mega.
    * `slotAgenda` legado (se algum dia for preenchido) tem prioridade.
+   *
+   * Walk-in (`fluxoSomenteComanda` sem hora): não grava slot.
+   * Edição de itens de comanda que já tinha horário na grelha: preserva o slot.
    */
   private mergeSlotOuHoraInicial(
     p: CreateAtendimentoPayload,
@@ -4788,7 +4791,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     horaIni: string,
     duracaoSlotMinutos?: number,
   ): CreateAtendimentoPayload {
-    if (this.isFluxoSomenteComanda()) return p;
+    if (this.isFluxoSomenteComanda() && !normalizarHoraHHmm(horaIni)) {
+      return p;
+    }
     if (this.slotAgenda) {
       return {
         ...p,
@@ -4807,6 +4812,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const slot = slotInicioFimBrasilia(dataYmd, hi, dur);
     if (!slot) return p;
     return { ...p, inicio: slot.inicio, fim: slot.fim };
+  }
+
+  /**
+   * Comanda com horário já na grelha (ex.: editar itens): deve reenviar
+   * `inicio`/`fim`/`agenda_*`. Walk-in puro (sem hora) continua sem slot.
+   */
+  private comandaDeveManterPosicaoNaGrelha(horaIni: string): boolean {
+    return !!normalizarHoraHHmm(horaIni);
   }
 
   /** Duração (min) da etapa no catálogo Regras Mega, para alinhar slot ao 1.º serviço do pacote. */
@@ -4837,7 +4850,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const observacao = String(raw['observacao'] ?? '').trim() || undefined;
     const horaIni = String(raw['hora_inicial'] ?? '');
     const somenteComanda = this.isFluxoSomenteComanda();
-    const agendaCartao = somenteComanda
+    /** Walk-in sem hora: sem cartão na grelha. Com hora (edição de itens): mantém. */
+    const gravarSlotGrelha =
+      !somenteComanda || this.comandaDeveManterPosicaoNaGrelha(horaIni);
+    const agendaCartao = !gravarSlotGrelha
       ? {}
       : (() => {
           const agenda_status = normalizarAgendaStatusId(
@@ -4891,7 +4907,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         tamanho: String(g.get('tamanho')?.value ?? 'Curto').trim(),
       });
     }
-    const slotPairs = somenteComanda
+    const slotPairs = !gravarSlotGrelha
       ? []
       : this.slotsSequenciaisParaPayloadServico(
           dataYmd,
@@ -4936,7 +4952,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         servicoIdx += 1;
         if (!pr) continue;
         const slotPatch =
-          !somenteComanda && sp != null
+          gravarSlotGrelha && sp != null
             ? { inicio: sp.inicio, fim: sp.fim }
             : {};
         const moneyPatch = {
