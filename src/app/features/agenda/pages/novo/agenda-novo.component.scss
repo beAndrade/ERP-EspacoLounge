@@ -1543,9 +1543,9 @@ textarea {
   column-gap: 0.55rem;
   grid-template-columns:
     minmax(0, 1fr)
-    minmax(0, var(--drawer-money-col, 140px))
-    minmax(0, var(--drawer-money-col, 140px))
-    minmax(0, var(--drawer-money-col, 140px))
+    minmax(0, var(--drawer-money-col, 112px))
+    minmax(0, var(--drawer-money-col, 112px))
+    minmax(0, var(--drawer-money-col, 112px))
     auto;
 
   @media (max-width: 900px) {
@@ -2100,8 +2100,13 @@ textarea {
   --drawer-pro-col: 150px;
   /** Tamanho (Serviço). */
   --drawer-tamanho-col: 150px;
-  /** Campos monetários (V.Unit, Desconto, Total): largura fixa para simetria visual. */
-  --drawer-money-col: 140px;
+  /**
+   * Campos monetários (V.Unit, Desconto, Total).
+   * Largura alvo + piso: o valor («R$ 110,00») não pode desaparecer no input.
+   * Em ecrãs estreitos encolhe a Descrição (reticências), não estes campos.
+   */
+  --drawer-money-col: 112px;
+  --drawer-money-col-min: 7rem;
   /** Padrão do drawer: inputs com 38px de altura. */
   --touch-min: 38px;
   --radius: 14px;
@@ -2550,20 +2555,35 @@ textarea {
       width: auto;
       min-width: 0;
       max-width: none;
+      overflow: hidden;
+
+      app-saas-select,
+      ::ng-deep .saas-select,
+      ::ng-deep .saas-select__trigger {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      ::ng-deep .saas-select__value,
+      ::ng-deep .saas-select__trigger-input {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
 
     .servico-row__field--tamanho {
-      flex: 0 0 var(--drawer-tamanho-col);
+      flex: 0 1 var(--drawer-tamanho-col);
       width: var(--drawer-tamanho-col);
-      min-width: var(--drawer-tamanho-col);
+      min-width: 5.5rem;
       max-width: var(--drawer-tamanho-col);
       box-sizing: border-box;
     }
 
     .servico-row__field--pro {
-      flex: 0 0 var(--drawer-pro-col);
+      flex: 0 1 var(--drawer-pro-col);
       width: var(--drawer-pro-col);
-      min-width: var(--drawer-pro-col);
+      min-width: 6rem;
       max-width: var(--drawer-pro-col);
     }
 
@@ -2571,14 +2591,34 @@ textarea {
     .servico-row__field--produto-total-estimado {
       flex: 0 0 var(--drawer-money-col);
       width: var(--drawer-money-col);
-      min-width: var(--drawer-money-col);
-      max-width: var(--drawer-money-col);
+      min-width: var(--drawer-money-col-min);
+      max-width: none;
+      box-sizing: border-box;
+
+      input,
+      .servico-row__total-estimado {
+        min-width: 0;
+        font-variant-numeric: tabular-nums;
+      }
     }
 
     .servico-row__actions--drawer {
       flex: 0 0 calc(38px * 2 + 0.4rem);
       margin-left: auto;
     }
+  }
+
+  /**
+   * Com coluna Tamanho: aperta Tipo/Pro/Tamanho; dinheiro mantém piso legível.
+   * A Descrição absorve o espaço em falta (reticências).
+   */
+  .servico-row--drawer:has(.servico-row__field--tamanho):has(
+      .servico-row__total-estimado
+    ):not(:has(.cabelo-calc--nested)) {
+    --drawer-money-col: 112px;
+    --drawer-tamanho-col: 104px;
+    --drawer-pro-col: 120px;
+    --drawer-tipo-linha-col: 124px;
   }
 
   /** Calculadora «Cabelo» no drawer: Cor, Tamanho, Método e Gramas numa única linha. */
@@ -2658,18 +2698,48 @@ textarea {
   .servico-row--drawer .servico-row__field--modal-prod-money {
     flex: 0 0 var(--drawer-money-col);
     width: var(--drawer-money-col);
-    min-width: var(--drawer-money-col);
-    max-width: var(--drawer-money-col);
+    min-width: var(--drawer-money-col-min);
+    max-width: none;
   }
 
   /**
-   * Em viewports mais estreitos: colunas um pouco mais compactas.
+   * Em viewports estreitos: aperta Tipo/Pro/Tamanho.
+   * Dinheiro mantém o piso; a Descrição encolhe com reticências.
    */
+  @media (max-width: 1400px) {
+    --drawer-money-col: 112px;
+    --drawer-tamanho-col: 112px;
+    --drawer-pro-col: 120px;
+    --drawer-tipo-linha-col: 128px;
+  }
+
   @media (max-width: 1200px) {
-    --drawer-tipo-linha-col: 150px;
-    --drawer-pro-col: 150px;
-    --drawer-tamanho-col: 150px;
-    --drawer-money-col: 128px;
+    --drawer-tipo-linha-col: 112px;
+    --drawer-pro-col: 104px;
+    --drawer-tamanho-col: 96px;
+    --drawer-money-col: 112px;
+  }
+
+  @media (max-width: 1400px) {
+    .servico-row--drawer:has(.servico-row__field--tamanho):has(
+        .servico-row__total-estimado
+      ):not(:has(.cabelo-calc--nested)) {
+      --drawer-money-col: 112px;
+      --drawer-tamanho-col: 96px;
+      --drawer-pro-col: 108px;
+      --drawer-tipo-linha-col: 116px;
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .servico-row--drawer:has(.servico-row__field--tamanho):has(
+        .servico-row__total-estimado
+      ):not(:has(.cabelo-calc--nested)) {
+      --drawer-money-col: 112px;
+      --drawer-tamanho-col: 88px;
+      --drawer-pro-col: 96px;
+      --drawer-tipo-linha-col: 104px;
+    }
   }
 
   /** Drawer: hover com borda vinho nos campos de texto. */
@@ -3086,10 +3156,13 @@ textarea {
   .servico-row__total-estimado {
     min-height: var(--touch-min, 38px);
     height: var(--touch-min, 38px);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .servico-row--drawer .servico-row__field--modal-prod-money input {
-    width: 140px;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
     height: 38px;
@@ -3105,7 +3178,7 @@ textarea {
     input,
   .servico-row__cabelo-rodape--drawer .servico-row__field--money input,
   .servico-row__cabelo-rodape--drawer .servico-row__total-estimado {
-    width: 140px;
+    width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     min-height: 38px;
