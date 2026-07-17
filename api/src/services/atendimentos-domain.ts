@@ -650,13 +650,25 @@ async function allocNextNumeroComanda(db: Db): Promise<number> {
 
 /** Alinha a sequência ao MAX actual (próximo `nextval` = max+1; tabela vazia → 1). */
 async function syncNumeroComandaSequence(db: Db): Promise<void> {
-  await db.execute(sql`
-    SELECT setval(
-      'atendimentos_pedido_numero_comanda_seq'::regclass,
-      COALESCE((SELECT MAX(numero_comanda) FROM atendimentos_pedido), 0),
-      true
-    )
-  `);
+  /**
+   * Postgres rejeita `setval(..., 0)` (MINVALUE da sequência é 1).
+   * Vazia: setval(1, false) → próximo nextval = 1.
+   * Com MAX=N: setval(N, true) → próximo nextval = N+1.
+   */
+  try {
+    await db.execute(sql`
+      SELECT setval(
+        'atendimentos_pedido_numero_comanda_seq'::regclass,
+        GREATEST(
+          1,
+          COALESCE((SELECT MAX(numero_comanda) FROM atendimentos_pedido), 0)
+        ),
+        (SELECT EXISTS (SELECT 1 FROM atendimentos_pedido LIMIT 1))
+      )
+    `);
+  } catch (e) {
+    console.error('[syncNumeroComandaSequence]', e);
+  }
 }
 
 async function ensurePedidoHeader(

@@ -1576,8 +1576,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
       error: (e: Error) => {
         this.excluindoIdAt = null;
         this.excluindoItemModal = false;
+        this.excluirItemModalAberto = false;
+        this.grupoPendenteExclusao = null;
         this.erro =
           e.message || 'Não foi possível excluir. Tente novamente.';
+        this.carregar();
       },
     });
   }
