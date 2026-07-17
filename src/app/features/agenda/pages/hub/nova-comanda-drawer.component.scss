@@ -918,12 +918,18 @@
   padding: 10px 15px 10px var(--drawer-pad-x, 15px);
   background: #fff;
   position: relative;
-  z-index: 2;
+  /** Acima de `.nc-drawer__resumo-sticky` (z-index: 6) para o menu Excluir/Outros não ficar por baixo. */
+  z-index: 20;
   overflow: visible;
   border-top: 1px solid var(--drawer-stroke, #ececec);
 
   &::before {
     content: none;
+  }
+
+  /** Com dropdown aberto, sobe ainda mais (conteúdo da comanda / selects). */
+  &:has(.nc-outros-wrap--open) {
+    z-index: 60;
   }
 
   /** Igual a `.agenda-modal__footer .btn.btn-footer--danger` no agendamento. */
@@ -1018,6 +1024,7 @@
   bottom: calc(100% + 6px);
   left: 0;
   right: auto;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: max-content;
