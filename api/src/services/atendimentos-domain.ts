@@ -284,6 +284,56 @@ function readRecorrenciaMeta(
   };
 }
 
+/**
+ * Comanda ainda aberta (não finalizada) do mesmo cliente no mesmo dia.
+ * Preferimos o id canónico `YYYYMMDD-cliente`; senão o menor id aberto.
+ */
+async function idAtendimentoComandaAbertaMesmoDia(
+  db: Db,
+  dataStr: string,
+  clienteId: string,
+): Promise<string | null> {
+  const cid = String(clienteId ?? '').trim();
+  if (!cid) return null;
+  const dataSql = parseDataSql(dataStr);
+
+  const rows = await db
+    .select({
+      idAtendimento: atendimentos.idAtendimento,
+      cobrancaStatus: atendimentos.cobrancaStatus,
+    })
+    .from(atendimentos)
+    .where(
+      and(
+        eq(atendimentos.idCliente, cid),
+        sqlDataAtendimentoIgual(dataSql),
+      ),
+    );
+
+  /** id → true se existir pelo menos uma linha não finalizada. */
+  const abertoPorId = new Map<string, boolean>();
+  for (const r of rows) {
+    const id = String(r.idAtendimento ?? '').trim();
+    if (!id) continue;
+    const finalizada =
+      String(r.cobrancaStatus ?? '')
+        .trim()
+        .toLowerCase() === 'finalizada';
+    if (!finalizada) abertoPorId.set(id, true);
+    else if (!abertoPorId.has(id)) abertoPorId.set(id, false);
+  }
+
+  const abertos = [...abertoPorId.entries()]
+    .filter(([, aberto]) => aberto)
+    .map(([id]) => id);
+  if (abertos.length === 0) return null;
+
+  const baseId = makeIdAtendimento(dataStr, cid);
+  if (abertos.includes(baseId)) return baseId;
+  abertos.sort((a, b) => a.localeCompare(b));
+  return abertos[0] ?? null;
+}
+
 async function resolveIdAtendimentoCriacao(
   db: Db,
   p: CreateAtendimentoPayload,
@@ -291,13 +341,22 @@ async function resolveIdAtendimentoCriacao(
   clienteId: string,
 ): Promise<string> {
   /**
-   * Só reutiliza pedido quando o cliente envia `id_atendimento` explícito
-   * (edição / «adicionar à comanda»). Novos agendamentos no mesmo dia — mesmo
-   * com comanda ainda aberta — geram id próprio, para não fundir horários/
-   * status distintos num único cartão da grelha.
+   * 1) `id_atendimento` explícito (edição / «adicionar à comanda» / multi-POST).
+   * 2) Comanda aberta do mesmo cliente no mesmo dia → reutiliza (vários
+   *    profissionais / horários na grelha, um só `numero_comanda`).
+   * 3) Caso contrário, id canónico ou ocorrência se a canónica já estiver
+   *    encerrada.
    */
   const idExpl = String((p as Record<string, unknown>)['id_atendimento'] ?? '').trim();
   if (idExpl) return idExpl;
+
+  const aberto = await idAtendimentoComandaAbertaMesmoDia(
+    db,
+    dataStr,
+    clienteId,
+  );
+  if (aberto) return aberto;
+
   return novoIdAtendimentoFallbackSemSufixoDesnecessario(db, dataStr, clienteId);
 }
 

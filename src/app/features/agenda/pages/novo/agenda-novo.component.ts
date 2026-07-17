@@ -61,6 +61,7 @@ import {
   switchMap,
   take,
   takeUntil,
+  tap,
   toArray,
 } from 'rxjs';
 import { AgendaModalCalendarComponent } from './agenda-modal-calendar.component';
@@ -99,6 +100,7 @@ import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp
 import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
 import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
 import {
+  AtendimentoCriadoResumo,
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
   CabeloCatalogoItem,
@@ -2780,6 +2782,32 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  /**
+   * Vários POSTs no mesmo dia (ex.: 2 serviços / profissionais) devem partilhar
+   * o mesmo `id_atendimento` → mesma comanda. O 1.º create define o id; os
+   * seguintes enviam `id_atendimento` explícito.
+   */
+  private criarAgendamentosMesmaComanda(
+    payloads: CreateAtendimentoPayload[],
+    idAtendimentoInicial?: string | null,
+  ): Observable<AtendimentoCriadoResumo[]> {
+    let idShared = String(idAtendimentoInicial ?? '').trim();
+    return from(payloads).pipe(
+      concatMap((p) => {
+        const body: CreateAtendimentoPayload = idShared
+          ? ({ ...p, id_atendimento: idShared } as CreateAtendimentoPayload)
+          : p;
+        return this.api.createAgendamento(body).pipe(
+          tap((res) => {
+            const id = String(res?.id ?? '').trim();
+            if (id) idShared = id;
+          }),
+        );
+      }),
+      toArray(),
+    );
+  }
+
   /** Grava só o dia do formulário e devolve o `id_atendimento` do pedido. */
   private salvarParaComanda(prep: {
     raw: Record<string, unknown>;
@@ -2803,18 +2831,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const gravar$ = editId
       ? this.api
           .excluirAtendimento(editId, { manterCabecalhoPedido: true })
-          .pipe(
-            switchMap(() =>
-              from(pl).pipe(
-                concatMap((p) => this.api.createAgendamento(p)),
-                toArray(),
-              ),
-            ),
-          )
-      : from(pl).pipe(
-          concatMap((p) => this.api.createAgendamento(p)),
-          toArray(),
-        );
+          .pipe(switchMap(() => this.criarAgendamentosMesmaComanda(pl, editId)))
+      : this.criarAgendamentosMesmaComanda(pl);
 
     return gravar$.pipe(
       map((arr) => {
@@ -2929,11 +2947,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (pl.length === 0) {
           return of(true);
         }
-        /** Em série: o mesmo `id_atendimento` em vários payloads em paralelo corrompe o pedido. */
-        return from(pl).pipe(
-          concatMap((p) => this.api.createAgendamento(p)),
-          toArray(),
-        );
+        /**
+         * Em série no mesmo dia: o 1.º create define a comanda; os seguintes
+         * reutilizam o `id` (vários profissionais → mesmas colunas, uma comanda).
+         */
+        const idDia =
+          editId && datas.length === 1 ? editId : undefined;
+        return this.criarAgendamentosMesmaComanda(pl, idDia);
       }),
     );
 
@@ -2983,9 +3003,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                   );
                   return excluirAntes.pipe(
                     switchMap(() =>
-                      from(pl).pipe(
-                        concatMap((p) => this.api.createAgendamento(p)),
-                        toArray(),
+                      this.criarAgendamentosMesmaComanda(
+                        pl,
+                        idEx.length > 0 ? idEx : undefined,
                       ),
                     ),
                   );
