@@ -56,7 +56,9 @@ export class ServicosComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.carregar();
-    this.salvoSub = this.drawer.salvo$.subscribe(() => this.carregar());
+    this.salvoSub = this.drawer.salvo$.subscribe((item) =>
+      this.carregar({ focarId: String(item.id) }),
+    );
   }
 
   ngOnDestroy(): void {
@@ -64,15 +66,23 @@ export class ServicosComponent implements OnInit, OnDestroy {
     this.salvoSub = null;
   }
 
-  carregar(): void {
+  /**
+   * Recarrega o catálogo. Com `focarId`, limpa busca/filtros e abre a página
+   * onde o serviço cai (evita “sumir” na pág. 1 após Novo).
+   */
+  carregar(opts?: { focarId?: string }): void {
     this.carregando = true;
     this.erro = '';
     this.api.listServicos().subscribe({
       next: (items) => {
         this.itens = items;
         this.carregando = false;
-        this.pagina = 1;
         this.selecionados.clear();
+        if (opts?.focarId) {
+          this.irParaServicoNaLista(opts.focarId);
+        } else {
+          this.pagina = 1;
+        }
       },
       error: (e: Error) => {
         this.erro =
@@ -80,6 +90,23 @@ export class ServicosComponent implements OnInit, OnDestroy {
         this.carregando = false;
       },
     });
+  }
+
+  /** Limpa filtros ativos e posiciona a paginação no serviço indicado. */
+  private irParaServicoNaLista(id: string): void {
+    this.busca = '';
+    this.buscaAberta = false;
+    this.filtroTipo = '';
+    this.filtroCategoria = '';
+    this.filtroMostraSite = '';
+    this.filtrosAbertos = false;
+
+    const idx = this.filtrados().findIndex((s) => String(s.id) === id);
+    if (idx < 0) {
+      this.pagina = 1;
+      return;
+    }
+    this.pagina = Math.floor(idx / this.porPagina) + 1;
   }
 
   categoriasDisponiveis(): string[] {
@@ -242,14 +269,14 @@ export class ServicosComponent implements OnInit, OnDestroy {
   abrirNovo(): void {
     this.drawer.abrirNovo({
       categorias: this.categoriasDisponiveis(),
-      onSalvo: () => this.carregar(),
+      onSalvo: (item) => this.carregar({ focarId: String(item.id) }),
     });
   }
 
   abrirEditar(s: Servico): void {
     this.drawer.abrirEdicao(s, {
       categorias: this.categoriasDisponiveis(),
-      onSalvo: () => this.carregar(),
+      onSalvo: (item) => this.carregar({ focarId: String(item.id) }),
     });
   }
 
