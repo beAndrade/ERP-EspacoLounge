@@ -1,41 +1,86 @@
 ---
-description: Padrão obrigatório para drawers empilhados (overlay, ESC, clique fora)
+description: Padrão obrigatório para drawers laterais (estrutura visual, overlay, ESC)
 globs:
+  - src/app/**/*drawer*
   - src/app/**/*.component.ts
   - src/app/**/*.component.html
   - src/app/**/*.component.scss
+alwaysApply: false
 ---
 
-# Drawers empilhados
+# Drawers laterais
 
-Ao criar ou alterar **qualquer drawer lateral** (gaveta `app-drawer`, sub-drawer, edição, comanda, faturar, etc.):
+Ao criar ou alterar **qualquer drawer** (`app-drawer`, cadastro, edição, sub-drawer):
+
+## Estrutura visual (obrigatória)
+
+Usar o mesmo shell dos drawers de **Cliente / Profissional / Minha conta**:
+
+```html
+<div class="overlay …" [class.overlay--open]="panelOpen" (click)="fechar()"></div>
+<div
+  class="app-drawer cliente-drawer cliente-drawer--<nome>"
+  [class.app-drawer--open]="panelOpen"
+>
+  <div class="cliente-shell">
+    <header class="cliente-head">
+      <div class="cliente-head__title-wrap">
+        <div class="cliente-head__title-row">
+          <h2 class="cliente-head__title">Novo … / Editando …</h2>
+        </div>
+      </div>
+      <button type="button" class="cliente-head__close" (click)="fechar()" aria-label="Fechar"></button>
+    </header>
+
+    <div class="cliente-body-scroll">
+      <div class="cliente-body">
+        <nav class="cliente-nav" [style.--cliente-nav-active-index]="abaAtivaIndex()">
+          <span class="cliente-nav__indicator" aria-hidden="true"></span>
+          <!-- botões .cliente-nav__item > .cliente-nav__label -->
+        </nav>
+        <div class="cliente-main"><!-- conteúdo da aba — sem H1 duplicado da aba --></div>
+      </div>
+    </div>
+
+    <footer class="cliente-drawer-footer">
+      <button class="cliente-footer-btn cliente-footer-btn--ghost">Cancelar</button>
+      <button class="cliente-footer-btn cliente-footer-btn--primary">Salvar</button>
+    </footer>
+  </div>
+</div>
+```
+
+### Regras de UI
+
+- Título só no **`cliente-head`** (`Novo X` / `Editando X`). **Não** repetir o nome da aba como H1 no conteúdo.
+- Nav e conteúdo no **mesmo fundo branco** (não pintar o aside de cinza).
+- Nav com **`cliente-nav` + indicador** (`--cliente-nav-active-index`), não inventar sidebar própria.
+- Rodapé com **`cliente-drawer-footer`** / **`cliente-footer-btn`**.
+- Host no `body` via `portalHostElementToBody`; shell com `position: fixed` + slide da direita (classes `cliente-drawer.app-drawer`).
+
+Referência: `cliente-drawer-shell`, `profissional-cadastro-drawer-host`, `servico-cadastro-drawer-host`, `minha-conta-drawer-host`.
 
 ## Overlay escuro
 
-- Importar `src/app/styles/drawer-stack.scss` no SCSS do componente da página.
-- Usar classe **`overlay`** com fundo `#00000073` (já definido no partial).
-- Estado aberto: **`[class.overlay--open]="drawerAberto"`** (flag `*Aberto`, não só `*PanelOpen`), para o escurecimento acompanhar o painel na abertura e no fecho.
-- **`(click)="fechar…()"`** no overlay — fecha só essa camada (ou a superior, conforme a pilha).
+- Importar / reutilizar `src/app/styles/drawer-stack.scss` quando o drawer for da página.
+- Classe **`overlay`**, fundo `#00000073`.
+- **`[class.overlay--open]="…Aberto / panelOpen"`** — escurecimento acompanha abertura e fecho.
+- **`(click)="fechar…()"`** no overlay.
 
 ## Tecla ESC
 
-- No **componente host** da página (quem monta os drawers), `@HostListener('document:keydown.escape')`.
-- Ordem: fechar **camada superior primeiro** (ex.: faturar → comanda → editar → modal).
-- `ev.preventDefault()` quando tratar o ESC.
-- Não fechar se houver operação em curso (`salvando`, confirmação, etc.).
+- No host: `@HostListener('document:keydown.escape')`.
+- Fechar **camada superior primeiro** (ex.: faturar → comanda → drawer).
+- `ev.preventDefault()`; não fechar se `salvando` / confirmação.
 
-## Z-index (comanda + sub-drawer faturar)
+## Z-index (pilha comanda + faturar)
 
-Ordem obrigatória (referência comandas):
+1. `overlay--comanda`
+2. `app-drawer--comanda`
+3. `overlay--faturar` (acima do drawer comanda)
+4. `app-drawer--faturar`
 
-1. `overlay--comanda` (ex.: 1100)
-2. `app-drawer--comanda` (ex.: 1102)
-3. `overlay--faturar` **acima** do drawer comanda (ex.: 1104) — escurece o fundo inteiro
-4. `app-drawer--faturar` (ex.: 1105)
+## Estilos
 
-Se `overlay--faturar` ficar abaixo do drawer comanda, o fundo à esquerda fica branco sem escurecimento.
-
-## Referência
-
-- Estilos: `src/app/styles/drawer-stack.scss`
-- Implementação: `src/app/features/financeiro/pages/transacoes/financeiro-transacoes.component.*`
+- `src/app/styles/drawer-stack.scss`
+- Shell compartilhado: `cliente-cadastro-drawer-host.component.scss` (`.cliente-drawer`, `.cliente-nav`, …)

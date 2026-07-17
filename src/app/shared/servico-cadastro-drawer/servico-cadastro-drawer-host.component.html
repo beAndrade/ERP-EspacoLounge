@@ -1,263 +1,367 @@
-@if (d.aberto) {
+@if (d.aberto()) {
   <div
     class="overlay overlay--servico-cadastro"
-    [class.overlay--open]="d.panelOpen"
+    [class.overlay--open]="d.panelOpen()"
     aria-hidden="true"
     (click)="d.fechar()"
   ></div>
   <div
-    class="servico-cadastro-drawer app-drawer"
-    [class.app-drawer--open]="d.panelOpen"
+    class="servico-cadastro-drawer app-drawer cliente-drawer cliente-drawer--servico"
+    [class.app-drawer--open]="d.panelOpen()"
     role="dialog"
     aria-modal="true"
     [attr.aria-label]="d.titulo"
     (click)="$event.stopPropagation()"
   >
-    <div class="servico-cadastro-drawer__layout">
-      <aside class="servico-cadastro-drawer__nav" aria-label="Secções do serviço">
-        <p class="servico-cadastro-drawer__nav-title">{{ d.titulo }}</p>
-        <nav class="servico-cadastro-drawer__nav-list">
-          @for (aba of abas; track aba) {
-            <button
-              type="button"
-              class="servico-cadastro-drawer__nav-item"
-              [class.servico-cadastro-drawer__nav-item--active]="d.abaAtiva === aba"
-              (click)="setAba(aba)"
-            >
-              {{ aba }}
-            </button>
-          }
-        </nav>
-      </aside>
-
-      <div class="servico-cadastro-drawer__main">
-        <header class="servico-cadastro-drawer__head">
-          <h1 class="servico-cadastro-drawer__title">{{ d.abaAtiva }}</h1>
-          <button
-            type="button"
-            class="servico-cadastro-drawer__close"
-            (click)="d.fechar()"
-            aria-label="Fechar"
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">{{ d.titulo }}</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="d.fechar()"
+          aria-label="Fechar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="22"
-              height="22"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </header>
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
 
-        @if (d.erro) {
-          <p class="servico-cadastro-drawer__alert" role="alert">{{ d.erro }}</p>
-        }
+      <div class="cliente-body-scroll">
+        <div class="cliente-body">
+          <nav
+            class="cliente-nav"
+            aria-label="Secções do serviço"
+            [style.--cliente-nav-active-index]="d.abaAtivaIndex()"
+          >
+            <span class="cliente-nav__indicator" aria-hidden="true"></span>
+            @for (aba of abas; track aba) {
+              <button
+                type="button"
+                class="cliente-nav__item"
+                [class.cliente-nav__item--active]="d.abaAtiva === aba"
+                (click)="setAba(aba)"
+              >
+                <span class="cliente-nav__label">{{ aba }}</span>
+              </button>
+            }
+          </nav>
 
-        <div class="servico-cadastro-drawer__body">
-          @if (d.abaAtiva === 'Cadastro') {
-            <div class="servico-cadastro-form">
-              <div class="servico-cadastro-form__foto">
-                <div class="servico-cadastro-form__foto-preview">
-                  @if (d.fotoUrl) {
-                    <img [src]="d.fotoUrl" alt="" />
-                  } @else {
-                    <span aria-hidden="true">be/</span>
-                  }
-                </div>
-                <label class="servico-cadastro-form__foto-btn">
-                  Alterar
+          <div class="cliente-main servico-cadastro-main">
+            @if (d.erro) {
+              <p class="servico-cadastro-drawer__alert" role="alert">{{ d.erro }}</p>
+            }
+
+            @if (d.abaAtiva === 'Cadastro') {
+              <div class="servico-cadastro-form">
+                <div class="servico-cadastro-form__foto">
+                  <label class="servico-cadastro-form__foto-preview" for="servico-foto-input">
+                    @if (d.fotoUrl) {
+                      <img [src]="d.fotoUrl" alt="" />
+                    } @else {
+                      <svg
+                        class="servico-cadastro-form__foto-icon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      </svg>
+                    }
+                  </label>
+                  <label class="servico-cadastro-form__foto-btn" for="servico-foto-input">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="servico-cadastro-form__foto-btn-icon lucide lucide-upload"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3v12" />
+                      <path d="m17 8-5-5-5 5" />
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    </svg>
+                    Alterar
+                  </label>
                   <input
+                    id="servico-foto-input"
                     type="file"
                     accept="image/*"
                     class="sr-only"
                     (change)="onFotoChange($event)"
                   />
-                </label>
-              </div>
+                </div>
 
-              <label class="servico-cadastro-form__field servico-cadastro-form__field--full">
-                <span class="servico-cadastro-form__label">* Nome</span>
-                <input
-                  type="text"
-                  class="servico-cadastro-form__input"
-                  [(ngModel)]="d.nome"
-                  name="servicoNome"
-                  placeholder="Informe o nome"
-                  autocomplete="off"
-                />
-              </label>
-
-              <div class="servico-cadastro-form__row">
-                <label class="servico-cadastro-form__field">
-                  <span class="servico-cadastro-form__label">* Categoria</span>
+                <label class="servico-cadastro-form__field servico-cadastro-form__field--full">
+                  <span class="servico-cadastro-form__label">* Nome</span>
                   <input
                     type="text"
                     class="servico-cadastro-form__input"
-                    list="servico-categorias-list"
-                    [(ngModel)]="d.categoria"
-                    name="servicoCategoria"
-                    placeholder="Ex.: Cabelo"
+                    [(ngModel)]="d.nome"
+                    name="servicoNome"
+                    placeholder="Informe o nome"
                     autocomplete="off"
                   />
-                  <datalist id="servico-categorias-list">
-                    @for (c of d.categoriasOpcoes; track c) {
-                      <option [value]="c"></option>
-                    }
-                  </datalist>
                 </label>
 
-                <div class="servico-cadastro-form__field">
-                  <span class="servico-cadastro-form__label">Preço de venda</span>
-                  <div class="servico-cadastro-form__preco">
-                    <select
-                      class="servico-cadastro-form__select"
-                      [(ngModel)]="d.tipo"
-                      name="servicoTipo"
-                    >
-                      <option value="Fixo">Preço fixo</option>
-                      <option value="Tamanho">Por tamanho</option>
-                    </select>
-                    @if (d.tipo === 'Fixo') {
+                <div class="servico-cadastro-form__row">
+                  <label class="servico-cadastro-form__field">
+                    <span class="servico-cadastro-form__label">* Categoria</span>
+                    <input
+                      type="text"
+                      class="servico-cadastro-form__input"
+                      list="servico-categorias-list"
+                      [(ngModel)]="d.categoria"
+                      name="servicoCategoria"
+                      placeholder="Ex.: Cabelo"
+                      autocomplete="off"
+                    />
+                    <datalist id="servico-categorias-list">
+                      @for (c of d.categoriasOpcoes; track c) {
+                        <option [value]="c"></option>
+                      }
+                    </datalist>
+                  </label>
+
+                  <div class="servico-cadastro-form__field">
+                    <span class="servico-cadastro-form__label">Preço de venda</span>
+                    <div class="servico-cadastro-form__preco servico-cadastro-form__preco--split">
+                      <select
+                        class="servico-cadastro-form__select"
+                        [(ngModel)]="d.tipo"
+                        name="servicoTipo"
+                      >
+                        <option value="Fixo">Preço fixo</option>
+                        <option value="Tamanho">Por tamanho</option>
+                      </select>
+                      @if (d.tipo === 'Fixo') {
+                        <input
+                          type="text"
+                          class="servico-cadastro-form__input"
+                          [(ngModel)]="d.valorBase"
+                          name="servicoValorBase"
+                          placeholder="R$ 0,00"
+                        />
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                @if (d.tipo === 'Tamanho') {
+                  <div
+                    class="servico-cadastro-form__tamanho-grid"
+                    role="group"
+                    aria-label="Preços e durações por tamanho"
+                  >
+                    <div class="servico-cadastro-form__tamanho-col">
+                      <span class="servico-cadastro-form__label">Curto</span>
                       <input
                         type="text"
                         class="servico-cadastro-form__input"
-                        [(ngModel)]="d.valorBase"
-                        name="servicoValorBase"
+                        [(ngModel)]="d.precoCurto"
+                        name="precoCurto"
                         placeholder="R$ 0,00"
+                        aria-label="Preço Curto"
                       />
-                    }
+                      <select
+                        class="servico-cadastro-form__input"
+                        [(ngModel)]="d.duracaoCurto"
+                        name="duracaoCurto"
+                        aria-label="Duração Curto"
+                      >
+                        <option [ngValue]="null">Padrão</option>
+                        @for (m of d.opcoesDuracaoCom(d.duracaoCurto); track m) {
+                          <option [ngValue]="m">{{ m }} min</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="servico-cadastro-form__tamanho-col">
+                      <span class="servico-cadastro-form__label">Médio</span>
+                      <input
+                        type="text"
+                        class="servico-cadastro-form__input"
+                        [(ngModel)]="d.precoMedio"
+                        name="precoMedio"
+                        placeholder="R$ 0,00"
+                        aria-label="Preço Médio"
+                      />
+                      <select
+                        class="servico-cadastro-form__input"
+                        [(ngModel)]="d.duracaoMedio"
+                        name="duracaoMedio"
+                        aria-label="Duração Médio"
+                      >
+                        <option [ngValue]="null">Padrão</option>
+                        @for (m of d.opcoesDuracaoCom(d.duracaoMedio); track m) {
+                          <option [ngValue]="m">{{ m }} min</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="servico-cadastro-form__tamanho-col">
+                      <span class="servico-cadastro-form__label">M/L</span>
+                      <input
+                        type="text"
+                        class="servico-cadastro-form__input"
+                        [(ngModel)]="d.precoMl"
+                        name="precoMl"
+                        placeholder="R$ 0,00"
+                        aria-label="Preço M/L"
+                      />
+                      <select
+                        class="servico-cadastro-form__input"
+                        [(ngModel)]="d.duracaoMl"
+                        name="duracaoMl"
+                        aria-label="Duração M/L"
+                      >
+                        <option [ngValue]="null">Padrão</option>
+                        @for (m of d.opcoesDuracaoCom(d.duracaoMl); track m) {
+                          <option [ngValue]="m">{{ m }} min</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="servico-cadastro-form__tamanho-col">
+                      <span class="servico-cadastro-form__label">Longo</span>
+                      <input
+                        type="text"
+                        class="servico-cadastro-form__input"
+                        [(ngModel)]="d.precoLongo"
+                        name="precoLongo"
+                        placeholder="R$ 0,00"
+                        aria-label="Preço Longo"
+                      />
+                      <select
+                        class="servico-cadastro-form__input"
+                        [(ngModel)]="d.duracaoLongo"
+                        name="duracaoLongo"
+                        aria-label="Duração Longo"
+                      >
+                        <option [ngValue]="null">Padrão</option>
+                        @for (m of d.opcoesDuracaoCom(d.duracaoLongo); track m) {
+                          <option [ngValue]="m">{{ m }} min</option>
+                        }
+                      </select>
+                    </div>
                   </div>
-                </div>
-              </div>
+                  <p class="servico-cadastro-form__hint">
+                    «Padrão» usa a duração base abaixo (Custo / Comissão / Duração).
+                  </p>
+                }
 
-              @if (d.tipo === 'Tamanho') {
-                <div class="servico-cadastro-form__row servico-cadastro-form__row--4">
+                <div
+                  class="servico-cadastro-form__row"
+                  [class.servico-cadastro-form__row--3]="d.tipo === 'Fixo'"
+                  [class.servico-cadastro-form__row--2]="d.tipo === 'Tamanho'"
+                >
                   <label class="servico-cadastro-form__field">
-                    <span class="servico-cadastro-form__label">Curto</span>
+                    <span class="servico-cadastro-form__label">Custo adicional</span>
                     <input
                       type="text"
                       class="servico-cadastro-form__input"
-                      [(ngModel)]="d.precoCurto"
-                      name="precoCurto"
+                      [(ngModel)]="d.custoAdicional"
+                      name="custoAdicional"
                       placeholder="R$ 0,00"
                     />
                   </label>
-                  <label class="servico-cadastro-form__field">
-                    <span class="servico-cadastro-form__label">Médio</span>
-                    <input
-                      type="text"
-                      class="servico-cadastro-form__input"
-                      [(ngModel)]="d.precoMedio"
-                      name="precoMedio"
-                      placeholder="R$ 0,00"
-                    />
-                  </label>
-                  <label class="servico-cadastro-form__field">
-                    <span class="servico-cadastro-form__label">M/L</span>
-                    <input
-                      type="text"
-                      class="servico-cadastro-form__input"
-                      [(ngModel)]="d.precoMl"
-                      name="precoMl"
-                      placeholder="R$ 0,00"
-                    />
-                  </label>
-                  <label class="servico-cadastro-form__field">
-                    <span class="servico-cadastro-form__label">Longo</span>
-                    <input
-                      type="text"
-                      class="servico-cadastro-form__input"
-                      [(ngModel)]="d.precoLongo"
-                      name="precoLongo"
-                      placeholder="R$ 0,00"
-                    />
-                  </label>
-                </div>
-              }
 
-              <div class="servico-cadastro-form__row servico-cadastro-form__row--3">
-                <label class="servico-cadastro-form__field">
-                  <span class="servico-cadastro-form__label">Custo adicional</span>
-                  <input
-                    type="text"
-                    class="servico-cadastro-form__input"
-                    [(ngModel)]="d.custoAdicional"
-                    name="custoAdicional"
-                    placeholder="R$ 0,00"
-                  />
-                </label>
+                  <div class="servico-cadastro-form__field">
+                    <div class="servico-cadastro-form__preco servico-cadastro-form__preco--labeled">
+                      <label class="servico-cadastro-form__preco-col">
+                        <span class="servico-cadastro-form__label">Comissão</span>
+                        <select
+                          class="servico-cadastro-form__select"
+                          [(ngModel)]="d.comissaoUnidade"
+                          name="comissaoUnidade"
+                        >
+                          <option value="pct">%</option>
+                          <option value="fixa">R$</option>
+                        </select>
+                      </label>
+                      <label class="servico-cadastro-form__preco-col servico-cadastro-form__preco-col--grow">
+                        <span class="servico-cadastro-form__label">Comissão fixa</span>
+                        <input
+                          type="text"
+                          class="servico-cadastro-form__input"
+                          [(ngModel)]="d.comissaoValor"
+                          name="comissaoValor"
+                          [placeholder]="d.comissaoUnidade === 'pct' ? '0,00' : 'R$ 0,00'"
+                        />
+                      </label>
+                    </div>
+                  </div>
 
-                <div class="servico-cadastro-form__field">
-                  <span class="servico-cadastro-form__label">Comissão</span>
-                  <div class="servico-cadastro-form__preco">
+                  <label class="servico-cadastro-form__field">
+                    <span class="servico-cadastro-form__label">
+                      {{ d.tipo === 'Tamanho' ? 'Duração padrão' : 'Duração' }}
+                    </span>
                     <select
-                      class="servico-cadastro-form__select"
-                      [(ngModel)]="d.comissaoUnidade"
-                      name="comissaoUnidade"
-                    >
-                      <option value="pct">%</option>
-                      <option value="fixa">R$</option>
-                    </select>
-                    <input
-                      type="text"
                       class="servico-cadastro-form__input"
-                      [(ngModel)]="d.comissaoValor"
-                      name="comissaoValor"
-                      [placeholder]="d.comissaoUnidade === 'pct' ? '0,00' : 'R$ 0,00'"
-                    />
-                  </div>
+                      [(ngModel)]="d.duracaoMinutos"
+                      name="duracaoMinutos"
+                    >
+                      @for (m of d.opcoesDuracaoCom(d.duracaoMinutos); track m) {
+                        <option [ngValue]="m">{{ m }} min</option>
+                      }
+                    </select>
+                  </label>
                 </div>
 
-                <label class="servico-cadastro-form__field">
-                  <span class="servico-cadastro-form__label">Duração</span>
-                  <select
-                    class="servico-cadastro-form__input"
-                    [(ngModel)]="d.duracaoMinutos"
-                    name="duracaoMinutos"
-                  >
-                    @for (m of [15, 20, 30, 45, 60, 90, 120]; track m) {
-                      <option [ngValue]="m">{{ m }} min</option>
-                    }
-                  </select>
+                <label class="servico-cadastro-form__field servico-cadastro-form__field--full">
+                  <span class="servico-cadastro-form__label">Descrição</span>
+                  <textarea
+                    class="servico-cadastro-form__textarea"
+                    rows="4"
+                    [(ngModel)]="d.descricao"
+                    name="descricao"
+                    placeholder="Essa descrição aparecerá para o seu cliente quando ele for agendar online."
+                  ></textarea>
                 </label>
               </div>
-
-              <label class="servico-cadastro-form__field servico-cadastro-form__field--full">
-                <span class="servico-cadastro-form__label">Descrição</span>
-                <textarea
-                  class="servico-cadastro-form__textarea"
-                  rows="4"
-                  [(ngModel)]="d.descricao"
-                  name="descricao"
-                  placeholder="Descrição do serviço"
-                ></textarea>
-              </label>
-
-              <label class="servico-cadastro-form__check">
-                <input
-                  type="checkbox"
-                  [(ngModel)]="d.mostraNoSite"
-                  name="mostraNoSite"
-                />
-                <span>Mostra no site</span>
-              </label>
-            </div>
-          } @else {
-            <p class="servico-cadastro-drawer__stub">
-              A secção «{{ d.abaAtiva }}» estará disponível em breve.
-            </p>
-          }
+            } @else {
+              <p class="cliente-tab-placeholder">
+                A secção «{{ d.abaAtiva }}» estará disponível em breve.
+              </p>
+            }
+          </div>
         </div>
+      </div>
 
-        <footer class="servico-cadastro-drawer__footer">
+      @if (d.abaAtiva === 'Cadastro') {
+        <footer class="cliente-drawer-footer">
           <button
             type="button"
-            class="servico-cadastro-drawer__btn servico-cadastro-drawer__btn--ghost"
+            class="cliente-footer-btn cliente-footer-btn--ghost"
             (click)="d.fechar()"
             [disabled]="d.salvando"
           >
@@ -265,14 +369,14 @@
           </button>
           <button
             type="button"
-            class="servico-cadastro-drawer__btn servico-cadastro-drawer__btn--primary"
+            class="cliente-footer-btn cliente-footer-btn--primary"
             (click)="d.salvar()"
-            [disabled]="d.salvando || d.abaAtiva !== 'Cadastro'"
+            [disabled]="d.salvando"
           >
-            {{ d.salvando ? 'A salvar…' : 'Salvar' }}
+            {{ d.salvando ? 'Salvando…' : 'Salvar' }}
           </button>
         </footer>
-      </div>
+      }
     </div>
   </div>
 }

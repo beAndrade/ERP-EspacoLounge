@@ -164,6 +164,16 @@
         <div class="list-table-card">
           <div class="table-wrap" role="region" aria-label="Lista de serviços">
             <table class="list-table servicos-table">
+              <colgroup>
+                <col class="servicos-table__col-check" />
+                <col class="servicos-table__col-nome" />
+                <col class="servicos-table__col-valor" />
+                <col class="servicos-table__col-comissao" />
+                <col class="servicos-table__col-duracao" />
+                <col class="servicos-table__col-categoria" />
+                <col class="servicos-table__col-mostra" />
+                <col class="servicos-table__col-acoes" />
+              </colgroup>
               <thead>
                 <tr>
                   <th class="col-check" scope="col">
@@ -175,13 +185,225 @@
                       title="Selecionar página"
                     />
                   </th>
-                  <th scope="col">Nome</th>
-                  <th scope="col">Valor</th>
-                  <th scope="col">Comissão</th>
-                  <th scope="col">Duração</th>
-                  <th scope="col">Categoria</th>
-                  <th scope="col">Mostra no site</th>
-                  <th class="col-acoes" scope="col"><span class="sr-only">Ações</span></th>
+                  <th class="col-nome servicos-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="servicos-th-sort"
+                      (click)="onOrdenarColuna('nome', $event)"
+                      [attr.aria-label]="'Ordenar por nome — ' + tooltipOrdenacao('nome')"
+                    >
+                      <span class="servicos-th-sort__label">Nome</span>
+                      <span class="servicos-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--up"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'nome' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--down"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'nome' && ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="servicos-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="servicos-th-sort"
+                      (click)="onOrdenarColuna('valor', $event)"
+                      [attr.aria-label]="'Ordenar por valor — ' + tooltipOrdenacao('valor')"
+                    >
+                      <span class="servicos-th-sort__label">Valor</span>
+                      <span class="servicos-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--up"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'valor' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--down"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'valor' && ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="servicos-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="servicos-th-sort"
+                      (click)="onOrdenarColuna('comissao', $event)"
+                      [attr.aria-label]="'Ordenar por comissão — ' + tooltipOrdenacao('comissao')"
+                    >
+                      <span class="servicos-th-sort__label">Comissão</span>
+                      <span class="servicos-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--up"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'comissao' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--down"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'comissao' && ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="servicos-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="servicos-th-sort"
+                      (click)="onOrdenarColuna('duracao', $event)"
+                      [attr.aria-label]="'Ordenar por duração — ' + tooltipOrdenacao('duracao')"
+                    >
+                      <span class="servicos-th-sort__label">Duração</span>
+                      <span class="servicos-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--up"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'duracao' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--down"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'duracao' && ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="servicos-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="servicos-th-sort"
+                      (click)="onOrdenarColuna('categoria', $event)"
+                      [attr.aria-label]="'Ordenar por categoria — ' + tooltipOrdenacao('categoria')"
+                    >
+                      <span class="servicos-th-sort__label">Categoria</span>
+                      <span class="servicos-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--up"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'categoria' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--down"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'categoria' && ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="servicos-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="servicos-th-sort"
+                      (click)="onOrdenarColuna('mostra', $event)"
+                      [attr.aria-label]="
+                        'Ordenar por mostra no site — ' + tooltipOrdenacao('mostra')
+                      "
+                    >
+                      <span class="servicos-th-sort__label">Mostra no site</span>
+                      <span class="servicos-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--up"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'mostra' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="servicos-th-sort__tri servicos-th-sort__tri--down"
+                          [class.servicos-th-sort__tri--on]="
+                            ordenacaoColuna === 'mostra' && ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="col-acoes" scope="col">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,14 +427,16 @@
                         />
                       </td>
                       <td class="col-nome">
-                        <div class="col-nome__cell">
-                          <button
-                            type="button"
-                            class="col-nome__link"
-                            (click)="abrirEditar(s)"
-                          >
-                            {{ rotuloServico(s) }}
-                          </button>
+                        <div
+                          class="col-nome__cell col-nome__cell--clickable"
+                          role="button"
+                          tabindex="0"
+                          [attr.aria-label]="'Editar serviço ' + rotuloServico(s)"
+                          (click)="abrirEditar(s)"
+                          (keydown.enter)="abrirEditar(s)"
+                          (keydown.space)="abrirEditar(s); $event.preventDefault()"
+                        >
+                          <span class="col-nome__link">{{ rotuloServico(s) }}</span>
                         </div>
                       </td>
                       <td>

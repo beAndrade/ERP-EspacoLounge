@@ -1,6 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import type { Servico } from '../../../../core/models/api.models';
 import { valorMonetarioParaNumero } from '../../../../core/utils/atendimento-display';
@@ -13,9 +14,10 @@ import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastr
   templateUrl: './servicos.component.html',
   styleUrl: './servicos.component.scss',
 })
-export class ServicosComponent implements OnInit {
+export class ServicosComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly drawer = inject(ServicoCadastroDrawerService);
+  private salvoSub: Subscription | null = null;
 
   carregando = false;
   erro = '';
@@ -37,6 +39,16 @@ export class ServicosComponent implements OnInit {
 
   selecionados = new Set<string>();
 
+  /** Coluna activa e direcção (padrão Nome asc). */
+  ordenacaoColuna:
+    | 'nome'
+    | 'valor'
+    | 'comissao'
+    | 'duracao'
+    | 'categoria'
+    | 'mostra' = 'nome';
+  ordenacaoDir: 'asc' | 'desc' = 'asc';
+
   excluirModalAberto = false;
   excluindo = false;
   excluirAlvo: Servico | null = null;
@@ -44,6 +56,12 @@ export class ServicosComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
+    this.salvoSub = this.drawer.salvo$.subscribe(() => this.carregar());
+  }
+
+  ngOnDestroy(): void {
+    this.salvoSub?.unsubscribe();
+    this.salvoSub = null;
   }
 
   carregar(): void {
@@ -75,7 +93,7 @@ export class ServicosComponent implements OnInit {
 
   filtrados(): Servico[] {
     const q = this.busca.trim().toLowerCase();
-    return this.itens.filter((s) => {
+    const list = this.itens.filter((s) => {
       const nome = this.rotuloServico(s).toLowerCase();
       const cat = String(s['Categoria'] ?? '')
         .trim()
@@ -101,6 +119,78 @@ export class ServicosComponent implements OnInit {
       }
       return true;
     });
+
+    const dir = this.ordenacaoDir === 'asc' ? 1 : -1;
+    return list.slice().sort((a, b) => this.compararOrdenacao(a, b) * dir);
+  }
+
+  onOrdenarColuna(
+    col: typeof this.ordenacaoColuna,
+    event: MouseEvent,
+  ): void {
+    if (this.ordenacaoColuna === col) {
+      this.ordenacaoDir = this.ordenacaoDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.ordenacaoColuna = col;
+      this.ordenacaoDir = 'asc';
+    }
+    this.pagina = 1;
+    (event.currentTarget as HTMLButtonElement | null)?.blur();
+  }
+
+  tooltipOrdenacao(col: typeof this.ordenacaoColuna): string {
+    if (this.ordenacaoColuna !== col) {
+      return 'Clique organiza por ascendente';
+    }
+    return this.ordenacaoDir === 'asc'
+      ? 'Clique organiza por descendente'
+      : 'Clique organiza por ascendente';
+  }
+
+  private compararOrdenacao(a: Servico, b: Servico): number {
+    switch (this.ordenacaoColuna) {
+      case 'nome':
+        return this.rotuloServico(a).localeCompare(
+          this.rotuloServico(b),
+          'pt-BR',
+          { sensitivity: 'base' },
+        );
+      case 'valor': {
+        const va = this.valorExibicao(a) ?? -1;
+        const vb = this.valorExibicao(b) ?? -1;
+        return va - vb;
+      }
+      case 'comissao':
+        return this.comissaoSortKey(a) - this.comissaoSortKey(b);
+      case 'duracao': {
+        return this.duracaoSortKey(a) - this.duracaoSortKey(b);
+      }
+      case 'categoria':
+        return this.categoriaServico(a).localeCompare(
+          this.categoriaServico(b),
+          'pt-BR',
+          { sensitivity: 'base' },
+        );
+      case 'mostra': {
+        const ma = a['mostra_no_site'] === false ? 0 : 1;
+        const mb = b['mostra_no_site'] === false ? 0 : 1;
+        return ma - mb;
+      }
+      default:
+        return 0;
+    }
+  }
+
+  private comissaoSortKey(s: Servico): number {
+    const pct = String(s['Comissão %'] ?? '')
+      .replace('%', '')
+      .trim()
+      .replace(',', '.');
+    if (pct) {
+      const n = Number.parseFloat(pct);
+      if (Number.isFinite(n)) return n;
+    }
+    return valorMonetarioParaNumero(s['Comissão Fixa']) ?? -1;
   }
 
   totalFiltrado(): number {
@@ -245,11 +335,50 @@ export class ServicosComponent implements OnInit {
   }
 
   duracaoExibicao(s: Servico): string {
+    const tipo = String(s['Tipo'] ?? '')
+      .trim()
+      .toLowerCase();
+    if (tipo === 'tamanho') {
+      const faixas = this.duracoesFaixaMinutos(s);
+      if (faixas.length > 0) {
+        const min = Math.min(...faixas);
+        const max = Math.max(...faixas);
+        if (min === max) return `${min} min`;
+        return `${min}–${max} min`;
+      }
+    }
     const m = Number(s['duracao_minutos'] ?? 30);
     if (!Number.isFinite(m) || m <= 0) return '—';
-    const h = Math.floor(m / 60);
-    const min = m % 60;
-    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    return `${m} min`;
+  }
+
+  private duracoesFaixaMinutos(s: Servico): number[] {
+    const keys = [
+      'duracao_curto',
+      'duracao_medio',
+      'duracao_m_l',
+      'duracao_longo',
+    ] as const;
+    const out: number[] = [];
+    for (const k of keys) {
+      const raw = s[k];
+      if (raw == null || raw === '') continue;
+      const n = Number(raw);
+      if (Number.isFinite(n) && n > 0) out.push(n);
+    }
+    return out;
+  }
+
+  private duracaoSortKey(s: Servico): number {
+    const tipo = String(s['Tipo'] ?? '')
+      .trim()
+      .toLowerCase();
+    if (tipo === 'tamanho') {
+      const faixas = this.duracoesFaixaMinutos(s);
+      if (faixas.length > 0) return Math.min(...faixas);
+    }
+    const m = Number(s['duracao_minutos'] ?? 0);
+    return Number.isFinite(m) ? m : 0;
   }
 
   estaSelecionado(id: string): boolean {

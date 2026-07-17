@@ -7,7 +7,8 @@
  * N├úo usar `:host` aqui ΓÇö com ViewEncapsulation.None o pseudo n├úo casa no DOM real.
  */
 app-cliente-cadastro-drawer-host,
-app-profissional-cadastro-drawer-host {
+app-profissional-cadastro-drawer-host,
+app-servico-cadastro-drawer-host {
   display: block;
   position: fixed;
   inset: 0;
@@ -31,6 +32,12 @@ app-profissional-cadastro-drawer-host {
   --z-cliente-stack-credito-drawer: 1291;
   --z-cliente-stack-faturar-overlay: 1292;
   --z-cliente-stack-faturar-drawer: 1293;
+}
+
+app-servico-cadastro-drawer-host {
+  z-index: 1620;
+  --z-cliente-global-overlay: 1620;
+  --z-cliente-global-drawer: 1630;
 }
 
 /* ViewEncapsulation.None ΓÇö n├úo usar `.app-drawer` sozinho (afeta outros m├│dulos). */

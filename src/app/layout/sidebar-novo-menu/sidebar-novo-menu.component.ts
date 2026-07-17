@@ -24,6 +24,8 @@ import { ClienteCadastroDrawerService } from '../../shared/cliente-cadastro-draw
 
 import { ProfissionalCadastroDrawerService } from '../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 
+import { ServicoCadastroDrawerService } from '../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
+
 import { AppToastService } from '../../shared/app-toast/app-toast.service';
 
 import { FinTransacaoNovoDrawerService } from '../../shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer.service';
@@ -117,6 +119,8 @@ export class SidebarNovoMenuComponent implements OnDestroy {
   private readonly clienteDrawer = inject(ClienteCadastroDrawerService);
 
   private readonly profDrawer = inject(ProfissionalCadastroDrawerService);
+
+  private readonly servicoDrawer = inject(ServicoCadastroDrawerService);
 
   private readonly toast = inject(AppToastService);
 
@@ -414,7 +418,7 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
       case 'servico':
 
-        void this.router.navigate(['/servicos']);
+        this.servicoDrawer.abrirNovo();
 
         break;
 

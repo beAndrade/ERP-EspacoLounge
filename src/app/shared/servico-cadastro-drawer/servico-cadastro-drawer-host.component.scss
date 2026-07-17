@@ -1,111 +1,131 @@
 @use '../../styles/drawer-stack';
+@use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
+
+/**
+ * Shell do drawer de serviço — CSS autocontido (não depende de HMR parcial).
+ * Espelha fin-novo-global-drawer + cliente-shell interno.
+ */
+app-servico-cadastro-drawer-host {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1620 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  --z-cliente-global-overlay: 1620;
+  --z-cliente-global-drawer: 1630;
+  --cliente-drawer-shell-w: 960px;
+}
 
 .overlay--servico-cadastro {
-  z-index: 1620;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1620 !important;
+  box-sizing: border-box !important;
+  background: #00000073 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.43s;
 }
 
-.servico-cadastro-drawer.app-drawer {
-  z-index: 1630;
-  width: min(920px, 100vw);
-  max-width: 100vw;
+.overlay--servico-cadastro.overlay--open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
+}
+
+/* Aceita classe nova e antiga (HMR stale) */
+.servico-cadastro-drawer.app-drawer,
+.cliente-drawer.cliente-drawer--servico.app-drawer {
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  --cliente-drawer-shell-w: 960px;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  z-index: 1630 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  width: min(960px, 100vw) !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12) !important;
+  overflow: hidden !important;
+  pointer-events: none;
+  transform: translateX(100%) !important;
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  will-change: transform;
+}
+
+.servico-cadastro-drawer.app-drawer.app-drawer--open,
+.cliente-drawer.cliente-drawer--servico.app-drawer.app-drawer--open {
+  transform: translateX(0) !important;
+  pointer-events: auto !important;
+}
+
+.servico-cadastro-drawer.app-drawer > .cliente-shell,
+.cliente-drawer.cliente-drawer--servico.app-drawer > .cliente-shell {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  width: 100% !important;
+}
+
+.servico-cadastro-main {
+  width: 100% !important;
+  max-width: none !important;
+  align-items: stretch !important;
+  align-self: stretch !important;
+  border-right: none !important;
+  padding: 16px 30px 24px 0;
+  box-sizing: border-box;
+}
+
+/* Main ocupa toda a largura restante (nav | 1fr), sem coluna vazia à direita */
+.cliente-drawer--servico .cliente-body {
+  grid-template-columns: var(--cliente-nav-col-w) minmax(0, 1fr) !important;
+}
+
+.cliente-drawer--servico .cliente-main {
+  width: 100% !important;
+  max-width: none !important;
+  border-right: none !important;
+}
+
+.servico-cadastro-form {
   display: flex;
   flex-direction: column;
-  background: #fff;
-  pointer-events: auto;
-}
-
-.servico-cadastro-drawer__layout {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  height: 100%;
-}
-
-.servico-cadastro-drawer__nav {
-  width: 220px;
-  flex-shrink: 0;
-  border-right: 1px solid rgba(15, 23, 42, 0.08);
-  background: #fafafa;
-  padding: 1rem 0.75rem;
-  overflow-y: auto;
-}
-
-.servico-cadastro-drawer__nav-title {
-  margin: 0 0.5rem 0.85rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.servico-cadastro-drawer__nav-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.servico-cadastro-drawer__nav-item {
-  display: block;
+  gap: 1rem;
   width: 100%;
-  text-align: left;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  padding: 0.55rem 0.65rem;
-  font-size: 0.8125rem;
-  color: #475569;
-  cursor: pointer;
-}
-
-.servico-cadastro-drawer__nav-item:hover {
-  background: rgba(80, 90, 251, 0.08);
-}
-
-.servico-cadastro-drawer__nav-item--active {
-  background: rgba(80, 90, 251, 0.12);
-  color: #505afb;
-  font-weight: 600;
-}
-
-.servico-cadastro-drawer__main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.servico-cadastro-drawer__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-}
-
-.servico-cadastro-drawer__title {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.servico-cadastro-drawer__close {
-  border: none;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 8px;
-}
-
-.servico-cadastro-drawer__close:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  max-width: none;
+  padding-left: 24px;
+  box-sizing: border-box;
 }
 
 .servico-cadastro-drawer__alert {
-  margin: 0.75rem 1.25rem 0;
+  margin: 0 0 1rem;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
   background: #fef2f2;
@@ -113,107 +133,94 @@
   font-size: 0.875rem;
 }
 
-.servico-cadastro-drawer__body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 1.25rem;
-}
-
-.servico-cadastro-drawer__stub {
-  margin: 2rem 0;
-  text-align: center;
-  color: #64748b;
-  font-size: 0.9375rem;
-}
-
-.servico-cadastro-drawer__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.65rem;
-  padding: 0.85rem 1.25rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
-}
-
-.servico-cadastro-drawer__btn {
-  min-height: 40px;
-  padding: 0 1rem;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-}
-
-.servico-cadastro-drawer__btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.servico-cadastro-drawer__btn--ghost {
-  background: #f1f5f9;
-  color: #334155;
-}
-
-.servico-cadastro-drawer__btn--primary {
-  background: var(--color-primary, #505afb);
-  color: #fff;
-}
-
-.servico-cadastro-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 720px;
-}
-
 .servico-cadastro-form__foto {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 0.35rem;
-  margin-left: auto;
+  margin: 0 auto;
 }
 
 .servico-cadastro-form__foto-preview {
-  width: 72px;
-  height: 72px;
+  width: 120px;
+  min-height: 120px;
+  height: 120px;
   border-radius: 12px;
-  background: #f4f4f5;
-  border: 1px solid #e4e4e7;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 0 20px 0 #e8e8e8;
   display: grid;
   place-items: center;
   overflow: hidden;
-  color: #505afb;
-  font-weight: 700;
-  font-size: 0.875rem;
+  color: #d5d5d3;
+  cursor: pointer;
+  object-fit: cover;
+  margin: 0;
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
   }
 }
 
+.servico-cadastro-form__foto-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: #d5d5d3;
+}
+
 .servico-cadastro-form__foto-btn {
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 82.27px;
+  height: 24px;
+  padding: 1px 7px 0;
+  border-radius: 6px;
+  background: #505afb;
+  color: #fff;
+  font-size: 14px;
   font-weight: 600;
-  color: #505afb;
+  line-height: 1;
   cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    color: #505afb;
+    background: #fff;
+    box-shadow: 0 2px 0 rgba(5, 55, 255, 0.06);
+  }
+}
+
+.servico-cadastro-form__foto-btn-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .servico-cadastro-form__row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
+  width: 100%;
+}
+
+.servico-cadastro-form__row--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .servico-cadastro-form__row--3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.servico-cadastro-form__row--4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .servico-cadastro-form__field {
@@ -221,6 +228,7 @@
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
+  width: 100%;
 }
 
 .servico-cadastro-form__field--full {
@@ -257,25 +265,72 @@
   display: flex;
   gap: 0.4rem;
   min-width: 0;
+  width: 100%;
 }
 
-.servico-cadastro-form__preco .servico-cadastro-form__select {
+.servico-cadastro-form__preco--labeled {
+  align-items: stretch;
+}
+
+.servico-cadastro-form__preco-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 0 0 7.5rem;
+  width: 7.5rem;
+}
+
+.servico-cadastro-form__preco-col--grow {
+  flex: 1 1 auto;
   width: auto;
-  min-width: 7.5rem;
-  flex-shrink: 0;
 }
 
-.servico-cadastro-form__preco .servico-cadastro-form__input {
-  flex: 1;
+.servico-cadastro-form__preco:not(.servico-cadastro-form__preco--split) {
+  .servico-cadastro-form__select {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .servico-cadastro-form__input {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+  }
 }
 
-.servico-cadastro-form__check {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #334155;
-  cursor: pointer;
+.servico-cadastro-form__preco--split {
+  .servico-cadastro-form__select,
+  .servico-cadastro-form__input {
+    flex: 1 1 0;
+    width: 50%;
+    min-width: 0;
+  }
+
+  .servico-cadastro-form__select:only-child {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+.servico-cadastro-form__tamanho-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.servico-cadastro-form__tamanho-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.servico-cadastro-form__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
 }
 
 .sr-only {
@@ -291,20 +346,14 @@
 }
 
 @media (max-width: 720px) {
-  .servico-cadastro-drawer__layout {
-    flex-direction: column;
-  }
-
-  .servico-cadastro-drawer__nav {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-    max-height: 140px;
+  .servico-cadastro-main {
+    padding: 0 16px 20px;
   }
 
   .servico-cadastro-form__row,
+  .servico-cadastro-form__row--2,
   .servico-cadastro-form__row--3,
-  .servico-cadastro-form__row--4 {
+  .servico-cadastro-form__tamanho-grid {
     grid-template-columns: 1fr;
   }
 }

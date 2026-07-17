@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import type { Servico, ServicoWritePayload } from '../../core/models/api.models';
@@ -31,8 +31,9 @@ export class ServicoCadastroDrawerService {
 
   readonly salvo$ = new Subject<Servico>();
 
-  aberto = false;
-  panelOpen = false;
+  readonly aberto = signal(false);
+  readonly panelOpen = signal(false);
+
   modo: 'novo' | 'editar' = 'novo';
   idEdicao: string | null = null;
   abaAtiva: ServicoCadastroAba = 'Cadastro';
@@ -51,17 +52,41 @@ export class ServicoCadastroDrawerService {
   comissaoUnidade: 'pct' | 'fixa' = 'pct';
   comissaoValor = '';
   duracaoMinutos = 30;
+  /** Minutos por faixa quando `tipo === Tamanho` (null = usar `duracaoMinutos`). */
+  duracaoCurto: number | null = null;
+  duracaoMedio: number | null = null;
+  duracaoMl: number | null = null;
+  duracaoLongo: number | null = null;
   descricao = '';
   mostraNoSite = true;
   fotoUrl = '';
+
+  readonly opcoesDuracaoMinutos = [15, 20, 30, 45, 60, 90, 120];
 
   categoriasOpcoes: string[] = [];
 
   private callbacks: ServicoDrawerCallbacks | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private pageScrollLockAtivo = false;
+  private bodyScrollPreDrawer = 0;
 
   get titulo(): string {
-    return this.modo === 'editar' ? 'Editar serviço' : 'Novo serviço';
+    return this.modo === 'editar' ? 'Editando serviço' : 'Novo serviço';
+  }
+
+  abaAtivaIndex(): number {
+    const i = SERVICO_ABAS.indexOf(this.abaAtiva);
+    return i >= 0 ? i : 0;
+  }
+
+  /** Opções de duração incluindo valor actual (ex.: legado fora da lista). */
+  opcoesDuracaoCom(atual: number | null | undefined): number[] {
+    const base = [...this.opcoesDuracaoMinutos];
+    if (atual != null && Number.isFinite(atual) && atual > 0 && !base.includes(atual)) {
+      base.push(atual);
+      base.sort((a, b) => a - b);
+    }
+    return base;
   }
 
   abrirNovo(opts?: ServicoDrawerCallbacks & { categorias?: string[] }): void {
@@ -87,12 +112,13 @@ export class ServicoCadastroDrawerService {
   }
 
   fechar(): void {
-    if (!this.aberto) return;
-    this.panelOpen = false;
+    if (!this.aberto()) return;
+    this.panelOpen.set(false);
+    this.desbloquearScrollPagina();
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;
-      this.aberto = false;
+      this.aberto.set(false);
       this.callbacks = null;
       this.erro = '';
       this.salvando = false;
@@ -116,6 +142,20 @@ export class ServicoCadastroDrawerService {
       this.erro = 'Informe a categoria.';
       this.abaAtiva = 'Cadastro';
       return;
+    }
+    if (this.tipo === 'Tamanho') {
+      const temPreco = [
+        this.precoCurto,
+        this.precoMedio,
+        this.precoMl,
+        this.precoLongo,
+      ].some((p) => p.trim().length > 0);
+      if (!temPreco) {
+        this.erro =
+          'Informe pelo menos um preço (Curto, Médio, M/L ou Longo).';
+        this.abaAtiva = 'Cadastro';
+        return;
+      }
     }
 
     const payload = this.montarPayload(nome, categoria);
@@ -148,17 +188,52 @@ export class ServicoCadastroDrawerService {
   }
 
   private abrirPainel(): void {
-    this.aberto = true;
-    this.panelOpen = false;
     this.abaAtiva = 'Cadastro';
     this.erro = '';
+    this.panelOpen.set(false);
+    this.aberto.set(true);
+    this.bloquearScrollPagina();
     queueMicrotask(() => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          this.panelOpen = true;
+          this.panelOpen.set(true);
         });
       });
     });
+  }
+
+  private obterLarguraScrollbar(): number {
+    if (typeof window === 'undefined') return 0;
+    return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  }
+
+  private bloquearScrollPagina(): void {
+    if (this.pageScrollLockAtivo) return;
+    this.bodyScrollPreDrawer = window.scrollY || 0;
+    const gutter = this.obterLarguraScrollbar();
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top = `-${this.bodyScrollPreDrawer}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    if (gutter > 0) {
+      body.style.paddingRight = `${gutter}px`;
+    }
+    this.pageScrollLockAtivo = true;
+  }
+
+  private desbloquearScrollPagina(): void {
+    if (!this.pageScrollLockAtivo) return;
+    const body = document.body;
+    body.style.position = '';
+    body.style.top = '';
+    body.style.left = '';
+    body.style.right = '';
+    body.style.width = '';
+    body.style.paddingRight = '';
+    this.pageScrollLockAtivo = false;
+    window.scrollTo(0, this.bodyScrollPreDrawer);
   }
 
   private resetForm(): void {
@@ -174,6 +249,10 @@ export class ServicoCadastroDrawerService {
     this.comissaoUnidade = 'pct';
     this.comissaoValor = '';
     this.duracaoMinutos = 30;
+    this.duracaoCurto = null;
+    this.duracaoMedio = null;
+    this.duracaoMl = null;
+    this.duracaoLongo = null;
     this.descricao = '';
     this.mostraNoSite = true;
     this.fotoUrl = '';
@@ -207,6 +286,10 @@ export class ServicoCadastroDrawerService {
     }
     const dur = Number(item['duracao_minutos'] ?? 30);
     this.duracaoMinutos = Number.isFinite(dur) && dur > 0 ? dur : 30;
+    this.duracaoCurto = this.lerDuracaoOuNull(item['duracao_curto']);
+    this.duracaoMedio = this.lerDuracaoOuNull(item['duracao_medio']);
+    this.duracaoMl = this.lerDuracaoOuNull(item['duracao_m_l']);
+    this.duracaoLongo = this.lerDuracaoOuNull(item['duracao_longo']);
     this.descricao = String(item['Descrição'] ?? '').trim();
     this.mostraNoSite = item['mostra_no_site'] !== false;
     this.fotoUrl = String(item['foto_url'] ?? '').trim();
@@ -239,15 +322,38 @@ export class ServicoCadastroDrawerService {
       return {
         ...base,
         valor_base: this.valorBase.trim() || null,
+        // Backend também zera faixas; envio explícito evita lixo residual no PATCH.
+        preco_curto: null,
+        preco_medio: null,
+        preco_medio_longo: null,
+        preco_longo: null,
+        duracao_curto: null,
+        duracao_medio: null,
+        duracao_m_l: null,
+        duracao_longo: null,
       };
     }
+
     return {
       ...base,
+      // `duracao_minutos` = duração base (faixas null usam este valor na agenda).
+      valor_base: null,
       preco_curto: this.precoCurto.trim() || null,
       preco_medio: this.precoMedio.trim() || null,
       preco_medio_longo: this.precoMl.trim() || null,
       preco_longo: this.precoLongo.trim() || null,
+      duracao_curto: this.duracaoCurto,
+      duracao_medio: this.duracaoMedio,
+      duracao_m_l: this.duracaoMl,
+      duracao_longo: this.duracaoLongo,
     };
+  }
+
+  private lerDuracaoOuNull(v: unknown): number | null {
+    if (v == null || v === '') return null;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.round(n);
   }
 
   private textoMoeda(v: unknown): string {

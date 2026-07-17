@@ -41,7 +41,7 @@ export class ServicoCadastroDrawerHostComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
-    if (!this.d.aberto) return;
+    if (!this.d.aberto()) return;
     if (ev.defaultPrevented) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();
