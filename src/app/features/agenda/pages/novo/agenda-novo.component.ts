@@ -72,6 +72,7 @@ import {
 import { AgendaStatusSelectComponent } from './agenda-status-select.component';
 import { AgendaCorSelectComponent } from './agenda-cor-select.component';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 import {
   expandirDatasRepeticao,
   inferirRepeticaoDasDatasOrdenadas,
@@ -231,6 +232,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private readonly toast = inject(AppToastService);
   private readonly wa = inject(WhatsappService);
   private readonly hostEl = inject(ElementRef<HTMLElement>);
+  private readonly servicoDrawer = inject(ServicoCadastroDrawerService);
 
   @HostBinding('class.agenda-novo--drawer')
   get isDrawerMode(): boolean {
@@ -588,6 +590,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (this.prefillEmCurso) return;
       this.slotAgenda = null;
     });
+
+    this.servicoDrawer.salvo$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((item) => this.aplicarServicoAposCriacao(item));
 
     this.form.controls.data.valueChanges
       .pipe(takeUntil(this.destroy$))
@@ -2076,6 +2082,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.form.patchValue({ cliente_id: id });
     this.clienteIdControl.markAsDirty();
     this.clienteIdControl.markAsTouched();
+  }
+
+  /**
+   * Catálogo de serviços é carregado uma vez no `ngOnInit`. Quando o drawer de
+   * serviço grava (sidebar / Serviços), injecta o item na lista do agendamento.
+   */
+  aplicarServicoAposCriacao(item: Servico): void {
+    const id = String(item?.id ?? '').trim();
+    if (!id) return;
+    const semEsse = this.servicos.filter((s) => String(s.id) !== id);
+    this.servicos = [...semEsse, item];
+    if (!this.isTipoServicoLinha(item)) return;
+    this.servicosTipoServico = this.servicos
+      .filter((s) => this.isTipoServicoLinha(s))
+      .sort((a, b) =>
+        this.rotuloServico(a).localeCompare(this.rotuloServico(b), 'pt-BR'),
+      );
   }
 
   /**
