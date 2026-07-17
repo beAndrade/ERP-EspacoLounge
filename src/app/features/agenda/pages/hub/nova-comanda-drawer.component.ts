@@ -909,7 +909,26 @@ export class NovaComandaDrawerComponent implements OnInit {
   }
 
   podeExcluirComanda(): boolean {
-    return Boolean(this.contexto()?.idAtendimento?.trim());
+    return (
+      Boolean(this.contexto()?.idAtendimento?.trim()) &&
+      !this.comandaTemPagamentosRegistados()
+    );
+  }
+
+  /**
+   * Opção A: com pagamentos (pago/parcial) só se exclui depois de remover
+   * os lançamentos em «Ver pagamentos» / Faturar.
+   */
+  comandaTemPagamentosRegistados(): boolean {
+    const r = this.resumoPagamentos;
+    const pago = Number(r?.total_pago ?? 0);
+    if (Number.isFinite(pago) && pago > 0.005) return true;
+    const st = String(r?.status ?? '').trim().toLowerCase();
+    return st === 'pago' || st === 'parcial';
+  }
+
+  motivoExclusaoBloqueada(): string {
+    return 'Esta comanda tem pagamentos. Remova-os em «Ver pagamentos» antes de excluir.';
   }
 
   abrirEditarAgendamento(): void {

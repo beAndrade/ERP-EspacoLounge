@@ -2388,6 +2388,13 @@ export async function excluirAtendimentoPorIdAtendimento(
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
   const manterPedido = Boolean(opts?.manterCabecalhoPedido);
+  /**
+   * Edição (manter cabeçalho) recria linhas — não é exclusão de comanda.
+   * Exclusão real: bloquear se já houver pagamentos (opção A).
+   */
+  if (!manterPedido) {
+    await assertComandaSemPagamentosParaExclusao(db, id);
+  }
   return await db.transaction(async (tx) => {
     await tx
       .delete(atendimentoItens)
@@ -2412,6 +2419,31 @@ export async function excluirAtendimentoPorIdAtendimento(
 
 export type ModoExclusaoComanda = 'somente_comanda' | 'completo';
 
+/** Mensagem estável para a UI (VALIDAÇÃO). */
+export const MSG_EXCLUIR_COMANDA_COM_PAGAMENTOS =
+  'Não é possível excluir uma comanda com pagamentos registados. Remova os pagamentos em «Ver pagamentos» / Faturar e tente de novo.';
+
+/**
+ * Opção A: comanda com dinheiro recebido (pago ou parcial) não pode ser excluída
+ * até o utilizador estornar/remover os pagamentos.
+ */
+export async function assertComandaSemPagamentosParaExclusao(
+  db: Db,
+  idAtendimento: string,
+): Promise<void> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) return;
+  const resumo = await getResumoComanda(db, id);
+  const pago = Number(resumo.total_pago ?? 0);
+  if (
+    (Number.isFinite(pago) && pago > 0.005) ||
+    resumo.status === 'pago' ||
+    resumo.status === 'parcial'
+  ) {
+    throw new Error(MSG_EXCLUIR_COMANDA_COM_PAGAMENTOS);
+  }
+}
+
 function ymdHojeLocal(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -2433,6 +2465,7 @@ export async function excluirComandaPorIdAtendimento(
 ): Promise<number> {
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
+  await assertComandaSemPagamentosParaExclusao(db, id);
   if (modo === 'completo') {
     return excluirAtendimentoPorIdAtendimento(db, id);
   }

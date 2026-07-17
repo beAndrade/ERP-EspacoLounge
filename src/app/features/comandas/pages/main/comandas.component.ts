@@ -469,6 +469,18 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.excluirMassaModalAberto = false;
       return;
     }
+    const bloqueadas = ids.filter((id) => {
+      const g = this.grupos.find((x) => this.idAtendimento(x) === id);
+      return g != null && this.comandaBloqueadaParaExclusao(g);
+    });
+    if (bloqueadas.length > 0) {
+      this.erro =
+        bloqueadas.length === ids.length
+          ? this.motivoExclusaoBloqueadaComanda()
+          : `${bloqueadas.length} comanda(s) têm pagamentos e não podem ser excluídas. Remova os pagamentos antes ou desmarque-as.`;
+      this.excluirMassaModalAberto = false;
+      return;
+    }
     this.excluindoEmMassa = true;
     this.erro = '';
     forkJoin(ids.map((id) => this.api.excluirAtendimento(id))).subscribe({
@@ -1509,10 +1521,29 @@ export class ComandasComponent implements OnInit, OnDestroy {
     }));
   }
 
+  /** Quitada ou com qualquer valor já recebido — não excluir (opção A). */
+  comandaBloqueadaParaExclusao(g: ComandaGrupo): boolean {
+    const l0 = g.linhas[0];
+    const pago = Number(l0?.total_pago ?? 0);
+    if (Number.isFinite(pago) && pago > this.epsMoeda) return true;
+    const st = String(l0?.status_cobranca ?? '')
+      .trim()
+      .toLowerCase();
+    return st === 'pago' || st === 'parcial';
+  }
+
+  motivoExclusaoBloqueadaComanda(): string {
+    return 'Esta comanda tem pagamentos. Remova-os em «Ver pagamentos» antes de excluir.';
+  }
+
   excluir(g: ComandaGrupo, ev: Event): void {
     ev.stopPropagation();
     this.menuAbertoParaId = null;
     if (!this.idAtendimento(g) || this.excluindoItemModal) return;
+    if (this.comandaBloqueadaParaExclusao(g)) {
+      this.erro = this.motivoExclusaoBloqueadaComanda();
+      return;
+    }
     this.grupoPendenteExclusao = g;
     this.excluirItemModalAberto = true;
   }

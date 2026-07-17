@@ -401,6 +401,16 @@
               </ul>
             }
           </div>
+        } @else if (comandaTemPagamentosRegistados()) {
+          <button
+            type="button"
+            class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
+            disabled
+            [attr.title]="motivoExclusaoBloqueada()"
+            [attr.aria-label]="motivoExclusaoBloqueada()"
+          >
+            Excluir
+          </button>
         }
         @if (!comandaFinalizada()) {
           <button

@@ -359,6 +359,9 @@ async function execExcluirAtendimento(body: {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (/Não é possível excluir uma comanda com pagamentos/i.test(msg)) {
+      return fail('VALIDATION', msg);
+    }
     return fail('SERVER', msg);
   }
 }

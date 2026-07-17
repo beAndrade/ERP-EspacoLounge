@@ -489,7 +489,15 @@
                                   type="button"
                                   role="menuitem"
                                   class="row-menu__item row-menu__item--excluir"
-                                  [disabled]="excluindoIdAt === idAtendimento(g)"
+                                  [disabled]="
+                                    excluindoIdAt === idAtendimento(g) ||
+                                    comandaBloqueadaParaExclusao(g)
+                                  "
+                                  [attr.title]="
+                                    comandaBloqueadaParaExclusao(g)
+                                      ? motivoExclusaoBloqueadaComanda()
+                                      : null
+                                  "
                                   (click)="excluir(g, $event)"
                                 >
                                   <span class="row-menu__item-ico" aria-hidden="true">
