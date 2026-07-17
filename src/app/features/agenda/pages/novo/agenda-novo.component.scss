@@ -2555,7 +2555,8 @@ textarea {
       width: auto;
       min-width: 0;
       max-width: none;
-      overflow: hidden;
+      /** Não usar overflow:hidden aqui — corta o painel do `app-saas-select`. */
+      overflow: visible;
 
       app-saas-select,
       ::ng-deep .saas-select,
@@ -2564,6 +2565,7 @@ textarea {
         max-width: 100%;
       }
 
+      /** Reticências só no texto do trigger, não no contentor do dropdown. */
       ::ng-deep .saas-select__value,
       ::ng-deep .saas-select__trigger-input {
         overflow: hidden;
