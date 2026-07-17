@@ -1646,9 +1646,14 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
     z-index: 1002;
   }
 
-  /** Sub-drawer Faturar — por cima da comanda. */
-  &--faturar {
+  /** Edição de itens da comanda — por cima da visualização. */
+  &--edit-agendamento {
     z-index: 1004;
+  }
+
+  /** Sub-drawer Faturar — por cima da edição / comanda. */
+  &--faturar {
+    z-index: 1006;
   }
 }
 
@@ -1733,12 +1738,30 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
     }
   }
 
+  /** Edição de itens da comanda — por cima da visualização. */
+  &--edit-agendamento {
+    z-index: 1005;
+
+    & > app-agenda-novo {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      min-width: 0;
+      max-height: 100%;
+    }
+
+    &:has(> app-agenda-novo.agenda-novo--somente-comanda) {
+      overflow: hidden;
+    }
+  }
+
   /**
-   * Sub-drawer Faturar — terceira camada (acima da comanda).
+   * Sub-drawer Faturar — terceira camada (acima da edição / comanda).
    * Mesmo rect; largura mais estreita em telas grandes para parecer um modal lateral.
    */
   &--faturar {
-    z-index: 1005;
+    z-index: 1007;
     background: #ffffff;
     /* Largura própria; não herda o preferred de 1649px do painel principal. */
     --drawer-preferred-w: 480px;
@@ -1760,13 +1783,13 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   }
 }
 
-/* Camadas extra para a página /comandas (mesmas regras que o hub). */
+/* Camadas extra: edição de itens acima da comanda (alinhar com /comandas). */
 .app-drawer--edit-agendamento {
-  z-index: 1003;
+  z-index: 1005;
 }
 
 .overlay--edit-agendamento {
-  z-index: 1002;
+  z-index: 1004;
 }
 
 /* ---- Vista semanal (cada profissional × 7 dias da semana) ---- */

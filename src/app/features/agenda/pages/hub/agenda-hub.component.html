@@ -1638,6 +1638,35 @@
   }
 }
 
+@if (editComandaAberto && editComandaCtx) {
+  <div
+    class="overlay overlay--edit-agendamento"
+    [class.overlay--open]="editComandaPanelOpen"
+    aria-hidden="true"
+    (click)="fecharEditComanda()"
+  ></div>
+  <div
+    class="app-drawer app-drawer--edit-agendamento"
+    [class.app-drawer--open]="editComandaPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Editar itens da comanda"
+    (click)="$event.stopPropagation()"
+  >
+    <app-agenda-novo
+      #editComandaDrawer
+      [modoModal]="true"
+      [fluxoSomenteComanda]="true"
+      [ocultarResumoComanda]="true"
+      [contextoSlot]="editComandaCtx"
+      (salvoComSucesso)="onSalvoEditComanda()"
+      (cancelarModal)="fecharEditComanda()"
+      (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
+      (abrirNovoClienteDrawer)="abrirClienteDrawerNovo()"
+    />
+  </div>
+}
+
 <app-whatsapp-enviar-modal
   [aberto]="whatsappModalAberto"
   [contexto]="whatsappContexto"

@@ -346,6 +346,19 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Data da comanda (`AAAA-MM-DD`) — alinha «Data do pagamento» / «Atrasado» no Faturar. */
   comandaDataYmdParaFaturar: string | null = null;
 
+  /**
+   * Drawer «Editando itens da comanda» (fluxoSomenteComanda), por cima da
+   * visualização da comanda — não o drawer de agendamento do calendário.
+   */
+  editComandaAberto = false;
+  editComandaPanelOpen = false;
+  editComandaCtx: {
+    data: string;
+    profissional_id: number;
+    hora?: string;
+    id_atendimento?: string;
+  } | null = null;
+
   whatsappModalAberto = false;
   whatsappContexto: WhatsappEnviarContexto | null = null;
 
@@ -355,9 +368,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   @ViewChild(FaturarDrawerComponent)
   private faturarDrawerRef?: FaturarDrawerComponent;
 
+  @ViewChild('editComandaDrawer')
+  private editComandaDrawerRef?: AgendaNovoComponent;
+
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private editComandaCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
 
@@ -376,7 +393,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   };
 
   /**
-   * ESC: um nível por vez (pagamentos → comanda → agendamento).
+   * ESC: um nível por vez (pagamentos → edição de itens → comanda → agendamento).
    * Usa `*Aberto` (não `*PanelOpen`) para não saltar níveis no mesmo keypress
    * enquanto a animação de fecho corre.
    */
@@ -423,6 +440,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         return;
       }
       this.fecharFaturarDrawer();
+      return;
+    }
+    if (this.editComandaAberto) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      if (this.editComandaDrawerRef?.tratarEscapeInterno()) return;
+      this.fecharEditComanda();
       return;
     }
     if (this.comandaPainelAberto) {
@@ -2099,6 +2123,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   fecharComandaDrawer(): void {
     if (!this.comandaPainelAberto) return;
+    this.limparEditComandaSemAnimacao();
     if (!this.comandaDrawerPanelOpen) {
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
@@ -2130,6 +2155,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   private limparComandaDrawerSemAnimacao(): void {
+    this.limparEditComandaSemAnimacao();
     this.comandaPainelAberto = false;
     this.comandaDrawerPanelOpen = false;
     this.comandaDrawerContexto = null;
@@ -2182,18 +2208,84 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Botão Editar dentro do drawer da comanda no hub.
-   * O drawer de agendamento já está aberto por baixo: basta fechar a comanda
-   * para que o utilizador volte ao agendamento (modo edição) que carregou-a.
+   * Botão Editar no drawer da comanda: abre «Editando itens da comanda»
+   * (`fluxoSomenteComanda`), não o drawer de agendamento do calendário.
    */
   onEditarAgendamentoDesdeComanda(): void {
-    if (!this.comandaPainelAberto) return;
-    this.fecharComandaDrawer();
+    const ctx = this.comandaDrawerContexto;
+    const idAt = ctx?.idAtendimento?.trim();
+    const ymd = (ctx?.dataYmd ?? '').trim();
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.abrirDrawerEditComanda(idAt, ymd);
   }
 
-  /** Gravação do agendamento com o formulário já aberto por baixo da comanda. */
+  private abrirDrawerEditComanda(idAt: string, ymd: string): void {
+    this.editComandaCtx = {
+      data: ymd,
+      profissional_id: 0,
+      id_atendimento: idAt,
+    };
+    this.editComandaAberto = true;
+    this.editComandaPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.editComandaPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  fecharEditComanda(): void {
+    if (!this.editComandaAberto) return;
+    this.editComandaPanelOpen = false;
+    if (this.editComandaCloseTimer != null) {
+      clearTimeout(this.editComandaCloseTimer);
+    }
+    this.editComandaCloseTimer = setTimeout(() => {
+      this.editComandaCloseTimer = null;
+      this.editComandaAberto = false;
+      this.editComandaCtx = null;
+    }, DRAWER_ANIM_MS);
+  }
+
+  private limparEditComandaSemAnimacao(): void {
+    this.editComandaAberto = false;
+    this.editComandaPanelOpen = false;
+    this.editComandaCtx = null;
+    if (this.editComandaCloseTimer != null) {
+      clearTimeout(this.editComandaCloseTimer);
+      this.editComandaCloseTimer = null;
+    }
+  }
+
+  /**
+   * Após salvar itens: fecha o editor e mantém/atualiza o drawer «Visualizando comanda».
+   */
+  onSalvoEditComanda(): void {
+    const idAt =
+      this.editComandaCtx?.id_atendimento?.trim() ??
+      this.comandaDrawerContexto?.idAtendimento?.trim() ??
+      '';
+    const comandaJaAberta =
+      this.comandaPainelAberto && this.comandaDrawerContexto != null;
+
+    this.fecharEditComanda();
+    this.recarregarVistaAtiva();
+
+    if (!idAt || !comandaJaAberta) return;
+    setTimeout(() => {
+      this.comandaDrawerRef?.recarregarDadosComanda();
+    }, 0);
+  }
+
+  /** Gravação: prioriza o editor de itens da comanda se estiver aberto. */
   onSalvarAgendamentoDesdeDrawerComanda(): void {
     if (!this.comandaPainelAberto) return;
+    if (this.editComandaAberto && this.editComandaDrawerRef) {
+      this.editComandaDrawerRef.salvar();
+      return;
+    }
     this.agendaDrawerRef?.salvar();
   }
 
