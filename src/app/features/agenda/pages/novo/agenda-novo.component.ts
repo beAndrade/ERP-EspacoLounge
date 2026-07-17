@@ -1791,6 +1791,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
+   * Ao mudar serviço ou tamanho: aplica sempre o preço de catálogo da combinação
+   * actual (o valor gravado na linha anterior não deve «grudar»).
+   */
+  aoEscolherServicoOuTamanhoNaLinha(linhaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return;
+    g.get('valor_unitario_tocado')?.setValue(false, { emitEvent: false });
+    this.atualizarValorUnitarioServicoSeIntacto(linhaIndex);
+  }
+
+  /**
    * Auto-preenche `preco_unitario` da linha de Produto com o preço de catálogo
    * quando o campo ainda está vazio e o utilizador não tocou manualmente.
    */

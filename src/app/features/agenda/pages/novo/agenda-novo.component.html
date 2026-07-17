@@ -430,7 +430,7 @@
                   [options]="opcoesServicosCatalogo()"
                   [placeholder]="modoModal ? 'Selecionar serviço' : 'Selecione…'"
                   aria-label="Serviço"
-                  (picked)="atualizarValorUnitarioServicoSeIntacto(i)"
+                  (picked)="aoEscolherServicoOuTamanhoNaLinha(i)"
                 />
               </div>
               @if (precisaTamanhoServicoId(ctrl.get('servico_id')?.value)) {
@@ -442,7 +442,7 @@
                     [options]="opcoesTamanhosSelect()"
                     placeholder="Tamanho…"
                     aria-label="Tamanho"
-                    (picked)="atualizarValorUnitarioServicoSeIntacto(i)"
+                    (picked)="aoEscolherServicoOuTamanhoNaLinha(i)"
                   />
                 </div>
               }
