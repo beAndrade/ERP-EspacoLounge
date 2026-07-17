@@ -322,6 +322,7 @@
                   @for (g of gruposPagina(); track g.id) {
                     <tr
                       [class.comandas-table__row--selected]="estaSelecionado(g)"
+                      [class.comandas-table__row--menu-open]="menuAbertoParaId === g.id"
                     >
                       <td class="col-check">
                         <input
@@ -420,7 +421,10 @@
                         >
                       </td>
                       <td class="col-menu">
-                        <div class="comandas-row-menu">
+                        <div
+                          class="comandas-row-menu"
+                          [class.comandas-row-menu--open]="menuAbertoParaId === g.id"
+                        >
                           <button
                             type="button"
                             class="icon-btn row-menu__trigger"

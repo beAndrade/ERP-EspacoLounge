@@ -289,7 +289,8 @@
   transition: box-shadow 0.2s ease;
 
   > .table-wrap {
-    overflow: hidden;
+    /* `visible`: o menu de ações da linha não fica cortado / atrás do card. */
+    overflow: visible;
     border-start-start-radius: 14px;
     border-start-end-radius: 14px;
     border-top-left-radius: 14px;
@@ -729,10 +730,19 @@ tbody td.col-ticket {
   }
 }
 
+tbody tr.comandas-table__row--menu-open {
+  position: relative;
+  z-index: 30;
+}
+
 .comandas-row-menu {
   position: relative;
   display: inline-flex;
   justify-content: flex-end;
+
+  &--open {
+    z-index: 40;
+  }
 }
 
 .row-menu__trigger {
@@ -751,8 +761,8 @@ tbody td.col-ticket {
   background: var(--color-surface);
   border: 1px solid #e7e5e4;
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  z-index: 80;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 50;
 
   li {
     margin: 0;

@@ -1,7 +1,7 @@
 /**
  * Regras alinhadas a apps-script/Code.gs (createAtendimento_ e auxiliares).
  */
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, max, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { descricaoParaListaLinha } from '../lib/descricao-lista';
 import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
@@ -636,22 +636,51 @@ async function assertProfissionalIdExists(
   }
 }
 
+/**
+ * Próximo `#comanda` = MAX(existentes) + 1 (tabela vazia → 1).
+ * Evita a sequência Postgres continuar a crescer após exclusões.
+ */
+async function allocNextNumeroComanda(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ m: max(atendimentosPedido.numeroComanda) })
+    .from(atendimentosPedido);
+  const m = Number(row?.m ?? 0);
+  return (Number.isFinite(m) && m > 0 ? m : 0) + 1;
+}
+
+/** Alinha a sequência ao MAX actual (próximo `nextval` = max+1; tabela vazia → 1). */
+async function syncNumeroComandaSequence(db: Db): Promise<void> {
+  await db.execute(sql`
+    SELECT setval(
+      'atendimentos_pedido_numero_comanda_seq'::regclass,
+      COALESCE((SELECT MAX(numero_comanda) FROM atendimentos_pedido), 0),
+      true
+    )
+  `);
+}
+
 async function ensurePedidoHeader(
   db: Db,
   idAtendimento: string,
   idCliente: string,
   meta?: { idRecorrencia: string | null; ordemRecorrencia: number | null },
 ): Promise<void> {
-  await db
-    .insert(atendimentosPedido)
-    .values({
-      idAtendimento,
-      idCliente: idCliente.trim(),
-      idRecorrencia: meta?.idRecorrencia ?? null,
-      ordemRecorrencia: meta?.ordemRecorrencia ?? null,
-    })
-    /** PK `id_atendimento`: sem `target` o Postgres pode não inferir o conflito e falhar ou duplicar pedido. */
-    .onConflictDoNothing({ target: atendimentosPedido.idAtendimento });
+  const [exist] = await db
+    .select({ id: atendimentosPedido.idAtendimento })
+    .from(atendimentosPedido)
+    .where(eq(atendimentosPedido.idAtendimento, idAtendimento))
+    .limit(1);
+  if (exist) return;
+
+  const numeroComanda = await allocNextNumeroComanda(db);
+  await db.insert(atendimentosPedido).values({
+    idAtendimento,
+    idCliente: idCliente.trim(),
+    idRecorrencia: meta?.idRecorrencia ?? null,
+    ordemRecorrencia: meta?.ordemRecorrencia ?? null,
+    numeroComanda,
+  });
+  await syncNumeroComandaSequence(db);
 }
 
 async function insertPivotServico(
@@ -2373,6 +2402,11 @@ export async function excluirAtendimentoPorIdAtendimento(
         .where(eq(atendimentosPedido.idAtendimento, id));
     }
     return rows.length;
+  }).then(async (n) => {
+    if (!manterPedido) {
+      await syncNumeroComandaSequence(db);
+    }
+    return n;
   });
 }
 
@@ -2467,6 +2501,9 @@ export async function excluirComandaPorIdAtendimento(
       .returning({ id: atendimentos.id });
 
     return rows.length;
+  }).then(async (n) => {
+    await syncNumeroComandaSequence(db);
+    return n;
   });
 }
 
