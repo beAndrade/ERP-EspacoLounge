@@ -82,6 +82,12 @@ import {
 } from './services/queries';
 import { columnPatchFromClienteBody } from './services/clientes-cadastro-normalize';
 import { assertClienteCadastroUnico } from './services/clientes-unicidade';
+import {
+  createServico,
+  deleteServico,
+  updateServico,
+  type ServicoWriteInput,
+} from './services/servicos-domain';
 
 const clienteCadastroBodySchema = t.Object({
   nome: t.String(),
@@ -1006,6 +1012,105 @@ const app = new Elysia({ adapter: node() })
     { params: t.Object({ id: t.String() }) },
   )
   .get('/api/servicos', async () => ok({ items: await listServicosForApi(db) }))
+  .post(
+    '/api/servicos',
+    async ({ body }) => {
+      try {
+        const item = await createServico(db, body as ServicoWriteInput);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|inválido|Duração/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        nome: t.String(),
+        tipo: t.Union([t.Literal('Fixo'), t.Literal('Tamanho')]),
+        categoria: t.Optional(t.Union([t.String(), t.Null()])),
+        mostra_no_site: t.Optional(t.Boolean()),
+        descricao: t.Optional(t.Union([t.String(), t.Null()])),
+        foto_url: t.Optional(t.Union([t.String(), t.Null()])),
+        valor_base: t.Optional(t.Union([t.String(), t.Null()])),
+        comissao_fixa: t.Optional(t.Union([t.String(), t.Null()])),
+        comissao_pct: t.Optional(t.Union([t.String(), t.Null()])),
+        custo_fixo: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_curto: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_medio: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_medio_longo: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_longo: t.Optional(t.Union([t.String(), t.Null()])),
+        duracao_minutos: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_curto: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_medio: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_m_l: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_longo: t.Optional(t.Union([t.Number(), t.Null()])),
+      }),
+    },
+  )
+  .patch(
+    '/api/servicos/:id',
+    async ({ params, body }) => {
+      try {
+        const item = await updateServico(
+          db,
+          params.id,
+          body as ServicoWriteInput,
+        );
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/obrigatório|inválido|Duração/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        nome: t.String(),
+        tipo: t.Union([t.Literal('Fixo'), t.Literal('Tamanho')]),
+        categoria: t.Optional(t.Union([t.String(), t.Null()])),
+        mostra_no_site: t.Optional(t.Boolean()),
+        descricao: t.Optional(t.Union([t.String(), t.Null()])),
+        foto_url: t.Optional(t.Union([t.String(), t.Null()])),
+        valor_base: t.Optional(t.Union([t.String(), t.Null()])),
+        comissao_fixa: t.Optional(t.Union([t.String(), t.Null()])),
+        comissao_pct: t.Optional(t.Union([t.String(), t.Null()])),
+        custo_fixo: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_curto: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_medio: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_medio_longo: t.Optional(t.Union([t.String(), t.Null()])),
+        preco_longo: t.Optional(t.Union([t.String(), t.Null()])),
+        duracao_minutos: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_curto: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_medio: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_m_l: t.Optional(t.Union([t.Number(), t.Null()])),
+        duracao_longo: t.Optional(t.Union([t.Number(), t.Null()])),
+      }),
+    },
+  )
+  .delete(
+    '/api/servicos/:id',
+    async ({ params }) => {
+      try {
+        const r = await deleteServico(db, params.id);
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/Não é possível excluir/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
   .get('/api/regras-mega', async () => ok({ items: await listRegrasMegaApi(db) }))
   .get('/api/pacotes', async () => ok({ items: await listPacotesApi(db) }))
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))

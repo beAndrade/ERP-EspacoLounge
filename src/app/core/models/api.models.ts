@@ -101,6 +101,29 @@ export interface Servico {
   [key: string]: unknown;
 }
 
+/** Payload de create/update do catálogo de serviços. */
+export type ServicoWritePayload = {
+  nome: string;
+  tipo: 'Fixo' | 'Tamanho';
+  categoria?: string | null;
+  mostra_no_site?: boolean;
+  descricao?: string | null;
+  foto_url?: string | null;
+  valor_base?: string | null;
+  comissao_fixa?: string | null;
+  comissao_pct?: string | null;
+  custo_fixo?: string | null;
+  preco_curto?: string | null;
+  preco_medio?: string | null;
+  preco_medio_longo?: string | null;
+  preco_longo?: string | null;
+  duracao_minutos?: number | null;
+  duracao_curto?: number | null;
+  duracao_medio?: number | null;
+  duracao_m_l?: number | null;
+  duracao_longo?: number | null;
+};
+
 /** Item da lista Agenda (aba Atendimentos), normalizado para a UI. */
 export interface AtendimentoListaItem {
   id: string;

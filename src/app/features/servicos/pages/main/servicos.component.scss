@@ -1,61 +1,183 @@
-.toolbar {
+@use '../../../../styles/list-page-shell';
+
+.servicos-page {
+  padding-right: 10px;
+  box-sizing: border-box;
+
+  .list-table-card {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    box-shadow:
+      0 10px 36px -12px rgba(15, 23, 42, 0.1),
+      0 4px 16px -6px rgba(15, 23, 42, 0.05);
+  }
+
+  .list-head__actions--servicos {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.servicos-table .col-nome__link {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: rgb(80, 90, 251);
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.servicos-filtros-drawer {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+.servicos-filtros-drawer--open {
+  width: 280px;
+}
+
+.servicos-filtros-drawer__inner {
+  width: 280px;
+  height: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(15, 23, 42, 0.06);
+  background: #fff;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.servicos-filtros-drawer__head {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
 
-  h1 {
+  h2 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1rem;
+  }
+
+  button {
+    border: none;
+    background: transparent;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #64748b;
   }
 }
 
-.link-back {
-  font-size: 0.95rem;
-}
-
-.hint {
-  color: var(--color-muted);
-  margin-bottom: 1rem;
-  line-height: 1.5;
-
-  code {
-    font-size: 0.85em;
-  }
-}
-
-.alert {
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius);
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-
-.table-wrap {
-  overflow-x: auto;
-  background: var(--color-surface);
-  border-radius: var(--radius);
-  border: 1px solid #e7e5e4;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f5f5f4;
-}
-
-th {
+.servicos-filtros-drawer__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--color-muted);
-  font-size: 0.85rem;
-  text-transform: uppercase;
+  color: #334155;
+
+  select {
+    min-height: 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    font: inherit;
+    font-weight: 400;
+  }
+}
+
+.servicos-filtros-drawer__footer {
+  margin-top: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.servicos-filtros-drawer__btn {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.servicos-filtros-drawer__btn--primary {
+  background: var(--color-primary, #505afb);
+  color: #fff;
+}
+
+.servicos-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1700;
+}
+
+.servicos-modal {
+  position: fixed;
+  z-index: 1710;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 2rem));
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+
+  h3 {
+    margin: 0 0 0.5rem;
+  }
+
+  p {
+    margin: 0 0 1rem;
+    color: #475569;
+  }
+}
+
+.servicos-modal__erro {
+  color: #b91c1c !important;
+}
+
+.servicos-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+
+  button {
+    min-height: 38px;
+    padding: 0 0.9rem;
+    border: none;
+    border-radius: 8px;
+    background: #f1f5f9;
+    cursor: pointer;
+    font-weight: 600;
+  }
+}
+
+.servicos-modal__btn--danger {
+  background: #ef4444 !important;
+  color: #fff !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

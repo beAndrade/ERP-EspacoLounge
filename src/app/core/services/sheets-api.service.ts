@@ -39,6 +39,7 @@ import {
   ProfissionalListaItem,
   RegraMegaItem,
   Servico,
+  ServicoWritePayload,
 } from '../models/api.models';
 import { enriquecerRotuloPacote } from '../utils/pacote-descricao';
 import { extractApiErrorMessage } from '../utils/api-error-message';
@@ -114,6 +115,35 @@ export class SheetsApiService {
         map((r) => this.unwrap(r)),
         map((d) => d.items),
       );
+  }
+
+  createServico(body: ServicoWritePayload): Observable<Servico> {
+    return this.http
+      .post<ApiResponse<{ item: Servico }>>(this.url('/api/servicos'), body)
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  updateServico(id: string, body: ServicoWritePayload): Observable<Servico> {
+    return this.http
+      .patch<ApiResponse<{ item: Servico }>>(
+        this.url(`/api/servicos/${encodeURIComponent(id)}`),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  deleteServico(id: string): Observable<{ id: string }> {
+    return this.http
+      .delete<ApiResponse<{ id: string }>>(
+        this.url(`/api/servicos/${encodeURIComponent(id)}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   listRegrasMega(): Observable<RegraMegaItem[]> {

@@ -323,6 +323,13 @@
       "when": 1775697957000,
       "tag": "0045_whatsapp_integration",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1775697958000,
+      "tag": "0046_servicos_cadastro_campos",
+      "breakpoints": true
     }
   ]
 }

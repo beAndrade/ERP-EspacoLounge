@@ -121,6 +121,10 @@ export async function listServicosForApi(db: Db) {
         Médio: r.medio,
         'M/L': r.mL,
         Longo: r.longo,
+        Categoria: r.categoria ?? null,
+        mostra_no_site: r.mostraNoSite !== false,
+        Descrição: r.descricao ?? null,
+        foto_url: r.fotoUrl ?? null,
       };
     })
     .filter(Boolean) as Record<string, unknown>[];

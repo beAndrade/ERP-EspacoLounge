@@ -21,7 +21,11 @@ const INTERVALO_MINUTOS = 30;
 export async function listServicosPublic(db: Db) {
   const items = await listServicosForApi(db);
   return items
-    .filter((s) => String(s.Serviço || '').trim())
+    .filter(
+      (s) =>
+        String(s.Serviço || '').trim() &&
+        s.mostra_no_site !== false,
+    )
     .map((s) => ({
       id: s.id,
       nome: String(s.Serviço || '').trim(),

@@ -202,6 +202,12 @@ export const servicos = pgTable('servicos', {
   medio: text('medio'),
   mL: text('m_l'),
   longo: text('longo'),
+  /** Categoria livre (texto), exibida na lista e no drawer. */
+  categoria: text('categoria'),
+  /** Se false, oculto do agendamento público. */
+  mostraNoSite: boolean('mostra_no_site').default(true).notNull(),
+  descricao: text('descricao'),
+  fotoUrl: text('foto_url'),
 });
 
 export const pacotes = pgTable('pacotes', {

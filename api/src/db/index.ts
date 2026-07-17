@@ -833,4 +833,52 @@ WHERE ("tipo" IS NULL OR trim("tipo") = '')
   AND "preco_curto" IS NOT NULL
   AND trim("preco_curto"::text) <> '';
 `));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'categoria'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "categoria" text;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'mostra_no_site'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "mostra_no_site" boolean DEFAULT true NOT NULL;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'descricao'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "descricao" text;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'servicos' AND c.column_name = 'foto_url'
+  ) THEN
+    ALTER TABLE "servicos" ADD COLUMN "foto_url" text;
+  END IF;
+END $$;
+`));
 }
