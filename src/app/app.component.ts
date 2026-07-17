@@ -18,6 +18,7 @@ import { mediaQueryMax } from './styles/breakpoints';
 import { AppShellUiService } from './core/services/app-shell-ui.service';
 import { SidebarNovoMenuComponent } from './layout/sidebar-novo-menu/sidebar-novo-menu.component';
 import { MinhaContaDrawerHostComponent } from './shared/minha-conta-drawer/minha-conta-drawer-host.component';
+import { FinTransacaoNovoDrawerHostComponent } from './shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer-host.component';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -39,6 +40,7 @@ export type NavSidebarDropdownId =
     ClienteCadastroDrawerHostComponent,
     ProfissionalCadastroDrawerHostComponent,
     MinhaContaDrawerHostComponent,
+    FinTransacaoNovoDrawerHostComponent,
     SidebarProfileComponent,
     SidebarNovoMenuComponent,
     AppToastComponent,
@@ -67,9 +69,12 @@ export class AppComponent implements OnInit {
 
   /**
    * Secções Financeiro, Controle, etc. abertas em simultâneo.
-   * Só mudam ao clicar no trigger — não recolhem ao trocar de rota.
+   * Abrem ao entrar na rota da secção; o utilizador pode fechar mesmo com a rota ativa.
    */
   navExpandOpenIds: NavSidebarDropdownId[] = [];
+
+  /** Secções com rota ativa no ciclo anterior (para só auto-abrir ao entrar). */
+  private lastActiveNavSections = new Set<NavSidebarDropdownId>();
 
   private readonly collapsedNavFirstRoute: Record<
     NavSidebarDropdownId,
@@ -177,7 +182,7 @@ export class AppComponent implements OnInit {
   }
 
   navExpandIsOpen(id: NavSidebarDropdownId): boolean {
-    return this.navExpandOpenIds.includes(id) || this.sectionActive(id);
+    return this.navExpandOpenIds.includes(id);
   }
 
   /** Rota ativa sob um prefixo (ex.: `/financeiro`, `/relatorios`). */
@@ -222,7 +227,10 @@ export class AppComponent implements OnInit {
     return p === base || p.startsWith(base + '/');
   }
 
-  /** Mantém Financeiro/Controle/etc. expandidos enquanto a rota ativa pertence à secção. */
+  /**
+   * Ao entrar numa secção (rota passa a pertencer-lhe), expande o acordeão.
+   * Não reabre se o utilizador a tiver fechado enquanto permanece na mesma secção.
+   */
   private syncNavExpandForActiveRoutes(): void {
     const secaoIds: NavSidebarDropdownId[] = [
       'financeiro',
@@ -231,13 +239,14 @@ export class AppComponent implements OnInit {
       'marketing',
       'relatorios',
     ];
-    const abrir = secaoIds.filter((id) => this.sectionActive(id));
-    if (abrir.length === 0) return;
+    const currentlyActive = new Set(
+      secaoIds.filter((id) => this.sectionActive(id)),
+    );
 
     const next = [...this.navExpandOpenIds];
     let mudou = false;
-    for (const id of abrir) {
-      if (!next.includes(id)) {
+    for (const id of currentlyActive) {
+      if (!this.lastActiveNavSections.has(id) && !next.includes(id)) {
         next.push(id);
         mudou = true;
       }
@@ -245,5 +254,6 @@ export class AppComponent implements OnInit {
     if (mudou) {
       this.navExpandOpenIds = next;
     }
+    this.lastActiveNavSections = currentlyActive;
   }
 }

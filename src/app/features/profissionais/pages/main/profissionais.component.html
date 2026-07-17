@@ -54,7 +54,16 @@
     }
   </td>
   <td class="col-nome">
-    <div class="col-nome__cell">
+    <div
+      class="col-nome__cell"
+      [class.col-nome__cell--clickable]="!modoGhost"
+      role="button"
+      [attr.tabindex]="modoGhost ? -1 : 0"
+      [attr.aria-label]="'Abrir profissional ' + p.nome"
+      (click)="onAbrirProfissionalDaCelula(p, $event, modoGhost)"
+      (keydown.enter)="onAbrirProfissionalDaCelula(p, $event, modoGhost)"
+      (keydown.space)="onAbrirProfissionalDaCelula(p, $event, modoGhost)"
+    >
       <app-profissional-avatar
         [fotoUrl]="profissionalFotoUrl(p)"
         variant="grid-head"

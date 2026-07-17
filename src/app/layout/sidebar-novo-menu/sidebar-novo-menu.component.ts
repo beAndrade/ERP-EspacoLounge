@@ -26,6 +26,8 @@ import { ProfissionalCadastroDrawerService } from '../../shared/profissional-cad
 
 import { AppToastService } from '../../shared/app-toast/app-toast.service';
 
+import { FinTransacaoNovoDrawerService } from '../../shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer.service';
+
 import { SidebarFlyoutService } from '../sidebar-flyout.service';
 
 
@@ -117,6 +119,8 @@ export class SidebarNovoMenuComponent implements OnDestroy {
   private readonly profDrawer = inject(ProfissionalCadastroDrawerService);
 
   private readonly toast = inject(AppToastService);
+
+  private readonly finNovoDrawer = inject(FinTransacaoNovoDrawerService);
 
   private readonly flyout = inject(SidebarFlyoutService);
 
@@ -389,25 +393,17 @@ export class SidebarNovoMenuComponent implements OnDestroy {
         break;
 
       case 'comanda':
-
-        void this.router.navigate(['/agenda'], {
-
+        void this.router.navigate(['/comandas'], {
           queryParams: { abrirNovaComanda: '1' },
-
         });
-
         break;
 
       case 'pacote':
-
         void this.router.navigate(['/pacotes']);
-
         break;
 
       case 'pacote-predef':
-
-        void this.router.navigate(['/pacotes/predefinidos']);
-
+        this.toast.show('Pacote Predefinido — em breve.');
         break;
 
       case 'cliente':
@@ -460,37 +456,25 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
       case 'recebimento':
 
-        void this.router.navigate(['/financeiro/transacoes'], {
-
-          queryParams: { novo: 'receita' },
-
-        });
+        this.finNovoDrawer.abrir('receita');
 
         break;
 
       case 'despesa':
 
-        void this.router.navigate(['/financeiro/transacoes'], {
-
-          queryParams: { novo: 'despesa' },
-
-        });
+        this.finNovoDrawer.abrir('despesa');
 
         break;
 
       case 'vale':
 
-        void this.router.navigate(['/financeiro/transacoes'], {
-
-          queryParams: { novo: 'vale' },
-
-        });
+        this.finNovoDrawer.abrir('vale');
 
         break;
 
       case 'transferencia':
 
-        this.toast.show('Transferência — em breve.');
+        this.finNovoDrawer.abrir('transferencia');
 
         break;
 

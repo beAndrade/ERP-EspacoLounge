@@ -12,9 +12,12 @@ export function precoUnitarioServicoCatalogo(
   const tipo = String(s['Tipo'] ?? '')
     .trim()
     .toLowerCase();
-  if (tipo === 'fixo') {
-    const v = valorMonetarioParaNumero(s['Valor Base']);
-    return v != null && v > 0 ? v : null;
+  const valorBase = valorMonetarioParaNumero(s['Valor Base']);
+  const temValorBase = valorBase != null && valorBase > 0;
+  /** Fixo, ou legado sem tipo com Valor Base preenchido. */
+  const comoFixo = tipo === 'fixo' || (!tipo && temValorBase);
+  if (comoFixo) {
+    return temValorBase ? valorBase : null;
   }
   const tam = (tamanho || 'Curto').trim();
   const keyMap: Record<string, string> = {
@@ -26,5 +29,7 @@ export function precoUnitarioServicoCatalogo(
   const col = keyMap[tam] ?? 'Preço Curto';
   const raw = (s as Record<string, unknown>)[col];
   const v = valorMonetarioParaNumero(raw);
-  return v != null && v > 0 ? v : null;
+  if (v != null && v > 0) return v;
+  /** Último recurso: Valor Base se os preços por tamanho estiverem vazios. */
+  return temValorBase ? valorBase : null;
 }

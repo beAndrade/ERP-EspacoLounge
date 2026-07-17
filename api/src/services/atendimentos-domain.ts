@@ -368,6 +368,14 @@ function tipoServicoCatalogo(srv: ServicoRow): 'Fixo' | 'Tamanho' | 'LegacyServi
   if (t === 'fixo') return 'Fixo';
   if (t === 'tamanho') return 'Tamanho';
   if (t === 'serviço' || t === 'servico') return 'LegacyServico';
+  /** Legado sem `tipo`: inferir pelo preço preenchido. */
+  if (!t) {
+    const vb = srv.valorBase;
+    if (vb != null && String(vb).trim() !== '') return 'Fixo';
+    if (srv.precoCurto != null && String(srv.precoCurto).trim() !== '') {
+      return 'Tamanho';
+    }
+  }
   return '';
 }
 

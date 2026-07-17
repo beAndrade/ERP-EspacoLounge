@@ -2144,7 +2144,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const s = this.servicoPorId(id);
     if (!s) return false;
     const t = String(s['Tipo'] ?? '').trim().toLowerCase();
-    return t === 'tamanho' || t === 'serviço' || t === 'servico';
+    if (t === 'fixo') return false;
+    if (t === 'tamanho' || t === 'serviço' || t === 'servico') return true;
+    /** Legado sem tipo: se tem valor base, trata como Fixo. */
+    if (!t) {
+      const vb = valorMonetarioParaNumero(s['Valor Base']);
+      return !(vb != null && vb > 0);
+    }
+    return false;
   }
 
   /** Sem profissionais na lista não dá para cumprir profissional obrigatório só com dropdown. */
@@ -3927,9 +3934,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private isTipoServicoLinha(s: Servico): boolean {
+    const nome = String(s['Serviço'] ?? '').trim();
+    if (!nome) return false;
     const t = String(s['Tipo'] ?? '')
       .trim()
       .toLowerCase();
+    /** Sem tipo na BD (legado): ainda é serviço de catálogo agendável. */
+    if (!t) return true;
     return (
       t === 'fixo' ||
       t === 'tamanho' ||

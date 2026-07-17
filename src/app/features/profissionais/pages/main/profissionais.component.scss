@@ -314,6 +314,21 @@
   background: var(--color-primary, #505afb);
 }
 
+.col-nome__cell--clickable {
+  cursor: pointer;
+  border-radius: 8px;
+
+  &:hover .col-nome__text,
+  &:focus-visible .col-nome__text {
+    color: rgb(80, 90, 251);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(80, 90, 251, 0.45);
+    outline-offset: 2px;
+  }
+}
+
 .col-email__cell {
   display: inline-flex;
   align-items: center;

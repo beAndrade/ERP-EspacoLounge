@@ -231,6 +231,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
       const id = (params.get('comanda') ?? '').trim();
       this.comandaQueryAbrir = id || null;
       this.tentarAbrirComandaPorQuery();
+      if (params.get('abrirNovaComanda') === '1') {
+        queueMicrotask(() => this.abrirNovaComandaDesdeAtalho());
+      }
     });
 
     forkJoin({
@@ -514,6 +517,25 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.novoAgendamentoPanelOpen = open;
       },
     );
+  }
+
+  /**
+   * Atalho sidebar «Novo → Comanda» (`?abrirNovaComanda=1`):
+   * mesmo drawer «Nova comanda» do botão Novo da lista.
+   */
+  private abrirNovaComandaDesdeAtalho(): void {
+    if (this.route.snapshot.queryParamMap.get('abrirNovaComanda') !== '1') {
+      return;
+    }
+    if (!this.novoAgendamentoAberto) {
+      this.abrirNovoAgendamentoDrawer();
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { abrirNovaComanda: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   fecharNovoAgendamento(): void {

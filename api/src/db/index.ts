@@ -817,4 +817,20 @@ SET "prazo_recebimento" = 1
 WHERE "codigo_interno" = 'transferencia'
   AND "prazo_recebimento" = 0;
 `));
+  /** Serviços sem tipo não apareciam no agendamento (filtro Fixo/Tamanho). */
+  await db.execute(sql.raw(`
+UPDATE "servicos"
+SET "tipo" = 'Fixo'
+WHERE ("tipo" IS NULL OR trim("tipo") = '')
+  AND "valor_base" IS NOT NULL
+  AND trim("valor_base"::text) <> ''
+  AND ("preco_curto" IS NULL OR trim("preco_curto"::text) = '');
+`));
+  await db.execute(sql.raw(`
+UPDATE "servicos"
+SET "tipo" = 'Tamanho'
+WHERE ("tipo" IS NULL OR trim("tipo") = '')
+  AND "preco_curto" IS NOT NULL
+  AND trim("preco_curto"::text) <> '';
+`));
 }

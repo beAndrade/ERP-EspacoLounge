@@ -2,6 +2,7 @@ import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import {
   Component,
+  DestroyRef,
   HostListener,
   LOCALE_ID,
   OnDestroy,
@@ -12,6 +13,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap, throwError, type Observable } from 'rxjs';
@@ -48,6 +50,7 @@ import {
   type FinTransacoesTotaisResumo,
 } from './fin-transacoes-totais-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { FinTransacaoNovoDrawerService } from '../../../../shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer.service';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { AgendaModalCalendarComponent } from '../../../agenda/pages/novo/agenda-modal-calendar.component';
@@ -124,6 +127,8 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly toast = inject(AppToastService);
+  private readonly finNovoGlobal = inject(FinTransacaoNovoDrawerService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -247,6 +252,10 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.carregarOpcoesFiltrosSidebar();
+
+    this.finNovoGlobal.salvo$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.carregar());
 
     this.route.queryParamMap.subscribe((params) => {
       const raw: Record<string, string | undefined> = {};

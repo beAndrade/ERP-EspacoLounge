@@ -77,19 +77,24 @@ app-profissional-cadastro-drawer-host {
     grid-template-columns: minmax(130px, 200px) minmax(0, 1fr);
   }
 
-  --cliente-drawer-surface-bg: #f8f8f8;
+  --cliente-drawer-surface-bg: #ffffff;
   --cliente-drawer-input-bg: #ffffff;
 
   .cliente-head {
     flex-shrink: 0;
     z-index: 10;
-    background: var(--cliente-drawer-surface-bg);
+    background: #ffffff;
   }
 
   .cliente-body-scroll,
   .cliente-body,
   .cliente-main {
-    background: var(--cliente-drawer-surface-bg);
+    background: #ffffff;
+  }
+
+  app-profissional-cadastro-form {
+    display: block;
+    background: #ffffff;
   }
 
   .cliente-nav--desktop {

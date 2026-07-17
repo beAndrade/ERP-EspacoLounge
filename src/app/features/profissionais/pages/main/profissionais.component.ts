@@ -187,6 +187,19 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
     });
   }
 
+  onAbrirProfissionalDaCelula(
+    p: ProfissionalListaItem,
+    ev: Event,
+    modoGhost?: boolean,
+  ): void {
+    if (modoGhost) return;
+    if (ev instanceof KeyboardEvent) {
+      ev.preventDefault();
+    }
+    ev.stopPropagation();
+    this.abrirEditar(p);
+  }
+
   exibirCelular(p: ProfissionalListaItem): string {
     const f = formatarCelularBr(p.celular);
     return f || '—';
