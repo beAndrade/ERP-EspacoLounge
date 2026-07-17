@@ -219,7 +219,12 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   onBuscaWrapClick(): void {
-    this.buscaAberta = true;
+    if (!this.buscaAberta) {
+      this.buscaAberta = true;
+      queueMicrotask(() => {
+        document.getElementById('servicos-busca-input')?.focus();
+      });
+    }
   }
 
   onBuscaInput(): void {
