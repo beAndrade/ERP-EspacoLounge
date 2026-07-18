@@ -57,7 +57,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.carregar();
     this.salvoSub = this.drawer.salvo$.subscribe((item) =>
-      this.carregar({ focarId: String(item.id) }),
+      this.aplicarServicoSalvo(item),
     );
   }
 
@@ -90,6 +90,22 @@ export class ServicosComponent implements OnInit, OnDestroy {
         this.carregando = false;
       },
     });
+  }
+
+  /** Insere/atualiza o item confirmado pela API e depois recarrega a lista. */
+  private aplicarServicoSalvo(item: Servico): void {
+    const id = String(item?.id ?? '').trim();
+    const nome = String(item?.['Serviço'] ?? '').trim();
+    if (!id || !nome) {
+      this.erro =
+        'O servidor não confirmou o serviço gravado. Recarregue e tente de novo.';
+      this.carregar();
+      return;
+    }
+    const rest = this.itens.filter((s) => String(s.id) !== id);
+    this.itens = [...rest, item];
+    this.irParaServicoNaLista(id);
+    this.carregar({ focarId: id });
   }
 
   /** Limpa filtros ativos e posiciona a paginação no serviço indicado. */
@@ -269,14 +285,12 @@ export class ServicosComponent implements OnInit, OnDestroy {
   abrirNovo(): void {
     this.drawer.abrirNovo({
       categorias: this.categoriasDisponiveis(),
-      onSalvo: (item) => this.carregar({ focarId: String(item.id) }),
     });
   }
 
   abrirEditar(s: Servico): void {
     this.drawer.abrirEdicao(s, {
       categorias: this.categoriasDisponiveis(),
-      onSalvo: (item) => this.carregar({ focarId: String(item.id) }),
     });
   }
 

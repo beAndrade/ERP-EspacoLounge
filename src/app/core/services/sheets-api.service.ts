@@ -109,8 +109,11 @@ export class SheetsApiService {
   }
 
   listServicos(): Observable<Servico[]> {
+    const params = new HttpParams().set('_cb', String(Date.now()));
     return this.http
-      .get<ApiResponse<{ items: Servico[] }>>(this.url('/api/servicos'))
+      .get<ApiResponse<{ items: Servico[] }>>(this.url('/api/servicos'), {
+        params,
+      })
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.items),
@@ -122,7 +125,7 @@ export class SheetsApiService {
       .post<ApiResponse<{ item: Servico }>>(this.url('/api/servicos'), body)
       .pipe(
         map((r) => this.unwrap(r)),
-        map((d) => d.item),
+        map((d) => this.requireServicoItem(d?.item, 'criar')),
       );
   }
 
@@ -134,7 +137,7 @@ export class SheetsApiService {
       )
       .pipe(
         map((r) => this.unwrap(r)),
-        map((d) => d.item),
+        map((d) => this.requireServicoItem(d?.item, 'atualizar')),
       );
   }
 
@@ -1397,6 +1400,20 @@ export class SheetsApiService {
           return this.unwrap(resp.body);
         }),
       );
+  }
+
+  private requireServicoItem(
+    item: Servico | null | undefined,
+    acao: 'criar' | 'atualizar',
+  ): Servico {
+    const id = item?.id != null ? String(item.id).trim() : '';
+    const nome = String(item?.['Serviço'] ?? '').trim();
+    if (!id || !nome) {
+      throw new Error(
+        `Resposta inválida ao ${acao} serviço (sem id/nome). O registo pode não ter sido gravado.`,
+      );
+    }
+    return item!;
   }
 
   private unwrap<T>(r: ApiResponse<T>): T {

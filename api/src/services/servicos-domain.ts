@@ -132,10 +132,21 @@ async function allocNextServicoId(db: Db): Promise<number> {
 export async function createServico(db: Db, input: ServicoWriteInput) {
   const vals = valoresGravacao(input);
   const id = await allocNextServicoId(db);
-  await db.insert(servicos).values({ id, ...vals });
+  const inserted = await db
+    .insert(servicos)
+    .values({ id, ...vals })
+    .returning({ id: servicos.id });
+  const insertedId = inserted[0]?.id;
+  if (insertedId == null) {
+    throw new Error('Falha ao gravar o serviço na base de dados.');
+  }
   const items = await listServicosForApi(db);
-  const item = items.find((s) => String(s.id) === String(id));
-  if (!item) throw new Error('Serviço criado mas não encontrado na listagem.');
+  const item = items.find((s) => String(s.id) === String(insertedId));
+  if (!item) {
+    throw new Error(
+      'Serviço inserido na base, mas não apareceu na listagem. Recarregue a página.',
+    );
+  }
   return item;
 }
 

@@ -122,12 +122,17 @@ export class ServicoCadastroDrawerService {
       this.callbacks = null;
       this.erro = '';
       this.salvando = false;
+      this.modo = 'novo';
+      this.idEdicao = null;
+      this.resetForm();
     }, DRAWER_ANIM_MS);
   }
 
   setAba(aba: ServicoCadastroAba): void {
     this.abaAtiva = aba;
   }
+
+  private static readonly FOTO_URL_MAX_CHARS = 520_000;
 
   salvar(): void {
     if (this.salvando) return;
@@ -157,22 +162,29 @@ export class ServicoCadastroDrawerService {
         return;
       }
     }
+    const foto = this.fotoUrl.trim();
+    if (foto && foto.length > ServicoCadastroDrawerService.FOTO_URL_MAX_CHARS) {
+      this.erro =
+        'A foto é grande demais para gravar. Escolha outra imagem ou grave sem foto.';
+      this.abaAtiva = 'Cadastro';
+      return;
+    }
 
     const payload = this.montarPayload(nome, categoria);
     this.salvando = true;
     this.erro = '';
-    const req =
-      this.modo === 'editar' && this.idEdicao
-        ? this.api.updateServico(this.idEdicao, payload)
-        : this.api.createServico(payload);
+    const criando = !(this.modo === 'editar' && this.idEdicao);
+    const req = criando
+      ? this.api.createServico(payload)
+      : this.api.updateServico(this.idEdicao!, payload);
 
     req.subscribe({
       next: (item) => {
         this.salvando = false;
         this.toast.show(
-          this.modo === 'editar'
-            ? 'Serviço atualizado com sucesso!'
-            : 'Serviço criado com sucesso!',
+          criando
+            ? 'Serviço criado com sucesso!'
+            : 'Serviço atualizado com sucesso!',
         );
         this.callbacks?.onSalvo?.(item);
         this.salvo$.next(item);

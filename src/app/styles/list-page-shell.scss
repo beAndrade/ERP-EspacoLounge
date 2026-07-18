@@ -778,6 +778,14 @@ tbody td.col-check + td {
     svg {
       color: #ff4d4f;
     }
+
+    &:hover:not(:disabled) {
+      color: #e63b3d;
+
+      svg {
+        color: #e63b3d;
+      }
+    }
   }
 
   &:hover:not(:disabled) {
