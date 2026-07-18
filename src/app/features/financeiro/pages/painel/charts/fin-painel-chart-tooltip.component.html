@@ -1,9 +1,11 @@
 @if (visible() && payload(); as tip) {
   <div
+    #tipEl
     class="fin-chart-tip"
+    [class.fin-chart-tip--ready]="!!box()"
     role="tooltip"
-    [style.left]="style()['left']"
-    [style.top]="style()['top']"
+    [style.left.px]="box()?.left ?? 0"
+    [style.top.px]="box()?.top ?? 0"
   >
     @if (tip.kind === 'fluxo') {
       <div class="fin-chart-tip__date">{{ labelData(tip.ponto.ymd) }}</div>
