@@ -23,6 +23,11 @@ export type ServicoWriteInput = {
   preco_medio?: string | null;
   preco_medio_longo?: string | null;
   preco_longo?: string | null;
+  /** Comissão R$ por tamanho (colunas legadas). */
+  curto?: string | null;
+  medio?: string | null;
+  m_l?: string | null;
+  longo?: string | null;
   duracao_minutos?: number | null;
   duracao_curto?: number | null;
   duracao_medio?: number | null;
@@ -54,6 +59,13 @@ function normalizarDuracao(
     throw new Error('Duração deve ser entre 5 e 1440 minutos.');
   }
   return n;
+}
+
+function textoComissaoOuNull(v: unknown): string | null {
+  const s = trimOrNull(v);
+  if (!s) return null;
+  if (s === '-' || s === '—') return null;
+  return s;
 }
 
 function valoresGravacao(input: ServicoWriteInput) {
@@ -92,6 +104,10 @@ function valoresGravacao(input: ServicoWriteInput) {
       precoMedio: null as string | null,
       precoMedioLongo: null as string | null,
       precoLongo: null as string | null,
+      curto: null as string | null,
+      medio: null as string | null,
+      mL: null as string | null,
+      longo: null as string | null,
       duracaoMinutos,
       duracaoCurto: null as number | null,
       duracaoMedio: null as number | null,
@@ -99,6 +115,17 @@ function valoresGravacao(input: ServicoWriteInput) {
       duracaoLongo: null as number | null,
     };
   }
+
+  /**
+   * Comissão por faixa: só grava se o body trouxe as chaves.
+   * Se a API antiga strippar `curto`/`m_l`/…, `undefined` não pode virar `null`
+   * (apagava os valores legados no BD).
+   */
+  const comissaoPorTamanhoNoBody =
+    input.curto !== undefined ||
+    input.medio !== undefined ||
+    input.m_l !== undefined ||
+    input.longo !== undefined;
 
   return {
     servico: nome,
@@ -115,6 +142,14 @@ function valoresGravacao(input: ServicoWriteInput) {
     precoMedio: trimOrNull(input.preco_medio),
     precoMedioLongo: trimOrNull(input.preco_medio_longo),
     precoLongo: trimOrNull(input.preco_longo),
+    ...(comissaoPorTamanhoNoBody
+      ? {
+          curto: textoComissaoOuNull(input.curto),
+          medio: textoComissaoOuNull(input.medio),
+          mL: textoComissaoOuNull(input.m_l),
+          longo: textoComissaoOuNull(input.longo),
+        }
+      : {}),
     duracaoMinutos,
     duracaoCurto: normalizarDuracao(input.duracao_curto, null),
     duracaoMedio: normalizarDuracao(input.duracao_medio, null),

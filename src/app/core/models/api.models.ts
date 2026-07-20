@@ -117,6 +117,11 @@ export type ServicoWritePayload = {
   preco_medio?: string | null;
   preco_medio_longo?: string | null;
   preco_longo?: string | null;
+  /** Comissão R$ por tamanho (colunas `curto` / `medio` / `m_l` / `longo`). */
+  curto?: string | null;
+  medio?: string | null;
+  m_l?: string | null;
+  longo?: string | null;
   duracao_minutos?: number | null;
   duracao_curto?: number | null;
   duracao_medio?: number | null;

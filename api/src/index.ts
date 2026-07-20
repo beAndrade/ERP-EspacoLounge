@@ -116,6 +116,33 @@ const clienteCadastroBodySchema = t.Object({
   facebook: t.Optional(t.String()),
 });
 
+/** Campos explícitos — TypeBox remove chaves não listadas (ex.: comissão por tamanho). */
+const servicoWriteBodySchema = t.Object({
+  nome: t.String(),
+  tipo: t.Union([t.Literal('Fixo'), t.Literal('Tamanho')]),
+  categoria: t.Optional(t.Union([t.String(), t.Null()])),
+  mostra_no_site: t.Optional(t.Boolean()),
+  descricao: t.Optional(t.Union([t.String(), t.Null()])),
+  foto_url: t.Optional(t.Union([t.String(), t.Null()])),
+  valor_base: t.Optional(t.Union([t.String(), t.Null()])),
+  comissao_fixa: t.Optional(t.Union([t.String(), t.Null()])),
+  comissao_pct: t.Optional(t.Union([t.String(), t.Null()])),
+  custo_fixo: t.Optional(t.Union([t.String(), t.Null()])),
+  preco_curto: t.Optional(t.Union([t.String(), t.Null()])),
+  preco_medio: t.Optional(t.Union([t.String(), t.Null()])),
+  preco_medio_longo: t.Optional(t.Union([t.String(), t.Null()])),
+  preco_longo: t.Optional(t.Union([t.String(), t.Null()])),
+  curto: t.Optional(t.Union([t.String(), t.Null()])),
+  medio: t.Optional(t.Union([t.String(), t.Null()])),
+  m_l: t.Optional(t.Union([t.String(), t.Null()])),
+  longo: t.Optional(t.Union([t.String(), t.Null()])),
+  duracao_minutos: t.Optional(t.Union([t.Number(), t.Null()])),
+  duracao_curto: t.Optional(t.Union([t.Number(), t.Null()])),
+  duracao_medio: t.Optional(t.Union([t.Number(), t.Null()])),
+  duracao_m_l: t.Optional(t.Union([t.Number(), t.Null()])),
+  duracao_longo: t.Optional(t.Union([t.Number(), t.Null()])),
+});
+
 /** Campos explícitos — `additionalProperties` sozinho não preserva `foto_url` no body parseado. */
 const profissionalCadastroBodySchema = t.Object({
   nome: t.Optional(t.String()),
@@ -1030,27 +1057,7 @@ const app = new Elysia({ adapter: node() })
       }
     },
     {
-      body: t.Object({
-        nome: t.String(),
-        tipo: t.Union([t.Literal('Fixo'), t.Literal('Tamanho')]),
-        categoria: t.Optional(t.Union([t.String(), t.Null()])),
-        mostra_no_site: t.Optional(t.Boolean()),
-        descricao: t.Optional(t.Union([t.String(), t.Null()])),
-        foto_url: t.Optional(t.Union([t.String(), t.Null()])),
-        valor_base: t.Optional(t.Union([t.String(), t.Null()])),
-        comissao_fixa: t.Optional(t.Union([t.String(), t.Null()])),
-        comissao_pct: t.Optional(t.Union([t.String(), t.Null()])),
-        custo_fixo: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_curto: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_medio: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_medio_longo: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_longo: t.Optional(t.Union([t.String(), t.Null()])),
-        duracao_minutos: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_curto: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_medio: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_m_l: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_longo: t.Optional(t.Union([t.Number(), t.Null()])),
-      }),
+      body: servicoWriteBodySchema,
     },
   )
   .patch(
@@ -1074,27 +1081,7 @@ const app = new Elysia({ adapter: node() })
     },
     {
       params: t.Object({ id: t.String() }),
-      body: t.Object({
-        nome: t.String(),
-        tipo: t.Union([t.Literal('Fixo'), t.Literal('Tamanho')]),
-        categoria: t.Optional(t.Union([t.String(), t.Null()])),
-        mostra_no_site: t.Optional(t.Boolean()),
-        descricao: t.Optional(t.Union([t.String(), t.Null()])),
-        foto_url: t.Optional(t.Union([t.String(), t.Null()])),
-        valor_base: t.Optional(t.Union([t.String(), t.Null()])),
-        comissao_fixa: t.Optional(t.Union([t.String(), t.Null()])),
-        comissao_pct: t.Optional(t.Union([t.String(), t.Null()])),
-        custo_fixo: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_curto: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_medio: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_medio_longo: t.Optional(t.Union([t.String(), t.Null()])),
-        preco_longo: t.Optional(t.Union([t.String(), t.Null()])),
-        duracao_minutos: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_curto: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_medio: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_m_l: t.Optional(t.Union([t.Number(), t.Null()])),
-        duracao_longo: t.Optional(t.Union([t.Number(), t.Null()])),
-      }),
+      body: servicoWriteBodySchema,
     },
   )
   .delete(

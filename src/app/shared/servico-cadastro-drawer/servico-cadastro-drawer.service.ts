@@ -21,6 +21,10 @@ export type ServicoMoedaCampo =
   | 'precoMedio'
   | 'precoMl'
   | 'precoLongo'
+  | 'comissaoCurto'
+  | 'comissaoMedio'
+  | 'comissaoMl'
+  | 'comissaoLongo'
   | 'custoAdicional';
 
 export const SERVICO_ABAS = [
@@ -65,6 +69,11 @@ export class ServicoCadastroDrawerService {
   precoMedio = '';
   precoMl = '';
   precoLongo = '';
+  /** Comissão R$ por faixa (`servicos.curto` / `medio` / `m_l` / `longo`). */
+  comissaoCurto = '';
+  comissaoMedio = '';
+  comissaoMl = '';
+  comissaoLongo = '';
   custoAdicional = '';
   comissaoUnidade: 'pct' | 'fixa' = 'pct';
   comissaoValor = '';
@@ -305,6 +314,10 @@ export class ServicoCadastroDrawerService {
     this.precoMedio = '';
     this.precoMl = '';
     this.precoLongo = '';
+    this.comissaoCurto = '';
+    this.comissaoMedio = '';
+    this.comissaoMl = '';
+    this.comissaoLongo = '';
     this.custoAdicional = '';
     this.comissaoUnidade = 'pct';
     this.comissaoValor = '';
@@ -331,6 +344,10 @@ export class ServicoCadastroDrawerService {
     this.precoMedio = normalizarMoedaExibicao(item['Preço Médio']);
     this.precoMl = normalizarMoedaExibicao(item['Preço Médio/Longo']);
     this.precoLongo = normalizarMoedaExibicao(item['Preço Longo']);
+    this.comissaoCurto = normalizarMoedaExibicao(item['Curto']);
+    this.comissaoMedio = normalizarMoedaExibicao(item['Médio']);
+    this.comissaoMl = normalizarMoedaExibicao(item['M/L']);
+    this.comissaoLongo = normalizarMoedaExibicao(item['Longo']);
     this.custoAdicional = normalizarMoedaExibicao(item['Custo Fixo']);
     const pct = String(item['Comissão %'] ?? '').trim();
     const fixa = String(item['Comissão Fixa'] ?? '').trim();
@@ -387,6 +404,10 @@ export class ServicoCadastroDrawerService {
         preco_medio: null,
         preco_medio_longo: null,
         preco_longo: null,
+        curto: null,
+        medio: null,
+        m_l: null,
+        longo: null,
         duracao_curto: null,
         duracao_medio: null,
         duracao_m_l: null,
@@ -402,6 +423,11 @@ export class ServicoCadastroDrawerService {
       preco_medio: moedaParaPayload(this.precoMedio),
       preco_medio_longo: moedaParaPayload(this.precoMl),
       preco_longo: moedaParaPayload(this.precoLongo),
+      // Comissão R$ por tamanho (colunas legadas curto/medio/m_l/longo).
+      curto: moedaParaPayload(this.comissaoCurto),
+      medio: moedaParaPayload(this.comissaoMedio),
+      m_l: moedaParaPayload(this.comissaoMl),
+      longo: moedaParaPayload(this.comissaoLongo),
       duracao_curto: this.duracaoCurto,
       duracao_medio: this.duracaoMedio,
       duracao_m_l: this.duracaoMl,

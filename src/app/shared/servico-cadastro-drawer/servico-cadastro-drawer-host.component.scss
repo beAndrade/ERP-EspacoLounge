@@ -246,6 +246,13 @@ app-servico-cadastro-drawer-host {
   font-weight: 700;
 }
 
+.servico-cadastro-form__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
 .servico-cadastro-form__input,
 .servico-cadastro-form__select,
 .servico-cadastro-form__textarea {

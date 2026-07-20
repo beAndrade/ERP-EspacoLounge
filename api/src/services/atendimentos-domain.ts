@@ -420,6 +420,23 @@ function pickValorServico(row: ServicoRow, tamanho: string): string {
   return vb != null && vb !== '' ? String(vb) : '';
 }
 
+/** Comissão R$ por faixa (`curto` / `medio` / `m_l` / `longo`); ignora `-`. */
+function pickComissaoPorTamanho(row: ServicoRow, tamanho: string): string {
+  const t = (tamanho || 'Curto').trim();
+  const colMap: Record<string, keyof ServicoRow | undefined> = {
+    Curto: 'curto',
+    Médio: 'medio',
+    'M/L': 'mL',
+    Longo: 'longo',
+  };
+  const key = colMap[t] ?? 'curto';
+  const v = row[key];
+  if (v == null) return '';
+  const s = String(v).trim();
+  if (!s || s === '-' || s === '—') return '';
+  return s;
+}
+
 function tipoServicoCatalogo(srv: ServicoRow): 'Fixo' | 'Tamanho' | 'LegacyServico' | '' {
   const t = String(srv.tipo || '')
     .trim()
@@ -488,10 +505,16 @@ function valorEComissaoServico(
   if (cat === 'Tamanho' || cat === 'LegacyServico') {
     const tam = (tamanhoParam || 'Curto').trim();
     const valorT = pickValorServico(srv, tam);
-    const pctCol = srv.comissaoPct;
-    let comT = '';
-    if (pctCol !== undefined && pctCol !== null && pctCol !== '') {
-      comT = comissaoFromPercentAndValor(valorT, pctCol);
+    let comT = pickComissaoPorTamanho(srv, tam);
+    if (!comT) {
+      const pctCol = srv.comissaoPct;
+      if (pctCol !== undefined && pctCol !== null && pctCol !== '') {
+        comT = comissaoFromPercentAndValor(valorT, pctCol);
+      }
+    }
+    if (!comT) {
+      const cf = srv.comissaoFixa;
+      if (cf != null && String(cf).trim() !== '') comT = String(cf);
     }
     return {
       valor: valorT,
