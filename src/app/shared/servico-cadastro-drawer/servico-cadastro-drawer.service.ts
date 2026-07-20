@@ -5,6 +5,23 @@ import type { Servico, ServicoWritePayload } from '../../core/models/api.models'
 import { AppToastService } from '../app-toast/app-toast.service';
 import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error-message';
+import {
+  moedaAPartirDosDigitos,
+  moedaParaPayload,
+  normalizarMoedaExibicao,
+  normalizarPercentualExibicao,
+  percentualAPartirDosDigitos,
+  percentualParaPayload,
+  valorDigitosVazio,
+} from '../../core/utils/brl-digit-input';
+
+export type ServicoMoedaCampo =
+  | 'valorBase'
+  | 'precoCurto'
+  | 'precoMedio'
+  | 'precoMl'
+  | 'precoLongo'
+  | 'custoAdicional';
 
 export const SERVICO_ABAS = [
   'Cadastro',
@@ -132,6 +149,37 @@ export class ServicoCadastroDrawerService {
     this.abaAtiva = aba;
   }
 
+  onMoedaInput(campo: ServicoMoedaCampo, ev: Event): void {
+    const el = ev.target as HTMLInputElement | null;
+    if (!el) return;
+    const fmt = moedaAPartirDosDigitos(el.value);
+    this[campo] = fmt;
+    el.value = fmt;
+  }
+
+  onComissaoValorInput(ev: Event): void {
+    const el = ev.target as HTMLInputElement | null;
+    if (!el) return;
+    const fmt =
+      this.comissaoUnidade === 'pct'
+        ? percentualAPartirDosDigitos(el.value)
+        : moedaAPartirDosDigitos(el.value);
+    this.comissaoValor = fmt;
+    el.value = fmt;
+  }
+
+  onComissaoUnidadeChange(): void {
+    const raw = this.comissaoValor;
+    if (!raw.trim()) {
+      this.comissaoValor = '';
+      return;
+    }
+    this.comissaoValor =
+      this.comissaoUnidade === 'pct'
+        ? percentualAPartirDosDigitos(raw)
+        : moedaAPartirDosDigitos(raw);
+  }
+
   private static readonly FOTO_URL_MAX_CHARS = 520_000;
 
   salvar(): void {
@@ -154,7 +202,7 @@ export class ServicoCadastroDrawerService {
         this.precoMedio,
         this.precoMl,
         this.precoLongo,
-      ].some((p) => p.trim().length > 0);
+      ].some((p) => !valorDigitosVazio(p));
       if (!temPreco) {
         this.erro =
           'Informe pelo menos um preço (Curto, Médio, M/L ou Longo).';
@@ -278,20 +326,20 @@ export class ServicoCadastroDrawerService {
       .trim()
       .toLowerCase();
     this.tipo = tipoRaw === 'tamanho' ? 'Tamanho' : 'Fixo';
-    this.valorBase = this.textoMoeda(item['Valor Base']);
-    this.precoCurto = this.textoMoeda(item['Preço Curto']);
-    this.precoMedio = this.textoMoeda(item['Preço Médio']);
-    this.precoMl = this.textoMoeda(item['Preço Médio/Longo']);
-    this.precoLongo = this.textoMoeda(item['Preço Longo']);
-    this.custoAdicional = this.textoMoeda(item['Custo Fixo']);
+    this.valorBase = normalizarMoedaExibicao(item['Valor Base']);
+    this.precoCurto = normalizarMoedaExibicao(item['Preço Curto']);
+    this.precoMedio = normalizarMoedaExibicao(item['Preço Médio']);
+    this.precoMl = normalizarMoedaExibicao(item['Preço Médio/Longo']);
+    this.precoLongo = normalizarMoedaExibicao(item['Preço Longo']);
+    this.custoAdicional = normalizarMoedaExibicao(item['Custo Fixo']);
     const pct = String(item['Comissão %'] ?? '').trim();
     const fixa = String(item['Comissão Fixa'] ?? '').trim();
     if (pct) {
       this.comissaoUnidade = 'pct';
-      this.comissaoValor = pct.replace('%', '').trim();
+      this.comissaoValor = normalizarPercentualExibicao(pct);
     } else if (fixa) {
       this.comissaoUnidade = 'fixa';
-      this.comissaoValor = this.textoMoeda(fixa);
+      this.comissaoValor = normalizarMoedaExibicao(fixa);
     } else {
       this.comissaoUnidade = 'pct';
       this.comissaoValor = '';
@@ -309,12 +357,12 @@ export class ServicoCadastroDrawerService {
 
   private montarPayload(nome: string, categoria: string): ServicoWritePayload {
     const comissaoPct =
-      this.comissaoUnidade === 'pct' && this.comissaoValor.trim()
-        ? this.comissaoValor.trim()
+      this.comissaoUnidade === 'pct'
+        ? percentualParaPayload(this.comissaoValor)
         : null;
     const comissaoFixa =
-      this.comissaoUnidade === 'fixa' && this.comissaoValor.trim()
-        ? this.comissaoValor.trim()
+      this.comissaoUnidade === 'fixa'
+        ? moedaParaPayload(this.comissaoValor)
         : null;
 
     const base: ServicoWritePayload = {
@@ -324,7 +372,7 @@ export class ServicoCadastroDrawerService {
       mostra_no_site: this.mostraNoSite,
       descricao: this.descricao.trim() || null,
       foto_url: this.fotoUrl.trim() || null,
-      custo_fixo: this.custoAdicional.trim() || null,
+      custo_fixo: moedaParaPayload(this.custoAdicional),
       comissao_pct: comissaoPct,
       comissao_fixa: comissaoFixa,
       duracao_minutos: this.duracaoMinutos,
@@ -333,7 +381,7 @@ export class ServicoCadastroDrawerService {
     if (this.tipo === 'Fixo') {
       return {
         ...base,
-        valor_base: this.valorBase.trim() || null,
+        valor_base: moedaParaPayload(this.valorBase),
         // Backend também zera faixas; envio explícito evita lixo residual no PATCH.
         preco_curto: null,
         preco_medio: null,
@@ -350,10 +398,10 @@ export class ServicoCadastroDrawerService {
       ...base,
       // `duracao_minutos` = duração base (faixas null usam este valor na agenda).
       valor_base: null,
-      preco_curto: this.precoCurto.trim() || null,
-      preco_medio: this.precoMedio.trim() || null,
-      preco_medio_longo: this.precoMl.trim() || null,
-      preco_longo: this.precoLongo.trim() || null,
+      preco_curto: moedaParaPayload(this.precoCurto),
+      preco_medio: moedaParaPayload(this.precoMedio),
+      preco_medio_longo: moedaParaPayload(this.precoMl),
+      preco_longo: moedaParaPayload(this.precoLongo),
       duracao_curto: this.duracaoCurto,
       duracao_medio: this.duracaoMedio,
       duracao_m_l: this.duracaoMl,
@@ -366,10 +414,5 @@ export class ServicoCadastroDrawerService {
     const n = Number(v);
     if (!Number.isFinite(n) || n <= 0) return null;
     return Math.round(n);
-  }
-
-  private textoMoeda(v: unknown): string {
-    if (v == null) return '';
-    return String(v).trim();
   }
 }

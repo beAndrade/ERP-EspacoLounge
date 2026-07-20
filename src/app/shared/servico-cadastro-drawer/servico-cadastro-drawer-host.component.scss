@@ -241,6 +241,11 @@ app-servico-cadastro-drawer-host {
   color: #334155;
 }
 
+.servico-cadastro-form__req {
+  color: #dc2626;
+  font-weight: 700;
+}
+
 .servico-cadastro-form__input,
 .servico-cadastro-form__select,
 .servico-cadastro-form__textarea {
@@ -325,12 +330,6 @@ app-servico-cadastro-drawer-host {
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
-}
-
-.servico-cadastro-form__hint {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #64748b;
 }
 
 .sr-only {
