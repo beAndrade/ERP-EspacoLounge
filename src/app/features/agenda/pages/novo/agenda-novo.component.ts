@@ -85,6 +85,7 @@ import {
 } from './agenda-repetir-cascade.models';
 import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
 import { formataMoedaBrlResumo } from '../../../../shared/comanda-resumo-bar/comanda-resumo.utils';
+import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { WhatsappService } from '../../../../core/services/whatsapp/whatsapp.service';
@@ -169,15 +170,6 @@ function parseNumeroMonetarioPtString(s: string): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-function formataMoedaBrl(n: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
 function valorCabeloPtValidator(
   control: AbstractControl,
 ): ValidationErrors | null {
@@ -192,10 +184,22 @@ function valorCabeloPtValidator(
 function mapTipoFromApi(t: string): TipoAtendimento {
   const x = t.trim().toLowerCase();
   if (x === 'mega') return 'Mega';
+  if (x === 'pacote queratina' || x === 'pacote_queratina') {
+    return 'Pacote Queratina';
+  }
   if (x === 'pacote') return 'Pacote';
   if (x === 'produto') return 'Produto';
   if (x === 'cabelo') return 'Cabelo';
   return 'Serviço';
+}
+
+/** Pacote comercial ou Pacote Queratina (mesma UI de etapas). */
+function isTipoPacoteFamilia(t: string | null | undefined): boolean {
+  return t === 'Pacote' || t === 'Pacote Queratina';
+}
+
+function isTipoMegaOuPacoteFamilia(t: string | null | undefined): boolean {
+  return t === 'Mega' || isTipoPacoteFamilia(t);
 }
 
 function parseQuantidadeFromDescricao(s: string): number {
@@ -340,6 +344,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     'Serviço',
     'Mega',
     'Pacote',
+    'Pacote Queratina',
     'Cabelo',
     'Produto',
   ];
@@ -350,7 +355,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   servicos: Servico[] = [];
   servicosTipoServico: Servico[] = [];
   regrasMega: RegraMegaItem[] = [];
+  regrasMegaQueratina: RegraMegaItem[] = [];
   pacotes: PacoteCatalogoItem[] = [];
+  pacotesQueratina: PacoteCatalogoItem[] = [];
   produtos: ProdutoCatalogoItem[] = [];
   cabelos: CabeloCatalogoItem[] = [];
   /** Lista de profissionais (`id` + nome) para selects e `profissional_id` na API. */
@@ -525,7 +532,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       clientes: this.api.listClientes(),
       servicos: this.api.listServicos(),
       regrasMega: this.api.listRegrasMega(),
+      regrasMegaQueratina: this.api.listRegrasMegaQueratina(),
       pacotes: this.api.listPacotes(),
+      pacotesQueratina: this.api.listPacotesQueratina(),
       produtos: this.api.listProdutos(),
       cabelos: this.api.listCabelos(),
       profissionais: this.api.listProfissionais(false, 'agenda').pipe(
@@ -543,7 +552,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             this.rotuloServico(a).localeCompare(this.rotuloServico(b), 'pt-BR'),
           );
         this.regrasMega = r.regrasMega;
+        this.regrasMegaQueratina = r.regrasMegaQueratina;
         this.pacotes = r.pacotes;
+        this.pacotesQueratina = r.pacotesQueratina;
         this.produtos = r.produtos;
         this.cabelos = r.cabelos;
         this.profissionais = r.profissionais ?? [];
@@ -1111,7 +1122,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           descontoStr,
           totalLinhaStr: totalComDesconto(q, unitSafe, descontoStr),
         });
-      } else if (tipo === 'Mega' || tipo === 'Pacote') {
+      } else if (tipo === 'Mega' || isTipoPacoteFamilia(tipo)) {
         const pac = String(g.get('pacote')?.value ?? '').trim();
         const prof = (g.get('profissional')?.value ?? null) as number | null;
         const resumo = pac ? `${tipo} — ${pac}` : tipo;
@@ -1940,6 +1951,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }));
   }
 
+  opcoesPacotesQueratinaSelect(): SaasSelectOption[] {
+    return this.pacotesQueratinaOrdenados.map((item) => ({
+      value: String(item.pacote),
+      label: this.rotuloPacoteCatalogo(item),
+    }));
+  }
+
   opcoesEtapasLinhaSelect(i: number): SaasSelectOption[] {
     return this.etapasSelectOptionsLinha(i).map((e) => ({ value: e, label: e }));
   }
@@ -2130,7 +2148,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Retirada → Preparo → Escova → Colocação; outras etapas a seguir (A–Z). */
   private ordenarSubFormEtapasMegaPacote(g: FormGroup): void {
     const itemTipo = String(g.get('itemTipo')?.value ?? '');
-    if (itemTipo !== 'Mega' && itemTipo !== 'Pacote') return;
+    if (!isTipoMegaOuPacoteFamilia(itemTipo)) return;
     const etapas = g.get('etapas') as FormArray<FormGroup>;
     if (!etapas?.length) return;
     const pairs = etapas.controls.map((c) => ({
@@ -2197,7 +2215,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       const g = this.linhasItensArray.at(i);
       const it = String(g.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
       if (it === 'Serviço') return true;
-      if (it === 'Mega' || it === 'Pacote') {
+      if (it === 'Mega' || isTipoPacoteFamilia(it)) {
         const et = this.etapasArrayDaLinha(i);
         if (et.length > 0) return true;
       }
@@ -2220,6 +2238,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (it === 'Serviço' && this.servicosTipoServico.length === 0) return true;
       if (it === 'Produto' && this.produtos.length === 0) return true;
       if (it === 'Pacote' && this.pacotes.length === 0) return true;
+      if (it === 'Pacote Queratina' && this.pacotesQueratina.length === 0) {
+        return true;
+      }
       if (it === 'Mega' && this.pacotesMegaUnicos.length === 0) return true;
     }
     return false;
@@ -2235,6 +2256,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Catálogo Pacote no select: 1/2 mecha antes de 1 mecha; depois 2, 5, 7… */
   get pacotesOrdenados(): PacoteCatalogoItem[] {
     return [...this.pacotes].sort((a, b) =>
+      this.ordenarNomePacoteMecha(a.pacote, b.pacote),
+    );
+  }
+
+  get pacotesQueratinaOrdenados(): PacoteCatalogoItem[] {
+    return [...this.pacotesQueratina].sort((a, b) =>
       this.ordenarNomePacoteMecha(a.pacote, b.pacote),
     );
   }
@@ -2279,11 +2306,34 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return ordenarNomesEtapasMegaPacote([...set]);
   }
 
-  /** Etapas para o select da linha `i` (Mega / Pacote). */
+  etapasParaPacoteQueratinaSelecionado(pacote: string): string[] {
+    const p = pacote.trim();
+    if (!p) return [];
+    const set = new Set(
+      this.regrasMegaQueratina
+        .filter((r) => r.pacote.trim() === p)
+        .map((r) => r.etapa.trim())
+        .filter(Boolean),
+    );
+    return ordenarNomesEtapasMegaPacote([...set]);
+  }
+
+  /** Etapas para o select da linha `i` (Mega / Pacote / Pacote Queratina). */
   etapasSelectOptionsLinha(i: number): string[] {
     const g = this.linhasItensArray.at(i);
     const itemTipo = String(g?.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
     const pacote = this.pacoteDaLinha(i);
+    if (itemTipo === 'Pacote Queratina') {
+      const directQ = this.etapasParaPacoteQueratinaSelecionado(pacote);
+      if (directQ.length > 0) return directQ;
+      if (pacote) {
+        const all = new Set(
+          this.regrasMegaQueratina.map((r) => r.etapa.trim()).filter(Boolean),
+        );
+        return ordenarNomesEtapasMegaPacote([...all]);
+      }
+      return [];
+    }
     const direct = this.etapasParaPacoteSelecionado(pacote);
     if (direct.length > 0) return direct;
     if (itemTipo === 'Pacote' && pacote) {
@@ -2641,11 +2691,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     linhaOrigemIndex?: number,
   ): void {
     const tipoNorm: TipoLinhaAtendimento =
-      tipo === 'Mega' || tipo === 'Pacote' ? tipo : 'Serviço';
+      tipo === 'Mega' || isTipoPacoteFamilia(tipo) ? tipo : 'Serviço';
     const g = this.novoGrupoLinhaItem(tipoNorm);
     if (linhaOrigemIndex != null && linhaOrigemIndex >= 0) {
       const origem = this.linhasItensArray.at(linhaOrigemIndex);
-      if (origem && (tipoNorm === 'Mega' || tipoNorm === 'Pacote')) {
+      if (origem && isTipoMegaOuPacoteFamilia(tipoNorm)) {
         const pacote = String(origem.get('pacote')?.value ?? '').trim();
         if (pacote) {
           g.patchValue({ pacote }, { emitEvent: false });
@@ -2669,7 +2719,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const t = String(g.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
     const etapas = g.get('etapas') as FormArray<FormGroup>;
     while (etapas.length) etapas.removeAt(0);
-    if (t === 'Mega' || t === 'Pacote') {
+    if (t === 'Mega' || isTipoPacoteFamilia(t)) {
       etapas.push(this.novoGrupoEtapa());
     }
     this.slotAgenda = null;
@@ -3582,7 +3632,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               ? 'mega'
               : tipoApi === 'Pacote'
                 ? 'pacote'
-                : null;
+                : tipoApi === 'Pacote Queratina'
+                  ? 'pacote_queratina'
+                  : null;
     if (!tipoPivot) return null;
     if (tipoPivot === 'servico') {
       const nomeServ = (row.servicosRef || '').trim();
@@ -3652,6 +3704,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     | { k: 'cabelo'; row: AtendimentoListaItem }
     | { k: 'mega'; rows: AtendimentoListaItem[] }
     | { k: 'pacote'; rows: AtendimentoListaItem[] }
+    | { k: 'pacote_queratina'; rows: AtendimentoListaItem[] }
   > {
     const out: Array<
       | { k: 'servico'; row: AtendimentoListaItem }
@@ -3659,6 +3712,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       | { k: 'cabelo'; row: AtendimentoListaItem }
       | { k: 'mega'; rows: AtendimentoListaItem[] }
       | { k: 'pacote'; rows: AtendimentoListaItem[] }
+      | { k: 'pacote_queratina'; rows: AtendimentoListaItem[] }
     > = [];
     let i = 0;
     while (i < sorted.length) {
@@ -3697,6 +3751,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         out.push({ k: 'pacote', rows: sorted.slice(start, i) });
         continue;
       }
+      if (ta === 'Pacote Queratina') {
+        const start = i;
+        const pac = String(sorted[i].pacote ?? '').trim();
+        while (i < sorted.length) {
+          if (mapTipoFromApi(sorted[i].tipo || '') !== 'Pacote Queratina') break;
+          if (String(sorted[i].pacote ?? '').trim() !== pac) break;
+          i++;
+        }
+        out.push({ k: 'pacote_queratina', rows: sorted.slice(start, i) });
+        continue;
+      }
       i++;
     }
     return out;
@@ -3713,6 +3778,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       | { k: 'cabelo'; row: AtendimentoListaItem }
       | { k: 'mega'; rows: AtendimentoListaItem[] }
       | { k: 'pacote'; rows: AtendimentoListaItem[] }
+      | { k: 'pacote_queratina'; rows: AtendimentoListaItem[] }
     >,
   ): Array<
     | { k: 'servico'; row: AtendimentoListaItem }
@@ -3720,6 +3786,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     | { k: 'cabelo'; row: AtendimentoListaItem }
     | { k: 'mega'; rows: AtendimentoListaItem[] }
     | { k: 'pacote'; rows: AtendimentoListaItem[] }
+    | { k: 'pacote_queratina'; rows: AtendimentoListaItem[] }
   > {
     const out: Array<
       | { k: 'servico'; row: AtendimentoListaItem }
@@ -3727,10 +3794,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       | { k: 'cabelo'; row: AtendimentoListaItem }
       | { k: 'mega'; rows: AtendimentoListaItem[] }
       | { k: 'pacote'; rows: AtendimentoListaItem[] }
+      | { k: 'pacote_queratina'; rows: AtendimentoListaItem[] }
     > = [];
     const idxPorBloco = new Map<string, number>();
     for (const seg of segs) {
-      if (seg.k !== 'pacote' && seg.k !== 'mega') {
+      if (seg.k !== 'pacote' && seg.k !== 'mega' && seg.k !== 'pacote_queratina') {
         out.push(seg);
         continue;
       }
@@ -3868,10 +3936,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.tentarPreencherValorCabeloDaCalculadoraLinha(
           this.linhasItensArray.length - 1,
         );
-      } else if (seg.k === 'mega' || seg.k === 'pacote') {
+      } else if (
+        seg.k === 'mega' ||
+        seg.k === 'pacote' ||
+        seg.k === 'pacote_queratina'
+      ) {
         const blockRows = seg.rows;
         const head = blockRows[0];
-        const tipoForm = seg.k === 'mega' ? 'Mega' : 'Pacote';
+        const tipoForm: TipoLinhaAtendimento =
+          seg.k === 'mega'
+            ? 'Mega'
+            : seg.k === 'pacote_queratina'
+              ? 'Pacote Queratina'
+              : 'Pacote';
         const g = this.novoGrupoLinhaItem(tipoForm);
         g.patchValue(
           { pacote: head.pacote || '', desconto: '' },
@@ -4042,7 +4119,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       calc_metodo: [''],
       calc_gramas: [''],
     });
-    if (itemTipo === 'Mega' || itemTipo === 'Pacote') {
+    if (isTipoMegaOuPacoteFamilia(itemTipo)) {
       (g.get('etapas') as FormArray<FormGroup>).push(this.novoGrupoEtapa());
     }
     return g;
@@ -4100,7 +4177,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         } else {
           profS?.setValidators([Validators.required]);
         }
-      } else if (tipo === 'Mega' || tipo === 'Pacote') {
+      } else if (isTipoMegaOuPacoteFamilia(tipo)) {
         pac?.setValidators([Validators.required]);
       } else if (tipo === 'Cabelo') {
         profC?.clearValidators();
@@ -4124,10 +4201,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const eg = etapas.at(j);
         const e = eg.get('etapa');
         const ep = eg.get('profissional');
-        const reqE =
-          tipo === 'Mega' || tipo === 'Pacote' ? [Validators.required] : [];
-        const reqP =
-          tipo === 'Mega' || tipo === 'Pacote' ? [Validators.required] : [];
+        const reqE = isTipoMegaOuPacoteFamilia(tipo)
+          ? [Validators.required]
+          : [];
+        const reqP = isTipoMegaOuPacoteFamilia(tipo)
+          ? [Validators.required]
+          : [];
         e?.setValidators(reqE);
         ep?.setValidators(reqP);
         e?.updateValueAndValidity({ emitEvent: false });
@@ -4283,7 +4362,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       }
       return true;
     }
-    if (tipo === 'Mega' || tipo === 'Pacote') {
+    if (isTipoMegaOuPacoteFamilia(tipo)) {
       if (!String(g.get('pacote')?.value ?? '').trim()) return false;
       return this.etapasValidasParaGrupo(
         g.get('etapas') as FormArray<FormGroup>,
@@ -4861,6 +4940,21 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return undefined;
   }
 
+  private duracaoMinutosRegraMegaQueratina(
+    pacote: string,
+    etapa: string,
+  ): number | undefined {
+    const pk = pacote.trim();
+    const ek = etapa.trim();
+    if (!pk || !ek) return undefined;
+    const r = this.regrasMegaQueratina.find(
+      (x) => x.pacote.trim() === pk && x.etapa.trim() === ek,
+    );
+    const n = Number(r?.duracao_minutos);
+    if (Number.isFinite(n) && n >= 5) return Math.min(24 * 60, Math.round(n));
+    return undefined;
+  }
+
   private montarPayloadsDasLinhas(
     raw: Record<string, unknown>,
   ): CreateAtendimentoPayload[] {
@@ -5139,6 +5233,46 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           this.mergeSlotOuHoraInicial(
             {
               tipo: 'Pacote',
+              cliente_id,
+              data: dataYmd,
+              pacote,
+              etapas: etapas.map((x) => ({
+                etapa: String(x.etapa ?? '').trim(),
+                profissional_id: Number(x.profissional),
+              })),
+              observacao,
+              ...agendaCartao,
+            },
+            primeiroMerge,
+            dataYmd,
+            horaIni,
+            dPrimeira,
+          ),
+        );
+        primeiroMerge = false;
+        continue;
+      }
+
+      if (tipo === 'Pacote Queratina') {
+        const pacote = String(g.get('pacote')?.value ?? '').trim();
+        if (!pacote) continue;
+        const etapasRaw = (
+          g.get('etapas') as FormArray<FormGroup>
+        ).getRawValue() as { etapa: string; profissional: number | null }[];
+        const etapas = [...etapasRaw].sort((a, b) =>
+          compararEtapasMegaPacoteFluxo(
+            String(a.etapa ?? ''),
+            String(b.etapa ?? ''),
+          ),
+        );
+        const dPrimeira = this.duracaoMinutosRegraMegaQueratina(
+          pacote,
+          String(etapas[0]?.etapa ?? '').trim(),
+        );
+        out.push(
+          this.mergeSlotOuHoraInicial(
+            {
+              tipo: 'Pacote Queratina',
               cliente_id,
               data: dataYmd,
               pacote,

@@ -29,15 +29,10 @@ import type {
   MetodoPagamentoComanda,
 } from '../../../../core/models/api.models';
 import { dataYmdAnteriorAHoje } from '../../../../core/utils/comanda-status.util';
-
-function formataMoedaBrl(n: number): string {
-  const num = n.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  /** Espaço explícito entre «R$» e o valor (evita NBSP apertado / placeholder sem gap). */
-  return `R$ ${num}`;
-}
+import {
+  formataMoedaBrl,
+  moedaAPartirDosDigitos,
+} from '../../../../core/utils/brl-digit-input';
 
 function parsePtDecimal(s: string): number {
   const t = String(s ?? '')
@@ -59,17 +54,6 @@ function formatarInputPt(n: number): string {
 }
 
 const PLACEHOLDER_MOEDA = 'R$ 0,00';
-
-/** Máscara por dígitos (centavos), igual aos outros campos de valor do sistema. */
-function moedaAPartirDosDigitos(raw: string): string {
-  const digits = String(raw ?? '').replace(/\D/g, '');
-  const trimmed = digits.length > 12 ? digits.slice(-12) : digits;
-  const centInt =
-    trimmed === '' ? 0 : Math.min(parseInt(trimmed, 10), 999999999999);
-  const n =
-    Number.isFinite(centInt) && centInt >= 0 ? Math.round(centInt) / 100 : 0;
-  return formataMoedaBrl(n);
-}
 
 function ymdHoje(): string {
   const n = new Date();

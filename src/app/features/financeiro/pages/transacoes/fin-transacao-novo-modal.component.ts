@@ -16,6 +16,7 @@ import {
   METODOS_NOME_FALLBACK,
   mapFormasParaNomes,
 } from '../../../../core/utils/fin-formas-pagamento.util';
+import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
 
 export interface FinTransacaoNovoSubmit {
   natureza: 'receita' | 'despesa';
@@ -99,10 +100,7 @@ export class FinTransacaoNovoModalComponent {
   rotuloValor(): string {
     if (!this.valorDigitos.trim()) return 'R$ 0,00';
     const v = (parseInt(this.valorDigitos, 10) || 0) / 100;
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(v);
+    return formataMoedaBrl(v);
   }
 
   onOverlayClick(ev: MouseEvent): void {

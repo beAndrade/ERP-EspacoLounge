@@ -22,6 +22,7 @@ import {
   taxaPorNomeForma,
 } from '../../../../core/utils/fin-formas-pagamento.util';
 import { calcularTaxaReais } from '../../../../core/utils/fin-taxa.util';
+import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
 import type { FinTransacaoLinhaUi } from './fin-transacoes.mapper';
 
 export interface FinTransacaoEditarSubmit {
@@ -138,10 +139,7 @@ export class FinTransacaoEditarDrawerComponent {
   rotuloMoeda(digitos: string): string {
     if (!digitos.trim()) return 'R$ 0,00';
     const v = (parseInt(digitos, 10) || 0) / 100;
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(v);
+    return formataMoedaBrl(v);
   }
 
   valorBrutoReais(): number {
@@ -159,10 +157,7 @@ export class FinTransacaoEditarDrawerComponent {
   }
 
   rotuloValorLiquido(): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(this.valorLiquidoReais());
+    return formataMoedaBrl(this.valorLiquidoReais());
   }
 
   onValorInput(ev: Event, qual: 'bruto' | 'taxas' | 'valor'): void {

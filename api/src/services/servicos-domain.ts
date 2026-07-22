@@ -4,6 +4,7 @@
 import { asc, eq, max, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { atendimentoItens, servicos } from '../db/schema';
+import { normalizeMoneyTextForDb } from '../lib/normalize-money-text';
 import { listServicosForApi } from './queries';
 
 export type ServicoTipoCatalogo = 'Fixo' | 'Tamanho';
@@ -61,11 +62,9 @@ function normalizarDuracao(
   return n;
 }
 
-function textoComissaoOuNull(v: unknown): string | null {
-  const s = trimOrNull(v);
-  if (!s) return null;
-  if (s === '-' || s === '—') return null;
-  return s;
+/** Comissão / preço em colunas `text`: canónico `R$ 1.234,56` (espaço ASCII). */
+function textoMoedaOuNull(v: unknown): string | null {
+  return normalizeMoneyTextForDb(v);
 }
 
 function valoresGravacao(input: ServicoWriteInput) {
@@ -78,7 +77,7 @@ function valoresGravacao(input: ServicoWriteInput) {
   const mostraNoSite = input.mostra_no_site !== false;
 
   const comissaoPct = trimOrNull(input.comissao_pct);
-  const comissaoFixa = trimOrNull(input.comissao_fixa);
+  const comissaoFixa = textoMoedaOuNull(input.comissao_fixa);
   /** Uma unidade de comissão: se % preenchida, limpa R$ (e vice-versa quando só R$). */
   let pct = comissaoPct;
   let fixa = comissaoFixa;
@@ -96,10 +95,10 @@ function valoresGravacao(input: ServicoWriteInput) {
       mostraNoSite,
       descricao,
       fotoUrl,
-      valorBase: trimOrNull(input.valor_base),
+      valorBase: textoMoedaOuNull(input.valor_base),
       comissaoFixa: fixa,
       comissaoPct: pct,
-      custoFixo: trimOrNull(input.custo_fixo),
+      custoFixo: textoMoedaOuNull(input.custo_fixo),
       precoCurto: null as string | null,
       precoMedio: null as string | null,
       precoMedioLongo: null as string | null,
@@ -137,17 +136,17 @@ function valoresGravacao(input: ServicoWriteInput) {
     valorBase: null as string | null,
     comissaoFixa: fixa,
     comissaoPct: pct,
-    custoFixo: trimOrNull(input.custo_fixo),
-    precoCurto: trimOrNull(input.preco_curto),
-    precoMedio: trimOrNull(input.preco_medio),
-    precoMedioLongo: trimOrNull(input.preco_medio_longo),
-    precoLongo: trimOrNull(input.preco_longo),
+    custoFixo: textoMoedaOuNull(input.custo_fixo),
+    precoCurto: textoMoedaOuNull(input.preco_curto),
+    precoMedio: textoMoedaOuNull(input.preco_medio),
+    precoMedioLongo: textoMoedaOuNull(input.preco_medio_longo),
+    precoLongo: textoMoedaOuNull(input.preco_longo),
     ...(comissaoPorTamanhoNoBody
       ? {
-          curto: textoComissaoOuNull(input.curto),
-          medio: textoComissaoOuNull(input.medio),
-          mL: textoComissaoOuNull(input.m_l),
-          longo: textoComissaoOuNull(input.longo),
+          curto: textoMoedaOuNull(input.curto),
+          medio: textoMoedaOuNull(input.medio),
+          mL: textoMoedaOuNull(input.m_l),
+          longo: textoMoedaOuNull(input.longo),
         }
       : {}),
     duracaoMinutos,

@@ -2,7 +2,7 @@
  * Linha pré-preenchida na comanda ao abrir a partir do agendamento (formulário ainda não gravado).
  */
 export type ComandaLinhaInicial = {
-  itemTipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Cabelo';
+  itemTipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Pacote Queratina' | 'Cabelo';
   servico_id?: string;
   tamanho?: string;
   profissional?: number | null;

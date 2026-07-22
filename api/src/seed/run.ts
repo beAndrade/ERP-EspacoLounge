@@ -7,10 +7,12 @@ import {
   despesas,
   folha,
   pacotes,
+  pacotesQueratina,
   pagamentos,
   produtos,
   profissionais,
   regrasMega,
+  regrasMegaQueratina,
   servicos,
 } from '../db/schema';
 import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
@@ -76,8 +78,10 @@ async function truncateAll() {
       despesas,
       folha,
       cabelos,
+      regras_mega_queratina,
       regras_mega,
       produtos,
+      pacotes_queratina,
       pacotes,
       servicos,
       profissionais,
@@ -91,6 +95,40 @@ async function truncateAll() {
       false
     )
   `));
+}
+
+/** Catálogo fixo Pacote Queratina (não vem do XLSX). */
+async function seedPacotesQueratina(): Promise<void> {
+  const [existe] = await db
+    .select({ id: pacotesQueratina.id })
+    .from(pacotesQueratina)
+    .limit(1);
+  if (existe) return;
+
+  await db.insert(pacotesQueratina).values([
+    { pacote: '2 mechas', precoPacote: 'R$ 400,00' },
+    { pacote: '5 mechas', precoPacote: 'R$ 500,00' },
+  ]);
+
+  const regras: { pacote: string; etapa: string; valor: string }[] = [
+    { pacote: '2 mechas', etapa: 'Retirada', valor: 'R$ 20,00' },
+    { pacote: '2 mechas', etapa: 'Preparo', valor: 'R$ 20,00' },
+    { pacote: '2 mechas', etapa: 'Escova', valor: 'R$ 25,00' },
+    { pacote: '2 mechas', etapa: 'Colocação', valor: 'R$ 35,00' },
+    { pacote: '5 mechas', etapa: 'Retirada', valor: 'R$ 30,00' },
+    { pacote: '5 mechas', etapa: 'Preparo', valor: 'R$ 30,00' },
+    { pacote: '5 mechas', etapa: 'Escova', valor: 'R$ 25,00' },
+    { pacote: '5 mechas', etapa: 'Colocação', valor: 'R$ 40,00' },
+  ];
+  await db.insert(regrasMegaQueratina).values(
+    regras.map((r) => ({
+      pacote: r.pacote,
+      etapa: r.etapa,
+      valor: r.valor,
+      comissao: r.valor,
+      duracaoMinutos: 30,
+    })),
+  );
 }
 
 export async function seedFromXlsx(options?: { truncate?: boolean }) {
@@ -235,6 +273,9 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
       });
     }
   }
+
+  /** Catálogo Pacote Queratina (preço cabeça + comissão por etapa). */
+  await seedPacotesQueratina();
 
   const shCab = resolveSheet(wb, ['Cabelos']);
   if (shCab) {

@@ -27,9 +27,11 @@ import {
   movimentacoes,
   folha,
   pacotes,
+  pacotesQueratina,
   produtos,
   profissionais,
   regrasMega,
+  regrasMegaQueratina,
   servicos,
 } from '../db/schema';
 import { darBaixaEstoqueProdutosDoPedido } from './estoque-domain';
@@ -100,6 +102,15 @@ export type CreateAtendimentoPayload = (
       cliente_id: string;
       data: string;
       /** Linha de cobrança; opcional. */
+      profissional_id?: number | null;
+      pacote: string;
+      etapas: { etapa: string; profissional_id: number }[];
+      observacao?: string;
+    }
+  | {
+      tipo: 'Pacote Queratina';
+      cliente_id: string;
+      data: string;
       profissional_id?: number | null;
       pacote: string;
       etapas: { etapa: string; profissional_id: number }[];
@@ -630,6 +641,53 @@ async function findPacoteCatalogo(
   };
 }
 
+async function findRegraMegaQueratina(
+  db: Db,
+  pacote: string,
+  etapa: string,
+): Promise<{ id: number; valor: string; comissao: string; duracaoMinutos: number }> {
+  const sp = pacote.trim();
+  const se = etapa.trim();
+  const rows = await db
+    .select()
+    .from(regrasMegaQueratina)
+    .where(
+      and(eq(regrasMegaQueratina.pacote, sp), eq(regrasMegaQueratina.etapa, se)),
+    );
+  const r = rows[0];
+  if (!r) {
+    throw new Error(
+      `Combinação Pacote/Etapa não encontrada em Regras Mega Queratina: "${sp}" / "${se}"`,
+    );
+  }
+  return {
+    id: r.id,
+    valor: r.valor != null ? String(r.valor) : '',
+    comissao: r.comissao != null ? String(r.comissao) : '',
+    duracaoMinutos: duracaoCatalogoMin(r.duracaoMinutos as number | null),
+  };
+}
+
+async function findPacoteQueratinaCatalogo(
+  db: Db,
+  nome: string,
+): Promise<{
+  id: number;
+  preco: string | null;
+} | null> {
+  const rows = await db
+    .select()
+    .from(pacotesQueratina)
+    .where(eq(pacotesQueratina.pacote, nome.trim()));
+  const r = rows[0];
+  if (!r) return null;
+  const preco = r.precoPacote;
+  return {
+    id: r.id,
+    preco: preco != null && preco !== '' ? String(preco) : null,
+  };
+}
+
 async function findProdutoPreco(db: Db, nome: string): Promise<string | null> {
   const rows = await db
     .select()
@@ -831,6 +889,36 @@ async function insertPivotPacote(
     etapa: et.length > 0 ? et : null,
     regraMegaId: o.regraMegaId ?? null,
     pacoteId: o.pacoteCatalogoId,
+    detalhes: null,
+  });
+}
+
+async function insertPivotPacoteQueratina(
+  db: Db,
+  o: {
+    idAtendimento: string;
+    pacote: string;
+    etapa: string;
+    profissionalId: number | null;
+    pacoteQueratinaId: number;
+    regraMegaQueratinaId?: number | null;
+  },
+): Promise<void> {
+  const pac = o.pacote.trim();
+  if (!pac) return;
+  const et = o.etapa.trim();
+  await db.insert(atendimentoItens).values({
+    idAtendimento: o.idAtendimento,
+    tipo: 'pacote_queratina',
+    servicoId: null,
+    produtoId: null,
+    quantidade: 1,
+    profissionalId: o.profissionalId,
+    tamanho: null,
+    pacote: pac,
+    etapa: et.length > 0 ? et : null,
+    regraMegaQueratinaId: o.regraMegaQueratinaId ?? null,
+    pacoteQueratinaId: o.pacoteQueratinaId,
     detalhes: null,
   });
 }
@@ -1237,6 +1325,11 @@ export async function createAtendimento(
       return createAtendimentoMega(db, p as Extract<CreateAtendimentoPayload, { tipo: 'Mega' }>);
     case 'Pacote':
       return createAtendimentoPacote(db, p as Extract<CreateAtendimentoPayload, { tipo: 'Pacote' }>);
+    case 'Pacote Queratina':
+      return createAtendimentoPacoteQueratina(
+        db,
+        p as Extract<CreateAtendimentoPayload, { tipo: 'Pacote Queratina' }>,
+      );
     case 'Produto':
       return createAtendimentoProduto(db, p as Extract<CreateAtendimentoPayload, { tipo: 'Produto' }>);
     case 'Cabelo':
@@ -1771,6 +1864,159 @@ async function createAtendimentoPacote(
   };
 }
 
+async function createAtendimentoPacoteQueratina(
+  db: Db,
+  p: Extract<CreateAtendimentoPayload, { tipo: 'Pacote Queratina' }>,
+): Promise<{
+  id: string;
+  linhas: number;
+  data: string;
+  cliente_id: string;
+  nomeCliente: string;
+}> {
+  const clienteId = String(p.cliente_id || '').trim();
+  const dataStr = String(p.data || '').trim();
+  const pacote = String(p.pacote || '').trim();
+  if (!clienteId || !dataStr || !pacote) {
+    throw new Error(
+      'cliente_id, data e pacote são obrigatórios para Pacote Queratina',
+    );
+  }
+  const profCob = await resolveProfissionalIdToInt(
+    db,
+    {
+      profissional_id: p.profissional_id,
+      profissional: (p as Record<string, unknown>)['profissional'],
+    },
+    false,
+  );
+  const etapas = p.etapas || [];
+  if (!etapas.length) {
+    throw new Error('Inclua ao menos uma etapa realizada para Pacote Queratina');
+  }
+  const cat = await findPacoteQueratinaCatalogo(db, pacote);
+  if (cat === null || cat.preco === null) {
+    throw new Error(`Pacote Queratina não encontrado: "${pacote}"`);
+  }
+  const nomeCliente = await findClienteNome(db, clienteId);
+  const idAt = await resolveIdAtendimentoCriacao(db, p, dataStr, clienteId);
+  const recorrenciaMeta = readRecorrenciaMeta(p);
+  const descontoLinha = '';
+  await ensurePedidoHeader(db, idAt, clienteId, recorrenciaMeta);
+  const obs = String(p.observacao || '').trim();
+  const agCartao = readAgendaCartaoMeta(p);
+  const pRec = p as Record<string, unknown>;
+  await appendAtendimentoLinha(db, {
+    idAt,
+    dataStr,
+    clienteId,
+    nomeCliente,
+    tipo: 'Pacote Queratina',
+    pacote,
+    etapa: '',
+    produto: '',
+    servicos: '',
+    tamanho: '',
+    profissionalId: profCob,
+    valor: cat.preco,
+    comissao: '',
+    quantidade: 1,
+    desconto: descontoLinha,
+    descricao: obs,
+    descricaoManual: obs,
+    inicio: null,
+    fim: null,
+    ...agCartao,
+  });
+  await insertPivotPacoteQueratina(db, {
+    idAtendimento: idAt,
+    pacote,
+    etapa: '',
+    profissionalId: profCob,
+    pacoteQueratinaId: cat.id,
+    regraMegaQueratinaId: null,
+  });
+  let cursorFim: string | null = null;
+  for (let idx = 0; idx < etapas.length; idx++) {
+    const st = etapas[idx];
+    const etapaNome = String(st.etapa || '').trim();
+    const stRec = st as Record<string, unknown>;
+    const profId = await resolveProfissionalIdToInt(
+      db,
+      {
+        profissional_id: stRec['profissional_id'],
+        profissional: stRec['profissional'],
+      },
+      true,
+    );
+    if (!etapaNome || profId == null) {
+      throw new Error('Cada etapa exige etapa e profissional_id');
+    }
+    const regra = await findRegraMegaQueratina(db, pacote, etapaNome);
+    let iniLine: string | null = null;
+    let fimLine: string | null = null;
+    if (idx === 0) {
+      const slot = parseInicioFimOpcional(
+        pRec['inicio'],
+        pRec['fim'],
+        regra.duracaoMinutos,
+      );
+      iniLine = slot.inicio;
+      fimLine = slot.fim;
+      const dm = duracaoCatalogoMin(regra.duracaoMinutos);
+      if (iniLine) {
+        const pp = partesSqlLocalDeTextoSalao(iniLine);
+        if (pp) {
+          fimLine = formatSqlLocalDateTime(addMinutesToParts(pp, dm));
+        }
+      }
+      cursorFim = fimLine;
+    } else if (cursorFim) {
+      const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
+      iniLine = enc.inicio;
+      fimLine = enc.fim;
+      cursorFim = fimLine;
+    }
+    await appendAtendimentoLinha(db, {
+      idAt,
+      dataStr,
+      clienteId,
+      nomeCliente,
+      tipo: 'Pacote Queratina',
+      pacote,
+      etapa: etapaNome,
+      produto: '',
+      servicos: '',
+      tamanho: '',
+      profissionalId: profId,
+      valor: '0',
+      comissao: regra.comissao,
+      quantidade: 1,
+      desconto: descontoLinha,
+      descricao: obs,
+      descricaoManual: obs,
+      inicio: iniLine,
+      fim: fimLine,
+      ...agCartao,
+    });
+    await insertPivotPacoteQueratina(db, {
+      idAtendimento: idAt,
+      pacote,
+      etapa: etapaNome,
+      profissionalId: profId,
+      pacoteQueratinaId: cat.id,
+      regraMegaQueratinaId: regra.id,
+    });
+  }
+  return {
+    id: idAt,
+    linhas: 1 + etapas.length,
+    data: dataStr,
+    cliente_id: clienteId,
+    nomeCliente,
+  };
+}
+
 async function createAtendimentoProduto(
   db: Db,
   p: Extract<CreateAtendimentoPayload, { tipo: 'Produto' }>,
@@ -2157,6 +2403,8 @@ export async function listAtendimentosRaw(
         detalhes: row.detalhes ?? null,
         regra_mega_id: row.regraMegaId ?? null,
         pacote_id: row.pacoteId ?? null,
+        regra_mega_queratina_id: row.regraMegaQueratinaId ?? null,
+        pacote_queratina_id: row.pacoteQueratinaId ?? null,
         valor_unitario: valorUnitarioStr,
         desconto: descontoStr,
         total_linha: totalLinha,

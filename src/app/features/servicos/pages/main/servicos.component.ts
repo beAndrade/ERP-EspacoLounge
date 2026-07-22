@@ -5,6 +5,8 @@ import { Subscription } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import type { Servico } from '../../../../core/models/api.models';
 import { valorMonetarioParaNumero } from '../../../../core/utils/atendimento-display';
+import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
+import { lerServicoTexto } from '../../../../core/utils/servico-campos';
 import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 
 @Component({
@@ -225,15 +227,30 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   private comissaoSortKey(s: Servico): number {
-    const pct = String(s['Comissão %'] ?? '')
+    const tipo = lerServicoTexto(s, 'Tipo', 'tipo').toLowerCase();
+    if (tipo === 'tamanho') {
+      const vals = [
+        lerServicoTexto(s, 'Curto', 'curto'),
+        lerServicoTexto(s, 'Médio', 'medio'),
+        lerServicoTexto(s, 'M/L', 'm_l'),
+        lerServicoTexto(s, 'Longo', 'longo'),
+      ]
+        .map((v) => valorMonetarioParaNumero(v))
+        .filter((n): n is number => n != null && n > 0);
+      if (vals.length) return Math.min(...vals);
+    }
+    const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct')
       .replace('%', '')
-      .trim()
       .replace(',', '.');
     if (pct) {
       const n = Number.parseFloat(pct);
       if (Number.isFinite(n)) return n;
     }
-    return valorMonetarioParaNumero(s['Comissão Fixa']) ?? -1;
+    return (
+      valorMonetarioParaNumero(
+        lerServicoTexto(s, 'Comissão Fixa', 'comissao_fixa'),
+      ) ?? -1
+    );
   }
 
   totalFiltrado(): number {
@@ -365,17 +382,34 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   comissaoExibicao(s: Servico): string {
-    const pct = String(s['Comissão %'] ?? '').trim();
+    const tipo = lerServicoTexto(s, 'Tipo', 'tipo').toLowerCase();
+    if (tipo === 'tamanho') {
+      const faixas: [string, string][] = [
+        ['C', lerServicoTexto(s, 'Curto', 'curto')],
+        ['M', lerServicoTexto(s, 'Médio', 'medio')],
+        ['M/L', lerServicoTexto(s, 'M/L', 'm_l')],
+        ['L', lerServicoTexto(s, 'Longo', 'longo')],
+      ];
+      const partes = faixas
+        .map(([label, raw]) => {
+          const n = valorMonetarioParaNumero(raw);
+          if (n == null || n <= 0) return null;
+          return `${label} ${formataMoedaBrl(n)}`;
+        })
+        .filter((p): p is string => p != null);
+      if (partes.length) return partes.join(' · ');
+    }
+
+    const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct');
     if (pct) {
       const n = pct.replace('%', '').trim();
-      return `% ${n}`;
+      return n ? `% ${n}` : '—';
     }
-    const fixa = valorMonetarioParaNumero(s['Comissão Fixa']);
+    const fixa = valorMonetarioParaNumero(
+      lerServicoTexto(s, 'Comissão Fixa', 'comissao_fixa'),
+    );
     if (fixa != null && fixa > 0) {
-      return fixa.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-      });
+      return formataMoedaBrl(fixa);
     }
     return '—';
   }

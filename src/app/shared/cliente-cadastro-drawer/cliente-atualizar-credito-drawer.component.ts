@@ -13,15 +13,10 @@ import { catchError, of } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error-message';
 import type { CriarClienteCreditoMovimentoPayload } from '../../core/models/api.models';
-
-function formataMoedaBrl(n: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
+import {
+  formataMoedaBrl,
+  moedaAPartirDosDigitos,
+} from '../../core/utils/brl-digit-input';
 
 function parsePtDecimal(s: string): number {
   const t = String(s ?? '')
@@ -33,16 +28,6 @@ function parsePtDecimal(s: string): number {
     .replace(',', '.');
   const n = parseFloat(t);
   return Number.isFinite(n) ? n : 0;
-}
-
-function moedaAPartirDosDigitos(raw: string): string {
-  const digits = String(raw ?? '').replace(/\D/g, '');
-  const trimmed = digits.length > 12 ? digits.slice(-12) : digits;
-  const centInt =
-    trimmed === '' ? 0 : Math.min(parseInt(trimmed, 10), 999999999999);
-  const n =
-    Number.isFinite(centInt) && centInt >= 0 ? Math.round(centInt) / 100 : 0;
-  return formataMoedaBrl(n);
 }
 
 const PLACEHOLDER_MOEDA = 'R$ 0,00';

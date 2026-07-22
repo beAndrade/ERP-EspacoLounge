@@ -1,12 +1,19 @@
 /** Máscara de valor por dígitos (centavos em cadeia), padrão do ERP. */
 
+import { valorMonetarioParaNumero } from './atendimento-display';
+
+/**
+ * Formato canónico de moeda no UI e em colunas `text` gravadas pelo front:
+ * `R$ 1.234,56` (espaço ASCII, vírgula decimal). Evita NBSP do `style: currency`.
+ */
 export function formataMoedaBrl(n: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
+  if (!Number.isFinite(n)) n = 0;
+  const sign = n < 0 ? '-' : '';
+  const formatted = Math.abs(n).toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(n);
+  });
+  return `${sign}R$ ${formatted}`;
 }
 
 /** Ex.: digitar 150 → `R$ 1,50`. */
@@ -37,13 +44,16 @@ export function valorDigitosVazio(raw: string): boolean {
   return !digits || /^0+$/.test(digits);
 }
 
-/** Reformata texto legado/API para máscara BRL; vazio fica vazio. */
+/**
+ * Reformata texto legado/API para máscara BRL; vazio fica vazio.
+ * Usa parse monetário (não cadeia de centavos) — `R$ 10.00` / `10` → `R$ 10,00`.
+ */
 export function normalizarMoedaExibicao(v: unknown): string {
   const s = String(v ?? '').trim();
-  if (!s) return '';
-  const digits = s.replace(/\D/g, '');
-  if (!digits || /^0+$/.test(digits)) return '';
-  return moedaAPartirDosDigitos(s);
+  if (!s || s === '-' || s === '—') return '';
+  const n = valorMonetarioParaNumero(s);
+  if (n == null || !Number.isFinite(n) || n === 0) return '';
+  return formataMoedaBrl(n);
 }
 
 /** Reformata % legado/API (aceita decimais antigos → arredonda); vazio fica vazio. */

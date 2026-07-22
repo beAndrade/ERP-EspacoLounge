@@ -52,22 +52,30 @@ export function toNumberPt(v: unknown): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-/** Texto pt-BR para colunas tipo planilha (ex.: folha, desconto). */
+/** Texto pt-BR canónico para colunas tipo planilha (ex.: folha, desconto). */
 export function formatMoedaReciboPt(n: number): string {
   const r = Math.round(n * 100) / 100;
-  return `R$ ${r.toFixed(2).replace('.', ',')}`;
+  if (!Number.isFinite(r)) return 'R$ 0,00';
+  const sign = r < 0 ? '-' : '';
+  const formatted = Math.abs(r).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${sign}R$ ${formatted}`;
 }
 
 const SLUG_POR_TIPO: Record<string, string> = {
   Serviço: 'receita_servicos',
   Mega: 'receita_mega',
   Pacote: 'receita_pacotes',
+  'Pacote Queratina': 'receita_pacotes',
   Produto: 'receita_produtos',
   Cabelo: 'receita_cabelo',
 };
 
 const ORDEM_TIPO: string[] = [
   'Pacote',
+  'Pacote Queratina',
   'Mega',
   'Serviço',
   'Produto',

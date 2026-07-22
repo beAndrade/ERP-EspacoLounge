@@ -2747,7 +2747,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     let best: number | null = null;
     for (const r of linhasPedido) {
       const t = (r.tipo || '').trim().toLowerCase();
-      if (t !== 'mega' && t !== 'pacote') continue;
+      if (t !== 'mega' && t !== 'pacote' && t !== 'pacote queratina') continue;
       if (!(r.etapa || '').trim()) continue;
       const ini = r.inicio ? String(r.inicio).trim() : '';
       if (!ini) continue;
@@ -2806,7 +2806,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return b.linhas.some((l) => {
       const t = (l.tipo || '').trim().toLowerCase();
       return (
-        (t === 'mega' || t === 'pacote') && (l.etapa || '').trim().length > 0
+        (t === 'mega' || t === 'pacote' || t === 'pacote queratina') &&
+        (l.etapa || '').trim().length > 0
       );
     });
   }
@@ -2824,7 +2825,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     let sum = 0;
     for (const l of b.linhas) {
       const t = (l.tipo || '').trim().toLowerCase();
-      if (t !== 'mega' && t !== 'pacote') continue;
+      if (t !== 'mega' && t !== 'pacote' && t !== 'pacote queratina') continue;
       if (!(l.etapa || '').trim()) continue;
       const ini = l.inicio ? String(l.inicio).trim() : '';
       if (!ini) continue;
@@ -2965,12 +2966,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const linhas = b.linhas;
     const soMegaOuPacote = linhas.every((l) => {
       const t = (l.tipo || '').trim().toLowerCase();
-      return t === 'mega' || t === 'pacote';
+      return t === 'mega' || t === 'pacote' || t === 'pacote queratina';
     });
     const comEtapaMegaPac = linhas.filter((l) => {
       const t = (l.tipo || '').trim().toLowerCase();
       return (
-        (t === 'pacote' || t === 'mega') && (l.etapa || '').trim().length > 0
+        (t === 'pacote' || t === 'mega' || t === 'pacote queratina') &&
+        (l.etapa || '').trim().length > 0
       );
     });
     if (soMegaOuPacote && comEtapaMegaPac.length > 0) {
@@ -2985,7 +2987,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       const seen = new Set<string>();
       if (pacNome) {
         const titulo =
-          t0 === 'mega' ? `Mega • ${pacNome}` : `Pacote • ${pacNome}`;
+          t0 === 'mega'
+            ? `Mega • ${pacNome}`
+            : t0 === 'pacote queratina'
+              ? `Pacote Queratina • ${pacNome}`
+              : `Pacote • ${pacNome}`;
         out.push(titulo);
         seen.add(titulo);
       }

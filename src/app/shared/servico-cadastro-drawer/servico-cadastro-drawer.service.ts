@@ -14,6 +14,8 @@ import {
   percentualParaPayload,
   valorDigitosVazio,
 } from '../../core/utils/brl-digit-input';
+import { lerServicoTexto } from '../../core/utils/servico-campos';
+import { valorMonetarioParaNumero } from '../../core/utils/atendimento-display';
 
 export type ServicoMoedaCampo =
   | 'valorBase'
@@ -333,30 +335,50 @@ export class ServicoCadastroDrawerService {
   }
 
   private preencherDeItem(item: Servico): void {
-    this.nome = String(item['Serviço'] ?? '').trim();
-    this.categoria = String(item['Categoria'] ?? '').trim();
-    const tipoRaw = String(item['Tipo'] ?? '')
-      .trim()
-      .toLowerCase();
+    this.nome = lerServicoTexto(item, 'Serviço', 'nome', 'servico');
+    this.categoria = lerServicoTexto(item, 'Categoria', 'categoria');
+    const tipoRaw = lerServicoTexto(item, 'Tipo', 'tipo').toLowerCase();
     this.tipo = tipoRaw === 'tamanho' ? 'Tamanho' : 'Fixo';
-    this.valorBase = normalizarMoedaExibicao(item['Valor Base']);
-    this.precoCurto = normalizarMoedaExibicao(item['Preço Curto']);
-    this.precoMedio = normalizarMoedaExibicao(item['Preço Médio']);
-    this.precoMl = normalizarMoedaExibicao(item['Preço Médio/Longo']);
-    this.precoLongo = normalizarMoedaExibicao(item['Preço Longo']);
-    this.comissaoCurto = normalizarMoedaExibicao(item['Curto']);
-    this.comissaoMedio = normalizarMoedaExibicao(item['Médio']);
-    this.comissaoMl = normalizarMoedaExibicao(item['M/L']);
-    this.comissaoLongo = normalizarMoedaExibicao(item['Longo']);
-    this.custoAdicional = normalizarMoedaExibicao(item['Custo Fixo']);
-    const pct = String(item['Comissão %'] ?? '').trim();
-    const fixa = String(item['Comissão Fixa'] ?? '').trim();
-    if (pct) {
+    this.valorBase = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Valor Base', 'valor_base'),
+    );
+    this.precoCurto = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Preço Curto', 'preco_curto'),
+    );
+    this.precoMedio = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Preço Médio', 'preco_medio'),
+    );
+    this.precoMl = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Preço Médio/Longo', 'preco_medio_longo'),
+    );
+    this.precoLongo = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Preço Longo', 'preco_longo'),
+    );
+    this.comissaoCurto = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Curto', 'curto'),
+    );
+    this.comissaoMedio = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Médio', 'medio'),
+    );
+    this.comissaoMl = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'M/L', 'm_l'),
+    );
+    this.comissaoLongo = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Longo', 'longo'),
+    );
+    this.custoAdicional = normalizarMoedaExibicao(
+      lerServicoTexto(item, 'Custo Fixo', 'custo_fixo'),
+    );
+    const pct = lerServicoTexto(item, 'Comissão %', 'comissao_pct');
+    const fixaRaw = lerServicoTexto(item, 'Comissão Fixa', 'comissao_fixa');
+    const fixaNum = valorMonetarioParaNumero(fixaRaw);
+    const pctFmt = normalizarPercentualExibicao(pct);
+    if (pctFmt) {
       this.comissaoUnidade = 'pct';
-      this.comissaoValor = normalizarPercentualExibicao(pct);
-    } else if (fixa) {
+      this.comissaoValor = pctFmt;
+    } else if (fixaNum != null && fixaNum > 0) {
       this.comissaoUnidade = 'fixa';
-      this.comissaoValor = normalizarMoedaExibicao(fixa);
+      this.comissaoValor = normalizarMoedaExibicao(fixaRaw);
     } else {
       this.comissaoUnidade = 'pct';
       this.comissaoValor = '';
@@ -367,7 +389,7 @@ export class ServicoCadastroDrawerService {
     this.duracaoMedio = this.lerDuracaoOuNull(item['duracao_medio']);
     this.duracaoMl = this.lerDuracaoOuNull(item['duracao_m_l']);
     this.duracaoLongo = this.lerDuracaoOuNull(item['duracao_longo']);
-    this.descricao = String(item['Descrição'] ?? '').trim();
+    this.descricao = lerServicoTexto(item, 'Descrição', 'descricao');
     this.mostraNoSite = item['mostra_no_site'] !== false;
     this.fotoUrl = String(item['foto_url'] ?? '').trim();
   }

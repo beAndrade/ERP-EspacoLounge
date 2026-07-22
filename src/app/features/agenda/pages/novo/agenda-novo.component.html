@@ -301,7 +301,8 @@
             @if (
               modoModal &&
               (ctrl.get('itemTipo')?.value === 'Mega' ||
-                ctrl.get('itemTipo')?.value === 'Pacote')
+                ctrl.get('itemTipo')?.value === 'Pacote' ||
+                ctrl.get('itemTipo')?.value === 'Pacote Queratina')
             ) {
               <div
                 class="servico-row__mega-topo servico-row__linha-cabecalho-modal"
@@ -319,39 +320,48 @@
                     (picked)="onItemTipoLinhaChange(i)"
                   />
                 </div>
-                @if (
-                  ctrl.get('itemTipo')?.value === 'Mega' ||
-                  ctrl.get('itemTipo')?.value === 'Pacote'
-                ) {
-                  @if (ctrl.get('itemTipo')?.value === 'Mega') {
-                    <div
-                      class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
-                    >
-                      <span>Pacote (Individual)</span>
-                      <app-saas-select
-                        [showFilter]="!modoModal"
-                        formControlName="pacote"
-                        [options]="opcoesPacotesMegaSelect()"
-                        placeholder="Selecione…"
-                        aria-label="Pacote (Individual)"
-                        (picked)="aplicarValidadoresLinhas()"
-                      />
-                    </div>
-                  } @else {
-                    <div
-                      class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
-                    >
-                      <span>Pacote (Manutenção)</span>
-                      <app-saas-select
-                        [showFilter]="!modoModal"
-                        formControlName="pacote"
-                        [options]="opcoesPacotesCatalogoSelect()"
-                        placeholder="Selecione…"
-                        aria-label="Pacote (Manutenção)"
-                        (picked)="aplicarValidadoresLinhas()"
-                      />
-                    </div>
-                  }
+                @if (ctrl.get('itemTipo')?.value === 'Mega') {
+                  <div
+                    class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
+                  >
+                    <span>Pacote (Individual)</span>
+                    <app-saas-select
+                      [showFilter]="!modoModal"
+                      formControlName="pacote"
+                      [options]="opcoesPacotesMegaSelect()"
+                      placeholder="Selecione…"
+                      aria-label="Pacote (Individual)"
+                      (picked)="aplicarValidadoresLinhas()"
+                    />
+                  </div>
+                } @else if (ctrl.get('itemTipo')?.value === 'Pacote Queratina') {
+                  <div
+                    class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
+                  >
+                    <span>Pacote Queratina</span>
+                    <app-saas-select
+                      [showFilter]="!modoModal"
+                      formControlName="pacote"
+                      [options]="opcoesPacotesQueratinaSelect()"
+                      placeholder="Selecione…"
+                      aria-label="Pacote Queratina"
+                      (picked)="aplicarValidadoresLinhas()"
+                    />
+                  </div>
+                } @else {
+                  <div
+                    class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
+                  >
+                    <span>Pacote (Manutenção)</span>
+                    <app-saas-select
+                      [showFilter]="!modoModal"
+                      formControlName="pacote"
+                      [options]="opcoesPacotesCatalogoSelect()"
+                      placeholder="Selecione…"
+                      aria-label="Pacote (Manutenção)"
+                      (picked)="aplicarValidadoresLinhas()"
+                    />
+                  </div>
                 }
                 <div
                   class="servico-row__actions servico-row__actions--drawer servico-row__actions--linha-cab"
@@ -359,16 +369,21 @@
                   <button
                     type="button"
                     class="btn btn--icon-line-add"
-                    (click)="adicionarLinhaItensDoTipo(ctrl.get('itemTipo')?.value === 'Pacote' ? 'Pacote' : 'Mega', i)"
+                    (click)="
+                      adicionarLinhaItensDoTipo(
+                        ctrl.get('itemTipo')?.value === 'Pacote Queratina'
+                          ? 'Pacote Queratina'
+                          : ctrl.get('itemTipo')?.value === 'Pacote'
+                            ? 'Pacote'
+                            : 'Mega',
+                        i
+                      )
+                    "
                     [attr.aria-label]="
-                      ctrl.get('itemTipo')?.value === 'Pacote'
-                        ? 'Adicionar linha Pacote'
-                        : 'Adicionar linha Mega'
+                      'Adicionar linha ' + (ctrl.get('itemTipo')?.value || '')
                     "
                     [attr.title]="
-                      ctrl.get('itemTipo')?.value === 'Pacote'
-                        ? 'Adicionar linha Pacote'
-                        : 'Adicionar linha Mega'
+                      'Adicionar linha ' + (ctrl.get('itemTipo')?.value || '')
                     "
                   >
                     +
@@ -768,11 +783,25 @@
               }
             }
 
-            @if (ctrl.get('itemTipo')?.value === 'Pacote') {
+            @if (
+              ctrl.get('itemTipo')?.value === 'Pacote' ||
+              ctrl.get('itemTipo')?.value === 'Pacote Queratina'
+            ) {
               @if (modoModal) {
-                @if (pacotes.length === 0) {
+                @if (
+                  ctrl.get('itemTipo')?.value === 'Pacote' && pacotes.length === 0
+                ) {
                   <p class="hint">
                     Cadastre pacotes na aba <strong>Pacotes</strong>.
+                  </p>
+                }
+                @if (
+                  ctrl.get('itemTipo')?.value === 'Pacote Queratina' &&
+                  pacotesQueratina.length === 0
+                ) {
+                  <p class="hint">
+                    Cadastre pacotes queratina no catálogo
+                    <strong>pacotes_queratina</strong>.
                   </p>
                 }
                 <div
@@ -875,18 +904,41 @@
                 </div>
               } @else {
                 <div class="servico-row__field">
-                  <span>Pacote (aba Pacotes)</span>
-                  <app-saas-select
-                    [showFilter]="!modoModal"
-                    formControlName="pacote"
-                    [options]="opcoesPacotesCatalogoSelect()"
-                    placeholder="Selecione…"
-                    aria-label="Pacote"
-                    (picked)="aplicarValidadoresLinhas()"
-                  />
+                  @if (ctrl.get('itemTipo')?.value === 'Pacote Queratina') {
+                    <span>Pacote Queratina</span>
+                    <app-saas-select
+                      [showFilter]="!modoModal"
+                      formControlName="pacote"
+                      [options]="opcoesPacotesQueratinaSelect()"
+                      placeholder="Selecione…"
+                      aria-label="Pacote Queratina"
+                      (picked)="aplicarValidadoresLinhas()"
+                    />
+                  } @else {
+                    <span>Pacote (aba Pacotes)</span>
+                    <app-saas-select
+                      [showFilter]="!modoModal"
+                      formControlName="pacote"
+                      [options]="opcoesPacotesCatalogoSelect()"
+                      placeholder="Selecione…"
+                      aria-label="Pacote"
+                      (picked)="aplicarValidadoresLinhas()"
+                    />
+                  }
                 </div>
-                @if (pacotes.length === 0) {
+                @if (
+                  ctrl.get('itemTipo')?.value === 'Pacote' && pacotes.length === 0
+                ) {
                   <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
+                }
+                @if (
+                  ctrl.get('itemTipo')?.value === 'Pacote Queratina' &&
+                  pacotesQueratina.length === 0
+                ) {
+                  <p class="hint">
+                    Cadastre pacotes queratina no catálogo
+                    <strong>pacotes_queratina</strong>.
+                  </p>
                 }
                 <p class="hint">
                   @if (!exibirColunasValorLinha()) {
@@ -1209,6 +1261,7 @@
               !modoModal ||
               (ctrl.get('itemTipo')?.value !== 'Mega' &&
                 ctrl.get('itemTipo')?.value !== 'Pacote' &&
+                ctrl.get('itemTipo')?.value !== 'Pacote Queratina' &&
                 ctrl.get('itemTipo')?.value !== 'Cabelo')
             ) {
               <div

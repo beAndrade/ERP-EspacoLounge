@@ -25,6 +25,8 @@ export const atendimentoItemTipoEnum = pgEnum('atendimento_item_tipo', [
   'mega',
   /** Linha Pacote comercial (cabeça e/ou etapas). */
   'pacote',
+  /** Pacote Queratina (cabeça/etapas em `pacotes_queratina` / `regras_mega_queratina`). */
+  'pacote_queratina',
   /** Linha Cabelo (valor manual; texto em `detalhes`). */
   'cabelo',
 ]);
@@ -216,6 +218,13 @@ export const pacotes = pgTable('pacotes', {
   precoPacote: text('preco_pacote'),
 });
 
+/** Catálogo comercial Pacote Queratina (preço da cabeça). */
+export const pacotesQueratina = pgTable('pacotes_queratina', {
+  id: serial('id').primaryKey(),
+  pacote: text('pacote').notNull(),
+  precoPacote: text('preco_pacote'),
+});
+
 export const produtos = pgTable('produtos', {
   id: serial('id').primaryKey(),
   produto: text('produto').notNull(),
@@ -234,6 +243,16 @@ export const regrasMega = pgTable('regras_mega', {
   valor: text('valor'),
   comissao: text('comissao'),
   /** Duração da etapa na agenda, em minutos (Mega e etapas de Pacote). */
+  duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
+});
+
+/** Etapas / comissão do Pacote Queratina (espelho de `regras_mega`). */
+export const regrasMegaQueratina = pgTable('regras_mega_queratina', {
+  id: serial('id').primaryKey(),
+  pacote: text('pacote').notNull(),
+  etapa: text('etapa').notNull(),
+  valor: text('valor'),
+  comissao: text('comissao'),
   duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
 });
 
@@ -337,6 +356,16 @@ export const atendimentoItens = pgTable(
     pacoteId: integer('pacote_id').references(() => pacotes.id, {
       onDelete: 'set null',
     }),
+    /** Etapa Pacote Queratina: FK a `regras_mega_queratina`. */
+    regraMegaQueratinaId: integer('regra_mega_queratina_id').references(
+      () => regrasMegaQueratina.id,
+      { onDelete: 'set null' },
+    ),
+    /** Cabeça / linhas Pacote Queratina: FK a `pacotes_queratina`. */
+    pacoteQueratinaId: integer('pacote_queratina_id').references(
+      () => pacotesQueratina.id,
+      { onDelete: 'set null' },
+    ),
     /** Cabelo: texto da linha (descrição). */
     detalhes: text('detalhes'),
     /** Valor unitário registado no carrinho (Serviço/Produto/Cabelo). Mega/Pacote: null. */

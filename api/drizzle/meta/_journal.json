@@ -330,6 +330,13 @@
       "when": 1775697958000,
       "tag": "0046_servicos_cadastro_campos",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1775697959000,
+      "tag": "0047_pacote_queratina",
+      "breakpoints": true
     }
   ]
 }

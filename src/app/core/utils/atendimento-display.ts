@@ -102,8 +102,8 @@ export function valorMonetarioParaNumero(v: unknown): number | null {
 export function linhaSortPriorityAtendimento(l: AtendimentoListaItem): number {
   const t = (l.tipo || '').trim().toLowerCase();
   const et = (l.etapa || '').trim();
-  if ((t === 'pacote' || t === 'mega') && !et) return 0;
-  if (t === 'pacote' || t === 'mega') return 1;
+  if ((t === 'pacote' || t === 'mega' || t === 'pacote_queratina') && !et) return 0;
+  if (t === 'pacote' || t === 'mega' || t === 'pacote_queratina') return 1;
   return 2;
 }
 
@@ -172,8 +172,8 @@ export function ordenarLinhasAtendimentoInPlace(
     if (ex && ey) {
       const tx = (x.tipo || '').trim().toLowerCase();
       const ty = (y.tipo || '').trim().toLowerCase();
-      const mx = tx === 'mega' || tx === 'pacote';
-      const my = ty === 'mega' || ty === 'pacote';
+      const mx = tx === 'mega' || tx === 'pacote' || tx === 'pacote_queratina';
+      const my = ty === 'mega' || ty === 'pacote' || ty === 'pacote_queratina';
       if (mx && my) {
         return compararEtapasMegaPacoteFluxo(ex, ey);
       }
@@ -194,11 +194,13 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     }
     return nome || desc || '—';
   }
-  if (t === 'pacote') {
+  if (t === 'pacote' || t === 'pacote queratina' || t === 'pacote_queratina') {
     const pac = (l.pacote || '').trim();
     const et = (l.etapa || '').trim();
+    const rotulo =
+      t === 'pacote' ? 'Pacote' : 'Pacote Queratina';
     if (!et) {
-      return pac ? `Pacote • ${pac}` : '—';
+      return pac ? `${rotulo} • ${pac}` : '—';
     }
     /* Com etapa: sempre incluir o pacote (antes só aparecia a etapa). */
     if (pac && et) {
@@ -247,7 +249,7 @@ export function totalLinhaPreferencialAtendimento(
    * o primeiro `total_linha` não-null costuma ser de outro tipo (ex. Serviço).
    * O valor cobrado por linha está em `atendimentos.valor` (espelho do pacote / etapa).
    */
-  if (tipo === 'mega' || tipo === 'pacote') {
+  if (tipo === 'mega' || tipo === 'pacote' || tipo === 'pacote queratina' || tipo === 'pacote_queratina') {
     const vLinha = valorMonetarioParaNumero(l.valor);
     if (vLinha != null) return Math.max(0, vLinha);
   }

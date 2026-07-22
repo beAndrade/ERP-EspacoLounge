@@ -290,6 +290,7 @@ export interface AtendimentoCriadoResumo {
 
 /** Linha normalizada da aba Regras Mega (Pacote + Etapa + valores). */
 export interface RegraMegaItem {
+  id?: number;
   pacote: string;
   etapa: string;
   valor: unknown;
@@ -299,21 +300,22 @@ export interface RegraMegaItem {
 }
 
 export interface PacoteCatalogoItem {
+  id?: number;
   pacote: string;
   preco: unknown;
 }
 
 /** Item da pivot `atendimento_itens` na resposta de listagem. */
 export interface AtendimentoItemCatalogo {
-  tipo: 'servico' | 'produto' | 'mega' | 'pacote' | 'cabelo';
+  tipo: 'servico' | 'produto' | 'mega' | 'pacote' | 'pacote_queratina' | 'cabelo';
   servico_id: number | null;
   produto_id: number | null;
   quantidade: number;
   profissional_id: number | null;
   tamanho: string | null;
-  /** `mega` / `pacote`: nome do pacote comercial. */
+  /** `mega` / `pacote` / `pacote_queratina`: nome do pacote comercial. */
   pacote?: string | null;
-  /** `mega` / `pacote`: etapa (vazio na cabeça do pacote). */
+  /** `mega` / `pacote` / `pacote_queratina`: etapa (vazio na cabeça do pacote). */
   etapa?: string | null;
   /** `cabelo`: texto da linha. */
   detalhes?: string | null;
@@ -321,6 +323,10 @@ export interface AtendimentoItemCatalogo {
   regra_mega_id?: number | null;
   /** FK opcional a `pacotes` (cabeça Pacote ou referência ao pacote comercial). */
   pacote_id?: number | null;
+  /** FK opcional a `regras_mega_queratina`. */
+  regra_mega_queratina_id?: number | null;
+  /** FK opcional a `pacotes_queratina`. */
+  pacote_queratina_id?: number | null;
   /** Valor unitário gravado no carrinho (Servico/Produto/Cabelo). String numérica ou null. */
   valor_unitario?: string | null;
   /** Desconto aplicado ao item (R$). String numérica ou null. */
@@ -590,6 +596,7 @@ export type TipoAtendimento =
   | 'Serviço'
   | 'Mega'
   | 'Pacote'
+  | 'Pacote Queratina'
   | 'Cabelo'
   | 'Produto';
 
@@ -663,6 +670,15 @@ export type CreateAtendimentoPayload = (
     }
   | {
       tipo: 'Pacote';
+      cliente_id: string;
+      data: string;
+      profissional_id?: number | null;
+      pacote: string;
+      etapas: AtendimentoEtapaPayload[];
+      observacao?: string;
+    }
+  | {
+      tipo: 'Pacote Queratina';
       cliente_id: string;
       data: string;
       profissional_id?: number | null;

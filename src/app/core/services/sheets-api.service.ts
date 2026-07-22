@@ -171,6 +171,28 @@ export class SheetsApiService {
       );
   }
 
+  listRegrasMegaQueratina(): Observable<RegraMegaItem[]> {
+    return this.http
+      .get<ApiResponse<{ items: RegraMegaItem[] }>>(
+        this.url('/api/regras-mega-queratina'),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  listPacotesQueratina(): Observable<PacoteCatalogoItem[]> {
+    return this.http
+      .get<ApiResponse<{ items: PacoteCatalogoItem[] }>>(
+        this.url('/api/pacotes-queratina'),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
   listProdutos(): Observable<ProdutoCatalogoItem[]> {
     return this.http
       .get<ApiResponse<{ items: ProdutoCatalogoItem[] }>>(

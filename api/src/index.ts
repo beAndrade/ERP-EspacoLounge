@@ -76,8 +76,10 @@ import {
   listCabelosApi,
   listClientesNormalized,
   listPacotesApi,
+  listPacotesQueratinaApi,
   listProdutosApi,
   listRegrasMegaApi,
+  listRegrasMegaQueratinaApi,
   listServicosForApi,
 } from './services/queries';
 import { columnPatchFromClienteBody } from './services/clientes-cadastro-normalize';
@@ -1103,6 +1105,12 @@ const app = new Elysia({ adapter: node() })
   )
   .get('/api/regras-mega', async () => ok({ items: await listRegrasMegaApi(db) }))
   .get('/api/pacotes', async () => ok({ items: await listPacotesApi(db) }))
+  .get('/api/regras-mega-queratina', async () =>
+    ok({ items: await listRegrasMegaQueratinaApi(db) }),
+  )
+  .get('/api/pacotes-queratina', async () =>
+    ok({ items: await listPacotesQueratinaApi(db) }),
+  )
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))
   .patch(
     '/api/produtos/:id/estoque',

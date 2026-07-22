@@ -8,8 +8,10 @@ import {
   clientes,
   movimentacoes,
   pacotes,
+  pacotesQueratina,
   produtos,
   regrasMega,
+  regrasMegaQueratina,
   servicos,
 } from '../db/schema';
 import { mapClienteRowToApi } from './clientes-cadastro-normalize';
@@ -125,6 +127,23 @@ export async function listServicosForApi(db: Db) {
         mostra_no_site: r.mostraNoSite !== false,
         Descrição: r.descricao ?? null,
         foto_url: r.fotoUrl ?? null,
+        /** Aliases ASCII — o front prefere estes para evitar falha de chave acentuada. */
+        valor_base: r.valorBase,
+        comissao_fixa: r.comissaoFixa,
+        comissao_pct: r.comissaoPct,
+        preco_curto: r.precoCurto,
+        preco_medio: r.precoMedio,
+        preco_medio_longo: r.precoMedioLongo,
+        preco_longo: r.precoLongo,
+        custo_fixo: r.custoFixo,
+        curto: r.curto,
+        medio: r.medio,
+        m_l: r.mL,
+        longo: r.longo,
+        nome: r.servico,
+        tipo: r.tipo,
+        categoria: r.categoria ?? null,
+        descricao: r.descricao ?? null,
       };
     })
     .filter(Boolean) as Record<string, unknown>[];
@@ -135,6 +154,7 @@ export async function listRegrasMegaApi(db: Db) {
   return rows
     .filter((r) => r.pacote?.trim() && r.etapa?.trim())
     .map((r) => ({
+      id: r.id,
       pacote: String(r.pacote).trim(),
       etapa: String(r.etapa).trim(),
       valor: r.valor,
@@ -148,8 +168,34 @@ export async function listPacotesApi(db: Db) {
   return rows
     .filter((r) => r.pacote?.trim())
     .map((r) => ({
+      id: r.id,
       pacote: String(r.pacote).trim(),
       preco: r.precoPacote,
+    }));
+}
+
+export async function listPacotesQueratinaApi(db: Db) {
+  const rows = await db.select().from(pacotesQueratina);
+  return rows
+    .filter((r) => r.pacote?.trim())
+    .map((r) => ({
+      id: r.id,
+      pacote: String(r.pacote).trim(),
+      preco: r.precoPacote,
+    }));
+}
+
+export async function listRegrasMegaQueratinaApi(db: Db) {
+  const rows = await db.select().from(regrasMegaQueratina);
+  return rows
+    .filter((r) => r.pacote?.trim() && r.etapa?.trim())
+    .map((r) => ({
+      id: r.id,
+      pacote: String(r.pacote).trim(),
+      etapa: String(r.etapa).trim(),
+      valor: r.valor,
+      comissao: r.comissao,
+      duracao_minutos: r.duracaoMinutos ?? 30,
     }));
 }
 

@@ -36,33 +36,20 @@ import { telefoneBrDigitos } from '../../../../core/utils/telefone-br';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
-
-function formataMoedaBrl(n: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
+import {
+  formataMoedaBrl,
+  moedaAPartirDosDigitos,
+} from '../../../../core/utils/brl-digit-input';
 
 /** Máscara de moeda nos campos do resumo (placeholder + valor exibido). */
-const PLACEHOLDER_MOEDA_RESUMO = 'R$0,00';
+const PLACEHOLDER_MOEDA_RESUMO = 'R$ 0,00';
 
 /**
  * Entrada só por dígitos: cada dígito acrescenta à direita em centavos
  * (ex.: 1 → R$ 0,01; 15 → R$ 0,15; 150 → R$ 1,50).
  */
 function moedaResumoAPartirDosDigitos(raw: string): string {
-  const digits = String(raw ?? '').replace(/\D/g, '');
-  const MAX_DIG = 12;
-  const trimmed =
-    digits.length > MAX_DIG ? digits.slice(-MAX_DIG) : digits;
-  const centInt =
-    trimmed === '' ? 0 : Math.min(parseInt(trimmed, 10), 999999999999);
-  const n =
-    Number.isFinite(centInt) && centInt >= 0 ? Math.round(centInt) / 100 : 0;
-  return formataMoedaBrl(n);
+  return moedaAPartirDosDigitos(raw);
 }
 
 /** Remove sufixo «— Qtd: n» do título do produto (a quantidade vai na faixa monetária). */
@@ -92,8 +79,8 @@ export interface LinhaResumoComanda {
     /** Só Mega: valor da etapa (ex.: ao lado do nome «Retirada — R$ …»). */
     valorEtapaBrl?: string | null;
   }[];
-  /** Tipo do bloco (`Serviço`/`Produto`/`Mega`/`Pacote`/`Cabelo`). */
-  tipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Cabelo' | 'Outro';
+  /** Tipo do bloco (`Serviço`/`Produto`/`Mega`/`Pacote`/`Pacote Queratina`/`Cabelo`). */
+  tipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Pacote Queratina' | 'Cabelo' | 'Outro';
   /** Quantidade quando aplicável (Produto/Serviço). */
   quantidade: number | null;
 }
@@ -395,7 +382,7 @@ export class NovaComandaDrawerComponent implements OnInit {
 
     for (const l of this.linhasAtendimentoApi) {
       const tp = String(l.tipo ?? '').trim().toLowerCase();
-      if (tp === 'mega' || tp === 'pacote') {
+      if (tp === 'mega' || tp === 'pacote' || tp === 'pacote queratina') {
         const k = `${tp}::${String(l.pacote ?? '').trim() || '(sem pacote)'}`;
         const arr = grupos.get(k) ?? [];
         arr.push(l);
@@ -410,7 +397,11 @@ export class NovaComandaDrawerComponent implements OnInit {
       const cabeca = linhas[0];
       const tipoCab = String(cabeca.tipo ?? '').trim().toLowerCase();
       const tipo: LinhaResumoComanda['tipo'] =
-        tipoCab === 'mega' ? 'Mega' : 'Pacote';
+        tipoCab === 'mega'
+          ? 'Mega'
+          : tipoCab === 'pacote queratina'
+            ? 'Pacote Queratina'
+            : 'Pacote';
       const nome =
         String(cabeca.pacote ?? '').trim() ||
         linhaResumoAtendimentoLista(cabeca);
@@ -523,7 +514,9 @@ export class NovaComandaDrawerComponent implements OnInit {
       );
     const tipoNorm = String(l.tipo ?? '').trim().toLowerCase();
     const megaOuPac =
-      tipoNorm === 'mega' || tipoNorm === 'pacote';
+      tipoNorm === 'mega' ||
+      tipoNorm === 'pacote' ||
+      tipoNorm === 'pacote queratina';
     /** Mega/Pacote: não usar pivot partilhado (ver `totalLinhaPreferencialAtendimento`). */
     const totalN = megaOuPac
       ? totalLinhaPreferencialAtendimento(l)
@@ -576,7 +569,10 @@ export class NovaComandaDrawerComponent implements OnInit {
     desconto: string;
     total: string;
   } | null {
-    const tpMega = bloco.tipo === 'Mega' || bloco.tipo === 'Pacote';
+    const tpMega =
+      bloco.tipo === 'Mega' ||
+      bloco.tipo === 'Pacote' ||
+      bloco.tipo === 'Pacote Queratina';
     if (tpMega) {
       const lCab = bloco.linha;
       const q = this.quantidadeLinha(lCab);
@@ -584,7 +580,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       const mostrarQtd = q != null && q > 0;
       const textoQtd = String(qEff).replace('.', ',');
 
-      if (bloco.tipo === 'Pacote') {
+      if (bloco.tipo === 'Pacote' || bloco.tipo === 'Pacote Queratina') {
         /** Valor do pacote na BD (cabeça; etapas costumam vir 0). */
         const totalN = valorMonetarioParaNumero(lCab.valor);
         if (totalN == null) {
@@ -787,6 +783,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       if (t === 'produto') return 'produto';
       if (t === 'mega') return 'mega';
       if (t === 'pacote') return 'pacote';
+      if (t === 'pacote queratina') return 'pacote_queratina';
       if (t === 'cabelo') return 'cabelo';
       return null;
     };
@@ -833,7 +830,11 @@ export class NovaComandaDrawerComponent implements OnInit {
         }
       }
 
-      if (pivotTipo === 'mega' || pivotTipo === 'pacote') {
+      if (
+        pivotTipo === 'mega' ||
+        pivotTipo === 'pacote' ||
+        pivotTipo === 'pacote_queratina'
+      ) {
         const pac = String(row.pacote ?? '').trim();
         const et = String(row.etapa ?? '').trim();
         const filtro = candidatos.filter((it) => {
