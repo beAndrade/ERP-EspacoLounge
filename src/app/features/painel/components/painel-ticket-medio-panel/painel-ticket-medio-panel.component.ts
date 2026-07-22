@@ -1,5 +1,12 @@
-import { Component, computed, input } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import type { PainelTicketMedioVm } from '../../models/painel-dashboard.models';
+import { PainelChartTooltipService } from '../../services/painel-chart-tooltip.service';
 
 /** Barra com base reta e só os cantos superiores arredondados. */
 function barraTopoArredondada(
@@ -25,6 +32,8 @@ function barraTopoArredondada(
   ].join(' ');
 }
 
+const Y_STEP = 30;
+
 @Component({
   selector: 'app-painel-ticket-medio-panel',
   standalone: true,
@@ -32,32 +41,41 @@ function barraTopoArredondada(
   styleUrl: './painel-ticket-medio-panel.component.scss',
 })
 export class PainelTicketMedioPanelComponent {
+  private readonly tip = inject(PainelChartTooltipService);
+
   readonly vm = input<PainelTicketMedioVm>({
     ticketAtual: null,
     vsAnteriorPct: null,
     periodoAnterior: null,
     periodoAtual: null,
+    qtdAnterior: 0,
+    qtdAtual: 0,
+    totalAnterior: 0,
+    totalAtual: 0,
   });
+
+  readonly activeIndex = signal<number | null>(null);
 
   readonly hasData = computed(
     () => this.vm().periodoAtual != null || this.vm().periodoAnterior != null,
   );
 
   readonly vbW = 320;
-  readonly vbH = 168;
-  readonly pad = { t: 18, r: 12, b: 36, l: 52 };
+  readonly vbH = 176;
+  readonly pad = { t: 16, r: 14, b: 40, l: 52 };
+  readonly axisTick = 5;
 
   readonly niceMax = computed(() => {
     const { periodoAnterior, periodoAtual } = this.vm();
     const max = Math.max(periodoAnterior ?? 0, periodoAtual ?? 0, 1);
-    return Math.ceil(max / 15) * 15 || 15;
+    return Math.max(Y_STEP, Math.ceil(max / Y_STEP) * Y_STEP);
   });
 
   readonly yTicks = computed(() => {
     const max = this.niceMax();
-    const steps = 4;
-    const step = max / steps;
-    return Array.from({ length: steps + 1 }, (_, i) => Math.round(step * i));
+    const ticks: number[] = [];
+    for (let v = 0; v <= max; v += Y_STEP) ticks.push(v);
+    return ticks;
   });
 
   readonly gridLines = computed(() => {
@@ -69,32 +87,79 @@ export class PainelTicketMedioPanelComponent {
     }));
   });
 
+  readonly plotBottom = computed(() => this.vbH - this.pad.b);
+  readonly plotTop = computed(() => this.pad.t);
+  readonly plotLeft = computed(() => this.pad.l);
+  readonly plotRight = computed(() => this.vbW - this.pad.r);
+
   readonly bars = computed(() => {
-    const { periodoAnterior, periodoAtual } = this.vm();
+    const v = this.vm();
     const pts = [
-      { label: 'Período anterior', value: periodoAnterior ?? 0, atual: false },
-      { label: 'Período atual', value: periodoAtual ?? 0, atual: true },
+      {
+        label: 'Período anterior',
+        value: v.periodoAnterior ?? 0,
+        qtd: v.qtdAnterior,
+        total: v.totalAnterior,
+        atual: false,
+      },
+      {
+        label: 'Período atual',
+        value: v.periodoAtual ?? 0,
+        qtd: v.qtdAtual,
+        total: v.totalAtual,
+        atual: true,
+      },
     ];
     const niceMax = this.niceMax();
     const innerW = this.vbW - this.pad.l - this.pad.r;
     const innerH = this.vbH - this.pad.t - this.pad.b;
+    const bandW = innerW / 2;
     const bw = 48;
-    const gap = (innerW - bw * 2) / 3;
     return pts.map((p, i) => {
       const h = p.value > 0 ? (p.value / niceMax) * innerH : 0;
-      const x = this.pad.l + gap + i * (bw + gap);
+      const bandX = this.pad.l + i * bandW;
+      const x = bandX + (bandW - bw) / 2;
       const y = this.pad.t + innerH - h;
       const barH = Math.max(h, p.value > 0 ? 2 : 0);
       return {
         ...p,
+        i,
+        bandX,
+        bandW,
         x,
         y,
         w: bw,
         h: barH,
-        path: barraTopoArredondada(x, y, bw, barH, 6),
+        cx: x + bw / 2,
+        path: barraTopoArredondada(x, y, bw, barH, 10),
       };
     });
   });
+
+  onEnter(ev: MouseEvent, i: number): void {
+    const b = this.bars()[i];
+    if (!b) return;
+    this.activeIndex.set(i);
+    this.tip.show({
+      dataLabel: b.label,
+      rows: [
+        { label: 'Ticket médio', value: this.formatMoeda(b.value) },
+        { label: 'Número de comandas', value: String(b.qtd) },
+        { label: 'Total', value: this.formatMoeda(b.total) },
+      ],
+      x: ev.clientX,
+      y: ev.clientY,
+    });
+  }
+
+  onMove(ev: MouseEvent): void {
+    this.tip.move(ev.clientX, ev.clientY);
+  }
+
+  onLeave(): void {
+    this.activeIndex.set(null);
+    this.tip.hide();
+  }
 
   formatMoeda(valor: number | null): string {
     if (valor == null) return '—';

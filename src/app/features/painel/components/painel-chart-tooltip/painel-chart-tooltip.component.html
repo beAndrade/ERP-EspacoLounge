@@ -1,6 +1,7 @@
 @if (visible() && payload(); as tip) {
   <div
     class="painel-chart-tooltip"
+    [class.painel-chart-tooltip--rows]="!!tip.rows?.length"
     role="tooltip"
     [style.left]="style()['left']"
     [style.top]="style()['top']"
@@ -8,14 +9,25 @@
     @if (tip.dataLabel) {
       <div class="painel-chart-tooltip__date">{{ tip.dataLabel }}</div>
     }
-    @if (tip.valorLabel) {
-      <div class="painel-chart-tooltip__value">{{ tip.valorLabel }}</div>
-    }
-    @if (tip.deltaLabel) {
-      <div class="painel-chart-tooltip__delta">{{ tip.deltaLabel }}</div>
-    }
-    @if (tip.nota) {
-      <div class="painel-chart-tooltip__nota">{{ tip.nota }}</div>
+    @if (tip.rows?.length) {
+      <div class="painel-chart-tooltip__rows">
+        @for (row of tip.rows; track row.label) {
+          <div class="painel-chart-tooltip__row">
+            <span class="painel-chart-tooltip__row-label">{{ row.label }}:</span>
+            <span class="painel-chart-tooltip__row-value">{{ row.value }}</span>
+          </div>
+        }
+      </div>
+    } @else {
+      @if (tip.valorLabel) {
+        <div class="painel-chart-tooltip__value">{{ tip.valorLabel }}</div>
+      }
+      @if (tip.deltaLabel) {
+        <div class="painel-chart-tooltip__delta">{{ tip.deltaLabel }}</div>
+      }
+      @if (tip.nota) {
+        <div class="painel-chart-tooltip__nota">{{ tip.nota }}</div>
+      }
     }
   </div>
 }

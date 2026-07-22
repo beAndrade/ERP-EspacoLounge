@@ -97,6 +97,14 @@ export type PainelTicketMedioVm = {
   vsAnteriorPct: number | null;
   periodoAnterior: number | null;
   periodoAtual: number | null;
+  /** Comandas faturadas no período anterior (para tooltip do gráfico). */
+  qtdAnterior: number;
+  /** Comandas faturadas no período atual (para tooltip do gráfico). */
+  qtdAtual: number;
+  /** Soma das comandas faturadas no período anterior. */
+  totalAnterior: number;
+  /** Soma das comandas faturadas no período atual. */
+  totalAtual: number;
 };
 
 export type PainelVendasCategoriaLinha = {
@@ -187,6 +195,10 @@ export function emptyTicketMedioVm(): PainelTicketMedioVm {
     vsAnteriorPct: null,
     periodoAnterior: null,
     periodoAtual: null,
+    qtdAnterior: 0,
+    qtdAtual: 0,
+    totalAnterior: 0,
+    totalAtual: 0,
   };
 }
 

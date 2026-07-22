@@ -260,16 +260,26 @@ function comandasNoIntervalo(
   );
 }
 
-function ticketMedioComandasFaturadas(
+type TicketMedioStats = {
+  ticket: number | null;
+  qtd: number;
+  total: number;
+};
+
+function statsComandasFaturadas(
   comandas: ReturnType<typeof agruparAtendimentosEmComandas>,
-): number | null {
+): TicketMedioStats {
   const faturadas = comandas.filter((g) => comandaQuitadaNasCifrasGrupo(g));
-  if (!faturadas.length) return null;
+  if (!faturadas.length) return { ticket: null, qtd: 0, total: 0 };
   let sum = 0;
   for (const g of faturadas) {
     sum += g.valorTotal ?? 0;
   }
-  return Math.round((sum / faturadas.length) * 100) / 100;
+  return {
+    ticket: Math.round((sum / faturadas.length) * 100) / 100,
+    qtd: faturadas.length,
+    total: Math.round(sum * 100) / 100,
+  };
 }
 
 function labelDiaCurto(ymd: string): string {
@@ -413,13 +423,17 @@ export function mapAtendimentosParaPainelPeriodo(
     }
   }
 
-  const ticketAtual = ticketMedioComandasFaturadas(comandas);
-  const ticketAnterior = ticketMedioComandasFaturadas(comandasAnterior);
+  const statsAtual = statsComandasFaturadas(comandas);
+  const statsAnterior = statsComandasFaturadas(comandasAnterior);
   const ticketMedio: PainelTicketMedioVm = {
-    ticketAtual,
-    vsAnteriorPct: pctVariacao(ticketAtual, ticketAnterior),
-    periodoAnterior: ticketAnterior,
-    periodoAtual: ticketAtual,
+    ticketAtual: statsAtual.ticket,
+    vsAnteriorPct: pctVariacao(statsAtual.ticket, statsAnterior.ticket),
+    periodoAnterior: statsAnterior.ticket,
+    periodoAtual: statsAtual.ticket,
+    qtdAnterior: statsAnterior.qtd,
+    qtdAtual: statsAtual.qtd,
+    totalAnterior: statsAnterior.total,
+    totalAtual: statsAtual.total,
   };
 
   const profMap = new Map<

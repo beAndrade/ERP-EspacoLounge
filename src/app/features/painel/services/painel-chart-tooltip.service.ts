@@ -1,10 +1,17 @@
 import { Injectable, signal } from '@angular/core';
 
+export type PainelTooltipRow = {
+  label: string;
+  value: string;
+};
+
 export type PainelTooltipPayload = {
   dataLabel: string;
-  valorLabel: string;
+  valorLabel?: string | null;
   deltaLabel?: string | null;
   nota?: string | null;
+  /** Linhas “rótulo: valor” (ex.: tooltip do ticket médio). */
+  rows?: PainelTooltipRow[];
   x: number;
   y: number;
 };

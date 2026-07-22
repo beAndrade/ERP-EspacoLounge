@@ -24,6 +24,41 @@
   margin-bottom: 0.15rem;
 }
 
+.painel-chart-tooltip--rows {
+  min-width: 10.5rem;
+  max-width: 16rem;
+
+  .painel-chart-tooltip__date {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 0.45rem;
+  }
+}
+
+.painel-chart-tooltip__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.painel-chart-tooltip__row {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.painel-chart-tooltip__row-label {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.painel-chart-tooltip__row-value {
+  color: #111827;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: 0.2rem;
+}
+
 .painel-chart-tooltip__value {
   font-size: 0.88rem;
   font-weight: 700;

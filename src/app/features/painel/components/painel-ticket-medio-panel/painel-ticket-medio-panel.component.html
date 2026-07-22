@@ -31,24 +31,66 @@
         [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
         role="img"
         aria-label="Comparação de ticket médio entre períodos"
+        (mouseleave)="onLeave()"
       >
         @for (g of gridLines(); track g.value) {
+          @if (g.value > 0) {
+            <line
+              class="painel-ticket__grid"
+              [attr.x1]="plotLeft()"
+              [attr.x2]="plotRight()"
+              [attr.y1]="g.y"
+              [attr.y2]="g.y"
+            />
+          }
+        }
+
+        @for (b of bars(); track b.label) {
+          @if (activeIndex() === b.i) {
+            <rect
+              class="painel-ticket__hover-band"
+              [attr.x]="b.bandX"
+              [attr.y]="plotTop()"
+              [attr.width]="b.bandW"
+              [attr.height]="plotBottom() - plotTop()"
+            />
+          }
+        }
+
+        <!-- Eixo Y (esquerda) + traços -->
+        <line
+          class="painel-ticket__axis"
+          [attr.x1]="plotLeft()"
+          [attr.x2]="plotLeft()"
+          [attr.y1]="plotTop()"
+          [attr.y2]="plotBottom()"
+        />
+        @for (g of gridLines(); track g.value) {
           <line
-            class="painel-ticket__grid"
-            [attr.x1]="pad.l"
-            [attr.x2]="vbW - pad.r"
+            class="painel-ticket__axis-tick"
+            [attr.x1]="plotLeft() - axisTick"
+            [attr.x2]="plotLeft()"
             [attr.y1]="g.y"
             [attr.y2]="g.y"
           />
           <text
             class="painel-ticket__tick"
-            [attr.x]="pad.l - 8"
+            [attr.x]="plotLeft() - axisTick - 4"
             [attr.y]="g.y + 3"
             text-anchor="end"
           >
             {{ formatMoedaCurta(g.value) }}
           </text>
         }
+
+        <!-- Eixo X (base) -->
+        <line
+          class="painel-ticket__axis"
+          [attr.x1]="plotLeft()"
+          [attr.x2]="plotRight()"
+          [attr.y1]="plotBottom()"
+          [attr.y2]="plotBottom()"
+        />
 
         @for (b of bars(); track b.label) {
           @if (b.path) {
@@ -58,24 +100,33 @@
               [attr.d]="b.path"
             />
           }
-          @if (b.value > 0) {
-            <text
-              class="painel-ticket__bar-value"
-              [attr.x]="b.x + b.w / 2"
-              [attr.y]="b.y - 6"
-              text-anchor="middle"
-            >
-              {{ formatMoeda(b.value) }}
-            </text>
-          }
+          <line
+            class="painel-ticket__axis-tick"
+            [attr.x1]="b.cx"
+            [attr.x2]="b.cx"
+            [attr.y1]="plotBottom()"
+            [attr.y2]="plotBottom() + axisTick"
+          />
           <text
             class="painel-ticket__bar-label"
-            [attr.x]="b.x + b.w / 2"
-            [attr.y]="vbH - 10"
+            [attr.x]="b.cx"
+            [attr.y]="vbH - 12"
             text-anchor="middle"
           >
             {{ b.label }}
           </text>
+        }
+
+        @for (b of bars(); track b.label) {
+          <rect
+            class="painel-ticket__hit"
+            [attr.x]="b.bandX"
+            [attr.y]="plotTop()"
+            [attr.width]="b.bandW"
+            [attr.height]="plotBottom() - plotTop()"
+            (mouseenter)="onEnter($event, b.i)"
+            (mousemove)="onMove($event)"
+          />
         }
       </svg>
     </div>
