@@ -14,27 +14,29 @@
     ></a>
   }
 
-  <header class="painel-smart-card__head">
-    <div class="painel-smart-card__titles">
-      <h2 class="painel-smart-card__title">{{ title() }}</h2>
-      @if (subtitle()) {
-        <p class="painel-smart-card__subtitle">{{ subtitle() }}</p>
-      }
-      @if (contextoAtivo() && focoLabel()) {
-        <span class="painel-smart-card__foco">Foco: {{ focoLabel() }}</span>
-      }
-    </div>
-    <div class="painel-smart-card__icon" aria-hidden="true">
-      <ng-content select="[painelCardIcon]" />
-    </div>
-  </header>
+  <div class="painel-smart-card__main">
+    <header class="painel-smart-card__head">
+      <div class="painel-smart-card__titles">
+        <h2 class="painel-smart-card__title">{{ title() }}</h2>
+        @if (subtitle()) {
+          <p class="painel-smart-card__subtitle">{{ subtitle() }}</p>
+        }
+        @if (contextoAtivo() && focoLabel()) {
+          <span class="painel-smart-card__foco">Foco: {{ focoLabel() }}</span>
+        }
+      </div>
+      <div class="painel-smart-card__icon" aria-hidden="true">
+        <ng-content select="[painelCardIcon]" />
+      </div>
+    </header>
 
-  <div class="painel-smart-card__value">
-    <ng-content select="[painelCardValue]" />
-  </div>
+    <div class="painel-smart-card__value">
+      <ng-content select="[painelCardValue]" />
+    </div>
 
-  <div class="painel-smart-card__spark">
-    <ng-content select="[painelCardSpark]" />
+    <div class="painel-smart-card__spark">
+      <ng-content select="[painelCardSpark]" />
+    </div>
   </div>
 
   <div class="painel-smart-card__reveal" aria-live="polite">

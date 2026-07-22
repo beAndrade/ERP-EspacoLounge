@@ -75,9 +75,21 @@
   overflow: hidden;
 }
 
-.painel-smart-card__head {
+/**
+ * Bloco colapsado com altura mínima fixa — a sparkline fica ancorada no fundo
+ * deste bloco (margin-top: auto) e não sobe quando o reveal abre.
+ */
+.painel-smart-card__main {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-height: calc(var(--psc-collapsed-h) - 1.1rem - 0.95rem);
+  min-width: 0;
+}
+
+.painel-smart-card__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -92,18 +104,26 @@
 
 .painel-smart-card__title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: normal;
   line-height: 1.25;
   color: #374151;
 }
 
 .painel-smart-card__subtitle {
   margin: 0.2rem 0 0;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: #9ca3af;
+  font-size: 14px;
+  font-weight: normal;
+  color: #828282;
   line-height: 1.3;
+  text-align: left;
+  /* Reserva 2 linhas para todos os cards — evita altura desigual no grid. */
+  min-height: calc(1.3em * 2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .painel-smart-card__foco {
@@ -139,8 +159,6 @@
 }
 
 .painel-smart-card__value {
-  position: relative;
-  z-index: 2;
   margin-top: 0.85rem;
   min-height: 2.15rem;
   pointer-events: none;
@@ -151,8 +169,6 @@
 }
 
 .painel-smart-card__spark {
-  position: relative;
-  z-index: 2;
   margin-top: auto;
   min-height: 2.5rem;
   opacity: 1;
@@ -185,9 +201,11 @@
 
 .painel-smart-card__reveal-body {
   min-width: 0;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: normal;
   line-height: 1.35;
-  color: #4b5563;
+  color: #828282;
+  text-align: left;
 }
 
 .painel-smart-card__cta {

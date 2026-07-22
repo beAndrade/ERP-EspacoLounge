@@ -306,7 +306,11 @@
 
 .painel-smart-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /**
+   * Quebra pela largura útil do grid (não só da viewport) — com sidebar,
+   * 5 colunas fixas apertavam os cards e o subtítulo quebrava linha.
+   */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.15rem;
   align-items: start;
   min-width: 0;
@@ -332,6 +336,10 @@
   flex-direction: column;
   gap: 0.32rem;
   min-width: 0;
+  font-size: 14px;
+  font-weight: normal;
+  color: #828282;
+  text-align: left;
 }
 
 .painel-reveal__divider {
@@ -345,13 +353,15 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: normal;
+  color: #828282;
+  text-align: left;
 
   strong {
-    font-size: 13px;
-    font-weight: 600;
-    color: #111827;
+    font-size: 14px;
+    font-weight: normal;
+    color: #828282;
     text-align: right;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -399,14 +409,16 @@
   grid-template-columns: 3.1rem minmax(0, 1fr) auto;
   gap: 0.45rem;
   align-items: baseline;
-  font-size: 13px;
-  color: #4b5563;
+  font-size: 14px;
+  font-weight: normal;
+  color: #828282;
+  text-align: left;
 }
 
 .painel-reveal__hora {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: #111827;
+  font-weight: normal;
+  color: #828282;
 }
 
 .painel-reveal__nome {
@@ -423,8 +435,10 @@
 
 .painel-reveal__empty {
   margin: 0;
-  font-size: 13px;
-  color: #9ca3af;
+  font-size: 14px;
+  font-weight: normal;
+  color: #828282;
+  text-align: left;
 }
 
 .painel-charts-grid {
@@ -625,17 +639,7 @@
   font-weight: 500;
 }
 
-@media (max-width: 1400px) {
-  .painel-smart-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 1100px) {
-  .painel-smart-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .painel-charts-grid {
     grid-template-columns: 1fr;
   }
@@ -658,7 +662,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 520px) {
   .painel-smart-grid {
     grid-template-columns: 1fr;
   }
