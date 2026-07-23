@@ -184,4 +184,30 @@
     border-top-color: transparent;
     border-bottom-color: rgba(0, 0, 0, 0.82);
   }
+
+  /** Balão à esquerda do botão — seta no meio da borda direita. */
+  &.ui-tip-portal--side-left .ui-tip-portal__arrow {
+    top: 50%;
+    left: auto;
+    right: calc(var(--ui-tip-arrow-size) * -1);
+    bottom: auto;
+    margin-left: 0;
+    margin-top: calc(var(--ui-tip-arrow-size) * -1);
+    border: var(--ui-tip-arrow-size) solid transparent;
+    border-left-color: rgba(0, 0, 0, 0.82);
+    border-top-color: transparent;
+  }
+
+  /** Fallback se não couber à esquerda. */
+  &.ui-tip-portal--side-right .ui-tip-portal__arrow {
+    top: 50%;
+    left: calc(var(--ui-tip-arrow-size) * -1);
+    right: auto;
+    bottom: auto;
+    margin-left: 0;
+    margin-top: calc(var(--ui-tip-arrow-size) * -1);
+    border: var(--ui-tip-arrow-size) solid transparent;
+    border-right-color: rgba(0, 0, 0, 0.82);
+    border-top-color: transparent;
+  }
 }

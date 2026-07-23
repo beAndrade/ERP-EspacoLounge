@@ -28,11 +28,11 @@
       }
 
       @if (filled()) {
-        <!-- Baseline + ticks por dia -->
+        <!-- Baseline exatamente do 1º ao último ponto -->
         <line
           class="painel-sparkline__axis"
-          [attr.x1]="padX"
-          [attr.x2]="vbW - padX"
+          [attr.x1]="plotFirstX()"
+          [attr.x2]="plotLastX()"
           [attr.y1]="baselineY()"
           [attr.y2]="baselineY()"
         />
@@ -41,8 +41,8 @@
             class="painel-sparkline__tick"
             [attr.x1]="p.x"
             [attr.x2]="p.x"
-            [attr.y1]="baselineY()"
-            [attr.y2]="baselineY() + 3"
+            [attr.y1]="baselineY() - 3"
+            [attr.y2]="baselineY()"
           />
         }
       }

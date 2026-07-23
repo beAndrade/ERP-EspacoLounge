@@ -19,11 +19,12 @@
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  overflow: hidden;
+  cursor: default;
 }
 
 .painel-sparkline--filled .painel-sparkline__svg {
-  cursor: crosshair;
+  cursor: default;
 }
 
 .painel-sparkline__area {

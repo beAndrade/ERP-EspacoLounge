@@ -19,13 +19,18 @@ type SparkPlotPoint = {
 
 type Pt = { x: number; y: number };
 
-/** Catmull-Rom → cubics (mesmo tipo de suavização do gráfico Belasis). */
-function smoothLinePath(pts: Pt[]): string {
+/**
+ * Catmull-Rom → cubics, com Y dos controles limitado ao plot
+ * (evita a curva “furar” a baseline).
+ */
+function smoothLinePath(pts: Pt[], yMin: number, yMax: number): string {
   if (pts.length === 0) return '';
   if (pts.length === 1) return `M ${pts[0]!.x} ${pts[0]!.y}`;
   if (pts.length === 2) {
     return `M ${pts[0]!.x} ${pts[0]!.y} L ${pts[1]!.x} ${pts[1]!.y}`;
   }
+
+  const clampY = (y: number) => Math.min(yMax, Math.max(yMin, y));
 
   let d = `M ${pts[0]!.x} ${pts[0]!.y}`;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -34,39 +39,25 @@ function smoothLinePath(pts: Pt[]): string {
     const p2 = pts[i + 1]!;
     const p3 = pts[i + 2] ?? p2;
     const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp1y = clampY(p1.y + (p2.y - p0.y) / 6);
     const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    const cp2y = clampY(p2.y - (p3.y - p1.y) / 6);
     d += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`;
   }
   return d;
 }
 
-/** Fecha a área: curva no topo + retorno pela baseline (como no Belasis). */
-function smoothAreaPath(pts: Pt[], baselineY: number): string {
+/** Área: curva no topo + retorno reto pela baseline (sem ultrapassar). */
+function smoothAreaPath(pts: Pt[], baselineY: number, yMin: number): string {
   if (pts.length === 0) return '';
-  const top = smoothLinePath(pts);
+  const top = smoothLinePath(pts, yMin, baselineY);
   if (pts.length === 1) {
     const p = pts[0]!;
     return `M ${p.x} ${baselineY} L ${p.x} ${p.y} L ${p.x} ${baselineY} Z`;
   }
-  const last = pts[pts.length - 1]!;
   const first = pts[0]!;
-  /** Volta pela baseline com segmentos C espelhados (y=baseline). */
-  const rev: Pt[] = [...pts].reverse().map((p) => ({ x: p.x, y: baselineY }));
-  let back = '';
-  for (let i = 0; i < rev.length - 1; i++) {
-    const p0 = rev[i - 1] ?? rev[i]!;
-    const p1 = rev[i]!;
-    const p2 = rev[i + 1]!;
-    const p3 = rev[i + 2] ?? p2;
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = baselineY;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = baselineY;
-    back += ` C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`;
-  }
-  return `${top} L ${last.x} ${baselineY}${back} L ${first.x} ${baselineY} Z`;
+  const last = pts[pts.length - 1]!;
+  return `${top} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
 }
 
 @Component({
@@ -85,8 +76,12 @@ export class PainelSparklineComponent {
   readonly filled = input(false);
   /** Âncora o eixo Y em zero (contagens diárias). */
   readonly baselineZero = input(false);
+  /**
+   * Se true, propaga o dia para o contexto do painel (destaca smart cards).
+   * Desligado no gráfico de profissionais — só mostra tooltip.
+   */
+  readonly syncContext = input(true);
 
-  /** ViewBox largo como no Belasis (~560×50) — escala via CSS. */
   readonly vbW = 560;
   readonly vbH = 52;
   readonly padX = 5;
@@ -117,23 +112,34 @@ export class PainelSparklineComponent {
     const innerW = this.vbW - this.padX * 2;
     const innerH = this.vbH - this.padY * 2;
     const span = max - min || 1;
+    const baseY = this.baselineY();
 
     return pts.map((point, i) => {
       const x = n === 1 ? this.vbW / 2 : this.padX + (i / (n - 1)) * innerW;
       const t = (point.value - min) / span;
-      const y = this.padY + (1 - t) * innerH;
+      const y = Math.min(baseY, this.padY + (1 - t) * innerH);
       return { x, y, i, point };
     });
   });
 
+  readonly plotFirstX = computed(() => this.plot()[0]?.x ?? this.padX);
+  readonly plotLastX = computed(
+    () => this.plot()[this.plot().length - 1]?.x ?? this.vbW - this.padX,
+  );
+
   readonly linePath = computed(() =>
-    smoothLinePath(this.plot().map((p) => ({ x: p.x, y: p.y }))),
+    smoothLinePath(
+      this.plot().map((p) => ({ x: p.x, y: p.y })),
+      this.padY,
+      this.baselineY(),
+    ),
   );
 
   readonly areaPath = computed(() =>
     smoothAreaPath(
       this.plot().map((p) => ({ x: p.x, y: p.y })),
       this.baselineY(),
+      this.padY,
     ),
   );
 
@@ -165,7 +171,7 @@ export class PainelSparklineComponent {
 
   onChartLeave(): void {
     this.activeIndex.set(null);
-    this.ctx.clear();
+    if (this.syncContext()) this.ctx.clear();
     this.tip.hide();
   }
 
@@ -173,7 +179,7 @@ export class PainelSparklineComponent {
     const p = this.plot()[i];
     if (!p) return;
     this.activeIndex.set(i);
-    this.ctx.setDay(p.point.ymd);
+    if (this.syncContext()) this.ctx.setDay(p.point.ymd);
     const dataFmt = ymdExibicaoBelasis(p.point.ymd) || p.point.ymd;
     this.tip.show({
       dataLabel: '',

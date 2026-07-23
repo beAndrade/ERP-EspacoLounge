@@ -212,38 +212,87 @@ export class UiTipTriggerComponent implements OnDestroy {
 
     panel.style.display = 'block';
     panel.style.visibility = 'hidden';
+    panel.classList.remove(
+      'ui-tip-portal--below',
+      'ui-tip-portal--side-left',
+      'ui-tip-portal--side-right',
+    );
     const panelW = panel.offsetWidth;
     const panelH = panel.offsetHeight;
 
-    let top = triggerRect.top - panelH - gap;
-    let placeBelow = false;
-    if (top < margin) {
-      top = triggerRect.bottom + gap;
-      placeBelow = true;
-    }
-
-    let left: number;
     const align = this.align();
+    let top: number;
+    let left: number;
+    let place: 'above' | 'below' | 'left' | 'right' = 'above';
+
     if (align === 'end') {
-      left = triggerRect.right - panelW;
+      /**
+       * Balão cresce à esquerda do botão; seta no meio da borda direita,
+       * apontando para o trigger.
+       */
+      left = triggerRect.left - panelW - gap;
+      top = triggerRect.top + triggerRect.height / 2 - panelH / 2;
+      place = 'left';
+      if (left < margin) {
+        left = triggerRect.right + gap;
+        place = 'right';
+      }
+      top = Math.max(
+        margin,
+        Math.min(top, window.innerHeight - panelH - margin),
+      );
     } else if (align === 'start') {
       left = triggerRect.left;
+      top = triggerRect.top - panelH - gap;
+      if (top < margin) {
+        top = triggerRect.bottom + gap;
+        place = 'below';
+      }
+      left = Math.max(
+        margin,
+        Math.min(left, window.innerWidth - panelW - margin),
+      );
     } else {
       left = triggerRect.left + triggerRect.width / 2 - panelW / 2;
+      top = triggerRect.top - panelH - gap;
+      if (top < margin) {
+        top = triggerRect.bottom + gap;
+        place = 'below';
+      }
+      left = Math.max(
+        margin,
+        Math.min(left, window.innerWidth - panelW - margin),
+      );
     }
-    left = Math.max(margin, Math.min(left, window.innerWidth - panelW - margin));
 
     panel.style.top = `${top}px`;
     panel.style.left = `${left}px`;
     panel.style.visibility = 'visible';
-    panel.classList.toggle('ui-tip-portal--below', placeBelow);
+    panel.classList.toggle('ui-tip-portal--below', place === 'below');
+    panel.classList.toggle('ui-tip-portal--side-left', place === 'left');
+    panel.classList.toggle('ui-tip-portal--side-right', place === 'right');
 
     const arrow = panel.querySelector('.ui-tip-portal__arrow') as HTMLElement | null;
-    if (arrow) {
+    if (!arrow) return;
+
+    if (place === 'left' || place === 'right') {
+      const tipMid = triggerRect.top + triggerRect.height / 2;
+      let arrowTop = tipMid - top - 7;
+      arrowTop = Math.max(10, Math.min(panelH - 20, arrowTop));
+      arrow.style.top = `${arrowTop}px`;
+      arrow.style.marginTop = '0';
+      arrow.style.left = '';
+      arrow.style.bottom = '';
+      arrow.style.right = '';
+    } else {
       const tipCenter = triggerRect.left + triggerRect.width / 2;
       let arrowLeft = tipCenter - left - 7;
       arrowLeft = Math.max(12, Math.min(panelW - 24, arrowLeft));
       arrow.style.left = `${arrowLeft}px`;
+      arrow.style.top = '';
+      arrow.style.marginTop = '';
+      arrow.style.right = '';
+      arrow.style.bottom = '';
     }
   }
 
