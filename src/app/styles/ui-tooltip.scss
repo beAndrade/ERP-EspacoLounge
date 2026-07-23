@@ -1,16 +1,15 @@
-/** Tooltip escuro reutilizável (trigger + balão com seta para baixo). */
+/** Tooltip escuro reutilizável (trigger + balão com seta). */
 
 :root {
-  /* vertical (top/bottom) maior que lateral (left/right) — único padrão em todo o app */
   --ui-tip-pad-block: 0.5rem;
   --ui-tip-pad-inline: 0.5rem;
   --ui-tip-font-size: 14px;
   --ui-tip-line-height: 1.25;
   --ui-tip-radius: 10px;
   --ui-tip-show-delay: 200ms;
-  /* Distância do topo do botão até a base do balão (seta ~7px dentro deste gap). */
   --ui-tip-gap: 10px;
   --ui-tip-arrow-size: 7px;
+  --ui-tip-bg: rgba(0, 0, 0, 0.82);
 }
 
 @mixin ui-tip-surface {
@@ -21,10 +20,61 @@
   line-height: var(--ui-tip-line-height);
   color: #fff;
   text-align: center;
-  background: rgba(0, 0, 0, 0.82);
+  background: var(--ui-tip-bg);
   border-radius: var(--ui-tip-radius);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
   box-sizing: border-box;
+}
+
+/**
+ * Triângulo só com as bordas necessárias (sem borda oposta transparente),
+ * ancorado na face do balão com 1px de overlap — evita seta “dentro”
+ * e a listra entre balão e base da seta.
+ */
+@mixin ui-tip-arrow-down {
+  top: calc(100% - 1px);
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  margin: 0 0 0 calc(var(--ui-tip-arrow-size) * -1);
+  border-style: solid;
+  border-width: var(--ui-tip-arrow-size) var(--ui-tip-arrow-size) 0;
+  border-color: var(--ui-tip-bg) transparent transparent;
+}
+
+@mixin ui-tip-arrow-up {
+  top: auto;
+  bottom: calc(100% - 1px);
+  left: 50%;
+  right: auto;
+  margin: 0 0 0 calc(var(--ui-tip-arrow-size) * -1);
+  border-style: solid;
+  border-width: 0 var(--ui-tip-arrow-size) var(--ui-tip-arrow-size);
+  border-color: transparent transparent var(--ui-tip-bg);
+}
+
+@mixin ui-tip-arrow-right {
+  top: 50%;
+  left: auto;
+  right: calc(-1 * var(--ui-tip-arrow-size) + 1px);
+  bottom: auto;
+  margin: calc(var(--ui-tip-arrow-size) * -1) 0 0;
+  border-style: solid;
+  border-width: var(--ui-tip-arrow-size) 0 var(--ui-tip-arrow-size)
+    var(--ui-tip-arrow-size);
+  border-color: transparent transparent transparent var(--ui-tip-bg);
+}
+
+@mixin ui-tip-arrow-left {
+  top: 50%;
+  left: calc(-1 * var(--ui-tip-arrow-size) + 1px);
+  right: auto;
+  bottom: auto;
+  margin: calc(var(--ui-tip-arrow-size) * -1) 0 0;
+  border-style: solid;
+  border-width: var(--ui-tip-arrow-size) var(--ui-tip-arrow-size)
+    var(--ui-tip-arrow-size) 0;
+  border-color: transparent var(--ui-tip-bg) transparent transparent;
 }
 
 .ui-tip-trigger,
@@ -60,17 +110,12 @@
     visibility 0s linear 0.16s;
   transition-delay: 0s, 0s;
 
-  /* Triângulo: margin negativa centra a seta no balão (e no botão). */
   &::after {
     content: '';
     position: absolute;
-    top: 100%;
-    left: 50%;
     width: 0;
     height: 0;
-    margin-left: calc(var(--ui-tip-arrow-size) * -1);
-    border: var(--ui-tip-arrow-size) solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.82);
+    @include ui-tip-arrow-down;
   }
 }
 
@@ -93,7 +138,6 @@
   right: 0;
   transform: none;
 
-  /* Seta no centro do botão (trigger 2rem), não na borda do balão. */
   &::after {
     left: auto;
     right: calc(1rem - var(--ui-tip-arrow-size));
@@ -169,45 +213,23 @@
 
   .ui-tip-portal__arrow {
     position: absolute;
-    top: 100%;
-    left: 50%;
     width: 0;
     height: 0;
-    margin-left: calc(var(--ui-tip-arrow-size) * -1);
-    border: var(--ui-tip-arrow-size) solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.82);
+    pointer-events: none;
+    @include ui-tip-arrow-down;
   }
 
   &.ui-tip-portal--below .ui-tip-portal__arrow {
-    top: auto;
-    bottom: 100%;
-    border-top-color: transparent;
-    border-bottom-color: rgba(0, 0, 0, 0.82);
+    @include ui-tip-arrow-up;
   }
 
-  /** Balão à esquerda do botão — seta no meio da borda direita. */
+  /** Balão à esquerda do botão — seta na borda direita, apontando ao trigger. */
   &.ui-tip-portal--side-left .ui-tip-portal__arrow {
-    top: 50%;
-    left: auto;
-    right: calc(var(--ui-tip-arrow-size) * -1);
-    bottom: auto;
-    margin-left: 0;
-    margin-top: calc(var(--ui-tip-arrow-size) * -1);
-    border: var(--ui-tip-arrow-size) solid transparent;
-    border-left-color: rgba(0, 0, 0, 0.82);
-    border-top-color: transparent;
+    @include ui-tip-arrow-right;
   }
 
   /** Fallback se não couber à esquerda. */
   &.ui-tip-portal--side-right .ui-tip-portal__arrow {
-    top: 50%;
-    left: calc(var(--ui-tip-arrow-size) * -1);
-    right: auto;
-    bottom: auto;
-    margin-left: 0;
-    margin-top: calc(var(--ui-tip-arrow-size) * -1);
-    border: var(--ui-tip-arrow-size) solid transparent;
-    border-right-color: rgba(0, 0, 0, 0.82);
-    border-top-color: transparent;
+    @include ui-tip-arrow-left;
   }
 }

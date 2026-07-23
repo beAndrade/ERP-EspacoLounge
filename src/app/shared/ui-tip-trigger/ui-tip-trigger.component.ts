@@ -277,18 +277,26 @@ export class UiTipTriggerComponent implements OnDestroy {
 
     if (place === 'left' || place === 'right') {
       const tipMid = triggerRect.top + triggerRect.height / 2;
-      let arrowTop = tipMid - top - 7;
+      const half = 7; // --ui-tip-arrow-size
+      let arrowTop = tipMid - top - half;
       arrowTop = Math.max(10, Math.min(panelH - 20, arrowTop));
       arrow.style.top = `${arrowTop}px`;
       arrow.style.marginTop = '0';
       arrow.style.left = '';
       arrow.style.bottom = '';
-      arrow.style.right = '';
+      // Mantém right/left do CSS (borda do balão); não zerar.
+      if (place === 'left') {
+        arrow.style.right = '';
+      } else {
+        arrow.style.left = '';
+      }
     } else {
       const tipCenter = triggerRect.left + triggerRect.width / 2;
-      let arrowLeft = tipCenter - left - 7;
+      const half = 7;
+      let arrowLeft = tipCenter - left - half;
       arrowLeft = Math.max(12, Math.min(panelW - 24, arrowLeft));
       arrow.style.left = `${arrowLeft}px`;
+      arrow.style.marginLeft = '0';
       arrow.style.top = '';
       arrow.style.marginTop = '';
       arrow.style.right = '';

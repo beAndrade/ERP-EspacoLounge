@@ -76,14 +76,14 @@ app-painel-rich-tip {
 .painel-rich-tip__arrow {
   position: absolute;
   left: 50%;
-  bottom: 100%;
+  bottom: calc(100% - 1px);
   width: 0;
   height: 0;
-  margin-bottom: -1px;
   transform: translateX(-50%);
   pointer-events: none;
-  border: 7px solid transparent;
-  border-bottom-color: #fff;
+  border-style: solid;
+  border-width: 0 7px 7px;
+  border-color: transparent transparent #fff;
   filter: drop-shadow(0 -1px 0 #eef0f5);
 }
 
