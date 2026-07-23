@@ -1,4 +1,8 @@
-<div class="painel-sparkline" [style.--spark-color]="color()">
+<div
+  class="painel-sparkline"
+  [class.painel-sparkline--filled]="filled()"
+  [style.--spark-color]="color()"
+>
   @if (hasSeries()) {
     <svg
       class="painel-sparkline__svg"
@@ -6,35 +10,69 @@
       preserveAspectRatio="none"
       role="img"
       aria-label="Tendência no período"
+      (mousemove)="onChartMove($event)"
+      (mouseleave)="onChartLeave()"
     >
+      <!-- Área suave (fill Belasis) -->
       @if (filled() && areaPath()) {
+        <path class="painel-sparkline__area" [attr.d]="areaPath()" />
+      }
+
+      <!-- Curva superior -->
+      @if (linePath()) {
         <path
-          class="painel-sparkline__area"
-          [attr.d]="areaPath()"
-          fill="currentColor"
+          class="painel-sparkline__curve"
+          [attr.d]="linePath()"
+          fill="none"
         />
       }
-      <polyline
-        class="painel-sparkline__line"
-        fill="none"
-        [attr.stroke]="'currentColor'"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        [attr.points]="polylinePoints()"
-      />
-      @for (p of plot(); track p.point.ymd + '-' + $index) {
+
+      @if (filled()) {
+        <!-- Baseline + ticks por dia -->
+        <line
+          class="painel-sparkline__axis"
+          [attr.x1]="padX"
+          [attr.x2]="vbW - padX"
+          [attr.y1]="baselineY()"
+          [attr.y2]="baselineY()"
+        />
+        @for (p of plot(); track p.point.ymd + '-' + p.i) {
+          <line
+            class="painel-sparkline__tick"
+            [attr.x1]="p.x"
+            [attr.x2]="p.x"
+            [attr.y1]="baselineY()"
+            [attr.y2]="baselineY() + 3"
+          />
+        }
+      }
+
+      <!-- Hover: guia vertical + ponto -->
+      @if (activePoint(); as ap) {
+        <line
+          class="painel-sparkline__guide"
+          [attr.x1]="ap.x"
+          [attr.x2]="ap.x"
+          [attr.y1]="padY"
+          [attr.y2]="baselineY()"
+        />
         <circle
-          class="painel-sparkline__hit"
-          [attr.cx]="p.cx"
-          [attr.cy]="p.cy"
-          r="8"
-          fill="transparent"
-          (mouseenter)="onPointEnter($event, p)"
-          (mousemove)="onPointMove($event)"
-          (mouseleave)="onPointLeave()"
+          class="painel-sparkline__dot"
+          [attr.cx]="ap.x"
+          [attr.cy]="ap.y"
+          r="4"
         />
       }
+
+      <!-- Hit full-bleed (eventos no svg) -->
+      <rect
+        class="painel-sparkline__hit-area"
+        x="0"
+        y="0"
+        [attr.width]="vbW"
+        [attr.height]="vbH"
+        fill="transparent"
+      />
     </svg>
   } @else {
     <div class="painel-sparkline__empty" aria-hidden="true">
