@@ -44,109 +44,118 @@
 
     <div class="painel-ticket__chart-wrap">
       <p class="painel-ticket__chart-title">Comparação entre períodos</p>
-      <svg
-        class="painel-ticket__chart"
-        [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
-        role="img"
-        aria-label="Comparação de ticket médio entre períodos"
-        (mouseleave)="onLeave()"
-      >
-        @for (g of gridLines(); track g.value) {
-          @if (g.value > 0) {
+      <div #plot class="painel-ticket__plot">
+        <svg
+          class="painel-ticket__chart"
+          [attr.viewBox]="'0 0 ' + width() + ' ' + height()"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="Comparação de ticket médio entre períodos"
+          (mouseleave)="onLeave()"
+        >
+          @for (g of gridLines(); track g.value) {
+            @if (g.value > 0) {
+              <line
+                class="painel-ticket__grid"
+                [attr.x1]="plotLeft()"
+                [attr.x2]="plotRight()"
+                [attr.y1]="g.y"
+                [attr.y2]="g.y"
+              />
+            }
+          }
+
+          @for (b of bars(); track b.label) {
+            @if (activeIndex() === b.i) {
+              <rect
+                class="painel-ticket__hover-band"
+                [attr.x]="b.bandX"
+                [attr.y]="plotTop()"
+                [attr.width]="b.bandW"
+                [attr.height]="plotBottom() - plotTop()"
+              />
+            }
+          }
+
+          <!-- Eixo Y (esquerda) + traços -->
+          <line
+            class="painel-ticket__axis"
+            [attr.x1]="plotLeft()"
+            [attr.x2]="plotLeft()"
+            [attr.y1]="plotTop()"
+            [attr.y2]="plotBottom()"
+          />
+          @for (g of gridLines(); track g.value) {
             <line
-              class="painel-ticket__grid"
-              [attr.x1]="plotLeft()"
-              [attr.x2]="plotRight()"
+              class="painel-ticket__axis-tick"
+              [attr.x1]="plotLeft() - axisTick"
+              [attr.x2]="plotLeft()"
               [attr.y1]="g.y"
               [attr.y2]="g.y"
             />
+            <text
+              class="painel-ticket__tick"
+              [attr.x]="plotLeft() - axisTick - 6"
+              [attr.y]="g.y + 4"
+              [attr.fill]="markerFill"
+              [attr.font-size]="markerFontSize"
+              font-weight="normal"
+              text-anchor="end"
+            >
+              {{ formatMoedaCurta(g.value) }}
+            </text>
           }
-        }
 
-        @for (b of bars(); track b.label) {
-          @if (activeIndex() === b.i) {
+          <!-- Eixo X (base) -->
+          <line
+            class="painel-ticket__axis"
+            [attr.x1]="plotLeft()"
+            [attr.x2]="plotRight()"
+            [attr.y1]="plotBottom()"
+            [attr.y2]="plotBottom()"
+          />
+
+          @for (b of bars(); track b.label) {
+            @if (b.path) {
+              <path
+                class="painel-ticket__bar"
+                [class.painel-ticket__bar--atual]="b.atual"
+                [attr.d]="b.path"
+              />
+            }
+            <line
+              class="painel-ticket__axis-tick"
+              [attr.x1]="b.cx"
+              [attr.x2]="b.cx"
+              [attr.y1]="plotBottom()"
+              [attr.y2]="plotBottom() + axisTick"
+            />
+            <text
+              class="painel-ticket__bar-label"
+              [attr.x]="b.cx"
+              [attr.y]="height() - 12"
+              [attr.fill]="markerFill"
+              [attr.font-size]="markerFontSize"
+              font-weight="normal"
+              text-anchor="middle"
+            >
+              {{ b.label }}
+            </text>
+          }
+
+          @for (b of bars(); track b.label) {
             <rect
-              class="painel-ticket__hover-band"
+              class="painel-ticket__hit"
               [attr.x]="b.bandX"
               [attr.y]="plotTop()"
               [attr.width]="b.bandW"
               [attr.height]="plotBottom() - plotTop()"
+              (mouseenter)="onEnter($event, b.i)"
+              (mousemove)="onMove($event)"
             />
           }
-        }
-
-        <!-- Eixo Y (esquerda) + traços -->
-        <line
-          class="painel-ticket__axis"
-          [attr.x1]="plotLeft()"
-          [attr.x2]="plotLeft()"
-          [attr.y1]="plotTop()"
-          [attr.y2]="plotBottom()"
-        />
-        @for (g of gridLines(); track g.value) {
-          <line
-            class="painel-ticket__axis-tick"
-            [attr.x1]="plotLeft() - axisTick"
-            [attr.x2]="plotLeft()"
-            [attr.y1]="g.y"
-            [attr.y2]="g.y"
-          />
-          <text
-            class="painel-ticket__tick"
-            [attr.x]="plotLeft() - axisTick - 4"
-            [attr.y]="g.y + 3"
-            text-anchor="end"
-          >
-            {{ formatMoedaCurta(g.value) }}
-          </text>
-        }
-
-        <!-- Eixo X (base) -->
-        <line
-          class="painel-ticket__axis"
-          [attr.x1]="plotLeft()"
-          [attr.x2]="plotRight()"
-          [attr.y1]="plotBottom()"
-          [attr.y2]="plotBottom()"
-        />
-
-        @for (b of bars(); track b.label) {
-          @if (b.path) {
-            <path
-              class="painel-ticket__bar"
-              [class.painel-ticket__bar--atual]="b.atual"
-              [attr.d]="b.path"
-            />
-          }
-          <line
-            class="painel-ticket__axis-tick"
-            [attr.x1]="b.cx"
-            [attr.x2]="b.cx"
-            [attr.y1]="plotBottom()"
-            [attr.y2]="plotBottom() + axisTick"
-          />
-          <text
-            class="painel-ticket__bar-label"
-            [attr.x]="b.cx"
-            [attr.y]="vbH - 12"
-            text-anchor="middle"
-          >
-            {{ b.label }}
-          </text>
-        }
-
-        @for (b of bars(); track b.label) {
-          <rect
-            class="painel-ticket__hit"
-            [attr.x]="b.bandX"
-            [attr.y]="plotTop()"
-            [attr.width]="b.bandW"
-            [attr.height]="plotBottom() - plotTop()"
-            (mouseenter)="onEnter($event, b.i)"
-            (mousemove)="onMove($event)"
-          />
-        }
-      </svg>
+        </svg>
+      </div>
     </div>
   } @else {
     <p class="painel-ticket__empty">Sem comandas faturadas no período</p>

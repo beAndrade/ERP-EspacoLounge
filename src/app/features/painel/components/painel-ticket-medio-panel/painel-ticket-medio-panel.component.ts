@@ -1,9 +1,13 @@
 import {
+  AfterViewInit,
   Component,
+  ElementRef,
+  OnDestroy,
   computed,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import type { PainelTicketMedioVm } from '../../models/painel-dashboard.models';
 import { PainelChartTooltipService } from '../../services/painel-chart-tooltip.service';
@@ -39,7 +43,7 @@ function barraTopoArredondada(
   templateUrl: './painel-ticket-medio-panel.component.html',
   styleUrl: './painel-ticket-medio-panel.component.scss',
 })
-export class PainelTicketMedioPanelComponent {
+export class PainelTicketMedioPanelComponent implements AfterViewInit, OnDestroy {
   private readonly tip = inject(PainelChartTooltipService);
 
   readonly vm = input<PainelTicketMedioVm>({
@@ -53,16 +57,22 @@ export class PainelTicketMedioPanelComponent {
     totalAtual: 0,
   });
 
+  readonly plotRef = viewChild<ElementRef<HTMLElement>>('plot');
+  readonly width = signal(500);
+  readonly height = signal(275);
   readonly activeIndex = signal<number | null>(null);
+
+  private ro: ResizeObserver | null = null;
 
   readonly hasData = computed(
     () => this.vm().periodoAtual != null || this.vm().periodoAnterior != null,
   );
 
-  readonly vbW = 320;
-  readonly vbH = 176;
-  readonly pad = { t: 16, r: 14, b: 40, l: 52 };
+  readonly pad = { t: 16, r: 14, b: 40, l: 64 };
   readonly axisTick = 5;
+  /** Tipografia dos marcadores (1:1 com CSS px via viewBox dinâmico). */
+  readonly markerFill = '#000000bf';
+  readonly markerFontSize = 12;
 
   /** Eixo Y adaptativo: valores altos → menos ticks, passo maior. */
   private readonly yScale = computed(() => {
@@ -72,22 +82,22 @@ export class PainelTicketMedioPanelComponent {
   });
 
   readonly niceMax = computed(() => this.yScale().max);
-
   readonly yTicks = computed(() => this.yScale().ticks);
+
+  readonly innerW = computed(() => this.width() - this.pad.l - this.pad.r);
+  readonly innerH = computed(() => this.height() - this.pad.t - this.pad.b);
+  readonly plotBottom = computed(() => this.pad.t + this.innerH());
+  readonly plotTop = computed(() => this.pad.t);
+  readonly plotLeft = computed(() => this.pad.l);
+  readonly plotRight = computed(() => this.width() - this.pad.r);
 
   readonly gridLines = computed(() => {
     const max = this.niceMax() || 1;
-    const innerH = this.vbH - this.pad.t - this.pad.b;
     return this.yTicks().map((value) => ({
       value,
-      y: this.pad.t + innerH * (1 - value / max),
+      y: this.pad.t + this.innerH() * (1 - value / max),
     }));
   });
-
-  readonly plotBottom = computed(() => this.vbH - this.pad.b);
-  readonly plotTop = computed(() => this.pad.t);
-  readonly plotLeft = computed(() => this.pad.l);
-  readonly plotRight = computed(() => this.vbW - this.pad.r);
 
   readonly bars = computed(() => {
     const v = this.vm();
@@ -108,21 +118,14 @@ export class PainelTicketMedioPanelComponent {
       },
     ];
     const niceMax = this.niceMax();
-    const innerW = this.vbW - this.pad.l - this.pad.r;
-    const innerH = this.vbH - this.pad.t - this.pad.b;
-    const bandW = innerW / 2;
-    /**
-     * Largura alvo ~79.92px no layout de referência (banda hover ~199px).
-     * Usa proporção da banda para manter a torre nessa escala visual.
-     */
-    const bw = bandW * (79.92 / 199);
-    /** Raio do topo ~14px no mesmo layout de referência. */
-    const barRadius = bandW * (14 / 199);
+    const bandW = this.innerW() / 2;
+    const bw = Math.min(79.92, bandW * 0.72);
+    const barRadius = 14;
     return pts.map((p, i) => {
-      const h = p.value > 0 ? (p.value / niceMax) * innerH : 0;
+      const h = p.value > 0 ? (p.value / niceMax) * this.innerH() : 0;
       const bandX = this.pad.l + i * bandW;
       const x = bandX + (bandW - bw) / 2;
-      const y = this.pad.t + innerH - h;
+      const y = this.pad.t + this.innerH() - h;
       const barH = Math.max(h, p.value > 0 ? 2 : 0);
       return {
         ...p,
@@ -138,6 +141,27 @@ export class PainelTicketMedioPanelComponent {
       };
     });
   });
+
+  ngAfterViewInit(): void {
+    const el = this.plotRef()?.nativeElement;
+    if (!el) return;
+    this.ro = new ResizeObserver((entries) => {
+      const cr = entries[0]?.contentRect;
+      if (!cr) return;
+      const w = Math.max(280, Math.floor(cr.width));
+      const h =
+        cr.height > 40
+          ? Math.max(180, Math.floor(cr.height))
+          : Math.max(200, Math.round(w * 0.55));
+      this.width.set(w);
+      this.height.set(h);
+    });
+    this.ro.observe(el);
+  }
+
+  ngOnDestroy(): void {
+    this.ro?.disconnect();
+  }
 
   onEnter(ev: MouseEvent, i: number): void {
     const b = this.bars()[i];
