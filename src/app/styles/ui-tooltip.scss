@@ -46,7 +46,7 @@
   position: absolute;
   left: 50%;
   bottom: calc(100% + var(--ui-tip-gap));
-  z-index: 3000;
+  z-index: 12000;
   min-width: max-content;
   max-width: 280px;
   @include ui-tip-surface;
@@ -132,14 +132,14 @@
   transition-delay: 0s, 0s;
 }
 
-/** Portal em `body` — classe separada de `.ui-tip` (evita `bottom`/`transform` do inline). */
+/** Portal em `body` — acima de painéis, drawers e overflow. */
 .ui-tip-portal {
   position: fixed;
   top: auto;
   left: auto;
   right: auto;
   bottom: auto;
-  z-index: 10050;
+  z-index: 12000;
   min-width: max-content;
   max-width: min(280px, calc(100vw - 24px));
   @include ui-tip-surface;

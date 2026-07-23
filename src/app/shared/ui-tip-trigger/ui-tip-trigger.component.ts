@@ -39,7 +39,12 @@ export type UiTipAlign = 'center' | 'end' | 'start';
 export class UiTipTriggerComponent implements OnDestroy {
   readonly tip = input<string>('');
   readonly align = input<UiTipAlign>('center');
-  readonly floating = input(false, { transform: booleanAttribute });
+  /**
+   * Por padrão renderiza no `document.body` (portal) para ficar acima de
+   * overflow/stacking dos painéis. Use `[floating]="false"` só se precisar do
+   * balão inline relativo ao trigger.
+   */
+  readonly floating = input(true, { transform: booleanAttribute });
   readonly tipOpen = signal(false);
 
   @ViewChild('anchor', { static: true })
