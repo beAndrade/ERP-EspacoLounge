@@ -37,12 +37,13 @@
           [attr.y2]="baselineY()"
         />
         @for (p of plot(); track p.point.ymd + '-' + p.i) {
+          <!-- Ticks só abaixo da baseline — não atravessam a curva -->
           <line
             class="painel-sparkline__tick"
             [attr.x1]="p.x"
             [attr.x2]="p.x"
-            [attr.y1]="baselineY() - 3"
-            [attr.y2]="baselineY()"
+            [attr.y1]="baselineY()"
+            [attr.y2]="baselineY() + 3"
           />
         }
       }

@@ -82,16 +82,18 @@ export class PainelSparklineComponent {
    */
   readonly syncContext = input(true);
 
+  /** ViewBox com folga inferior para ticks abaixo da baseline. */
   readonly vbW = 560;
-  readonly vbH = 52;
+  readonly vbH = 56;
   readonly padX = 5;
   readonly padY = 4;
+  readonly padBottom = 6;
 
   readonly activeIndex = signal<number | null>(null);
 
   readonly hasSeries = computed(() => this.points().length > 0);
 
-  readonly baselineY = computed(() => this.vbH - this.padY);
+  readonly baselineY = computed(() => this.vbH - this.padBottom);
 
   readonly plot = computed((): SparkPlotPoint[] => {
     const pts = this.points();
@@ -110,7 +112,7 @@ export class PainelSparklineComponent {
 
     const n = pts.length;
     const innerW = this.vbW - this.padX * 2;
-    const innerH = this.vbH - this.padY * 2;
+    const innerH = this.vbH - this.padY - this.padBottom;
     const span = max - min || 1;
     const baseY = this.baselineY();
 

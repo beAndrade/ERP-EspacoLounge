@@ -20,9 +20,53 @@
 }
 
 .painel-prof-rank__metric {
+  position: relative;
   width: 100%;
   min-width: 0;
   cursor: default;
+
+  &:hover .painel-prof-rank__metric-tip {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 0.16s ease,
+      visibility 0s;
+  }
+}
+
+.painel-prof-rank__metric-tip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.82);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.16s ease,
+    visibility 0s linear 0.16s;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    margin-left: -7px;
+    border: 7px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.82);
+  }
 }
 
 .painel-prof-rank__label {

@@ -1,12 +1,7 @@
 <div class="painel-prof-rank">
   @if (hasData()) {
     <div class="painel-prof-rank__summary">
-      <div
-        class="painel-prof-rank__metric"
-        (mouseenter)="onMetricEnter($event)"
-        (mousemove)="onMetricMove($event)"
-        (mouseleave)="onMetricLeave()"
-      >
+      <div class="painel-prof-rank__metric">
         <p class="painel-prof-rank__label">Atendimentos</p>
         <div class="painel-prof-rank__value-row">
           <strong class="painel-prof-rank__value">{{
@@ -20,6 +15,9 @@
             {{ formatPct(vm().vsAnteriorPct) }}
           </span>
         </div>
+        <span class="painel-prof-rank__metric-tip" role="tooltip">
+          Total no período anterior: {{ vm().totalPeriodoAnterior }}
+        </span>
       </div>
       @if (vm().spark.length > 0) {
         <app-painel-sparkline

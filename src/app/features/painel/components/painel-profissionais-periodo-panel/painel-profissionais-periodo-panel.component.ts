@@ -1,10 +1,9 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { PainelSparklineComponent } from '../painel-sparkline/painel-sparkline.component';
 import type {
   PainelProfissionaisPeriodoVm,
   PainelProfissionalRankingLinha,
 } from '../../models/painel-dashboard.models';
-import { PainelChartTooltipService } from '../../services/painel-chart-tooltip.service';
 
 type PodiumSlot = {
   rank: 1 | 2 | 3;
@@ -19,8 +18,6 @@ type PodiumSlot = {
   styleUrl: './painel-profissionais-periodo-panel.component.scss',
 })
 export class PainelProfissionaisPeriodoPanelComponent {
-  private readonly tip = inject(PainelChartTooltipService);
-
   readonly vm = input<PainelProfissionaisPeriodoVm>({
     totalAtendimentos: 0,
     totalPeriodoAnterior: 0,
@@ -43,24 +40,6 @@ export class PainelProfissionaisPeriodoPanelComponent {
     ];
   });
 
-  onMetricEnter(ev: MouseEvent): void {
-    const totalAnt = this.vm().totalPeriodoAnterior;
-    this.tip.show({
-      dataLabel: '',
-      valorLabel: `Total no período anterior: ${totalAnt}`,
-      x: ev.clientX,
-      y: ev.clientY,
-    });
-  }
-
-  onMetricMove(ev: MouseEvent): void {
-    this.tip.move(ev.clientX, ev.clientY);
-  }
-
-  onMetricLeave(): void {
-    this.tip.hide();
-  }
-
   formatMoeda(valor: number | null): string {
     if (valor == null) return '—';
     return new Intl.NumberFormat('pt-BR', {
@@ -69,10 +48,17 @@ export class PainelProfissionaisPeriodoPanelComponent {
     }).format(valor);
   }
 
+  /**
+   * ((atual − anterior) / anterior) × 100.
+   * Ex.: 18 vs 2 → 800%. Se anterior = 0, mostra 0,00%.
+   */
   formatPct(pct: number | null): string {
     if (pct == null) return '0,00%';
     const abs = Math.abs(pct);
-    return `${abs.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+    return `${abs.toLocaleString('pt-BR', {
+      minimumFractionDigits: Number.isInteger(abs) ? 0 : 2,
+      maximumFractionDigits: 2,
+    })}%`;
   }
 
   servicosLabel(n: number): string {
