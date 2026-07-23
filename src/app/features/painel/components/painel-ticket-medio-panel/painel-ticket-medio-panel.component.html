@@ -12,9 +12,25 @@
             [class.painel-ticket__delta--down]="vm().vsAnteriorPct! < 0"
           >
             @if (vm().vsAnteriorPct! > 0) {
-              <span aria-hidden="true">↑</span>
+              <svg
+                class="painel-ticket__delta-icon"
+                viewBox="0 0 10 8"
+                width="10"
+                height="8"
+                aria-hidden="true"
+              >
+                <polygon points="5,0 10,8 0,8" />
+              </svg>
             } @else if (vm().vsAnteriorPct! < 0) {
-              <span aria-hidden="true">↓</span>
+              <svg
+                class="painel-ticket__delta-icon"
+                viewBox="0 0 10 8"
+                width="10"
+                height="8"
+                aria-hidden="true"
+              >
+                <polygon points="0,0 10,0 5,8" />
+              </svg>
             }
             {{ formatPct(vm().vsAnteriorPct) }}
           </span>

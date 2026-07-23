@@ -17,41 +17,62 @@
 
 .painel-ticket__label {
   margin: 0;
-  font-size: 0.82rem;
-  color: #6b7280;
+  font-size: 16px;
+  font-weight: normal;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .painel-ticket__value {
   margin: 0;
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.15;
+  font-size: 24px;
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.75);
+  line-height: 1.25;
   font-variant-numeric: tabular-nums;
 }
 
 .painel-ticket__vs {
   margin: 0.15rem 0 0;
-  font-size: 0.82rem;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: normal;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .painel-ticket__delta {
-  font-weight: 600;
-  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
 
   &--up {
-    color: #059669;
+    color: #52c41a;
+
+    .painel-ticket__delta-icon {
+      fill: #52c41a;
+    }
   }
 
   &--down {
     color: #dc2626;
+
+    .painel-ticket__delta-icon {
+      fill: #dc2626;
+    }
   }
 
   &--muted {
     color: #9ca3af;
     font-weight: 500;
   }
+}
+
+.painel-ticket__delta-icon {
+  display: block;
+  flex: 0 0 auto;
 }
 
 .painel-ticket__chart-wrap {
