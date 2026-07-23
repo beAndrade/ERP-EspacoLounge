@@ -85,7 +85,11 @@ export type PainelProfissionalRankingLinha = {
 
 /** Ranking de profissionais na seção «Análise do período». */
 export type PainelProfissionaisPeriodoVm = {
+  /** Serviços no período atual. */
   totalAtendimentos: number;
+  /** Serviços no período anterior (simétrico). */
+  totalPeriodoAnterior: number;
+  /** Variação % vs período anterior. */
   vsAnteriorPct: number | null;
   spark: PainelSparkPoint[];
   linhas: PainelProfissionalRankingLinha[];
@@ -205,6 +209,7 @@ export function emptyTicketMedioVm(): PainelTicketMedioVm {
 export function emptyProfissionaisPeriodoVm(): PainelProfissionaisPeriodoVm {
   return {
     totalAtendimentos: 0,
+    totalPeriodoAnterior: 0,
     vsAnteriorPct: null,
     spark: [],
     linhas: [],

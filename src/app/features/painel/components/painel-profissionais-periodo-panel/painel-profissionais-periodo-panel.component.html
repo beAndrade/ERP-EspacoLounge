@@ -1,7 +1,12 @@
 <div class="painel-prof-rank">
   @if (hasData()) {
     <div class="painel-prof-rank__summary">
-      <div class="painel-prof-rank__metric">
+      <div
+        class="painel-prof-rank__metric"
+        (mouseenter)="onMetricEnter($event)"
+        (mousemove)="onMetricMove($event)"
+        (mouseleave)="onMetricLeave()"
+      >
         <p class="painel-prof-rank__label">Atendimentos</p>
         <div class="painel-prof-rank__value-row">
           <strong class="painel-prof-rank__value">{{

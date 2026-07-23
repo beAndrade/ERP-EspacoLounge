@@ -508,6 +508,7 @@ export function mapAtendimentosParaPainelPeriodo(
   const totalAnterior = contarServicos(comandasAnterior);
   const profissionais: PainelProfissionaisPeriodoVm = {
     totalAtendimentos: totalAtual,
+    totalPeriodoAnterior: totalAnterior,
     vsAnteriorPct: pctVariacao(totalAtual, totalAnterior),
     spark,
     linhas: profLinhas,

@@ -1,9 +1,10 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { PainelSparklineComponent } from '../painel-sparkline/painel-sparkline.component';
 import type {
   PainelProfissionaisPeriodoVm,
   PainelProfissionalRankingLinha,
 } from '../../models/painel-dashboard.models';
+import { PainelChartTooltipService } from '../../services/painel-chart-tooltip.service';
 
 type PodiumSlot = {
   rank: 1 | 2 | 3;
@@ -18,8 +19,11 @@ type PodiumSlot = {
   styleUrl: './painel-profissionais-periodo-panel.component.scss',
 })
 export class PainelProfissionaisPeriodoPanelComponent {
+  private readonly tip = inject(PainelChartTooltipService);
+
   readonly vm = input<PainelProfissionaisPeriodoVm>({
     totalAtendimentos: 0,
+    totalPeriodoAnterior: 0,
     vsAnteriorPct: null,
     spark: [],
     linhas: [],
@@ -38,6 +42,24 @@ export class PainelProfissionaisPeriodoPanelComponent {
       { rank: 3, linha: byRank.get(3) ?? null },
     ];
   });
+
+  onMetricEnter(ev: MouseEvent): void {
+    const totalAnt = this.vm().totalPeriodoAnterior;
+    this.tip.show({
+      dataLabel: '',
+      valorLabel: `Total no período anterior: ${totalAnt}`,
+      x: ev.clientX,
+      y: ev.clientY,
+    });
+  }
+
+  onMetricMove(ev: MouseEvent): void {
+    this.tip.move(ev.clientX, ev.clientY);
+  }
+
+  onMetricLeave(): void {
+    this.tip.hide();
+  }
 
   formatMoeda(valor: number | null): string {
     if (valor == null) return '—';

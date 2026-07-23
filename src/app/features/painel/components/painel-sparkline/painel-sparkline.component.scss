@@ -43,6 +43,10 @@
   pointer-events: none;
 }
 
+.painel-sparkline--filled .painel-sparkline__curve {
+  stroke-width: 1;
+}
+
 .painel-sparkline:not(.painel-sparkline--filled) .painel-sparkline__curve {
   stroke-width: 2.25;
 }
