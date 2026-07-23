@@ -114,10 +114,11 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
-  gap: 0.65rem;
+  gap: 0.35rem;
   width: 100%;
-  min-height: 14rem;
-  padding-top: 0.35rem;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
 }
 
 .painel-prof-rank__podium-col {
@@ -125,7 +126,10 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  gap: 0.2rem;
   min-width: 0;
+  padding: 0;
+  margin: 0;
 
   &--empty {
     visibility: hidden;
@@ -162,7 +166,8 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  margin-bottom: 0.35rem;
+  margin: 0;
+  padding: 0;
   border-radius: 50%;
   background: var(--podium-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -179,12 +184,13 @@
 
 .painel-prof-rank__podium-name {
   margin: 0;
+  padding: 0;
   width: 100%;
   font-size: 14px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.75);
   text-align: center;
-  line-height: 1.25;
+  line-height: 1.5714285714285714;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -192,12 +198,13 @@
 }
 
 .painel-prof-rank__podium-meta {
-  margin: 0.12rem 0 0;
+  margin: 0;
+  padding: 0;
   font-size: 14px;
   font-weight: 500;
   text-align: center;
   color: #6b7280;
-  line-height: 1.3;
+  line-height: 1.5714285714285714;
 }
 
 .painel-prof-rank__podium-name + .painel-prof-rank__podium-meta {
@@ -210,7 +217,8 @@
   justify-content: center;
   width: 100px;
   height: var(--podium-block-h);
-  margin-top: 0.55rem;
+  margin: 0;
+  padding: 0;
   border-radius: 12px 12px 0 0;
   border: 2px solid var(--podium-accent);
   background: linear-gradient(
