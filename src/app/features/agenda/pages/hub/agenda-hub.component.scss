@@ -1420,6 +1420,29 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   cursor: pointer;
 }
 
+/* Encaixe: gap branco fino entre faixas; cantos externos arredondados. */
+.day-col__card-slot--split {
+  padding: 0 1.5px;
+}
+
+.day-col__card-slot--split .day-col__card {
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.day-col__card-slot--split.day-col__card-slot--lane-first .day-col__card {
+  border-radius: 9px 4px 4px 9px;
+}
+
+.day-col__card-slot--split.day-col__card-slot--lane-last .day-col__card {
+  border-radius: 4px 9px 9px 4px;
+}
+
+.day-col__card-slot--split.day-col__card-slot--lane-first.day-col__card-slot--lane-last
+  .day-col__card {
+  border-radius: 9px;
+}
+
 .day-col__card {
   position: relative;
   width: 100%;

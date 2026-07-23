@@ -775,6 +775,11 @@
                 @for (lay of blocosLayout(p.id); track lay.bloco.trackKey) {
                 <div
                   class="day-col__card-slot"
+                  [class.day-col__card-slot--split]="lay.lanes > 1"
+                  [class.day-col__card-slot--lane-first]="lay.lane === 0"
+                  [class.day-col__card-slot--lane-last]="
+                    lay.lane === lay.lanes - 1
+                  "
                   [style.top.%]="topPctBloco(lay.bloco)"
                   [style.height.%]="alturaPctBloco(lay.bloco)"
                   [style.left.%]="lay.leftPct"
@@ -1047,6 +1052,11 @@
                   @for (lay of blocosLayout(p.id, d.ymd); track lay.bloco.trackKey) {
                     <div
                       class="day-col__card-slot"
+                      [class.day-col__card-slot--split]="lay.lanes > 1"
+                      [class.day-col__card-slot--lane-first]="lay.lane === 0"
+                      [class.day-col__card-slot--lane-last]="
+                        lay.lane === lay.lanes - 1
+                      "
                       [style.top.%]="topPctBloco(lay.bloco, d.ymd)"
                       [style.height.%]="alturaPctBloco(lay.bloco, d.ymd)"
                       [style.left.%]="lay.leftPct"

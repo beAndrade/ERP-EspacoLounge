@@ -52,6 +52,7 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
   @Input() set intervalosOcupados(v: IntervaloMinutosDia[]) {
     this._intervalos = Array.isArray(v) ? v : [];
   }
+  /** Mantido por compatibilidade; conflito passa a ser tratado no Salvar. */
   @Output() conflitoHorario = new EventEmitter<string>();
   @Output() painelAberto = new EventEmitter<void>();
 
@@ -77,8 +78,23 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
     return out;
   }
 
+  /** Rótulo do trigger: inclui «(Indisponível)» se o horário escolhido estiver ocupado. */
   get displayLabel(): string {
+    if (!this.inner) return '';
+    const m = this.hhmmParaMinutos(this.inner);
+    if (m != null && this.minutoOcupado(m)) {
+      return `${this.inner} (Indisponível)`;
+    }
     return this.inner;
+  }
+
+  private hhmmParaMinutos(hhmm: string): number | null {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim());
+    if (!m) return null;
+    const h = Number(m[1]);
+    const mi = Number(m[2]);
+    if (!Number.isFinite(h) || !Number.isFinite(mi)) return null;
+    return h * 60 + mi;
   }
 
   private minutoOcupado(m: number): boolean {
@@ -123,16 +139,11 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
     }
   }
 
-  escolher(hhmm: string, indisponivel: boolean, ev: Event): void {
+  escolher(hhmm: string, _indisponivel: boolean, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
     if (this.isDisabled) return;
-    if (indisponivel) {
-      this.conflitoHorario.emit(hhmm);
-      this.panelOpen = false;
-      this.onTouched();
-      return;
-    }
+    // Indisponível continua selecionável; o aviso de conflito é no Salvar.
     this.inner = hhmm;
     this.onChange(hhmm);
     this.onTouched();

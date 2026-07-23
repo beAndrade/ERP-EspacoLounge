@@ -466,9 +466,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   modalDataPickerOpen = false;
   /** Intervalos [a,b) em minutos do dia para marcar horários (Indisponível). */
   intervalosOcupacaoDia: IntervaloMinutosDia[] = [];
-  /** Aviso de horário já ocupado (sem encaixe automático). */
+  /** Aviso de conflito ao salvar (encaixe lado a lado na grelha). */
   modalConflitoHorario = false;
-  private horaPendenteConflito: string | null = null;
+  /** Utilizador confirmou «Sim» no modal de conflito nesta tentativa de gravação. */
+  private encaixeConfirmado = false;
 
   /** Drawer: propagar alterações às ocorrências seguintes da repetição. */
   aplicarAlteracoesProximos = false;
@@ -808,14 +809,48 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.modalDataPickerOpen = false;
   }
 
-  onConflitoHorarioEscolhido(hhmm: string): void {
-    this.horaPendenteConflito = hhmm;
-    this.modalConflitoHorario = true;
-  }
-
+  /** Cancelar no modal de conflito — não grava. */
   fecharAvisoConflitoHorario(): void {
     this.modalConflitoHorario = false;
-    this.horaPendenteConflito = null;
+    this.encaixeConfirmado = false;
+  }
+
+  /** Sim — grava mesmo com sobreposição (encaixe na grelha). */
+  confirmarEncaixeHorario(): void {
+    this.modalConflitoHorario = false;
+    this.encaixeConfirmado = true;
+    this.salvar();
+  }
+
+  /**
+   * Intervalo do novo agendamento cruza algum já ocupado no dia
+   * (exceto o próprio em edição).
+   */
+  private horarioNovoConflitaComOcupacao(): boolean {
+    const hi = normalizarHoraHHmm(
+      String(this.form.controls.hora_inicial.value ?? ''),
+    );
+    if (!hi) return false;
+    const [hs, ms] = hi.split(':').map(Number);
+    if (!Number.isFinite(hs) || !Number.isFinite(ms)) return false;
+    const start = hs! * 60 + ms!;
+    const end = start + Math.max(5, this.duracaoMinutosAgendaServicos());
+    for (const r of this.intervalosOcupacaoDia) {
+      if (start < r.b && end > r.a) return true;
+    }
+    return false;
+  }
+
+  /** Abre modal de encaixe se necessário; true = abortar o save. */
+  private bloquearPorConflitoHorarioPendente(): boolean {
+    if (!this.modoModal || this.isFluxoSomenteComanda()) return false;
+    if (this.encaixeConfirmado) {
+      this.encaixeConfirmado = false;
+      return false;
+    }
+    if (!this.horarioNovoConflitaComOcupacao()) return false;
+    this.modalConflitoHorario = true;
+    return true;
   }
 
   /**
@@ -2934,6 +2969,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   salvar(): void {
     const prep = this.prepararSalvamentoFormulario();
     if (!prep) return;
+
+    if (this.bloquearPorConflitoHorarioPendente()) return;
 
     const { raw, dataBase } = prep;
 

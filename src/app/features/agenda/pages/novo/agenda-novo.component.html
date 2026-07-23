@@ -223,7 +223,6 @@
                 [formControl]="form.controls.hora_inicial"
                 [intervalosOcupados]="intervalosOcupacaoDia"
                 aria-label="Horário inicial"
-                (conflitoHorario)="onConflitoHorarioEscolhido($event)"
                 (painelAberto)="onHorarioPainelAbriu()"
               />
             </div>
@@ -1652,15 +1651,22 @@
             Conflito de horários
           </h2>
           <p class="agenda-conflito__text">
-            Este horário já está ocupado. Escolha outro intervalo na grelha.
+            Deseja encaixar os agendamentos?
           </p>
           <div class="agenda-conflito__actions">
             <button
               type="button"
-              class="agenda-conflito__btn agenda-conflito__btn--primary"
+              class="agenda-conflito__btn agenda-conflito__btn--ghost"
               (click)="fecharAvisoConflitoHorario()"
             >
-              OK
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="agenda-conflito__btn agenda-conflito__btn--primary"
+              (click)="confirmarEncaixeHorario()"
+            >
+              Sim
             </button>
           </div>
         </div>

@@ -2606,6 +2606,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     bloco: AgendaHubBloco;
     leftPct: number;
     widthPct: number;
+    lane: number;
+    lanes: number;
   }> {
     const blocos = this.blocosNaColuna(profId, ymd);
     type Ext = { bloco: AgendaHubBloco; start: number; end: number };
@@ -2655,7 +2657,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       const lane = laneByBloco.get(ev.bloco) ?? 0;
       const widthPct = 100 / maxC;
       const leftPct = (lane / maxC) * 100;
-      return { bloco: ev.bloco, leftPct, widthPct };
+      return { bloco: ev.bloco, leftPct, widthPct, lane, lanes: maxC };
     });
   }
 
