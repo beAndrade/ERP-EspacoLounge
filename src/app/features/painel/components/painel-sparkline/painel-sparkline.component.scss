@@ -29,5 +29,12 @@
 .painel-sparkline__empty {
   width: 100%;
   height: 100%;
-  color: #d1d5db;
+}
+
+.painel-sparkline__baseline {
+  fill: none;
+  stroke: rgb(240, 240, 240);
+  stroke-width: 1.5;
+  stroke-dasharray: 3, 3;
+  stroke-linecap: round;
 }

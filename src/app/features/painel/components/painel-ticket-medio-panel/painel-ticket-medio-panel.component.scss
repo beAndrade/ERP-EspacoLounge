@@ -98,9 +98,10 @@
 }
 
 .painel-ticket__grid {
-  stroke: #e5e7eb;
+  fill: none;
+  stroke: rgb(240, 240, 240);
   stroke-width: 1;
-  stroke-dasharray: 3 3;
+  stroke-dasharray: 3, 3;
   pointer-events: none;
 }
 
