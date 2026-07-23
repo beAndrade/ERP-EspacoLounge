@@ -161,11 +161,20 @@
   background: var(--podium-accent);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   color: #fff;
+  line-height: 0;
 
   svg {
     display: block;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+}
+
+.painel-prof-rank__podium-col--2,
+.painel-prof-rank__podium-col--3 {
+  .painel-prof-rank__podium-icon {
+    color: rgba(0, 0, 0, 0.75);
   }
 }
 
