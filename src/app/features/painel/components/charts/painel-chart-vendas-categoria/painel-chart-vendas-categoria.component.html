@@ -1,7 +1,13 @@
 <div class="painel-vcat">
   @if (hasData()) {
     <div class="painel-vcat__donut">
-      <svg viewBox="0 0 160 160" role="img" aria-label="Vendas por categoria">
+      <svg
+        width="190"
+        height="190"
+        viewBox="0 0 190 190"
+        role="img"
+        aria-label="Vendas por categoria"
+      >
         <circle
           class="painel-vcat__track"
           [attr.cx]="cx"
@@ -26,7 +32,7 @@
           }
         </g>
       </svg>
-      <span class="painel-vcat__center">{{ formatMoeda(vm().total) }}</span>
+      <span class="painel-vcat__center">Total: {{ formatMoeda(vm().total) }}</span>
     </div>
 
     <ul class="painel-vcat__legend">

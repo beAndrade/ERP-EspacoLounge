@@ -10,10 +10,10 @@ import type { PainelVendasCategoriaVm } from '../../../models/painel-dashboard.m
 export class PainelChartVendasCategoriaComponent {
   readonly vm = input<PainelVendasCategoriaVm>({ total: 0, linhas: [] });
 
-  readonly cx = 80;
-  readonly cy = 80;
-  readonly r = 62;
-  readonly stroke = 24;
+  readonly cx = 95;
+  readonly cy = 95;
+  readonly r = 74;
+  readonly stroke = 28;
 
   readonly hasData = computed(() => this.vm().total > 0);
 
