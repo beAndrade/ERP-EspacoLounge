@@ -26,15 +26,17 @@
 
 .painel-prof-rank__label {
   margin: 0;
-  font-size: 0.82rem;
-  color: #6b7280;
+  font-size: 16px;
+  font-weight: normal;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .painel-prof-rank__value-row {
   position: relative;
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 0;
   width: 100%;
   margin-top: 0.15rem;
 
@@ -83,16 +85,19 @@
 }
 
 .painel-prof-rank__value {
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: #111827;
+  margin-right: 20px !important;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
   line-height: 1.15;
 }
 
 .painel-prof-rank__pct {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #9ca3af;
+  font-size: 16px;
+  font-weight: normal;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
 
   &--up {
     color: #059669;
