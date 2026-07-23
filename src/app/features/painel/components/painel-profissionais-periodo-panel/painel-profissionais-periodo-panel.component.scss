@@ -111,8 +111,8 @@
 }
 
 .painel-prof-rank__podium {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  justify-content: center;
   align-items: end;
   gap: 0.35rem;
   width: 100%;
@@ -127,6 +127,7 @@
   align-items: center;
   text-align: center;
   gap: 0.2rem;
+  width: 100px;
   min-width: 0;
   padding: 0;
   margin: 0;
@@ -186,6 +187,7 @@
   margin: 0;
   padding: 0;
   width: 100%;
+  max-width: 100%;
   font-size: 14px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.75);
@@ -200,11 +202,15 @@
 .painel-prof-rank__podium-meta {
   margin: 0;
   padding: 0;
+  max-width: 100%;
   font-size: 14px;
   font-weight: 500;
   text-align: center;
   color: #6b7280;
   line-height: 1.5714285714285714;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .painel-prof-rank__podium-name + .painel-prof-rank__podium-meta {
