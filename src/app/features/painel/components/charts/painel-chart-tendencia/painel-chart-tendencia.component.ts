@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import type { PainelChartPoint } from '../../../models/painel-dashboard.models';
 import { PainelChartTooltipService } from '../../../services/painel-chart-tooltip.service';
+import { niceYAxis } from '../../../utils/painel-chart-scale.util';
 
 function labelDataCompleta(ymd: string): string {
   const [y, m, d] = ymd.split('-');
@@ -71,19 +72,15 @@ export class PainelChartTendenciaComponent implements AfterViewInit, OnDestroy {
   readonly innerH = computed(() => this.height() - this.pad.t - this.pad.b);
   readonly plotBottom = computed(() => this.pad.t + this.innerH());
 
-  readonly niceMax = computed(() => {
+  /** Eixo Y adaptativo: valores altos → menos ticks, passo maior. */
+  private readonly yScale = computed(() => {
     const max = Math.max(...this.series().map((p) => p.value), 0);
-    return Math.max(4, Math.ceil(max));
+    return niceYAxis(max, 4);
   });
 
-  readonly ticks = computed(() => {
-    const max = this.niceMax();
-    const step = Math.max(1, Math.ceil(max / 4));
-    const out: number[] = [];
-    for (let v = 0; v <= max; v += step) out.push(v);
-    if (out[out.length - 1] !== max) out.push(max);
-    return out;
-  });
+  readonly niceMax = computed(() => this.yScale().max);
+
+  readonly ticks = computed(() => this.yScale().ticks);
 
   readonly gridLines = computed(() => {
     const max = this.niceMax() || 1;
