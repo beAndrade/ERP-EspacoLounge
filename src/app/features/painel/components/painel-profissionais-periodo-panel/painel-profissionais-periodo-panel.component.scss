@@ -133,20 +133,26 @@
 
   &--1 {
     --podium-accent: #efaf41;
-    --podium-block-h: 7.25rem;
-    --podium-tint: color-mix(in srgb, #efaf41 18%, #fff);
+    --podium-block-h: 80px;
+    --podium-grad-from: #efaf4122;
+    --podium-grad-to: #efaf4144;
+    --podium-shadow: #efaf4133;
   }
 
   &--2 {
     --podium-accent: #c0c0c0;
-    --podium-block-h: 5.5rem;
-    --podium-tint: color-mix(in srgb, #c0c0c0 22%, #fff);
+    --podium-block-h: 60px;
+    --podium-grad-from: #c0c0c022;
+    --podium-grad-to: #c0c0c044;
+    --podium-shadow: #c0c0c033;
   }
 
   &--3 {
     --podium-accent: #cd7f32;
-    --podium-block-h: 4.25rem;
-    --podium-tint: color-mix(in srgb, #cd7f32 18%, #fff);
+    --podium-block-h: 40px;
+    --podium-grad-from: #cd7f3222;
+    --podium-grad-to: #cd7f3244;
+    --podium-shadow: #cd7f3233;
   }
 }
 
@@ -202,19 +208,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 100px;
   height: var(--podium-block-h);
   margin-top: 0.55rem;
-  border-radius: 10px;
+  border-radius: 12px 12px 0 0;
   border: 2px solid var(--podium-accent);
-  background: var(--podium-tint);
+  background: linear-gradient(
+    135deg,
+    var(--podium-grad-from) 0%,
+    var(--podium-grad-to) 100%
+  );
+  box-shadow: 0 4px 12px var(--podium-shadow);
   box-sizing: border-box;
 
   span {
-    font-size: clamp(1.75rem, 4vw, 2.35rem);
-    font-weight: 800;
-    color: color-mix(in srgb, var(--podium-accent) 72%, #111827);
-    letter-spacing: 0.02em;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--podium-accent);
     line-height: 1;
   }
 }
