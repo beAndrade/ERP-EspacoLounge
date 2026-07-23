@@ -1,4 +1,4 @@
-<div class="painel-chart painel-chart-funnel" (mouseleave)="onLeave()">
+<div class="painel-chart painel-chart-funnel">
   @if (hasData()) {
     <svg
       class="painel-chart-funnel__svg"
@@ -10,13 +10,11 @@
         <g class="painel-chart-funnel__stage">
           <path
             class="painel-chart-funnel__slice"
-            [class.painel-chart-funnel__slice--active]="activeIndex() === s.i"
             [attr.d]="s.d"
             [attr.fill]="s.color"
             stroke="#fff"
             stroke-width="1"
-            (mouseenter)="onEnter($event, s.i)"
-            (mousemove)="onMove($event)"
+            pointer-events="none"
           />
           <text
             class="painel-chart-funnel__label"

@@ -21,12 +21,7 @@
 }
 
 .painel-chart-funnel__slice {
-  cursor: default;
-  transition: filter 160ms ease;
-
-  &--active {
-    filter: brightness(1.06);
-  }
+  pointer-events: none;
 }
 
 .painel-chart-funnel__label {

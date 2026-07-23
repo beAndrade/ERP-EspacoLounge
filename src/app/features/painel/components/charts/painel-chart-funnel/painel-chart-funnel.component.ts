@@ -1,16 +1,5 @@
-import {
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import type { PainelChartPoint } from '../../../models/painel-dashboard.models';
-import {
-  PainelChartTooltipService,
-  boundsFromEventTarget,
-} from '../../../services/painel-chart-tooltip.service';
 
 /** Geometria alinhada ao FunnelChart Belasis/Recharts. */
 const VB_W = 501;
@@ -41,9 +30,7 @@ function trapezoidPath(
 }
 
 type FunnelStage = {
-  p: PainelChartPoint;
   i: number;
-  pctTotal: number;
   display: string;
   d: string;
   color: string;
@@ -58,11 +45,7 @@ type FunnelStage = {
   styleUrl: './painel-chart-funnel.component.scss',
 })
 export class PainelChartFunnelComponent {
-  private readonly tip = inject(PainelChartTooltipService);
-
   readonly series = input<PainelChartPoint[]>([]);
-  readonly pointHover = output<PainelChartPoint | null>();
-  readonly activeIndex = signal<number | null>(null);
   readonly hasData = computed(() => this.series().length > 0);
 
   readonly vbW = VB_W;
@@ -95,9 +78,7 @@ export class PainelChartFunnelComponent {
           : `${p.label}: ${p.value} (${pctTotal}%)`;
 
       return {
-        p,
         i,
-        pctTotal,
         display,
         d: trapezoidPath(yTop, yBot, wTop, wBot),
         color: FILLS[i % FILLS.length]!,
@@ -106,30 +87,4 @@ export class PainelChartFunnelComponent {
       };
     });
   });
-
-  onEnter(ev: MouseEvent, i: number): void {
-    const st = this.stages()[i];
-    if (!st) return;
-    this.activeIndex.set(i);
-    this.pointHover.emit(st.p);
-    this.tip.show({
-      dataLabel: st.display,
-      valorLabel: `${st.p.value} agendamentos`,
-      deltaLabel: `${st.pctTotal}% do total criado no período`,
-      nota: st.p.nota ?? null,
-      x: ev.clientX,
-      y: ev.clientY,
-      bounds: boundsFromEventTarget(ev),
-    });
-  }
-
-  onMove(ev: MouseEvent): void {
-    this.tip.move(ev.clientX, ev.clientY, boundsFromEventTarget(ev));
-  }
-
-  onLeave(): void {
-    this.activeIndex.set(null);
-    this.pointHover.emit(null);
-    this.tip.hide();
-  }
 }
