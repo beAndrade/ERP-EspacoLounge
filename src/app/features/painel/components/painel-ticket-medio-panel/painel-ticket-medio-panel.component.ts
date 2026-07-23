@@ -116,6 +116,8 @@ export class PainelTicketMedioPanelComponent {
      * Usa proporção da banda para manter a torre nessa escala visual.
      */
     const bw = bandW * (79.92 / 199);
+    /** Raio do topo ~14px no mesmo layout de referência. */
+    const barRadius = bandW * (14 / 199);
     return pts.map((p, i) => {
       const h = p.value > 0 ? (p.value / niceMax) * innerH : 0;
       const bandX = this.pad.l + i * bandW;
@@ -132,7 +134,7 @@ export class PainelTicketMedioPanelComponent {
         w: bw,
         h: barH,
         cx: x + bw / 2,
-        path: barraTopoArredondada(x, y, bw, barH, Math.min(12, bw / 5)),
+        path: barraTopoArredondada(x, y, bw, barH, barRadius),
       };
     });
   });
