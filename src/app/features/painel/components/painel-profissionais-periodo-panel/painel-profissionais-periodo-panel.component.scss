@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.75rem;
+  gap: 0.65rem;
   width: 100%;
   margin-bottom: 1rem;
   padding-bottom: 0.85rem;
@@ -64,53 +64,97 @@
   width: 100%;
   max-width: none;
   flex: none;
-  opacity: 0.9;
 }
 
-.painel-prof-rank__table-wrap {
-  overflow-x: auto;
-}
-
-.painel-prof-rank__table {
+.painel-prof-rank__podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.65rem;
   width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
+  min-height: 14rem;
+  padding-top: 0.35rem;
+}
 
-  th {
-    text-align: left;
-    font-weight: 600;
-    color: #6b7280;
-    padding: 0.35rem 0.5rem 0.55rem 0;
-    border-bottom: 1px solid #f1f2f9;
+.painel-prof-rank__podium-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+
+  &--empty {
+    visibility: hidden;
   }
 
-  td {
-    padding: 0.55rem 0.5rem 0.55rem 0;
-    color: #374151;
-    border-bottom: 1px solid #f9fafb;
-    vertical-align: middle;
+  &--1 {
+    --podium-accent: #e8b923;
+    --podium-icon: #d4a017;
+    --podium-block-h: 7.25rem;
+    --podium-tint: #fff8e1;
   }
 
-  th:last-child,
-  td:last-child {
-    text-align: right;
-    padding-right: 0;
+  &--2 {
+    --podium-accent: #90a4c4;
+    --podium-icon: #7b8fad;
+    --podium-block-h: 5.5rem;
+    --podium-tint: #eef2f8;
+  }
+
+  &--3 {
+    --podium-accent: #c48a5a;
+    --podium-icon: #b57a48;
+    --podium-block-h: 4.25rem;
+    --podium-tint: #f7efe8;
   }
 }
 
-.painel-prof-rank__badge {
-  display: inline-flex;
+.painel-prof-rank__podium-icon {
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.35rem;
+  color: var(--podium-icon);
+}
+
+.painel-prof-rank__podium-name {
+  margin: 0;
+  width: 100%;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.painel-prof-rank__podium-meta {
+  margin: 0.12rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.painel-prof-rank__podium-block {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  margin-right: 0.45rem;
-  border-radius: 999px;
-  background: #f59e0b;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  vertical-align: middle;
+  width: 100%;
+  height: var(--podium-block-h);
+  margin-top: 0.55rem;
+  border-radius: 10px;
+  border: 2px solid var(--podium-accent);
+  background: var(--podium-tint);
+  box-sizing: border-box;
+
+  span {
+    font-size: clamp(1.75rem, 4vw, 2.35rem);
+    font-weight: 800;
+    color: color-mix(in srgb, var(--podium-accent) 72%, #111827);
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
 }
 
 .painel-prof-rank__empty {

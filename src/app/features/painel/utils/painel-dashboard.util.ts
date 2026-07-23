@@ -436,6 +436,21 @@ export function mapAtendimentosParaPainelPeriodo(
     totalAtual: statsAtual.total,
   };
 
+  const isLinhaServico = (linha: AtendimentoListaItem) =>
+    categoriaDaLinha(linha) === 'Serviços';
+
+  const contarServicos = (
+    grupos: ReturnType<typeof comandasNoIntervalo>,
+  ): number => {
+    let n = 0;
+    for (const g of grupos) {
+      for (const linha of g.linhas) {
+        if (isLinhaServico(linha)) n += 1;
+      }
+    }
+    return n;
+  };
+
   const profMap = new Map<
     string,
     { nome: string; servicos: number; faturamento: number }
@@ -443,6 +458,7 @@ export function mapAtendimentosParaPainelPeriodo(
   for (const g of comandas) {
     const faturada = comandaQuitadaNasCifrasGrupo(g);
     for (const linha of g.linhas) {
+      if (!isLinhaServico(linha)) continue;
       const nome = String(linha.profissional ?? '').trim() || 'Sem profissional';
       const key = nome.toLowerCase();
       const acc = profMap.get(key) ?? { nome, servicos: 0, faturamento: 0 };
@@ -466,13 +482,30 @@ export function mapAtendimentosParaPainelPeriodo(
           : null,
     }));
 
-  const spark: PainelSparkPoint[] = tendencia.map((p) => ({
-    ymd: p.ymd ?? '',
-    value: p.value,
-  }));
+  /** Spark: 1 ponto por dia do período — só linhas de serviço. */
+  const servicosPorDia = new Map<string, number>();
+  for (const g of comandas) {
+    const ymd = (g.data ?? '').slice(0, 10);
+    if (!ymd) continue;
+    for (const linha of g.linhas) {
+      if (!isLinhaServico(linha)) continue;
+      servicosPorDia.set(ymd, (servicosPorDia.get(ymd) ?? 0) + 1);
+    }
+  }
+  const spark: PainelSparkPoint[] = enumerarDiasYmd(inicio, fim).map((ymd) => {
+    const value = servicosPorDia.get(ymd) ?? 0;
+    const [y, m, d] = ymd.split('-');
+    const dataLabel =
+      y && m && d ? `${d}/${m}/${y}` : labelDiaCurto(ymd);
+    return {
+      ymd,
+      value,
+      label: `${value} em ${dataLabel}`,
+    };
+  });
 
-  const totalAtual = cartoes.length;
-  const totalAnterior = cartoesAnterior.length;
+  const totalAtual = contarServicos(comandas);
+  const totalAnterior = contarServicos(comandasAnterior);
   const profissionais: PainelProfissionaisPeriodoVm = {
     totalAtendimentos: totalAtual,
     vsAnteriorPct: pctVariacao(totalAtual, totalAnterior),

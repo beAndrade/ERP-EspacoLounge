@@ -4,7 +4,9 @@
       <div class="painel-prof-rank__metric">
         <p class="painel-prof-rank__label">Atendimentos</p>
         <div class="painel-prof-rank__value-row">
-          <strong class="painel-prof-rank__value">{{ vm().totalAtendimentos }}</strong>
+          <strong class="painel-prof-rank__value">{{
+            vm().totalAtendimentos
+          }}</strong>
           <span
             class="painel-prof-rank__pct"
             [class.painel-prof-rank__pct--up]="(vm().vsAnteriorPct ?? 0) > 0"
@@ -14,39 +16,79 @@
           </span>
         </div>
       </div>
-      @if (vm().spark.length > 1) {
+      @if (vm().spark.length > 0) {
         <app-painel-sparkline
           class="painel-prof-rank__spark"
           [points]="vm().spark"
-          color="#505afb"
+          color="#7c9cff"
+          [filled]="true"
+          [baselineZero]="true"
         />
       }
     </div>
 
-    <div class="painel-prof-rank__table-wrap">
-      <table class="painel-prof-rank__table">
-        <thead>
-          <tr>
-            <th scope="col">Profissional</th>
-            <th scope="col">Serviços</th>
-            <th scope="col">Valor médio por atendimento</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (linha of vm().linhas; track linha.nome) {
-            <tr>
-              <td>
-                <span class="painel-prof-rank__badge">{{ linha.rank }}</span>
-                {{ linha.nome }}
-              </td>
-              <td>{{ linha.servicos }}</td>
-              <td>{{ formatMoeda(linha.valorMedio) }}</td>
-            </tr>
+    <div class="painel-prof-rank__podium" aria-label="Pódio de profissionais">
+      @for (slot of podium(); track slot.rank) {
+        <div
+          class="painel-prof-rank__podium-col"
+          [class.painel-prof-rank__podium-col--1]="slot.rank === 1"
+          [class.painel-prof-rank__podium-col--2]="slot.rank === 2"
+          [class.painel-prof-rank__podium-col--3]="slot.rank === 3"
+          [class.painel-prof-rank__podium-col--empty]="!slot.linha"
+        >
+          @if (slot.linha; as p) {
+            <div class="painel-prof-rank__podium-icon" aria-hidden="true">
+              @if (slot.rank === 1) {
+                <!-- Coroa -->
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+                  <path
+                    d="M3 17h18l-1.5-9-4.5 3.5L12 5l-3 6.5L4.5 8 3 17z"
+                    fill="currentColor"
+                    opacity="0.95"
+                  />
+                  <path
+                    d="M4 19h16v2H4v-2z"
+                    fill="currentColor"
+                  />
+                </svg>
+              } @else {
+                <!-- Troféu -->
+                <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+                  <path
+                    d="M8 4h8v5a4 4 0 0 1-8 0V4z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M8 6H5.5A2.5 2.5 0 0 0 5.5 11H8M16 6h2.5A2.5 2.5 0 0 1 18.5 11H16"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M10 13h4v2.5c0 1-.5 1.5-2 1.5s-2-.5-2-1.5V13z"
+                    fill="currentColor"
+                  />
+                  <path d="M9 19h6v2H9v-2z" fill="currentColor" />
+                </svg>
+              }
+            </div>
+            <p class="painel-prof-rank__podium-name" [title]="p.nome">
+              {{ p.nome }}
+            </p>
+            <p class="painel-prof-rank__podium-meta">
+              {{ servicosLabel(p.servicos) }}
+            </p>
+            <p class="painel-prof-rank__podium-meta">
+              {{ formatMoeda(p.valorMedio) }}
+            </p>
+            <div class="painel-prof-rank__podium-block">
+              <span>{{ slot.rank }}º</span>
+            </div>
           }
-        </tbody>
-      </table>
+        </div>
+      }
     </div>
   } @else {
-    <p class="painel-prof-rank__empty">Sem atendimentos no período</p>
+    <p class="painel-prof-rank__empty">Sem serviços no período</p>
   }
 </div>

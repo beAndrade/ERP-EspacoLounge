@@ -7,11 +7,18 @@
       role="img"
       aria-label="Tendência no período"
     >
+      @if (filled() && areaPath()) {
+        <path
+          class="painel-sparkline__area"
+          [attr.d]="areaPath()"
+          fill="currentColor"
+        />
+      }
       <polyline
         class="painel-sparkline__line"
         fill="none"
         [attr.stroke]="'currentColor'"
-        stroke-width="2.25"
+        stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
         [attr.points]="polylinePoints()"
@@ -21,19 +28,11 @@
           class="painel-sparkline__hit"
           [attr.cx]="p.cx"
           [attr.cy]="p.cy"
-          r="6"
+          r="8"
           fill="transparent"
           (mouseenter)="onPointEnter($event, p)"
           (mousemove)="onPointMove($event)"
           (mouseleave)="onPointLeave()"
-        />
-        <circle
-          class="painel-sparkline__dot"
-          [attr.cx]="p.cx"
-          [attr.cy]="p.cy"
-          r="2.25"
-          fill="currentColor"
-          aria-hidden="true"
         />
       }
     </svg>

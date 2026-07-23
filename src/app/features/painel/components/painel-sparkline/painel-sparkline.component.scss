@@ -21,9 +21,13 @@
   cursor: pointer;
 }
 
-.painel-sparkline__dot {
+.painel-sparkline__area {
+  opacity: 0.22;
   pointer-events: none;
-  opacity: 0.85;
+}
+
+.painel-sparkline__line {
+  pointer-events: none;
 }
 
 .painel-sparkline__empty {

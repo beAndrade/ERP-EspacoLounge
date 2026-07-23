@@ -54,7 +54,7 @@
   visibility: hidden;
   transform: translateX(-50%);
   pointer-events: none;
-  white-space: nowrap;
+  white-space: pre-line;
   transition:
     opacity 0.16s ease,
     visibility 0s linear 0.16s;
@@ -147,7 +147,7 @@
   visibility: hidden;
   transform: none;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
   transition:
     opacity 0.16s ease,
     visibility 0s linear 0.16s;
@@ -163,7 +163,8 @@
 
   .ui-tip-portal__label {
     display: block;
-    white-space: nowrap;
+    white-space: pre-line;
+    text-align: center;
   }
 
   .ui-tip-portal__arrow {

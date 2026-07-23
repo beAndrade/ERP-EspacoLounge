@@ -24,6 +24,10 @@ export class PainelSparklineComponent {
 
   readonly points = input<PainelSparkPoint[]>([]);
   readonly color = input<string>('#505afb');
+  /** Preenche área sob a linha (ex.: ranking de profissionais). */
+  readonly filled = input(false);
+  /** Âncora o eixo Y em zero (contagens diárias). */
+  readonly baselineZero = input(false);
 
   readonly vbW = 120;
   readonly vbH = 36;
@@ -37,21 +41,26 @@ export class PainelSparklineComponent {
     if (pts.length === 0) return [];
 
     const values = pts.map((p) => p.value);
-    let min = Math.min(...values);
+    let min = this.baselineZero() ? 0 : Math.min(...values);
     let max = Math.max(...values);
     if (min === max) {
-      min -= 1;
-      max += 1;
+      if (this.baselineZero()) {
+        max = Math.max(max, 1);
+      } else {
+        min -= 1;
+        max += 1;
+      }
     }
 
     const n = pts.length;
     const innerW = this.vbW - this.padX * 2;
     const innerH = this.vbH - this.padY * 2;
+    const span = max - min || 1;
 
     return pts.map((point, i) => {
       const x =
         n === 1 ? this.vbW / 2 : this.padX + (i / (n - 1)) * innerW;
-      const t = (point.value - min) / (max - min);
+      const t = (point.value - min) / span;
       const y = this.padY + (1 - t) * innerH;
       return { x, y, cx: x, cy: y, point };
     });
@@ -63,15 +72,26 @@ export class PainelSparklineComponent {
       .join(' '),
   );
 
+  readonly areaPath = computed(() => {
+    const pts = this.plot();
+    if (pts.length === 0) return '';
+    const bottom = this.vbH - this.padY;
+    if (pts.length === 1) {
+      const p = pts[0]!;
+      return `M ${p.x - 2} ${bottom} L ${p.x - 2} ${p.y} L ${p.x + 2} ${p.y} L ${p.x + 2} ${bottom} Z`;
+    }
+    const line = pts.map((p) => `${p.x},${p.y}`).join(' L ');
+    const first = pts[0]!;
+    const last = pts[pts.length - 1]!;
+    return `M ${first.x},${bottom} L ${line} L ${last.x},${bottom} Z`;
+  });
+
   onPointEnter(ev: MouseEvent, p: SparkPlotPoint): void {
     this.ctx.setDay(p.point.ymd);
+    const dataFmt = ymdExibicaoBelasis(p.point.ymd) || p.point.ymd;
     this.tip.show({
-      dataLabel: ymdExibicaoBelasis(p.point.ymd) || p.point.ymd,
-      valorLabel:
-        p.point.label ??
-        new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(
-          p.point.value,
-        ),
+      dataLabel: '',
+      valorLabel: p.point.label ?? `${p.point.value} em ${dataFmt}`,
       x: ev.clientX,
       y: ev.clientY,
     });
