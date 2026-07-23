@@ -621,8 +621,6 @@
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
-  padding-bottom: 0.65rem;
-  border-bottom: 1px solid var(--painel-border);
 
   &.painel-panel__head--row {
     flex-direction: row;
@@ -630,13 +628,15 @@
   }
 }
 
-/** Borda na largura total do card (cancela o padding horizontal do painel). */
+/** Borda só nos headers diretos do card (largura total do painel). */
 .painel-panel > .painel-panel__head {
   width: auto;
   margin-left: calc(-1 * var(--painel-panel-pad-x));
   margin-right: calc(-1 * var(--painel-panel-pad-x));
   padding-left: var(--painel-panel-pad-x);
   padding-right: var(--painel-panel-pad-x);
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--painel-border);
 }
 
 .painel-panel__title {
