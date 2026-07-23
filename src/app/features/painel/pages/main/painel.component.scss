@@ -456,6 +456,16 @@
   grid-column: span 3;
 }
 
+.painel-panel--h367 {
+  height: 367px;
+
+  > app-painel-chart-vendas-categoria,
+  > app-painel-chart-funnel {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
 .painel-panel {
   --painel-panel-pad-x: 1.2rem;
   display: flex;

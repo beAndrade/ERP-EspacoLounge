@@ -1,6 +1,8 @@
 :host {
   display: block;
   width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .painel-vcat {
@@ -8,10 +10,12 @@
   align-items: center;
   gap: 1.25rem;
   flex-wrap: wrap;
-  min-height: 160px;
+  height: 100%;
+  min-height: 0;
 }
 
 .painel-vcat__donut {
+  position: relative;
   flex: 0 0 160px;
   max-width: 160px;
 
@@ -27,28 +31,23 @@
 }
 
 .painel-vcat__arc {
-  cursor: pointer;
-  transition:
-    stroke-width 160ms ease,
-    filter 160ms ease;
-
-  &--active {
-    filter: drop-shadow(0 2px 5px rgba(15, 23, 42, 0.22));
-    stroke-width: 27;
-  }
+  pointer-events: none;
 }
 
-.painel-vcat__center-label {
-  fill: #9ca3af;
-  font-size: 10px;
-  font-family: inherit;
-}
-
-.painel-vcat__center-value {
-  fill: #111827;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: inherit;
+.painel-vcat__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 1.5rem;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.5714285714285714;
+  pointer-events: none;
 }
 
 .painel-vcat__legend {
@@ -66,8 +65,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.82rem;
-  color: #4b5563;
   min-width: 0;
 }
 
@@ -79,13 +76,18 @@
 }
 
 .painel-vcat__legend-name {
-  color: #374151;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: normal;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .painel-vcat__legend-value {
   margin-left: auto;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
