@@ -49,15 +49,15 @@
   color: rgba(0, 0, 0, 0.75);
 
   &--up {
-    color: #52c41a;
+    color: #36ab18 !important;
 
     .painel-ticket__delta-icon {
-      fill: #52c41a;
+      fill: #36ab18;
     }
   }
 
   &--down {
-    color: #dc2626;
+    color: #dc2626 !important;
 
     .painel-ticket__delta-icon {
       fill: #dc2626;
@@ -73,6 +73,8 @@
 .painel-ticket__delta-icon {
   display: block;
   flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
 }
 
 .painel-ticket__chart-wrap {
