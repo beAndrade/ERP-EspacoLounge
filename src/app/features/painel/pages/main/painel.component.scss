@@ -457,11 +457,12 @@
 }
 
 .painel-panel {
+  --painel-panel-pad-x: 1.2rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
   min-width: 0;
-  padding: 1.15rem 1.2rem 1.25rem;
+  padding: 1.15rem var(--painel-panel-pad-x) 1.25rem;
   border-radius: var(--painel-radius);
   background: #fff;
   border: 1px solid var(--painel-border);
@@ -618,11 +619,24 @@
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--painel-border);
 
   &.painel-panel__head--row {
     flex-direction: row;
     align-items: center;
   }
+}
+
+/** Borda na largura total do card (cancela o padding horizontal do painel). */
+.painel-panel > .painel-panel__head {
+  width: auto;
+  margin-left: calc(-1 * var(--painel-panel-pad-x));
+  margin-right: calc(-1 * var(--painel-panel-pad-x));
+  padding-left: var(--painel-panel-pad-x);
+  padding-right: var(--painel-panel-pad-x);
 }
 
 .painel-panel__title {
