@@ -118,8 +118,9 @@
 }
 
 .painel-ticket__tick {
-  font-size: 9px;
-  fill: #9ca3af;
+  fill: rgba(0, 0, 0, 0.75);
+  font-size: 12px;
+  font-weight: normal;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
@@ -144,8 +145,9 @@
 }
 
 .painel-ticket__bar-label {
-  font-size: 9px;
-  fill: #6b7280;
+  fill: rgba(0, 0, 0, 0.75);
+  font-size: 12px;
+  font-weight: normal;
   pointer-events: none;
 }
 
