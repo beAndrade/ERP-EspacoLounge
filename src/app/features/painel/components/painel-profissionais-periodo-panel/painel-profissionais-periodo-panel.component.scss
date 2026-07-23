@@ -174,21 +174,28 @@
 .painel-prof-rank__podium-name {
   margin: 0;
   width: 100%;
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.75);
+  text-align: left;
   line-height: 1.25;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  text-overflow: ellipsis;
+  word-break: keep-all;
 }
 
 .painel-prof-rank__podium-meta {
   margin: 0.12rem 0 0;
-  font-size: 0.78rem;
+  font-size: 14px;
   font-weight: 500;
+  text-align: center;
   color: #6b7280;
   line-height: 1.3;
+}
+
+.painel-prof-rank__podium-name + .painel-prof-rank__podium-meta {
+  color: var(--podium-accent);
 }
 
 .painel-prof-rank__podium-block {
