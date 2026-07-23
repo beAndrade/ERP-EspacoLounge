@@ -15,8 +15,6 @@
   gap: 0.65rem;
   width: 100%;
   margin-bottom: 1rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid #f1f2f9;
   overflow: visible;
 }
 
@@ -134,32 +132,41 @@
   }
 
   &--1 {
-    --podium-accent: #e8b923;
-    --podium-icon: #d4a017;
+    --podium-accent: #efaf41;
     --podium-block-h: 7.25rem;
-    --podium-tint: #fff8e1;
+    --podium-tint: color-mix(in srgb, #efaf41 18%, #fff);
   }
 
   &--2 {
-    --podium-accent: #90a4c4;
-    --podium-icon: #7b8fad;
+    --podium-accent: #c0c0c0;
     --podium-block-h: 5.5rem;
-    --podium-tint: #eef2f8;
+    --podium-tint: color-mix(in srgb, #c0c0c0 22%, #fff);
   }
 
   &--3 {
-    --podium-accent: #c48a5a;
-    --podium-icon: #b57a48;
+    --podium-accent: #cd7f32;
     --podium-block-h: 4.25rem;
-    --podium-tint: #f7efe8;
+    --podium-tint: color-mix(in srgb, #cd7f32 18%, #fff);
   }
 }
 
 .painel-prof-rank__podium-icon {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
   margin-bottom: 0.35rem;
-  color: var(--podium-icon);
+  border-radius: 50%;
+  background: var(--podium-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: #fff;
+
+  svg {
+    display: block;
+    width: 26px;
+    height: 26px;
+  }
 }
 
 .painel-prof-rank__podium-name {
