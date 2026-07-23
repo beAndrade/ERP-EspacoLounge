@@ -11,7 +11,22 @@ const DIAS = [
   'domingo',
 ] as const;
 
-const HORAS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
+/** Alinhado ao último horário do drawer de agendamento (23h). */
+const HORAS = [
+  8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+] as const;
+
+/**
+ * Opacidade de #505AFB (sobre branco) para contraste ≈ com texto rgba(0,0,0,.75):
+ * 1→8.46, 2→6.56, 3→4.66, 4+→3.43 (teto visual deste azul).
+ */
+function heatAlphaPorContagem(n: number): number {
+  if (n <= 0) return 0;
+  if (n === 1) return 0.256;
+  if (n === 2) return 0.505;
+  if (n === 3) return 0.779;
+  return 1;
+}
 
 @Component({
   selector: 'app-painel-chart-heatmap',
@@ -36,7 +51,6 @@ export class PainelChartHeatmapComponent {
         map.set(`${d}-${h}`, p);
       }
     }
-    const max = Math.max(...this.series().map((p) => p.value), 1);
     return HORAS.map((hora) => ({
       hora,
       horaLabel: `${hora}h`,
@@ -46,13 +60,11 @@ export class PainelChartHeatmapComponent {
           value: 0,
           meta: { dia, hora: `${hora}h`, diaIdx, horaIdx: hora },
         };
-        /** 0 = sem fill; 1 = pico do período (azul mais opaco). */
-        const intensity = p.value > 0 ? Math.min(1, p.value / max) : 0;
         return {
           p,
           dia,
           key: `${diaIdx}-${hora}`,
-          intensity,
+          heatAlpha: heatAlphaPorContagem(p.value),
         };
       }),
     }));

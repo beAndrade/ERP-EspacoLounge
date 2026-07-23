@@ -403,7 +403,7 @@ export class SheetsApiService {
     /** Quando true, só pedidos com `atendimentos.inicio` (agenda com horário). */
     somenteComHorario?: boolean,
   ): Observable<AtendimentoListaItem[]> {
-    let params = new HttpParams();
+    let params = new HttpParams().set('_cb', String(Date.now()));
     if (dataInicio) params = params.set('dataInicio', dataInicio);
     if (dataFim) params = params.set('dataFim', dataFim);
     if (idAtendimento?.trim()) {

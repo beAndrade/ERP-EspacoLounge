@@ -2,32 +2,41 @@
   @if (hasData()) {
     <div class="painel-chart-heatmap__scroll">
       <table class="painel-chart-heatmap__table">
-        <thead>
-          <tr>
-            <th class="painel-chart-heatmap__corner" scope="col"></th>
-            @for (dia of dias; track dia) {
-              <th scope="col" class="painel-chart-heatmap__day">{{ dia }}</th>
-            }
-          </tr>
-        </thead>
+        <colgroup>
+          <col class="painel-chart-heatmap__col-hour" />
+          @for (dia of dias; track dia) {
+            <col class="painel-chart-heatmap__col-day" />
+          }
+        </colgroup>
         <tbody>
           @for (row of grid(); track row.hora) {
             <tr>
-              <th scope="row" class="painel-chart-heatmap__hour">{{ row.horaLabel }}</th>
+              <th scope="row" class="painel-chart-heatmap__hour-cell">
+                <div class="painel-chart-heatmap__hour">{{ row.horaLabel }}</div>
+              </th>
               @for (c of row.cells; track c.key) {
                 <td>
-                  <span
+                  <div
                     class="painel-chart-heatmap__cell"
-                    [style.--heat]="c.intensity"
+                    [class.painel-chart-heatmap__cell--on]="c.p.value > 0"
+                    [style.--heat-alpha]="c.heatAlpha"
                     [attr.aria-label]="c.dia + ' ' + row.horaLabel + ': ' + c.p.value"
                   >
                     {{ c.p.value }}
-                  </span>
+                  </div>
                 </td>
               }
             </tr>
           }
         </tbody>
+        <tfoot>
+          <tr>
+            <td class="painel-chart-heatmap__corner"></td>
+            @for (dia of dias; track dia) {
+              <th scope="col" class="painel-chart-heatmap__day">{{ dia }}</th>
+            }
+          </tr>
+        </tfoot>
       </table>
     </div>
   } @else {

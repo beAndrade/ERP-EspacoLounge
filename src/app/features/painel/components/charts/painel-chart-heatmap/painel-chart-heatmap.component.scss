@@ -12,50 +12,99 @@
 .painel-chart-heatmap__table {
   width: 100%;
   min-width: 36rem;
+  table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 0;
+  /** Gap fixo de 1px entre todos os blocos (não usa margin na célula). */
+  border-spacing: 1px;
   font-size: 0.75rem;
+  background: transparent;
+
+  col.painel-chart-heatmap__col-hour {
+    width: 40px;
+  }
+
+  col.painel-chart-heatmap__col-day {
+    width: calc((100% - 40px) / 7);
+  }
+
+  th,
+  td {
+    box-sizing: border-box;
+    vertical-align: middle;
+    padding: 0;
+  }
+
+  td {
+    width: calc((100% - 40px) / 7);
+  }
+
+  tbody td {
+    /** Garante que o fundo do gap não herde o azul do vizinho. */
+    background: transparent;
+  }
 }
 
 .painel-chart-heatmap__corner {
-  width: 2.5rem;
+  width: 40px;
 }
 
+/** Dias da semana — rodapé do mapa. */
 .painel-chart-heatmap__day {
-  font-weight: 600;
-  color: #6b7280;
+  flex: 1 1 0%;
+  width: 60px;
+  visibility: visible;
   text-align: center;
-  padding: 0.15rem 0.25rem 0.45rem;
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.5714285714285714;
+  padding: 0.45rem 0.25rem 0.15rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.painel-chart-heatmap__hour-cell {
+  width: 40px;
+  vertical-align: middle;
+  background: transparent;
+}
+
+/** Rótulo de hora — mesma altura do bloco, sem margin que invada o gap. */
 .painel-chart-heatmap__hour {
-  font-weight: 600;
-  color: #9ca3af;
+  box-sizing: border-box;
+  width: 100%;
+  height: 35px;
+  margin: 0;
+  padding: 9.46px 5px 0 0;
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.5714285714285714;
   text-align: right;
-  padding-right: 0.35rem;
   white-space: nowrap;
+  user-select: none;
 }
 
+/**
+ * Célula: preenche o td por completo (sem margin).
+ * O gap de 1px vem só do border-spacing — blocos pintados não se fundem.
+ */
 .painel-chart-heatmap__cell {
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  margin: 1px 1px 0 0;
-  height: 35px;
+  margin: 0;
   width: 100%;
-  flex: 1 1 0%;
-  min-width: 2.1rem;
+  height: 35px;
+  min-height: 35px;
+  max-height: 35px;
   padding: 0;
   border: none;
   border-radius: 8px;
   text-align: center;
-  /**
-   * Mais agendamentos → --heat maior → azul mais opaco → contraste do texto menor.
-   * Menos agendamentos → azul mais claro → contraste maior.
-   */
-  background: rgba(80, 90, 251, calc(var(--heat, 0) * 0.55));
+  background: transparent;
   color: rgba(0, 0, 0, 0.75);
   font: inherit;
   font-size: 14px;
@@ -63,6 +112,15 @@
   line-height: 1.5714285714285714;
   pointer-events: none;
   user-select: none;
+  isolation: isolate;
+
+  &--on {
+    /**
+     * Contraste alvo (texto rgba(0,0,0,.75) sobre #505AFB):
+     * 1→~8.46, 2→~6.56, 3→~4.66, 4+→~3.43 via --heat-alpha.
+     */
+    background: rgba(80, 90, 251, var(--heat-alpha, 0.256));
+  }
 }
 
 .painel-chart__empty {

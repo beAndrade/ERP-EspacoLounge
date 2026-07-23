@@ -12,6 +12,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subscription, catchError, finalize, forkJoin, of } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AgendaDadosUiService } from '../../../../core/services/agenda-dados-ui.service';
 import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.service';
 import { toYmd } from '../../../../core/utils/atendimento-display';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
@@ -150,6 +151,7 @@ function descreverClimaWmo(code: number): { emoji: string; descricao: string } {
 })
 export class PainelComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
+  private readonly agendaDados = inject(AgendaDadosUiService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(AppToastService);
@@ -286,6 +288,13 @@ export class PainelComponent implements OnInit {
         this.carregarCards();
         this.carregarPeriodo();
       });
+
+    this.agendaDados.mudancas$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.carregarCards();
+        this.carregarPeriodo();
+      });
   }
 
   /** Verifica o relógio a cada segundo, mas só emite quando o minuto muda. */
@@ -382,7 +391,9 @@ export class PainelComponent implements OnInit {
     this.carregarPeriodo(true);
   }
 
-  onPeriodoAlterado(): void {
+  onPeriodoAlterado(ev: { inicioYmd: string; fimYmd: string }): void {
+    this.periodoInicio = ev.inicioYmd;
+    this.periodoFim = ev.fimYmd;
     if (this.atualizando()) {
       this.pararGiro();
       this.loadsManuaisPendentes = 0;
@@ -397,7 +408,6 @@ export class PainelComponent implements OnInit {
 
     const agora = Date.now();
     this.ultimaAtualizacaoManualEm = agora;
-    this.chartsAnimKey.update((k) => k + 1);
 
     /** Mantém a seta girando por um tempo mínimo, mesmo com carga instantânea. */
     const restante =
@@ -478,6 +488,7 @@ export class PainelComponent implements OnInit {
         this.ticketMedio.set(agregado.ticketMedio);
         this.profissionaisPeriodo.set(agregado.profissionais);
         this.vendasCategoria.set(agregado.vendasCategoria);
+        this.chartsAnimKey.update((k) => k + 1);
       });
   }
 }

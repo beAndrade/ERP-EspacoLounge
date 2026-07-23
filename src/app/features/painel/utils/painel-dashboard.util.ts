@@ -1,11 +1,17 @@
 import type { AtendimentoListaItem, CaixaDiaResumo } from '../../../core/models/api.models';
 import {
+  diaCivilReferenciaHorarioGrupo,
   horaInicialMenorDasLinhasAtendimento,
   pedidoTemPosicaoNaGrelhaAgenda,
   toYmd,
   totalLinhaPreferencialAtendimento,
   valorMonetarioParaNumero,
 } from '../../../core/utils/atendimento-display';
+import { normalizarHoraHHmm } from '../../../core/utils/brasilia-time';
+import {
+  parseSqlLocalDateTime,
+  ymdOfParts,
+} from '../../../core/utils/sql-local-datetime';
 import {
   AGENDA_STATUS_META,
   inferirAgendaStatusPorCorHex,
@@ -135,7 +141,9 @@ export function mapCaixaDiaParaFaturamentoCardVm(
   };
 }
 
-const HEATMAP_HORAS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
+const HEATMAP_HORAS = [
+  8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+] as const;
 const HEATMAP_DIAS_SEMANA = [
   'segunda-feira',
   'terça-feira',
@@ -220,6 +228,7 @@ function statusAgendaDoCartao(rows: AtendimentoListaItem[]): AgendaStatusId {
 /**
  * Cartões como na grelha da agenda: mesmo pedido parte por status/horário;
  * só entram linhas com posição na grelha (têm horário no dia).
+ * Dia civil vem do `inicio` (não exige comanda / faturação).
  */
 function cartoesAgendaNoIntervalo(
   linhas: AtendimentoListaItem[],
@@ -233,22 +242,91 @@ function cartoesAgendaNoIntervalo(
     linhas: AtendimentoListaItem[];
   }[] = [];
   for (const [, rows] of grupos) {
-    const data = (rows[0]?.data ?? '').slice(0, 10);
-    if (!ymdNoIntervalo(data, inicio, fim)) continue;
+    const dataCabeca = (rows[0]?.data ?? '').slice(0, 10);
+    const dia = diaCivilReferenciaHorarioGrupo(rows, dataCabeca);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) continue;
+    if (!ymdNoIntervalo(dia, inicio, fim)) continue;
     for (const part of particionarLinhasPedidoEmCartoesAgenda(
       rows,
-      data,
+      dia,
       'cartao',
     )) {
-      if (!pedidoTemPosicaoNaGrelhaAgenda(part.linhas, data)) continue;
+      if (!pedidoTemPosicaoNaGrelhaAgenda(part.linhas, dia)) continue;
       out.push({
-        data,
+        data: dia,
         status: statusAgendaDoCartao(part.linhas),
         linhas: part.linhas,
       });
     }
   }
   return out;
+}
+
+/**
+ * Conta agendamentos com horário no período para o mapa de calor.
+ * Bloco = piso da hora do `inicio`: 08:00–08:59 → 8h, 09:00–09:59 → 9h, etc.
+ * Não depende de comanda faturada. Deduplica por pedido + dia + bloco.
+ */
+function contarHeatmapPorDiaHora(
+  linhas: AtendimentoListaItem[],
+  inicio: string,
+  fim: string,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  const vistos = new Set<string>();
+  const horaMin = HEATMAP_HORAS[0];
+  const horaMax = HEATMAP_HORAS[HEATMAP_HORAS.length - 1];
+
+  for (const row of linhas) {
+    const bucket = bucketHeatmapDeInicio(
+      String(row.inicio ?? '').trim(),
+      (row.data ?? '').slice(0, 10),
+    );
+    if (!bucket) continue;
+    if (!ymdNoIntervalo(bucket.dia, inicio, fim)) continue;
+    if (bucket.hora < horaMin || bucket.hora > horaMax) continue;
+
+    const idPedido = String(row.id ?? '').trim();
+    const idLinha =
+      row.linha_id != null && Number.isFinite(row.linha_id)
+        ? String(row.linha_id)
+        : '';
+    const dedupeKey = `${idPedido || `L:${idLinha}`}|${bucket.dia}|${bucket.hora}`;
+    if (vistos.has(dedupeKey)) continue;
+    vistos.add(dedupeKey);
+
+    const diaIdx = indiceDiaSemanaSegunda(bucket.dia);
+    const key = `${diaIdx}-${bucket.hora}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+/**
+ * Extrai dia civil + bloco horário a partir de `inicio`.
+ * Minutos são ignorados (floor): 08:00…08:59 → bloco 8.
+ */
+function bucketHeatmapDeInicio(
+  inicioRaw: string,
+  dataFallbackYmd: string,
+): { dia: string; hora: number } | null {
+  const raw = inicioRaw.trim();
+  if (!raw) return null;
+
+  const p = parseSqlLocalDateTime(raw);
+  if (p) {
+    return { dia: ymdOfParts(p), hora: p.hh };
+  }
+
+  /** Fallback: só HH:mm (usa a coluna Data do atendimento). */
+  const hhmm = normalizarHoraHHmm(raw);
+  if (!hhmm) return null;
+  const hora = parseInt(hhmm.slice(0, 2), 10);
+  if (!Number.isFinite(hora)) return null;
+  const dia = dataFallbackYmd.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return null;
+  return { dia, hora };
 }
 
 function comandasNoIntervalo(
@@ -295,16 +373,6 @@ function labelDiaCurto(ymd: string): string {
 function indiceDiaSemanaSegunda(ymd: string): number {
   const d = parseYmdLocal(ymd).getDay();
   return d === 0 ? 6 : d - 1;
-}
-
-function horaBucketHeatmap(rows: AtendimentoListaItem[], dataYmd: string): number | null {
-  const hhmm = horaInicialMenorDasLinhasAtendimento(rows, dataYmd);
-  if (!hhmm) return null;
-  const h = parseInt(hhmm.split(':')[0] ?? '', 10);
-  if (!Number.isFinite(h) || h < HEATMAP_HORAS[0] || h > HEATMAP_HORAS[HEATMAP_HORAS.length - 1]) {
-    return null;
-  }
-  return h;
 }
 
 const CATEGORIA_META: readonly { label: string; cor: string }[] = [
@@ -403,14 +471,7 @@ export function mapAtendimentosParaPainelPeriodo(
         ]
       : [];
 
-  const heatmapCounts = new Map<string, number>();
-  for (const c of cartoes) {
-    const diaIdx = indiceDiaSemanaSegunda(c.data);
-    const hora = horaBucketHeatmap(c.linhas, c.data);
-    if (hora == null) continue;
-    const key = `${diaIdx}-${hora}`;
-    heatmapCounts.set(key, (heatmapCounts.get(key) ?? 0) + 1);
-  }
+  const heatmapCounts = contarHeatmapPorDiaHora(linhas, inicio, fim);
   const heatmap: PainelChartPoint[] = [];
   for (let d = 0; d < HEATMAP_DIAS_SEMANA.length; d++) {
     for (const h of HEATMAP_HORAS) {

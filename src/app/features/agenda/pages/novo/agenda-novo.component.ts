@@ -72,6 +72,7 @@ import {
 import { AgendaStatusSelectComponent } from './agenda-status-select.component';
 import { AgendaCorSelectComponent } from './agenda-cor-select.component';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AgendaDadosUiService } from '../../../../core/services/agenda-dados-ui.service';
 import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 import {
   expandirDatasRepeticao,
@@ -230,6 +231,7 @@ function parseQuantidadeFromDescricao(s: string): number {
 })
 export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private readonly api = inject(SheetsApiService);
+  private readonly agendaDados = inject(AgendaDadosUiService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -3194,6 +3196,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.datasSerieOcorrenciasSalvas = [];
         this.yminSerieOcorrenciasSalvas = null;
         this.enviarLembreteUi = false;
+        this.agendaDados.notificarMudanca();
 
         if (lembreteCtx) {
           this.concluirLembreteWhatsappAposSalvar(lembretePopup, lembreteCtx);
@@ -3414,6 +3417,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.descartarExcluirConfirmModal();
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
+        this.agendaDados.notificarMudanca();
         if (this.modoModal) {
           this.salvoComSucesso.emit();
         } else {
@@ -3498,6 +3502,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           this.descartarExcluirConfirmModal();
           this.idAtendimentoEmEdicao = null;
           this.slotAgenda = null;
+          this.agendaDados.notificarMudanca();
           if (this.modoModal) {
             this.salvoComSucesso.emit();
           } else {
