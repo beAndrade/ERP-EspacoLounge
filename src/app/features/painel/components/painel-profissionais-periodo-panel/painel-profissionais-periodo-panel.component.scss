@@ -21,10 +21,24 @@
 }
 
 .painel-prof-rank__metric {
-  position: relative;
   width: 100%;
   min-width: 0;
   cursor: default;
+}
+
+.painel-prof-rank__label {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.painel-prof-rank__value-row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.15rem;
 
   &:hover .painel-prof-rank__metric-tip {
     opacity: 1;
@@ -68,20 +82,6 @@
     border: 7px solid transparent;
     border-top-color: rgba(0, 0, 0, 0.82);
   }
-}
-
-.painel-prof-rank__label {
-  margin: 0;
-  font-size: 0.82rem;
-  color: #6b7280;
-}
-
-.painel-prof-rank__value-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  width: 100%;
-  margin-top: 0.15rem;
 }
 
 .painel-prof-rank__value {

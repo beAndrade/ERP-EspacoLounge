@@ -14,10 +14,10 @@
           >
             {{ formatPct(vm().vsAnteriorPct) }}
           </span>
+          <span class="painel-prof-rank__metric-tip" role="tooltip">
+            Total no período anterior: {{ vm().totalPeriodoAnterior }}
+          </span>
         </div>
-        <span class="painel-prof-rank__metric-tip" role="tooltip">
-          Total no período anterior: {{ vm().totalPeriodoAnterior }}
-        </span>
       </div>
       @if (vm().spark.length > 0) {
         <app-painel-sparkline
