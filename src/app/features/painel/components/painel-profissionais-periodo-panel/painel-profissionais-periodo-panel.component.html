@@ -43,17 +43,23 @@
           @if (slot.linha; as p) {
             <div class="painel-prof-rank__podium-icon" aria-hidden="true">
               @if (slot.rank === 1) {
-                <!-- Coroa -->
-                <svg viewBox="0 0 24 24" fill="none">
+                <!-- Coroa (Lucide) -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
                   <path
-                    d="M3 17h18l-1.5-9-4.5 3.5L12 5l-3 6.5L4.5 8 3 17z"
-                    fill="currentColor"
-                    opacity="0.95"
+                    d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"
                   />
-                  <path
-                    d="M4 19h16v2H4v-2z"
-                    fill="currentColor"
-                  />
+                  <path d="M5 21h14" />
                 </svg>
               } @else {
                 <!-- Troféu (Lucide) -->
