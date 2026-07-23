@@ -1,4 +1,4 @@
-<div class="painel-chart painel-chart-heatmap" (mouseleave)="onLeave()">
+<div class="painel-chart painel-chart-heatmap">
   @if (hasData()) {
     <div class="painel-chart-heatmap__scroll">
       <table class="painel-chart-heatmap__table">
@@ -16,18 +16,13 @@
               <th scope="row" class="painel-chart-heatmap__hour">{{ row.horaLabel }}</th>
               @for (c of row.cells; track c.key) {
                 <td>
-                  <button
-                    type="button"
+                  <span
                     class="painel-chart-heatmap__cell"
-                    [class.painel-chart-heatmap__cell--active]="c.active"
-                    [class.painel-chart-heatmap__cell--hover]="activeKey() === c.key"
                     [style.--heat]="c.intensity"
-                    (mouseenter)="onEnter($event, c.key, c.p)"
-                    (mousemove)="onMove($event)"
                     [attr.aria-label]="c.dia + ' ' + row.horaLabel + ': ' + c.p.value"
                   >
                     {{ c.p.value }}
-                  </button>
+                  </span>
                 </td>
               }
             </tr>

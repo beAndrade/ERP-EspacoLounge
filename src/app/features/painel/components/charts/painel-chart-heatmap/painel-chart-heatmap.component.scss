@@ -13,7 +13,7 @@
   width: 100%;
   min-width: 36rem;
   border-collapse: separate;
-  border-spacing: 0.28rem;
+  border-spacing: 0;
   font-size: 0.75rem;
 }
 
@@ -41,31 +41,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  margin: 1px 1px 0 0;
+  height: 35px;
   width: 100%;
+  flex: 1 1 0%;
   min-width: 2.1rem;
-  min-height: 1.85rem;
+  padding: 0;
   border: none;
   border-radius: 8px;
-  background: transparent;
-  color: #9ca3af;
+  text-align: center;
+  /**
+   * Mais agendamentos → --heat maior → azul mais opaco → contraste do texto menor.
+   * Menos agendamentos → azul mais claro → contraste maior.
+   */
+  background: rgba(80, 90, 251, calc(var(--heat, 0) * 0.55));
+  color: rgba(0, 0, 0, 0.75);
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    transform 140ms ease,
-    background 140ms ease,
-    color 140ms ease;
-
-  &--active {
-    background: #505afb;
-    color: #fff;
-  }
-
-  &--hover {
-    transform: scale(1.06);
-    filter: brightness(1.05);
-  }
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.5714285714285714;
+  pointer-events: none;
+  user-select: none;
 }
 
 .painel-chart__empty {

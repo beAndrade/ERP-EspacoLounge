@@ -1,13 +1,5 @@
-import {
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import type { PainelChartPoint } from '../../../models/painel-dashboard.models';
-import { PainelChartTooltipService, boundsFromEventTarget } from '../../../services/painel-chart-tooltip.service';
 
 const DIAS = [
   'segunda-feira',
@@ -28,11 +20,7 @@ const HORAS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as const;
   styleUrl: './painel-chart-heatmap.component.scss',
 })
 export class PainelChartHeatmapComponent {
-  private readonly tip = inject(PainelChartTooltipService);
-
   readonly series = input<PainelChartPoint[]>([]);
-  readonly pointHover = output<PainelChartPoint | null>();
-  readonly activeKey = signal<string | null>(null);
 
   readonly dias = DIAS;
   readonly horas = HORAS;
@@ -58,41 +46,15 @@ export class PainelChartHeatmapComponent {
           value: 0,
           meta: { dia, hora: `${hora}h`, diaIdx, horaIdx: hora },
         };
+        /** 0 = sem fill; 1 = pico do período (azul mais opaco). */
         const intensity = p.value > 0 ? Math.min(1, p.value / max) : 0;
         return {
           p,
           dia,
-          diaIdx,
-          hora,
           key: `${diaIdx}-${hora}`,
           intensity,
-          active: p.value > 0,
         };
       }),
     }));
   });
-
-  onEnter(ev: MouseEvent, key: string, p: PainelChartPoint): void {
-    this.activeKey.set(key);
-    this.pointHover.emit(p);
-    this.tip.show({
-      dataLabel: String(p.meta?.['dia'] ?? p.label),
-      valorLabel: `${p.value} atendimento${p.value === 1 ? '' : 's'}`,
-      deltaLabel: String(p.meta?.['hora'] ?? ''),
-      nota: p.nota ?? null,
-      x: ev.clientX,
-      y: ev.clientY,
-      bounds: boundsFromEventTarget(ev),
-    });
-  }
-
-  onMove(ev: MouseEvent): void {
-    this.tip.move(ev.clientX, ev.clientY, boundsFromEventTarget(ev));
-  }
-
-  onLeave(): void {
-    this.activeKey.set(null);
-    this.pointHover.emit(null);
-    this.tip.hide();
-  }
 }
