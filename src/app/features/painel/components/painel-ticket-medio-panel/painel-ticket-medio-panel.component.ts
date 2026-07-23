@@ -111,8 +111,11 @@ export class PainelTicketMedioPanelComponent {
     const innerW = this.vbW - this.pad.l - this.pad.r;
     const innerH = this.vbH - this.pad.t - this.pad.b;
     const bandW = innerW / 2;
-    /** Largura visual das colunas (~80px no layout de referência). */
-    const bw = Math.min(80, bandW * 0.72);
+    /**
+     * Largura alvo ~79.92px no layout de referência (banda hover ~199px).
+     * Usa proporção da banda para manter a torre nessa escala visual.
+     */
+    const bw = bandW * (79.92 / 199);
     return pts.map((p, i) => {
       const h = p.value > 0 ? (p.value / niceMax) * innerH : 0;
       const bandX = this.pad.l + i * bandW;
@@ -129,7 +132,7 @@ export class PainelTicketMedioPanelComponent {
         w: bw,
         h: barH,
         cx: x + bw / 2,
-        path: barraTopoArredondada(x, y, bw, barH, 12),
+        path: barraTopoArredondada(x, y, bw, barH, Math.min(12, bw / 5)),
       };
     });
   });
