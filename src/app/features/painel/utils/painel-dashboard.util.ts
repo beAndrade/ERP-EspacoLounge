@@ -3,6 +3,7 @@ import {
   horaInicialMenorDasLinhasAtendimento,
   pedidoTemPosicaoNaGrelhaAgenda,
   toYmd,
+  totalLinhaPreferencialAtendimento,
   valorMonetarioParaNumero,
 } from '../../../core/utils/atendimento-display';
 import {
@@ -456,16 +457,14 @@ export function mapAtendimentosParaPainelPeriodo(
     { nome: string; servicos: number; faturamento: number }
   >();
   for (const g of comandas) {
-    const faturada = comandaQuitadaNasCifrasGrupo(g);
     for (const linha of g.linhas) {
       if (!isLinhaServico(linha)) continue;
       const nome = String(linha.profissional ?? '').trim() || 'Sem profissional';
       const key = nome.toLowerCase();
       const acc = profMap.get(key) ?? { nome, servicos: 0, faturamento: 0 };
       acc.servicos += 1;
-      if (faturada) {
-        acc.faturamento += valorMonetarioParaNumero(linha.valor) ?? 0;
-      }
+      // Mesma base da contagem: todos os serviços do período (não só comandas quitadas).
+      acc.faturamento += totalLinhaPreferencialAtendimento(linha) ?? 0;
       profMap.set(key, acc);
     }
   }
@@ -477,7 +476,7 @@ export function mapAtendimentosParaPainelPeriodo(
       nome: p.nome,
       servicos: p.servicos,
       valorMedio:
-        p.servicos > 0 && p.faturamento > 0
+        p.servicos > 0
           ? Math.round((p.faturamento / p.servicos) * 100) / 100
           : null,
     }));
