@@ -11,12 +11,15 @@
             [class.painel-ticket__delta--up]="vm().vsAnteriorPct! > 0"
             [class.painel-ticket__delta--down]="vm().vsAnteriorPct! < 0"
           >
+            <span class="painel-ticket__delta-pct">{{
+              formatPct(vm().vsAnteriorPct)
+            }}</span>
             @if (vm().vsAnteriorPct! > 0) {
               <svg
                 class="painel-ticket__delta-icon"
                 viewBox="0 0 10 8"
-                width="22"
-                height="22"
+                width="16"
+                height="16"
                 aria-hidden="true"
               >
                 <polygon points="5,0 10,8 0,8" />
@@ -25,14 +28,13 @@
               <svg
                 class="painel-ticket__delta-icon"
                 viewBox="0 0 10 8"
-                width="22"
-                height="22"
+                width="16"
+                height="16"
                 aria-hidden="true"
               >
                 <polygon points="0,0 10,0 5,8" />
               </svg>
             }
-            {{ formatPct(vm().vsAnteriorPct) }}
           </span>
         } @else {
           <span class="painel-ticket__delta painel-ticket__delta--muted">—</span>

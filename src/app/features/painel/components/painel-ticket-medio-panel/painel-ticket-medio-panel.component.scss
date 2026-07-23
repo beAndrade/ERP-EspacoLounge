@@ -42,26 +42,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  margin-left: 5px;
+  margin-left: 5px !important;
   font-size: 14px;
   font-weight: bold;
   text-align: left;
   color: rgba(0, 0, 0, 0.75);
 
-  &--up {
-    color: #36ab18 !important;
-
-    .painel-ticket__delta-icon {
-      fill: #36ab18;
-    }
+  &--up .painel-ticket__delta-icon {
+    fill: #36ab18;
   }
 
-  &--down {
-    color: #dc2626 !important;
-
-    .painel-ticket__delta-icon {
-      fill: #dc2626;
-    }
+  &--down .painel-ticket__delta-icon {
+    fill: #dc2626;
   }
 
   &--muted {
@@ -70,11 +62,18 @@
   }
 }
 
+.painel-ticket__delta-pct {
+  font-size: 14px;
+  font-weight: bold;
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
+}
+
 .painel-ticket__delta-icon {
   display: block;
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
 }
 
 .painel-ticket__chart-wrap {
