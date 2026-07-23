@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import type { PainelTicketMedioVm } from '../../models/painel-dashboard.models';
-import { PainelChartTooltipService } from '../../services/painel-chart-tooltip.service';
+import { PainelChartTooltipService, boundsFromElement } from '../../services/painel-chart-tooltip.service';
 import { niceYAxis } from '../../utils/painel-chart-scale.util';
 
 /** Barra com base reta e só os cantos superiores arredondados. */
@@ -167,6 +167,7 @@ export class PainelTicketMedioPanelComponent implements AfterViewInit, OnDestroy
     const b = this.bars()[i];
     if (!b) return;
     this.activeIndex.set(i);
+    const plot = this.plotRef()?.nativeElement;
     this.tip.show({
       dataLabel: b.label,
       rows: [
@@ -176,11 +177,17 @@ export class PainelTicketMedioPanelComponent implements AfterViewInit, OnDestroy
       ],
       x: ev.clientX,
       y: ev.clientY,
+      bounds: plot ? boundsFromElement(plot) : undefined,
     });
   }
 
   onMove(ev: MouseEvent): void {
-    this.tip.move(ev.clientX, ev.clientY);
+    const plot = this.plotRef()?.nativeElement;
+    this.tip.move(
+      ev.clientX,
+      ev.clientY,
+      plot ? boundsFromElement(plot) : undefined,
+    );
   }
 
   onLeave(): void {

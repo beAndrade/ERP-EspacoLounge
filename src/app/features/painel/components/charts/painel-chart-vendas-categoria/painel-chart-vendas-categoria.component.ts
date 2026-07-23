@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import type { PainelVendasCategoriaVm } from '../../../models/painel-dashboard.models';
-import { PainelChartTooltipService } from '../../../services/painel-chart-tooltip.service';
+import { PainelChartTooltipService, boundsFromEventTarget } from '../../../services/painel-chart-tooltip.service';
 
 @Component({
   selector: 'app-painel-chart-vendas-categoria',
@@ -65,11 +65,12 @@ export class PainelChartVendasCategoriaComponent {
       valorLabel: `${this.formatMoeda(l.valor)} (${l.pct}%)`,
       x: ev.clientX,
       y: ev.clientY,
+      bounds: boundsFromEventTarget(ev),
     });
   }
 
   onMove(ev: MouseEvent): void {
-    this.tip.move(ev.clientX, ev.clientY);
+    this.tip.move(ev.clientX, ev.clientY, boundsFromEventTarget(ev));
   }
 
   onLeave(): void {

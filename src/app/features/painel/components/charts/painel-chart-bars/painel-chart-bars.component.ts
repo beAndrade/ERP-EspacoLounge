@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import type { PainelChartPoint } from '../../../models/painel-dashboard.models';
-import { PainelChartTooltipService } from '../../../services/painel-chart-tooltip.service';
+import { PainelChartTooltipService, boundsFromEventTarget } from '../../../services/painel-chart-tooltip.service';
 import { PainelDashboardContextService } from '../../../services/painel-dashboard-context.service';
 
 @Component({
@@ -67,11 +67,12 @@ export class PainelChartBarsComponent {
       nota: p.nota ?? null,
       x: ev.clientX,
       y: ev.clientY,
+      bounds: boundsFromEventTarget(ev),
     });
   }
 
   onMove(ev: MouseEvent): void {
-    this.tip.move(ev.clientX, ev.clientY);
+    this.tip.move(ev.clientX, ev.clientY, boundsFromEventTarget(ev));
   }
 
   onLeave(): void {

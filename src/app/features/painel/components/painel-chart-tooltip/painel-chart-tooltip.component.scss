@@ -3,11 +3,13 @@
 }
 
 /**
- * Estilo alinhado ao tooltip Recharts/Belasis (`.recharts-default-tooltip`):
- * fundo branco, borda leve, sombra suave, texto único em cinza.
+ * Wrapper no estilo Recharts (`.recharts-tooltip-wrapper`):
+ * left/top 0 + transform translate; transição 400ms no movimento.
  */
 .painel-chart-tooltip {
   position: fixed;
+  left: 0;
+  top: 0;
   z-index: 1400;
   margin: 0;
   min-width: 0;
@@ -18,9 +20,17 @@
   border: 1px solid #f0f0f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   white-space: nowrap;
-  transform: translate(-50%, calc(-100% - 10px));
-  animation: painelTipIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
   pointer-events: none;
+  visibility: hidden;
+  will-change: transform;
+}
+
+.painel-chart-tooltip--ready {
+  visibility: visible;
+}
+
+.painel-chart-tooltip--animate {
+  transition: transform 400ms;
 }
 
 .painel-chart-tooltip__date {
@@ -92,19 +102,8 @@
   color: #9ca3af;
 }
 
-@keyframes painelTipIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, calc(-100% - 4px));
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, calc(-100% - 10px));
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .painel-chart-tooltip {
-    animation: none;
+  .painel-chart-tooltip--animate {
+    transition: none;
   }
 }

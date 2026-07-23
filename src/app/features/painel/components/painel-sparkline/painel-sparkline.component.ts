@@ -168,7 +168,12 @@ export class PainelSparklineComponent {
         best = i;
       }
     }
-    this.setActive(best, ev.clientX, ev.clientY);
+    this.setActive(best, ev.clientX, ev.clientY, {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    });
   }
 
   onChartLeave(): void {
@@ -177,7 +182,12 @@ export class PainelSparklineComponent {
     this.tip.hide();
   }
 
-  private setActive(i: number, clientX: number, clientY: number): void {
+  private setActive(
+    i: number,
+    clientX: number,
+    clientY: number,
+    bounds: { left: number; top: number; right: number; bottom: number },
+  ): void {
     const p = this.plot()[i];
     if (!p) return;
     this.activeIndex.set(i);
@@ -188,6 +198,7 @@ export class PainelSparklineComponent {
       valorLabel: p.point.label ?? `${p.point.value} em ${dataFmt}`,
       x: clientX,
       y: clientY,
+      bounds,
     });
   }
 }

@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import type { PainelChartPoint } from '../../../models/painel-dashboard.models';
-import { PainelChartTooltipService } from '../../../services/painel-chart-tooltip.service';
+import { PainelChartTooltipService, boundsFromElement } from '../../../services/painel-chart-tooltip.service';
 import { niceYAxis } from '../../../utils/painel-chart-scale.util';
 
 function labelDataCompleta(ymd: string): string {
@@ -188,16 +188,23 @@ export class PainelChartTendenciaComponent implements AfterViewInit, OnDestroy {
     this.activeIndex.set(i);
     this.pointHover.emit(p);
     const plural = p.value === 1 ? 'agendamento criado' : 'agendamentos criados';
+    const plot = this.plotRef()?.nativeElement;
     this.tip.show({
       dataLabel: labelDataCompleta(p.ymd ?? ''),
       valorLabel: `${p.value} ${plural}`,
       x: ev.clientX,
       y: ev.clientY,
+      bounds: plot ? boundsFromElement(plot) : undefined,
     });
   }
 
   onMove(ev: MouseEvent): void {
-    this.tip.move(ev.clientX, ev.clientY);
+    const plot = this.plotRef()?.nativeElement;
+    this.tip.move(
+      ev.clientX,
+      ev.clientY,
+      plot ? boundsFromElement(plot) : undefined,
+    );
   }
 
   onLeave(): void {

@@ -1,10 +1,12 @@
 @if (visible() && payload(); as tip) {
   <div
+    #tipEl
     class="painel-chart-tooltip"
     [class.painel-chart-tooltip--rows]="!!tip.rows?.length"
+    [class.painel-chart-tooltip--ready]="placed()"
+    [class.painel-chart-tooltip--animate]="animate()"
     role="tooltip"
-    [style.left]="style()['left']"
-    [style.top]="style()['top']"
+    [style.transform]="transformStyle()"
   >
     @if (tip.dataLabel) {
       <div class="painel-chart-tooltip__date">{{ tip.dataLabel }}</div>
