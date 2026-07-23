@@ -72,6 +72,7 @@
   width: 100%;
   height: auto;
   display: block;
+  cursor: default;
 }
 
 .painel-ticket__grid {
@@ -115,7 +116,7 @@
   pointer-events: none;
 
   &--atual {
-    fill: #34d399;
+    fill: #52c41a;
   }
 }
 

@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import type { PainelTicketMedioVm } from '../../models/painel-dashboard.models';
 import { PainelChartTooltipService } from '../../services/painel-chart-tooltip.service';
+import { niceYAxis } from '../../utils/painel-chart-scale.util';
 
 /** Barra com base reta e só os cantos superiores arredondados. */
 function barraTopoArredondada(
@@ -31,8 +32,6 @@ function barraTopoArredondada(
     'Z',
   ].join(' ');
 }
-
-const Y_STEP = 30;
 
 @Component({
   selector: 'app-painel-ticket-medio-panel',
@@ -65,18 +64,16 @@ export class PainelTicketMedioPanelComponent {
   readonly pad = { t: 16, r: 14, b: 40, l: 52 };
   readonly axisTick = 5;
 
-  readonly niceMax = computed(() => {
+  /** Eixo Y adaptativo: valores altos → menos ticks, passo maior. */
+  private readonly yScale = computed(() => {
     const { periodoAnterior, periodoAtual } = this.vm();
-    const max = Math.max(periodoAnterior ?? 0, periodoAtual ?? 0, 1);
-    return Math.max(Y_STEP, Math.ceil(max / Y_STEP) * Y_STEP);
+    const raw = Math.max(periodoAnterior ?? 0, periodoAtual ?? 0);
+    return niceYAxis(raw, 4);
   });
 
-  readonly yTicks = computed(() => {
-    const max = this.niceMax();
-    const ticks: number[] = [];
-    for (let v = 0; v <= max; v += Y_STEP) ticks.push(v);
-    return ticks;
-  });
+  readonly niceMax = computed(() => this.yScale().max);
+
+  readonly yTicks = computed(() => this.yScale().ticks);
 
   readonly gridLines = computed(() => {
     const max = this.niceMax() || 1;
@@ -114,7 +111,8 @@ export class PainelTicketMedioPanelComponent {
     const innerW = this.vbW - this.pad.l - this.pad.r;
     const innerH = this.vbH - this.pad.t - this.pad.b;
     const bandW = innerW / 2;
-    const bw = 48;
+    /** Largura visual das colunas (~80px no layout de referência). */
+    const bw = Math.min(80, bandW * 0.72);
     return pts.map((p, i) => {
       const h = p.value > 0 ? (p.value / niceMax) * innerH : 0;
       const bandX = this.pad.l + i * bandW;
@@ -131,7 +129,7 @@ export class PainelTicketMedioPanelComponent {
         w: bw,
         h: barH,
         cx: x + bw / 2,
-        path: barraTopoArredondada(x, y, bw, barH, 10),
+        path: barraTopoArredondada(x, y, bw, barH, 12),
       };
     });
   });
