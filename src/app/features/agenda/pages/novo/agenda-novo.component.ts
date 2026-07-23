@@ -2743,12 +2743,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.aplicarValidadoresLinhas();
   }
 
-  removerLinhaItens(i: number): void {
-    if (this.linhasItensArray.length <= 1) return;
-    this.linhasItensArray.removeAt(i);
-    this.aplicarValidadoresLinhas();
-  }
-
   /** Ao mudar o tipo da linha, ajusta sub-formulários (ex.: etapas Mega/Pacote). */
   onItemTipoLinhaChange(i: number): void {
     const g = this.linhasItensArray.at(i);
@@ -4133,6 +4127,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     itemTipo: TipoLinhaAtendimento = 'Serviço',
   ): FormGroup {
     const g = this.fb.group({
+      /** Identidade estável para `@for track` (não vai para a API). */
+      _rowKey: this.fb.nonNullable.control(this.gerarRowKeyLinha()),
       itemTipo: this.fb.control<TipoLinhaAtendimento>(itemTipo),
       servico_id: [''],
       tamanho: this.fb.nonNullable.control<string>('Curto'),
@@ -4165,6 +4161,27 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       (g.get('etapas') as FormArray<FormGroup>).push(this.novoGrupoEtapa());
     }
     return g;
+  }
+
+  private gerarRowKeyLinha(): string {
+    return `ln-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  /** Track estável do `@for` das linhas (evita apagar a linha errada com `track $index`). */
+  trackLinhaItens(ctrl: FormGroup): string {
+    const key = ctrl.get('_rowKey')?.value;
+    return typeof key === 'string' && key ? key : `fallback-${this.linhasItensArray.controls.indexOf(ctrl)}`;
+  }
+
+  removerLinhaItens(linhaOuIndex: FormGroup | number): void {
+    if (this.linhasItensArray.length <= 1) return;
+    const i =
+      typeof linhaOuIndex === 'number'
+        ? linhaOuIndex
+        : this.linhasItensArray.controls.indexOf(linhaOuIndex);
+    if (i < 0 || i >= this.linhasItensArray.length) return;
+    this.linhasItensArray.removeAt(i);
+    this.aplicarValidadoresLinhas();
   }
 
   private garantirMinUmaLinha(): void {

@@ -282,7 +282,7 @@
             </button>
           </div>
         }
-        @for (ctrl of linhasItensArray.controls; track $index; let i = $index) {
+        @for (ctrl of linhasItensArray.controls; track trackLinhaItens(ctrl); let i = $index) {
           <div
             class="servico-row servico-row--misto"
             [class.servico-row--drawer]="modoModal"
@@ -391,7 +391,7 @@
                     type="button"
                     class="btn btn--icon-danger"
                     [disabled]="linhasItensArray.length < 2"
-                    (click)="removerLinhaItens(i)"
+                    (click)="removerLinhaItens(ctrl)"
                     [attr.aria-label]="'Remover linha ' + (i + 1)"
                     [title]="
                       linhasItensArray.length > 1
@@ -1166,7 +1166,7 @@
                       type="button"
                       class="btn btn--icon-danger"
                       [disabled]="linhasItensArray.length < 2"
-                      (click)="removerLinhaItens(i)"
+                      (click)="removerLinhaItens(ctrl)"
                       [attr.aria-label]="'Remover linha ' + (i + 1)"
                       [title]="
                         linhasItensArray.length > 1
@@ -1282,7 +1282,7 @@
                   type="button"
                   class="btn btn--icon-danger"
                   [disabled]="linhasItensArray.length < 2"
-                  (click)="removerLinhaItens(i)"
+                  (click)="removerLinhaItens(ctrl)"
                   [attr.aria-label]="'Remover linha ' + (i + 1)"
                   [title]="
                     linhasItensArray.length > 1

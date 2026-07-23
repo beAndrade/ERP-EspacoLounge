@@ -15,6 +15,9 @@
   box-sizing: border-box;
   --modal-sidebar-w: 359px;
   --modal-col-gap: 1.25rem;
+  /** Esquerda: só o gap (encontro com a sidebar). Direita: até a borda da viewport. */
+  --drawer-bleed-l: var(--modal-col-gap);
+  --drawer-bleed-r: var(--drawer-pad-x, 15px);
   --drawer-stroke: #ececec;
   --touch-min: 40px;
   --radius: 14px;
@@ -154,6 +157,10 @@
 }
 
 @include bp.bp-down(drawer-form) {
+  :host {
+    --drawer-bleed-l: 0px;
+  }
+
   .nc-drawer {
     display: flex;
     flex-direction: column;
@@ -184,9 +191,10 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  overflow-clip-margin: 16px 12px 20px 28px;
+  overflow-x: clip;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-clip-margin: 16px 12px 20px calc(var(--drawer-bleed-l, 0px) + 28px);
 }
 
 /** = `agenda-modal__header` (drawer). */
@@ -202,7 +210,7 @@
 }
 
 /**
- * Cabeçalho dentro do `.nc-main--comanda-scroll`: o título rola com o fluxo;
+ * Cabeçalho dentro do scroll de `.nc-drawer__main`: o título rola com o fluxo;
  * só o `.nc-modal-close` usa `position: sticky` (referência Ant Design).
  */
 .nc-modal-header--drawer-scroll {
@@ -277,13 +285,13 @@
   background: #fff;
 }
 
-/** = `form-shell__flow--modal` (coluna direita; scroll fica em `.nc-main--comanda-scroll`). */
+/** = `form-shell__flow--modal` (coluna direita; scroll em `.nc-drawer__main`). */
 .nc-drawer__flow {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /**
@@ -319,15 +327,15 @@
   flex-direction: column;
   gap: 1.25rem;
 
-  /** Coluna principal: cabeçalho fixo no fluxo; lista de itens preenche o resto. */
+  /** Coluna principal: cresce com o conteúdo; scroll sobe para `.nc-drawer__main`. */
   &--comanda-scroll {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
     width: 100%;
     max-width: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
     padding-bottom: 0;
     padding-right: 15px;
     box-sizing: border-box;
@@ -440,22 +448,20 @@
   gap: 0.65rem;
 }
 
-/** Lista de itens: ocupa a área útil de `.nc-main--comanda-scroll` (resumo no sticky). */
+/** Lista de itens: altura natural; scroll da coluna em `.nc-drawer__main`. */
 .nc-itens--panel-fixed {
-  flex: 1 1 auto;
-  min-height: 12rem;
+  flex: 0 0 auto;
+  min-height: 0;
   max-height: none;
   width: 100%;
   max-width: 100%;
 
   .nc-itens__body {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
     width: 100%;
     max-width: 100%;
-    overflow-y: auto;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
   }
 }
 
@@ -468,9 +474,22 @@
   box-sizing: border-box;
   padding: 0 15px 0.5rem 0;
   margin-top: 1rem;
-  border-top: 1px solid var(--drawer-stroke, #ececec);
+  border-top: none;
   background: #fff;
   box-shadow: none;
+  position: relative;
+
+  /** Borda top até o encontro com a sidebar (só atravessa o gap). */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(-1 * var(--drawer-bleed-l, 0px));
+    right: calc(-1 * var(--drawer-bleed-r, 0px));
+    height: 1px;
+    background: var(--drawer-stroke, #ececec);
+    pointer-events: none;
+  }
 }
 
 .nc-itens__title {
@@ -921,10 +940,18 @@
   /** Acima de `.nc-drawer__resumo-sticky` (z-index: 6) para o menu Excluir/Outros não ficar por baixo. */
   z-index: 20;
   overflow: visible;
-  border-top: 1px solid var(--drawer-stroke, #ececec);
+  border-top: none;
 
+  /** Linha até o encontro com a sidebar (só o gap; não atravessa a coluna do cliente). */
   &::before {
-    content: none;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(-1 * var(--drawer-bleed-l, 0px));
+    right: calc(-1 * var(--drawer-bleed-r, 0px));
+    height: 1px;
+    background: var(--drawer-stroke, #ececec);
+    pointer-events: none;
   }
 
   /** Com dropdown aberto, sobe ainda mais (conteúdo da comanda / selects). */

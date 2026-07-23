@@ -90,6 +90,8 @@ export class PainelSparklineComponent {
   readonly padBottom = 6;
 
   readonly activeIndex = signal<number | null>(null);
+  /** Tamanho renderizado do SVG (para manter o ponto circular com preserveAspectRatio=none). */
+  private readonly svgCssSize = signal({ w: 560, h: 56 });
 
   readonly hasSeries = computed(() => this.points().length > 0);
 
@@ -151,10 +153,24 @@ export class PainelSparklineComponent {
     return this.plot()[i] ?? null;
   });
 
+  /**
+   * Raios em unidades do viewBox para o ponto parecer ~4px circular
+   * mesmo com o SVG esticado (preserveAspectRatio="none").
+   */
+  readonly dotRadii = computed(() => {
+    const { w, h } = this.svgCssSize();
+    const targetPx = 4;
+    return {
+      rx: (targetPx * this.vbW) / Math.max(w, 1),
+      ry: (targetPx * this.vbH) / Math.max(h, 1),
+    };
+  });
+
   onChartMove(ev: MouseEvent): void {
     const svg = ev.currentTarget as SVGElement;
     const rect = svg.getBoundingClientRect();
     if (rect.width <= 0) return;
+    this.svgCssSize.set({ w: rect.width, h: rect.height });
     const xUser = ((ev.clientX - rect.left) / rect.width) * this.vbW;
     const pts = this.plot();
     if (!pts.length) return;

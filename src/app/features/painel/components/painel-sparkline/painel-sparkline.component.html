@@ -57,11 +57,12 @@
           [attr.y1]="padY"
           [attr.y2]="baselineY()"
         />
-        <circle
+        <ellipse
           class="painel-sparkline__dot"
           [attr.cx]="ap.x"
           [attr.cy]="ap.y"
-          r="4"
+          [attr.rx]="dotRadii().rx"
+          [attr.ry]="dotRadii().ry"
         />
       }
 
