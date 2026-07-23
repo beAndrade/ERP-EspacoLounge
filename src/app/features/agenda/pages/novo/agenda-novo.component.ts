@@ -341,6 +341,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     clienteId: string;
     cliente: Cliente | null;
   }>();
+  /** Editor só-comanda: comanda removida na API — o hub fecha a pilha de drawers. */
+  readonly comandaExcluidaDoEditor = output<void>();
 
   readonly tiposLinhaAtendimento: TipoLinhaAtendimento[] = [
     'Serviço',
@@ -3405,13 +3407,20 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!id || this.salvando || this.excluindo) return;
     this.erro = '';
     this.excluindo = true;
-    this.api.excluirAtendimento(id).subscribe({
+    const opts = this.isFluxoSomenteComanda()
+      ? { modoExclusao: 'somente_comanda' as const }
+      : undefined;
+    this.api.excluirAtendimento(id, opts).subscribe({
       next: () => {
         this.excluindo = false;
         this.descartarExcluirConfirmModal();
         this.idAtendimentoEmEdicao = null;
         this.slotAgenda = null;
         this.agendaDados.notificarMudanca();
+        if (this.isFluxoSomenteComanda() && this.modoModal) {
+          this.comandaExcluidaDoEditor.emit();
+          return;
+        }
         if (this.modoModal) {
           this.salvoComSucesso.emit();
         } else {
@@ -4534,6 +4543,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Chevron + dropdown só quando há ocorrências futuras na série salva. */
   mostrarMenuExcluirSerie(): boolean {
+    if (this.isFluxoSomenteComanda()) return false;
     return this.temAgendamentosFuturosNaSerieSalva();
   }
 

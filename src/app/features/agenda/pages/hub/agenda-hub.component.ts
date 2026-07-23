@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Title } from '@angular/platform-browser';
 import { filter } from 'rxjs/operators';
+import { catchError, of, take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AtendimentoListaItem,
@@ -2279,6 +2280,76 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
+  /**
+   * Faturar no editor de itens: fecha a edição e abre o drawer de pagamentos
+   * (mesmo fluxo do botão Faturar na comanda), com overlay a escurecer atrás.
+   */
+  onFaturarDesdeEditComanda(ev: {
+    idAtendimento: string;
+    dataYmd: string;
+    clienteId: string;
+    cliente: Cliente | null;
+  }): void {
+    const id = ev.idAtendimento?.trim();
+    if (!id) return;
+    this.comandaDataYmdParaFaturar =
+      ev.dataYmd || this.comandaDataYmdParaFaturar;
+    this.limparEditComandaSemAnimacao();
+
+    if (this.comandaPainelAberto && this.comandaDrawerRef) {
+      this.comandaDrawerRef.recarregarDadosComanda();
+      queueMicrotask(() => {
+        if (this.comandaDrawerRef?.podeFaturar()) {
+          this.comandaDrawerRef.abrirFaturar();
+          return;
+        }
+        this.abrirFaturarPorIdAtendimento(id, ev.dataYmd);
+      });
+      return;
+    }
+    this.abrirFaturarPorIdAtendimento(id, ev.dataYmd);
+  }
+
+  /** Excluir comanda a partir do editor de itens — fecha a pilha como no drawer da comanda. */
+  onComandaExcluidaDesdeEdit(): void {
+    this.limparEditComandaSemAnimacao();
+    this.onComandaExcluida();
+  }
+
+  private abrirFaturarPorIdAtendimento(
+    idAtendimento: string,
+    dataYmd: string | null | undefined,
+  ): void {
+    const id = idAtendimento.trim();
+    if (!id) return;
+    this.api
+      .listComandaPagamentos(id)
+      .pipe(
+        take(1),
+        catchError(() =>
+          of({
+            items: [],
+            resumo: {
+              total_bruto: 0,
+              desconto: 0,
+              total: 0,
+              total_pago: 0,
+              saldo: 0,
+              status: 'aberto' as const,
+              cobranca_status: null,
+            },
+          }),
+        ),
+      )
+      .subscribe((r) => {
+        this.onAbrirFaturarComanda({
+          idAtendimento: id,
+          resumo: r.resumo,
+          dataComandaYmd: dataYmd ?? this.comandaDataYmdParaFaturar,
+        });
+      });
+  }
+
   /** Gravação: prioriza o editor de itens da comanda se estiver aberto. */
   onSalvarAgendamentoDesdeDrawerComanda(): void {
     if (!this.comandaPainelAberto) return;
@@ -2426,6 +2497,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Após gravar pagamentos: fecha drawers e volta à grelha da agenda. */
   onFaturaComandaSucesso(): void {
     this.fecharFaturarDrawer({ recarregarComanda: false });
+    this.limparEditComandaSemAnimacao();
     this.fecharComandaDrawer();
     if (this.modalAberto) {
       this.fecharModal();

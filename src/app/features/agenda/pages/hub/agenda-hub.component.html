@@ -1618,34 +1618,6 @@
       (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
     />
   </div>
-
-  @if (faturarDrawerAberto && faturarCtx) {
-    <div
-      class="overlay overlay--faturar"
-      [class.overlay--open]="faturarDrawerPanelOpen"
-      aria-hidden="true"
-      (click)="fecharFaturarDrawer()"
-    ></div>
-    <div
-      class="app-drawer app-drawer--faturar"
-      [class.app-drawer--open]="faturarDrawerPanelOpen"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Faturar comanda"
-      (click)="$event.stopPropagation()"
-    >
-      <app-faturar-drawer
-        [idAtendimento]="faturarCtx.idAtendimento"
-        [resumoInicial]="faturarCtx.resumo"
-        [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
-        [dataComanda]="comandaDataYmdParaFaturar"
-        [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
-        [gerenciarEscape]="false"
-        (faturado)="onFaturaComandaSucesso()"
-        (fechar)="fecharFaturarDrawer()"
-      />
-    </div>
-  }
 }
 
 @if (editComandaAberto && editComandaCtx) {
@@ -1671,8 +1643,38 @@
       [contextoSlot]="editComandaCtx"
       (salvoComSucesso)="onSalvoEditComanda()"
       (cancelarModal)="fecharEditComanda()"
+      (faturarDesdeFormulario)="onFaturarDesdeEditComanda($event)"
+      (comandaExcluidaDoEditor)="onComandaExcluidaDesdeEdit()"
       (abrirCadastroCliente)="onAbrirCadastroClienteSidebarHub($event)"
       (abrirNovoClienteDrawer)="abrirClienteDrawerNovo()"
+    />
+  </div>
+}
+
+@if (faturarDrawerAberto && faturarCtx) {
+  <div
+    class="overlay overlay--faturar"
+    [class.overlay--open]="faturarDrawerPanelOpen"
+    aria-hidden="true"
+    (click)="fecharFaturarDrawer()"
+  ></div>
+  <div
+    class="app-drawer app-drawer--faturar"
+    [class.app-drawer--open]="faturarDrawerPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Faturar comanda"
+    (click)="$event.stopPropagation()"
+  >
+    <app-faturar-drawer
+      [idAtendimento]="faturarCtx.idAtendimento"
+      [resumoInicial]="faturarCtx.resumo"
+      [creditoComandaAplicado]="faturarCtx.creditoAUsar ?? 0"
+      [dataComanda]="comandaDataYmdParaFaturar"
+      [modoVerPagamentos]="faturarCtx.modoVerPagamentos ?? false"
+      [gerenciarEscape]="false"
+      (faturado)="onFaturaComandaSucesso()"
+      (fechar)="fecharFaturarDrawer()"
     />
   </div>
 }
