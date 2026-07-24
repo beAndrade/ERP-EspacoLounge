@@ -2416,7 +2416,7 @@ export async function listAtendimentosRaw(
   /** Resumo financeiro consolidado (total / total_pago / saldo / status) por pedido. */
   const resumosPorId = await getResumosPorAtendimento(db, idsAt);
 
-  /** Prestações `pendente` em `comanda_pagamentos` (vencimento por linha, ex. 2.ª parcela de cartão). */
+  /** Prestações fiado (`pendente`) em `comanda_pagamentos` — atraso na recepção. */
   const prestacaoPendentePorId = new Map<
     string,
     { atrasada: boolean; menorDataYmd: string | null }

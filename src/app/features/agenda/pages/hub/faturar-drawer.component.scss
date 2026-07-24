@@ -869,6 +869,12 @@ input[type='number'].fat-field__input {
     border: 1px solid var(--drawer-badge-pendente-border, #ffbb96);
   }
 
+  &.fat-pag-badge--a-receber {
+    color: #0958d9;
+    background: #e6f4ff;
+    border: 1px solid #91caff;
+  }
+
   &.fat-pag-badge--atraso {
     @include badge-atraso.badge-atraso-com-icone-relogio;
     color: var(--drawer-badge-atraso-fg, #cf1322);

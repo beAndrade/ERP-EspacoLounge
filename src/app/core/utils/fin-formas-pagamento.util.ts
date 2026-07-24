@@ -11,6 +11,7 @@ const COMANDA_METODOS = new Set<MetodoPagamentoComanda>([
   'transferencia',
   'outros',
   'pendente',
+  'a_receber_cartao',
 ]);
 
 export type MetodoComandaGrupo = 'dinheiro' | 'cartao' | 'pix' | 'outros';

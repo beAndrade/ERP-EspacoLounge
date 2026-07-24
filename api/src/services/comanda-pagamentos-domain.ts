@@ -4,9 +4,11 @@
  * Modelo:
  * - 1 linha em `comanda_pagamentos` por evento de pagamento (parcial ou total).
  * - 1 movimentação financeira (`receita`) ligada por FK para cada pagamento **com caixa**
- *   (método diferente de `pendente`).
- * - Status da comanda derivado por SUM(valor recebido): pago / parcial / pendente.
- * - Parcelas futuras: 1 linha com `metodo` = pendente; não entram em `total_pago`.
+ *   (método diferente de `pendente` e `a_receber_cartao`).
+ * - Status da comanda (recepção): quitada quando caixa + parcelas de cartão a receber
+ *   cobrem o total e não há fiado (`pendente`).
+ * - `total_pago` = só caixa (exclui `pendente` e `a_receber_cartao`).
+ * - Fiado: `metodo = pendente`. Parcela futura de cartão: `a_receber_cartao`.
  *
  * NÃO usa o índice único `movimentacoes_confirm_receita_id_at_idx` (que
  * limita 1 receita por `id_atendimento` com origem `atendimento_confirmacao`).
@@ -39,7 +41,8 @@ export type MetodoPagamentoComanda =
   | 'pix'
   | 'transferencia'
   | 'outros'
-  | 'pendente';
+  | 'pendente'
+  | 'a_receber_cartao';
 
 const METODOS: ReadonlySet<MetodoPagamentoComanda> = new Set<
   MetodoPagamentoComanda
@@ -51,6 +54,7 @@ const METODOS: ReadonlySet<MetodoPagamentoComanda> = new Set<
   'transferencia',
   'outros',
   'pendente',
+  'a_receber_cartao',
 ]);
 
 const ROTULOS_METODO: Record<MetodoPagamentoComanda, string> = {
@@ -61,7 +65,14 @@ const ROTULOS_METODO: Record<MetodoPagamentoComanda, string> = {
   transferencia: 'Transferência',
   outros: 'Outros',
   pendente: 'Pendente',
+  a_receber_cartao: 'A receber (cartão)',
 };
+
+/** Métodos sem movimentação de caixa até liquidação. */
+export function metodoSemCaixaComanda(m: string | null | undefined): boolean {
+  const t = String(m ?? '').trim();
+  return t === 'pendente' || t === 'a_receber_cartao';
+}
 
 export function rotuloMetodoComanda(m: MetodoPagamentoComanda): string {
   return ROTULOS_METODO[m] ?? 'Outros';
@@ -76,9 +87,9 @@ export interface ResumoComanda {
   desconto: number;
   /** Total a pagar = total_bruto − desconto (mín. 0). */
   total: number;
-  /** Soma de valores já recebidos (exclui linhas com método `pendente`). */
+  /** Soma de valores já recebidos em caixa (exclui `pendente` e `a_receber_cartao`). */
   total_pago: number;
-  /** total − total_pago (mín. 0). */
+  /** total − total_pago − a_receber_cartao (dívida do cliente; mín. 0). */
   saldo: number;
   /** Estado para a UI: aberto / pendente / parcial / pago. */
   status: StatusCobrancaDerivado;
@@ -168,39 +179,36 @@ function calcularTotaisDeLinhas(rows: AtendLinhaResumo[]): {
   };
 }
 
-function statusDerivado(
+function statusCobrancaComanda(
   total: number,
-  totalPago: number,
+  totalPagoCaixa: number,
+  totalAReceberCartao: number,
   cobrancaStatus: string | null,
+  hasFiado: boolean,
 ): StatusCobrancaDerivado {
   const cs = String(cobrancaStatus ?? '').trim().toLowerCase();
-  if (cs !== 'finalizada' && totalPago <= 0) return 'aberto';
-  if (totalPago <= 0) return 'pendente';
-  if (totalPago + 0.005 < total) return 'parcial';
+  const alocadoCliente = totalPagoCaixa + totalAReceberCartao;
+  if (cs !== 'finalizada' && alocadoCliente <= 0.005) return 'aberto';
+  /** Fiado bloqueia «pago» na recepção até liquidar. */
+  if (hasFiado && cs === 'finalizada') return 'pendente';
+  if (cs === 'finalizada' && alocadoCliente + 0.005 >= total) return 'pago';
+  if (alocadoCliente <= 0.005) return 'pendente';
+  if (alocadoCliente + 0.005 < total) return 'parcial';
   return 'pago';
 }
 
-/** Soma só pagamentos com caixa (exclui parcelas agendadas `pendente`). */
+/** Soma só pagamentos com caixa (exclui fiado e parcela de cartão a receber). */
 const sqlTotalPagoRecebido = sql<string>`coalesce(sum(
-  case when ${comandaPagamentos.metodo}::text <> 'pendente'
+  case when ${comandaPagamentos.metodo}::text NOT IN ('pendente', 'a_receber_cartao')
   then ${comandaPagamentos.valor}::numeric else 0 end
 ), 0)`;
 
-/**
- * Quando existe linha `pendente` (parcela futura ou dívida), a comanda finalizada
- * mantém status `pendente` até liquidar todas as prestações.
- */
-function statusComOverridePendente(
-  status: StatusCobrancaDerivado,
-  cobrancaStatus: string | null,
-  hasPendente: boolean,
-): StatusCobrancaDerivado {
-  const cs = String(cobrancaStatus ?? '').trim().toLowerCase();
-  if (hasPendente && cs === 'finalizada') return 'pendente';
-  return status;
-}
+const sqlTotalAReceberCartao = sql<string>`coalesce(sum(
+  case when ${comandaPagamentos.metodo}::text = 'a_receber_cartao'
+  then ${comandaPagamentos.valor}::numeric else 0 end
+), 0)`;
 
-async function idsComPagamentoPendente(
+async function idsComPagamentoFiado(
   db: Db,
   ids: string[],
 ): Promise<Set<string>> {
@@ -332,6 +340,7 @@ export async function getResumoComanda(
   const [agg] = await db
     .select({
       total_pago: sqlTotalPagoRecebido,
+      total_a_receber_cartao: sqlTotalAReceberCartao,
     })
     .from(comandaPagamentos)
     .where(eq(comandaPagamentos.idAtendimento, id));
@@ -339,12 +348,20 @@ export async function getResumoComanda(
   const totalPago = Math.round(
     (parseFloat(String(agg?.total_pago ?? '0')) || 0) * 100,
   ) / 100;
-  const saldo = Math.max(0, Math.round((total - totalPago) * 100) / 100);
-  const pendenteIds = await idsComPagamentoPendente(db, [id]);
-  const status = statusComOverridePendente(
-    statusDerivado(total, totalPago, cobranca_status),
+  const totalAReceberCartao = Math.round(
+    (parseFloat(String(agg?.total_a_receber_cartao ?? '0')) || 0) * 100,
+  ) / 100;
+  const saldo = Math.max(
+    0,
+    Math.round((total - totalPago - totalAReceberCartao) * 100) / 100,
+  );
+  const fiadoIds = await idsComPagamentoFiado(db, [id]);
+  const status = statusCobrancaComanda(
+    total,
+    totalPago,
+    totalAReceberCartao,
     cobranca_status,
-    pendenteIds.has(id),
+    fiadoIds.has(id),
   );
 
   return {
@@ -423,20 +440,24 @@ export async function getResumosPorAtendimento(
     .select({
       idAtendimento: comandaPagamentos.idAtendimento,
       total_pago: sqlTotalPagoRecebido,
+      total_a_receber_cartao: sqlTotalAReceberCartao,
     })
     .from(comandaPagamentos)
     .where(inArray(comandaPagamentos.idAtendimento, lista))
     .groupBy(comandaPagamentos.idAtendimento);
 
-  const pagosMap = new Map<string, number>();
+  const pagosMap = new Map<string, { pago: number; aReceber: number }>();
   for (const r of pagosRows) {
-    pagosMap.set(
-      String(r.idAtendimento || '').trim(),
-      Math.round((parseFloat(String(r.total_pago ?? '0')) || 0) * 100) / 100,
-    );
+    pagosMap.set(String(r.idAtendimento || '').trim(), {
+      pago: Math.round((parseFloat(String(r.total_pago ?? '0')) || 0) * 100) / 100,
+      aReceber:
+        Math.round(
+          (parseFloat(String(r.total_a_receber_cartao ?? '0')) || 0) * 100,
+        ) / 100,
+    });
   }
 
-  const pendenteIds = await idsComPagamentoPendente(db, lista);
+  const fiadoIds = await idsComPagamentoFiado(db, lista);
 
   for (const id of lista) {
     const rows = linhasPorId.get(id) ?? [];
@@ -445,18 +466,25 @@ export async function getResumosPorAtendimento(
     const legacy = calcularTotaisDeLinhas(rows);
     const { total_bruto, desconto, total, cobranca_status } =
       mesclarTotaisPivotELegado(totaisItens, legacy);
-    const totalPago = pagosMap.get(id) ?? 0;
-    const saldo = Math.max(0, Math.round((total - totalPago) * 100) / 100);
+    const aggPag = pagosMap.get(id) ?? { pago: 0, aReceber: 0 };
+    const totalPago = aggPag.pago;
+    const totalAReceberCartao = aggPag.aReceber;
+    const saldo = Math.max(
+      0,
+      Math.round((total - totalPago - totalAReceberCartao) * 100) / 100,
+    );
     out.set(id, {
       total_bruto,
       desconto,
       total,
       total_pago: totalPago,
       saldo,
-      status: statusComOverridePendente(
-        statusDerivado(total, totalPago, cobranca_status),
+      status: statusCobrancaComanda(
+        total,
+        totalPago,
+        totalAReceberCartao,
         cobranca_status,
-        pendenteIds.has(id),
+        fiadoIds.has(id),
       ),
       cobranca_status,
     });
@@ -592,7 +620,7 @@ function prepararInputPagamentoComanda(
   const metodoRaw = String(input.metodo ?? '').trim().toLowerCase();
   if (!METODOS.has(metodoRaw as MetodoPagamentoComanda)) {
     throw new Error(
-      'Método inválido. Use dinheiro, cartao_credito, cartao_debito, pix, transferencia, outros ou pendente.',
+      'Método inválido. Use dinheiro, cartao_credito, cartao_debito, pix, transferencia, outros, pendente ou a_receber_cartao.',
     );
   }
   const metodo = metodoRaw as MetodoPagamentoComanda;
@@ -665,7 +693,8 @@ type DbLike = Pick<
 >;
 
 /**
- * Insere uma linha em `comanda_pagamentos` (e receita em `movimentacoes`, exceto método `pendente`).
+ * Insere uma linha em `comanda_pagamentos` (e receita em `movimentacoes`, exceto
+ * métodos sem caixa: `pendente` / `a_receber_cartao`).
  * Usado dentro de `db.transaction`.
  */
 export async function inserirPagamentoComandaEmTx(
@@ -700,7 +729,7 @@ export async function inserirPagamentoComandaEmTx(
 
   let movimentacaoId: number | null = null;
 
-  if (metodo !== 'pendente') {
+  if (!metodoSemCaixaComanda(metodo)) {
     const slug = slugCategoriaReceitaPredominante(linhas);
     const categoriaId = await getCategoriaIdPorSlug(
       tx as unknown as Db,
@@ -827,9 +856,9 @@ export async function aplicarCreditoClientePorExcessoEmTx(
   }
 
   const prep = prepararInputPagamentoComanda(input);
-  if (prep.metodo === 'pendente') {
+  if (prep.metodo === 'pendente' || prep.metodo === 'a_receber_cartao') {
     throw new Error(
-      'O método «pendente» não pode ser usado para crédito de cliente.',
+      'Métodos sem caixa não podem ser usados para crédito de cliente.',
     );
   }
 
@@ -880,7 +909,8 @@ export async function aplicarCreditoClientePorExcessoEmTx(
 }
 
 /**
- * Alinha `atendimentos.pagamento_status` com o resumo e com linhas `pendente` (dívida).
+ * Alinha `atendimentos.pagamento_status` com o resumo e com fiado (`pendente`).
+ * Parcelas `a_receber_cartao` não mantêm `pagamento_status = pendente`.
  * Se não restar nenhum pagamento e a cobrança estava finalizada, reabre
  * (`cobranca_status` / `pagamento_status` → null) — alinhado ao card «comanda aberta».
  */
@@ -916,7 +946,7 @@ export async function sincronizarPagamentoStatusAtendimento(
     return;
   }
 
-  const [pendRow] = await db
+  const [fiadoRow] = await db
     .select({ id: comandaPagamentos.id })
     .from(comandaPagamentos)
     .where(
@@ -926,18 +956,18 @@ export async function sincronizarPagamentoStatusAtendimento(
       ),
     )
     .limit(1);
-  const hasPendente = pendRow != null;
+  const hasFiado = fiadoRow != null;
 
   const resumo = await getResumoComanda(db, id);
 
   if (!finalizada) return;
 
   let pagamentoStatus: string;
-  if (hasPendente) {
+  if (hasFiado) {
     pagamentoStatus = 'pendente';
   } else if (resumo.status === 'pago') {
     pagamentoStatus = 'confirmado';
-  } else if (resumo.total_pago > 0) {
+  } else if (resumo.total_pago > 0 || resumo.status === 'parcial') {
     pagamentoStatus = 'parcial';
   } else {
     pagamentoStatus = 'pendente';
@@ -1018,7 +1048,7 @@ export async function liquidarPendenciaComandaPorId(
     .where(eq(comandaPagamentos.id, id))
     .limit(1);
   if (!pend) throw new Error('Prestação pendente não encontrada');
-  if (pend.metodo !== 'pendente') {
+  if (pend.metodo !== 'pendente' && pend.metodo !== 'a_receber_cartao') {
     throw new Error('Esta prestação já está liquidada');
   }
 

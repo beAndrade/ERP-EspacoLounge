@@ -47,7 +47,7 @@ function calcularValorLiquido(
   return calcularValorLiquidoReceita(bruto, taxaPct, taxaFixa);
 }
 
-/** Dinheiro/Pix → Caixa; cartão/transferência/débito/crédito → Banco. */
+/** Dinheiro/Pix → Caixa; cartão/transferência/débito/crédito/a receber cartão → Banco. */
 export function contaFromMetodo(metodo: string | null | undefined): 'Caixa' | 'Banco' {
   const m = String(metodo ?? '')
     .trim()
@@ -56,6 +56,7 @@ export function contaFromMetodo(metodo: string | null | undefined): 'Caixa' | 'B
   if (
     m.includes('cartão') ||
     m.includes('cartao') ||
+    m.includes('a receber') ||
     m.includes('crédito') ||
     m.includes('credito') ||
     m.includes('débito') ||

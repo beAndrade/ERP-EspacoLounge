@@ -207,11 +207,12 @@ export interface AtendimentoListaItem {
    */
   status_cobranca?: 'aberto' | 'pendente' | 'parcial' | 'pago';
   /**
-   * Existe prestação em `comanda_pagamentos` com `metodo = pendente` e `data_pagamento` < hoje
-   * (ex.: 2.ª parcela de cartão vencida). Só é fiável com listagem `/api/atendimentos` actualizada.
+   * Existe prestação em `comanda_pagamentos` com `metodo = pendente` (fiado) e
+   * `data_pagamento` < hoje. Parcelas `a_receber_cartao` não entram aqui.
+   * Só é fiável com listagem `/api/atendimentos` actualizada.
    */
   pagamento_prestacao_pendente_atrasada?: boolean;
-  /** Menor `data_pagamento` entre linhas ainda `pendente` (YYYY-MM-DD), se houver. */
+  /** Menor `data_pagamento` entre linhas ainda `pendente`/fiado (YYYY-MM-DD), se houver. */
   pagamento_prestacao_menor_data?: string | null;
 }
 
@@ -223,7 +224,8 @@ export type MetodoPagamentoComanda =
   | 'pix'
   | 'transferencia'
   | 'outros'
-  | 'pendente';
+  | 'pendente'
+  | 'a_receber_cartao';
 
 /** Linha de `comanda_pagamentos` (1 evento de pagamento parcial ou total). */
 export interface ComandaPagamentoItem {

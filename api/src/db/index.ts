@@ -255,6 +255,21 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 `));
+  /** Alinha com `0024` + `0048_metodo_a_receber_cartao` (só o enum; backfill mais abaixo). */
+  await db.execute(sql.raw(`
+DO $$ BEGIN
+  ALTER TYPE "metodo_pagamento_comanda" ADD VALUE 'pendente';
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$ BEGIN
+  ALTER TYPE "metodo_pagamento_comanda" ADD VALUE 'a_receber_cartao';
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+`));
   await db.execute(sql.raw(`
 DO $$
 BEGIN
@@ -351,6 +366,50 @@ BEGIN
 END $$;
 `));
   }
+  /** Backfill `0048`: pendente com rótulo de cartão → a_receber_cartao. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'comanda_pagamentos' AND c.column_name = 'metodo_rotulo'
+  ) THEN
+    UPDATE "comanda_pagamentos"
+    SET "metodo" = 'a_receber_cartao'
+    WHERE "metodo" = 'pendente'
+      AND (
+        lower(coalesce("metodo_rotulo", '')) IN ('cartao_credito', 'cartao_debito')
+        OR lower(coalesce("metodo_rotulo", '')) LIKE '%cartao%'
+        OR lower(coalesce("metodo_rotulo", '')) LIKE '%cartão%'
+        OR lower(coalesce("metodo_rotulo", '')) LIKE '%crédito%'
+        OR lower(coalesce("metodo_rotulo", '')) LIKE '%credito%'
+        OR lower(coalesce("metodo_rotulo", '')) LIKE '%débito%'
+        OR lower(coalesce("metodo_rotulo", '')) LIKE '%debito%'
+      );
+  END IF;
+END $$;
+`));
+  /**
+   * Comandas finalizadas só com parcelas de cartão a receber (sem fiado):
+   * deixa de ficar `pagamento_status = pendente` na recepção.
+   */
+  await db.execute(sql.raw(`
+UPDATE "atendimentos" a
+SET "pagamento_status" = 'confirmado'
+WHERE lower(coalesce(a."cobranca_status", '')) = 'finalizada'
+  AND lower(coalesce(a."pagamento_status", '')) = 'pendente'
+  AND NOT EXISTS (
+    SELECT 1 FROM "comanda_pagamentos" cp
+    WHERE cp."id_atendimento" = a."id_atendimento"
+      AND cp."metodo" = 'pendente'
+  )
+  AND EXISTS (
+    SELECT 1 FROM "comanda_pagamentos" cp
+    WHERE cp."id_atendimento" = a."id_atendimento"
+      AND cp."metodo" = 'a_receber_cartao'
+  );
+`));
   await db.execute(sql.raw(`
 DO $$
 BEGIN

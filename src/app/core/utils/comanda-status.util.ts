@@ -76,7 +76,7 @@ export function statusComandaColunaFromGrupo(
   return statusComandaColunaFromItem(g.linhas[0]);
 }
 
-/** `pagamento_status` = pendente (dívida agendada / parcelas futuras). */
+/** `pagamento_status` = pendente (só fiado / dívida do cliente). */
 export function comandaPagamentoPendenteDividaItem(
   l: AtendimentoListaItem,
 ): boolean {
@@ -159,8 +159,9 @@ function itemTemDividaNaoQuitada(l: AtendimentoListaItem): boolean {
 
 /**
  * Comanda faturada com saldo em aberto exibida como «Atrasado».
- * Com parcelas: só se alguma prestação `pendente` tiver data de vencimento &lt; hoje.
- * Sem parcelas: data da comanda passada e pagamento único ainda não quitado.
+ * Com fiado (`pendente`): só se alguma prestação tiver vencimento &lt; hoje.
+ * Parcela de cartão a receber não atrasa a coluna Pagamento da recepção.
+ * Sem fiado: data da comanda passada e pagamento único ainda não quitado.
  */
 export function pagamentoEmAtrasoParaExibicao(
   l: AtendimentoListaItem,

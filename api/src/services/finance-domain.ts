@@ -672,17 +672,19 @@ export async function listTransacoesFinanceirasApi(
     .from(pagamentos)
     .leftJoin(profissionais, eq(profissionais.id, pagamentos.profissionalId));
 
+  const metodosSemCaixa = ['pendente', 'a_receber_cartao'] as const;
+
   const pendDateFilter =
     tipoData === 'competencia'
       ? and(
-          eq(comandaPagamentos.metodo, 'pendente'),
+          inArray(comandaPagamentos.metodo, [...metodosSemCaixa]),
           gte(sql`(${comandaPagamentos.createdAt})::date`, di),
           lte(sql`(${comandaPagamentos.createdAt})::date`, df),
         )
       : tipoData === 'pagamento'
         ? sql`false`
         : and(
-            eq(comandaPagamentos.metodo, 'pendente'),
+            inArray(comandaPagamentos.metodo, [...metodosSemCaixa]),
             gte(comandaPagamentos.dataPagamento, di),
             lte(comandaPagamentos.dataPagamento, df),
           );
@@ -696,6 +698,7 @@ export async function listTransacoesFinanceirasApi(
             data_pagamento: comandaPagamentos.dataPagamento,
             criado_em: comandaPagamentos.createdAt,
             valor: comandaPagamentos.valor,
+            metodo: comandaPagamentos.metodo,
             metodo_rotulo: comandaPagamentos.metodoRotulo,
             id_atendimento: comandaPagamentos.idAtendimento,
           })
@@ -773,7 +776,13 @@ export async function listTransacoesFinanceirasApi(
     const numero = numeros.get(idAt) ?? null;
     const nomeCli = nomes.get(idAt) ?? null;
     const idCli = clientes.get(idAt) ?? null;
-    const forma = String(r.metodo_rotulo ?? '').trim() || 'Pendente';
+    const isCartao = String(r.metodo ?? '').trim() === 'a_receber_cartao';
+    const rotuloBase = String(r.metodo_rotulo ?? '').trim();
+    const forma = isCartao
+      ? rotuloBase
+        ? `A receber (cartão) · ${rotuloBase}`
+        : 'A receber (cartão)'
+      : rotuloBase || 'Pendente';
     const taxaPend = taxaFormaPorMetodo(taxaMap, forma);
     items.push({
       tipo: 'pendencia',
@@ -787,7 +796,7 @@ export async function listTransacoesFinanceirasApi(
       descricao: null,
       id_atendimento: idAt || null,
       metodo_pagamento: forma,
-      origem: 'comanda_pendente',
+      origem: isCartao ? 'comanda_a_receber_cartao' : 'comanda_pendente',
       numero_comanda: numero,
       nome_cliente: nomeCli,
       id_cliente: idCli,

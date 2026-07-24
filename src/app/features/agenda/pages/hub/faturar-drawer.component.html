@@ -395,6 +395,9 @@
                   [class.fat-pag-badge--pendente]="
                     badgePagamentoLinha(l) === 'pendente'
                   "
+                  [class.fat-pag-badge--a-receber]="
+                    badgePagamentoLinha(l) === 'a_receber_cartao'
+                  "
                   [class.fat-pag-badge--atraso]="
                     badgePagamentoLinha(l) === 'atrasado'
                   "
@@ -404,6 +407,8 @@
                 >
                   @if (badgePagamentoLinha(l) === 'atrasado') {
                     Atrasado
+                  } @else if (badgePagamentoLinha(l) === 'a_receber_cartao') {
+                    A receber (cartão)
                   } @else if (badgePagamentoLinha(l) === 'pendente') {
                     Pendente
                   } @else if (badgePagamentoLinha(l) === 'credito') {

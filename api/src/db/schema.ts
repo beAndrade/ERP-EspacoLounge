@@ -42,8 +42,13 @@ export const metodoPagamentoComandaEnum = pgEnum('metodo_pagamento_comanda', [
   'pix',
   'transferencia',
   'outros',
-  /** Valor em dívida: conta no total da comanda; sem receita em `movimentacoes`. */
+  /** Valor em dívida do cliente (fiado): sem receita em `movimentacoes` até liquidação. */
   'pendente',
+  /**
+   * Parcela futura de cartão (máquina/adquirente): sem caixa até liquidar;
+   * não é dívida do cliente na recepção.
+   */
+  'a_receber_cartao',
 ]);
 
 export const clientes = pgTable('clientes', {
@@ -505,7 +510,7 @@ export const movimentacoes = pgTable(
  * Pagamentos da comanda (parciais ou totais). 1 registo por evento de pagamento.
  * Status da comanda é derivado: SUM(valor) >= total → pago; >0 → parcial; =0 → pendente.
  * `movimentacao_id` liga ao razão financeiro (1 movimentação `receita` por pagamento),
- * exceto método `pendente` (valor em dívida, sem receita até liquidação).
+ * exceto métodos `pendente` (fiado) e `a_receber_cartao` (parcela futura de cartão).
  */
 export const comandaPagamentos = pgTable(
   'comanda_pagamentos',

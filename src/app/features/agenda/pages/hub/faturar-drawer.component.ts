@@ -124,6 +124,7 @@ const ROTULO_METODO_UI_FALLBACK: Record<MetodoPagamentoComanda, string> = {
   cartao_debito: 'Cartão de débito',
   pix: 'Pix',
   pendente: 'Pendente',
+  a_receber_cartao: 'A receber (cartão)',
   transferencia: 'Transferência',
   outros: 'Outros',
 };
@@ -136,7 +137,7 @@ export interface RascunhoPagamento {
   /** Sempre 1 por linha após split; gravado na API por parcela. */
   parcelas: number;
   destino: 'comanda' | 'credito';
-  /** Método do botão (ex. «Pix» na linha 2/2 agendada como `pendente`). */
+  /** Método do botão (ex. «Cartão» na linha 2/2 agendada como `a_receber_cartao`). */
   metodoRotulo?: MetodoPagamentoComanda;
   parcelaNumero?: number;
   parcelasTotal?: number;
@@ -607,10 +608,15 @@ export class FaturarDrawerComponent implements OnInit {
       .reduce((s, x) => s + x.valor, 0);
   }
 
-  /** Só parcelas já recebidas (exclui agendadas como `pendente`). */
+  /** Só parcelas já recebidas em caixa (exclui fiado e a receber cartão). */
   private somaRascunhoComandaPago(): number {
     return this.rascunho
-      .filter((x) => x.destino === 'comanda' && x.metodo !== 'pendente')
+      .filter(
+        (x) =>
+          x.destino === 'comanda' &&
+          x.metodo !== 'pendente' &&
+          x.metodo !== 'a_receber_cartao',
+      )
       .reduce((s, x) => s + x.valor, 0);
   }
 
@@ -624,17 +630,28 @@ export class FaturarDrawerComponent implements OnInit {
     const n = Math.max(1, Math.floor(parcelas));
     const valores = dividirValorEmParcelas(valorTotal, n);
     const grupo = `g-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const isCartao =
+      metodo === 'cartao_credito' || metodo === 'cartao_debito';
     return valores.map((valor, i) => {
       const parcelaNumero = i + 1;
-      const parcelaFutura =
+      const parcelaFuturaCartao =
+        destino === 'comanda' && n > 1 && isCartao && parcelaNumero > 1;
+      const parcelaFuturaOutro =
         destino === 'comanda' &&
         n > 1 &&
+        !isCartao &&
         metodo !== 'pendente' &&
+        metodo !== 'a_receber_cartao' &&
         parcelaNumero > 1;
+      const metodoLinha: MetodoPagamentoComanda = parcelaFuturaCartao
+        ? 'a_receber_cartao'
+        : parcelaFuturaOutro
+          ? 'pendente'
+          : metodo;
       return {
         idLocal: `${grupo}-p${parcelaNumero}`,
         data_pagamento: ymdAddMonths(dataYmd, i),
-        metodo: parcelaFutura ? 'pendente' : metodo,
+        metodo: metodoLinha,
         metodoRotulo: metodo,
         valor,
         parcelas: 1,
@@ -753,16 +770,22 @@ export class FaturarDrawerComponent implements OnInit {
     return l.kind === 'api' ? parseFloat(l.row.valor) || 0 : l.row.valor;
   }
 
-  badgePagamentoLinha(l: PagamentoLinhaUi): 'pago' | 'pendente' | 'credito' | 'atrasado' {
+  badgePagamentoLinha(
+    l: PagamentoLinhaUi,
+  ): 'pago' | 'pendente' | 'a_receber_cartao' | 'credito' | 'atrasado' {
     if (l.kind === 'rasc' && l.row.destino === 'credito') return 'credito';
     const metodo = l.kind === 'api' ? l.row.metodo : l.row.metodo;
-    if (metodo === 'pendente' && this.linhaPagamentoPendenteEmAtraso(l)) {
+    if (
+      (metodo === 'pendente' || metodo === 'a_receber_cartao') &&
+      this.linhaPagamentoPendenteEmAtraso(l)
+    ) {
       return 'atrasado';
     }
+    if (metodo === 'a_receber_cartao') return 'a_receber_cartao';
     return metodo === 'pendente' ? 'pendente' : 'pago';
   }
 
-  /** Linha «Pendente» vencida: `data_pagamento` da parcela anterior a hoje. */
+  /** Prestação sem caixa vencida: `data_pagamento` da parcela anterior a hoje. */
   private linhaPagamentoPendenteEmAtraso(l: PagamentoLinhaUi): boolean {
     const y = (
       l.kind === 'api' ? l.row.data_pagamento : l.row.data_pagamento
