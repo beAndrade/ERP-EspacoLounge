@@ -2369,6 +2369,52 @@ export async function listAtendimentosRaw(
     return true;
   });
 
+  /**
+   * Isolamento orçamento ↔ produção: filtra cedo pelos ids do pedido.
+   * Sem isto, a lista de Orçamentos misturava tickets da agenda.
+   */
+  if (!idF && modoPedido !== 'todos') {
+    const idsCandidatos = Array.from(
+      new Set(
+        filtered
+          .map((a) => String(a.idAtendimento || '').trim())
+          .filter((x) => x.length > 0),
+      ),
+    );
+    if (idsCandidatos.length === 0) {
+      return [];
+    }
+    const pedModos = await db
+      .select({
+        id: atendimentosPedido.idAtendimento,
+        modo: atendimentosPedido.modo,
+      })
+      .from(atendimentosPedido)
+      .where(inArray(atendimentosPedido.idAtendimento, idsCandidatos));
+    const idsPermitidos = new Set<string>();
+    for (const p of pedModos) {
+      const id = String(p.id || '').trim();
+      const m = String(p.modo ?? 'producao').trim().toLowerCase();
+      if (!id) continue;
+      if (modoPedido === 'orcamento') {
+        if (m === 'orcamento') idsPermitidos.add(id);
+      } else if (m !== 'orcamento') {
+        idsPermitidos.add(id);
+      }
+    }
+    /** Pedidos sem cabeçalho: só entram em listagens de produção. */
+    if (modoPedido === 'producao') {
+      for (const id of idsCandidatos) {
+        if (!pedModos.some((p) => String(p.id).trim() === id)) {
+          idsPermitidos.add(id);
+        }
+      }
+    }
+    filtered = filtered.filter((a) =>
+      idsPermitidos.has(String(a.idAtendimento || '').trim()),
+    );
+  }
+
   if (somenteComHorario && !idF) {
     const idsComHorario = new Set<string>();
     for (const a of filtered) {
@@ -2397,6 +2443,30 @@ export async function listAtendimentosRaw(
       .where(inArray(profissionais.id, profIds));
     for (const r of pr) {
       nomePorProfId.set(r.id, String(r.nome || '').trim());
+    }
+  }
+
+  /** Nome actual do cadastro (não a cópia antiga em `atendimentos.nome_cliente`). */
+  const clienteIds = Array.from(
+    new Set(
+      filtered
+        .map((a) => String(a.idCliente || '').trim())
+        .filter((x) => x.length > 0),
+    ),
+  );
+  const nomeClienteAtualPorId = new Map<string, string>();
+  if (clienteIds.length > 0) {
+    const cliRows = await db
+      .select({
+        id: clientes.idCliente,
+        nome: clientes.nomeExibido,
+      })
+      .from(clientes)
+      .where(inArray(clientes.idCliente, clienteIds));
+    for (const r of cliRows) {
+      const id = String(r.id || '').trim();
+      const nome = String(r.nome || '').trim();
+      if (id && nome) nomeClienteAtualPorId.set(id, nome);
     }
   }
 
@@ -2541,15 +2611,6 @@ export async function listAtendimentosRaw(
     }
   }
 
-  /** Por id específico devolvemos sempre; listagens filtram por modo. */
-  if (!idF && modoPedido !== 'todos') {
-    filtered = filtered.filter((a) => {
-      const k = String(a.idAtendimento || '').trim();
-      const m = modoPorIdAt.get(k)?.modo ?? 'producao';
-      return modoPedido === 'orcamento' ? m === 'orcamento' : m !== 'orcamento';
-    });
-  }
-
   /**
    * Corrige `pagamento_status` persistido como «parcial» quando o resumo já
    * indica «pago» (ex.: desconto global não entrava no total da pivot antes do fix).
@@ -2595,6 +2656,11 @@ export async function listAtendimentosRaw(
         : null;
     const profNome = pid != null ? nomePorProfId.get(pid) ?? '' : '';
     const idAtKey = String(a.idAtendimento || '').trim();
+    const idCliKey = String(a.idCliente || '').trim();
+    const nomeClienteAtual =
+      (idCliKey ? nomeClienteAtualPorId.get(idCliKey) : null) ||
+      String(a.nomeCliente ?? '').trim() ||
+      null;
     /** Catálogo completo em todas as linhas do mesmo pedido (a UI relaciona valores por linha). */
     const catalogoLista = idAtKey ? (itensPorPedido.get(idAtKey) ?? []) : [];
     return {
@@ -2604,7 +2670,7 @@ export async function listAtendimentosRaw(
       inicio: tsParaRespostaListagem(a.inicio as Date | string | null),
       fim: tsParaRespostaListagem(a.fim as Date | string | null),
       'ID Cliente': a.idCliente,
-      'Nome Cliente': a.nomeCliente,
+      'Nome Cliente': nomeClienteAtual,
       Tipo: a.tipo,
       Pacote: a.pacote,
       Etapa: a.etapa,

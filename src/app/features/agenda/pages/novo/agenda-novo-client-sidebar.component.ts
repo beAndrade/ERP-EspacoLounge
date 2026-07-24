@@ -15,6 +15,7 @@ import {
   telefoneClienteWhatsappDigitos,
   telefoneClienteWhatsappExibicao,
 } from '../../../../core/utils/telefone-br';
+import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import {
   SaasSelectComponent,
   type SaasSelectOption,
@@ -243,11 +244,11 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
     this.whatsappContexto = {
       telefone: digitos,
       clienteId: this.cliente?.id ?? undefined,
-      clienteNome: this.cliente?.nome?.trim() || undefined,
+      clienteNome: nomeClienteParaWhatsapp(this.cliente) || undefined,
       idAtendimento: this.whatsappIdAtendimento?.trim() || undefined,
       templateCodigo: 'confirmacao',
       variaveis: {
-        cliente: this.cliente?.nome?.trim() ?? '',
+        cliente: nomeClienteParaWhatsapp(this.cliente),
         data: this.whatsappDataFmt?.trim() ?? '',
         hora: this.whatsappHora?.trim() ?? '',
       },

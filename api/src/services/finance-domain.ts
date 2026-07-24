@@ -10,6 +10,7 @@ import {
   atendimentos,
   atendimentosPedido,
   categoriasFinanceiras,
+  clientes,
   comandaPagamentos,
   despesas,
   folha,
@@ -529,16 +530,45 @@ async function mapaNomeClientePorAtendimento(
   const linhas = await db
     .select({
       idAtendimento: atendimentos.idAtendimento,
+      idCliente: atendimentos.idCliente,
       nomeCliente: atendimentos.nomeCliente,
     })
     .from(atendimentos)
     .where(inArray(atendimentos.idAtendimento, uniq))
     .orderBy(asc(atendimentos.id));
 
+  const clienteIds = Array.from(
+    new Set(
+      linhas
+        .map((r) => String(r.idCliente || '').trim())
+        .filter(Boolean),
+    ),
+  );
+  const nomeAtualPorCliente = new Map<string, string>();
+  if (clienteIds.length > 0) {
+    const cliRows = await db
+      .select({
+        id: clientes.idCliente,
+        nome: clientes.nomeExibido,
+      })
+      .from(clientes)
+      .where(inArray(clientes.idCliente, clienteIds));
+    for (const r of cliRows) {
+      const id = String(r.id || '').trim();
+      const nome = String(r.nome || '').trim();
+      if (id && nome) nomeAtualPorCliente.set(id, nome);
+    }
+  }
+
   for (const r of linhas) {
     const id = String(r.idAtendimento || '').trim();
     if (!id || map.has(id)) continue;
-    map.set(id, String(r.nomeCliente ?? '').trim());
+    const cid = String(r.idCliente || '').trim();
+    const atual = cid ? nomeAtualPorCliente.get(cid) : '';
+    map.set(
+      id,
+      String(atual || r.nomeCliente || '').trim(),
+    );
   }
   return map;
 }

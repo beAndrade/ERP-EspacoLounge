@@ -996,10 +996,20 @@ BEGIN
 END $$;
 `));
   await db.execute(sql.raw(`
-DO $$ BEGIN
-  ALTER TYPE "whatsapp_message_tipo" ADD VALUE IF NOT EXISTS 'orcamento';
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_type t
+    WHERE t.typname = 'whatsapp_message_tipo'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'whatsapp_message_tipo'
+      AND e.enumlabel = 'orcamento'
+  ) THEN
+    ALTER TYPE "whatsapp_message_tipo" ADD VALUE 'orcamento';
+  END IF;
 END $$;
 `));
   await db.execute(sql.raw(`
@@ -1013,5 +1023,33 @@ SELECT
 WHERE NOT EXISTS (
   SELECT 1 FROM "whatsapp_templates" WHERE "codigo" = 'orcamento'
 );
+`));
+  /** Catálogo Pacote Queratina (PROD pode ter tabelas vazias se só correu migrate sem seed). */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables t
+    WHERE t.table_schema = current_schema() AND t.table_name = 'pacotes_queratina'
+  ) AND NOT EXISTS (SELECT 1 FROM "pacotes_queratina" LIMIT 1) THEN
+    INSERT INTO "pacotes_queratina" ("pacote", "preco_pacote") VALUES
+      ('2 mechas', 'R$ 400,00'),
+      ('5 mechas', 'R$ 500,00');
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables t
+    WHERE t.table_schema = current_schema() AND t.table_name = 'regras_mega_queratina'
+  ) AND NOT EXISTS (SELECT 1 FROM "regras_mega_queratina" LIMIT 1) THEN
+    INSERT INTO "regras_mega_queratina" ("pacote", "etapa", "valor", "comissao", "duracao_minutos") VALUES
+      ('2 mechas', 'Retirada', 'R$ 20,00', 'R$ 20,00', 30),
+      ('2 mechas', 'Preparo', 'R$ 20,00', 'R$ 20,00', 30),
+      ('2 mechas', 'Escova', 'R$ 25,00', 'R$ 25,00', 30),
+      ('2 mechas', 'Colocação', 'R$ 35,00', 'R$ 35,00', 30),
+      ('5 mechas', 'Retirada', 'R$ 30,00', 'R$ 30,00', 30),
+      ('5 mechas', 'Preparo', 'R$ 30,00', 'R$ 30,00', 30),
+      ('5 mechas', 'Escova', 'R$ 25,00', 'R$ 25,00', 30),
+      ('5 mechas', 'Colocação', 'R$ 40,00', 'R$ 40,00', 30);
+  END IF;
+END $$;
 `));
 }

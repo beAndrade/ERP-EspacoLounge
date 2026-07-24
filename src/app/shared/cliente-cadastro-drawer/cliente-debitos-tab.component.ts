@@ -5,6 +5,7 @@ import { concatMap, EMPTY, from } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { telefoneBrDigitos } from '../../core/utils/telefone-br';
+import { nomeClienteParaWhatsapp } from '../../core/utils/whatsapp-variaveis';
 import type {
   ClienteComandaAbertaLinhaUi,
   ClienteDebitoLinhaUi,
@@ -257,11 +258,18 @@ export class ClienteDebitosTabComponent {
     this.whatsappContexto.set({
       telefone: digitos,
       clienteId: this.d.clienteId ?? undefined,
-      clienteNome: this.d.cadastroNome.trim() || undefined,
+      clienteNome:
+        nomeClienteParaWhatsapp({
+          nome: this.d.cadastroNome,
+          apelido: this.d.cadastroApelido,
+        }) || undefined,
       idAtendimento: row.idAtendimento,
       templateCodigo: 'cobranca',
       variaveis: {
-        cliente: this.d.cadastroNome.trim(),
+        cliente: nomeClienteParaWhatsapp({
+          nome: this.d.cadastroNome,
+          apelido: this.d.cadastroApelido,
+        }),
         valor,
       },
     });

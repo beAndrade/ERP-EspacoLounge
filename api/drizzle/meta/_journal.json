@@ -351,6 +351,13 @@
       "when": 1775697961000,
       "tag": "0049_atendimentos_pedido_orcamento",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1775697962000,
+      "tag": "0050_pacotes_queratina_catalogo",
+      "breakpoints": true
     }
   ]
 }

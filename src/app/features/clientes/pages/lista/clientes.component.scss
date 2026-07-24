@@ -254,12 +254,6 @@
 .clientes-page .list-table-card {
   position: relative;
   overflow: visible;
-  box-shadow: none;
-  transition: box-shadow 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
-  }
 }
 
 .clientes-page .list-table-card > .table-wrap {

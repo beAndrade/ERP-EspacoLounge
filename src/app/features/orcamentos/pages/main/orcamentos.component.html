@@ -1,31 +1,111 @@
 <div class="list-page orcamentos-page">
   <div class="orcamentos-page__lead">
-    <div class="list-toolbar">
-      <div class="list-toolbar__left">
-        <h1 class="list-page__title">Orçamentos</h1>
+    <header class="list-head">
+      <div class="list-head__title-row">
+        <div class="list-head__left">
+          <h1 class="list-head__title">Orçamentos</h1>
+        </div>
+        <div class="list-head__actions">
+          <div
+            class="list-head__busca-wrap"
+            [class.list-head__busca-wrap--open]="buscaAberta"
+            role="search"
+            (click)="onBuscaWrapClick()"
+          >
+            <span class="list-head__busca-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-search"
+              >
+                <path d="m21 21-4.34-4.34" />
+                <circle cx="11" cy="11" r="8" />
+              </svg>
+            </span>
+            <span
+              class="list-head__busca-label"
+              [class.list-head__busca-label--hidden]="buscaAberta"
+              aria-hidden="true"
+              >Buscar</span
+            >
+            <label class="sr-only" for="orcamentos-busca-input"
+              >Buscar orçamentos</label
+            >
+            <input
+              id="orcamentos-busca-input"
+              type="text"
+              class="list-head__busca-input"
+              [(ngModel)]="busca"
+              name="buscaOrcamentos"
+              [placeholder]="buscaPlaceholder"
+              [class.list-head__busca-input--search-open]="buscaAberta"
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+              [attr.aria-expanded]="buscaAberta"
+              aria-label="Buscar orçamentos"
+              title="Buscar"
+            />
+          </div>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+            (click)="toggleFiltros()"
+            aria-label="Filtrar orçamentos"
+            title="Filtrar"
+          >
+            <svg
+              class="list-icon-sm list-icon-sm--funnel"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+              />
+            </svg>
+            <span class="list-head__toolbar-label">Filtrar</span>
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+            (click)="abrirNovo()"
+          >
+            <svg
+              class="list-icon-sm"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span>Novo</span>
+          </button>
+        </div>
       </div>
-      <div class="list-toolbar__right">
-        <label class="sr-only" for="orcamentos-busca">Buscar</label>
-        <input
-          id="orcamentos-busca"
-          type="search"
-          class="list-toolbar__search"
-          placeholder="Buscar cliente ou ticket"
-          [(ngModel)]="busca"
-          name="busca"
-        />
-        <button
-          type="button"
-          class="list-toolbar__btn"
-          (click)="filtrosAbertos = !filtrosAbertos"
-        >
-          Filtrar
-        </button>
-        <button type="button" class="list-toolbar__btn list-toolbar__btn--primary" (click)="abrirNovo()">
-          Novo
-        </button>
-      </div>
-    </div>
+    </header>
 
     @if (filtrosAbertos) {
       <div class="orcamentos-filtros" aria-label="Filtros">
@@ -38,7 +118,11 @@
             <span>Data final</span>
             <input type="text" [(ngModel)]="dataFim" name="df" maxlength="10" />
           </label>
-          <button type="button" class="list-toolbar__btn list-toolbar__btn--primary" (click)="aplicarFiltros()">
+          <button
+            type="button"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+            (click)="aplicarFiltros()"
+          >
             Aplicar
           </button>
         </div>
@@ -60,8 +144,9 @@
     @if (erro) {
       <p class="list-page__error" role="alert">{{ erro }}</p>
     }
+  </div>
 
-    <div class="orcamentos-table-card">
+  <div class="list-table-card orcamentos-table-card">
       <div class="table-wrap">
         <table class="orcamentos-table">
           <thead>
@@ -272,7 +357,6 @@
         </div>
       }
     </div>
-  </div>
 </div>
 
 @if (novoAberto && novoCtx) {

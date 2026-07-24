@@ -26,6 +26,7 @@ import {
   toYmd,
   valorMonetarioParaNumero,
 } from '../../../../core/utils/atendimento-display';
+import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import { AgendaNovoComponent } from '../../../agenda/pages/novo/agenda-novo.component';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
@@ -70,6 +71,7 @@ function formataMoeda(n: number): string {
   templateUrl: './orcamentos.component.html',
   styleUrl: './orcamentos.component.scss',
 })
+/** Toolbar alinhada a Comandas (`list-head`). */
 export class OrcamentosComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly route = inject(ActivatedRoute);
@@ -87,6 +89,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   dataInicio = '';
   dataFim = '';
   busca = '';
+  buscaAberta = false;
   filtrosAbertos = false;
   filtroStatus = new Set<OrcamentoStatus>();
 
@@ -162,12 +165,42 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     if (this.novoAberto) {
       ev.preventDefault();
       this.fecharNovo();
+      return;
+    }
+    if (this.buscaAberta) {
+      ev.preventDefault();
+      this.fecharPainelBusca();
     }
   }
 
-  @HostListener('document:click')
-  onDocClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocClick(ev: MouseEvent): void {
     this.menuAbertoParaId = null;
+    const t = ev.target as HTMLElement | null;
+    if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
+      this.fecharPainelBusca();
+    }
+  }
+
+  get buscaPlaceholder(): string {
+    return this.buscaAberta ? 'Buscar cliente ou ticket…' : '';
+  }
+
+  onBuscaWrapClick(): void {
+    if (!this.buscaAberta) {
+      this.buscaAberta = true;
+      queueMicrotask(() => {
+        document.getElementById('orcamentos-busca-input')?.focus();
+      });
+    }
+  }
+
+  fecharPainelBusca(): void {
+    this.buscaAberta = false;
+  }
+
+  toggleFiltros(): void {
+    this.filtrosAbertos = !this.filtrosAbertos;
   }
 
   carregar(): void {
@@ -187,7 +220,11 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
           clientes.map((c) => [String(c.id).trim(), c]),
         );
         this.profissionais = profissionais.filter((p) => p.ativo !== false);
-        this.grupos = this.agrupar(items);
+        /** Só pedidos criados como orçamento (nunca tickets da agenda/produção). */
+        const soOrcamentos = items.filter(
+          (it) => String(it.modo ?? '').trim().toLowerCase() === 'orcamento',
+        );
+        this.grupos = this.agrupar(soOrcamentos);
         this.carregando = false;
         this.pagina = 1;
       },
@@ -407,15 +444,19 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
         return v != null ? `• ${nome}: ${formataMoeda(v)}` : `• ${nome}`;
       })
       .join('\n');
+    const cli = g.idCliente
+      ? this.clientesPorId.get(g.idCliente)
+      : null;
+    const nomeWa = nomeClienteParaWhatsapp(cli, g.nomeCliente);
     this.whatsappGrupo = g;
     this.whatsappCtx = {
       telefone: tel,
       clienteId: g.idCliente ?? undefined,
-      clienteNome: g.nomeCliente,
+      clienteNome: nomeWa,
       idAtendimento: g.id,
       templateCodigo: 'orcamento',
       variaveis: {
-        cliente: g.nomeCliente,
+        cliente: nomeWa,
         numero_comanda: String(g.numeroComanda ?? ''),
         resumo,
         valor: g.valorTotal != null ? formataMoeda(g.valorTotal) : '',

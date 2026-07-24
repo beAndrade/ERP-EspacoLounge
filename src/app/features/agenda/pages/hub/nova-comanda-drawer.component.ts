@@ -34,6 +34,7 @@ import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { telefoneBrDigitos } from '../../../../core/utils/telefone-br';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
+import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import {
@@ -1103,11 +1104,11 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.whatsappContexto.set({
       telefone: digitos,
       clienteId: ctx?.clienteId,
-      clienteNome: cliente?.nome ?? ctx?.cliente?.nome ?? '',
+      clienteNome: nomeClienteParaWhatsapp(cliente ?? ctx?.cliente),
       idAtendimento: ctx?.idAtendimento ?? undefined,
       templateCodigo: 'confirmacao',
       variaveis: {
-        cliente: cliente?.nome ?? ctx?.cliente?.nome ?? '',
+        cliente: nomeClienteParaWhatsapp(cliente ?? ctx?.cliente),
         data: dataFmt,
         hora,
       },

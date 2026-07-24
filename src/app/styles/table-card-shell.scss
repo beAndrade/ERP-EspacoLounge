@@ -1,29 +1,40 @@
 /**
- * Cartão de tabela (comandas, clientes, …).
- * O thead preenche o topo — o recorte fica em `.table-wrap`.
+ * Cartão de tabela — formato visual único do sistema.
+ * Preferir estas classes no markup; wraps órfãos listados também herdam o visual.
  */
+$list-table-card-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
+$list-table-card-border: 1px solid rgba(0 0 0 / 3%);
+$list-table-card-radius: 12px;
+
+@mixin list-table-card-surface {
+  box-shadow: $list-table-card-shadow;
+  flex: auto;
+  width: 100%;
+  max-width: 100%;
+  border: $list-table-card-border;
+  align-self: stretch;
+  transition: box-shadow 0.1s;
+  border-radius: $list-table-card-radius;
+  background: var(--color-surface, #fff);
+  box-sizing: border-box;
+}
+
 .list-table-card,
 .comandas-table-card,
-.drawer-table-card {
-  border-radius: 0;
-  border-start-start-radius: 14px;
-  border-start-end-radius: 14px;
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  border-end-start-radius: 14px;
-  border-end-end-radius: 14px;
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
-  overflow: visible;
+.drawer-table-card,
+.orcamentos-table-card,
+.prof-stack-table-wrap,
+.prof-comissoes-table-wrap,
+.wa-table-wrap,
+.cliente-painel-servicos__table-wrap {
+  @include list-table-card-surface;
 }
 
 .list-table-card > .table-wrap,
 .comandas-table-card > .table-wrap,
+.orcamentos-table-card > .table-wrap,
 .drawer-table-card > .drawer-table-wrap {
-  overflow: visible;
-  border-radius: 0;
-  border-start-start-radius: 14px;
-  border-start-end-radius: 14px;
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
+  overflow-x: clip;
+  overflow-y: visible;
+  border-radius: $list-table-card-radius;
 }

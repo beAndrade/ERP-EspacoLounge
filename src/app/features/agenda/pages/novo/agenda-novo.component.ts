@@ -100,6 +100,7 @@ import {
   type SaasSelectOption,
 } from './saas-select.component';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
+import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
 import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
 import {
@@ -3276,7 +3277,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           }) ?? '';
         lembreteCtx = {
           telefone,
-          clienteNome: String(cliente?.nome ?? '').trim(),
+          clienteNome: nomeClienteParaWhatsapp(cliente),
           datasYmd: [...datas],
           hora,
           profissional: this.nomeProfissionalWhatsappDasLinhas(),

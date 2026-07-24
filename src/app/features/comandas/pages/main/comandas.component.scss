@@ -10,7 +10,6 @@
   max-width: none;
   margin-left: 0;
   margin-right: 0;
-  padding-right: 10px;
   box-sizing: border-box;
 }
 
@@ -275,31 +274,22 @@
 .comandas-table-card {
   align-self: stretch;
   isolation: isolate;
-  background: var(--color-surface);
-  border: 1px solid #efefef;
-  box-shadow: none;
-  /* Cantos superiores — ver `styles/table-card-shell.scss`. */
-  border-radius: 0;
-  border-start-start-radius: 14px;
-  border-start-end-radius: 14px;
-  border-top-left-radius: 14px;
-  border-top-right-radius: 14px;
-  /* `visible` no card: dropdown “itens por página” no rodapé. */
+  box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
+  flex: auto;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid rgba(0 0 0 / 3%);
+  transition: box-shadow 0.1s;
+  border-radius: 12px;
+  background: var(--color-surface, #fff);
+  box-sizing: border-box;
   overflow: visible;
-  transition: box-shadow 0.2s ease;
 
   > .table-wrap {
     /* `visible`: o menu de ações da linha não fica cortado / atrás do card. */
     overflow: visible;
-    border-start-start-radius: 14px;
-    border-start-end-radius: 14px;
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
+    border-radius: 12px;
   }
-}
-
-.comandas-table-card:hover {
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.035);
 }
 
 .table-wrap {

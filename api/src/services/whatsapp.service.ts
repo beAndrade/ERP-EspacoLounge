@@ -249,11 +249,13 @@ export async function sendWhatsappMessageApi(
   }
 
   const clienteId = input.cliente_id?.trim() || null;
+  let nomeClienteWhatsapp = '';
   if (clienteId) {
     const [cli] = await db
       .select({
         notificacoesAtivo: clientes.notificacoesAtivo,
         nome: clientes.nomeExibido,
+        apelido: clientes.apelido,
       })
       .from(clientes)
       .where(eq(clientes.idCliente, clienteId))
@@ -262,6 +264,8 @@ export async function sendWhatsappMessageApi(
     if (!cli.notificacoesAtivo) {
       throw new Error('Cliente desativou notificações por WhatsApp/SMS.');
     }
+    nomeClienteWhatsapp =
+      String(cli.apelido ?? '').trim() || String(cli.nome ?? '').trim();
   }
 
   let conteudo = String(input.texto ?? '').trim();
@@ -275,6 +279,10 @@ export async function sendWhatsappMessageApi(
     if (!template.ativo) throw new Error(`Template "${templateCodigo}" está inativo.`);
     const vars = {
       ...(input.variaveis ?? {}),
+      /** Apelido (ou nome) do cadastro — variável `{{cliente}}`. */
+      cliente:
+        nomeClienteWhatsapp ||
+        String(input.variaveis?.cliente ?? '').trim(),
       empresa: input.variaveis?.empresa ?? config.nomeEmpresa ?? '',
       profissional:
         String(opts?.nomeRemetente ?? '').trim() ||

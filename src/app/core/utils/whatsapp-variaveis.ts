@@ -19,3 +19,24 @@ export function mesclarVariaveisWhatsapp(
   out['profissional'] = String(opts.nomeProfissional ?? '').trim();
   return out;
 }
+
+/**
+ * Nome usado em `{{cliente}}` nas mensagens WhatsApp:
+ * preferir **apelido** (campo do cadastro); se vazio, o nome exibido.
+ */
+export function nomeClienteParaWhatsapp(
+  cliente:
+    | {
+        nome?: string | null;
+        apelido?: string | null;
+      }
+    | null
+    | undefined,
+  fallback = '',
+): string {
+  const apelido = String(cliente?.apelido ?? '').trim();
+  if (apelido) return apelido;
+  const nome = String(cliente?.nome ?? '').trim();
+  if (nome) return nome;
+  return String(fallback ?? '').trim();
+}

@@ -87,6 +87,7 @@ import {
   listRegrasMegaApi,
   listRegrasMegaQueratinaApi,
   listServicosForApi,
+  sincronizarNomeClienteEmAtendimentos,
 } from './services/queries';
 import { columnPatchFromClienteBody } from './services/clientes-cadastro-normalize';
 import { assertClienteCadastroUnico } from './services/clientes-unicidade';
@@ -1076,6 +1077,8 @@ const app = new Elysia({ adapter: node() })
         .where(eq(clientes.idCliente, id))
         .returning();
       if (!updated.length) return fail('NOT_FOUND', 'Cliente não encontrado');
+
+      await sincronizarNomeClienteEmAtendimentos(db, id, nome);
 
       const item = await getClienteById(db, id);
       if (!item) return fail('NOT_FOUND', 'Cliente não encontrado');

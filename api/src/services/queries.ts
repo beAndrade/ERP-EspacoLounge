@@ -34,6 +34,26 @@ export async function getClienteById(db: Db, id: string) {
 }
 
 /**
+ * Propaga o nome actual do cadastro para as cópias em `atendimentos.nome_cliente`
+ * (listas de comandas/agenda/financeiro leem esse campo).
+ */
+export async function sincronizarNomeClienteEmAtendimentos(
+  db: Db,
+  idCliente: string,
+  nomeExibido: string,
+): Promise<number> {
+  const cid = String(idCliente || '').trim();
+  const nome = String(nomeExibido || '').trim();
+  if (!cid || !nome) return 0;
+  const updated = await db
+    .update(atendimentos)
+    .set({ nomeCliente: nome })
+    .where(eq(atendimentos.idCliente, cid))
+    .returning({ id: atendimentos.id });
+  return updated.length;
+}
+
+/**
  * Próximo `id_cliente` no padrão da planilha (`CL0001`, …).
  * Usa agregação SQL (evita depender da forma do resultado do `select` no Drizzle e ignora UUIDs).
  */

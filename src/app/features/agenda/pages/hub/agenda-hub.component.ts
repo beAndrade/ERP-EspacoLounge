@@ -69,6 +69,7 @@ import {
   type AgendaCorOpcao,
 } from '../../../../core/utils/agenda-cor-card';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
+import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
@@ -1102,11 +1103,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.whatsappContexto = {
       telefone: digitos,
       clienteId: clienteId || undefined,
-      clienteNome: cliente?.nome ?? '',
+      clienteNome: nomeClienteParaWhatsapp(cliente),
       idAtendimento: idAtendimento || undefined,
       templateCodigo: 'confirmacao',
       variaveis: {
-        cliente: cliente?.nome ?? '',
+        cliente: nomeClienteParaWhatsapp(cliente),
         data: dataFmt,
         hora,
       },

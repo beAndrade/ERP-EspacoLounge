@@ -1288,7 +1288,18 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.cadastroDrawer.abrirEdicao(cid, {
       nomeLista: g.nomeCliente?.trim() ?? '',
       callbacks: {
-        onSalvo: () => this.atualizarGruposECatalogo(),
+        onSalvo: (salvo) => {
+          const nomeNovo = String(salvo?.nome ?? '').trim();
+          const cidSalvo = String(salvo?.id ?? cid).trim();
+          if (cidSalvo && nomeNovo) {
+            this.grupos = this.grupos.map((g) =>
+              this.idCliente(g) === cidSalvo
+                ? { ...g, nomeCliente: nomeNovo }
+                : g,
+            );
+          }
+          this.atualizarGruposECatalogo();
+        },
       },
     });
   }
@@ -1357,6 +1368,14 @@ export class ComandasComponent implements OnInit, OnDestroy {
         onSalvo: (salvo) => {
           this.atualizarGruposECatalogo();
           const cidSalvo = (salvo.id ?? cid).trim();
+          const nomeNovo = String(salvo?.nome ?? '').trim();
+          if (cidSalvo && nomeNovo) {
+            this.grupos = this.grupos.map((g) =>
+              this.idCliente(g) === cidSalvo
+                ? { ...g, nomeCliente: nomeNovo }
+                : g,
+            );
+          }
           if (
             cidSalvo &&
             this.comandaDrawerContexto?.clienteId?.trim() === cidSalvo
