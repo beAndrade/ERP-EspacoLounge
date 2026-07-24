@@ -12,6 +12,7 @@ export type WhatsappMessageTipo =
   | 'lembrete'
   | 'cobranca'
   | 'aniversario'
+  | 'orcamento'
   | 'manual';
 
 export type WhatsappLogStatus = 'pending' | 'sent' | 'failed';
@@ -104,6 +105,8 @@ export const WHATSAPP_PLACEHOLDERS = [
   'hora',
   'profissional',
   'valor',
+  'numero_comanda',
+  'resumo',
 ] as const;
 
 export type WhatsappPlaceholder = (typeof WHATSAPP_PLACEHOLDERS)[number];

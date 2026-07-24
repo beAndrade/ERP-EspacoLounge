@@ -158,6 +158,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
   ];
 
   selecionados = new Set<string>();
+
+  /** Coluna activa e direcção (padrão Ticket descendente — mais recente primeiro). */
+  ordenacaoColuna: 'ticket' | 'data' | 'cliente' = 'ticket';
+  ordenacaoDir: 'asc' | 'desc' = 'desc';
+
   menuAbertoParaId: string | null = null;
   excluindoIdAt: string | null = null;
   excluirMassaModalAberto = false;
@@ -872,20 +877,62 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return 3;
   }
 
+  onOrdenarColuna(
+    col: typeof this.ordenacaoColuna,
+    event: MouseEvent,
+  ): void {
+    if (this.ordenacaoColuna === col) {
+      this.ordenacaoDir = this.ordenacaoDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.ordenacaoColuna = col;
+      this.ordenacaoDir = 'asc';
+    }
+    this.pagina = 1;
+    (event.currentTarget as HTMLButtonElement | null)?.blur();
+  }
+
+  tooltipOrdenacao(col: typeof this.ordenacaoColuna): string {
+    if (this.ordenacaoColuna !== col) {
+      return 'Clique organiza por ascendente';
+    }
+    return this.ordenacaoDir === 'asc'
+      ? 'Clique organiza por descendente'
+      : 'Clique organiza por ascendente';
+  }
+
   /**
-   * Comandas criadas mais recentemente primeiro (`numero_comanda` maior).
-   * Desempate: prioridade de status, data mais recente, nome.
+   * Ordena pela coluna activa (Ticket / Data / Cliente).
+   * Desempate: prioridade de status, depois as restantes chaves.
    */
   private compararGruposComanda(a: ComandaGrupo, b: ComandaGrupo): number {
-    const na = a.numeroComanda ?? 0;
-    const nb = b.numeroComanda ?? 0;
-    if (nb !== na) return nb - na;
+    const dir = this.ordenacaoDir === 'asc' ? 1 : -1;
+    const primaria = this.compararOrdenacaoPrimaria(a, b) * dir;
+    if (primaria !== 0) return primaria;
     const pa = this.prioridadeOrdenacaoStatus(a);
     const pb = this.prioridadeOrdenacaoStatus(b);
     if (pa !== pb) return pa - pb;
-    const c = b.data.localeCompare(a.data);
-    if (c !== 0) return c;
-    return a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR');
+    const cData = b.data.localeCompare(a.data);
+    if (cData !== 0) return cData;
+    const cTicket = (b.numeroComanda ?? 0) - (a.numeroComanda ?? 0);
+    if (cTicket !== 0) return cTicket;
+    return a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR', {
+      sensitivity: 'base',
+    });
+  }
+
+  private compararOrdenacaoPrimaria(a: ComandaGrupo, b: ComandaGrupo): number {
+    switch (this.ordenacaoColuna) {
+      case 'ticket':
+        return (a.numeroComanda ?? 0) - (b.numeroComanda ?? 0);
+      case 'data':
+        return a.data.localeCompare(b.data);
+      case 'cliente':
+        return a.nomeCliente.localeCompare(b.nomeCliente, 'pt-BR', {
+          sensitivity: 'base',
+        });
+      default:
+        return 0;
+    }
   }
 
   private readonly epsMoeda = 0.005;

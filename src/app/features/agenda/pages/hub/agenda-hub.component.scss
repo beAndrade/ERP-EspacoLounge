@@ -1080,15 +1080,15 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   &__triangle {
     width: 0;
     height: 0;
-    border-top: 5px solid transparent;
-    border-bottom: 5px solid transparent;
-    border-left: 7px solid #e53935;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-left: 5px solid #e53935;
   }
 
   &__bar {
     flex: 1 1 auto;
     min-width: 0;
-    height: 2px;
+    height: 1px;
     background: #e53935;
   }
 

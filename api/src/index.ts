@@ -21,6 +21,10 @@ import {
   atualizarAgendaCorBloco,
 } from './services/atendimentos-domain';
 import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
+import {
+  atualizarStatusOrcamento,
+  converterOrcamentoParaProducao,
+} from './services/orcamentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
 import { faturarComandaComRascunho } from './services/comanda-faturar-batch';
 import {
@@ -1943,12 +1947,22 @@ const app = new Elysia({ adapter: node() })
         q.somenteComHorario === 'true' ||
         q.somente_com_horario === '1' ||
         q.somente_com_horario === 'true';
+      const modoRaw = String(q.modo ?? '')
+        .trim()
+        .toLowerCase();
+      const modoPedido =
+        modoRaw === 'orcamento'
+          ? ('orcamento' as const)
+          : modoRaw === 'todos'
+            ? ('todos' as const)
+            : ('producao' as const);
       const items = await listAtendimentosRaw(
         db,
         query.dataInicio,
         query.dataFim,
         idAt || undefined,
         somenteComHorario,
+        modoPedido,
       );
       return ok({ items });
     } catch (e) {
@@ -1956,6 +1970,78 @@ const app = new Elysia({ adapter: node() })
       return fail('SERVER', msg);
     }
   })
+  .post(
+    '/api/orcamentos/:idAtendimento/status',
+    async ({ params, body }) => {
+      try {
+        const id = String(params.idAtendimento || '').trim();
+        const status = String(
+          (body as { status?: string })?.status ?? '',
+        )
+          .trim()
+          .toLowerCase();
+        if (
+          status !== 'rascunho' &&
+          status !== 'enviado' &&
+          status !== 'aceito' &&
+          status !== 'arquivado'
+        ) {
+          return fail('VALIDATION', 'status inválido');
+        }
+        const r = await atualizarStatusOrcamento(db, id, status);
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        status: t.Union([
+          t.Literal('rascunho'),
+          t.Literal('enviado'),
+          t.Literal('aceito'),
+          t.Literal('arquivado'),
+        ]),
+      }),
+    },
+  )
+  .post(
+    '/api/orcamentos/:idAtendimento/converter',
+    async ({ params, body }) => {
+      try {
+        const id = String(params.idAtendimento || '').trim();
+        const b = (body ?? {}) as {
+          data?: string;
+          inicio?: string;
+          fim?: string;
+          profissional_id?: number;
+          agenda_status?: string;
+        };
+        const r = await converterOrcamentoParaProducao(db, {
+          id_atendimento: id,
+          data: String(b.data ?? ''),
+          inicio: String(b.inicio ?? ''),
+          fim: String(b.fim ?? ''),
+          profissional_id: Number(b.profissional_id),
+          agenda_status: b.agenda_status,
+        });
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object({
+        data: t.String(),
+        inicio: t.String(),
+        fim: t.String(),
+        profissional_id: t.Number(),
+        agenda_status: t.Optional(t.String()),
+      }),
+    },
+  )
   .post(
     '/api/atendimentos',
     async ({ body, query }) => {

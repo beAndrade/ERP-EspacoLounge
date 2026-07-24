@@ -402,6 +402,8 @@ export class SheetsApiService {
     idAtendimento?: string,
     /** Quando true, só pedidos com `atendimentos.inicio` (agenda com horário). */
     somenteComHorario?: boolean,
+    /** `producao` (default) | `orcamento` | `todos`. */
+    modo?: 'producao' | 'orcamento' | 'todos',
   ): Observable<AtendimentoListaItem[]> {
     let params = new HttpParams().set('_cb', String(Date.now()));
     if (dataInicio) params = params.set('dataInicio', dataInicio);
@@ -411,6 +413,9 @@ export class SheetsApiService {
     }
     if (somenteComHorario) {
       params = params.set('somenteComHorario', '1');
+    }
+    if (modo && modo !== 'producao') {
+      params = params.set('modo', modo);
     }
     return this.http
       .get<ApiResponse<{ items: Record<string, unknown>[] }>>(
@@ -908,6 +913,48 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  atualizarStatusOrcamento(
+    idAtendimento: string,
+    status: 'rascunho' | 'enviado' | 'aceito' | 'arquivado',
+  ): Observable<{ id_atendimento: string; orcamento_status: string }> {
+    const id = encodeURIComponent(idAtendimento.trim());
+    return this.http
+      .post<
+        ApiResponse<{ id_atendimento: string; orcamento_status: string }>
+      >(this.url(`/api/orcamentos/${id}/status`), { status })
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  converterOrcamento(
+    idAtendimento: string,
+    payload: {
+      data: string;
+      inicio: string;
+      fim: string;
+      profissional_id: number;
+      agenda_status?: string;
+    },
+  ): Observable<{
+    id_atendimento: string;
+    modo: string;
+    data: string;
+    inicio: string;
+    fim: string;
+  }> {
+    const id = encodeURIComponent(idAtendimento.trim());
+    return this.http
+      .post<
+        ApiResponse<{
+          id_atendimento: string;
+          modo: string;
+          data: string;
+          inicio: string;
+          fim: string;
+        }>
+      >(this.url(`/api/orcamentos/${id}/converter`), payload)
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
   /** Marca o atendimento (todas as linhas com o mesmo id) como pronto para cobrança. */
   finalizarCobranca(
     idAtendimento: string,
@@ -1357,6 +1404,24 @@ export class SheetsApiService {
       total_pago: totalPago,
       saldo,
       status_cobranca: statusCobranca,
+      modo: (() => {
+        const m = String(raw['modo'] ?? '').trim().toLowerCase();
+        return m === 'orcamento' ? 'orcamento' : m === 'producao' ? 'producao' : m || 'producao';
+      })(),
+      orcamento_status: (() => {
+        const s = String(raw['orcamento_status'] ?? raw['orcamentoStatus'] ?? '')
+          .trim()
+          .toLowerCase();
+        return s || null;
+      })(),
+      orcamento_enviado_em:
+        raw['orcamento_enviado_em'] != null
+          ? String(raw['orcamento_enviado_em'])
+          : null,
+      orcamento_convertido_em:
+        raw['orcamento_convertido_em'] != null
+          ? String(raw['orcamento_convertido_em'])
+          : null,
       pagamento_prestacao_pendente_atrasada:
         raw['pagamento_prestacao_pendente_atrasada'] === true ||
         String(raw['pagamento_prestacao_pendente_atrasada'] ?? '').toLowerCase() ===

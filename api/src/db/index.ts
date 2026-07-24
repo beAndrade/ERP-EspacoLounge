@@ -940,4 +940,78 @@ BEGIN
   END IF;
 END $$;
 `));
+  await db.execute(sql.raw(`
+DO $$ BEGIN
+  CREATE TYPE "pedido_modo" AS ENUM ('producao', 'orcamento');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$ BEGIN
+  CREATE TYPE "orcamento_status" AS ENUM ('rascunho', 'enviado', 'aceito', 'arquivado');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'modo'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido"
+      ADD COLUMN "modo" "pedido_modo" NOT NULL DEFAULT 'producao';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'orcamento_status'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "orcamento_status" "orcamento_status";
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'orcamento_enviado_em'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "orcamento_enviado_em" timestamptz;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'orcamento_convertido_em'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "orcamento_convertido_em" timestamptz;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'orcamento_convertido_de'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "orcamento_convertido_de" text;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$ BEGIN
+  ALTER TYPE "whatsapp_message_tipo" ADD VALUE IF NOT EXISTS 'orcamento';
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+`));
+  await db.execute(sql.raw(`
+INSERT INTO "whatsapp_templates" ("codigo", "nome", "corpo", "ativo", "ordem")
+SELECT
+  'orcamento',
+  'Orçamento',
+  'Olá {{cliente}}! Segue o orçamento #{{numero_comanda}} da {{empresa}}:' || E'\n\n' || '{{resumo}}' || E'\n\n' || 'Total: {{valor}}' || E'\n\n' || 'Qualquer dúvida, estamos à disposição.',
+  true,
+  50
+WHERE NOT EXISTS (
+  SELECT 1 FROM "whatsapp_templates" WHERE "codigo" = 'orcamento'
+);
+`));
 }

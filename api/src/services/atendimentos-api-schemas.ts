@@ -60,6 +60,10 @@ export const postAtendimentoMutationBody = t.Object(
     modo_exclusao: t.Optional(
       t.Union([t.Literal('somente_comanda'), t.Literal('completo')]),
     ),
+    /** `producao` (default) | `orcamento` — grava em `atendimentos_pedido.modo`. */
+    modo: t.Optional(
+      t.Union([t.Literal('producao'), t.Literal('orcamento')]),
+    ),
   },
   { additionalProperties: true },
 );

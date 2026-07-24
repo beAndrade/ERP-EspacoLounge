@@ -40,6 +40,8 @@ type ShortcutId =
 
   | 'comanda'
 
+  | 'orcamento'
+
   | 'pacote'
 
   | 'pacote-predef'
@@ -161,6 +163,8 @@ export class SidebarNovoMenuComponent implements OnDestroy {
         { id: 'agendamento', label: 'Agendamento' },
 
         { id: 'comanda', label: 'Comanda' },
+
+        { id: 'orcamento', label: 'Orçamento' },
 
         { id: 'pacote', label: 'Pacote' },
 
@@ -399,6 +403,12 @@ export class SidebarNovoMenuComponent implements OnDestroy {
       case 'comanda':
         void this.router.navigate(['/comandas'], {
           queryParams: { abrirNovaComanda: '1' },
+        });
+        break;
+
+      case 'orcamento':
+        void this.router.navigate(['/orcamentos'], {
+          queryParams: { abrirNovoOrcamento: '1' },
         });
         break;
 

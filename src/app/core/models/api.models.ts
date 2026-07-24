@@ -207,6 +207,14 @@ export interface AtendimentoListaItem {
    */
   status_cobranca?: 'aberto' | 'pendente' | 'parcial' | 'pago';
   /**
+   * `producao` (default) ou `orcamento` — espelho de `atendimentos_pedido.modo`.
+   */
+  modo?: 'producao' | 'orcamento' | string | null;
+  /** Ciclo do orçamento quando `modo = orcamento`. */
+  orcamento_status?: 'rascunho' | 'enviado' | 'aceito' | 'arquivado' | string | null;
+  orcamento_enviado_em?: string | null;
+  orcamento_convertido_em?: string | null;
+  /**
    * Existe prestação em `comanda_pagamentos` com `metodo = pendente` (fiado) e
    * `data_pagamento` < hoje. Parcelas `a_receber_cartao` não entram aqui.
    * Só é fiável com listagem `/api/atendimentos` actualizada.
@@ -633,6 +641,11 @@ export type AtendimentoIdCriacaoOpcional = {
   id_atendimento?: string;
 };
 
+/** `orcamento` = fora de agenda/financeiro até converter. */
+export type PedidoModoCriacaoOpcional = {
+  modo?: 'producao' | 'orcamento';
+};
+
 /** Desconto por linha (R$) na criação/edição do atendimento. */
 export type DescontoCriacaoOpcional = {
   desconto?: string;
@@ -729,4 +742,5 @@ export type CreateAtendimentoPayload = (
   AgendaCartaoCriacaoOpcional &
   RecorrenciaCriacaoOpcional &
   AtendimentoIdCriacaoOpcional &
+  PedidoModoCriacaoOpcional &
   DescontoCriacaoOpcional;

@@ -1653,7 +1653,7 @@ textarea {
   justify-content: flex-end;
   gap: 0.4rem;
   flex: 0 0 auto;
-  min-width: calc(38px * 2 + 0.4rem);
+  min-width: 38px;
   box-sizing: border-box;
 
   &--etapas {

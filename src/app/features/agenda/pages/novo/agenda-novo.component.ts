@@ -266,7 +266,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Modal da página Comandas (sem cartão no calendário). */
   isFluxoSomenteComanda(): boolean {
-    return this.modoModal && this.fluxoSomenteComanda;
+    return this.modoModal && (this.fluxoSomenteComanda || this.fluxoOrcamento);
   }
 
   /**
@@ -275,7 +275,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    */
   exibirColunasValorLinha(itemTipo?: string | null): boolean {
     if (!this.modoModal) return true;
-    if (this.fluxoSomenteComanda) return true;
+    if (this.fluxoSomenteComanda || this.fluxoOrcamento) return true;
     return String(itemTipo ?? '').trim() === 'Cabelo';
   }
 
@@ -286,6 +286,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    * e UI sem horário, status, lembrete ou repetição.
    */
   @Input() fluxoSomenteComanda = false;
+  /**
+   * Página Orçamentos: mesmo UX walk-in, grava `modo=orcamento` no pedido.
+   */
+  @Input() fluxoOrcamento = false;
   /**
    * Drawer de edição de itens (Comandas): sem bloco Desconto/Crédito/Total
    * — o resumo fica só no drawer de comanda por baixo.
@@ -2193,7 +2197,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return g?.get('etapas') as FormArray<FormGroup>;
   }
 
-  /** Retirada → Preparo → Escova → Colocação; outras etapas a seguir (A–Z). */
+  /** Retirada → Preparo → Escova → Colocação; outras etapas a seguir (A–Z). Rascunhos vazios ficam no fim. */
   private ordenarSubFormEtapasMegaPacote(g: FormGroup): void {
     const itemTipo = String(g.get('itemTipo')?.value ?? '');
     if (!isTipoMegaOuPacoteFamilia(itemTipo)) return;
@@ -2203,9 +2207,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       c,
       nome: String(c.get('etapa')?.value ?? '').trim(),
     }));
-    pairs.sort((a, b) =>
-      compararEtapasMegaPacoteFluxo(a.nome, b.nome),
-    );
+    pairs.sort((a, b) => {
+      const aVazia = !a.nome;
+      const bVazia = !b.nome;
+      if (aVazia !== bVazia) return aVazia ? 1 : -1;
+      return compararEtapasMegaPacoteFluxo(a.nome, b.nome);
+    });
     while (etapas.length) etapas.removeAt(0);
     for (const { c } of pairs) etapas.push(c);
   }
@@ -2762,7 +2769,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const etapas = g.get('etapas') as FormArray<FormGroup>;
     while (etapas.length) etapas.removeAt(0);
     if (t === 'Mega' || isTipoPacoteFamilia(t)) {
-      etapas.push(this.novoGrupoEtapa());
+      etapas.push(this.novoGrupoEtapa({ rascunho: true }));
     }
     this.slotAgenda = null;
     this.aplicarValidadoresLinhas();
@@ -2782,16 +2789,95 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  adicionarEtapaNaLinha(i: number): void {
-    this.etapasArrayDaLinha(i).push(this.novoGrupoEtapa());
-    this.aplicarValidadoresLinhas();
-  }
-
   removerEtapaNaLinha(i: number, j: number): void {
     const et = this.etapasArrayDaLinha(i);
     if (et.length <= 1) return;
     et.removeAt(j);
+    this.garantirLinhaEtapaRascunho(i);
     this.aplicarValidadoresLinhas();
+  }
+
+  /**
+   * Mega / Pacote / Pacote Queratina: ao escolher etapa + profissional na última
+   * linha, abre automaticamente uma linha vazia (sem botão «+»).
+   */
+  onCamposEtapaAlterados(linhaI: number): void {
+    if (this.prefillEmCurso) return;
+    const g = this.linhasItensArray.at(linhaI);
+    if (!g || !isTipoMegaOuPacoteFamilia(String(g.get('itemTipo')?.value ?? ''))) {
+      return;
+    }
+    this.garantirLinhaEtapaRascunho(linhaI);
+    this.aplicarValidadoresLinhas();
+  }
+
+  private etapaLinhaVazia(g: FormGroup): boolean {
+    const e = String(g.get('etapa')?.value ?? '').trim();
+    const p = g.get('profissional')?.value;
+    return !e && (p == null || !(Number(p) > 0));
+  }
+
+  private etapaLinhaCompleta(g: FormGroup): boolean {
+    const e = String(g.get('etapa')?.value ?? '').trim();
+    const p = g.get('profissional')?.value;
+    return !!e && p != null && Number(p) > 0;
+  }
+
+  /** Garante no máximo uma linha vazia no fim; se a última estiver completa, acrescenta rascunho. */
+  private garantirLinhaEtapaRascunho(linhaI: number): void {
+    const et = this.etapasArrayDaLinha(linhaI);
+    if (!et) return;
+    while (
+      et.length > 1 &&
+      this.etapaLinhaVazia(et.at(et.length - 1)) &&
+      this.etapaLinhaVazia(et.at(et.length - 2))
+    ) {
+      et.removeAt(et.length - 1);
+    }
+    if (et.length === 0) {
+      et.push(this.novoGrupoEtapa({ rascunho: true }));
+      return;
+    }
+    const last = et.at(et.length - 1);
+    if (last && this.etapaLinhaCompleta(last)) {
+      et.push(this.novoGrupoEtapa({ rascunho: true }));
+    }
+  }
+
+  private garantirRascunhosEtapasTodasLinhas(): void {
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      if (!g || !isTipoMegaOuPacoteFamilia(String(g.get('itemTipo')?.value ?? ''))) {
+        continue;
+      }
+      this.garantirLinhaEtapaRascunho(i);
+    }
+  }
+
+  /** Remove linhas de etapa vazias (rascunho) antes de validar / gravar. */
+  private limparEtapasRascunhoVazias(): void {
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      if (!g || !isTipoMegaOuPacoteFamilia(String(g.get('itemTipo')?.value ?? ''))) {
+        continue;
+      }
+      const et = this.etapasArrayDaLinha(i);
+      for (let j = et.length - 1; j >= 0; j--) {
+        if (this.etapaLinhaVazia(et.at(j)) && et.length > 1) {
+          et.removeAt(j);
+        }
+      }
+    }
+  }
+
+  private etapasCompletasRaw(
+    etapasRaw: { etapa: string; profissional: number | null }[],
+  ): { etapa: string; profissional: number | null }[] {
+    return etapasRaw.filter((x) => {
+      const e = String(x.etapa ?? '').trim();
+      const p = x.profissional;
+      return !!e && p != null && Number(p) > 0;
+    });
   }
 
   /**
@@ -2815,24 +2901,29 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     dataBase: string;
   } | null {
     this.erro = '';
+    this.limparEtapasRascunhoVazias();
     this.aplicarValidadoresLinhas();
     this.sincronizarValorCabeloCalculadoNasLinhas();
 
     if (!String(this.form.get('cliente_id')?.value ?? '').trim()) {
+      this.restaurarRascunhosEtapasAposValidacao();
       this.mostrarAvisoClienteObrigatorio();
       return null;
     }
 
     if (!this.form.valid) {
+      this.restaurarRascunhosEtapasAposValidacao();
       return this.registrarFalhaValidacao();
     }
 
     const raw = this.form.getRawValue() as Record<string, unknown>;
     if (!this.validarLinhas(raw)) {
+      this.restaurarRascunhosEtapasAposValidacao();
       return this.registrarFalhaValidacao();
     }
 
     if (this.avisoItensDuplicados.trim()) {
+      this.restaurarRascunhosEtapasAposValidacao();
       return this.registrarFalhaValidacao(this.avisoItensDuplicados);
     }
 
@@ -2840,11 +2931,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
     const dataBase = normalizarDataIso(String(raw['data'] ?? ''));
     if (!dataBase) {
+      this.restaurarRascunhosEtapasAposValidacao();
       return this.registrarFalhaValidacao();
     }
 
     this.validacaoFormularioVisivel = false;
     return { raw, dataBase };
+  }
+
+  private restaurarRascunhosEtapasAposValidacao(): void {
+    this.garantirRascunhosEtapasTodasLinhas();
+    this.aplicarValidadoresLinhas();
   }
 
   private static readonly MSG_CAMPOS_OBRIGATORIOS =
@@ -2920,9 +3017,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     let idShared = String(idAtendimentoInicial ?? '').trim();
     return from(payloads).pipe(
       concatMap((p) => {
-        const body: CreateAtendimentoPayload = idShared
+        let body: CreateAtendimentoPayload = idShared
           ? ({ ...p, id_atendimento: idShared } as CreateAtendimentoPayload)
           : p;
+        if (this.fluxoOrcamento) {
+          body = { ...body, modo: 'orcamento' };
+        }
         return this.api.createAgendamento(body).pipe(
           tap((res) => {
             const id = String(res?.id ?? '').trim();
@@ -4031,7 +4131,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           );
         }
         if (et.length < 1) {
-          et.push(this.novoGrupoEtapa());
+          et.push(this.novoGrupoEtapa({ rascunho: true }));
         }
         this.linhasItensArray.push(g);
       }
@@ -4087,6 +4187,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
     this.reforcarHoraInicialSeVazia(sorted, dataYmd);
     this.prefillEmCurso = false;
+    this.garantirRascunhosEtapasTodasLinhas();
     this.aplicarValidadoresLinhas();
     if (this.modoModal) this.restaurarRepetirPreferenciaClienteArmazem();
   }
@@ -4134,10 +4235,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
-  private novoGrupoEtapa(): FormGroup {
+  private novoGrupoEtapa(opts?: { rascunho?: boolean }): FormGroup {
+    const rascunho = opts?.rascunho === true;
     return this.fb.group({
-      etapa: ['', Validators.required],
-      profissional: [null as number | null, Validators.required],
+      etapa: ['', rascunho ? [] : Validators.required],
+      profissional: [
+        null as number | null,
+        rascunho ? [] : Validators.required,
+      ],
     });
   }
 
@@ -4176,7 +4281,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       calc_gramas: [''],
     });
     if (isTipoMegaOuPacoteFamilia(itemTipo)) {
-      (g.get('etapas') as FormArray<FormGroup>).push(this.novoGrupoEtapa());
+      (g.get('etapas') as FormArray<FormGroup>).push(
+        this.novoGrupoEtapa({ rascunho: true }),
+      );
     }
     return g;
   }
@@ -4278,12 +4385,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const eg = etapas.at(j);
         const e = eg.get('etapa');
         const ep = eg.get('profissional');
-        const reqE = isTipoMegaOuPacoteFamilia(tipo)
-          ? [Validators.required]
-          : [];
-        const reqP = isTipoMegaOuPacoteFamilia(tipo)
-          ? [Validators.required]
-          : [];
+        /** Linha vazia = rascunho para próxima etapa; não bloqueia o formulário. */
+        const exigir =
+          isTipoMegaOuPacoteFamilia(tipo) && !this.etapaLinhaVazia(eg);
+        const reqE = exigir ? [Validators.required] : [];
+        const reqP = exigir ? [Validators.required] : [];
         e?.setValidators(reqE);
         ep?.setValidators(reqP);
         e?.updateValueAndValidity({ emitEvent: false });
@@ -4460,14 +4566,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private etapasValidasParaGrupo(etapas: FormArray<FormGroup>): boolean {
-    if (etapas.length < 1) return false;
+    let completas = 0;
     for (let i = 0; i < etapas.length; i++) {
       const g = etapas.at(i);
-      const e = String(g.get('etapa')?.value ?? '').trim();
-      const p = g.get('profissional')?.value;
-      if (!e || p == null || !(Number(p) > 0)) return false;
+      if (this.etapaLinhaVazia(g)) continue;
+      if (!this.etapaLinhaCompleta(g)) return false;
+      completas++;
     }
-    return true;
+    return completas >= 1;
   }
 
   private aplicarContextoSlotInput(): void {
@@ -5257,12 +5363,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
-        const etapas = [...etapasRaw].sort((a, b) =>
+        const etapas = this.etapasCompletasRaw(etapasRaw).sort((a, b) =>
           compararEtapasMegaPacoteFluxo(
             String(a.etapa ?? ''),
             String(b.etapa ?? ''),
           ),
         );
+        if (etapas.length < 1) continue;
         const dPrimeira = this.duracaoMinutosRegraMega(
           pacote,
           String(etapas[0]?.etapa ?? '').trim(),
@@ -5297,12 +5404,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
-        const etapas = [...etapasRaw].sort((a, b) =>
+        const etapas = this.etapasCompletasRaw(etapasRaw).sort((a, b) =>
           compararEtapasMegaPacoteFluxo(
             String(a.etapa ?? ''),
             String(b.etapa ?? ''),
           ),
         );
+        if (etapas.length < 1) continue;
         const dPrimeira = this.duracaoMinutosRegraMega(
           pacote,
           String(etapas[0]?.etapa ?? '').trim(),
@@ -5337,12 +5445,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
         ).getRawValue() as { etapa: string; profissional: number | null }[];
-        const etapas = [...etapasRaw].sort((a, b) =>
+        const etapas = this.etapasCompletasRaw(etapasRaw).sort((a, b) =>
           compararEtapasMegaPacoteFluxo(
             String(a.etapa ?? ''),
             String(b.etapa ?? ''),
           ),
         );
+        if (etapas.length < 1) continue;
         const dPrimeira = this.duracaoMinutosRegraMegaQueratina(
           pacote,
           String(etapas[0]?.etapa ?? '').trim(),

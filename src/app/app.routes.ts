@@ -21,6 +21,7 @@ import { EstoqueComponent } from './features/estoque/pages/main/estoque.componen
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
 import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
 import { ComandasComponent } from './features/comandas/pages/main/comandas.component';
+import { OrcamentosComponent } from './features/orcamentos/pages/main/orcamentos.component';
 import { PainelComponent } from './features/painel/pages/main/painel.component';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
@@ -48,6 +49,12 @@ export const routes: Routes = [
     data: { titulo: 'Pacotes Predefinidos' },
   },
   { path: 'comandas', component: ComandasComponent, canActivate: [authGuard] },
+  {
+    path: 'orcamentos',
+    component: OrcamentosComponent,
+    canActivate: [authGuard],
+    data: { titulo: 'Orçamentos' },
+  },
   { path: 'atendimentos', redirectTo: 'comandas', pathMatch: 'full' },
   { path: 'agenda/novo', component: AgendaNovoComponent, canActivate: [authGuard] },
   { path: 'agenda/lista', component: AgendaListaComponent, canActivate: [authGuard] },

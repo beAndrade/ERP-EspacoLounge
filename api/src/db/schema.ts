@@ -315,6 +315,15 @@ export const pagamentos = pgTable(
   ],
 );
 
+export const pedidoModoEnum = pgEnum('pedido_modo', ['producao', 'orcamento']);
+
+export const orcamentoStatusEnum = pgEnum('orcamento_status', [
+  'rascunho',
+  'enviado',
+  'aceito',
+  'arquivado',
+]);
+
 /** Um registo por `id_atendimento` textual (carrinho / pedido). */
 export const atendimentosPedido = pgTable('atendimentos_pedido', {
   idAtendimento: text('id_atendimento').primaryKey(),
@@ -334,6 +343,20 @@ export const atendimentosPedido = pgTable('atendimentos_pedido', {
     .default(
       sql`nextval('atendimentos_pedido_numero_comanda_seq'::regclass)`,
     ),
+  /** `producao` = comanda/agenda normal; `orcamento` = fora de financeiro/agenda. */
+  modo: pedidoModoEnum('modo').notNull().default('producao'),
+  /** Só preenchido quando `modo = orcamento`. */
+  orcamentoStatus: orcamentoStatusEnum('orcamento_status'),
+  orcamentoEnviadoEm: timestamp('orcamento_enviado_em', {
+    withTimezone: true,
+    mode: 'string',
+  }),
+  orcamentoConvertidoEm: timestamp('orcamento_convertido_em', {
+    withTimezone: true,
+    mode: 'string',
+  }),
+  /** `id_atendimento` de origem se este pedido veio de conversão (auditoria). */
+  orcamentoConvertidoDe: text('orcamento_convertido_de'),
 });
 
 export const atendimentoItens = pgTable(
@@ -592,6 +615,7 @@ export const whatsappMessageTipoEnum = pgEnum('whatsapp_message_tipo', [
   'lembrete',
   'cobranca',
   'aniversario',
+  'orcamento',
   'manual',
 ]);
 

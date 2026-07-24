@@ -999,6 +999,9 @@ export async function criarPagamentoComanda(
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
 
+  const { assertPedidoNaoOrcamento } = await import('./orcamentos-domain');
+  await assertPedidoNaoOrcamento(db, id);
+
   const result = await db.transaction(async (tx) => {
     const pagamentoRow = await inserirPagamentoComandaEmTx(tx, id, input);
     return { pagamentoRow };

@@ -281,7 +281,11 @@ async function novoIdAtendimentoFallbackSemSufixoDesnecessario(
 
 function readRecorrenciaMeta(
   p: CreateAtendimentoPayload,
-): { idRecorrencia: string | null; ordemRecorrencia: number | null } {
+): {
+  idRecorrencia: string | null;
+  ordemRecorrencia: number | null;
+  modo: 'producao' | 'orcamento';
+} {
   const rec = p as Record<string, unknown>;
   const idBruto = String(rec['id_recorrencia'] ?? '').trim();
   const ordemRaw = Number(rec['ordem_recorrencia']);
@@ -289,15 +293,20 @@ function readRecorrenciaMeta(
     Number.isFinite(ordemRaw) && ordemRaw >= 1
       ? Math.trunc(ordemRaw)
       : null;
+  const modoRaw = String(rec['modo'] ?? '')
+    .trim()
+    .toLowerCase();
   return {
     idRecorrencia: idBruto || null,
     ordemRecorrencia: ordem,
+    modo: modoRaw === 'orcamento' ? 'orcamento' : 'producao',
   };
 }
 
 /**
  * Comanda ainda aberta (não finalizada) do mesmo cliente no mesmo dia.
  * Preferimos o id canónico `YYYYMMDD-cliente`; senão o menor id aberto.
+ * Orçamentos não entram (e produção não reutiliza orçamento).
  */
 async function idAtendimentoComandaAbertaMesmoDia(
   db: Db,
@@ -334,9 +343,25 @@ async function idAtendimentoComandaAbertaMesmoDia(
     else if (!abertoPorId.has(id)) abertoPorId.set(id, false);
   }
 
-  const abertos = [...abertoPorId.entries()]
+  let abertos = [...abertoPorId.entries()]
     .filter(([, aberto]) => aberto)
     .map(([id]) => id);
+  if (abertos.length === 0) return null;
+
+  /** Exclui pedidos em modo orçamento. */
+  const pedModos = await db
+    .select({
+      id: atendimentosPedido.idAtendimento,
+      modo: atendimentosPedido.modo,
+    })
+    .from(atendimentosPedido)
+    .where(inArray(atendimentosPedido.idAtendimento, abertos));
+  const orcamentoIds = new Set(
+    pedModos
+      .filter((p) => String(p.modo) === 'orcamento')
+      .map((p) => String(p.id).trim()),
+  );
+  abertos = abertos.filter((id) => !orcamentoIds.has(id));
   if (abertos.length === 0) return null;
 
   const baseId = makeIdAtendimento(dataStr, cid);
@@ -355,11 +380,17 @@ async function resolveIdAtendimentoCriacao(
    * 1) `id_atendimento` explícito (edição / «adicionar à comanda» / multi-POST).
    * 2) Comanda aberta do mesmo cliente no mesmo dia → reutiliza (vários
    *    profissionais / horários na grelha, um só `numero_comanda`).
+   *    Orçamentos sempre geram id novo (salvo id explícito).
    * 3) Caso contrário, id canónico ou ocorrência se a canónica já estiver
    *    encerrada.
    */
   const idExpl = String((p as Record<string, unknown>)['id_atendimento'] ?? '').trim();
   if (idExpl) return idExpl;
+
+  const modoMeta = readRecorrenciaMeta(p);
+  if (modoMeta.modo === 'orcamento') {
+    return makeIdAtendimentoOcorrencia(dataStr, clienteId);
+  }
 
   const aberto = await idAtendimentoComandaAbertaMesmoDia(
     db,
@@ -756,7 +787,11 @@ async function ensurePedidoHeader(
   db: Db,
   idAtendimento: string,
   idCliente: string,
-  meta?: { idRecorrencia: string | null; ordemRecorrencia: number | null },
+  meta?: {
+    idRecorrencia: string | null;
+    ordemRecorrencia: number | null;
+    modo?: 'producao' | 'orcamento';
+  },
 ): Promise<void> {
   const [exist] = await db
     .select({ id: atendimentosPedido.idAtendimento })
@@ -765,6 +800,7 @@ async function ensurePedidoHeader(
     .limit(1);
   if (exist) return;
 
+  const modo = meta?.modo === 'orcamento' ? 'orcamento' : 'producao';
   const numeroComanda = await allocNextNumeroComanda(db);
   await db.insert(atendimentosPedido).values({
     idAtendimento,
@@ -772,6 +808,8 @@ async function ensurePedidoHeader(
     idRecorrencia: meta?.idRecorrencia ?? null,
     ordemRecorrencia: meta?.ordemRecorrencia ?? null,
     numeroComanda,
+    modo,
+    orcamentoStatus: modo === 'orcamento' ? 'rascunho' : null,
   });
   await syncNumeroComandaSequence(db);
 }
@@ -2310,6 +2348,8 @@ export async function listAtendimentosRaw(
   dataFim?: string,
   idAtendimento?: string,
   somenteComHorario = false,
+  /** `producao` (default) exclui orçamentos; `orcamento` só orçamentos; `todos` sem filtro. */
+  modoPedido: 'producao' | 'orcamento' | 'todos' = 'producao',
 ): Promise<Record<string, unknown>[]> {
   const rows = await db
     .select()
@@ -2456,11 +2496,24 @@ export async function listAtendimentosRaw(
   }
 
   const numerosPorIdAt = new Map<string, number>();
+  const modoPorIdAt = new Map<
+    string,
+    {
+      modo: string;
+      orcamento_status: string | null;
+      orcamento_enviado_em: string | null;
+      orcamento_convertido_em: string | null;
+    }
+  >();
   if (idsAt.length > 0) {
     const pedNum = await db
       .select({
         id: atendimentosPedido.idAtendimento,
         n: atendimentosPedido.numeroComanda,
+        modo: atendimentosPedido.modo,
+        orcamentoStatus: atendimentosPedido.orcamentoStatus,
+        orcamentoEnviadoEm: atendimentosPedido.orcamentoEnviadoEm,
+        orcamentoConvertidoEm: atendimentosPedido.orcamentoConvertidoEm,
       })
       .from(atendimentosPedido)
       .where(inArray(atendimentosPedido.idAtendimento, idsAt));
@@ -2470,7 +2523,31 @@ export async function listAtendimentosRaw(
       if (k && Number.isFinite(nv) && nv > 0) {
         numerosPorIdAt.set(k, nv);
       }
+      if (k) {
+        modoPorIdAt.set(k, {
+          modo: String(r.modo ?? 'producao'),
+          orcamento_status:
+            r.orcamentoStatus != null ? String(r.orcamentoStatus) : null,
+          orcamento_enviado_em:
+            r.orcamentoEnviadoEm != null
+              ? String(r.orcamentoEnviadoEm)
+              : null,
+          orcamento_convertido_em:
+            r.orcamentoConvertidoEm != null
+              ? String(r.orcamentoConvertidoEm)
+              : null,
+        });
+      }
     }
+  }
+
+  /** Por id específico devolvemos sempre; listagens filtram por modo. */
+  if (!idF && modoPedido !== 'todos') {
+    filtered = filtered.filter((a) => {
+      const k = String(a.idAtendimento || '').trim();
+      const m = modoPorIdAt.get(k)?.modo ?? 'producao';
+      return modoPedido === 'orcamento' ? m === 'orcamento' : m !== 'orcamento';
+    });
   }
 
   /**
@@ -2576,6 +2653,22 @@ export async function listAtendimentosRaw(
       numero_comanda: numerosPorIdAt.get(idAtKey) ?? null,
       ...(idAtKey
         ? (() => {
+            const mo = modoPorIdAt.get(idAtKey);
+            return {
+              modo: mo?.modo ?? 'producao',
+              orcamento_status: mo?.orcamento_status ?? null,
+              orcamento_enviado_em: mo?.orcamento_enviado_em ?? null,
+              orcamento_convertido_em: mo?.orcamento_convertido_em ?? null,
+            };
+          })()
+        : {
+            modo: 'producao',
+            orcamento_status: null,
+            orcamento_enviado_em: null,
+            orcamento_convertido_em: null,
+          }),
+      ...(idAtKey
+        ? (() => {
             const pr = prestacaoPendentePorId.get(idAtKey);
             return {
               pagamento_prestacao_pendente_atrasada: pr?.atrasada ?? false,
@@ -2590,6 +2683,16 @@ export async function listAtendimentosRaw(
   });
 }
 
+export async function assertPedidoNaoOrcamento(
+  db: Db,
+  idAtendimento: string,
+): Promise<void> {
+  const { assertPedidoNaoOrcamento: assert } = await import(
+    './orcamentos-domain'
+  );
+  await assert(db, idAtendimento);
+}
+
 /** Marca todas as linhas com o mesmo `ID Atendimento` como finalizadas; pagamento fica pendente. */
 export async function finalizarCobrancaPorIdAtendimento(
   db: Db,
@@ -2598,6 +2701,7 @@ export async function finalizarCobrancaPorIdAtendimento(
 ): Promise<number> {
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
+  await assertPedidoNaoOrcamento(db, id);
 
   const rows = await db
     .select()

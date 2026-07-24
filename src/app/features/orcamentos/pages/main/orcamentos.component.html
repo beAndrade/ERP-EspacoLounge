@@ -1,0 +1,349 @@
+<div class="list-page orcamentos-page">
+  <div class="orcamentos-page__lead">
+    <div class="list-toolbar">
+      <div class="list-toolbar__left">
+        <h1 class="list-page__title">Orçamentos</h1>
+      </div>
+      <div class="list-toolbar__right">
+        <label class="sr-only" for="orcamentos-busca">Buscar</label>
+        <input
+          id="orcamentos-busca"
+          type="search"
+          class="list-toolbar__search"
+          placeholder="Buscar cliente ou ticket"
+          [(ngModel)]="busca"
+          name="busca"
+        />
+        <button
+          type="button"
+          class="list-toolbar__btn"
+          (click)="filtrosAbertos = !filtrosAbertos"
+        >
+          Filtrar
+        </button>
+        <button type="button" class="list-toolbar__btn list-toolbar__btn--primary" (click)="abrirNovo()">
+          Novo
+        </button>
+      </div>
+    </div>
+
+    @if (filtrosAbertos) {
+      <div class="orcamentos-filtros" aria-label="Filtros">
+        <div class="orcamentos-filtros__periodo">
+          <label>
+            <span>Data inicial</span>
+            <input type="text" [(ngModel)]="dataInicio" name="di" maxlength="10" />
+          </label>
+          <label>
+            <span>Data final</span>
+            <input type="text" [(ngModel)]="dataFim" name="df" maxlength="10" />
+          </label>
+          <button type="button" class="list-toolbar__btn list-toolbar__btn--primary" (click)="aplicarFiltros()">
+            Aplicar
+          </button>
+        </div>
+        <div class="orcamentos-filtros__chips">
+          @for (st of filtrosStatus; track st.id) {
+            <button
+              type="button"
+              class="orcamentos-chip"
+              [class.orcamentos-chip--on]="filtroStatusAtivo(st.id)"
+              (click)="toggleFiltroStatus(st.id)"
+            >
+              {{ st.label }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    @if (erro) {
+      <p class="list-page__error" role="alert">{{ erro }}</p>
+    }
+
+    <div class="orcamentos-table-card">
+      <div class="table-wrap">
+        <table class="orcamentos-table">
+          <thead>
+            <tr>
+              <th class="orcamentos-th-sort-wrap" scope="col">
+                <button
+                  type="button"
+                  class="orcamentos-th-sort"
+                  (click)="onOrdenarColuna('ticket', $event)"
+                  [attr.aria-label]="'Ordenar por ticket — ' + tooltipOrdenacao('ticket')"
+                >
+                  <span class="orcamentos-th-sort__label">Ticket</span>
+                  <span class="orcamentos-th-sort__icons" aria-hidden="true">
+                    <svg
+                      class="orcamentos-th-sort__tri"
+                      [class.orcamentos-th-sort__tri--on]="
+                        ordenacaoColuna === 'ticket' && ordenacaoDir === 'asc'
+                      "
+                      width="10"
+                      height="6"
+                      viewBox="0 0 10 6"
+                    >
+                      <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                    </svg>
+                    <svg
+                      class="orcamentos-th-sort__tri"
+                      [class.orcamentos-th-sort__tri--on]="
+                        ordenacaoColuna === 'ticket' && ordenacaoDir === 'desc'
+                      "
+                      width="10"
+                      height="6"
+                      viewBox="0 0 10 6"
+                    >
+                      <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                    </svg>
+                  </span>
+                </button>
+              </th>
+              <th class="orcamentos-th-sort-wrap" scope="col">
+                <button
+                  type="button"
+                  class="orcamentos-th-sort"
+                  (click)="onOrdenarColuna('data', $event)"
+                  [attr.aria-label]="'Ordenar por data — ' + tooltipOrdenacao('data')"
+                >
+                  <span class="orcamentos-th-sort__label">Data</span>
+                  <span class="orcamentos-th-sort__icons" aria-hidden="true">
+                    <svg
+                      class="orcamentos-th-sort__tri"
+                      [class.orcamentos-th-sort__tri--on]="
+                        ordenacaoColuna === 'data' && ordenacaoDir === 'asc'
+                      "
+                      width="10"
+                      height="6"
+                      viewBox="0 0 10 6"
+                    >
+                      <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                    </svg>
+                    <svg
+                      class="orcamentos-th-sort__tri"
+                      [class.orcamentos-th-sort__tri--on]="
+                        ordenacaoColuna === 'data' && ordenacaoDir === 'desc'
+                      "
+                      width="10"
+                      height="6"
+                      viewBox="0 0 10 6"
+                    >
+                      <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                    </svg>
+                  </span>
+                </button>
+              </th>
+              <th class="orcamentos-th-sort-wrap" scope="col">
+                <button
+                  type="button"
+                  class="orcamentos-th-sort"
+                  (click)="onOrdenarColuna('cliente', $event)"
+                  [attr.aria-label]="'Ordenar por cliente — ' + tooltipOrdenacao('cliente')"
+                >
+                  <span class="orcamentos-th-sort__label">Cliente</span>
+                  <span class="orcamentos-th-sort__icons" aria-hidden="true">
+                    <svg
+                      class="orcamentos-th-sort__tri"
+                      [class.orcamentos-th-sort__tri--on]="
+                        ordenacaoColuna === 'cliente' && ordenacaoDir === 'asc'
+                      "
+                      width="10"
+                      height="6"
+                      viewBox="0 0 10 6"
+                    >
+                      <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                    </svg>
+                    <svg
+                      class="orcamentos-th-sort__tri"
+                      [class.orcamentos-th-sort__tri--on]="
+                        ordenacaoColuna === 'cliente' && ordenacaoDir === 'desc'
+                      "
+                      width="10"
+                      height="6"
+                      viewBox="0 0 10 6"
+                    >
+                      <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                    </svg>
+                  </span>
+                </button>
+              </th>
+              <th scope="col">Status</th>
+              <th scope="col">Valor</th>
+              <th scope="col"><span class="sr-only">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (carregando) {
+              <tr>
+                <td colspan="6" class="table-body__busy">Carregando…</td>
+              </tr>
+            } @else if (totalFiltrado() === 0) {
+              <tr>
+                <td colspan="6" class="table-body__empty">
+                  Nenhum orçamento neste período.
+                </td>
+              </tr>
+            } @else {
+              @for (g of paginaItens(); track g.id) {
+                <tr>
+                  <td>{{ rotuloTicket(g) }}</td>
+                  <td>{{ dataDdMmBarraAaaa(g.data) }}</td>
+                  <td>{{ g.nomeCliente || '—' }}</td>
+                  <td>
+                    <span
+                      class="orcamentos-badge"
+                      [attr.data-status]="g.orcamentoStatus"
+                    >
+                      {{ rotuloStatus(g.orcamentoStatus) }}
+                    </span>
+                  </td>
+                  <td class="col-valor">
+                    @if (g.valorTotal != null) {
+                      {{
+                        g.valorTotal
+                          | number: '1.2-2' : 'pt-BR'
+                      }}
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="col-menu" (click)="$event.stopPropagation()">
+                    <button
+                      type="button"
+                      class="orcamentos-menu-btn"
+                      aria-label="Ações"
+                      (click)="toggleMenu($event, g.id)"
+                    >
+                      ⋮
+                    </button>
+                    @if (menuAbertoParaId === g.id) {
+                      <div class="orcamentos-menu" role="menu">
+                        <button type="button" role="menuitem" (click)="enviarWhatsapp(g)">
+                          Enviar WhatsApp
+                        </button>
+                        @if (g.orcamentoStatus !== 'aceito' && g.orcamentoStatus !== 'arquivado') {
+                          <button type="button" role="menuitem" (click)="marcarAceito(g)">
+                            Marcar aceito
+                          </button>
+                        }
+                        @if (g.orcamentoStatus === 'aceito' || g.orcamentoStatus === 'enviado') {
+                          <button type="button" role="menuitem" (click)="abrirConverter(g)">
+                            Converter para agenda
+                          </button>
+                        }
+                        @if (g.orcamentoStatus !== 'arquivado') {
+                          <button type="button" role="menuitem" (click)="arquivar(g)">
+                            Arquivar
+                          </button>
+                        }
+                      </div>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (!carregando && totalFiltrado() > 0) {
+        <div class="orcamentos-pager">
+          <span>{{ totalFiltrado() }} orçamento(s)</span>
+          <label>
+            Por página
+            <select [(ngModel)]="itensPorPagina" name="pp" (ngModelChange)="pagina = 1">
+              @for (n of opcoesItensPorPagina; track n) {
+                <option [ngValue]="n">{{ n }}</option>
+              }
+            </select>
+          </label>
+          <button type="button" [disabled]="pagina <= 1" (click)="pagina = pagina - 1">
+            Anterior
+          </button>
+          <span>{{ pagina }} / {{ totalPaginas() }}</span>
+          <button
+            type="button"
+            [disabled]="pagina >= totalPaginas()"
+            (click)="pagina = pagina + 1"
+          >
+            Próxima
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+@if (novoAberto && novoCtx) {
+  <div
+    class="overlay"
+    [class.overlay--open]="novoPanelOpen"
+    (click)="fecharNovo()"
+  ></div>
+  <div
+    class="app-drawer"
+    [class.app-drawer--open]="novoPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Novo orçamento"
+  >
+    <app-agenda-novo
+      [modoModal]="true"
+      [fluxoSomenteComanda]="true"
+      [fluxoOrcamento]="true"
+      [contextoSlot]="novoCtx"
+      (salvoComSucesso)="onSalvoNovo()"
+      (cancelarModal)="fecharNovo()"
+    />
+  </div>
+}
+
+<app-whatsapp-enviar-modal
+  [aberto]="whatsappAberto"
+  [contexto]="whatsappCtx"
+  (fechar)="fecharWhatsapp()"
+  (enviado)="onWhatsappEnviado()"
+/>
+
+@if (converterAberto && converterGrupo) {
+  <div class="orcamentos-modal-backdrop" (click)="fecharConverter()"></div>
+  <div class="orcamentos-modal" role="dialog" aria-modal="true" aria-label="Converter orçamento">
+    <h2>Converter para agenda</h2>
+    <p>Defina data, horário e profissional para colocar o orçamento em produção.</p>
+    <label>
+      Data
+      <input type="date" [(ngModel)]="converterData" name="cdata" />
+    </label>
+    <label>
+      Início
+      <input type="time" [(ngModel)]="converterHora" name="chini" />
+    </label>
+    <label>
+      Fim
+      <input type="time" [(ngModel)]="converterFimHora" name="chim" />
+    </label>
+    <label>
+      Profissional
+      <select [(ngModel)]="converterProfissionalId" name="cprof">
+        <option [ngValue]="null">Selecione…</option>
+        @for (p of profissionais; track p.id) {
+          <option [ngValue]="p.id">{{ p.nome }}</option>
+        }
+      </select>
+    </label>
+    <div class="orcamentos-modal__actions">
+      <button type="button" (click)="fecharConverter()" [disabled]="convertendo">
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="orcamentos-modal__primary"
+        (click)="confirmarConverter()"
+        [disabled]="convertendo"
+      >
+        {{ convertendo ? 'Convertendo…' : 'Converter' }}
+      </button>
+    </div>
+  </div>
+}

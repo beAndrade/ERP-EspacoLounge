@@ -273,9 +273,123 @@
                       title="Selecionar página"
                     />
                   </th>
-                  <th class="col-ticket" scope="col">Ticket</th>
-                  <th class="col-data" scope="col">Data</th>
-                  <th class="col-cliente" scope="col">Cliente</th>
+                  <th class="col-ticket comandas-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="comandas-th-sort"
+                      (click)="onOrdenarColuna('ticket', $event)"
+                      [attr.aria-label]="
+                        'Ordenar por ticket — ' + tooltipOrdenacao('ticket')
+                      "
+                    >
+                      <span class="comandas-th-sort__label">Ticket</span>
+                      <span class="comandas-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="comandas-th-sort__tri comandas-th-sort__tri--up"
+                          [class.comandas-th-sort__tri--on]="
+                            ordenacaoColuna === 'ticket' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="comandas-th-sort__tri comandas-th-sort__tri--down"
+                          [class.comandas-th-sort__tri--on]="
+                            ordenacaoColuna === 'ticket' &&
+                            ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="col-data comandas-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="comandas-th-sort"
+                      (click)="onOrdenarColuna('data', $event)"
+                      [attr.aria-label]="
+                        'Ordenar por data — ' + tooltipOrdenacao('data')
+                      "
+                    >
+                      <span class="comandas-th-sort__label">Data</span>
+                      <span class="comandas-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="comandas-th-sort__tri comandas-th-sort__tri--up"
+                          [class.comandas-th-sort__tri--on]="
+                            ordenacaoColuna === 'data' && ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="comandas-th-sort__tri comandas-th-sort__tri--down"
+                          [class.comandas-th-sort__tri--on]="
+                            ordenacaoColuna === 'data' && ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="col-cliente comandas-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="comandas-th-sort"
+                      (click)="onOrdenarColuna('cliente', $event)"
+                      [attr.aria-label]="
+                        'Ordenar por cliente — ' + tooltipOrdenacao('cliente')
+                      "
+                    >
+                      <span class="comandas-th-sort__label">Cliente</span>
+                      <span class="comandas-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="comandas-th-sort__tri comandas-th-sort__tri--up"
+                          [class.comandas-th-sort__tri--on]="
+                            ordenacaoColuna === 'cliente' &&
+                            ordenacaoDir === 'asc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="comandas-th-sort__tri comandas-th-sort__tri--down"
+                          [class.comandas-th-sort__tri--on]="
+                            ordenacaoColuna === 'cliente' &&
+                            ordenacaoDir === 'desc'
+                          "
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
                   <th class="col-status" scope="col">Status</th>
                   <th class="col-valor" scope="col">Valor</th>
                   <th class="col-pagamento" scope="col">Pagamento</th>
