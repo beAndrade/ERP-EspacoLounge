@@ -3127,3 +3127,45 @@ export async function atualizarAgendaStatusBloco(
   }
   return { linhasAtualizadas: atualizadas };
 }
+
+/**
+ * Atualiza `agenda_cor` em todas as linhas do mesmo `id_atendimento`.
+ * Hex vazio / null → remove a cor nomeada (volta ao padrão do status).
+ */
+export async function atualizarAgendaCorBloco(
+  db: Db,
+  payload: { id_atendimento: string; agenda_cor: string | null },
+): Promise<{ linhasAtualizadas: number }> {
+  const id = String(payload.id_atendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+
+  let cor: string | null = null;
+  if (payload.agenda_cor != null) {
+    const raw = String(payload.agenda_cor).trim();
+    if (raw) {
+      if (!/^#[0-9A-Fa-f]{6}$/.test(raw)) {
+        throw new Error('agenda_cor inválida (use #RRGGBB)');
+      }
+      cor = raw;
+    }
+  }
+
+  const rows = await db
+    .select({ id: atendimentos.id })
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, id));
+
+  if (rows.length === 0) {
+    throw new Error('Nenhuma linha encontrada para atualizar a cor');
+  }
+
+  let atualizadas = 0;
+  for (const r of rows) {
+    await db
+      .update(atendimentos)
+      .set({ agendaCor: cor })
+      .where(eq(atendimentos.id, r.id));
+    atualizadas += 1;
+  }
+  return { linhasAtualizadas: atualizadas };
+}

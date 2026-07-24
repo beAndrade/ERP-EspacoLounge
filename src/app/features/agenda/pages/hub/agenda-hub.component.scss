@@ -3725,16 +3725,19 @@ $month-num-fg-muted: #00000028;
   }
 }
 
-.hub-card-tip__action-wrap--status {
+.hub-card-tip__action-wrap--status,
+.hub-card-tip__action-wrap--cor {
   position: relative;
   width: 100%;
 }
 
-.hub-card-tip__action--status {
+.hub-card-tip__action--status,
+.hub-card-tip__action--cor {
   cursor: pointer;
 
   &.hub-card-tip__action--hot,
-  .hub-card-tip__action-wrap--status:hover & {
+  .hub-card-tip__action-wrap--status:hover &,
+  .hub-card-tip__action-wrap--cor:hover & {
     background: rgba(80, 90, 251, 0.1);
   }
 }
@@ -3752,7 +3755,8 @@ $month-num-fg-muted: #00000028;
     0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
-.hub-card-tip__flyout--status {
+.hub-card-tip__flyout--status,
+.hub-card-tip__flyout--cor {
   left: 50%;
   bottom: calc(100% + 12px);
   transform: translateX(-50%);
@@ -3770,8 +3774,16 @@ $month-num-fg-muted: #00000028;
   box-shadow: 2px 2px 4px rgba(15, 23, 42, 0.06);
 }
 
+.hub-card-tip__flyout-sep {
+  height: 1px;
+  margin: 6px 0;
+  background: #f1f1f1;
+}
+
 .hub-card-tip__flyout-opt {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   box-sizing: border-box;
   margin: 0;
@@ -3796,8 +3808,13 @@ $month-num-fg-muted: #00000028;
   }
 }
 
-.hub-card-tip__action--cor {
-  color: #ef4444;
+.hub-card-tip__flyout-opt--remover {
+  color: #ff7875;
+
+  svg {
+    flex-shrink: 0;
+    color: #ff7875;
+  }
 }
 
 .hub-card-tip__action--comanda {

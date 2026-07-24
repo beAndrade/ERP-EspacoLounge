@@ -60,8 +60,11 @@ import { mediaQueryMax } from '../../../../styles/breakpoints';
 import { AppShellUiService } from '../../../../core/services/app-shell-ui.service';
 import { telefoneBrDigitos, telefoneClienteWhatsappExibicao } from '../../../../core/utils/telefone-br';
 import {
+  AGENDA_COR_META_BASE,
+  AGENDA_COR_PADRAO_ID,
   listarOpcoesCorAgenda,
   resolverAgendaCorIdPorHex,
+  type AgendaCorOpcao,
 } from '../../../../core/utils/agenda-cor-card';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
@@ -321,6 +324,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private tipStatusMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
   readonly agendaStatusOpcoesTip = AGENDA_STATUS_META;
   tipStatusSalvando = false;
+  /** Submenu de cor no tip (hover). */
+  tipCorMenuOpen = false;
+  private tipCorMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly agendaCorOpcoesTip = AGENDA_COR_META_BASE.filter(
+    (o) => o.id !== AGENDA_COR_PADRAO_ID,
+  );
+  tipCorSalvando = false;
   private cardHoverShowTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverHideTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverFadeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -2019,6 +2029,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     ev.preventDefault();
     ev.stopPropagation();
     this.fecharTipStatusMenu(true);
+    this.fecharTipCorMenu(true);
     const tip = this.cardHoverTip;
     if (!tip?.bloco) return;
     this.abrirDrawerEdicaoBloco(tip.bloco, ev, { keepHoverTip: true });
@@ -2026,6 +2037,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   onTipStatusEnter(): void {
     if (this.tipStatusSalvando) return;
+    this.fecharTipCorMenu(true);
     this.clearTipStatusMenuCloseTimer();
     this.tipStatusMenuOpen = true;
     this.cardHoverTipSticky = true;
@@ -2049,10 +2061,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private fecharTipStatusMenu(imediato = false): void {
     this.clearTipStatusMenuCloseTimer();
-    if (imediato) {
-      this.tipStatusMenuOpen = false;
-      return;
-    }
     this.tipStatusMenuOpen = false;
   }
 
@@ -2085,6 +2093,98 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       error: () => {
         this.tipStatusSalvando = false;
         this.fecharTipStatusMenu(true);
+      },
+    });
+  }
+
+  onTipCorEnter(): void {
+    if (this.tipCorSalvando) return;
+    this.fecharTipStatusMenu(true);
+    this.clearTipCorMenuCloseTimer();
+    this.tipCorMenuOpen = true;
+    this.cardHoverTipSticky = true;
+    this.clearCardHoverHideTimer();
+  }
+
+  onTipCorLeave(): void {
+    this.clearTipCorMenuCloseTimer();
+    this.tipCorMenuCloseTimer = setTimeout(() => {
+      this.tipCorMenuCloseTimer = null;
+      this.tipCorMenuOpen = false;
+    }, 160);
+  }
+
+  private clearTipCorMenuCloseTimer(): void {
+    if (this.tipCorMenuCloseTimer != null) {
+      clearTimeout(this.tipCorMenuCloseTimer);
+      this.tipCorMenuCloseTimer = null;
+    }
+  }
+
+  private fecharTipCorMenu(_imediato = false): void {
+    this.clearTipCorMenuCloseTimer();
+    this.tipCorMenuOpen = false;
+  }
+
+  onTipCorEscolher(opcao: AgendaCorOpcao, ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const tip = this.cardHoverTip;
+    const id = tip ? this.idAtendimentoBloco(tip.bloco) : '';
+    if (!tip || !id || this.tipCorSalvando) return;
+    const hex = (opcao.cor || '').trim() || null;
+    const atualHex = String(tip.bloco.linhas[0]?.agenda_cor ?? '').trim() || null;
+    if ((hex || null) === (atualHex || null)) {
+      this.fecharTipCorMenu(true);
+      return;
+    }
+    this.tipCorSalvando = true;
+    this.cardHoverTipSticky = true;
+    this.api.atualizarAgendaCor(id, hex).subscribe({
+      next: () => {
+        this.tipCorSalvando = false;
+        for (const l of tip.bloco.linhas) {
+          l.agenda_cor = hex;
+        }
+        tip.corLabel = opcao.label;
+        tip.corHex = hex || tip.statusCor;
+        this.fecharTipCorMenu(true);
+        this.recarregarVistaAtiva();
+      },
+      error: () => {
+        this.tipCorSalvando = false;
+        this.fecharTipCorMenu(true);
+      },
+    });
+  }
+
+  onTipCorRemover(ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const tip = this.cardHoverTip;
+    const id = tip ? this.idAtendimentoBloco(tip.bloco) : '';
+    if (!tip || !id || this.tipCorSalvando) return;
+    const atualHex = String(tip.bloco.linhas[0]?.agenda_cor ?? '').trim();
+    if (!atualHex) {
+      this.fecharTipCorMenu(true);
+      return;
+    }
+    this.tipCorSalvando = true;
+    this.cardHoverTipSticky = true;
+    this.api.atualizarAgendaCor(id, null).subscribe({
+      next: () => {
+        this.tipCorSalvando = false;
+        for (const l of tip.bloco.linhas) {
+          l.agenda_cor = null;
+        }
+        tip.corLabel = 'Sem cor';
+        tip.corHex = tip.statusCor;
+        this.fecharTipCorMenu(true);
+        this.recarregarVistaAtiva();
+      },
+      error: () => {
+        this.tipCorSalvando = false;
+        this.fecharTipCorMenu(true);
       },
     });
   }
@@ -3285,7 +3385,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (
       CARD_HOVER_TIP_PIN_DEBUG ||
       this.cardHoverTipSticky ||
-      this.tipStatusMenuOpen
+      this.tipStatusMenuOpen ||
+      this.tipCorMenuOpen
     ) {
       return;
     }
@@ -3332,6 +3433,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.clearCardHoverHideTimer();
     this.clearCardHoverFadeTimer();
     this.fecharTipStatusMenu(true);
+    this.fecharTipCorMenu(true);
     this.cardHoverTipVisible = false;
     this.cardHoverTip = null;
     this.cardHoverTipSticky = false;
@@ -3413,8 +3515,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       servico: itens[0] ?? '—',
       statusLabel: statusMeta.label,
       statusCor: statusMeta.cor,
-      corLabel: corOpt?.label?.trim() || 'Padrão',
-      corHex: corOpt?.cor || corHex || statusMeta.cor,
+      corLabel:
+        !corOpt || corOpt.id === AGENDA_COR_PADRAO_ID
+          ? 'Sem cor'
+          : corOpt.label.trim() || 'Sem cor',
+      corHex: (corOpt?.cor || corHex || statusMeta.cor).trim() || statusMeta.cor,
     };
     // Próximo frame: dispara a transição de fade-in.
     requestAnimationFrame(() => {

@@ -980,6 +980,25 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  /** Atualiza `agenda_cor` (hex ou null para remover). */
+  atualizarAgendaCor(
+    idAtendimento: string,
+    agendaCor: string | null,
+  ): Observable<{ linhas_atualizadas: number }> {
+    const params = new HttpParams().set('acao', 'agenda-cor');
+    return this.http
+      .post<ApiResponse<{ linhas_atualizadas: number }>>(
+        this.url('/api/atendimentos'),
+        {
+          acao: 'agenda-cor',
+          id_atendimento: idAtendimento,
+          agenda_cor: agendaCor,
+        },
+        { params },
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
   excluirAtendimento(
     idAtendimento: string,
     opts?: {
