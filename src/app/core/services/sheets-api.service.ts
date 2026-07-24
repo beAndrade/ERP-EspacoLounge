@@ -961,6 +961,25 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  /** Atualiza `agenda_status` de todas as linhas do atendimento. */
+  atualizarAgendaStatus(
+    idAtendimento: string,
+    agendaStatus: string,
+  ): Observable<{ linhas_atualizadas: number }> {
+    const params = new HttpParams().set('acao', 'agenda-status');
+    return this.http
+      .post<ApiResponse<{ linhas_atualizadas: number }>>(
+        this.url('/api/atendimentos'),
+        {
+          acao: 'agenda-status',
+          id_atendimento: idAtendimento,
+          agenda_status: agendaStatus,
+        },
+        { params },
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
   excluirAtendimento(
     idAtendimento: string,
     opts?: {

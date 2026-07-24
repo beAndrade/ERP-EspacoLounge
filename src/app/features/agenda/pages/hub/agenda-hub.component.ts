@@ -316,6 +316,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    * só fecha ao voltar a pairar no cartão de origem.
    */
   private cardHoverTipSticky = false;
+  /** Submenu de status no tip (hover). */
+  tipStatusMenuOpen = false;
+  private tipStatusMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly agendaStatusOpcoesTip = AGENDA_STATUS_META;
+  tipStatusSalvando = false;
   private cardHoverShowTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverHideTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverFadeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -2013,9 +2018,75 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   onTipServicoClick(ev: MouseEvent): void {
     ev.preventDefault();
     ev.stopPropagation();
+    this.fecharTipStatusMenu(true);
     const tip = this.cardHoverTip;
     if (!tip?.bloco) return;
     this.abrirDrawerEdicaoBloco(tip.bloco, ev, { keepHoverTip: true });
+  }
+
+  onTipStatusEnter(): void {
+    if (this.tipStatusSalvando) return;
+    this.clearTipStatusMenuCloseTimer();
+    this.tipStatusMenuOpen = true;
+    this.cardHoverTipSticky = true;
+    this.clearCardHoverHideTimer();
+  }
+
+  onTipStatusLeave(): void {
+    this.clearTipStatusMenuCloseTimer();
+    this.tipStatusMenuCloseTimer = setTimeout(() => {
+      this.tipStatusMenuCloseTimer = null;
+      this.tipStatusMenuOpen = false;
+    }, 160);
+  }
+
+  private clearTipStatusMenuCloseTimer(): void {
+    if (this.tipStatusMenuCloseTimer != null) {
+      clearTimeout(this.tipStatusMenuCloseTimer);
+      this.tipStatusMenuCloseTimer = null;
+    }
+  }
+
+  private fecharTipStatusMenu(imediato = false): void {
+    this.clearTipStatusMenuCloseTimer();
+    if (imediato) {
+      this.tipStatusMenuOpen = false;
+      return;
+    }
+    this.tipStatusMenuOpen = false;
+  }
+
+  onTipStatusEscolher(
+    status: (typeof AGENDA_STATUS_META)[number],
+    ev: MouseEvent,
+  ): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const tip = this.cardHoverTip;
+    const id = tip ? this.idAtendimentoBloco(tip.bloco) : '';
+    if (!tip || !id || this.tipStatusSalvando) return;
+    if (normalizarAgendaStatusId(tip.bloco.linhas[0]?.agenda_status) === status.id) {
+      this.fecharTipStatusMenu(true);
+      return;
+    }
+    this.tipStatusSalvando = true;
+    this.cardHoverTipSticky = true;
+    this.api.atualizarAgendaStatus(id, status.id).subscribe({
+      next: () => {
+        this.tipStatusSalvando = false;
+        for (const l of tip.bloco.linhas) {
+          l.agenda_status = status.id;
+        }
+        tip.statusLabel = status.label;
+        tip.statusCor = status.cor;
+        this.fecharTipStatusMenu(true);
+        this.recarregarVistaAtiva();
+      },
+      error: () => {
+        this.tipStatusSalvando = false;
+        this.fecharTipStatusMenu(true);
+      },
+    });
   }
 
   /** Salta para outro dia/pedido mantendo o drawer (próximos agendamentos). */
@@ -3211,7 +3282,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   private scheduleCardHoverHide(): void {
-    if (CARD_HOVER_TIP_PIN_DEBUG || this.cardHoverTipSticky) return;
+    if (
+      CARD_HOVER_TIP_PIN_DEBUG ||
+      this.cardHoverTipSticky ||
+      this.tipStatusMenuOpen
+    ) {
+      return;
+    }
     this.clearCardHoverHideTimer();
     this.cardHoverHideTimer = setTimeout(() => {
       this.cardHoverHideTimer = null;
@@ -3254,6 +3331,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.clearCardHoverShowTimer();
     this.clearCardHoverHideTimer();
     this.clearCardHoverFadeTimer();
+    this.fecharTipStatusMenu(true);
     this.cardHoverTipVisible = false;
     this.cardHoverTip = null;
     this.cardHoverTipSticky = false;

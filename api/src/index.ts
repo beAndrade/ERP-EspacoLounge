@@ -17,6 +17,7 @@ import {
   finalizarCobrancaPorIdAtendimento,
   listAtendimentosRaw,
   remarcarBlocoAgendamento,
+  atualizarAgendaStatusBloco,
 } from './services/atendimentos-domain';
 import type { CreateAtendimentoPayload } from './services/atendimentos-domain';
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
@@ -389,6 +390,32 @@ async function execExcluirAtendimento(body: {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/Não é possível excluir uma comanda com pagamentos/i.test(msg)) {
+      return fail('VALIDATION', msg);
+    }
+    return fail('SERVER', msg);
+  }
+}
+
+async function execAtualizarAgendaStatus(body: {
+  id_atendimento?: string;
+  agenda_status?: string;
+}) {
+  try {
+    const id = String(body.id_atendimento || '').trim();
+    if (!id) return fail('VALIDATION', 'id_atendimento é obrigatório');
+    const status = String(body.agenda_status || '').trim();
+    if (!status) return fail('VALIDATION', 'agenda_status é obrigatório');
+    const r = await atualizarAgendaStatusBloco(db, {
+      id_atendimento: id,
+      agenda_status: status,
+    });
+    if (!r.linhasAtualizadas) {
+      return fail('NOT_FOUND', 'Nenhuma linha foi atualizada');
+    }
+    return ok({ linhas_atualizadas: r.linhasAtualizadas });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/inválid|obrigatór|nenhuma linha/i.test(msg)) {
       return fail('VALIDATION', msg);
     }
     return fail('SERVER', msg);
@@ -1912,6 +1939,8 @@ const app = new Elysia({ adapter: node() })
       qAcao === 'confirmar-pagamento' || bAcao === 'confirmar-pagamento';
     const isExcluir = qAcao === 'excluir' || bAcao === 'excluir';
     const isRemarcar = qAcao === 'remarcar' || bAcao === 'remarcar';
+    const isAgendaStatus =
+      qAcao === 'agenda-status' || bAcao === 'agenda-status';
     if (isFinalizar) {
       const idAt = String(
         b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
@@ -1956,6 +1985,16 @@ const app = new Elysia({ adapter: node() })
         profissional_destino_id: Number(bRec['profissional_destino_id']),
         data: String(bRec['data'] ?? '').trim(),
         hora_inicio: String(bRec['hora_inicio'] ?? '').trim(),
+      });
+    }
+    if (isAgendaStatus) {
+      return execAtualizarAgendaStatus({
+        id_atendimento: String(
+          b.id_atendimento ??
+            (b as { idAtendimento?: string }).idAtendimento ??
+            '',
+        ).trim(),
+        agenda_status: String(b.agenda_status ?? '').trim(),
       });
     }
     try {

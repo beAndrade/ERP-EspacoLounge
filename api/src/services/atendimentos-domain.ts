@@ -3082,3 +3082,48 @@ export async function remarcarBlocoAgendamento(
 
   return { linhasAtualizadas: atualizadas };
 }
+
+const AGENDA_STATUS_IDS_VALIDOS = new Set([
+  'confirmado',
+  'nao_confirmado',
+  'aguardando',
+  'cancelado',
+]);
+
+/**
+ * Atualiza `agenda_status` em todas as linhas do mesmo `id_atendimento`.
+ */
+export async function atualizarAgendaStatusBloco(
+  db: Db,
+  payload: { id_atendimento: string; agenda_status: string },
+): Promise<{ linhasAtualizadas: number }> {
+  const id = String(payload.id_atendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+
+  const status = String(payload.agenda_status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+  if (!AGENDA_STATUS_IDS_VALIDOS.has(status)) {
+    throw new Error('agenda_status inválido');
+  }
+
+  const rows = await db
+    .select({ id: atendimentos.id })
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, id));
+
+  if (rows.length === 0) {
+    throw new Error('Nenhuma linha encontrada para atualizar o status');
+  }
+
+  let atualizadas = 0;
+  for (const r of rows) {
+    await db
+      .update(atendimentos)
+      .set({ agendaStatus: status })
+      .where(eq(atendimentos.id, r.id));
+    atualizadas += 1;
+  }
+  return { linhasAtualizadas: atualizadas };
+}
