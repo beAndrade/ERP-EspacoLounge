@@ -3092,6 +3092,7 @@ const AGENDA_STATUS_IDS_VALIDOS = new Set([
 
 /**
  * Atualiza `agenda_status` em todas as linhas do mesmo `id_atendimento`.
+ * Limpa `agenda_cor` para o cartão passar a usar a cor do status.
  */
 export async function atualizarAgendaStatusBloco(
   db: Db,
@@ -3121,7 +3122,7 @@ export async function atualizarAgendaStatusBloco(
   for (const r of rows) {
     await db
       .update(atendimentos)
-      .set({ agendaStatus: status })
+      .set({ agendaStatus: status, agendaCor: null })
       .where(eq(atendimentos.id, r.id));
     atualizadas += 1;
   }

@@ -970,6 +970,15 @@ export class ComandasComponent implements OnInit, OnDestroy {
       : 'Pendente';
   }
 
+  /** Cobrança faturada (`cobranca_status` finalizada) — drawer só leitura. */
+  comandaCobrancaFinalizada(g: ComandaGrupo): boolean {
+    return statusComandaColunaFromItem(g.linhas[0]) === 'finalizado';
+  }
+
+  rotuloMenuAbrirComanda(g: ComandaGrupo): string {
+    return this.comandaCobrancaFinalizada(g) ? 'Ver comanda' : 'Editar comanda';
+  }
+
   classeBadgeStatus(g: ComandaGrupo): string {
     return statusComandaColunaFromItem(g.linhas[0]) === 'finalizado'
       ? 'badge--finalizado'
@@ -1097,7 +1106,18 @@ export class ComandasComponent implements OnInit, OnDestroy {
     return id || null;
   }
 
-  /** Menu da linha: abre o drawer de edição do agendamento desta comanda. */
+  /**
+   * Menu da linha: abre o drawer da comanda.
+   * Finalizada → visualização (campos readonly + «Ver pagamentos»).
+   * Pendente → edição da comanda.
+   */
+  abrirComandaDoMenu(g: ComandaGrupo, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.abrirDrawerComandaPorGrupo(g);
+  }
+
+  /** Abre o drawer de edição do agendamento desta comanda (ex.: a partir do drawer). */
   editarAgendamento(g: ComandaGrupo, ev: Event): void {
     ev.stopPropagation();
     this.menuAbertoParaId = null;

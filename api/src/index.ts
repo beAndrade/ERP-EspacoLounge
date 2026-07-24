@@ -1960,7 +1960,8 @@ const app = new Elysia({ adapter: node() })
     '/api/atendimentos',
     async ({ body, query }) => {
     const b = (body ?? {}) as Record<string, unknown>;
-    const qAcao = String(query?.acao ?? '').trim().toLowerCase();
+    const q = (query ?? {}) as Record<string, unknown>;
+    const qAcao = String(q['acao'] ?? '').trim().toLowerCase();
     const bAcao = String(b.acao ?? '').trim().toLowerCase();
     const isFinalizar = qAcao === 'finalizar' || bAcao === 'finalizar';
     const isConfirmarPagamento =
@@ -1968,8 +1969,23 @@ const app = new Elysia({ adapter: node() })
     const isExcluir = qAcao === 'excluir' || bAcao === 'excluir';
     const isRemarcar = qAcao === 'remarcar' || bAcao === 'remarcar';
     const isAgendaStatus =
-      qAcao === 'agenda-status' || bAcao === 'agenda-status';
-    const isAgendaCor = qAcao === 'agenda-cor' || bAcao === 'agenda-cor';
+      qAcao === 'agenda-status' ||
+      bAcao === 'agenda-status' ||
+      (b.agenda_status != null &&
+        String(b.agenda_status).trim() !== '' &&
+        b.tipo == null &&
+        !isFinalizar &&
+        !isExcluir &&
+        !isRemarcar);
+    const isAgendaCor =
+      qAcao === 'agenda-cor' ||
+      bAcao === 'agenda-cor' ||
+      (('agenda_cor' in b) &&
+        b.tipo == null &&
+        !isFinalizar &&
+        !isExcluir &&
+        !isRemarcar &&
+        !isAgendaStatus);
     if (isFinalizar) {
       const idAt = String(
         b.id_atendimento ?? (b as { idAtendimento?: string }).idAtendimento ?? '',
@@ -2053,7 +2069,12 @@ const app = new Elysia({ adapter: node() })
       return fail('SERVER', msg);
     }
   },
-    { body: postAtendimentoMutationBody },
+    {
+      body: postAtendimentoMutationBody,
+      query: t.Object({
+        acao: t.Optional(t.String()),
+      }),
+    },
   )
   .get('/api/folha', async ({ query, request }) => {
     const denied = requireAdminPin(request);

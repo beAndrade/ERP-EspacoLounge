@@ -749,9 +749,9 @@
    * Agenda: scroll no `main` (conteúdo do hub cresce com a grelha).
    */
   &.main--agenda-hub {
-    --hub-main-pad-left: 0;
-    --hub-main-pad-right: 0;
-    padding: 0;
+    --hub-main-pad-left: 12px;
+    --hub-main-pad-right: 12px;
+    padding: 0 var(--hub-main-pad-right) 0 var(--hub-main-pad-left);
     flex: 1 1 0%;
     min-height: 0;
     max-height: 100%;
@@ -883,9 +883,9 @@
 
   /** Mesmo scroll do desktop (`main`) — necessário para `backdrop-filter` / glass. */
   .main.main--agenda-hub {
-    --hub-main-pad-left: 0;
-    --hub-main-pad-right: 0;
-    padding: 0;
+    --hub-main-pad-left: 12px;
+    --hub-main-pad-right: 12px;
+    padding: 0 var(--hub-main-pad-right) 0 var(--hub-main-pad-left);
     flex: 1 1 0%;
     min-height: 0;
     max-height: 100%;
@@ -955,9 +955,9 @@
     padding: 0 15px 0.5rem;
 
     &.main--agenda-hub {
-      --hub-main-pad-left: 0;
-      --hub-main-pad-right: 0;
-      padding: 0;
+      --hub-main-pad-left: 12px;
+      --hub-main-pad-right: 12px;
+      padding: 0 var(--hub-main-pad-right) 0 var(--hub-main-pad-left);
     }
   }
 }

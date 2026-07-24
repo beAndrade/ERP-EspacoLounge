@@ -289,8 +289,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /**
    * Drawer de edição de itens (Comandas): sem bloco Desconto/Crédito/Total
    * — o resumo fica só no drawer de comanda por baixo.
+   * Também reduz o rodapé a Cancelar + Salvar (sem Faturar/Excluir).
    */
   @Input() ocultarResumoComanda = false;
+
+  /**
+   * Edição de itens empilhada sobre a comanda (`ocultarResumoComanda`):
+   * só Cancelar + Salvar no footer.
+   */
+  isEdicaoItensSobreComanda(): boolean {
+    return this.modoModal && this.ocultarResumoComanda;
+  }
 
   /** Resumo financeiro (walk-in Nova comanda); não usado no drawer de edição de itens. */
   readonly descontoResumoWalkInCtrl = new FormControl(formataMoedaBrlResumo(0), {

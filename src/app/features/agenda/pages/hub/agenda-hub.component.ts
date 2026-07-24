@@ -19,6 +19,7 @@ import {
   AtendimentoListaItem,
   ProfissionalListaItem,
   Cliente,
+  Servico,
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.service';
@@ -54,6 +55,7 @@ import {
   type AbrirCadastroClientePayload,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
+import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
 import { mediaQueryMax } from '../../../../styles/breakpoints';
@@ -71,6 +73,7 @@ import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.mo
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
+import { lerServicoTexto } from '../../../../core/utils/servico-campos';
 
 type CelulaCalendario = {
   dia: number;
@@ -152,8 +155,14 @@ type AgendaCardHoverTip = {
   statusLabel: string;
   statusCor: string;
   corLabel: string;
+  /** Hex da cor nomeada; vazio = «Sem cor». */
   corHex: string;
+  /** Número do pedido (`atendimentos_pedido`); 0 se ainda não houver. */
+  numeroComanda: number;
 };
+
+/** Texto «Sem cor» no tip (Belasis). */
+const TIP_SEM_COR_TEXTO = 'rgba(0, 0, 0, 0.7)';
 
 const CARD_HOVER_TIP_DELAY_MS = 800;
 const CARD_HOVER_TIP_GAP_PX = 14;
@@ -197,6 +206,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly title = inject(Title);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
+  private readonly servicoDrawer = inject(ServicoCadastroDrawerService);
   readonly sessao = inject(SessaoUsuarioService);
   private readonly shellUi = inject(AppShellUiService);
   private readonly toast = inject(AppToastService);
@@ -287,6 +297,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     horaInicio: string;
   } | null = null;
 
+  /** Modal «Atenção» excluir agendamento (ação do tip do cartão). */
+  excluirTipModalAberto = false;
+  excluirTipSalvando = false;
+  excluirTipErro = '';
+  excluirTipId: string | null = null;
+
   cardArrasteBloco: AgendaHubBloco | null = null;
   cardArrasteYmd = '';
   cardArrasteProfId = 0;
@@ -314,6 +330,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   cardHoverTipVisible = false;
   /** Expõe o flag de pin para o template (badge DEBUG). */
   readonly cardHoverTipPinDebug = CARD_HOVER_TIP_PIN_DEBUG;
+  /** Cor do texto «Sem cor» no tip. */
+  readonly tipSemCorTexto = TIP_SEM_COR_TEXTO;
   /**
    * Tip preso após ação (ex.: abrir drawer): não fecha no mouseleave;
    * só fecha ao voltar a pairar no cartão de origem.
@@ -322,11 +340,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Submenu de status no tip (hover). */
   tipStatusMenuOpen = false;
   private tipStatusMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private tipStatusMenuOpenTimer: ReturnType<typeof setTimeout> | null = null;
   readonly agendaStatusOpcoesTip = AGENDA_STATUS_META;
   tipStatusSalvando = false;
   /** Submenu de cor no tip (hover). */
   tipCorMenuOpen = false;
   private tipCorMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private tipCorMenuOpenTimer: ReturnType<typeof setTimeout> | null = null;
   readonly agendaCorOpcoesTip = AGENDA_COR_META_BASE.filter(
     (o) => o.id !== AGENDA_COR_PADRAO_ID,
   );
@@ -430,9 +450,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
     if (ev.defaultPrevented) return;
 
-    // Ficha/pilha do cliente ou profissional: ESC é só do host global.
+    // Ficha/pilha do cliente, profissional ou serviço: ESC é só do host global.
     if (this.cadastroDrawer.isAberto) return;
     if (this.profissionalDrawer.aberto) return;
+    if (this.servicoDrawer.aberto()) return;
 
     if (this.hubMenuAberto) {
       ev.preventDefault();
@@ -444,6 +465,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       ev.preventDefault();
       ev.stopImmediatePropagation();
       this.fecharPaineisHub();
+      return;
+    }
+    if (this.excluirTipModalAberto) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      if (!this.excluirTipSalvando) {
+        this.fecharModalExcluirTip();
+      }
       return;
     }
     if (this.remarcarModalAberto) {
@@ -571,6 +600,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   profissionaisVisiveis(): ProfissionalListaItem[] {
     return this.profissionais.filter((p) => !this.profOcultos.has(p.id));
+  }
+
+  temProfissionaisVisiveis(): boolean {
+    return this.profissionaisVisiveis().length > 0;
+  }
+
+  abrirCadastroProfissionais(): void {
+    void this.router.navigate(['/profissionais']);
   }
 
   profissionalAtivoMobile(): number | null {
@@ -979,6 +1016,26 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   desmarcarTodosProfissionais(): void {
     for (const p of this.profissionais) {
       this.profOcultos.add(p.id);
+    }
+  }
+
+  selecionarTodosProfissionais(): void {
+    this.profOcultos.clear();
+  }
+
+  /** Todos os profissionais ocultos no filtro (lista não vazia). */
+  todosProfissionaisDesmarcados(): boolean {
+    const list = this.profissionais;
+    return (
+      list.length > 0 && list.every((p) => this.profOcultos.has(p.id))
+    );
+  }
+
+  alternarSelecaoTodosProfissionais(): void {
+    if (this.todosProfissionaisDesmarcados()) {
+      this.selecionarTodosProfissionais();
+    } else {
+      this.desmarcarTodosProfissionais();
     }
   }
 
@@ -1647,6 +1704,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return toYmd(new Date());
   }
 
+  /** Vista dia: o título «Hoje» corresponde ao `diaYmd` atual. */
+  diaGrelhaEHoje(): boolean {
+    return this.diaYmd === this.hojeYmd();
+  }
+
   abrirNovo(profissionalId: number, hora: string, dataYmd?: string): void {
     this.modalContexto = {
       data: dataYmd ?? this.diaYmd,
@@ -2024,7 +2086,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.iniciarAberturaDrawer();
   }
 
-  /** Tip: «Serviço» → drawer de edição; tip fica preso até re-hover no cartão. */
+  /** Tip: «Serviço» → drawer «Editando serviço»; tip fica preso até re-hover no cartão. */
   onTipServicoClick(ev: MouseEvent): void {
     ev.preventDefault();
     ev.stopPropagation();
@@ -2032,24 +2094,173 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.fecharTipCorMenu(true);
     const tip = this.cardHoverTip;
     if (!tip?.bloco) return;
-    this.abrirDrawerEdicaoBloco(tip.bloco, ev, { keepHoverTip: true });
+    this.cardHoverTipSticky = true;
+    this.clearCardHoverHideTimer();
+    this.clearCardHoverShowTimer();
+    const btn = ev.currentTarget;
+    if (btn instanceof HTMLElement) btn.blur();
+    this.abrirDrawerEdicaoServicoDoBloco(tip.bloco, tip.servico);
   }
+
+  /** Resolve o serviço do cartão e abre o drawer de cadastro/edição. */
+  private abrirDrawerEdicaoServicoDoBloco(
+    bloco: AgendaHubBloco,
+    nomeExibido: string,
+  ): void {
+    const ids: number[] = [];
+    for (const l of bloco.linhas) {
+      const itens = l.itens_catalogo ?? l.itens ?? [];
+      for (const it of itens) {
+        if (it.tipo !== 'servico') continue;
+        const sid = Number(it.servico_id);
+        if (!Number.isFinite(sid) || sid <= 0) continue;
+        if (!ids.includes(sid)) ids.push(sid);
+      }
+    }
+    const nomeAlvo = (nomeExibido || '').trim().toLowerCase();
+
+    this.api.listServicos().pipe(take(1)).subscribe({
+      next: (lista) => {
+        const porNome = (s: Servico): boolean =>
+          lerServicoTexto(s, 'nome', 'Nome').trim().toLowerCase() === nomeAlvo;
+
+        let found: Servico | undefined;
+        if (ids.length && nomeAlvo) {
+          found = lista.find(
+            (s) => ids.includes(Number(s.id)) && porNome(s),
+          );
+        }
+        if (!found && ids.length) {
+          found = lista.find((s) => ids.includes(Number(s.id)));
+        }
+        if (!found && nomeAlvo) {
+          found = lista.find(porNome);
+        }
+        if (!found) {
+          const ref = (
+            bloco.linhas[0]?.servicosRef ||
+            bloco.linhas[0]?.descricao ||
+            ''
+          )
+            .trim()
+            .toLowerCase();
+          if (ref) {
+            found = lista.find(
+              (s) =>
+                lerServicoTexto(s, 'nome', 'Nome').trim().toLowerCase() === ref,
+            );
+          }
+        }
+        if (!found) {
+          this.toast.showWarning(
+            'Não foi possível abrir o serviço deste agendamento.',
+          );
+          return;
+        }
+        this.servicoDrawer.abrirEdicao(found);
+      },
+      error: () => {
+        this.toast.showWarning('Não foi possível carregar o serviço.');
+      },
+    });
+  }
+
+  /** Tip: «Ver Comanda #N» → drawer da comanda; tip fica preso até re-hover no cartão. */
+  onTipComandaClick(ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.fecharTipStatusMenu(true);
+    this.fecharTipCorMenu(true);
+    const tip = this.cardHoverTip;
+    if (!tip?.bloco) return;
+    this.cardHoverTipSticky = true;
+    this.clearCardHoverHideTimer();
+    this.clearCardHoverShowTimer();
+    const btn = ev.currentTarget;
+    if (btn instanceof HTMLElement) btn.blur();
+    this.abrirComandaVisualizandoBloco(tip.bloco);
+  }
+
+  /** Tip: «Excluir» → modal Atenção (mesmo padrão do drawer de agendamento). */
+  onTipExcluirClick(ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.fecharTipStatusMenu(true);
+    this.fecharTipCorMenu(true);
+    const tip = this.cardHoverTip;
+    if (!tip?.bloco) return;
+    const id = this.idAtendimentoBloco(tip.bloco);
+    if (!id || this.excluirTipSalvando) return;
+    this.excluirTipErro = '';
+    this.excluirTipId = id;
+    this.excluirTipModalAberto = true;
+    this.fecharCardHoverTip();
+  }
+
+  fecharModalExcluirTip(): void {
+    if (this.excluirTipSalvando) return;
+    this.excluirTipModalAberto = false;
+    this.excluirTipId = null;
+    this.excluirTipErro = '';
+  }
+
+  confirmarExcluirTip(): void {
+    const id = this.excluirTipId?.trim();
+    if (!id || this.excluirTipSalvando) return;
+    this.excluirTipSalvando = true;
+    this.excluirTipErro = '';
+    this.api.excluirAtendimento(id).subscribe({
+      next: () => {
+        this.excluirTipSalvando = false;
+        this.excluirTipModalAberto = false;
+        this.excluirTipId = null;
+        this.recarregarVistaAtiva();
+      },
+      error: (e: Error) => {
+        this.excluirTipSalvando = false;
+        this.excluirTipErro =
+          e.message ||
+          'Não foi possível excluir. Verifique a internet e tente de novo.';
+      },
+    });
+  }
+
+  /** Tira o focus do tip (ex.: ao fechar a comanda) para não ficar outline no botão. */
+  private blurFocoNoCardTip(): void {
+    const ae = document.activeElement;
+    if (!(ae instanceof HTMLElement)) return;
+    if (ae.closest('.hub-card-tip')) ae.blur();
+  }
+
+  private static readonly TIP_FLYOUT_OPEN_DELAY_MS = 220;
+  private static readonly TIP_FLYOUT_CLOSE_DELAY_MS = 180;
 
   onTipStatusEnter(): void {
     if (this.tipStatusSalvando) return;
-    this.fecharTipCorMenu(true);
+    if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipCorMenu(true);
     this.clearTipStatusMenuCloseTimer();
-    this.tipStatusMenuOpen = true;
+    this.clearTipStatusMenuOpenTimer();
     this.cardHoverTipSticky = true;
     this.clearCardHoverHideTimer();
+    if (this.tipStatusMenuOpen) return;
+    if (CARD_HOVER_TIP_PIN_DEBUG) {
+      this.tipStatusMenuOpen = true;
+      return;
+    }
+    this.tipStatusMenuOpenTimer = setTimeout(() => {
+      this.tipStatusMenuOpenTimer = null;
+      this.tipStatusMenuOpen = true;
+    }, AgendaHubComponent.TIP_FLYOUT_OPEN_DELAY_MS);
   }
 
   onTipStatusLeave(): void {
+    if (CARD_HOVER_TIP_PIN_DEBUG) return;
+    this.clearTipStatusMenuOpenTimer();
     this.clearTipStatusMenuCloseTimer();
     this.tipStatusMenuCloseTimer = setTimeout(() => {
       this.tipStatusMenuCloseTimer = null;
       this.tipStatusMenuOpen = false;
-    }, 160);
+    }, AgendaHubComponent.TIP_FLYOUT_CLOSE_DELAY_MS);
   }
 
   private clearTipStatusMenuCloseTimer(): void {
@@ -2059,8 +2270,16 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
   }
 
-  private fecharTipStatusMenu(imediato = false): void {
+  private clearTipStatusMenuOpenTimer(): void {
+    if (this.tipStatusMenuOpenTimer != null) {
+      clearTimeout(this.tipStatusMenuOpenTimer);
+      this.tipStatusMenuOpenTimer = null;
+    }
+  }
+
+  private fecharTipStatusMenu(_imediato = false): void {
     this.clearTipStatusMenuCloseTimer();
+    this.clearTipStatusMenuOpenTimer();
     this.tipStatusMenuOpen = false;
   }
 
@@ -2074,44 +2293,61 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const id = tip ? this.idAtendimentoBloco(tip.bloco) : '';
     if (!tip || !id || this.tipStatusSalvando) return;
     if (normalizarAgendaStatusId(tip.bloco.linhas[0]?.agenda_status) === status.id) {
-      this.fecharTipStatusMenu(true);
+      if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipStatusMenu(true);
       return;
     }
     this.tipStatusSalvando = true;
     this.cardHoverTipSticky = true;
+    this.clearCardHoverHideTimer();
+    // Optimistic: tip + grelha já refletem a escolha.
+    this.aplicarAgendaStatusNasLinhasLocais(id, status.id);
+    tip.statusLabel = status.label;
+    tip.statusCor = status.cor;
+    tip.corLabel = 'Sem cor';
+    tip.corHex = '';
     this.api.atualizarAgendaStatus(id, status.id).subscribe({
       next: () => {
         this.tipStatusSalvando = false;
-        for (const l of tip.bloco.linhas) {
-          l.agenda_status = status.id;
-        }
-        tip.statusLabel = status.label;
-        tip.statusCor = status.cor;
-        this.fecharTipStatusMenu(true);
+        if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipStatusMenu(true);
+        this.toast.show('Agendamento atualizado com sucesso!');
         this.recarregarVistaAtiva();
       },
-      error: () => {
+      error: (e: Error) => {
         this.tipStatusSalvando = false;
-        this.fecharTipStatusMenu(true);
+        if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipStatusMenu(true);
+        this.toast.showWarning(
+          this.mensagemErroAgendaTip(e, 'status'),
+        );
       },
     });
   }
 
   onTipCorEnter(): void {
     if (this.tipCorSalvando) return;
-    this.fecharTipStatusMenu(true);
+    if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipStatusMenu(true);
     this.clearTipCorMenuCloseTimer();
-    this.tipCorMenuOpen = true;
+    this.clearTipCorMenuOpenTimer();
     this.cardHoverTipSticky = true;
     this.clearCardHoverHideTimer();
+    if (this.tipCorMenuOpen) return;
+    if (CARD_HOVER_TIP_PIN_DEBUG) {
+      this.tipCorMenuOpen = true;
+      return;
+    }
+    this.tipCorMenuOpenTimer = setTimeout(() => {
+      this.tipCorMenuOpenTimer = null;
+      this.tipCorMenuOpen = true;
+    }, AgendaHubComponent.TIP_FLYOUT_OPEN_DELAY_MS);
   }
 
   onTipCorLeave(): void {
+    if (CARD_HOVER_TIP_PIN_DEBUG) return;
+    this.clearTipCorMenuOpenTimer();
     this.clearTipCorMenuCloseTimer();
     this.tipCorMenuCloseTimer = setTimeout(() => {
       this.tipCorMenuCloseTimer = null;
       this.tipCorMenuOpen = false;
-    }, 160);
+    }, AgendaHubComponent.TIP_FLYOUT_CLOSE_DELAY_MS);
   }
 
   private clearTipCorMenuCloseTimer(): void {
@@ -2121,8 +2357,16 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
   }
 
+  private clearTipCorMenuOpenTimer(): void {
+    if (this.tipCorMenuOpenTimer != null) {
+      clearTimeout(this.tipCorMenuOpenTimer);
+      this.tipCorMenuOpenTimer = null;
+    }
+  }
+
   private fecharTipCorMenu(_imediato = false): void {
     this.clearTipCorMenuCloseTimer();
+    this.clearTipCorMenuOpenTimer();
     this.tipCorMenuOpen = false;
   }
 
@@ -2135,25 +2379,26 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const hex = (opcao.cor || '').trim() || null;
     const atualHex = String(tip.bloco.linhas[0]?.agenda_cor ?? '').trim() || null;
     if ((hex || null) === (atualHex || null)) {
-      this.fecharTipCorMenu(true);
+      if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipCorMenu(true);
       return;
     }
     this.tipCorSalvando = true;
     this.cardHoverTipSticky = true;
+    this.clearCardHoverHideTimer();
+    this.aplicarAgendaCorNasLinhasLocais(id, hex);
+    tip.corLabel = opcao.label;
+    tip.corHex = hex || '';
     this.api.atualizarAgendaCor(id, hex).subscribe({
       next: () => {
         this.tipCorSalvando = false;
-        for (const l of tip.bloco.linhas) {
-          l.agenda_cor = hex;
-        }
-        tip.corLabel = opcao.label;
-        tip.corHex = hex || tip.statusCor;
-        this.fecharTipCorMenu(true);
+        if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipCorMenu(true);
+        this.toast.show('Agendamento atualizado com sucesso!');
         this.recarregarVistaAtiva();
       },
-      error: () => {
+      error: (e: Error) => {
         this.tipCorSalvando = false;
-        this.fecharTipCorMenu(true);
+        if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipCorMenu(true);
+        this.toast.showWarning(this.mensagemErroAgendaTip(e, 'cor'));
       },
     });
   }
@@ -2166,27 +2411,96 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (!tip || !id || this.tipCorSalvando) return;
     const atualHex = String(tip.bloco.linhas[0]?.agenda_cor ?? '').trim();
     if (!atualHex) {
-      this.fecharTipCorMenu(true);
+      if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipCorMenu(true);
       return;
     }
     this.tipCorSalvando = true;
     this.cardHoverTipSticky = true;
+    this.clearCardHoverHideTimer();
+    this.aplicarAgendaCorNasLinhasLocais(id, null);
+    tip.corLabel = 'Sem cor';
+    tip.corHex = '';
     this.api.atualizarAgendaCor(id, null).subscribe({
       next: () => {
         this.tipCorSalvando = false;
-        for (const l of tip.bloco.linhas) {
-          l.agenda_cor = null;
-        }
-        tip.corLabel = 'Sem cor';
-        tip.corHex = tip.statusCor;
-        this.fecharTipCorMenu(true);
+        if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipCorMenu(true);
+        this.toast.show('Agendamento atualizado com sucesso!');
         this.recarregarVistaAtiva();
       },
-      error: () => {
+      error: (e: Error) => {
         this.tipCorSalvando = false;
-        this.fecharTipCorMenu(true);
+        if (!CARD_HOVER_TIP_PIN_DEBUG) this.fecharTipCorMenu(true);
+        this.toast.showWarning(this.mensagemErroAgendaTip(e, 'cor'));
       },
     });
+  }
+
+  private mensagemErroAgendaTip(
+    e: Error,
+    campo: 'status' | 'cor',
+  ): string {
+    const msg = String(e?.message ?? '').trim();
+    if (/tipo é obrigatório/i.test(msg)) {
+      return 'Não foi possível atualizar. Reinicie a API e tente de novo.';
+    }
+    return (
+      msg ||
+      (campo === 'status'
+        ? 'Não foi possível atualizar o status.'
+        : 'Não foi possível atualizar a cor.')
+    );
+  }
+
+  /** Atualiza `agenda_cor` nas listagens da grelha (fundo do cartão) e no tip. */
+  private aplicarAgendaCorNasLinhasLocais(
+    idAtendimento: string,
+    hex: string | null,
+  ): void {
+    const id = idAtendimento.trim();
+    if (!id) return;
+    const patch = (items: AtendimentoListaItem[]) => {
+      for (const it of items) {
+        if (String(it.id ?? '').trim() === id) {
+          it.agenda_cor = hex;
+        }
+      }
+    };
+    patch(this.linhasDia);
+    patch(this.linhasSemana);
+    patch(this.itensMes);
+    const tip = this.cardHoverTip;
+    if (tip && this.idAtendimentoBloco(tip.bloco) === id) {
+      for (const l of tip.bloco.linhas) {
+        l.agenda_cor = hex;
+      }
+    }
+  }
+
+  /** Atualiza `agenda_status` e limpa cor nomeada nas listagens + tip. */
+  private aplicarAgendaStatusNasLinhasLocais(
+    idAtendimento: string,
+    statusId: string,
+  ): void {
+    const id = idAtendimento.trim();
+    if (!id) return;
+    const patch = (items: AtendimentoListaItem[]) => {
+      for (const it of items) {
+        if (String(it.id ?? '').trim() === id) {
+          it.agenda_status = statusId;
+          it.agenda_cor = null;
+        }
+      }
+    };
+    patch(this.linhasDia);
+    patch(this.linhasSemana);
+    patch(this.itensMes);
+    const tip = this.cardHoverTip;
+    if (tip && this.idAtendimentoBloco(tip.bloco) === id) {
+      for (const l of tip.bloco.linhas) {
+        l.agenda_status = statusId;
+        l.agenda_cor = null;
+      }
+    }
   }
 
   /** Salta para outro dia/pedido mantendo o drawer (próximos agendamentos). */
@@ -2229,6 +2543,16 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private limparEfeitosDrawer(): void {
     this.desbloquearScrollPagina();
+    this.blurFocoNoCardGrelha();
+  }
+
+  /** Evita outline/focus no cartão após fechar o drawer. */
+  private blurFocoNoCardGrelha(): void {
+    const ae = document.activeElement;
+    if (!(ae instanceof HTMLElement)) return;
+    if (ae.classList.contains('day-col__card') || ae.closest('.day-col__card')) {
+      ae.blur();
+    }
   }
 
   /**
@@ -2327,6 +2651,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   fecharComandaDrawer(): void {
     if (!this.comandaPainelAberto) return;
+    this.blurFocoNoCardTip();
     this.limparEditComandaSemAnimacao();
     if (!this.comandaDrawerPanelOpen) {
       this.comandaPainelAberto = false;
@@ -2349,6 +2674,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
       this.comandaDataYmdParaFaturar = null;
+      this.blurFocoNoCardTip();
       if (this.comandaSomenteStandalone) {
         this.comandaSomenteStandalone = false;
         if (!this.modalAberto) {
@@ -2364,6 +2690,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDrawerPanelOpen = false;
     this.comandaDrawerContexto = null;
     this.comandaDataYmdParaFaturar = null;
+    this.blurFocoNoCardTip();
     if (this.comandaSomenteStandalone) {
       this.comandaSomenteStandalone = false;
       if (!this.modalAberto) {
@@ -2397,6 +2724,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.modalAberto = false;
       this.modalContexto = null;
       this.desbloquearScrollPagina();
+      this.blurFocoNoCardGrelha();
     }, DRAWER_ANIM_MS);
   }
 
@@ -3488,9 +3816,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const statusId = normalizarAgendaStatusId(linha?.agenda_status);
     const statusMeta =
       AGENDA_STATUS_META.find((s) => s.id === statusId) ?? AGENDA_STATUS_META[0];
-    const corHex = String(linha?.agenda_cor ?? '').trim();
-    const corId = resolverAgendaCorIdPorHex(corHex || null);
-    const corOpt = listarOpcoesCorAgenda().find((o) => o.id === corId);
+    const tipCor = this.resolverTipCorExibicao(linha?.agenda_cor);
     const ymd =
       String(ymdCtx ?? linha?.data ?? this.diaYmd).trim() || this.diaYmd;
     const intervalo = this.intervaloHHmmBloco(bloco, ymd) || this.horaBloco(bloco, ymd);
@@ -3515,20 +3841,52 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       servico: itens[0] ?? '—',
       statusLabel: statusMeta.label,
       statusCor: statusMeta.cor,
-      corLabel:
-        !corOpt || corOpt.id === AGENDA_COR_PADRAO_ID
-          ? 'Sem cor'
-          : corOpt.label.trim() || 'Sem cor',
-      corHex: (corOpt?.cor || corHex || statusMeta.cor).trim() || statusMeta.cor,
+      corLabel: tipCor.label,
+      corHex: tipCor.hex,
+      numeroComanda:
+        linha?.numeroComanda != null &&
+        Number.isFinite(linha.numeroComanda) &&
+        linha.numeroComanda > 0
+          ? linha.numeroComanda
+          : 0,
     };
     // Próximo frame: dispara a transição de fade-in.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (this.cardHoverTip?.trackKey === bloco.trackKey) {
           this.cardHoverTipVisible = true;
+          if (CARD_HOVER_TIP_PIN_DEBUG) {
+            this.tipStatusMenuOpen = false;
+            this.tipCorMenuOpen = true;
+          }
         }
       });
     });
+  }
+
+  /**
+   * Cor nomeada do agendamento (`agenda_cor`); sem hex → «Sem cor».
+   */
+  private resolverTipCorExibicao(agendaCor: string | null | undefined): {
+    label: string;
+    hex: string;
+  } {
+    const corHex = String(agendaCor ?? '').trim();
+    if (!corHex) return { label: 'Sem cor', hex: '' };
+    const corId = resolverAgendaCorIdPorHex(corHex);
+    const corOpt = listarOpcoesCorAgenda().find((o) => o.id === corId);
+    if (!corOpt || corOpt.id === AGENDA_COR_PADRAO_ID) {
+      return { label: 'Sem cor', hex: '' };
+    }
+    return {
+      label: corOpt.label.trim() || 'Sem cor',
+      hex: (corOpt.cor || corHex).trim(),
+    };
+  }
+
+  /** Cor do texto da linha Cor no tip. */
+  tipCorTexto(tip: AgendaCardHoverTip): string {
+    return tip.corHex.trim() || TIP_SEM_COR_TEXTO;
   }
 
   private formatarDataHoraCardTip(ymd: string, intervalo: string): string {
@@ -3677,6 +4035,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       next: (items) => {
         this.linhasSemana = items;
         this.carregandoSemana = false;
+        this.sincronizarTipAposRecarregar();
       },
       error: (e: Error) => {
         this.erro =
@@ -3695,6 +4054,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       next: (items) => {
         this.linhasDia = items;
         this.carregandoDia = false;
+        this.sincronizarTipAposRecarregar();
       },
       error: (e: Error) => {
         this.erro =
@@ -3704,5 +4064,38 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         this.carregandoDia = false;
       },
     });
+  }
+
+  /** Mantém o tip apontando para o bloco fresco da grelha após reload. */
+  private sincronizarTipAposRecarregar(): void {
+    const tip = this.cardHoverTip;
+    if (!tip) return;
+    const id = this.idAtendimentoBloco(tip.bloco);
+    if (!id) return;
+    const ymd = tip.ymdCtx || this.diaYmd;
+    for (const p of this.profissionaisVisiveis()) {
+      for (const b of this.blocosNaColuna(p.id, ymd)) {
+        if (this.idAtendimentoBloco(b) === id) {
+          tip.bloco = b;
+          const l0 = b.linhas[0];
+          const statusId = normalizarAgendaStatusId(l0?.agenda_status);
+          const statusMeta =
+            AGENDA_STATUS_META.find((s) => s.id === statusId) ??
+            AGENDA_STATUS_META[0];
+          tip.statusLabel = statusMeta.label;
+          tip.statusCor = statusMeta.cor;
+          const tipCor = this.resolverTipCorExibicao(l0?.agenda_cor);
+          tip.corLabel = tipCor.label;
+          tip.corHex = tipCor.hex;
+          tip.numeroComanda =
+            l0?.numeroComanda != null &&
+            Number.isFinite(l0.numeroComanda) &&
+            l0.numeroComanda > 0
+              ? l0.numeroComanda
+              : 0;
+          return;
+        }
+      }
+    }
   }
 }

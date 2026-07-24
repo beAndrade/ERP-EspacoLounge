@@ -269,9 +269,13 @@
                   <button
                     type="button"
                     class="hub-filtros-sec__link"
-                    (click)="desmarcarTodosProfissionais()"
+                    (click)="alternarSelecaoTodosProfissionais()"
                   >
-                    Desmarcar tudo
+                    {{
+                      todosProfissionaisDesmarcados()
+                        ? 'Selecionar todos'
+                        : 'Desmarcar tudo'
+                    }}
                   </button>
                 </div>
                 <ul class="hub-filtros-list">
@@ -644,6 +648,8 @@
       class="grid-wrap"
       [class.grid-wrap--compact]="layoutMobile"
       [class.grid-wrap--loading]="carregandoVista()"
+      [class.grid-wrap--sem-prof]="!temProfissionaisVisiveis()"
+      [class.grid-wrap--outro-dia]="!diaGrelhaEHoje()"
       role="region"
       aria-label="Horários por profissional"
     >
@@ -830,6 +836,9 @@
             }
           </div>
         </div>
+        @if (!temProfissionaisVisiveis()) {
+          <ng-container *ngTemplateOutlet="hubGridSemProfissionais" />
+        }
       </div>
     </div>
     } @else if (modoVista === 'semana') {
@@ -837,6 +846,7 @@
       class="week-grid-wrap"
       [class.grid-wrap--compact]="layoutMobile"
       [class.grid-wrap--loading]="carregandoVista()"
+      [class.grid-wrap--sem-prof]="!temProfissionaisVisiveis()"
       role="region"
       aria-label="Horários semanais por profissional"
     >
@@ -1110,6 +1120,9 @@
             }
           </div>
         </div>
+        @if (!temProfissionaisVisiveis()) {
+          <ng-container *ngTemplateOutlet="hubGridSemProfissionais" />
+        }
       </div>
     </div>
     } @else {
@@ -1487,6 +1500,41 @@
       </button>
     </div>
   </ng-template>
+
+  <ng-template #hubGridSemProfissionais>
+    <div class="hub-grid-empty" role="status">
+      <svg
+        class="hub-grid-empty__icon"
+        xmlns="http://www.w3.org/2000/svg"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <path d="M3.5 8h17" />
+        <rect width="18" height="18" x="3" y="4" rx="2" />
+        <path d="m4 20 16-16" />
+      </svg>
+      <p class="hub-grid-empty__title">Sem expediente</p>
+      <p class="hub-grid-empty__text">
+        Você pode alterar o expediente de seus
+        <button
+          type="button"
+          class="hub-grid-empty__link"
+          (click)="abrirCadastroProfissionais()"
+        >
+          profissionais
+        </button>
+      </p>
+    </div>
+  </ng-template>
 </div>
 
 @if (!layoutMobile) {
@@ -1512,6 +1560,52 @@
     [style.background]="cardArrasteGhostCor"
   >
     <span class="agenda-card-ghost__text">{{ cardArrasteGhostRotulo }}</span>
+  </div>
+}
+
+@if (excluirTipModalAberto) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalExcluirTip()"
+  ></div>
+  <div
+    class="comandas-modal hub-excluir-tip-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hub-excluir-tip-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 id="hub-excluir-tip-title" class="comandas-modal__title">
+      Atenção
+    </h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir este agendamento?
+    </p>
+    @if (excluirTipErro) {
+      <p class="hub-remarcar-modal__erro" role="alert">{{ excluirTipErro }}</p>
+    }
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="excluirTipSalvando"
+        (click)="fecharModalExcluirTip()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="excluirTipSalvando"
+        (click)="confirmarExcluirTip()"
+      >
+        {{ excluirTipSalvando ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
+    </div>
   </div>
 }
 
@@ -1742,6 +1836,7 @@
         <div class="hub-card-tip__sep" aria-hidden="true"></div>
         <div
           class="hub-card-tip__action-wrap hub-card-tip__action-wrap--status"
+          [class.hub-card-tip__action-wrap--open]="tipStatusMenuOpen"
           (mouseenter)="onTipStatusEnter()"
           (mouseleave)="onTipStatusLeave()"
         >
@@ -1749,7 +1844,22 @@
             class="hub-card-tip__action hub-card-tip__action--status"
             [class.hub-card-tip__action--hot]="tipStatusMenuOpen"
           >
-            <span class="hub-card-tip__swatch" [style.background]="tip.statusCor"></span>
+            <svg
+              class="hub-card-tip__flag"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              [style.color]="tip.statusCor"
+            >
+              <path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/>
+            </svg>
             <span [style.color]="tip.statusCor">{{ tip.statusLabel }}</span>
             <svg class="hub-card-tip__chev" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
           </div>
@@ -1777,6 +1887,7 @@
         </div>
         <div
           class="hub-card-tip__action-wrap hub-card-tip__action-wrap--cor"
+          [class.hub-card-tip__action-wrap--open]="tipCorMenuOpen"
           (mouseenter)="onTipCorEnter()"
           (mouseleave)="onTipCorLeave()"
         >
@@ -1784,8 +1895,26 @@
             class="hub-card-tip__action hub-card-tip__action--cor"
             [class.hub-card-tip__action--hot]="tipCorMenuOpen"
           >
-            <span class="hub-card-tip__swatch" [style.background]="tip.corHex"></span>
-            <span [style.color]="tip.corHex">{{ tip.corLabel }}</span>
+            <svg
+              class="hub-card-tip__paint"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              [style.color]="tipCorTexto(tip)"
+            >
+              <path d="M11 7 6 2"/>
+              <path d="M18.992 12H2.041"/>
+              <path d="M21.145 18.38A3.34 3.34 0 0 1 20 16.5a3.3 3.3 0 0 1-1.145 1.88c-.575.46-.855 1.02-.855 1.595A2 2 0 0 0 20 22a2 2 0 0 0 2-2.025c0-.58-.285-1.13-.855-1.595"/>
+              <path d="m8.5 4.5 2.148-2.148a1.205 1.205 0 0 1 1.704 0l7.296 7.296a1.205 1.205 0 0 1 0 1.704l-7.592 7.592a3.615 3.615 0 0 1-5.112 0l-3.888-3.888a3.615 3.615 0 0 1 0-5.112L5.67 7.33"/>
+            </svg>
+            <span [style.color]="tipCorTexto(tip)">{{ tip.corLabel }}</span>
             <svg class="hub-card-tip__chev" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
           </div>
           @if (tipCorMenuOpen) {
@@ -1821,15 +1950,25 @@
             </div>
           }
         </div>
-        <div class="hub-card-tip__action hub-card-tip__action--comanda">
+        <button
+          type="button"
+          class="hub-card-tip__action hub-card-tip__action--comanda"
+          (mousedown)="$event.preventDefault()"
+          (click)="onTipComandaClick($event)"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-          <span>Criar Comanda</span>
-          <svg class="hub-card-tip__plus" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-        </div>
-        <div class="hub-card-tip__action hub-card-tip__action--excluir">
+          <span>Ver Comanda #{{ tip.numeroComanda > 0 ? tip.numeroComanda : '—' }}</span>
+          <svg class="hub-card-tip__chev" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <button
+          type="button"
+          class="hub-card-tip__action hub-card-tip__action--excluir"
+          (mousedown)="$event.preventDefault()"
+          (click)="onTipExcluirClick($event)"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           <span>Excluir</span>
-        </div>
+        </button>
       </div>
     </div>
   </div>

@@ -1486,7 +1486,11 @@
           <footer
             class="agenda-modal__footer"
             [attr.aria-label]="
-              fluxoSomenteComanda ? 'Ações da comanda' : 'Ações do agendamento'
+              isEdicaoItensSobreComanda()
+                ? 'Ações da edição de itens'
+                : fluxoSomenteComanda
+                  ? 'Ações da comanda'
+                  : 'Ações do agendamento'
             "
           >
             <button
@@ -1497,7 +1501,7 @@
             >
               Cancelar
             </button>
-            @if (idAtendimentoEmEdicao?.trim()) {
+            @if (idAtendimentoEmEdicao?.trim() && !isEdicaoItensSobreComanda()) {
               <div
                 class="agenda-modal__excluir-wrap"
                 [class.agenda-modal__excluir-wrap--open]="excluirMenuAberto"
@@ -1604,30 +1608,32 @@
             >
               {{ salvando ? 'Salvando…' : 'Salvar' }}
             </button>
-            @if (fluxoSomenteComanda) {
-              <button
-                type="button"
-                class="btn btn-footer btn-footer--comanda"
-                (click)="onFaturarSomenteComandaClick($event)"
-                [disabled]="salvando || excluindo"
-              >
-                {{ salvando ? 'Salvando…' : 'Faturar' }}
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="btn btn-footer btn-footer--comanda"
-                (click)="onAbrirComandaClick($event)"
-                [disabled]="salvando || excluindo"
-              >
-                {{
-                  salvando
-                    ? 'Salvando…'
-                    : comandaAbertaParaClienteNoDia
-                      ? 'Acessar comanda'
-                      : 'Criar comanda'
-                }}
-              </button>
+            @if (!isEdicaoItensSobreComanda()) {
+              @if (fluxoSomenteComanda) {
+                <button
+                  type="button"
+                  class="btn btn-footer btn-footer--comanda"
+                  (click)="onFaturarSomenteComandaClick($event)"
+                  [disabled]="salvando || excluindo"
+                >
+                  {{ salvando ? 'Salvando…' : 'Faturar' }}
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn btn-footer btn-footer--comanda"
+                  (click)="onAbrirComandaClick($event)"
+                  [disabled]="salvando || excluindo"
+                >
+                  {{
+                    salvando
+                      ? 'Salvando…'
+                      : comandaAbertaParaClienteNoDia
+                        ? 'Acessar comanda'
+                        : 'Criar comanda'
+                  }}
+                </button>
+              }
             }
           </footer>
         }

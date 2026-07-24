@@ -75,7 +75,7 @@ import { AppToastService } from './app-toast.service';
         position: fixed;
         top: 0;
         left: 50%;
-        z-index: 12000;
+        z-index: 20000;
         display: inline-flex;
         align-items: center;
         gap: 10px;

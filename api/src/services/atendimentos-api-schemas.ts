@@ -32,6 +32,10 @@ export const postAtendimentoMutationBody = t.Object(
     profissional_origem_id: t.Optional(t.Number()),
     profissional_destino_id: t.Optional(t.Number()),
     hora_inicio: t.Optional(t.String()),
+    /** Tip da agenda: alterar `agenda_status` do bloco. */
+    agenda_status: t.Optional(t.String()),
+    /** Tip da agenda: cor nomeada do cartão (`#RRGGBB` ou null). */
+    agenda_cor: t.Optional(t.Union([t.String(), t.Null()])),
     id_recorrencia: t.Optional(t.String()),
     ordem_recorrencia: t.Optional(t.Number()),
     /** Override do valor unitário (R$) — cabeça do pedido (single item). */
