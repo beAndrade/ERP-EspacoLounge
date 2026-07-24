@@ -133,6 +133,8 @@ type AgendaHubBloco = {
 
 type AgendaCardHoverTip = {
   trackKey: string;
+  bloco: AgendaHubBloco;
+  ymdCtx?: string;
   left: number;
   top: number;
   /** Distância da seta ao canto esquerdo do tip (centro do cartão da grelha). */
@@ -155,6 +157,8 @@ const CARD_HOVER_TIP_GAP_PX = 14;
 const CARD_HOVER_TIP_FADE_MS = 220;
 const CARD_HOVER_TIP_W_PX = 230;
 const CARD_HOVER_TIP_H_PX = 333.53;
+/** DEBUG visual do tip — desligado com as ações reais. */
+const CARD_HOVER_TIP_PIN_DEBUG = false;
 
 @Component({
   selector: 'app-agenda-hub',
@@ -305,6 +309,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Tooltip de hover nos cartões da grelha (delay 1.8s). */
   cardHoverTip: AgendaCardHoverTip | null = null;
   cardHoverTipVisible = false;
+  /** Expõe o flag de pin para o template (badge DEBUG). */
+  readonly cardHoverTipPinDebug = CARD_HOVER_TIP_PIN_DEBUG;
+  /**
+   * Tip preso após ação (ex.: abrir drawer): não fecha no mouseleave;
+   * só fecha ao voltar a pairar no cartão de origem.
+   */
+  private cardHoverTipSticky = false;
   private cardHoverShowTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverHideTimer: ReturnType<typeof setTimeout> | null = null;
   private cardHoverFadeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1951,9 +1962,19 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /** Abre o drawer em modo edição (sem saltar para a receção). */
-  abrirDrawerEdicaoBloco(b: AgendaHubBloco, e: Event): void {
-    this.fecharCardHoverTip();
-    this.cardHoverSuppressed = true;
+  abrirDrawerEdicaoBloco(
+    b: AgendaHubBloco,
+    e: Event,
+    opts?: { keepHoverTip?: boolean },
+  ): void {
+    if (!opts?.keepHoverTip) {
+      this.fecharCardHoverTip();
+      this.cardHoverSuppressed = true;
+    } else {
+      this.cardHoverTipSticky = true;
+      this.clearCardHoverHideTimer();
+      this.clearCardHoverShowTimer();
+    }
     if (this.cardArrasteSuprimirClick) {
       this.cardArrasteSuprimirClick = false;
       e.stopPropagation();
@@ -1986,6 +2007,15 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     };
     this.modalAberto = true;
     this.iniciarAberturaDrawer();
+  }
+
+  /** Tip: «Serviço» → drawer de edição; tip fica preso até re-hover no cartão. */
+  onTipServicoClick(ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const tip = this.cardHoverTip;
+    if (!tip?.bloco) return;
+    this.abrirDrawerEdicaoBloco(tip.bloco, ev, { keepHoverTip: true });
   }
 
   /** Salta para outro dia/pedido mantendo o drawer (próximos agendamentos). */
@@ -3143,18 +3173,29 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (this.layoutMobile || this.cardArrasteAtivo || this.cardHoverSuppressed) {
       return;
     }
+    // Tip sticky: re-hover no cartão de origem fecha o tip.
+    if (
+      this.cardHoverTipSticky &&
+      this.cardHoverTip?.trackKey === bloco.trackKey
+    ) {
+      this.cardHoverTipSticky = false;
+      this.fecharCardHoverTip();
+      return;
+    }
     const slot = (ev.currentTarget as HTMLElement | null) ?? null;
     if (!slot) return;
     this.clearCardHoverHideTimer();
     this.clearCardHoverShowTimer();
+    const delay = CARD_HOVER_TIP_PIN_DEBUG ? 0 : CARD_HOVER_TIP_DELAY_MS;
     this.cardHoverShowTimer = setTimeout(() => {
       this.cardHoverShowTimer = null;
       if (this.cardArrasteAtivo || this.cardHoverSuppressed) return;
       void this.abrirCardHoverTip(bloco, slot, ymdCtx);
-    }, CARD_HOVER_TIP_DELAY_MS);
+    }, delay);
   }
 
   onCardHoverLeave(): void {
+    if (CARD_HOVER_TIP_PIN_DEBUG || this.cardHoverTipSticky) return;
     this.clearCardHoverShowTimer();
     this.cardHoverSuppressed = false;
     this.scheduleCardHoverHide();
@@ -3165,10 +3206,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   onCardHoverTipLeave(): void {
+    if (CARD_HOVER_TIP_PIN_DEBUG || this.cardHoverTipSticky) return;
     this.scheduleCardHoverHide();
   }
 
   private scheduleCardHoverHide(): void {
+    if (CARD_HOVER_TIP_PIN_DEBUG || this.cardHoverTipSticky) return;
     this.clearCardHoverHideTimer();
     this.cardHoverHideTimer = setTimeout(() => {
       this.cardHoverHideTimer = null;
@@ -3213,6 +3256,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.clearCardHoverFadeTimer();
     this.cardHoverTipVisible = false;
     this.cardHoverTip = null;
+    this.cardHoverTipSticky = false;
     this.cardHoverSuppressed = false;
   }
 
@@ -3273,9 +3317,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const itens = this.itensResumoBloco(bloco);
 
     this.clearCardHoverFadeTimer();
+    this.cardHoverTipSticky = false;
     this.cardHoverTipVisible = false;
     this.cardHoverTip = {
       trackKey: bloco.trackKey,
+      bloco,
+      ymdCtx: ymd,
       left,
       top,
       arrowLeft,

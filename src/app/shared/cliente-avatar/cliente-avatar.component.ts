@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 /** Tamanhos/contextos padronizados do avatar do cliente. */
-export type ClienteAvatarVariant = 'lista' | 'cabecalho' | 'perfil' | 'sidebar';
+export type ClienteAvatarVariant = 'lista' | 'cabecalho' | 'perfil' | 'sidebar' | 'tip';
 
 @Component({
   selector: 'app-cliente-avatar',
