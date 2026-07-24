@@ -1410,7 +1410,7 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   pointer-events: none;
 }
 
-/* Faixa horizontal + vertical do cartão; sobreposições = várias faixas lado a lado. */
+/* Faixa do cartão; encaixes usam overlay (base full-width + top à direita). */
 .day-col__card-slot {
   position: absolute;
   box-sizing: border-box;
@@ -1420,27 +1420,18 @@ $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
   cursor: pointer;
 }
 
-/* Encaixe: gap branco fino entre faixas; cantos externos arredondados. */
-.day-col__card-slot--split {
-  padding: 0 1.5px;
+.day-col__card-slot--encaixe-base {
+  padding: 0 2px;
 }
 
-.day-col__card-slot--split .day-col__card {
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.day-col__card-slot--encaixe-top {
+  padding: 0 2px 0 0;
 }
 
-.day-col__card-slot--split.day-col__card-slot--lane-first .day-col__card {
-  border-radius: 9px 4px 4px 9px;
-}
-
-.day-col__card-slot--split.day-col__card-slot--lane-last .day-col__card {
-  border-radius: 4px 9px 9px 4px;
-}
-
-.day-col__card-slot--split.day-col__card-slot--lane-first.day-col__card-slot--lane-last
-  .day-col__card {
+.day-col__card-slot--encaixe-top .day-col__card {
+  border: 1.5px solid #fff;
   border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
 }
 
 .day-col__card {
@@ -3448,8 +3439,11 @@ $month-num-fg-muted: #00000028;
   position: fixed;
   z-index: 1400;
   box-sizing: border-box;
-  width: 280px;
-  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  width: 230px;
+  height: 333.53px;
+  padding: 12px 14px;
   border-radius: 14px;
   background: #fff;
   box-shadow:
@@ -3478,6 +3472,19 @@ $month-num-fg-muted: #00000028;
   }
 }
 
+.hub-card-tip__body {
+  display: flex;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  padding: 10px 0;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
 .hub-card-tip__arrow {
   position: absolute;
   top: -6px;
@@ -3502,6 +3509,7 @@ $month-num-fg-muted: #00000028;
   gap: 10px;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f1f1;
+  flex-shrink: 0;
 }
 
 .hub-card-tip__head-text {
@@ -3514,6 +3522,9 @@ $month-num-fg-muted: #00000028;
   font-weight: 700;
   line-height: 1.25;
   color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hub-card-tip__fone {
@@ -3521,6 +3532,9 @@ $month-num-fg-muted: #00000028;
   font-size: 12px;
   font-weight: 500;
   color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hub-card-tip__meta {
@@ -3529,6 +3543,7 @@ $month-num-fg-muted: #00000028;
   gap: 8px;
   padding: 12px 0;
   border-bottom: 1px solid #f1f1f1;
+  flex-shrink: 0;
 }
 
 .hub-card-tip__meta-row {
@@ -3539,6 +3554,15 @@ $month-num-fg-muted: #00000028;
   font-weight: 500;
   color: #374151;
   line-height: 1.35;
+  min-width: 0;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
 
   svg {
     flex-shrink: 0;
@@ -3552,6 +3576,9 @@ $month-num-fg-muted: #00000028;
   flex-direction: column;
   gap: 2px;
   padding-top: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
 }
 
 .hub-card-tip__action {
@@ -3564,10 +3591,14 @@ $month-num-fg-muted: #00000028;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
+  min-width: 0;
 
   > span:not(.hub-card-tip__swatch) {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   svg {

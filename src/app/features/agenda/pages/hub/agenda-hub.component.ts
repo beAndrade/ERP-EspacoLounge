@@ -153,6 +153,8 @@ type AgendaCardHoverTip = {
 const CARD_HOVER_TIP_DELAY_MS = 800;
 const CARD_HOVER_TIP_GAP_PX = 14;
 const CARD_HOVER_TIP_FADE_MS = 220;
+const CARD_HOVER_TIP_W_PX = 230;
+const CARD_HOVER_TIP_H_PX = 333.53;
 
 @Component({
   selector: 'app-agenda-hub',
@@ -2668,8 +2670,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Cartões na mesma coluna (profissional) que se sobrepõem no tempo passam a
-   * dividir a largura (ex.: 2 → 50% cada), em vez de empilhar e tapar o de baixo.
+   * Sobreposição (encaixe) na mesma coluna: o 1.º bloco (lane 0) ocupa 100% da
+   * largura; os seguintes ficam por cima, alinhados à direita, mais estreitos.
    */
   blocosLayout(
     profId: number,
@@ -2680,6 +2682,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     widthPct: number;
     lane: number;
     lanes: number;
+    zIndex: number;
   }> {
     const blocos = this.blocosNaColuna(profId, ymd);
     type Ext = { bloco: AgendaHubBloco; start: number; end: number };
@@ -2727,9 +2730,37 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         if (cnt > maxC) maxC = cnt;
       }
       const lane = laneByBloco.get(ev.bloco) ?? 0;
-      const widthPct = 100 / maxC;
-      const leftPct = (lane / maxC) * 100;
-      return { bloco: ev.bloco, leftPct, widthPct, lane, lanes: maxC };
+      if (maxC <= 1) {
+        return {
+          bloco: ev.bloco,
+          leftPct: 0,
+          widthPct: 100,
+          lane: 0,
+          lanes: 1,
+          zIndex: 2,
+        };
+      }
+      /** Original: largura total; encaixes: ~62% à direita (cascata se N>2). */
+      if (lane === 0) {
+        return {
+          bloco: ev.bloco,
+          leftPct: 0,
+          widthPct: 100,
+          lane,
+          lanes: maxC,
+          zIndex: 2,
+        };
+      }
+      const widthPct = Math.max(48, 62 - (lane - 1) * 6);
+      const leftPct = 100 - widthPct;
+      return {
+        bloco: ev.bloco,
+        leftPct,
+        widthPct,
+        lane,
+        lanes: maxC,
+        zIndex: 2 + lane,
+      };
     });
   }
 
@@ -3193,8 +3224,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const card =
       (slotEl.querySelector('.day-col__card') as HTMLElement | null) ?? slotEl;
     const rect = card.getBoundingClientRect();
-    const tipW = 280;
-    const tipH = 320;
+    const tipW = CARD_HOVER_TIP_W_PX;
+    const tipH = CARD_HOVER_TIP_H_PX;
     const gap = CARD_HOVER_TIP_GAP_PX;
     const cardCenterX = rect.left + rect.width / 2;
 
