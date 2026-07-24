@@ -1503,8 +1503,22 @@ export class ComandasComponent implements OnInit, OnDestroy {
       this.editAgendamentoCtx?.id_atendimento?.trim() ??
       this.comandaDrawerContexto?.idAtendimento?.trim() ??
       '';
+    const ymdEdit = (this.editAgendamentoCtx?.data ?? '').trim();
     const comandaJaAberta =
       this.comandaPainelAberto && this.comandaDrawerContexto != null;
+
+    if (
+      comandaJaAberta &&
+      /^\d{4}-\d{2}-\d{2}$/.test(ymdEdit) &&
+      this.comandaDrawerContexto &&
+      this.comandaDrawerContexto.dataYmd !== ymdEdit
+    ) {
+      this.comandaDrawerContexto = {
+        ...this.comandaDrawerContexto,
+        dataYmd: ymdEdit,
+      };
+      this.comandaDataYmdParaFaturar = ymdEdit;
+    }
 
     this.fecharEditAgendamento();
     this.carregar();
@@ -1527,6 +1541,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   onComandaDataYmdAlterada(ymd: string | null): void {
     this.comandaDataYmdParaFaturar = ymd;
+    const ctx = this.comandaDrawerContexto;
+    if (!ctx) return;
+    const next = (ymd ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(next) || ctx.dataYmd === next) return;
+    this.comandaDrawerContexto = { ...ctx, dataYmd: next };
   }
 
   // ----- Sub-drawer Faturar -------------------------------------------------

@@ -69,6 +69,8 @@ const SLUG_POR_TIPO: Record<string, string> = {
   Serviço: 'receita_servicos',
   Mega: 'receita_mega',
   Pacote: 'receita_pacotes',
+  'Pacote Adesivo+Queratina': 'receita_pacotes',
+  /** Legado (pré-0051). */
   'Pacote Queratina': 'receita_pacotes',
   Produto: 'receita_produtos',
   Cabelo: 'receita_cabelo',
@@ -76,6 +78,7 @@ const SLUG_POR_TIPO: Record<string, string> = {
 
 const ORDEM_TIPO: string[] = [
   'Pacote',
+  'Pacote Adesivo+Queratina',
   'Pacote Queratina',
   'Mega',
   'Serviço',
@@ -604,9 +607,11 @@ function movimentacaoEditavel(origem: string): boolean {
 
 /**
  * Razão unificado de Transações (`GET /api/financeiro/transacoes`):
- * - `movimentacoes` (receitas/despesas: comanda, manual, despesa cadastro, comissão paga)
- * - `comanda_pagamentos` com método `pendente` (prestação em atraso)
+ * - `movimentacoes` (receitas/despesas: comanda faturada, manual, despesa, comissão paga)
+ * - `comanda_pagamentos` com método `pendente` / `a_receber_cartao` (comanda já faturada)
  * - `pagamentos` legados (folha) sem `movimentacao` espelhada (`observacao` ≠ `mov:{id}`)
+ * Comandas **sem faturar** não entram. Fiado só após Faturar com método Pendente /
+ * A receber (cartão): status Em aberto (venc. ≥ hoje) ou Atrasado (venc. < hoje).
  * Comissões *a pagar* em Comissões só entram aqui após `POST /api/financeiro/comissoes/pagar`.
  */
 export type FinTransacoesTipoDataApi = 'vencimento' | 'competencia' | 'pagamento';

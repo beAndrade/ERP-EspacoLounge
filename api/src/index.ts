@@ -15,6 +15,7 @@ import {
   excluirComandaPorIdAtendimento,
   type ModoExclusaoComanda,
   finalizarCobrancaPorIdAtendimento,
+  aplicarDescontoComandaPorIdAtendimento,
   listAtendimentosRaw,
   remarcarBlocoAgendamento,
   atualizarAgendaStatusBloco,
@@ -665,6 +666,16 @@ const app = new Elysia({ adapter: node() })
     if (!auth.ok) {
       set.status = 401;
       return auth.response;
+    }
+  })
+  .onAfterHandle(({ request, set }) => {
+    /**
+     * Evita o browser devolver GET antigo após excluir/recriar o mesmo
+     * `id_atendimento` na edição de itens da comanda.
+     */
+    if (request.method === 'GET') {
+      set.headers['cache-control'] = 'no-store, no-cache, must-revalidate';
+      set.headers['pragma'] = 'no-cache';
     }
   })
   .get('/health', () =>
@@ -2293,6 +2304,39 @@ const app = new Elysia({ adapter: node() })
         metodo_rotulo: t.Optional(t.String()),
         troco: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
         observacao: t.Optional(t.Union([t.String(), t.Null()])),
+      }),
+    },
+  )
+  .patch(
+    '/api/comandas/:idAtendimento/desconto',
+    async ({ params, body }) => {
+      try {
+        const id = String(params.idAtendimento || '').trim();
+        if (!id) return fail('VALIDATION', 'idAtendimento é obrigatório');
+        const desconto =
+          body?.desconto != null ? String(body.desconto) : '';
+        const n = await aplicarDescontoComandaPorIdAtendimento(
+          db,
+          id,
+          desconto,
+        );
+        if (!n) {
+          return fail(
+            'NOT_FOUND',
+            'Nenhuma linha encontrada para este atendimento',
+          );
+        }
+        const resumo = await getResumoComanda(db, id);
+        return ok({ atualizadas: n, resumo });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ idAtendimento: t.String() }),
+      body: t.Object({
+        desconto: t.Optional(t.Union([t.String(), t.Number(), t.Null()])),
       }),
     },
   )

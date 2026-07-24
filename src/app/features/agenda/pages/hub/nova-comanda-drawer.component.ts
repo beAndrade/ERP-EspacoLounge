@@ -12,7 +12,19 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { catchError, map, of, take, startWith, distinctUntilChanged } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  finalize,
+  map,
+  of,
+  shareReplay,
+  take,
+  startWith,
+  distinctUntilChanged,
+  switchMap,
+  type Observable,
+} from 'rxjs';
 import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
 import { AgendaNovoClientSidebarComponent } from '../novo/agenda-novo-client-sidebar.component';
 import type {
@@ -23,7 +35,9 @@ import type {
   ComandaResumoPagamentos,
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import {
+  isTipoPacoteQueratinaNorm,
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
   parseFiltroDataDdMm,
@@ -80,8 +94,8 @@ export interface LinhaResumoComanda {
     /** Só Mega: valor da etapa (ex.: ao lado do nome «Retirada — R$ …»). */
     valorEtapaBrl?: string | null;
   }[];
-  /** Tipo do bloco (`Serviço`/`Produto`/`Mega`/`Pacote`/`Pacote Queratina`/`Cabelo`). */
-  tipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Pacote Queratina' | 'Cabelo' | 'Outro';
+  /** Tipo do bloco (`Serviço`/`Produto`/`Mega`/`Pacote`/`Pacote Adesivo+Queratina`/`Cabelo`). */
+  tipo: 'Serviço' | 'Produto' | 'Mega' | 'Pacote' | 'Pacote Adesivo+Queratina' | 'Cabelo' | 'Outro';
   /** Quantidade quando aplicável (Produto/Serviço). */
   quantidade: number | null;
 }
@@ -117,6 +131,7 @@ export class NovaComandaDrawerComponent implements OnInit {
   private readonly clientSidebarRef =
     viewChild(AgendaNovoClientSidebarComponent);
   private readonly api = inject(SheetsApiService);
+  private readonly toast = inject(AppToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   /** Preenchido ao abrir a partir do drawer de agendamento (cliente / data correntes). */
@@ -187,6 +202,21 @@ export class NovaComandaDrawerComponent implements OnInit {
   private lastClienteFetchId = '';
   /** Evita repor crédito ao reexecutar o effect com o mesmo `id_atendimento`. */
   private lastIdAtParaCamposResumo = '';
+  /**
+   * Desconto digitado nesta abertura do drawer (fonte de verdade local).
+   * Impede o sync da API (ainda a 0) de apagar o valor antes do PATCH.
+   */
+  private descontoSessaoReais: number | null = null;
+  private persistindoDesconto = false;
+  /**
+   * Sequência + sub activa do GET de itens: ignora respostas stale após
+   * excluir/recriar o mesmo `id_atendimento` (edição de itens).
+   */
+  private linhasLoadSeq = 0;
+  private linhasLoadSub: { unsubscribe(): void } | null = null;
+  /** Idem para o GET de pagamentos/resumo. */
+  private pagamentosLoadSeq = 0;
+  private pagamentosLoadSub: { unsubscribe(): void } | null = null;
 
   constructor() {
     effect(() => {
@@ -216,9 +246,16 @@ export class NovaComandaDrawerComponent implements OnInit {
         this.resumoPagamentos = RESUMO_VAZIO;
         this.pagamentos = [];
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+          this.linhasLoadSub?.unsubscribe();
+          this.linhasLoadSub = null;
+          this.linhasLoadSeq++;
+          this.pagamentosLoadSub?.unsubscribe();
+          this.pagamentosLoadSub = null;
+          this.pagamentosLoadSeq++;
           this.lastIdAtParaCamposResumo = '';
           this.lastClienteFetchId = '';
           this.clienteApi = null;
+          this.descontoSessaoReais = null;
           this.descontoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
@@ -249,6 +286,7 @@ export class NovaComandaDrawerComponent implements OnInit {
         }
         if (idAt !== this.lastIdAtParaCamposResumo) {
           this.lastIdAtParaCamposResumo = idAt;
+          this.descontoSessaoReais = null;
           this.descontoResumoCtrl.setValue(formataMoedaBrl(0), {
             emitEvent: false,
           });
@@ -279,7 +317,31 @@ export class NovaComandaDrawerComponent implements OnInit {
       });
     this.descontoResumoCtrl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.clampCreditoResumoAoMaximo());
+      .subscribe((raw) => {
+        if (this.descontoResumoCtrl.dirty) {
+          this.descontoSessaoReais = this.valorMonetarioCampoResumo(raw);
+        }
+        this.clampCreditoResumoAoMaximo();
+      });
+    /** Grava o desconto ao sair do campo / após pausa na digitação. */
+    this.descontoResumoCtrl.valueChanges
+      .pipe(
+        debounceTime(450),
+        takeUntilDestroyed(this.destroyRef),
+        switchMap(() => {
+          if (this.comandaFinalizada()) return of(null);
+          if (
+            this.descontoSessaoReais == null &&
+            this.descontoResumoCtrl.pristine
+          ) {
+            return of(null);
+          }
+          const id = this.contexto()?.idAtendimento?.trim();
+          if (!id) return of(null);
+          return this.persistirDescontoComanda$(id, this.descontoAtualReais());
+        }),
+      )
+      .subscribe();
     this.creditoResumoCtrl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.clampCreditoResumoAoMaximo());
@@ -289,26 +351,37 @@ export class NovaComandaDrawerComponent implements OnInit {
   private recarregarResumoPagamentos(idAtendimento: string): void {
     const id = (idAtendimento || '').trim();
     if (!id) {
+      this.pagamentosLoadSub?.unsubscribe();
+      this.pagamentosLoadSub = null;
+      this.pagamentosLoadSeq++;
       this.resumoPagamentos = RESUMO_VAZIO;
       this.pagamentos = [];
+      this.carregandoPagamentos = false;
       return;
     }
+    this.pagamentosLoadSub?.unsubscribe();
     this.carregandoPagamentos = true;
-    this.api
+    const seq = ++this.pagamentosLoadSeq;
+    this.pagamentosLoadSub = this.api
       .listComandaPagamentos(id)
       .pipe(
-        takeUntilDestroyed(this.destroyRef),
+        take(1),
         catchError(() =>
           of({ items: [] as ComandaPagamentoItem[], resumo: RESUMO_VAZIO }),
         ),
       )
       .subscribe({
         next: (r) => {
+          if (seq !== this.pagamentosLoadSeq) return;
           if (this.contexto()?.idAtendimento?.trim() !== id) return;
           this.pagamentos = r.items ?? [];
           this.resumoPagamentos = r.resumo ?? RESUMO_VAZIO;
           this.sincronizarDescontoResumoDoBackendELeitura(true);
           this.sincronizarCreditoUsadoDosPagamentos();
+          this.carregandoPagamentos = false;
+        },
+        error: () => {
+          if (seq !== this.pagamentosLoadSeq) return;
           this.carregandoPagamentos = false;
         },
       });
@@ -364,7 +437,8 @@ export class NovaComandaDrawerComponent implements OnInit {
     const ymd = (ctx?.dataYmd ?? '').trim();
     const idAt = (ctx?.idAtendimento ?? '').trim();
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
-    this.carregarLinhasAtendimento(ymd, idAt);
+    /** Mantém a lista visível (sem flash) quando já há itens — evita shake no drawer. */
+    this.carregarLinhasAtendimento(ymd, idAt, { soft: true });
     this.recarregarResumoPagamentos(idAt);
     this.notificarSidebarContagens();
   }
@@ -383,7 +457,7 @@ export class NovaComandaDrawerComponent implements OnInit {
 
     for (const l of this.linhasAtendimentoApi) {
       const tp = String(l.tipo ?? '').trim().toLowerCase();
-      if (tp === 'mega' || tp === 'pacote' || tp === 'pacote queratina') {
+      if (tp === 'mega' || tp === 'pacote' || isTipoPacoteQueratinaNorm(tp)) {
         const k = `${tp}::${String(l.pacote ?? '').trim() || '(sem pacote)'}`;
         const arr = grupos.get(k) ?? [];
         arr.push(l);
@@ -400,8 +474,8 @@ export class NovaComandaDrawerComponent implements OnInit {
       const tipo: LinhaResumoComanda['tipo'] =
         tipoCab === 'mega'
           ? 'Mega'
-          : tipoCab === 'pacote queratina'
-            ? 'Pacote Queratina'
+          : isTipoPacoteQueratinaNorm(tipoCab)
+            ? 'Pacote Adesivo+Queratina'
             : 'Pacote';
       const nome =
         String(cabeca.pacote ?? '').trim() ||
@@ -517,19 +591,23 @@ export class NovaComandaDrawerComponent implements OnInit {
     const megaOuPac =
       tipoNorm === 'mega' ||
       tipoNorm === 'pacote' ||
-      tipoNorm === 'pacote queratina';
+      isTipoPacoteQueratinaNorm(tipoNorm);
     /** Mega/Pacote: não usar pivot partilhado (ver `totalLinhaPreferencialAtendimento`). */
     const totalN = megaOuPac
       ? totalLinhaPreferencialAtendimento(l)
       : (itemRef?.total_linha != null
           ? valorMonetarioParaNumero(itemRef.total_linha)
           : null) ?? totalLinhaPreferencialAtendimento(l);
-    /** Mega/Pacote: desconto é só ao nível da comanda — nunca por linha. */
+    /**
+     * Desconto por item: só a pivot (`itemRef.desconto`).
+     * Desconto da comanda vive em `desconto_comanda` / resumo — nunca em «Desc.».
+     * Mega/Pacote: desconto só no resumo da comanda.
+     */
     const descN = megaOuPac
       ? null
-      : ((itemRef?.desconto != null
-          ? valorMonetarioParaNumero(itemRef.desconto)
-          : null) ?? valorMonetarioParaNumero(l.desconto));
+      : itemRef?.desconto != null
+        ? valorMonetarioParaNumero(itemRef.desconto)
+        : null;
     if (
       totalN === null &&
       (descN === null || descN <= 0)
@@ -573,7 +651,7 @@ export class NovaComandaDrawerComponent implements OnInit {
     const tpMega =
       bloco.tipo === 'Mega' ||
       bloco.tipo === 'Pacote' ||
-      bloco.tipo === 'Pacote Queratina';
+      bloco.tipo === 'Pacote Adesivo+Queratina';
     if (tpMega) {
       const lCab = bloco.linha;
       const q = this.quantidadeLinha(lCab);
@@ -581,7 +659,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       const mostrarQtd = q != null && q > 0;
       const textoQtd = String(qEff).replace('.', ',');
 
-      if (bloco.tipo === 'Pacote' || bloco.tipo === 'Pacote Queratina') {
+      if (bloco.tipo === 'Pacote' || bloco.tipo === 'Pacote Adesivo+Queratina') {
         /** Valor do pacote na BD (cabeça; etapas costumam vir 0). */
         const totalN = valorMonetarioParaNumero(lCab.valor);
         if (totalN == null) {
@@ -677,40 +755,61 @@ export class NovaComandaDrawerComponent implements OnInit {
    * Carrega linhas do atendimento e atualiza o mapa de quantidade por `linha_id`.
    * A API pode devolver `itens_catalogo` completo só numa linha; aqui distribuímos
    * as quantidades por ordem/tipo para cada linha renderizada da comanda.
+   *
+   * Importante: GET só por `id_atendimento` (com cache-bust), sem filtrar pela
+   * data do contexto — após editar itens a data pode divergir e o filtro
+   * `data+id` devolvia lista vazia/antiga. Também ignora respostas fora de ordem
+   * (GET em voo antes do excluir+recriar sobrescrevia o UI).
    */
   private carregarLinhasAtendimento(
-    ymd: string,
+    _ymd: string,
     idAt: string,
+    opts?: { soft?: boolean },
   ): { unsubscribe(): void } {
-    this.carregandoItens = true;
+    this.linhasLoadSub?.unsubscribe();
+    const soft =
+      opts?.soft === true && this.linhasAtendimentoApi.length > 0;
+    if (!soft) {
+      this.carregandoItens = true;
+    }
     this.erroItens = '';
-    return this.api
-      .listAgendamentos(ymd, ymd, idAt)
+    const seq = ++this.linhasLoadSeq;
+    const id = idAt.trim();
+    const sub = this.api
+      .listAgendamentosPorIdParaEdicao(id)
       .pipe(
-      takeUntilDestroyed(this.destroyRef),
-      catchError((e: Error) => {
-        this.erroItens =
-          e.message || 'Não foi possível carregar os itens do agendamento.';
-        return of([] as AtendimentoListaItem[]);
-      }),
-      map((rows) => {
-        const copy = [...rows];
-        ordenarLinhasAtendimentoInPlace(copy);
-        this.linhasAtendimentoApi.length = 0;
-        this.linhasAtendimentoApi.push(...copy);
-        this.reconstruirMapaQuantidade(copy);
-        this.carregandoItens = false;
-        return copy;
-      }),
+        take(1),
+        catchError((e: Error) => {
+          if (seq === this.linhasLoadSeq) {
+            this.erroItens =
+              e.message || 'Não foi possível carregar os itens do agendamento.';
+            this.carregandoItens = false;
+          }
+          return of([] as AtendimentoListaItem[]);
+        }),
+        map((rows) => {
+          if (seq !== this.linhasLoadSeq) return rows;
+          const copy = [...rows];
+          ordenarLinhasAtendimentoInPlace(copy);
+          this.linhasAtendimentoApi.length = 0;
+          this.linhasAtendimentoApi.push(...copy);
+          this.reconstruirMapaQuantidade(copy);
+          this.carregandoItens = false;
+          return copy;
+        }),
       )
       .subscribe({
         next: () => {
+          if (seq !== this.linhasLoadSeq) return;
+          if (this.contexto()?.idAtendimento?.trim() !== id) return;
           this.sincronizarDescontoResumoDoBackendELeitura(false);
           this.aplicarCreditoAutomaticoSeElegivel();
           this.aplicarEstadoCamposComandaFinalizada();
           this.sincronizarCreditoUsadoDosPagamentos();
         },
       });
+    this.linhasLoadSub = sub;
+    return sub;
   }
 
   /** Comanda finalizada: desabilita campos editáveis (só leitura + cursor bloqueado na UI). */
@@ -732,19 +831,52 @@ export class NovaComandaDrawerComponent implements OnInit {
     }
   }
 
-  /**
-   * Mantém o input «Desconto» alinhado ao resumo da API; se a API vier sem desconto,
-   * usa a soma das colunas «Desc.» (Mega/Pacote só na cabeça).
-   */
-  private sincronizarDescontoResumoDoBackendELeitura(forcar: boolean): void {
-    if (!forcar && !this.descontoResumoCtrl.pristine) return;
-    const implicit = this.somaDescontosExibidosPorItensComanda();
+  private sincronizarDescontoResumoDoBackendELeitura(_forcar: boolean): void {
     const api = this.resumoPagamentos?.desconto ?? 0;
+    const local = this.descontoAtualReais();
+    /**
+     * Utilizador já digitou nesta sessão: não deixar o GET (ainda sem desconto)
+     * apagar o valor local antes do PATCH terminar.
+     */
+    if (
+      this.descontoSessaoReais != null &&
+      this.descontoSessaoReais > 0.005 &&
+      api <= 0.005
+    ) {
+      return;
+    }
+    if (!this.descontoResumoCtrl.pristine && api <= 0.005) {
+      return;
+    }
+    if (
+      this.descontoResumoCtrl.dirty &&
+      local > 0.005 &&
+      Math.abs(local - api) > 0.005
+    ) {
+      return;
+    }
+    const implicit = this.somaDescontosExibidosPorItensComanda();
     const v = Math.round((api > 0 ? api : implicit) * 100) / 100;
+    if (Math.abs(local - v) <= 0.005) {
+      this.descontoResumoCtrl.markAsPristine();
+      if (v > 0.005) {
+        this.descontoSessaoReais = v;
+      }
+      return;
+    }
     this.descontoResumoCtrl.setValue(formataMoedaBrl(v), {
       emitEvent: false,
     });
     this.descontoResumoCtrl.markAsPristine();
+    this.descontoSessaoReais = v > 0.005 ? v : null;
+  }
+
+  /** Valor a persistir: sessão do utilizador tem prioridade sobre o controlo. */
+  private descontoAtualReais(): number {
+    if (this.descontoSessaoReais != null) {
+      return Math.max(0, this.descontoSessaoReais);
+    }
+    return this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
   }
 
   /** Soma pagamentos `outros` gravados como uso de crédito do cliente. */
@@ -784,7 +916,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       if (t === 'produto') return 'produto';
       if (t === 'mega') return 'mega';
       if (t === 'pacote') return 'pacote';
-      if (t === 'pacote queratina') return 'pacote_queratina';
+      if (isTipoPacoteQueratinaNorm(t)) return 'pacote_queratina';
       if (t === 'cabelo') return 'cabelo';
       return null;
     };
@@ -945,35 +1077,147 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.fecharOutrosMenu();
     const r = this.resumoPagamentos;
     const bruto = this.subtotalBrutoAntesDescontoResumo();
-    const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
+    const desc = this.descontoAtualReais();
     const creditoAUsar = this.valorMonetarioCampoResumo(
       this.creditoResumoCtrl.value,
     );
-    const total = this.totalAntesAplicarCredito();
+    const cash = this.cashbackComandaReais();
+    const total = Math.max(
+      0,
+      Math.round((bruto - desc - cash) * 100) / 100,
+    );
     const totalPago = r.total_pago ?? 0;
     const saldo = Math.max(
       0,
       Math.round((total - totalPago - creditoAUsar) * 100) / 100,
     );
-    this.faturarComanda.emit({
-      idAtendimento: id,
-      creditoAUsar: creditoAUsar > 0.005 ? creditoAUsar : undefined,
-      dataComandaYmd: this.dataComandaYmdParaFaturar(),
-      modoVerPagamentos: this.comandaFinalizada(),
-      resumo: {
-        ...r,
-        total_bruto: bruto,
-        desconto: desc,
-        total,
-        saldo,
-      },
+    const resumoEmit = {
+      ...r,
+      total_bruto: bruto,
+      desconto: desc,
+      total,
+      saldo,
+    };
+    const emitir = () => {
+      this.faturarComanda.emit({
+        idAtendimento: id,
+        creditoAUsar: creditoAUsar > 0.005 ? creditoAUsar : undefined,
+        dataComandaYmd: this.dataComandaYmdParaFaturar(),
+        modoVerPagamentos: this.comandaFinalizada(),
+        resumo: resumoEmit,
+      });
+    };
+    this.persistirDescontoComanda$(id, desc).subscribe((resumoApi) => {
+      if (resumoApi) {
+        this.resumoPagamentos = {
+          ...this.resumoPagamentos,
+          ...resumoApi,
+          total_bruto: bruto,
+          desconto: desc,
+          total,
+          saldo,
+        };
+      }
+      emitir();
     });
   }
 
   gravarRodape(): void {
     if (!this.podeSalvarComandaRodape()) return;
     this.fecharOutrosMenu();
-    this.salvarComanda.emit();
+    const id = this.contexto()?.idAtendimento?.trim();
+    if (!id) {
+      this.salvarComanda.emit();
+      return;
+    }
+    const desc = this.descontoAtualReais();
+    /** Sempre emite Salvar — o desconto tenta gravar, mas não bloqueia o fecho. */
+    this.persistirDescontoComanda$(id, desc)
+      .pipe(
+        take(1),
+        catchError(() => of(null)),
+      )
+      .subscribe(() => this.salvarComanda.emit());
+  }
+
+  /** Grava o desconto assim que o utilizador sai do campo (não espera o Salvar). */
+  onDescontoResumoBlur(): void {
+    if (this.comandaFinalizada()) return;
+    const id = this.contexto()?.idAtendimento?.trim();
+    if (!id) return;
+    this.descontoSessaoReais = this.valorMonetarioCampoResumo(
+      this.descontoResumoCtrl.value,
+    );
+    this.persistirDescontoComanda$(id, this.descontoAtualReais())
+      .pipe(take(1))
+      .subscribe();
+  }
+
+  /**
+   * Grava `desconto_comanda` na API. Pedidos iguais em paralelo partilham o HTTP;
+   * se o valor mudou, inicia um novo PATCH.
+   */
+  private descontoPersistInFlight$: Observable<ComandaResumoPagamentos | null> | null =
+    null;
+  private descontoPersistInFlightKey: string | null = null;
+
+  private persistirDescontoComanda$(
+    idAtendimento: string,
+    desc: number,
+  ): Observable<ComandaResumoPagamentos | null> {
+    this.descontoSessaoReais = desc;
+    const key = `${idAtendimento}|${Math.round(desc * 100)}`;
+    if (
+      this.descontoPersistInFlight$ &&
+      this.descontoPersistInFlightKey === key
+    ) {
+      return this.descontoPersistInFlight$;
+    }
+    this.persistindoDesconto = true;
+    this.descontoPersistInFlightKey = key;
+    this.descontoPersistInFlight$ = this.api
+      .aplicarDescontoComanda(
+        idAtendimento,
+        desc > 0.005 ? formataMoedaBrl(desc) : '',
+      )
+      .pipe(
+        take(1),
+        map((resp) => {
+          this.descontoResumoCtrl.setValue(formataMoedaBrl(desc), {
+            emitEvent: false,
+          });
+          this.descontoResumoCtrl.markAsPristine();
+          const descontoApi = Math.max(
+            desc,
+            Number(resp?.resumo?.desconto) || 0,
+          );
+          this.resumoPagamentos = {
+            ...this.resumoPagamentos,
+            ...(resp?.resumo ?? {}),
+            desconto: descontoApi,
+          };
+          this.descontoSessaoReais = descontoApi > 0.005 ? descontoApi : desc;
+          return this.resumoPagamentos;
+        }),
+        catchError((err: unknown) => {
+          console.error('[comanda] falha ao gravar desconto', err);
+          const msg =
+            err instanceof Error && err.message.trim()
+              ? err.message
+              : 'Não foi possível gravar o desconto.';
+          this.toast.showWarning(msg);
+          return of(null);
+        }),
+        finalize(() => {
+          if (this.descontoPersistInFlightKey === key) {
+            this.persistindoDesconto = false;
+            this.descontoPersistInFlight$ = null;
+            this.descontoPersistInFlightKey = null;
+          }
+        }),
+        shareReplay({ bufferSize: 1, refCount: true }),
+      );
+    return this.descontoPersistInFlight$;
   }
 
   // ----- Outros / excluir ---------------------------------------------------
@@ -1164,7 +1408,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       return Math.max(0, Math.round((apiTotal - cash) * 100) / 100);
     }
     const bruto = this.subtotalBrutoAntesDescontoResumo();
-    const desc = this.valorMonetarioCampoResumo(this.descontoResumoCtrl.value);
+    const desc = this.descontoAtualReais();
     return Math.max(
       0,
       Math.round((bruto - desc - cash) * 100) / 100,
@@ -1278,7 +1522,7 @@ export class NovaComandaDrawerComponent implements OnInit {
     return Math.round(sum * 100) / 100;
   }
 
-  /** Soma das colunas «Desc.» por linha (Mega/Pacote costumam vir «—»; aí prevalece o desconto da API). */
+  /** Soma das colunas «Desc.» por item (só desconto da pivot; Mega/Pacote = «—»). */
   private somaDescontosExibidosPorItensComanda(): number {
     let sum = 0;
     for (const b of this.blocosLeitura()) {

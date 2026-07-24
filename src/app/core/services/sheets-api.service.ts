@@ -1079,6 +1079,7 @@ export class SheetsApiService {
     items: ComandaPagamentoItem[];
     resumo: ComandaResumoPagamentos;
   }> {
+    const params = new HttpParams().set('_cb', String(Date.now()));
     return this.http
       .get<
         ApiResponse<{
@@ -1089,6 +1090,7 @@ export class SheetsApiService {
         this.url(
           `/api/comandas/${encodeURIComponent(idAtendimento)}/pagamentos`,
         ),
+        { params },
       )
       .pipe(map((raw) => this.unwrap(raw)));
   }
@@ -1115,6 +1117,26 @@ export class SheetsApiService {
           `/api/comandas/${encodeURIComponent(idAtendimento)}/pagamentos`,
         ),
         payload,
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
+  /**
+   * Grava o desconto da comanda (`desconto_comanda`) sem finalizar a cobrança.
+   * Usado no Salvar da comanda e ao abrir Faturar.
+   */
+  aplicarDescontoComanda(
+    idAtendimento: string,
+    descontoReais: string,
+  ): Observable<{ atualizadas: number; resumo: ComandaResumoPagamentos }> {
+    return this.http
+      .patch<
+        ApiResponse<{ atualizadas: number; resumo: ComandaResumoPagamentos }>
+      >(
+        this.url(
+          `/api/comandas/${encodeURIComponent(idAtendimento)}/desconto`,
+        ),
+        { desconto: descontoReais },
       )
       .pipe(map((raw) => this.unwrap(raw)));
   }

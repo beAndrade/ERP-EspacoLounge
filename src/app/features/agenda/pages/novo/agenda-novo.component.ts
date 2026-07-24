@@ -186,8 +186,12 @@ function valorCabeloPtValidator(
 function mapTipoFromApi(t: string): TipoAtendimento {
   const x = t.trim().toLowerCase();
   if (x === 'mega') return 'Mega';
-  if (x === 'pacote queratina' || x === 'pacote_queratina') {
-    return 'Pacote Queratina';
+  if (
+    x === 'pacote adesivo+queratina' ||
+    x === 'pacote queratina' ||
+    x === 'pacote_queratina'
+  ) {
+    return 'Pacote Adesivo+Queratina';
   }
   if (x === 'pacote') return 'Pacote';
   if (x === 'produto') return 'Produto';
@@ -195,9 +199,9 @@ function mapTipoFromApi(t: string): TipoAtendimento {
   return 'Serviço';
 }
 
-/** Pacote comercial ou Pacote Queratina (mesma UI de etapas). */
+/** Pacote comercial ou Pacote Adesivo+Queratina (mesma UI de etapas). */
 function isTipoPacoteFamilia(t: string | null | undefined): boolean {
-  return t === 'Pacote' || t === 'Pacote Queratina';
+  return t === 'Pacote' || t === 'Pacote Adesivo+Queratina';
 }
 
 function isTipoMegaOuPacoteFamilia(t: string | null | undefined): boolean {
@@ -313,6 +317,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   readonly creditoResumoWalkInCtrl = new FormControl(formataMoedaBrlResumo(0), {
     nonNullable: true,
   });
+  /** Último `id_atendimento` devolvido pelo create (para gravar desconto da comanda). */
+  private lastIdAtendimentoCriado = '';
 
   /** Pré-preenche data, primeira linha de serviço e slot (hora local). */
   @Input() contextoSlot: {
@@ -362,7 +368,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     'Serviço',
     'Mega',
     'Pacote',
-    'Pacote Queratina',
+    'Pacote Adesivo+Queratina',
     'Cabelo',
     'Produto',
   ];
@@ -462,6 +468,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
+  /** Ignora GET de edição fora de ordem ao reabrir o mesmo id. */
+  private edicaoLoadSeq = 0;
   /**
    * Datas `AAAA-MM-DD` com agendamento gravado (mesmo cliente e horário inicial),
    * descobertas ao editar — para «Próximos agendamentos» da série salva.
@@ -2294,7 +2302,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (it === 'Serviço' && this.servicosTipoServico.length === 0) return true;
       if (it === 'Produto' && this.produtos.length === 0) return true;
       if (it === 'Pacote' && this.pacotes.length === 0) return true;
-      if (it === 'Pacote Queratina' && this.pacotesQueratina.length === 0) {
+      if (it === 'Pacote Adesivo+Queratina' && this.pacotesQueratina.length === 0) {
         return true;
       }
       if (it === 'Mega' && this.pacotesMegaUnicos.length === 0) return true;
@@ -2374,12 +2382,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return ordenarNomesEtapasMegaPacote([...set]);
   }
 
-  /** Etapas para o select da linha `i` (Mega / Pacote / Pacote Queratina). */
+  /** Etapas para o select da linha `i` (Mega / Pacote / Pacote Adesivo+Queratina). */
   etapasSelectOptionsLinha(i: number): string[] {
     const g = this.linhasItensArray.at(i);
     const itemTipo = String(g?.get('itemTipo')?.value ?? '') as TipoLinhaAtendimento;
     const pacote = this.pacoteDaLinha(i);
-    if (itemTipo === 'Pacote Queratina') {
+    if (itemTipo === 'Pacote Adesivo+Queratina') {
       const directQ = this.etapasParaPacoteQueratinaSelecionado(pacote);
       if (directQ.length > 0) return directQ;
       if (pacote) {
@@ -2799,7 +2807,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Mega / Pacote / Pacote Queratina: ao escolher etapa + profissional na última
+   * Mega / Pacote / Pacote Adesivo+Queratina: ao escolher etapa + profissional na última
    * linha, abre automaticamente uma linha vazia (sem botão «+»).
    */
   onCamposEtapaAlterados(linhaI: number): void {
@@ -3027,7 +3035,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         return this.api.createAgendamento(body).pipe(
           tap((res) => {
             const id = String(res?.id ?? '').trim();
-            if (id) idShared = id;
+            if (id) {
+              idShared = id;
+              this.lastIdAtendimentoCriado = id;
+            }
           }),
         );
       }),
@@ -3075,6 +3086,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   salvar(): void {
+    if (this.salvando || this.excluindo) return;
     const prep = this.prepararSalvamentoFormulario();
     if (!prep) return;
 
@@ -3249,6 +3261,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           : criar$;
 
     this.salvando = true;
+    this.lastIdAtendimentoCriado = editId ?? '';
 
     /** Abrir aba no gesto do «Salvar» (evita bloqueio de pop-up após o HTTP). */
     let lembretePopup: Window | null = null;
@@ -3290,39 +3303,73 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       }
     }
 
-    salvar$.subscribe({
-      next: () => {
-        this.salvando = false;
-        this.repetirAgendamento = { modo: 'nenhum' };
-        this.repetirDataAncoraModal = null;
-        this.persistirRepetirPreferenciaClienteArmazem();
-        this.idAtendimentoEmEdicao = null;
-        this.slotAgenda = null;
-        this.aplicarAlteracoesProximos = false;
-        this.datasSerieOcorrenciasSalvas = [];
-        this.yminSerieOcorrenciasSalvas = null;
-        this.enviarLembreteUi = false;
-        this.agendaDados.notificarMudanca();
+    const finalizarSucessoSalvar = (): void => {
+      this.salvando = false;
+      this.repetirAgendamento = { modo: 'nenhum' };
+      this.repetirDataAncoraModal = null;
+      this.persistirRepetirPreferenciaClienteArmazem();
+      this.idAtendimentoEmEdicao = null;
+      this.slotAgenda = null;
+      this.aplicarAlteracoesProximos = false;
+      this.datasSerieOcorrenciasSalvas = [];
+      this.yminSerieOcorrenciasSalvas = null;
+      this.enviarLembreteUi = false;
+      this.agendaDados.notificarMudanca();
 
-        if (lembreteCtx) {
-          this.concluirLembreteWhatsappAposSalvar(lembretePopup, lembreteCtx);
-        }
+      if (lembreteCtx) {
+        this.concluirLembreteWhatsappAposSalvar(lembretePopup, lembreteCtx);
+      }
 
-        if (this.modoModal) {
-          this.salvoComSucesso.emit();
-        } else {
-          void this.router.navigate(['/agenda']);
-        }
-      },
-      error: (e: Error) => {
-        lembretePopup?.close();
-        this.avisoItensDuplicados = '';
-        this.erro =
-          e.message ||
-          'Não foi possível salvar. Verifique a internet e tente de novo.';
-        this.salvando = false;
-      },
-    });
+      if (this.modoModal) {
+        this.salvoComSucesso.emit();
+      } else {
+        void this.router.navigate(['/agenda']);
+      }
+    };
+
+    salvar$
+      .pipe(
+        switchMap(() => {
+          const id = (
+            editId ||
+            this.lastIdAtendimentoCriado ||
+            ''
+          ).trim();
+          if (!id || !this.mostrarResumoComandaWalkIn()) {
+            return of(null);
+          }
+          const desc = this.valorCampoResumoWalkIn(
+            this.descontoResumoWalkInCtrl.value,
+          );
+          /** Não enviar PATCH vazio se o utilizador não tocou no desconto (evita apagar). */
+          if (desc <= 0.005 && !this.descontoResumoWalkInCtrl.dirty) {
+            return of(null);
+          }
+          return this.api
+            .aplicarDescontoComanda(
+              id,
+              desc > 0.005 ? formataMoedaBrl(desc) : '',
+            )
+            .pipe(
+              take(1),
+              catchError((err: unknown) => {
+                console.error('[agenda] falha ao gravar desconto da comanda', err);
+                return of(null);
+              }),
+            );
+        }),
+      )
+      .subscribe({
+        next: () => finalizarSucessoSalvar(),
+        error: (e: Error) => {
+          lembretePopup?.close();
+          this.avisoItensDuplicados = '';
+          this.erro =
+            e.message ||
+            'Não foi possível salvar. Verifique a internet e tente de novo.';
+          this.salvando = false;
+        },
+      });
   }
 
   /**
@@ -3787,7 +3834,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               ? 'mega'
               : tipoApi === 'Pacote'
                 ? 'pacote'
-                : tipoApi === 'Pacote Queratina'
+                : tipoApi === 'Pacote Adesivo+Queratina'
                   ? 'pacote_queratina'
                   : null;
     if (!tipoPivot) return null;
@@ -3906,11 +3953,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         out.push({ k: 'pacote', rows: sorted.slice(start, i) });
         continue;
       }
-      if (ta === 'Pacote Queratina') {
+      if (ta === 'Pacote Adesivo+Queratina') {
         const start = i;
         const pac = String(sorted[i].pacote ?? '').trim();
         while (i < sorted.length) {
-          if (mapTipoFromApi(sorted[i].tipo || '') !== 'Pacote Queratina') break;
+          if (mapTipoFromApi(sorted[i].tipo || '') !== 'Pacote Adesivo+Queratina') break;
           if (String(sorted[i].pacote ?? '').trim() !== pac) break;
           i++;
         }
@@ -4027,7 +4074,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             servico_id: sid,
             tamanho: (row.tamanho || 'Curto').trim() || 'Curto',
             profissional: this.profissionalValorForm(row),
-            desconto: money.desconto || row.desconto || '',
+            desconto: money.desconto || '',
             valor_unitario:
               money.valor_unitario ||
               formataMoedaBrl(
@@ -4055,7 +4102,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           {
             produto: row.produtoNome || '',
             quantidade: q > 0 ? q : 1,
-            desconto: money.desconto || row.desconto || '',
+            desconto: money.desconto || '',
             preco_unitario:
               money.valor_unitario ||
               (this.precoCatalogoProduto(row.produtoNome || '') != null
@@ -4082,7 +4129,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             valor_cabelo:
               money.valor_unitario || this.valorCampoCabeloDeApi(row.valor),
             detalhes_cabelo: detalhesCabelo,
-            desconto: money.desconto || row.desconto || '',
+            desconto: money.desconto || '',
           },
           { emitEvent: false },
         );
@@ -4102,7 +4149,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           seg.k === 'mega'
             ? 'Mega'
             : seg.k === 'pacote_queratina'
-              ? 'Pacote Queratina'
+              ? 'Pacote Adesivo+Queratina'
               : 'Pacote';
         const g = this.novoGrupoLinhaItem(tipoForm);
         g.patchValue(
@@ -4605,6 +4652,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.slotAgenda = null;
   }
 
+  /**
+   * Após editar itens noutro drawer: alinha o formulário deste `agenda-novo`
+   * com a API para não regravar linhas antigas se alguém chamar `salvar()`.
+   */
+  recarregarEdicaoDoServidor(idAtendimento?: string | null): void {
+    const id =
+      String(idAtendimento ?? this.idAtendimentoEmEdicao ?? '').trim() ||
+      String(this.contextoSlot?.id_atendimento ?? '').trim();
+    if (!id) return;
+    this.carregarEdicaoPorIdParaModal(id);
+  }
+
   /** Hub / navegação: carrega pedido no formulário e libera listas. */
   private carregarEdicaoPorIdParaModal(id: string): void {
     const trimmed = id.trim();
@@ -4614,11 +4673,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.erro = '';
     this.idAtendimentoEmEdicao = trimmed;
+    const seq = ++this.edicaoLoadSeq;
     this.api
       .listAgendamentosPorIdParaEdicao(trimmed)
       .pipe(take(1), takeUntil(this.destroy$))
       .subscribe({
         next: (items) => {
+          if (seq !== this.edicaoLoadSeq) return;
           if (items.length > 0) {
             this.aplicarEdicaoNoForm(items);
             this.comandaAbertaParaClienteNoDia = true;
@@ -4640,6 +4701,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           this.carregandoListas = false;
         },
         error: () => {
+          if (seq !== this.edicaoLoadSeq) return;
           this.erro = 'Não foi possível carregar o atendimento.';
           this.idAtendimentoEmEdicao = null;
           this.datasSerieOcorrenciasSalvas = [];
@@ -5440,7 +5502,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         continue;
       }
 
-      if (tipo === 'Pacote Queratina') {
+      if (tipo === 'Pacote Adesivo+Queratina') {
         const pacote = String(g.get('pacote')?.value ?? '').trim();
         if (!pacote) continue;
         const etapasRaw = (
@@ -5460,7 +5522,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         out.push(
           this.mergeSlotOuHoraInicial(
             {
-              tipo: 'Pacote Queratina',
+              tipo: 'Pacote Adesivo+Queratina',
               cliente_id,
               data: dataYmd,
               pacote,

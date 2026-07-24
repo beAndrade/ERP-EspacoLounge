@@ -1182,3 +1182,249 @@ input[type='number'].fat-field__input {
     font-size: 1rem;
   }
 }
+
+/* Modal «Calcular troco» — portado ao lado do `.overlay--faturar` (viewport). */
+.fat-troco-modal {
+  position: fixed;
+  inset: 0;
+  /* Acima do overlay faturar (1005) e do drawer (1006). */
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.fat-troco-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: #00000073;
+  opacity: 0;
+  pointer-events: auto;
+  /* Fechar rápido — abertura sobrescrita em `--in`. */
+  transition: opacity 0.12s ease-in;
+}
+
+.fat-troco-modal--in .fat-troco-modal__backdrop {
+  opacity: 1;
+  transition: opacity 0.32s ease;
+}
+
+.fat-troco-modal__panel {
+  --troco-dx: 0px;
+  --troco-dy: 40px;
+  --troco-scale: 0.2;
+  position: relative;
+  box-sizing: border-box;
+  width: 350px;
+  height: 218.41px;
+  max-width: calc(100vw - 2rem);
+  background-color: #ffffff;
+  background-clip: padding-box;
+  border: 0;
+  border-radius: 14px;
+  box-shadow:
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  pointer-events: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0;
+  color: var(--fat-fg, #18181b);
+  transform: translate(var(--troco-dx), var(--troco-dy)) scale(var(--troco-scale));
+  opacity: 0;
+  transform-origin: center center;
+  /* Fechar: some rápido (sem “ver” o morph até o botão). */
+  transition:
+    transform 0.16s ease-in,
+    opacity 0.1s ease-in;
+  will-change: transform, opacity;
+}
+
+.fat-troco-modal__panel--in {
+  transform: translate(0, 0) scale(1);
+  opacity: 1;
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.32s ease;
+}
+
+.fat-troco-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+
+  &:hover {
+    background: #f4f4f5;
+    color: #52525b;
+  }
+}
+
+.fat-troco-modal__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  padding-right: 1.25rem;
+}
+
+.fat-troco-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+}
+
+.fat-troco-modal__label {
+  font-weight: 500;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.75);
+  line-height: 1.2;
+  padding-bottom: 8px;
+}
+
+.fat-troco-modal__input {
+  box-sizing: border-box;
+  height: 38px;
+  min-height: 38px;
+  padding: 7px 11px;
+  color: rgba(0, 0, 0, 0.75);
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.75);
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5714285714285714;
+  list-style: none;
+  width: 100%;
+  text-align: start;
+  background-color: transparent;
+  /* Mesmo modelo do `.fat-field__input`: contorno via box-shadow. */
+  border: 0;
+  border-radius: 12px;
+  outline: 0;
+  transition: all 0.2s linear;
+  appearance: textfield;
+  box-shadow: inset 0 0 0 1px #f1f1f1;
+  cursor: text;
+
+  &::placeholder {
+    color: #000000bf;
+    -webkit-text-fill-color: #000000bf;
+    opacity: 1;
+  }
+
+  &:hover {
+    box-shadow: inset 0 0 0 1px #7a88ff;
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: 0;
+    /* Igual a `--fat-field-focus-shadow` do drawer. */
+    box-shadow:
+      inset 0 0 0 1px #7a88ff,
+      0 0 0 2px rgba(5, 55, 255, 0.06);
+  }
+}
+
+/* Sobrescreve `.app-drawer input` (borda sólida global) quando o modal está no drawer. */
+.fat-troco-modal
+  input.fat-troco-modal__input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
+    [type='file']
+  ) {
+  border-width: 0;
+  border-style: none;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px #f1f1f1;
+  cursor: text;
+
+  &:hover {
+    border-color: transparent;
+    box-shadow: inset 0 0 0 1px #7a88ff;
+  }
+
+  &:focus,
+  &:focus-visible {
+    border-color: transparent;
+    box-shadow:
+      inset 0 0 0 1px #7a88ff,
+      0 0 0 2px rgba(5, 55, 255, 0.06);
+  }
+}
+
+.fat-troco-modal__divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: center;
+
+  span {
+    color: rgba(0, 0, 0, 0.75);
+    font-weight: 500;
+    font-size: 16px;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: #e4e4e7;
+  }
+}
+
+.fat-troco-modal__troco {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 0;
+  width: 100%;
+  padding-top: 12px;
+  padding-bottom: 2px;
+  box-sizing: border-box;
+}
+
+.fat-troco-modal__result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-weight: bold;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  color: #18181b;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}

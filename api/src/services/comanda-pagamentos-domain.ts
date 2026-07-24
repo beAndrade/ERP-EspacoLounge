@@ -20,6 +20,7 @@ import type { Db } from '../db';
 import {
   atendimentoItens,
   atendimentos,
+  atendimentosPedido,
   clientes,
   comandaPagamentos,
   movimentacoes,
@@ -160,6 +161,7 @@ function calcularTotaisDeLinhas(rows: AtendLinhaResumo[]): {
   cobranca_status: string | null;
 } {
   let bruto = 0;
+  let desconto = 0;
   for (const r of rows) {
     const raw =
       r.valorManual != null && String(r.valorManual).trim()
@@ -167,9 +169,9 @@ function calcularTotaisDeLinhas(rows: AtendLinhaResumo[]): {
         : r.valor;
     const v = toNumberPt(raw);
     if (v !== null) bruto += v;
+    const d = toNumberPt(r.desconto);
+    if (d != null && d > 0) desconto += d;
   }
-  const d = rows[0] ? toNumberPt(rows[0].desconto) : null;
-  const desconto = d != null && d > 0 ? d : 0;
   const total = Math.max(0, bruto - desconto);
   return {
     total_bruto: Math.round(bruto * 100) / 100,
@@ -248,37 +250,83 @@ function mesclarTotaisPivotELegado(
     total: number;
     cobranca_status: string | null;
   },
+  descontoComanda = 0,
 ): {
   total_bruto: number;
   desconto: number;
   total: number;
   cobranca_status: string | null;
 } {
+  const dc =
+    Number.isFinite(descontoComanda) && descontoComanda > 0
+      ? Math.round(descontoComanda * 100) / 100
+      : 0;
+
   if (!totaisItens) {
-    return legacy;
+    const desconto = Math.round((legacy.desconto + dc) * 100) / 100;
+    const total = Math.max(
+      0,
+      Math.round((legacy.total_bruto - desconto) * 100) / 100,
+    );
+    return {
+      total_bruto: legacy.total_bruto,
+      desconto,
+      total,
+      cobranca_status: legacy.cobranca_status,
+    };
   }
-  if (legacy.total > totaisItens.total + 0.005) {
-    return legacy;
+  if (legacy.total_bruto > totaisItens.total_bruto + 0.005) {
+    const desconto = Math.round((legacy.desconto + dc) * 100) / 100;
+    const total = Math.max(
+      0,
+      Math.round((legacy.total_bruto - desconto) * 100) / 100,
+    );
+    return {
+      total_bruto: legacy.total_bruto,
+      desconto,
+      total,
+      cobranca_status: legacy.cobranca_status,
+    };
   }
   /**
-   * `atendimentos.desconto` (1.ª linha) pode espelhar o mesmo valor já somado na pivot,
-   * ou ser desconto «Na comanda» extra / total do pedido. Não somar cegamente pivot+legacy.
+   * Desconto por item: pivot (ou legado nas linhas).
+   * Desconto da comanda: `atendimentos_pedido.desconto_comanda` (somado à parte).
    */
   const p = totaisItens.desconto;
   const l = legacy.desconto;
-  let descontoMerged: number;
+  let descontoItens: number;
   if (p <= 0.005) {
-    descontoMerged = l;
+    descontoItens = l;
   } else if (l <= 0.005) {
-    descontoMerged = p;
+    descontoItens = p;
   } else if (Math.abs(l - p) <= 0.005) {
-    descontoMerged = p;
+    descontoItens = p;
   } else if (l > p) {
-    descontoMerged = l;
+    descontoItens = l;
   } else {
-    descontoMerged = p + l;
+    descontoItens = p + l;
   }
-  descontoMerged = Math.round(descontoMerged * 100) / 100;
+  /**
+   * Contaminação: o mesmo valor de `desconto_comanda` ecoado nas linhas/pivot.
+   * Não somar em dobro (nem triplo se legado e pivot repetirem o valor).
+   */
+  if (dc > 0.005) {
+    if (Math.abs(descontoItens - dc) <= 0.005) {
+      descontoItens = 0;
+    } else if (
+      p > 0.005 &&
+      l > 0.005 &&
+      Math.abs(p - dc) <= 0.005 &&
+      Math.abs(l - dc) <= 0.005
+    ) {
+      descontoItens = 0;
+    } else if (p > 0.005 && Math.abs(p - dc) <= 0.005 && l > dc + 0.005) {
+      descontoItens = Math.round((l - dc) * 100) / 100;
+    } else if (l > 0.005 && Math.abs(l - dc) <= 0.005 && p > dc + 0.005) {
+      descontoItens = Math.round((p - dc) * 100) / 100;
+    }
+  }
+  const descontoMerged = Math.round((descontoItens + dc) * 100) / 100;
   const totalMerged = Math.max(
     0,
     Math.round((totaisItens.total_bruto - descontoMerged) * 100) / 100,
@@ -289,6 +337,40 @@ function mesclarTotaisPivotELegado(
     total: totalMerged,
     cobranca_status: legacy.cobranca_status,
   };
+}
+
+async function lerDescontoComandaPedido(
+  db: Db,
+  idAtendimento: string,
+): Promise<number> {
+  const [row] = await db
+    .select({ descontoComanda: atendimentosPedido.descontoComanda })
+    .from(atendimentosPedido)
+    .where(eq(atendimentosPedido.idAtendimento, idAtendimento))
+    .limit(1);
+  const n = toNumberPt(row?.descontoComanda ?? null);
+  return n != null && n > 0 ? n : 0;
+}
+
+async function lerDescontosComandaPorIds(
+  db: Db,
+  ids: string[],
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (ids.length === 0) return out;
+  const rows = await db
+    .select({
+      idAtendimento: atendimentosPedido.idAtendimento,
+      descontoComanda: atendimentosPedido.descontoComanda,
+    })
+    .from(atendimentosPedido)
+    .where(inArray(atendimentosPedido.idAtendimento, ids));
+  for (const r of rows) {
+    const k = String(r.idAtendimento || '').trim();
+    const n = toNumberPt(r.descontoComanda ?? null);
+    out.set(k, n != null && n > 0 ? n : 0);
+  }
+  return out;
 }
 
 /**
@@ -334,8 +416,9 @@ export async function getResumoComanda(
 
   const totaisItens = calcularTotaisDeItens(itens as ItemLinhaResumo[]);
   const legacy = calcularTotaisDeLinhas(linhas as AtendLinhaResumo[]);
+  const descontoComanda = await lerDescontoComandaPedido(db, id);
   const { total_bruto, desconto, total, cobranca_status } =
-    mesclarTotaisPivotELegado(totaisItens, legacy);
+    mesclarTotaisPivotELegado(totaisItens, legacy, descontoComanda);
 
   const [agg] = await db
     .select({
@@ -458,6 +541,7 @@ export async function getResumosPorAtendimento(
   }
 
   const fiadoIds = await idsComPagamentoFiado(db, lista);
+  const descontosComanda = await lerDescontosComandaPorIds(db, lista);
 
   for (const id of lista) {
     const rows = linhasPorId.get(id) ?? [];
@@ -465,7 +549,11 @@ export async function getResumosPorAtendimento(
     const totaisItens = calcularTotaisDeItens(itens);
     const legacy = calcularTotaisDeLinhas(rows);
     const { total_bruto, desconto, total, cobranca_status } =
-      mesclarTotaisPivotELegado(totaisItens, legacy);
+      mesclarTotaisPivotELegado(
+        totaisItens,
+        legacy,
+        descontosComanda.get(id) ?? 0,
+      );
     const aggPag = pagosMap.get(id) ?? { pago: 0, aReceber: 0 };
     const totalPago = aggPag.pago;
     const totalAReceberCartao = aggPag.aReceber;

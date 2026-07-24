@@ -108,7 +108,7 @@ export type CreateAtendimentoPayload = (
       observacao?: string;
     }
   | {
-      tipo: 'Pacote Queratina';
+      tipo: 'Pacote Adesivo+Queratina';
       cliente_id: string;
       data: string;
       profissional_id?: number | null;
@@ -1363,10 +1363,11 @@ export async function createAtendimento(
       return createAtendimentoMega(db, p as Extract<CreateAtendimentoPayload, { tipo: 'Mega' }>);
     case 'Pacote':
       return createAtendimentoPacote(db, p as Extract<CreateAtendimentoPayload, { tipo: 'Pacote' }>);
+    case 'Pacote Adesivo+Queratina':
     case 'Pacote Queratina':
       return createAtendimentoPacoteQueratina(
         db,
-        p as Extract<CreateAtendimentoPayload, { tipo: 'Pacote Queratina' }>,
+        p as Extract<CreateAtendimentoPayload, { tipo: 'Pacote Adesivo+Queratina' }>,
       );
     case 'Produto':
       return createAtendimentoProduto(db, p as Extract<CreateAtendimentoPayload, { tipo: 'Produto' }>);
@@ -1904,7 +1905,7 @@ async function createAtendimentoPacote(
 
 async function createAtendimentoPacoteQueratina(
   db: Db,
-  p: Extract<CreateAtendimentoPayload, { tipo: 'Pacote Queratina' }>,
+  p: Extract<CreateAtendimentoPayload, { tipo: 'Pacote Adesivo+Queratina' }>,
 ): Promise<{
   id: string;
   linhas: number;
@@ -1917,7 +1918,7 @@ async function createAtendimentoPacoteQueratina(
   const pacote = String(p.pacote || '').trim();
   if (!clienteId || !dataStr || !pacote) {
     throw new Error(
-      'cliente_id, data e pacote são obrigatórios para Pacote Queratina',
+      'cliente_id, data e pacote são obrigatórios para Pacote Adesivo+Queratina',
     );
   }
   const profCob = await resolveProfissionalIdToInt(
@@ -1930,11 +1931,11 @@ async function createAtendimentoPacoteQueratina(
   );
   const etapas = p.etapas || [];
   if (!etapas.length) {
-    throw new Error('Inclua ao menos uma etapa realizada para Pacote Queratina');
+    throw new Error('Inclua ao menos uma etapa realizada para Pacote Adesivo+Queratina');
   }
   const cat = await findPacoteQueratinaCatalogo(db, pacote);
   if (cat === null || cat.preco === null) {
-    throw new Error(`Pacote Queratina não encontrado: "${pacote}"`);
+    throw new Error(`Pacote Adesivo+Queratina não encontrado: "${pacote}"`);
   }
   const nomeCliente = await findClienteNome(db, clienteId);
   const idAt = await resolveIdAtendimentoCriacao(db, p, dataStr, clienteId);
@@ -1949,7 +1950,7 @@ async function createAtendimentoPacoteQueratina(
     dataStr,
     clienteId,
     nomeCliente,
-    tipo: 'Pacote Queratina',
+    tipo: 'Pacote Adesivo+Queratina',
     pacote,
     etapa: '',
     produto: '',
@@ -2020,7 +2021,7 @@ async function createAtendimentoPacoteQueratina(
       dataStr,
       clienteId,
       nomeCliente,
-      tipo: 'Pacote Queratina',
+      tipo: 'Pacote Adesivo+Queratina',
       pacote,
       etapa: etapaNome,
       produto: '',
@@ -2777,43 +2778,18 @@ export async function finalizarCobrancaPorIdAtendimento(
 
   if (rows.length === 0) return 0;
 
-  let descontoStr = '';
-  const trimmed = String(descontoRaw ?? '').trim();
-  if (trimmed) {
-    const n = toNumberPt(trimmed);
-    if (n === null || n < 0) {
-      throw new Error(
-        'Desconto inválido. Use valor em reais (ex.: 10 ou 10,50 ou R$ 10,00).',
-      );
-    }
-    if (n > 0) {
-      descontoStr = formatMoedaReciboPt(n);
-    }
-  }
+  await aplicarDescontoComandaPorIdAtendimento(db, id, descontoRaw);
 
   const resumoAntes = await getResumoComanda(db, id);
   let atualizadas = 0;
-  for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
+  for (const r of rows) {
     const patch: {
       cobrancaStatus: string;
       pagamentoStatus: string;
-      desconto?: string;
-      descricao?: string;
     } = {
       cobrancaStatus: 'finalizada',
       pagamentoStatus: resumoAntes.total_pago > 0 ? 'parcial' : 'pendente',
     };
-
-    /** Desconto global só na 1.ª linha; não apagar descontos por item nas restantes. */
-    if (descontoStr && i === 0) {
-      patch.desconto = descontoStr;
-      const baseDesc = String(r.descricao ?? '').trim();
-      const suffix = `Desconto: ${descontoStr}`;
-      if (!baseDesc.includes('Desconto:')) {
-        patch.descricao = baseDesc ? `${baseDesc} — ${suffix}` : suffix;
-      }
-    }
 
     await db.update(atendimentos).set(patch).where(eq(atendimentos.id, r.id));
     atualizadas += 1;
@@ -2824,6 +2800,141 @@ export async function finalizarCobrancaPorIdAtendimento(
   }
 
   return atualizadas;
+}
+
+/**
+ * Remove sufixo «Desconto: R$ …» deixado pelo fluxo antigo (desconto da comanda
+ * gravado em `atendimentos.descricao` / `.desconto`).
+ */
+function stripSufixoDescontoComandaDescricao(descricao: string): string {
+  return String(descricao ?? '')
+    .replace(/\s*—\s*Desconto:\s*R\$\s*[\d.,]+/gi, '')
+    .replace(/Desconto:\s*R\$\s*[\d.,]+/gi, '')
+    .replace(/\s*—\s*$/g, '')
+    .trim();
+}
+
+function descontoLinhaEquivale(
+  raw: unknown,
+  alvo: number,
+): boolean {
+  if (!(alvo > 0.005)) return false;
+  const n = toNumberPt(raw);
+  return n != null && Math.abs(n - alvo) <= 0.005;
+}
+
+/**
+ * Grava o desconto «da comanda» em `atendimentos_pedido.desconto_comanda`
+ * (não em `atendimentos.desconto` / pivot, que são desconto por item).
+ *
+ * Também remove contaminação do fluxo antigo: o mesmo valor ia para a 1.ª linha,
+ * o sufixo na descrição e, após regravar no editor, para a pivot — e a UI
+ * mostrava «Desc.» no item.
+ */
+export async function aplicarDescontoComandaPorIdAtendimento(
+  db: Db,
+  idAtendimento: string,
+  descontoRaw?: unknown,
+): Promise<number> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento é obrigatório');
+  await assertPedidoNaoOrcamento(db, id);
+
+  const [pedido] = await db
+    .select({ id: atendimentosPedido.idAtendimento })
+    .from(atendimentosPedido)
+    .where(eq(atendimentosPedido.idAtendimento, id))
+    .limit(1);
+  if (!pedido) return 0;
+
+  let descontoStr: string | null = null;
+  let descontoNum = 0;
+  const trimmed = String(descontoRaw ?? '').trim();
+  if (trimmed) {
+    const n = toNumberPt(trimmed);
+    if (n === null || n < 0) {
+      throw new Error(
+        'Desconto inválido. Use valor em reais (ex.: 10 ou 10,50 ou R$ 10,00).',
+      );
+    }
+    if (n > 0) {
+      descontoNum = Math.round(n * 100) / 100;
+      descontoStr = formatMoedaReciboPt(descontoNum);
+    }
+  }
+
+  await db
+    .update(atendimentosPedido)
+    .set({ descontoComanda: descontoStr })
+    .where(eq(atendimentosPedido.idAtendimento, id));
+
+  await limparContaminacaoDescontoComanda(db, id, descontoNum);
+
+  return 1;
+}
+
+/**
+ * Limpa vestígios do desconto da comanda em linhas/pivot.
+ * Quando `descontoComandaNum > 0`, remove também o mesmo valor numérico em
+ * `atendimentos.desconto` e `atendimento_itens.desconto` (contaminação típica).
+ */
+async function limparContaminacaoDescontoComanda(
+  db: Db,
+  idAtendimento: string,
+  descontoComandaNum: number,
+): Promise<void> {
+  const linhas = await db
+    .select({
+      id: atendimentos.id,
+      desconto: atendimentos.desconto,
+      descricao: atendimentos.descricao,
+    })
+    .from(atendimentos)
+    .where(eq(atendimentos.idAtendimento, idAtendimento));
+
+  for (const row of linhas) {
+    const descTxt = String(row.descricao ?? '');
+    const novaDesc = stripSufixoDescontoComandaDescricao(descTxt);
+    const tinhaSufixo = novaDesc !== descTxt;
+    const mesmoValorComanda = descontoLinhaEquivale(
+      row.desconto,
+      descontoComandaNum,
+    );
+    const patch: { desconto?: string; descricao?: string } = {};
+    if (tinhaSufixo) {
+      patch.descricao = novaDesc;
+    }
+    /** Sufixo antigo ou eco do valor da comanda na coluna de item. */
+    if (tinhaSufixo || mesmoValorComanda) {
+      if (String(row.desconto ?? '').trim()) {
+        patch.desconto = '';
+      }
+    }
+    if (Object.keys(patch).length > 0) {
+      await db
+        .update(atendimentos)
+        .set(patch)
+        .where(eq(atendimentos.id, row.id));
+    }
+  }
+
+  if (!(descontoComandaNum > 0.005)) return;
+
+  const itens = await db
+    .select({
+      id: atendimentoItens.id,
+      desconto: atendimentoItens.desconto,
+    })
+    .from(atendimentoItens)
+    .where(eq(atendimentoItens.idAtendimento, idAtendimento));
+
+  for (const it of itens) {
+    if (!descontoLinhaEquivale(it.desconto, descontoComandaNum)) continue;
+    await db
+      .update(atendimentoItens)
+      .set({ desconto: null })
+      .where(eq(atendimentoItens.id, it.id));
+  }
 }
 
 /**

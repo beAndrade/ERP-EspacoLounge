@@ -1024,7 +1024,7 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "whatsapp_templates" WHERE "codigo" = 'orcamento'
 );
 `));
-  /** Catálogo Pacote Queratina (PROD pode ter tabelas vazias se só correu migrate sem seed). */
+  /** Catálogo Pacote Adesivo+Queratina (PROD pode ter tabelas vazias se só correu migrate sem seed). */
   await db.execute(sql.raw(`
 DO $$
 BEGIN
@@ -1051,5 +1051,67 @@ BEGIN
       ('5 mechas', 'Colocação', 'R$ 40,00', 'R$ 40,00', 30);
   END IF;
 END $$;
+`));
+  /** Rótulo em `atendimentos.tipo` (enum do pivot permanece `pacote_queratina`). */
+  await db.execute(sql.raw(`
+UPDATE "atendimentos"
+SET "tipo" = 'Pacote Adesivo+Queratina'
+WHERE "tipo" = 'Pacote Queratina';
+`));
+  /** Desconto da comanda em `atendimentos_pedido` (separado do desconto por item). */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'desconto_comanda'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "desconto_comanda" text;
+  END IF;
+END $$;
+`));
+  /**
+   * Contaminação pré-separação: desconto da comanda em descrição / linhas / pivot.
+   * Idempotente — seguro em bases já migradas com 0053.
+   */
+  await db.execute(sql.raw(`
+UPDATE "atendimentos" a
+SET
+  "desconto" = '',
+  "descricao" = trim(both ' —' from regexp_replace(
+    regexp_replace(
+      coalesce(a."descricao", ''),
+      '\\s*—\\s*Desconto:\\s*R\\$\\s*[\\d.,]+',
+      '',
+      'i'
+    ),
+    'Desconto:\\s*R\\$\\s*[\\d.,]+',
+    '',
+    'i'
+  ))
+WHERE coalesce(a."descricao", '') ILIKE '%Desconto:%';
+`));
+  await db.execute(sql.raw(`
+UPDATE "atendimentos" a
+SET "desconto" = ''
+FROM "atendimentos_pedido" p
+WHERE a."id_atendimento" = p."id_atendimento"
+  AND coalesce(trim(p."desconto_comanda"), '') <> ''
+  AND coalesce(trim(a."desconto"), '') <> ''
+  AND regexp_replace(coalesce(a."desconto", ''), '[^\\d,]', '', 'g')
+    = regexp_replace(p."desconto_comanda", '[^\\d,]', '', 'g');
+`));
+  await db.execute(sql.raw(`
+UPDATE "atendimento_itens" i
+SET "desconto" = NULL
+FROM "atendimentos_pedido" p
+WHERE i."id_atendimento" = p."id_atendimento"
+  AND coalesce(trim(p."desconto_comanda"), '') <> ''
+  AND i."desconto" IS NOT NULL
+  AND round(i."desconto"::numeric, 2) = round(
+    replace(regexp_replace(p."desconto_comanda", '[^\\d,]', '', 'g'), ',', '.')::numeric,
+    2
+  );
 `));
 }

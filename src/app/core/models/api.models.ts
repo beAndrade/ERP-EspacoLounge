@@ -606,7 +606,7 @@ export type TipoAtendimento =
   | 'Serviço'
   | 'Mega'
   | 'Pacote'
-  | 'Pacote Queratina'
+  | 'Pacote Adesivo+Queratina'
   | 'Cabelo'
   | 'Produto';
 
@@ -693,7 +693,7 @@ export type CreateAtendimentoPayload = (
       observacao?: string;
     }
   | {
-      tipo: 'Pacote Queratina';
+      tipo: 'Pacote Adesivo+Queratina';
       cliente_id: string;
       data: string;
       profissional_id?: number | null;

@@ -358,6 +358,27 @@
       "when": 1775697962000,
       "tag": "0050_pacotes_queratina_catalogo",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1775697963000,
+      "tag": "0051_renomear_pacote_queratina_tipo",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1775697964000,
+      "tag": "0052_desconto_comanda_pedido",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1775698200000,
+      "tag": "0053_limpar_contaminacao_desconto_comanda",
+      "breakpoints": true
     }
   ]
 }

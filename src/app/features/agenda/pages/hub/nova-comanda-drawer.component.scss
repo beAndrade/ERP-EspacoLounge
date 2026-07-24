@@ -195,6 +195,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overflow-clip-margin: 16px 12px 20px calc(var(--drawer-bleed-l, 0px) + 28px);
+  /* Fecha drawer superior sem “puxar” o scroll desta coluna. */
+  overflow-anchor: none;
 }
 
 /** = `agenda-modal__header` (drawer). */

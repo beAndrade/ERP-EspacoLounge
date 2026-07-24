@@ -453,8 +453,10 @@
 .fin-transacoes-table tbody td.col-titular,
 .fin-transacoes-table tbody td.col-forma,
 .fin-transacoes-table tbody td.col-cat {
+  max-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fin-transacoes-table {

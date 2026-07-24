@@ -121,7 +121,7 @@
                       [class.nc-leitura__item--mega-pacote]="
                         b.tipo === 'Mega' ||
                         b.tipo === 'Pacote' ||
-                        b.tipo === 'Pacote Queratina'
+                        b.tipo === 'Pacote Adesivo+Queratina'
                       "
                     >
                       <div
@@ -254,6 +254,7 @@
         [creditoSomenteLeitura]="comandaFinalizada()"
         [cashbackReais]="cashbackComandaReais()"
         [totalReais]="totalComandaResumoCalculado()"
+        (descontoBlur)="onDescontoResumoBlur()"
       />
     </div>
   </div>

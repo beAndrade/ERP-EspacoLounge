@@ -10,8 +10,8 @@
       [attr.placeholder]="placeholderMoeda"
       [formControl]="descontoResumoCtrl"
       [readonly]="descontoSomenteLeitura"
-      (input)="onResumoMoedaInput(descontoResumoCtrl, $event)"
-      (blur)="normalizarCampoMoedaResumo(descontoResumoCtrl)"
+      (input)="onDescontoResumoMoedaInput($event)"
+      (blur)="normalizarCampoMoedaResumo(descontoResumoCtrl); descontoBlur.emit()"
       [attr.aria-label]="'Desconto: ' + descontoResumoCtrl.value"
     />
   </div>

@@ -25,7 +25,7 @@ export const atendimentoItemTipoEnum = pgEnum('atendimento_item_tipo', [
   'mega',
   /** Linha Pacote comercial (cabeça e/ou etapas). */
   'pacote',
-  /** Pacote Queratina (cabeça/etapas em `pacotes_queratina` / `regras_mega_queratina`). */
+  /** Pacote Adesivo+Queratina (cabeça/etapas em `pacotes_queratina` / `regras_mega_queratina`). */
   'pacote_queratina',
   /** Linha Cabelo (valor manual; texto em `detalhes`). */
   'cabelo',
@@ -223,7 +223,7 @@ export const pacotes = pgTable('pacotes', {
   precoPacote: text('preco_pacote'),
 });
 
-/** Catálogo comercial Pacote Queratina (preço da cabeça). */
+/** Catálogo comercial Pacote Adesivo+Queratina (preço da cabeça). */
 export const pacotesQueratina = pgTable('pacotes_queratina', {
   id: serial('id').primaryKey(),
   pacote: text('pacote').notNull(),
@@ -251,7 +251,7 @@ export const regrasMega = pgTable('regras_mega', {
   duracaoMinutos: integer('duracao_minutos').default(30).notNull(),
 });
 
-/** Etapas / comissão do Pacote Queratina (espelho de `regras_mega`). */
+/** Etapas / comissão do Pacote Adesivo+Queratina (espelho de `regras_mega`). */
 export const regrasMegaQueratina = pgTable('regras_mega_queratina', {
   id: serial('id').primaryKey(),
   pacote: text('pacote').notNull(),
@@ -345,6 +345,11 @@ export const atendimentosPedido = pgTable('atendimentos_pedido', {
     ),
   /** `producao` = comanda/agenda normal; `orcamento` = fora de financeiro/agenda. */
   modo: pedidoModoEnum('modo').notNull().default('producao'),
+  /**
+   * Desconto da comanda inteira (resumo / Faturar).
+   * Separado de `atendimentos.desconto` / pivot (desconto por item).
+   */
+  descontoComanda: text('desconto_comanda'),
   /** Só preenchido quando `modo = orcamento`. */
   orcamentoStatus: orcamentoStatusEnum('orcamento_status'),
   orcamentoEnviadoEm: timestamp('orcamento_enviado_em', {
@@ -384,12 +389,12 @@ export const atendimentoItens = pgTable(
     pacoteId: integer('pacote_id').references(() => pacotes.id, {
       onDelete: 'set null',
     }),
-    /** Etapa Pacote Queratina: FK a `regras_mega_queratina`. */
+    /** Etapa Pacote Adesivo+Queratina: FK a `regras_mega_queratina`. */
     regraMegaQueratinaId: integer('regra_mega_queratina_id').references(
       () => regrasMegaQueratina.id,
       { onDelete: 'set null' },
     ),
-    /** Cabeça / linhas Pacote Queratina: FK a `pacotes_queratina`. */
+    /** Cabeça / linhas Pacote Adesivo+Queratina: FK a `pacotes_queratina`. */
     pacoteQueratinaId: integer('pacote_queratina_id').references(
       () => pacotesQueratina.id,
       { onDelete: 'set null' },

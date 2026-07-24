@@ -102,9 +102,24 @@ export function valorMonetarioParaNumero(v: unknown): number | null {
 export function linhaSortPriorityAtendimento(l: AtendimentoListaItem): number {
   const t = (l.tipo || '').trim().toLowerCase();
   const et = (l.etapa || '').trim();
-  if ((t === 'pacote' || t === 'mega' || t === 'pacote_queratina') && !et) return 0;
-  if (t === 'pacote' || t === 'mega' || t === 'pacote_queratina') return 1;
+  const pacoteFamilia =
+    t === 'pacote' || t === 'mega' || isTipoPacoteQueratinaNorm(t);
+  if (pacoteFamilia && !et) return 0;
+  if (pacoteFamilia) return 1;
   return 2;
+}
+
+/**
+ * Tipo Pacote Adesivo+Queratina (rótulo UI, valor legado ou enum do pivot).
+ * `atendimentos.tipo` guarda o rótulo; o pivot usa `pacote_queratina`.
+ */
+export function isTipoPacoteQueratinaNorm(tipoNorm: string): boolean {
+  const t = tipoNorm.trim().toLowerCase();
+  return (
+    t === 'pacote adesivo+queratina' ||
+    t === 'pacote queratina' ||
+    t === 'pacote_queratina'
+  );
 }
 
 /** Normaliza nome de etapa para comparação (minúsculas, sem acentos). */
@@ -172,8 +187,10 @@ export function ordenarLinhasAtendimentoInPlace(
     if (ex && ey) {
       const tx = (x.tipo || '').trim().toLowerCase();
       const ty = (y.tipo || '').trim().toLowerCase();
-      const mx = tx === 'mega' || tx === 'pacote' || tx === 'pacote_queratina';
-      const my = ty === 'mega' || ty === 'pacote' || ty === 'pacote_queratina';
+      const mx =
+        tx === 'mega' || tx === 'pacote' || isTipoPacoteQueratinaNorm(tx);
+      const my =
+        ty === 'mega' || ty === 'pacote' || isTipoPacoteQueratinaNorm(ty);
       if (mx && my) {
         return compararEtapasMegaPacoteFluxo(ex, ey);
       }
@@ -194,11 +211,11 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     }
     return nome || desc || '—';
   }
-  if (t === 'pacote' || t === 'pacote queratina' || t === 'pacote_queratina') {
+  if (t === 'pacote' || isTipoPacoteQueratinaNorm(t)) {
     const pac = (l.pacote || '').trim();
     const et = (l.etapa || '').trim();
     const rotulo =
-      t === 'pacote' ? 'Pacote' : 'Pacote Queratina';
+      t === 'pacote' ? 'Pacote' : 'Pacote Adesivo+Queratina';
     if (!et) {
       return pac ? `${rotulo} • ${pac}` : '—';
     }
@@ -249,7 +266,7 @@ export function totalLinhaPreferencialAtendimento(
    * o primeiro `total_linha` não-null costuma ser de outro tipo (ex. Serviço).
    * O valor cobrado por linha está em `atendimentos.valor` (espelho do pacote / etapa).
    */
-  if (tipo === 'mega' || tipo === 'pacote' || tipo === 'pacote queratina' || tipo === 'pacote_queratina') {
+  if (tipo === 'mega' || tipo === 'pacote' || isTipoPacoteQueratinaNorm(tipo)) {
     const vLinha = valorMonetarioParaNumero(l.valor);
     if (vLinha != null) return Math.max(0, vLinha);
   }

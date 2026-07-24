@@ -28,6 +28,7 @@ import { diffMinutesEntreHorarios } from '../../../../core/utils/sql-local-datet
 import {
   dataDdMmBarraAaaa,
   horaInicialMenorDasLinhasAtendimento,
+  isTipoPacoteQueratinaNorm,
   linhaResumoAtendimentoLista,
   ordenarLinhasAtendimentoInPlace,
   pedidoTemPosicaoNaGrelhaAgenda,
@@ -378,6 +379,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Segundo painel («Nova comanda») por cima do drawer de agendamento. */
   comandaPainelAberto = false;
   comandaDrawerPanelOpen = false;
+  /**
+   * Após a slide-in: desliga transition de transform (evita shake ao fechar
+   * Faturar / Editar itens por cima).
+   */
+  comandaDrawerSettled = false;
   /** Comanda aberta sem drawer de agendamento (cartão já faturado na grelha). */
   comandaSomenteStandalone = false;
   /** Último pedido de abertura (para ligar o drawer de comanda à API depois). */
@@ -423,6 +429,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private comandaDrawerSettleTimer: ReturnType<typeof setTimeout> | null = null;
   private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private editComandaCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
@@ -591,6 +598,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     if (this.comandaDrawerCloseTimer != null) {
       clearTimeout(this.comandaDrawerCloseTimer);
       this.comandaDrawerCloseTimer = null;
+    }
+    if (this.comandaDrawerSettleTimer != null) {
+      clearTimeout(this.comandaDrawerSettleTimer);
+      this.comandaDrawerSettleTimer = null;
     }
     if (this.faturarDrawerCloseTimer != null) {
       clearTimeout(this.faturarDrawerCloseTimer);
@@ -2631,6 +2642,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   ): void {
     const standalone = opts?.standalone === true;
     if (!standalone && !this.modalAberto) return;
+    /** Evita ver o modal de conflito «atrás» da comanda. */
+    this.agendaDrawerRef?.fecharAvisoConflitoHorario();
     this.comandaSomenteStandalone = standalone;
     if (standalone) {
       this.bloquearScrollPagina();
@@ -2640,21 +2653,59 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.comandaDataYmdParaFaturar =
       /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null;
     this.comandaPainelAberto = true;
+    this.comandaDrawerSettled = false;
     this.comandaDrawerPanelOpen = false;
     queueMicrotask(() => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           this.comandaDrawerPanelOpen = true;
+          this.agendarComandaDrawerSettled();
         });
       });
     });
+  }
+
+  /** Marca o painel da comanda como “assentado” após a slide-in. */
+  private agendarComandaDrawerSettled(): void {
+    if (this.comandaDrawerSettleTimer != null) {
+      clearTimeout(this.comandaDrawerSettleTimer);
+    }
+    this.comandaDrawerSettleTimer = setTimeout(() => {
+      this.comandaDrawerSettleTimer = null;
+      if (this.comandaPainelAberto && this.comandaDrawerPanelOpen) {
+        this.comandaDrawerSettled = true;
+      }
+    }, DRAWER_ANIM_MS);
+  }
+
+  private cancelarComandaDrawerSettled(): void {
+    if (this.comandaDrawerSettleTimer != null) {
+      clearTimeout(this.comandaDrawerSettleTimer);
+      this.comandaDrawerSettleTimer = null;
+    }
+    this.comandaDrawerSettled = false;
+  }
+
+  /** Tira o foco do sub-drawer para não deslocar o scroll da comanda ao fechar. */
+  private blurFocoAtivoNoDrawer(): void {
+    if (typeof document === 'undefined') return;
+    const ae = document.activeElement;
+    if (ae instanceof HTMLElement && ae !== document.body) {
+      ae.blur();
+    }
   }
 
   fecharComandaDrawer(): void {
     if (!this.comandaPainelAberto) return;
     this.blurFocoNoCardTip();
     this.limparEditComandaSemAnimacao();
+    /**
+     * O Salvar da comanda (ou testes de desconto) não deve deixar o modal de
+     * «Conflito de horários» pendente no drawer de agendamento por baixo.
+     */
+    this.agendaDrawerRef?.fecharAvisoConflitoHorario();
     if (!this.comandaDrawerPanelOpen) {
+      this.cancelarComandaDrawerSettled();
       this.comandaPainelAberto = false;
       this.comandaDrawerContexto = null;
       this.comandaDataYmdParaFaturar = null;
@@ -2666,6 +2717,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       }
       return;
     }
+    /** Reativa transition para a slide-out. */
+    this.cancelarComandaDrawerSettled();
     this.comandaDrawerPanelOpen = false;
     if (this.comandaDrawerCloseTimer != null) {
       clearTimeout(this.comandaDrawerCloseTimer);
@@ -2687,6 +2740,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   private limparComandaDrawerSemAnimacao(): void {
     this.limparEditComandaSemAnimacao();
+    this.cancelarComandaDrawerSettled();
     this.comandaPainelAberto = false;
     this.comandaDrawerPanelOpen = false;
     this.comandaDrawerContexto = null;
@@ -2771,6 +2825,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   fecharEditComanda(): void {
     if (!this.editComandaAberto) return;
+    this.blurFocoAtivoNoDrawer();
     this.editComandaPanelOpen = false;
     if (this.editComandaCloseTimer != null) {
       clearTimeout(this.editComandaCloseTimer);
@@ -2800,10 +2855,31 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.editComandaCtx?.id_atendimento?.trim() ??
       this.comandaDrawerContexto?.idAtendimento?.trim() ??
       '';
+    const ymdEdit = (this.editComandaCtx?.data ?? '').trim();
     const comandaJaAberta =
       this.comandaPainelAberto && this.comandaDrawerContexto != null;
 
+    if (
+      comandaJaAberta &&
+      /^\d{4}-\d{2}-\d{2}$/.test(ymdEdit) &&
+      this.comandaDrawerContexto &&
+      this.comandaDrawerContexto.dataYmd !== ymdEdit
+    ) {
+      this.comandaDrawerContexto = {
+        ...this.comandaDrawerContexto,
+        dataYmd: ymdEdit,
+      };
+      this.comandaDataYmdParaFaturar = ymdEdit;
+    }
+
     this.fecharEditComanda();
+    /**
+     * O agendamento por baixo ainda tinha as linhas antigas; se o Salvar da
+     * comanda voltasse a chamar `agendaDrawerRef.salvar()`, apagava a edição.
+     */
+    if (idAt) {
+      this.agendaDrawerRef?.recarregarEdicaoDoServidor(idAt);
+    }
     this.recarregarVistaAtiva();
 
     if (!idAt || !comandaJaAberta) return;
@@ -2882,18 +2958,30 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       });
   }
 
-  /** Gravação: prioriza o editor de itens da comanda se estiver aberto. */
+  /** Gravação: prioriza o editor de itens; senão só fecha a comanda. */
   onSalvarAgendamentoDesdeDrawerComanda(): void {
     if (!this.comandaPainelAberto) return;
     if (this.editComandaAberto && this.editComandaDrawerRef) {
       this.editComandaDrawerRef.salvar();
       return;
     }
-    this.agendaDrawerRef?.salvar();
+    /**
+     * Desconto já persistido em `gravarRodape`. Nunca chamar
+     * `agendaDrawerRef.salvar()` — isso reabria o modal de conflito de
+     * horários no agendamento por baixo e parecia um bug ao sair da comanda.
+     */
+    this.agendaDrawerRef?.fecharAvisoConflitoHorario();
+    this.fecharComandaDrawer();
+    this.recarregarVistaAtiva();
   }
 
   onComandaDataYmdAlterada(ymd: string | null): void {
     this.comandaDataYmdParaFaturar = ymd;
+    const ctx = this.comandaDrawerContexto;
+    if (!ctx) return;
+    const next = (ymd ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(next) || ctx.dataYmd === next) return;
+    this.comandaDrawerContexto = { ...ctx, dataYmd: next };
   }
 
   /** Abre o drawer de cadastro vazio (botão «Criar cliente» no agendamento). */
@@ -3008,6 +3096,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       return;
     }
     const recarregarComanda = opts?.recarregarComanda !== false;
+    this.blurFocoAtivoNoDrawer();
     this.faturarDrawerPanelOpen = false;
     if (this.faturarDrawerCloseTimer != null) {
       clearTimeout(this.faturarDrawerCloseTimer);
@@ -3382,7 +3471,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     let best: number | null = null;
     for (const r of linhasPedido) {
       const t = (r.tipo || '').trim().toLowerCase();
-      if (t !== 'mega' && t !== 'pacote' && t !== 'pacote queratina') continue;
+      if (t !== 'mega' && t !== 'pacote' && !isTipoPacoteQueratinaNorm(t)) continue;
       if (!(r.etapa || '').trim()) continue;
       const ini = r.inicio ? String(r.inicio).trim() : '';
       if (!ini) continue;
@@ -3441,7 +3530,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return b.linhas.some((l) => {
       const t = (l.tipo || '').trim().toLowerCase();
       return (
-        (t === 'mega' || t === 'pacote' || t === 'pacote queratina') &&
+        (t === 'mega' || t === 'pacote' || isTipoPacoteQueratinaNorm(t)) &&
         (l.etapa || '').trim().length > 0
       );
     });
@@ -3460,7 +3549,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     let sum = 0;
     for (const l of b.linhas) {
       const t = (l.tipo || '').trim().toLowerCase();
-      if (t !== 'mega' && t !== 'pacote' && t !== 'pacote queratina') continue;
+      if (t !== 'mega' && t !== 'pacote' && !isTipoPacoteQueratinaNorm(t)) continue;
       if (!(l.etapa || '').trim()) continue;
       const ini = l.inicio ? String(l.inicio).trim() : '';
       if (!ini) continue;
@@ -3601,12 +3690,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const linhas = b.linhas;
     const soMegaOuPacote = linhas.every((l) => {
       const t = (l.tipo || '').trim().toLowerCase();
-      return t === 'mega' || t === 'pacote' || t === 'pacote queratina';
+      return t === 'mega' || t === 'pacote' || isTipoPacoteQueratinaNorm(t);
     });
     const comEtapaMegaPac = linhas.filter((l) => {
       const t = (l.tipo || '').trim().toLowerCase();
       return (
-        (t === 'pacote' || t === 'mega' || t === 'pacote queratina') &&
+        (t === 'pacote' || t === 'mega' || isTipoPacoteQueratinaNorm(t)) &&
         (l.etapa || '').trim().length > 0
       );
     });
@@ -3624,8 +3713,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         const titulo =
           t0 === 'mega'
             ? `Mega • ${pacNome}`
-            : t0 === 'pacote queratina'
-              ? `Pacote Queratina • ${pacNome}`
+            : isTipoPacoteQueratinaNorm(t0)
+              ? `Pacote Adesivo+Queratina • ${pacNome}`
               : `Pacote • ${pacNome}`;
         out.push(titulo);
         seen.add(titulo);

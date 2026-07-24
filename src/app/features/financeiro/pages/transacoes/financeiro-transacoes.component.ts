@@ -358,6 +358,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
         this.selecionados.set(new Set());
         this.pagina = 1;
         this.ultimoCarregamentoChave = `${diTxt}|${dfTxt}|${this.filtroTipoData}`;
+        this.sincronizarOpcoesFiltroComLinhas();
         this.carregando = false;
       },
       error: (e: Error) => {
@@ -809,17 +810,38 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     return this.podePagarPendencia(row) || this.podePagarMovimentacao(row);
   }
 
-  colunaPagoVisivel(row: FinTransacaoLinhaUi): boolean {
-    return this.podeEstornarLinha(row) || this.podePagarLinha(row);
+  /**
+   * Saldo em aberto sem linha em `comanda_pagamentos`: o toggle abre a comanda
+   * para faturar (não há endpoint de baixa direta).
+   */
+  podePagarAbrindoComanda(row: FinTransacaoLinhaUi): boolean {
+    return (
+      row.status !== 'pago' &&
+      !!row.idAtendimento?.trim() &&
+      !this.podePagarLinha(row)
+    );
+  }
+
+  /** Coluna Pago: switch em todas as linhas (ligado = pago / estornar; desligado = pagar). */
+  colunaPagoVisivel(_row: FinTransacaoLinhaUi): boolean {
+    return true;
   }
 
   switchPagoDesabilitado(row: FinTransacaoLinhaUi): boolean {
-    return this.liquidandoPagoId === row.id || !this.colunaPagoVisivel(row);
+    if (this.liquidandoPagoId === row.id) return true;
+    if (row.status === 'pago') return !this.podeEstornarLinha(row);
+    return !this.podePagarLinha(row) && !this.podePagarAbrindoComanda(row);
   }
 
   tooltipColunaPago(row: FinTransacaoLinhaUi): string {
-    if (row.status === 'pago') return 'Clique para estornar';
-    return 'Clique para pagar';
+    if (row.status === 'pago') {
+      return this.podeEstornarLinha(row)
+        ? 'Clique para estornar'
+        : 'Pagamento não pode ser estornado aqui';
+    }
+    if (this.podePagarLinha(row)) return 'Clique para pagar';
+    if (this.podePagarAbrindoComanda(row)) return 'Abrir comanda para pagar';
+    return 'Pagamento indisponível nesta linha';
   }
 
   onTogglePago(row: FinTransacaoLinhaUi, ev: Event): void {
@@ -829,8 +851,14 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       this.estornoModalLinha = row;
       return;
     }
-    this.pagoPopoverLinhaId = row.id;
-    this.pagoPopoverData = ymdHoje();
+    if (this.podePagarLinha(row)) {
+      this.pagoPopoverLinhaId = row.id;
+      this.pagoPopoverData = ymdHoje();
+      return;
+    }
+    if (this.podePagarAbrindoComanda(row)) {
+      this.verComanda(row);
+    }
   }
 
   onPagoDataPicked(ymd: string, row: FinTransacaoLinhaUi): void {
@@ -1184,8 +1212,10 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   }
 
   private carregarOpcoesFiltrosSidebar(): void {
-    if (this.opcoesFiltroCarregadas) return;
-    this.opcoesFiltroCarregadas = true;
+    if (this.opcoesFiltroCarregadas) {
+      this.sincronizarOpcoesFiltroComLinhas();
+      return;
+    }
     forkJoin({
       formas: this.api.listFinFormasPagamentoOpcoes().pipe(catchError(() => of([]))),
       categorias: this.api.listCategoriasFinanceiras().pipe(catchError(() => of([]))),
@@ -1201,7 +1231,59 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
         [...categorias].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
       );
       this.inicializarMarcacoesFiltro();
+      this.opcoesFiltroCarregadas = true;
+      this.sincronizarOpcoesFiltroComLinhas();
     });
+  }
+
+  /**
+   * Formas vindas da API de linhas (ex.: «Pendente», «A receber (cartão) · …»)
+   * podem não existir no cadastro. Se o filtro carregar antes das linhas, essas
+   * comandas em aberto ficavam ocultas — inclui e marca automaticamente.
+   */
+  private sincronizarOpcoesFiltroComLinhas(): void {
+    if (!this.opcoesFiltroCarregadas) return;
+    const formas = new Set(this.formasOpcoes());
+    let formasMudou = false;
+    for (const row of this.linhasFonte) {
+      const f = row.formaPagamento.trim();
+      if (!f || f === '—') continue;
+      if (!formas.has(f)) {
+        formas.add(f);
+        this.formasMarcadas.add(f);
+        formasMudou = true;
+      }
+    }
+    if (formasMudou) {
+      this.formasOpcoes.set(
+        [...formas].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+      );
+    }
+
+    const cats = this.categoriasOpcoes();
+    const idsConhecidos = new Set(cats.map((c) => c.id));
+    const extrasCat: CategoriaFinanceiraItem[] = [];
+    for (const row of this.linhasFonte) {
+      const id = row.categoriaId;
+      if (id == null || idsConhecidos.has(id)) continue;
+      const nome = row.categoria.trim() || `Categoria #${id}`;
+      idsConhecidos.add(id);
+      extrasCat.push({
+        id,
+        nome,
+        natureza: row.linhaReceita ? 'receita' : 'despesa',
+        slug: `extra_${id}`,
+        ordem: 9999,
+      });
+      this.categoriasMarcadas.add(id);
+    }
+    if (extrasCat.length > 0) {
+      this.categoriasOpcoes.set(
+        [...cats, ...extrasCat].sort((a, b) =>
+          a.nome.localeCompare(b.nome, 'pt-BR'),
+        ),
+      );
+    }
   }
 
   private inicializarMarcacoesFiltro(): void {
@@ -1213,7 +1295,23 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     if (!this.opcoesFiltroCarregadas) return true;
     if (this.formasMarcadas.size === 0) return false;
     const forma = row.formaPagamento.trim() || '—';
-    return this.formasMarcadas.has(forma);
+    if (this.formasMarcadas.has(forma)) return true;
+    /**
+     * Parcela «A receber (cartão) · Visa»: se o utilizador marcou o prefixo
+     * genérico no filtro, não esconder a linha.
+     */
+    if (forma.startsWith('A receber (cartão)')) {
+      for (const marcada of this.formasMarcadas) {
+        if (
+          marcada === 'A receber (cartão)' ||
+          forma.startsWith(marcada) ||
+          marcada.startsWith('A receber (cartão)')
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private linhaPassaCategoria(row: FinTransacaoLinhaUi): boolean {
@@ -1733,6 +1831,11 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
 
   onComandaDataYmdAlterada(ymd: string | null): void {
     this.comandaDataYmdParaFaturar = ymd;
+    const ctx = this.comandaDrawerContexto;
+    if (!ctx) return;
+    const next = (ymd ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(next) || ctx.dataYmd === next) return;
+    this.comandaDrawerContexto = { ...ctx, dataYmd: next };
   }
 
   onAbrirFaturarComanda(ev: {

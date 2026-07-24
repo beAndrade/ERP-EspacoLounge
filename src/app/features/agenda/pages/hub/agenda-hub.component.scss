@@ -1943,6 +1943,15 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
     transform: translateX(0);
   }
 
+  /**
+   * Após a animação de abertura: sem transition em `transform`.
+   * Evita um “shake” quando um drawer superior fecha/desmonta e o compositor
+   * re-promove a camada do painel que ficou por baixo.
+   */
+  &--open.app-drawer--settled {
+    transition: none;
+  }
+
   & > app-agenda-novo {
     display: flex;
     flex: 1 1 auto;
@@ -1957,6 +1966,8 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
    */
   &--comanda {
     z-index: 1003;
+    /* Scroll só em `.nc-drawer__main` — evita salto de foco no painel exterior. */
+    overflow: hidden;
 
     & > app-nova-comanda-drawer {
       display: flex;
@@ -1964,6 +1975,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
       flex-direction: column;
       min-height: 0;
       min-width: 0;
+      height: 100%;
     }
   }
 

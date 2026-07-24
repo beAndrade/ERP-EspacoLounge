@@ -447,7 +447,7 @@
     <div class="fat-resumo">
       <div class="fat-resumo__row">
         <span>Descontos</span>
-        <span>{{ brl(resumo.desconto) }}</span>
+        <span>{{ textoDescontoResumo() }}</span>
       </div>
       @if (mostrarLinhaCreditosComandaResumo()) {
         <div class="fat-resumo__row">
@@ -476,7 +476,7 @@
     <button
       type="button"
       class="fat-btn fat-btn--ghost"
-      (click)="abrirCalcularTroco()"
+      (click)="abrirCalcularTroco($event)"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -519,36 +519,76 @@
   </footer>
 </div>
 @if (trocoAberto) {
-  <div class="fat-modal" role="dialog" aria-modal="true" aria-label="Calcular troco">
-    <div class="fat-modal__backdrop" (click)="fecharCalcularTroco()"></div>
-    <div class="fat-modal__panel">
-      <h3 class="fat-modal__title">Calcular troco</h3>
-      <p class="fat-modal__text">
-        Insira o valor recebido em dinheiro pela cliente.
-      </p>
-      <label class="fat-field">
-        <span class="fat-field__label">Valor recebido</span>
-        <input
-          type="text"
-          class="fat-field__input"
-          inputmode="numeric"
-          [formControl]="recebidoCtrl"
-          (input)="onRecebidoMoedaInput($event)"
-          [attr.placeholder]="placeholderMoeda"
-        />
-      </label>
-      <div class="fat-troco">
-        <span>Troco</span>
-        <strong>{{ brl(trocoCalculado()) }}</strong>
-      </div>
-      <div class="fat-modal__actions">
-        <button
-          type="button"
-          class="fat-btn fat-btn--primary"
-          (click)="fecharCalcularTroco()"
+  <div
+    #trocoModalRoot
+    class="fat-troco-modal"
+    [class.fat-troco-modal--in]="trocoPanelIn"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Calcular troco"
+  >
+    <div
+      class="fat-troco-modal__backdrop"
+      (click)="fecharCalcularTroco()"
+    ></div>
+    <div
+      class="fat-troco-modal__panel"
+      [class.fat-troco-modal__panel--in]="trocoPanelIn"
+      [ngStyle]="trocoOriginStyle"
+    >
+      <button
+        type="button"
+        class="fat-troco-modal__close"
+        (click)="fecharCalcularTroco()"
+        aria-label="Fechar"
+        title="Fechar"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
         >
-          Fechar
-        </button>
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+      <div class="fat-troco-modal__fields">
+        <label class="fat-troco-modal__field">
+          <span class="fat-troco-modal__label">Valor cobrado</span>
+          <input
+            type="text"
+            class="fat-troco-modal__input"
+            [value]="brl(valorCobradoTroco())"
+            readonly
+            tabindex="-1"
+            aria-readonly="true"
+          />
+        </label>
+        <label class="fat-troco-modal__field">
+          <span class="fat-troco-modal__label">Valor recebido</span>
+          <input
+            id="fat-troco-recebido"
+            type="text"
+            class="fat-troco-modal__input"
+            inputmode="numeric"
+            [formControl]="recebidoCtrl"
+            (input)="onRecebidoMoedaInput($event)"
+            [attr.placeholder]="placeholderMoeda"
+          />
+        </label>
+      </div>
+      <div class="fat-troco-modal__troco">
+        <div class="fat-troco-modal__divider" aria-hidden="true">
+          <span>Troco</span>
+        </div>
+        <div class="fat-troco-modal__result">{{ brl(trocoCalculado()) }}</div>
       </div>
     </div>
   </div>

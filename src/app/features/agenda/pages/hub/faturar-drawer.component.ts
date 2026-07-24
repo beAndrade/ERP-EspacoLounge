@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   ElementRef,
@@ -10,6 +11,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+import { NgStyle } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
@@ -156,13 +158,14 @@ const EPS_SALDO = 0.02;
 @Component({
   selector: 'app-faturar-drawer',
   standalone: true,
-  imports: [ReactiveFormsModule, AgendaModalCalendarComponent],
+  imports: [NgStyle, ReactiveFormsModule, AgendaModalCalendarComponent],
   templateUrl: './faturar-drawer.component.html',
   styleUrl: './faturar-drawer.component.scss',
 })
 export class FaturarDrawerComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly idAtendimento = input.required<string>();
   /** Resumo enviado pelo pai ao abrir; é refrescado pela API ao montar. */
@@ -230,7 +233,14 @@ export class FaturarDrawerComponent implements OnInit {
 
   /** Modal local de calcular troco. */
   trocoAberto = false;
+  /** Classe de entrada/saída (FLIP a partir do botão). */
+  trocoPanelIn = false;
+  trocoOriginStyle: Record<string, string> = {};
+  private trocoCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly TROCO_ANIM_MS = 160;
   readonly recebidoCtrl = new FormControl('', { nonNullable: true });
+  /** Host do modal (portado para `body` — o drawer usa `transform`). */
+  private readonly trocoModalRoot = viewChild<ElementRef<HTMLElement>>('trocoModalRoot');
 
   excluindoPagamentoId: number | null = null;
 
@@ -241,6 +251,12 @@ export class FaturarDrawerComponent implements OnInit {
   };
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.trocoCloseTimer != null) {
+        clearTimeout(this.trocoCloseTimer);
+        this.trocoCloseTimer = null;
+      }
+    });
     /** Pré-carrega valor com o saldo restante quando o resumo muda. */
     effect(() => {
       const r = this.resumoInicial();
@@ -323,14 +339,28 @@ export class FaturarDrawerComponent implements OnInit {
     if (!ini) {
       return api;
     }
+    /** Desconto já na API: fonte de verdade. Senão, mantém o da comanda (UI). */
+    if ((api.desconto ?? 0) > 0.005) {
+      return {
+        ...api,
+        total_pago: api.total_pago,
+        saldo: api.saldo,
+        status: api.status,
+        cobranca_status: api.cobranca_status,
+      };
+    }
+    const totalBruto =
+      ini.total_bruto > 0.005 ? ini.total_bruto : (api.total_bruto ?? 0);
+    const desconto = Math.max(ini.desconto ?? 0, api.desconto ?? 0);
+    const total = Math.max(
+      0,
+      Math.round((totalBruto - desconto) * 100) / 100,
+    );
     const totalPago = api.total_pago;
-    const total = ini.total;
-    const totalBruto = ini.total_bruto;
-    const desconto = ini.desconto;
     const cred = this.creditoComandaAplicado();
     const saldoApi = api.saldo;
     const saldo =
-      saldoApi != null && Number.isFinite(saldoApi)
+      saldoApi != null && Number.isFinite(saldoApi) && desconto > 0.005
         ? Math.max(0, Math.round(saldoApi * 100) / 100)
         : Math.max(
             0,
@@ -707,24 +737,34 @@ export class FaturarDrawerComponent implements OnInit {
     );
   }
 
+  /** Total da comanda após desconto (antes do crédito previsto). */
+  private totalAposDesconto(): number {
+    const bruto = Number(this.resumo.total_bruto);
+    const desc = Number(this.resumo.desconto) || 0;
+    if (Number.isFinite(bruto) && bruto >= 0) {
+      return Math.max(0, Math.round((bruto - desc) * 100) / 100);
+    }
+    const t = Number(this.resumo.total);
+    return Number.isFinite(t) ? Math.max(0, Math.round(t * 100) / 100) : 0;
+  }
+
   /** Quanto falta alocar (total comanda − pago − crédito previsto na comanda). */
   saldoRestante(): number {
     const cred = this.creditoComandaAplicado();
     return Math.max(
       0,
       Math.round(
-        (this.resumo.total - this.totalAlocado() - cred) * 100,
+        (this.totalAposDesconto() - this.totalAlocado() - cred) * 100,
       ) / 100,
     );
   }
 
-  /** Total líquido exibido no resumo (após crédito previsto da comanda). */
+  /** Total líquido exibido no resumo (após desconto e crédito previsto). */
   totalLiquidoResumo(): number {
     const cred = this.valorCreditosComandaResumo();
-    if (cred <= 0.001) return this.resumo.total;
     return Math.max(
       0,
-      Math.round((this.resumo.total - cred) * 100) / 100,
+      Math.round((this.totalAposDesconto() - cred) * 100) / 100,
     );
   }
 
@@ -785,11 +825,15 @@ export class FaturarDrawerComponent implements OnInit {
     return metodo === 'pendente' ? 'pendente' : 'pago';
   }
 
-  /** Prestação sem caixa vencida: `data_pagamento` da parcela anterior a hoje. */
+  /** Prestação sem caixa: data da parcela (ou preview do picker) < hoje → Atrasado. */
   private linhaPagamentoPendenteEmAtraso(l: PagamentoLinhaUi): boolean {
     const y = (
-      l.kind === 'api' ? l.row.data_pagamento : l.row.data_pagamento
-    ).trim();
+      this.linhaDataPickerAberto(l) && this.linhaDataPreviewYmd
+        ? this.linhaDataPreviewYmd
+        : l.row.data_pagamento
+    )
+      .trim()
+      .slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return false;
     return dataYmdAnteriorAHoje(y);
   }
@@ -803,7 +847,7 @@ export class FaturarDrawerComponent implements OnInit {
     const temCred = this.rascunho.some((r) => r.destino === 'credito');
     const quitadoComRascunho = this.saldoRestante() <= 0.001;
     const baseQuitada =
-      this.resumo.total_pago + EPS_SALDO >= this.resumo.total;
+      this.resumo.total_pago + EPS_SALDO >= this.totalAposDesconto();
     if (temComanda && !quitadoComRascunho) return false;
     if (temCred && !temComanda && !baseQuitada) return false;
     if (
@@ -986,7 +1030,7 @@ export class FaturarDrawerComponent implements OnInit {
           this.salvando = false;
           this.rascunho = [];
           this.pagamentos = r.items ?? [];
-          this.resumo = this.mesclarResumoComInicial(r.resumo);
+          this.resumo = r.resumo;
           this.faturado.emit();
         },
         error: (e: Error) => {
@@ -1029,19 +1073,98 @@ export class FaturarDrawerComponent implements OnInit {
 
   // ----- Calcular troco ---------------------------------------------------
 
-  abrirCalcularTroco(): void {
-    this.recebidoCtrl.setValue('');
+  abrirCalcularTroco(ev: MouseEvent): void {
+    if (this.trocoCloseTimer != null) {
+      clearTimeout(this.trocoCloseTimer);
+      this.trocoCloseTimer = null;
+    }
+    const btn = ev.currentTarget as HTMLElement | null;
+    const r = btn?.getBoundingClientRect();
+    const modalW = 350;
+    const modalH = 218.41;
+    if (r) {
+      const finalCx = window.innerWidth / 2;
+      const finalCy = window.innerHeight / 2;
+      const btnCx = r.left + r.width / 2;
+      const btnCy = r.top + r.height / 2;
+      const scale = Math.max(
+        0.06,
+        Math.min(r.width / modalW, r.height / modalH),
+      );
+      this.trocoOriginStyle = {
+        '--troco-dx': `${btnCx - finalCx}px`,
+        '--troco-dy': `${btnCy - finalCy}px`,
+        '--troco-scale': String(scale),
+      };
+    } else {
+      this.trocoOriginStyle = {
+        '--troco-dx': '0px',
+        '--troco-dy': '40px',
+        '--troco-scale': '0.2',
+      };
+    }
+    this.recebidoCtrl.setValue(formataMoedaBrl(0));
+    this.trocoPanelIn = false;
     this.trocoAberto = true;
+    // O drawer usa `transform` — `position: fixed` ficaria preso ao painel.
+    // Força o CD para o `#trocoModalRoot` existir e monta sobre o overlay (viewport).
+    this.cdr.detectChanges();
+    this.montarTrocoModalNoViewport();
+    requestAnimationFrame(() => {
+      this.trocoPanelIn = true;
+      this.cdr.detectChanges();
+      // Reafirma o portal caso o CD recoloque o nó no drawer.
+      this.montarTrocoModalNoViewport();
+      queueMicrotask(() => {
+        document.getElementById('fat-troco-recebido')?.focus();
+      });
+    });
   }
 
   fecharCalcularTroco(): void {
-    this.trocoAberto = false;
+    if (!this.trocoAberto) return;
+    this.trocoPanelIn = false;
+    if (this.trocoCloseTimer != null) {
+      clearTimeout(this.trocoCloseTimer);
+    }
+    this.trocoCloseTimer = setTimeout(() => {
+      this.trocoAberto = false;
+      this.trocoCloseTimer = null;
+      this.cdr.markForCheck();
+    }, FaturarDrawerComponent.TROCO_ANIM_MS);
+  }
+
+  /**
+   * Coloca o modal como irmão do `.overlay--faturar` (mesmo retângulo do ecrã),
+   * ou em `document.body` se o overlay não existir — fora do drawer com `transform`.
+   */
+  private montarTrocoModalNoViewport(): void {
+    const root = this.trocoModalRoot()?.nativeElement;
+    if (!root) return;
+    const overlay = document.querySelector<HTMLElement>(
+      '.overlay.overlay--faturar',
+    );
+    const parent = overlay?.parentElement;
+    if (overlay && parent) {
+      if (root.parentElement !== parent || root.previousElementSibling !== overlay) {
+        parent.insertBefore(root, overlay.nextSibling);
+      }
+      return;
+    }
+    if (root.parentElement !== document.body) {
+      document.body.appendChild(root);
+    }
+  }
+
+  /** Valor cobrado no modal de troco = saldo em aberto da comanda. */
+  valorCobradoTroco(): number {
+    return this.saldoRestante();
   }
 
   trocoCalculado(): number {
     const recebido = parsePtDecimal(this.recebidoCtrl.value);
-    const total = parsePtDecimal(this.valorCtrl.value);
-    return Math.max(0, Math.round((recebido - total) * 100) / 100);
+    const cobrado = this.valorCobradoTroco();
+    return Math.max(0, Math.round((recebido - cobrado) * 100) / 100);
   }
 
   // ----- Helpers UI -------------------------------------------------------
@@ -1049,6 +1172,13 @@ export class FaturarDrawerComponent implements OnInit {
   brl(n: number | string): string {
     const num = typeof n === 'number' ? n : parseFloat(String(n));
     return formataMoedaBrl(Number.isFinite(num) ? num : 0);
+  }
+
+  /** Só mostra «-» quando há desconto > 0. */
+  textoDescontoResumo(): string {
+    const d = Number(this.resumo.desconto) || 0;
+    const txt = this.brl(d);
+    return d > 0.005 ? `- ${txt}` : txt;
   }
 
   rotuloMetodoPagamento(p: ComandaPagamentoItem): string {

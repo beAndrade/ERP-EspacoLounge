@@ -97,7 +97,7 @@ async function truncateAll() {
   `));
 }
 
-/** Catálogo fixo Pacote Queratina (não vem do XLSX). */
+/** Catálogo fixo Pacote Adesivo+Queratina (não vem do XLSX). */
 async function seedPacotesQueratina(): Promise<void> {
   const [existe] = await db
     .select({ id: pacotesQueratina.id })
@@ -274,7 +274,7 @@ export async function seedFromXlsx(options?: { truncate?: boolean }) {
     }
   }
 
-  /** Catálogo Pacote Queratina (preço cabeça + comissão por etapa). */
+  /** Catálogo Pacote Adesivo+Queratina (preço cabeça + comissão por etapa). */
   await seedPacotesQueratina();
 
   const shCab = resolveSheet(wb, ['Cabelos']);

@@ -301,7 +301,7 @@
               modoModal &&
               (ctrl.get('itemTipo')?.value === 'Mega' ||
                 ctrl.get('itemTipo')?.value === 'Pacote' ||
-                ctrl.get('itemTipo')?.value === 'Pacote Queratina')
+                ctrl.get('itemTipo')?.value === 'Pacote Adesivo+Queratina')
             ) {
               <div
                 class="servico-row__mega-topo servico-row__linha-cabecalho-modal"
@@ -333,17 +333,17 @@
                       (picked)="aplicarValidadoresLinhas()"
                     />
                   </div>
-                } @else if (ctrl.get('itemTipo')?.value === 'Pacote Queratina') {
+                } @else if (ctrl.get('itemTipo')?.value === 'Pacote Adesivo+Queratina') {
                   <div
                     class="servico-row__field servico-row__field--pacote-mega servico-row__field--linha-cab--col"
                   >
-                    <span>Pacote Queratina</span>
+                    <span>Pacote (Manutenção)</span>
                     <app-saas-select
                       [showFilter]="!modoModal"
                       formControlName="pacote"
                       [options]="opcoesPacotesQueratinaSelect()"
                       placeholder="Selecione…"
-                      aria-label="Pacote Queratina"
+                      aria-label="Pacote (Manutenção)"
                       (picked)="aplicarValidadoresLinhas()"
                     />
                   </div>
@@ -370,8 +370,8 @@
                     class="btn btn--icon-line-add"
                     (click)="
                       adicionarLinhaItensDoTipo(
-                        ctrl.get('itemTipo')?.value === 'Pacote Queratina'
-                          ? 'Pacote Queratina'
+                        ctrl.get('itemTipo')?.value === 'Pacote Adesivo+Queratina'
+                          ? 'Pacote Adesivo+Queratina'
                           : ctrl.get('itemTipo')?.value === 'Pacote'
                             ? 'Pacote'
                             : 'Mega',
@@ -765,7 +765,7 @@
 
             @if (
               ctrl.get('itemTipo')?.value === 'Pacote' ||
-              ctrl.get('itemTipo')?.value === 'Pacote Queratina'
+              ctrl.get('itemTipo')?.value === 'Pacote Adesivo+Queratina'
             ) {
               @if (modoModal) {
                 @if (
@@ -776,7 +776,7 @@
                   </p>
                 }
                 @if (
-                  ctrl.get('itemTipo')?.value === 'Pacote Queratina' &&
+                  ctrl.get('itemTipo')?.value === 'Pacote Adesivo+Queratina' &&
                   pacotesQueratina.length === 0
                 ) {
                   <p class="hint">
@@ -870,14 +870,14 @@
                 </div>
               } @else {
                 <div class="servico-row__field">
-                  @if (ctrl.get('itemTipo')?.value === 'Pacote Queratina') {
-                    <span>Pacote Queratina</span>
+                  @if (ctrl.get('itemTipo')?.value === 'Pacote Adesivo+Queratina') {
+                    <span>Pacote (Manutenção)</span>
                     <app-saas-select
                       [showFilter]="!modoModal"
                       formControlName="pacote"
                       [options]="opcoesPacotesQueratinaSelect()"
                       placeholder="Selecione…"
-                      aria-label="Pacote Queratina"
+                      aria-label="Pacote (Manutenção)"
                       (picked)="aplicarValidadoresLinhas()"
                     />
                   } @else {
@@ -898,7 +898,7 @@
                   <p class="hint">Cadastre pacotes na aba <strong>Pacotes</strong>.</p>
                 }
                 @if (
-                  ctrl.get('itemTipo')?.value === 'Pacote Queratina' &&
+                  ctrl.get('itemTipo')?.value === 'Pacote Adesivo+Queratina' &&
                   pacotesQueratina.length === 0
                 ) {
                   <p class="hint">
@@ -1222,7 +1222,7 @@
               !modoModal ||
               (ctrl.get('itemTipo')?.value !== 'Mega' &&
                 ctrl.get('itemTipo')?.value !== 'Pacote' &&
-                ctrl.get('itemTipo')?.value !== 'Pacote Queratina' &&
+                ctrl.get('itemTipo')?.value !== 'Pacote Adesivo+Queratina' &&
                 ctrl.get('itemTipo')?.value !== 'Cabelo')
             ) {
               <div

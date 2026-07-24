@@ -2091,16 +2091,19 @@ textarea {
   }
 }
 
-/** Hub drawer: tipografia do drawer (labels padronizados). */
+/** Hub drawer: tipografia do drawer (labels padronizados).
+ * Tokens partilhados por todos os hosts de `app-agenda-novo` em modo drawer:
+ * Agenda (novo/edição), Comandas, Orçamentos, cadastro cliente empilhado.
+ * Não aplica a `nova-comanda-drawer` (layout/medidas próprias). */
 :host.agenda-novo--drawer .form.form--modal {
   /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
   padding-inline: 0;
-  /** Coluna «Tipo de linha» / Tamanho / Profissional: 150px. */
-  --drawer-tipo-linha-col: 150px;
+  /** Coluna «Tipo de linha»: 240px (ex.: «Pacote Adesivo+Queratina»). */
+  --drawer-tipo-linha-col: 240px;
   /** Descrição (Serviço/Produto) ocupa a área livre da linha. */
   --drawer-descricao-col: auto;
-  /** Profissional em Serviço. */
-  --drawer-pro-col: 150px;
+  /** Profissional em Serviço / Produto. */
+  --drawer-pro-col: 175px;
   /** Tamanho (Serviço). */
   --drawer-tamanho-col: 150px;
   /**

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import {
   formataMoedaBrlResumo,
@@ -23,6 +23,8 @@ export class ComandaResumoBarComponent {
   @Input() creditoSomenteLeitura = false;
   @Input() cashbackReais = 0;
   @Input() totalReais = 0;
+  /** Após normalizar o campo Desconto (para o pai persistir). */
+  @Output() readonly descontoBlur = new EventEmitter<void>();
 
   readonly placeholderMoeda = PLACEHOLDER_MOEDA_RESUMO;
 
@@ -33,6 +35,7 @@ export class ComandaResumoBarComponent {
   onResumoMoedaInput(c: FormControl<string>, ev: Event): void {
     const el = ev.target as HTMLInputElement | null;
     if (!el) return;
+    c.markAsDirty();
     const formatted = moedaResumoAPartirDosDigitos(el.value);
     if (c.value !== formatted) {
       c.setValue(formatted, { emitEvent: true });
@@ -44,8 +47,11 @@ export class ComandaResumoBarComponent {
   }
 
   onCreditoResumoMoedaInput(ev: Event): void {
-    this.creditoResumoCtrl.markAsDirty();
     this.onResumoMoedaInput(this.creditoResumoCtrl, ev);
+  }
+
+  onDescontoResumoMoedaInput(ev: Event): void {
+    this.onResumoMoedaInput(this.descontoResumoCtrl, ev);
   }
 
   normalizarCampoMoedaResumo(c: FormControl<string>): void {
