@@ -189,7 +189,7 @@ import {
   listComissoesResumidasApi,
   recalcularTotaisComissaoFolhaPorPeriodo,
 } from './services/folha-domain';
-import { incrementarEstoqueProduto } from './services/estoque-domain';
+import { incrementarEstoqueProduto, criarProdutoApi } from './services/estoque-domain';
 import { isPublicApiPath, authenticateRequest } from './lib/auth-guard';
 import {
   alterarEmailUsuario,
@@ -1185,6 +1185,101 @@ const app = new Elysia({ adapter: node() })
     ok({ items: await listPacotesQueratinaApi(db) }),
   )
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))
+  .post(
+    '/api/produtos',
+    async ({ body }) => {
+      try {
+        const b = body as Record<string, unknown>;
+        const item = await criarProdutoApi(db, {
+          produto: String(b.produto ?? b.nome ?? ''),
+          categoria: b.categoria != null ? String(b.categoria) : null,
+          marca: b.marca != null ? String(b.marca) : null,
+          preco: b.preco != null ? String(b.preco) : null,
+          custo: b.custo != null ? String(b.custo) : null,
+          estoque_inicial:
+            b.estoque_inicial != null
+              ? String(b.estoque_inicial)
+              : b.estoqueInicial != null
+                ? String(b.estoqueInicial)
+                : null,
+          estoque_minimo:
+            b.estoque_minimo != null
+              ? String(b.estoque_minimo)
+              : b.estoqueMinimo != null
+                ? String(b.estoqueMinimo)
+                : null,
+          unidade: b.unidade != null ? String(b.unidade) : null,
+          preco_profissional:
+            b.preco_profissional != null
+              ? String(b.preco_profissional)
+              : b.precoProfissional != null
+                ? String(b.precoProfissional)
+                : null,
+          custo_adicional:
+            b.custo_adicional != null
+              ? String(b.custo_adicional)
+              : b.custoAdicional != null
+                ? String(b.custoAdicional)
+                : null,
+          comissao_padrao:
+            b.comissao_padrao != null
+              ? String(b.comissao_padrao)
+              : b.comissaoPadrao != null
+                ? String(b.comissaoPadrao)
+                : null,
+          codigo_item:
+            b.codigo_item != null
+              ? String(b.codigo_item)
+              : b.codigoItem != null
+                ? String(b.codigoItem)
+                : null,
+          codigo_barras:
+            b.codigo_barras != null
+              ? String(b.codigo_barras)
+              : b.codigoBarras != null
+                ? String(b.codigoBarras)
+                : null,
+          observacoes: b.observacoes != null ? String(b.observacoes) : null,
+          foto_url:
+            b.foto_url != null
+              ? String(b.foto_url)
+              : b.fotoUrl != null
+                ? String(b.fotoUrl)
+                : null,
+        });
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/informe|categoria|nome/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      body: t.Object(
+        {
+          produto: t.Optional(t.String()),
+          nome: t.Optional(t.String()),
+          categoria: t.Optional(t.String()),
+          marca: t.Optional(t.String()),
+          preco: t.Optional(t.String()),
+          custo: t.Optional(t.String()),
+          estoque_inicial: t.Optional(t.String()),
+          estoque_minimo: t.Optional(t.String()),
+          unidade: t.Optional(t.String()),
+          preco_profissional: t.Optional(t.String()),
+          custo_adicional: t.Optional(t.String()),
+          comissao_padrao: t.Optional(t.String()),
+          codigo_item: t.Optional(t.String()),
+          codigo_barras: t.Optional(t.String()),
+          observacoes: t.Optional(t.String()),
+          foto_url: t.Optional(t.String()),
+        },
+        { additionalProperties: true },
+      ),
+    },
+  )
   .patch(
     '/api/produtos/:id/estoque',
     async ({ params, body }) => {

@@ -1,0 +1,403 @@
+@if (d.aberto()) {
+  <div
+    class="overlay overlay--produto-cadastro"
+    [class.overlay--open]="d.panelOpen()"
+    aria-hidden="true"
+    (click)="d.fechar()"
+  ></div>
+  <div
+    class="produto-cadastro-drawer app-drawer cliente-drawer cliente-drawer--produto"
+    [class.app-drawer--open]="d.panelOpen()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="d.titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">{{ d.titulo }}</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="d.fechar()"
+          aria-label="Fechar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="cliente-body-scroll">
+        <div class="cliente-body">
+          <nav
+            class="cliente-nav"
+            aria-label="Secções do produto"
+            [style.--cliente-nav-active-index]="d.abaAtivaIndex()"
+          >
+            <span class="cliente-nav__indicator" aria-hidden="true"></span>
+            @for (aba of abas; track aba) {
+              <button
+                type="button"
+                class="cliente-nav__item"
+                [class.cliente-nav__item--active]="d.abaAtiva === aba"
+                [class.cliente-nav__item--disabled]="d.abaDesabilitada(aba)"
+                [attr.aria-disabled]="d.abaDesabilitada(aba) ? 'true' : null"
+                (click)="setAba(aba)"
+              >
+                <span class="cliente-nav__label">{{ aba }}</span>
+              </button>
+            }
+          </nav>
+
+          <div class="cliente-main produto-cadastro-main">
+            @if (d.erro) {
+              <p class="produto-cadastro-drawer__alert" role="alert">{{ d.erro }}</p>
+            }
+
+            @if (d.abaAtiva === 'Cadastro') {
+              <div class="produto-cadastro-form">
+                <div class="produto-cadastro-form__foto">
+                  <label class="produto-cadastro-form__foto-preview" for="produto-foto-input">
+                    @if (d.fotoUrl) {
+                      <img [src]="d.fotoUrl" alt="" />
+                    } @else {
+                      <svg
+                        class="produto-cadastro-form__foto-icon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      </svg>
+                    }
+                  </label>
+                  <label class="produto-cadastro-form__foto-btn" for="produto-foto-input">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3v12" />
+                      <path d="m17 8-5-5-5 5" />
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    </svg>
+                    Alterar
+                  </label>
+                  <input
+                    id="produto-foto-input"
+                    type="file"
+                    accept="image/*"
+                    class="sr-only"
+                    (change)="onFotoChange($event)"
+                  />
+                </div>
+
+                <label class="produto-cadastro-form__field produto-cadastro-form__field--full">
+                  <span class="produto-cadastro-form__label">
+                    <span class="produto-cadastro-form__req" aria-hidden="true">*</span> Nome
+                  </span>
+                  <input
+                    type="text"
+                    class="produto-cadastro-form__input"
+                    [(ngModel)]="d.nome"
+                    name="produtoNome"
+                    placeholder="Nome do produto"
+                    autocomplete="off"
+                  />
+                </label>
+
+                <div class="produto-cadastro-form__row">
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">
+                      <span class="produto-cadastro-form__req" aria-hidden="true">*</span>
+                      Categoria
+                    </span>
+                    <input
+                      type="text"
+                      class="produto-cadastro-form__input"
+                      list="produto-categorias-list"
+                      [(ngModel)]="d.categoria"
+                      name="produtoCategoria"
+                      placeholder="Categoria"
+                      autocomplete="off"
+                    />
+                    <datalist id="produto-categorias-list">
+                      @for (c of d.categoriasOpcoes; track c) {
+                        <option [value]="c"></option>
+                      }
+                    </datalist>
+                  </label>
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Marca</span>
+                    <input
+                      type="text"
+                      class="produto-cadastro-form__input"
+                      list="produto-marcas-list"
+                      [(ngModel)]="d.marca"
+                      name="produtoMarca"
+                      placeholder="Marca"
+                      autocomplete="off"
+                    />
+                    <datalist id="produto-marcas-list">
+                      @for (m of d.marcasOpcoes; track m) {
+                        <option [value]="m"></option>
+                      }
+                    </datalist>
+                  </label>
+                </div>
+
+                <div class="produto-cadastro-form__row">
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Preço de venda</span>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      class="produto-cadastro-form__input"
+                      [(ngModel)]="d.precoVenda"
+                      name="precoVenda"
+                      placeholder="R$ 0,00"
+                      (input)="d.onMoedaInput('precoVenda', $event)"
+                    />
+                  </label>
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Custo de compra</span>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      class="produto-cadastro-form__input"
+                      [(ngModel)]="d.custoCompra"
+                      name="custoCompra"
+                      placeholder="R$ 0,00"
+                      (input)="d.onMoedaInput('custoCompra', $event)"
+                    />
+                  </label>
+                </div>
+
+                <h3 class="produto-cadastro-form__section">Estoque</h3>
+
+                <div class="produto-cadastro-form__row">
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">
+                      <span class="produto-cadastro-form__req" aria-hidden="true">*</span>
+                      Registro de saída
+                    </span>
+                    <select
+                      class="produto-cadastro-form__select"
+                      [(ngModel)]="d.registroSaida"
+                      name="registroSaida"
+                    >
+                      <option value="em unidade">em unidade</option>
+                      <option value="em ml">em ml</option>
+                      <option value="em gramas">em gramas</option>
+                    </select>
+                  </label>
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Uma unidade equivale a</span>
+                    <div class="produto-cadastro-form__suffix">
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__input"
+                        [(ngModel)]="d.unidadeEquivalente"
+                        name="unidadeEquivalente"
+                        (input)="d.onInteiroInput('unidadeEquivalente', $event)"
+                      />
+                      <span class="produto-cadastro-form__suffix-label">{{
+                        rotuloUnidade()
+                      }}</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="produto-cadastro-form__row">
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">
+                      Estoque mínimo
+                      <span
+                        class="produto-cadastro-form__info"
+                        title="Alerta quando o estoque ficar abaixo deste valor"
+                        aria-label="Alerta quando o estoque ficar abaixo deste valor"
+                        >i</span
+                      >
+                    </span>
+                    <div class="produto-cadastro-form__suffix">
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__input"
+                        [(ngModel)]="d.estoqueMinimo"
+                        name="estoqueMinimo"
+                        (input)="d.onInteiroInput('estoqueMinimo', $event)"
+                      />
+                      <span class="produto-cadastro-form__suffix-label">{{
+                        rotuloUnidade()
+                      }}</span>
+                    </div>
+                  </label>
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Estoque inicial</span>
+                    <div class="produto-cadastro-form__suffix">
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__input"
+                        [(ngModel)]="d.estoqueInicial"
+                        name="estoqueInicial"
+                        (input)="d.onInteiroInput('estoqueInicial', $event)"
+                      />
+                      <span class="produto-cadastro-form__suffix-label">{{
+                        rotuloUnidade()
+                      }}</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="produto-cadastro-form__row">
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Preço para profissional</span>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      class="produto-cadastro-form__input"
+                      [(ngModel)]="d.precoProfissional"
+                      name="precoProfissional"
+                      placeholder="R$ 0,00"
+                      (input)="d.onMoedaInput('precoProfissional', $event)"
+                    />
+                  </label>
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Custo adicional</span>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      class="produto-cadastro-form__input"
+                      [(ngModel)]="d.custoAdicional"
+                      name="custoAdicional"
+                      placeholder="R$ 0,00"
+                      (input)="d.onMoedaInput('custoAdicional', $event)"
+                    />
+                  </label>
+                </div>
+
+                <label class="produto-cadastro-form__field produto-cadastro-form__field--full">
+                  <span class="produto-cadastro-form__label">Comissão padrão</span>
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    class="produto-cadastro-form__input"
+                    [(ngModel)]="d.comissaoPadrao"
+                    name="comissaoPadrao"
+                    placeholder="% 0,00"
+                    (input)="d.onComissaoInput($event)"
+                  />
+                </label>
+
+                <div class="produto-cadastro-form__row">
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Código do item</span>
+                    <input
+                      type="text"
+                      class="produto-cadastro-form__input"
+                      [(ngModel)]="d.codigoItem"
+                      name="codigoItem"
+                      placeholder="Código do Item"
+                      autocomplete="off"
+                    />
+                  </label>
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Código de barras</span>
+                    <input
+                      type="text"
+                      class="produto-cadastro-form__input"
+                      [(ngModel)]="d.codigoBarras"
+                      name="codigoBarras"
+                      placeholder="Código de barras"
+                      autocomplete="off"
+                    />
+                  </label>
+                </div>
+
+                <label class="produto-cadastro-form__field produto-cadastro-form__field--full">
+                  <span class="produto-cadastro-form__label">Observações</span>
+                  <textarea
+                    class="produto-cadastro-form__textarea"
+                    rows="4"
+                    [(ngModel)]="d.observacoes"
+                    name="observacoes"
+                    placeholder="Anotações"
+                  ></textarea>
+                </label>
+              </div>
+            } @else {
+              <p class="cliente-tab-placeholder">
+                A secção «{{ d.abaAtiva }}» estará disponível em breve.
+              </p>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (d.abaAtiva === 'Cadastro') {
+        <footer class="cliente-drawer-footer">
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--ghost"
+            (click)="d.fechar()"
+            [disabled]="d.salvando"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--primary"
+            (click)="d.salvar()"
+            [disabled]="d.salvando"
+          >
+            {{ d.salvando ? 'Salvando…' : 'Salvar' }}
+          </button>
+        </footer>
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,286 @@
+@use '../../styles/drawer-stack';
+@use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
+
+app-produto-cadastro-drawer-host {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1620 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  --z-cliente-global-overlay: 1620;
+  --z-cliente-global-drawer: 1630;
+  --cliente-drawer-shell-w: 960px;
+}
+
+.overlay--produto-cadastro {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1620 !important;
+  box-sizing: border-box !important;
+  background: #00000073 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.43s;
+}
+
+.overlay--produto-cadastro.overlay--open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
+}
+
+.produto-cadastro-drawer.app-drawer,
+.cliente-drawer.cliente-drawer--produto.app-drawer {
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  --cliente-drawer-shell-w: 960px;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  z-index: 1630 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  width: min(960px, 100vw) !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12) !important;
+  overflow: hidden !important;
+  pointer-events: none;
+  transform: translateX(100%) !important;
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  will-change: transform;
+}
+
+.produto-cadastro-drawer.app-drawer.app-drawer--open,
+.cliente-drawer.cliente-drawer--produto.app-drawer.app-drawer--open {
+  transform: translateX(0) !important;
+  pointer-events: auto !important;
+}
+
+.produto-cadastro-drawer.app-drawer > .cliente-shell,
+.cliente-drawer.cliente-drawer--produto.app-drawer > .cliente-shell {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  width: 100% !important;
+}
+
+.produto-cadastro-main {
+  width: 100% !important;
+  max-width: none !important;
+  align-items: stretch !important;
+  align-self: stretch !important;
+  border-right: none !important;
+  padding: 16px 30px 24px 0;
+  box-sizing: border-box;
+}
+
+.cliente-drawer--produto .cliente-body {
+  grid-template-columns: var(--cliente-nav-col-w) minmax(0, 1fr) !important;
+}
+
+.cliente-drawer--produto .cliente-main {
+  width: 100% !important;
+  max-width: none !important;
+  border-right: none !important;
+}
+
+.produto-cadastro-drawer__alert {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  color: #cf1322;
+  font-size: 14px;
+}
+
+.produto-cadastro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 720px;
+}
+
+.produto-cadastro-form__foto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.25rem;
+}
+
+.produto-cadastro-form__foto-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  overflow: hidden;
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.produto-cadastro-form__foto-icon {
+  color: #94a3b8;
+}
+
+.produto-cadastro-form__foto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: color-mix(in srgb, var(--color-primary, #505afb) 12%, #fff);
+  color: var(--color-primary, #505afb);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.produto-cadastro-form__section {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.produto-cadastro-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.produto-cadastro-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.produto-cadastro-form__field--full {
+  width: 100%;
+}
+
+.produto-cadastro-form__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.produto-cadastro-form__req {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.produto-cadastro-form__info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid #94a3b8;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  cursor: help;
+}
+
+.produto-cadastro-form__input,
+.produto-cadastro-form__select,
+.produto-cadastro-form__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.produto-cadastro-form__textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.produto-cadastro-form__suffix {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+
+  .produto-cadastro-form__input {
+    padding-right: 5.5rem;
+  }
+}
+
+.produto-cadastro-form__suffix-label {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  translate: 0 -50%;
+  font-size: 0.8125rem;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 720px) {
+  .produto-cadastro-form__row {
+    grid-template-columns: 1fr;
+  }
+}

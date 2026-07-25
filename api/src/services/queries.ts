@@ -227,9 +227,20 @@ export async function listProdutosApi(db: Db) {
       id: r.id,
       produto: String(r.produto).trim(),
       categoria: r.categoria != null ? String(r.categoria).trim() : '',
+      marca: r.marca != null ? String(r.marca).trim() : '',
       preco: r.preco,
+      custo: r.custo,
       estoque: r.estoque,
+      estoque_inicial: r.estoqueInicial,
+      estoque_minimo: r.estoqueMinimo,
       unidade: r.unidade != null ? String(r.unidade) : '',
+      preco_profissional: r.precoProfissional,
+      custo_adicional: r.custoAdicional,
+      comissao_padrao: r.comissaoPadrao,
+      codigo_item: r.codigoItem,
+      codigo_barras: r.codigoBarras,
+      observacoes: r.observacoes,
+      foto_url: r.fotoUrl,
     }));
 }
 

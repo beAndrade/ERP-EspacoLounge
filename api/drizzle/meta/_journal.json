@@ -379,6 +379,13 @@
       "when": 1775698200000,
       "tag": "0053_limpar_contaminacao_desconto_comanda",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1775698300000,
+      "tag": "0054_produtos_cadastro_campos",
+      "breakpoints": true
     }
   ]
 }

@@ -34,6 +34,7 @@ import {
   MovimentacaoListaItem,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
+  ProdutoWritePayload,
   ProfissionalCadastroPayload,
   ProfissionalComissaoServicoItem,
   ProfissionalListaItem,
@@ -201,6 +202,18 @@ export class SheetsApiService {
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.items),
+      );
+  }
+
+  createProduto(payload: ProdutoWritePayload): Observable<ProdutoCatalogoItem> {
+    return this.http
+      .post<ApiResponse<{ item: ProdutoCatalogoItem }>>(
+        this.url('/api/produtos'),
+        payload,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
       );
   }
 

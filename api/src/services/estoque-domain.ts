@@ -119,3 +119,107 @@ export async function incrementarEstoqueProduto(
     return { id: produtoId, produto: nome, estoque: estoqueStr };
   });
 }
+
+function textoOpcional(v: unknown): string | null {
+  const s = String(v ?? '').trim();
+  return s.length > 0 ? s : null;
+}
+
+export type ProdutoCatalogoApi = {
+  id: number;
+  produto: string;
+  categoria: string;
+  marca: string;
+  preco: string | null;
+  custo: string | null;
+  estoque: string | null;
+  estoque_inicial: string | null;
+  estoque_minimo: string | null;
+  unidade: string;
+  preco_profissional: string | null;
+  custo_adicional: string | null;
+  comissao_padrao: string | null;
+  codigo_item: string | null;
+  codigo_barras: string | null;
+  observacoes: string | null;
+  foto_url: string | null;
+};
+
+function mapProdutoRow(r: typeof produtos.$inferSelect): ProdutoCatalogoApi {
+  return {
+    id: r.id,
+    produto: String(r.produto || '').trim(),
+    categoria: r.categoria != null ? String(r.categoria).trim() : '',
+    marca: r.marca != null ? String(r.marca).trim() : '',
+    preco: r.preco,
+    custo: r.custo,
+    estoque: r.estoque,
+    estoque_inicial: r.estoqueInicial,
+    estoque_minimo: r.estoqueMinimo,
+    unidade: r.unidade != null ? String(r.unidade) : '',
+    preco_profissional: r.precoProfissional,
+    custo_adicional: r.custoAdicional,
+    comissao_padrao: r.comissaoPadrao,
+    codigo_item: r.codigoItem,
+    codigo_barras: r.codigoBarras,
+    observacoes: r.observacoes,
+    foto_url: r.fotoUrl,
+  };
+}
+
+export type CriarProdutoInput = {
+  produto: string;
+  categoria?: string | null;
+  marca?: string | null;
+  preco?: string | null;
+  custo?: string | null;
+  estoque_inicial?: string | null;
+  estoque_minimo?: string | null;
+  unidade?: string | null;
+  preco_profissional?: string | null;
+  custo_adicional?: string | null;
+  comissao_padrao?: string | null;
+  codigo_item?: string | null;
+  codigo_barras?: string | null;
+  observacoes?: string | null;
+  foto_url?: string | null;
+};
+
+export async function criarProdutoApi(
+  db: Db,
+  input: CriarProdutoInput,
+): Promise<ProdutoCatalogoApi> {
+  const nome = String(input.produto ?? '').trim();
+  if (!nome) throw new Error('Informe o nome do produto.');
+  const categoria = textoOpcional(input.categoria);
+  if (!categoria) throw new Error('Informe a categoria.');
+
+  const estoqueInicial = textoOpcional(input.estoque_inicial) ?? '0';
+  const estoqueNum = parseQuantidadeEstoque(estoqueInicial);
+  const estoqueStr = formatEstoqueArmazenamento(estoqueNum);
+
+  const [row] = await db
+    .insert(produtos)
+    .values({
+      produto: nome,
+      categoria,
+      marca: textoOpcional(input.marca),
+      preco: textoOpcional(input.preco),
+      custo: textoOpcional(input.custo),
+      estoque: estoqueStr,
+      estoqueInicial: estoqueStr,
+      estoqueMinimo: textoOpcional(input.estoque_minimo) ?? '0',
+      unidade: textoOpcional(input.unidade) ?? 'unidade',
+      precoProfissional: textoOpcional(input.preco_profissional),
+      custoAdicional: textoOpcional(input.custo_adicional),
+      comissaoPadrao: textoOpcional(input.comissao_padrao),
+      codigoItem: textoOpcional(input.codigo_item),
+      codigoBarras: textoOpcional(input.codigo_barras),
+      observacoes: textoOpcional(input.observacoes),
+      fotoUrl: textoOpcional(input.foto_url),
+    })
+    .returning();
+
+  if (!row) throw new Error('Não foi possível criar o produto.');
+  return mapProdutoRow(row);
+}

@@ -18,6 +18,8 @@ import { EmBreveComponent } from './pages/em-breve/em-breve.component';
 import { ConfiguracoesShellComponent } from './features/configuracoes/pages/shell/configuracoes-shell.component';
 import { ConfiguracoesWhatsappComponent } from './features/configuracoes/pages/whatsapp/configuracoes-whatsapp.component';
 import { EstoqueComponent } from './features/estoque/pages/main/estoque.component';
+import { CategoriasComponent } from './features/categorias/pages/main/categorias.component';
+import { MarcasComponent } from './features/marcas/pages/main/marcas.component';
 import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
 import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
 import { ComandasComponent } from './features/comandas/pages/main/comandas.component';
@@ -80,13 +82,13 @@ export const routes: Routes = [
   },
   {
     path: 'categorias',
-    component: EmBreveComponent,
+    component: CategoriasComponent,
     canActivate: [authGuard, adminGuard],
     data: { titulo: 'Categorias' },
   },
   {
     path: 'marcas',
-    component: EmBreveComponent,
+    component: MarcasComponent,
     canActivate: [authGuard, adminGuard],
     data: { titulo: 'Marcas' },
   },

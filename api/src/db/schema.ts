@@ -234,11 +234,20 @@ export const produtos = pgTable('produtos', {
   id: serial('id').primaryKey(),
   produto: text('produto').notNull(),
   categoria: text('categoria'),
+  marca: text('marca'),
   custo: text('custo'),
   preco: text('preco'),
   estoque: text('estoque'),
   estoqueInicial: text('estoque_inicial'),
+  estoqueMinimo: text('estoque_minimo'),
   unidade: text('unidade'),
+  precoProfissional: text('preco_profissional'),
+  custoAdicional: text('custo_adicional'),
+  comissaoPadrao: text('comissao_padrao'),
+  codigoItem: text('codigo_item'),
+  codigoBarras: text('codigo_barras'),
+  observacoes: text('observacoes'),
+  fotoUrl: text('foto_url'),
 });
 
 export const regrasMega = pgTable('regras_mega', {

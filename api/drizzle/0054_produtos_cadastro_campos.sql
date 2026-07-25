@@ -1,0 +1,9 @@
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "marca" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "estoque_minimo" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "preco_profissional" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "custo_adicional" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "comissao_padrao" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "codigo_item" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "codigo_barras" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "observacoes" text;
+ALTER TABLE "produtos" ADD COLUMN IF NOT EXISTS "foto_url" text;

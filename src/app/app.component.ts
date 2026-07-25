@@ -13,6 +13,7 @@ import { AppToastComponent } from './shared/app-toast/app-toast.component';
 import { ClienteCadastroDrawerHostComponent } from './shared/cliente-cadastro-drawer/cliente-cadastro-drawer-host.component';
 import { ProfissionalCadastroDrawerHostComponent } from './shared/profissional-cadastro-drawer/profissional-cadastro-drawer-host.component';
 import { ServicoCadastroDrawerHostComponent } from './shared/servico-cadastro-drawer/servico-cadastro-drawer-host.component';
+import { ProdutoCadastroDrawerHostComponent } from './shared/produto-cadastro-drawer/produto-cadastro-drawer-host.component';
 import { SessaoUsuarioService } from './core/services/sessao-usuario.service';
 import { SidebarProfileComponent } from './layout/sidebar-profile/sidebar-profile.component';
 import { mediaQueryMax } from './styles/breakpoints';
@@ -41,6 +42,7 @@ export type NavSidebarDropdownId =
     ClienteCadastroDrawerHostComponent,
     ProfissionalCadastroDrawerHostComponent,
     ServicoCadastroDrawerHostComponent,
+    ProdutoCadastroDrawerHostComponent,
     MinhaContaDrawerHostComponent,
     FinTransacaoNovoDrawerHostComponent,
     SidebarProfileComponent,

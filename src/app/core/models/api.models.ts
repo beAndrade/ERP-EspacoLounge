@@ -352,10 +352,39 @@ export interface ProdutoCatalogoItem {
   produto: string;
   /** Categoria livre do cadastro (quando existir). */
   categoria?: string;
+  marca?: string | null;
   preco: unknown;
+  custo?: unknown;
   /** Texto da coluna `estoque` (mesma convenção da planilha). */
   estoque?: unknown;
+  estoque_inicial?: unknown;
+  estoque_minimo?: unknown;
   unidade: string;
+  preco_profissional?: string | null;
+  custo_adicional?: string | null;
+  comissao_padrao?: string | null;
+  codigo_item?: string | null;
+  codigo_barras?: string | null;
+  observacoes?: string | null;
+  foto_url?: string | null;
+}
+
+export interface ProdutoWritePayload {
+  produto: string;
+  categoria: string;
+  marca?: string | null;
+  preco?: string | null;
+  custo?: string | null;
+  estoque_inicial?: string | null;
+  estoque_minimo?: string | null;
+  unidade?: string | null;
+  preco_profissional?: string | null;
+  custo_adicional?: string | null;
+  comissao_padrao?: string | null;
+  codigo_item?: string | null;
+  codigo_barras?: string | null;
+  observacoes?: string | null;
+  foto_url?: string | null;
 }
 
 /** Referência da aba Cabelos (MVP: ajuda visual; valor vem manual). */

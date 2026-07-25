@@ -9,7 +9,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ProdutoCatalogoItem } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
-import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { ProdutoCadastroDrawerService } from '../../../../shared/produto-cadastro-drawer/produto-cadastro-drawer.service';
 
 export type ProdutosAba = 'produtos' | 'lotes';
 export type ProdutosOrdenacaoColuna =
@@ -28,7 +28,7 @@ export type ProdutosOrdenacaoColuna =
 })
 export class EstoqueComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
-  private readonly toast = inject(AppToastService);
+  private readonly produtoDrawer = inject(ProdutoCadastroDrawerService);
 
   carregando = false;
   erro = '';
@@ -151,7 +151,25 @@ export class EstoqueComponent implements OnInit {
   }
 
   onNovo(): void {
-    this.toast.show('Cadastro de produtos em breve.');
+    const categorias = [
+      ...new Set(
+        this.itens
+          .map((p) => String(p.categoria ?? '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const marcas = [
+      ...new Set(
+        this.itens
+          .map((p) => String(p.marca ?? '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    this.produtoDrawer.abrirNovo({
+      categorias,
+      marcas,
+      onSalvo: () => this.carregar(),
+    });
   }
 
   onOrdenarColuna(col: ProdutosOrdenacaoColuna, ev?: Event): void {
@@ -185,8 +203,10 @@ export class EstoqueComponent implements OnInit {
     let list = this.itens.slice();
     if (q) {
       list = list.filter((p) => {
-        const campos = [p.produto, p.categoria, (p as { marca?: string }).marca];
-        return campos.some((c) => this.normalizarBusca(String(c ?? '')).includes(q));
+        const campos = [p.produto, p.categoria, p.marca];
+        return campos.some((c) =>
+          this.normalizarBusca(String(c ?? '')).includes(q),
+        );
       });
     }
 
@@ -200,8 +220,11 @@ export class EstoqueComponent implements OnInit {
           const pb = this.precoNum(b) ?? 0;
           return (pa - pb) * dir;
         }
-        case 'comissao':
-          return 0;
+        case 'comissao': {
+          const ca = this.comissaoNum(a);
+          const cb = this.comissaoNum(b);
+          return (ca - cb) * dir;
+        }
         case 'nome':
         default: {
           const na = this.normalizarBusca(a.produto ?? '');
@@ -278,11 +301,20 @@ export class EstoqueComponent implements OnInit {
   }
 
   marcaProduto(p: ProdutoCatalogoItem): string {
-    return this.exibirTexto((p as { marca?: string | null }).marca);
+    return this.exibirTexto(p.marca);
   }
 
-  comissaoProduto(_p: ProdutoCatalogoItem): string {
-    return '—';
+  comissaoProduto(p: ProdutoCatalogoItem): string {
+    const c = String(p.comissao_padrao ?? '').trim();
+    if (!c) return '—';
+    return c.includes('%') ? c : `${c} %`;
+  }
+
+  private comissaoNum(p: ProdutoCatalogoItem): number {
+    const raw = String(p.comissao_padrao ?? '').replace(/[^\d.,-]/g, '');
+    if (!raw) return 0;
+    const n = parseFloat(raw.replace(',', '.'));
+    return Number.isFinite(n) ? n : 0;
   }
 
   precoNum(p: ProdutoCatalogoItem): number | null {

@@ -1102,4 +1102,29 @@ WHERE a."id_atendimento" = p."id_atendimento"
   AND regexp_replace(coalesce(a."desconto", ''), '[^\\d,]', '', 'g')
     = regexp_replace(p."desconto_comanda", '[^\\d,]', '', 'g');
 `));
+  /** Campos extras do cadastro de produtos (drawer Novo produto). */
+  for (const col of [
+    'marca',
+    'estoque_minimo',
+    'preco_profissional',
+    'custo_adicional',
+    'comissao_padrao',
+    'codigo_item',
+    'codigo_barras',
+    'observacoes',
+    'foto_url',
+  ] as const) {
+    await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'produtos' AND c.column_name = '${col}'
+  ) THEN
+    ALTER TABLE "produtos" ADD COLUMN "${col}" text;
+  END IF;
+END $$;
+`));
+  }
 }

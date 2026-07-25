@@ -31,7 +31,7 @@
             <div class="list-head__left">
               <h1 class="list-head__title">Produtos</h1>
             </div>
-            <div class="list-head__actions">
+            <div class="list-head__actions list-head__actions--produtos">
               <div
                 class="list-head__busca-wrap"
                 [class.list-head__busca-wrap--open]="buscaAberta"
@@ -161,9 +161,9 @@
       }
 
       @if (!erro) {
-        <div class="list-table-card produtos-table-card">
+        <div class="list-table-card">
           <div class="table-wrap" role="region" aria-label="Lista de produtos">
-            <table class="produtos-table">
+            <table class="list-table produtos-table">
               <colgroup>
                 <col class="produtos-table__col-check" />
                 <col class="produtos-table__col-nome" />
@@ -185,7 +185,7 @@
                       title="Selecionar página"
                     />
                   </th>
-                  <th class="produtos-th-sort-wrap" scope="col">
+                  <th class="col-nome produtos-th-sort-wrap" scope="col">
                     <button
                       type="button"
                       class="produtos-th-sort"
@@ -195,7 +195,7 @@
                       <span class="produtos-th-sort__label">Nome</span>
                       <span class="produtos-th-sort__icons" aria-hidden="true">
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'nome' && ordenacaoDir === 'asc'
                           "
@@ -206,7 +206,7 @@
                           <polygon points="5,0 10,6 0,6" fill="currentColor" />
                         </svg>
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'nome' && ordenacaoDir === 'desc'
                           "
@@ -231,7 +231,7 @@
                       <span class="produtos-th-sort__label">Estoque</span>
                       <span class="produtos-th-sort__icons" aria-hidden="true">
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'estoque' && ordenacaoDir === 'asc'
                           "
@@ -242,7 +242,7 @@
                           <polygon points="5,0 10,6 0,6" fill="currentColor" />
                         </svg>
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'estoque' && ordenacaoDir === 'desc'
                           "
@@ -267,7 +267,7 @@
                       <span class="produtos-th-sort__label">Preço de venda</span>
                       <span class="produtos-th-sort__icons" aria-hidden="true">
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'preco' && ordenacaoDir === 'asc'
                           "
@@ -278,7 +278,7 @@
                           <polygon points="5,0 10,6 0,6" fill="currentColor" />
                         </svg>
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'preco' && ordenacaoDir === 'desc'
                           "
@@ -301,7 +301,7 @@
                       <span class="produtos-th-sort__label">Comissão</span>
                       <span class="produtos-th-sort__icons" aria-hidden="true">
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'comissao' && ordenacaoDir === 'asc'
                           "
@@ -312,7 +312,7 @@
                           <polygon points="5,0 10,6 0,6" fill="currentColor" />
                         </svg>
                         <svg
-                          class="produtos-th-sort__tri"
+                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
                           [class.produtos-th-sort__tri--on]="
                             ordenacaoColuna === 'comissao' && ordenacaoDir === 'desc'
                           "
@@ -388,7 +388,7 @@
                   </tr>
                 } @else {
                   @for (p of itensPagina(); track p.id) {
-                    <tr [class.produtos-table__row--selected]="estaSelecionado(p.id)">
+                    <tr [class.list-table__row--selected]="estaSelecionado(p.id)">
                       <td class="col-check">
                         <input
                           type="checkbox"

@@ -1,0 +1,374 @@
+<div class="list-page categorias-page">
+  <div class="list-layout" [class.list-layout--filtros-open]="filtrosAbertos">
+    <aside
+      class="categorias-filtros-drawer"
+      [class.categorias-filtros-drawer--open]="filtrosAbertos"
+      aria-label="Filtros de categorias"
+    >
+      <div class="categorias-filtros-drawer__inner">
+        <header class="categorias-filtros-drawer__head">
+          <h2>Filtros</h2>
+          <button type="button" (click)="filtrosAbertos = false" aria-label="Fechar filtros">
+            ×
+          </button>
+        </header>
+        <p class="categorias-filtros-drawer__hint">Filtros avançados em breve.</p>
+        <footer class="categorias-filtros-drawer__footer">
+          <button type="button" class="categorias-filtros-drawer__btn" (click)="limparFiltros()">
+            Limpar
+          </button>
+          <button
+            type="button"
+            class="categorias-filtros-drawer__btn categorias-filtros-drawer__btn--primary"
+            (click)="aplicarFiltros()"
+          >
+            Aplicar
+          </button>
+        </footer>
+      </div>
+    </aside>
+
+    <div class="list-layout__main">
+      <div class="list-page__lead">
+        <header class="list-head">
+          <div class="list-head__title-row">
+            <div class="list-head__left">
+              <h1 class="list-head__title">Categorias</h1>
+            </div>
+            <div class="list-head__actions list-head__actions--categorias">
+              <div
+                class="list-head__busca-wrap"
+                [class.list-head__busca-wrap--open]="buscaAberta"
+                role="search"
+                (click)="onBuscaWrapClick()"
+              >
+                <span class="list-head__busca-icon" aria-hidden="true">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m21 21-4.34-4.34" />
+                    <circle cx="11" cy="11" r="8" />
+                  </svg>
+                </span>
+                <span
+                  class="list-head__busca-label"
+                  [class.list-head__busca-label--hidden]="buscaAberta"
+                  aria-hidden="true"
+                  >Buscar</span
+                >
+                <label class="sr-only" for="categorias-busca-input">Buscar categorias</label>
+                <input
+                  id="categorias-busca-input"
+                  type="text"
+                  class="list-head__busca-input"
+                  [(ngModel)]="busca"
+                  name="buscaCategorias"
+                  [placeholder]="buscaPlaceholder"
+                  [class.list-head__busca-input--search-open]="buscaAberta"
+                  [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+                  autocomplete="off"
+                  (click)="$event.stopPropagation()"
+                  (input)="onBuscaInput()"
+                  aria-label="Buscar categorias"
+                  title="Buscar"
+                />
+              </div>
+              <button
+                type="button"
+                class="list-head__toolbar-btn"
+                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+                (click)="toggleFiltros()"
+              >
+                <svg
+                  class="list-icon-sm list-icon-sm--funnel"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+                  />
+                </svg>
+                <span class="list-head__toolbar-label">Filtrar</span>
+              </button>
+              <button
+                type="button"
+                class="list-head__toolbar-btn list-head__toolbar-btn--link"
+                (click)="onNovo()"
+              >
+                <svg
+                  class="list-icon-sm"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5v14" />
+                </svg>
+                <span>Novo</span>
+              </button>
+            </div>
+          </div>
+        </header>
+      </div>
+
+      @if (erro) {
+        <p class="alert" role="alert">{{ erro }}</p>
+      }
+
+      @if (!erro) {
+        <div class="list-table-card">
+          <div class="table-wrap" role="region" aria-label="Lista de categorias">
+            <table class="list-table categorias-table">
+              <colgroup>
+                <col class="categorias-table__col-check" />
+                <col class="categorias-table__col-nome" />
+                <col class="categorias-table__col-itens" />
+                <col class="categorias-table__col-acoes" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="col-check" scope="col">
+                    <input
+                      type="checkbox"
+                      [checked]="!carregando && todosDaPaginaSelecionados()"
+                      [disabled]="carregando || totalFiltrado() === 0"
+                      (change)="toggleSelecionarTodos($event)"
+                      title="Selecionar página"
+                    />
+                  </th>
+                  <th class="col-nome categorias-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="categorias-th-sort"
+                      (click)="onOrdenarColuna('nome', $event)"
+                      [attr.aria-label]="'Ordenar por nome — ' + tooltipOrdenacao('nome')"
+                    >
+                      <span class="categorias-th-sort__label">Nome</span>
+                      <span class="categorias-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="categorias-th-sort__tri categorias-th-sort__tri--up"
+                          [class.categorias-th-sort__tri--on]="
+                            ordenacaoColuna === 'nome' && ordenacaoDir === 'asc'
+                          "
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="categorias-th-sort__tri categorias-th-sort__tri--down"
+                          [class.categorias-th-sort__tri--on]="
+                            ordenacaoColuna === 'nome' && ordenacaoDir === 'desc'
+                          "
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="categorias-th-sort-wrap" scope="col">
+                    <button
+                      type="button"
+                      class="categorias-th-sort"
+                      (click)="onOrdenarColuna('itens', $event)"
+                      [attr.aria-label]="'Ordenar por itens — ' + tooltipOrdenacao('itens')"
+                    >
+                      <span class="categorias-th-sort__label">Itens</span>
+                      <span class="categorias-th-sort__icons" aria-hidden="true">
+                        <svg
+                          class="categorias-th-sort__tri categorias-th-sort__tri--up"
+                          [class.categorias-th-sort__tri--on]="
+                            ordenacaoColuna === 'itens' && ordenacaoDir === 'asc'
+                          "
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                        </svg>
+                        <svg
+                          class="categorias-th-sort__tri categorias-th-sort__tri--down"
+                          [class.categorias-th-sort__tri--on]="
+                            ordenacaoColuna === 'itens' && ordenacaoDir === 'desc'
+                          "
+                          width="10"
+                          height="6"
+                          viewBox="0 0 10 6"
+                        >
+                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                        </svg>
+                      </span>
+                    </button>
+                  </th>
+                  <th class="col-acoes" scope="col">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (carregando) {
+                  <tr>
+                    <td colspan="4" class="table-body__busy">A carregar…</td>
+                  </tr>
+                } @else if (paginaItens().length === 0) {
+                  <tr>
+                    <td colspan="4" class="table-body__empty">Nenhuma categoria encontrada.</td>
+                  </tr>
+                } @else {
+                  @for (c of paginaItens(); track c.id) {
+                    <tr [class.list-table__row--selected]="estaSelecionado(c.id)">
+                      <td class="col-check">
+                        <input
+                          type="checkbox"
+                          [checked]="estaSelecionado(c.id)"
+                          (change)="toggleSelecionado(c, $event)"
+                          [attr.aria-label]="'Selecionar ' + c.nome"
+                        />
+                      </td>
+                      <td class="col-nome">
+                        <div
+                          class="col-nome__cell col-nome__cell--clickable"
+                          role="button"
+                          tabindex="0"
+                          [attr.aria-label]="'Editar categoria ' + c.nome"
+                          (click)="onEditar(c)"
+                          (keydown.enter)="onEditar(c)"
+                          (keydown.space)="onEditar(c); $event.preventDefault()"
+                        >
+                          <span class="col-nome__link">{{ c.nome }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          class="categorias-itens"
+                          [class.categorias-itens--vazio]="c.qtdItens <= 0"
+                        >
+                          {{ rotuloItens(c.qtdItens) }}
+                        </span>
+                      </td>
+                      <td class="col-acoes">
+                        <div class="list-row-acoes">
+                          <button
+                            type="button"
+                            class="list-row-acoes__btn list-row-acoes__btn--edit"
+                            (click)="onEditar(c)"
+                            aria-label="Editar categoria"
+                            title="Editar"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path
+                                d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                              />
+                            </svg>
+                          </button>
+                          <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                          <button
+                            type="button"
+                            class="list-row-acoes__btn list-row-acoes__btn--delete"
+                            (click)="onExcluir(c)"
+                            aria-label="Excluir categoria"
+                            title="Excluir"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="list-footer">
+            <span class="list-footer__total">{{ totalFiltrado() }} no total</span>
+            <div class="list-footer__pager">
+              <button
+                type="button"
+                class="list-footer__page-btn"
+                [disabled]="pagina <= 1"
+                (click)="irPagina(-1)"
+                aria-label="Página anterior"
+              >
+                ‹
+              </button>
+              <span class="list-footer__page-num">{{ pagina }}</span>
+              <button
+                type="button"
+                class="list-footer__page-btn"
+                [disabled]="pagina >= totalPaginas()"
+                (click)="irPagina(1)"
+                aria-label="Próxima página"
+              >
+                ›
+              </button>
+              <select
+                class="list-footer__per-page"
+                [(ngModel)]="porPagina"
+                (ngModelChange)="onPorPaginaChange()"
+                name="porPagina"
+                aria-label="Itens por página"
+              >
+                @for (n of opcoesPorPagina; track n) {
+                  <option [ngValue]="n">{{ n }} / página</option>
+                }
+              </select>
+            </div>
+          </footer>
+        </div>
+      }
+    </div>
+  </div>
+</div>

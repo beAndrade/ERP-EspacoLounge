@@ -1,0 +1,244 @@
+@use '../../../../styles/list-page-shell';
+
+.marcas-page {
+  padding-right: 10px;
+  box-sizing: border-box;
+
+  .list-table-card {
+    overflow: hidden;
+  }
+
+  .list-head__actions--marcas {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .list-table tbody tr:hover td:not(.table-body__busy):not(.table-body__empty) {
+    background: transparent;
+  }
+
+  .list-table tbody tr.list-table__row--selected:hover td {
+    background: #f0f3ff;
+  }
+}
+
+.marcas-table {
+  table-layout: fixed;
+}
+
+.marcas-table__col-check {
+  width: 48px;
+}
+
+.marcas-table__col-nome {
+  width: 36%;
+}
+
+.marcas-table__col-itens {
+  width: auto;
+}
+
+.marcas-table__col-acoes {
+  width: 130px;
+}
+
+.marcas-table thead th.col-check,
+.marcas-table tbody td.col-check {
+  width: 48px;
+  min-width: 48px;
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.marcas-table thead th.col-check input[type='checkbox'],
+.marcas-table tbody td.col-check input[type='checkbox'] {
+  display: block;
+  margin: 0 auto;
+}
+
+.marcas-table thead th.col-acoes,
+.marcas-table tbody td.col-acoes {
+  width: 130px;
+  min-width: 130px;
+  text-align: center;
+}
+
+.marcas-th-sort-wrap {
+  position: relative;
+  overflow: visible;
+  padding: 0 !important;
+}
+
+.marcas-th-sort {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 45px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline-offset: -2px;
+  }
+}
+
+.marcas-th-sort__label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.marcas-th-sort__icons {
+  flex: 0 0 auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  line-height: 0;
+}
+
+.marcas-th-sort__tri {
+  display: block;
+  color: #d4d4d8;
+  opacity: 0.4;
+  transform: scale(0.92);
+  transform-origin: center;
+  transition:
+    color 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &--on {
+    color: var(--color-primary, #505afb);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.marcas-table .col-nome__cell--clickable {
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.marcas-table .col-nome__cell--clickable:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.marcas-table .col-nome__link {
+  display: inline-block;
+  max-width: 100%;
+  color: rgb(80, 90, 251);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marcas-table .col-nome__cell--clickable:hover .col-nome__link {
+  text-decoration: underline;
+}
+
+.marcas-itens {
+  color: rgb(80, 90, 251);
+  font-size: 14px;
+
+  &--vazio {
+    color: #94a3b8;
+  }
+}
+
+.marcas-filtros-drawer {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+.marcas-filtros-drawer--open {
+  width: 280px;
+}
+
+.marcas-filtros-drawer__inner {
+  width: 280px;
+  height: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(15, 23, 42, 0.06);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.marcas-filtros-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  button {
+    border: none;
+    background: transparent;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #64748b;
+  }
+}
+
+.marcas-filtros-drawer__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.marcas-filtros-drawer__footer {
+  margin-top: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.marcas-filtros-drawer__btn {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.marcas-filtros-drawer__btn--primary {
+  background: var(--color-primary, #505afb);
+  color: #fff;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
