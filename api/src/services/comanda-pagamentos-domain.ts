@@ -82,9 +82,12 @@ export function rotuloMetodoComanda(m: MetodoPagamentoComanda): string {
 export type StatusCobrancaDerivado = 'aberto' | 'pendente' | 'parcial' | 'pago';
 
 export interface ResumoComanda {
-  /** Soma dos valores brutos das linhas (antes do desconto). */
+  /**
+   * Subtotal após descontos por item (ainda sem desconto da comanda).
+   * Descontos por item já estão reflectidos aqui.
+   */
   total_bruto: number;
-  /** Desconto aplicado (em reais). */
+  /** Só `desconto_comanda` (campo da comanda / Faturar «Descontos»). */
   desconto: number;
   /** Total a pagar = total_bruto − desconto (mín. 0). */
   total: number;
@@ -241,6 +244,12 @@ async function idsComPagamentoFiado(
  * (ex.: Mega/Pacote sem `valor_unitario`, linhas antigas, ajustes só na planilha).
  * Nesse caso o total pela pivot fica **abaixo** do somatório real das linhas — a UI
  * da comanda usa as linhas (`faixaPrecoBloc`); alinhamos ao legado quando for maior.
+ *
+ * Contrato do resumo:
+ * - `desconto` = só `desconto_comanda` (campo da comanda / Faturar «Descontos»)
+ * - `total_bruto` = subtotal **após** descontos por item (ainda sem desconto da comanda)
+ * - `total` = `total_bruto − desconto`
+ * Desconto por item NÃO entra em `desconto` — já está no total da linha/pivot.
  */
 function mesclarTotaisPivotELegado(
   totaisItens: { total_bruto: number; desconto: number; total: number } | null,
@@ -262,81 +271,43 @@ function mesclarTotaisPivotELegado(
       ? Math.round(descontoComanda * 100) / 100
       : 0;
 
-  if (!totaisItens) {
-    const desconto = Math.round((legacy.desconto + dc) * 100) / 100;
+  /** Desconto em linhas legado que é eco do desconto da comanda (não é por item). */
+  const descontoLegadoSoItens = (legadoDesc: number): number => {
+    if (!(legadoDesc > 0.005)) return 0;
+    if (dc > 0.005 && Math.abs(legadoDesc - dc) <= 0.005) return 0;
+    return Math.round(legadoDesc * 100) / 100;
+  };
+
+  const fechar = (
+    subtotalAposItens: number,
+    cobranca_status: string | null,
+  ) => {
+    const total_bruto = Math.max(
+      0,
+      Math.round(subtotalAposItens * 100) / 100,
+    );
     const total = Math.max(
       0,
-      Math.round((legacy.total_bruto - desconto) * 100) / 100,
+      Math.round((total_bruto - dc) * 100) / 100,
     );
     return {
-      total_bruto: legacy.total_bruto,
-      desconto,
+      total_bruto,
+      desconto: dc,
       total,
-      cobranca_status: legacy.cobranca_status,
+      cobranca_status,
     };
+  };
+
+  if (!totaisItens) {
+    const descItens = descontoLegadoSoItens(legacy.desconto);
+    return fechar(legacy.total_bruto - descItens, legacy.cobranca_status);
   }
   if (legacy.total_bruto > totaisItens.total_bruto + 0.005) {
-    const desconto = Math.round((legacy.desconto + dc) * 100) / 100;
-    const total = Math.max(
-      0,
-      Math.round((legacy.total_bruto - desconto) * 100) / 100,
-    );
-    return {
-      total_bruto: legacy.total_bruto,
-      desconto,
-      total,
-      cobranca_status: legacy.cobranca_status,
-    };
+    const descItens = descontoLegadoSoItens(legacy.desconto);
+    return fechar(legacy.total_bruto - descItens, legacy.cobranca_status);
   }
-  /**
-   * Desconto por item: pivot (ou legado nas linhas).
-   * Desconto da comanda: `atendimentos_pedido.desconto_comanda` (somado à parte).
-   */
-  const p = totaisItens.desconto;
-  const l = legacy.desconto;
-  let descontoItens: number;
-  if (p <= 0.005) {
-    descontoItens = l;
-  } else if (l <= 0.005) {
-    descontoItens = p;
-  } else if (Math.abs(l - p) <= 0.005) {
-    descontoItens = p;
-  } else if (l > p) {
-    descontoItens = l;
-  } else {
-    descontoItens = p + l;
-  }
-  /**
-   * Contaminação: o mesmo valor de `desconto_comanda` ecoado nas linhas/pivot.
-   * Não somar em dobro (nem triplo se legado e pivot repetirem o valor).
-   */
-  if (dc > 0.005) {
-    if (Math.abs(descontoItens - dc) <= 0.005) {
-      descontoItens = 0;
-    } else if (
-      p > 0.005 &&
-      l > 0.005 &&
-      Math.abs(p - dc) <= 0.005 &&
-      Math.abs(l - dc) <= 0.005
-    ) {
-      descontoItens = 0;
-    } else if (p > 0.005 && Math.abs(p - dc) <= 0.005 && l > dc + 0.005) {
-      descontoItens = Math.round((l - dc) * 100) / 100;
-    } else if (l > 0.005 && Math.abs(l - dc) <= 0.005 && p > dc + 0.005) {
-      descontoItens = Math.round((p - dc) * 100) / 100;
-    }
-  }
-  const descontoMerged = Math.round((descontoItens + dc) * 100) / 100;
-  const totalMerged = Math.max(
-    0,
-    Math.round((totaisItens.total_bruto - descontoMerged) * 100) / 100,
-  );
-  return {
-    total_bruto: totaisItens.total_bruto,
-    desconto: descontoMerged,
-    total: totalMerged,
-    cobranca_status: legacy.cobranca_status,
-  };
+  /** Pivot: `total` já é bruto − desconto por item. */
+  return fechar(totaisItens.total, legacy.cobranca_status);
 }
 
 async function lerDescontoComandaPedido(

@@ -2827,9 +2827,9 @@ function descontoLinhaEquivale(
  * Grava o desconto «da comanda» em `atendimentos_pedido.desconto_comanda`
  * (não em `atendimentos.desconto` / pivot, que são desconto por item).
  *
- * Também remove contaminação do fluxo antigo: o mesmo valor ia para a 1.ª linha,
- * o sufixo na descrição e, após regravar no editor, para a pivot — e a UI
- * mostrava «Desc.» no item.
+ * Também remove contaminação do fluxo antigo nas linhas (`atendimentos`):
+ * o mesmo valor ia para a 1.ª linha e o sufixo na descrição. A pivot
+ * (`atendimento_itens.desconto`) fica intacta — é desconto por item.
  */
 export async function aplicarDescontoComandaPorIdAtendimento(
   db: Db,
@@ -2874,9 +2874,10 @@ export async function aplicarDescontoComandaPorIdAtendimento(
 }
 
 /**
- * Limpa vestígios do desconto da comanda em linhas/pivot.
- * Quando `descontoComandaNum > 0`, remove também o mesmo valor numérico em
- * `atendimentos.desconto` e `atendimento_itens.desconto` (contaminação típica).
+ * Limpa vestígios do desconto da comanda em linhas (`atendimentos`).
+ * Nunca toca em `atendimento_itens.desconto` — esse é desconto **por item**
+ * legítimo; apagá-lo quando coincidia com `desconto_comanda` fazia o «Desc.»
+ * do item desaparecer após Salvar na comanda.
  */
 async function limparContaminacaoDescontoComanda(
   db: Db,
@@ -2904,7 +2905,7 @@ async function limparContaminacaoDescontoComanda(
     if (tinhaSufixo) {
       patch.descricao = novaDesc;
     }
-    /** Sufixo antigo ou eco do valor da comanda na coluna de item. */
+    /** Sufixo antigo ou eco do valor da comanda na coluna legado da linha. */
     if (tinhaSufixo || mesmoValorComanda) {
       if (String(row.desconto ?? '').trim()) {
         patch.desconto = '';
@@ -2916,24 +2917,6 @@ async function limparContaminacaoDescontoComanda(
         .set(patch)
         .where(eq(atendimentos.id, row.id));
     }
-  }
-
-  if (!(descontoComandaNum > 0.005)) return;
-
-  const itens = await db
-    .select({
-      id: atendimentoItens.id,
-      desconto: atendimentoItens.desconto,
-    })
-    .from(atendimentoItens)
-    .where(eq(atendimentoItens.idAtendimento, idAtendimento));
-
-  for (const it of itens) {
-    if (!descontoLinhaEquivale(it.desconto, descontoComandaNum)) continue;
-    await db
-      .update(atendimentoItens)
-      .set({ desconto: null })
-      .where(eq(atendimentoItens.id, it.id));
   }
 }
 

@@ -484,7 +484,7 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
   align-self: stretch;
   transition: box-shadow 0.1s;
   border-radius: 12px;
-  background: var(--color-surface, #fff);
+  background: #fff;
   box-sizing: border-box;
   overflow: visible;
 
@@ -606,22 +606,24 @@ col.drawer-table__col-check {
 }
 
 .list-table thead th {
-  background: #fafaf9;
-  padding: 12px 8px;
+  background: #fafafa;
+  padding: 12px 10px;
   font-weight: 600;
   font-size: 14px;
-  color: #000000bf;
+  color: rgba(0, 0, 0, 0.75);
   text-align: left;
   vertical-align: middle;
+  border-bottom: 1px solid #efefef;
 }
 
 .list-table tbody td {
-  padding: 0 8px;
+  padding: 12px 10px;
   height: 48px;
   border-bottom: 1px solid #efefef;
   vertical-align: middle;
   font-size: 14px;
   color: var(--list-body-text, #000000bf);
+  box-sizing: border-box;
 }
 
 .list-table tbody tr:hover td:not(.table-body__busy):not(.table-body__empty) {

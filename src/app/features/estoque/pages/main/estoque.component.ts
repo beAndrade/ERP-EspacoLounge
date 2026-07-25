@@ -1,8 +1,22 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
-import { Component, inject, LOCALE_ID, OnInit } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  inject,
+  LOCALE_ID,
+  OnInit,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ProdutoCatalogoItem } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+
+export type ProdutosAba = 'produtos' | 'lotes';
+export type ProdutosOrdenacaoColuna =
+  | 'nome'
+  | 'estoque'
+  | 'preco'
+  | 'comissao';
 
 @Component({
   selector: 'app-estoque',
@@ -14,18 +28,31 @@ import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 })
 export class EstoqueComponent implements OnInit {
   private readonly api = inject(SheetsApiService);
+  private readonly toast = inject(AppToastService);
 
   carregando = false;
   erro = '';
   itens: ProdutoCatalogoItem[] = [];
-  /** Filtro por nome (texto livre, sem acentos na comparação). */
-  busca = '';
 
-  editandoEstoque = false;
-  /** Rascunho por `id`: quantidade inteira a somar ao estoque. */
-  entradaPorId: Record<number, string> = {};
-  aplicandoId: number | null = null;
-  erroEntrada = '';
+  aba: ProdutosAba = 'produtos';
+
+  busca = '';
+  buscaAberta = false;
+  filtrosAbertos = false;
+  pulsoToolbarBusca = false;
+  pulsoToolbarFiltro = false;
+  private readonly duracaoPulsoToolbarMs = 600;
+  private tPulsoBusca = 0;
+  private tPulsoFiltro = 0;
+
+  ordenacaoColuna: ProdutosOrdenacaoColuna = 'nome';
+  ordenacaoDir: 'asc' | 'desc' = 'asc';
+
+  pagina = 1;
+  itensPorPagina = 20;
+  readonly opcoesItensPorPagina = [10, 20, 40, 50, 100];
+  perPageMenuAberto = false;
+  selecionados = new Set<number>();
 
   ngOnInit(): void {
     this.carregar();
@@ -38,6 +65,8 @@ export class EstoqueComponent implements OnInit {
       next: (items) => {
         this.itens = items;
         this.carregando = false;
+        this.pagina = 1;
+        this.selecionados.clear();
       },
       error: (e: Error) => {
         this.erro =
@@ -48,13 +77,97 @@ export class EstoqueComponent implements OnInit {
     });
   }
 
-  /** Linhas da tabela após filtro de nome. */
-  get itensFiltrados(): ProdutoCatalogoItem[] {
-    const q = this.normalizarBusca(this.busca);
-    if (!q) return this.itens;
-    return this.itens.filter((p) =>
-      this.normalizarBusca(p.produto ?? '').includes(q),
-    );
+  get buscaPlaceholder(): string {
+    return this.buscaAberta
+      ? 'Buscar por nome, marca ou categoria…'
+      : '';
+  }
+
+  definirAba(aba: ProdutosAba): void {
+    if (this.aba === aba) return;
+    this.aba = aba;
+    this.pagina = 1;
+    this.selecionados.clear();
+  }
+
+  private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
+    if (which === 'busca') {
+      window.clearTimeout(this.tPulsoBusca);
+      this.pulsoToolbarBusca = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarBusca = true;
+        this.tPulsoBusca = window.setTimeout(() => {
+          this.pulsoToolbarBusca = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+    } else {
+      window.clearTimeout(this.tPulsoFiltro);
+      this.pulsoToolbarFiltro = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarFiltro = true;
+        this.tPulsoFiltro = window.setTimeout(() => {
+          this.pulsoToolbarFiltro = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+    }
+  }
+
+  fecharPainelBusca(): void {
+    this.buscaAberta = false;
+  }
+
+  onBuscaWrapClick(): void {
+    if (!this.buscaAberta) {
+      this.dispararPulsoToolbar('busca');
+      this.buscaAberta = true;
+      queueMicrotask(() => {
+        document.getElementById('produtos-busca-input')?.focus();
+      });
+    }
+  }
+
+  onBuscaInput(): void {
+    this.pagina = 1;
+  }
+
+  onBuscaEnter(ev: Event): void {
+    ev.preventDefault();
+    this.pagina = 1;
+  }
+
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
+    this.dispararPulsoToolbar('filtro');
+    this.filtrosAbertos = !this.filtrosAbertos;
+  }
+
+  onLimparFiltros(): void {
+    this.pagina = 1;
+  }
+
+  onAplicarFiltros(): void {
+    this.pagina = 1;
+    this.filtrosAbertos = false;
+  }
+
+  onNovo(): void {
+    this.toast.show('Cadastro de produtos em breve.');
+  }
+
+  onOrdenarColuna(col: ProdutosOrdenacaoColuna, ev?: Event): void {
+    ev?.stopPropagation();
+    if (this.ordenacaoColuna === col) {
+      this.ordenacaoDir = this.ordenacaoDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.ordenacaoColuna = col;
+      this.ordenacaoDir = 'asc';
+    }
+    this.pagina = 1;
+  }
+
+  tooltipOrdenacao(col: ProdutosOrdenacaoColuna): string {
+    if (this.ordenacaoColuna !== col) return 'clique para ordenar';
+    return this.ordenacaoDir === 'asc' ? 'ascendente' : 'descendente';
   }
 
   private normalizarBusca(s: string): string {
@@ -65,38 +178,111 @@ export class EstoqueComponent implements OnInit {
       .replace(/\p{M}/gu, '');
   }
 
-  toggleEdicaoEstoque(): void {
-    this.editandoEstoque = !this.editandoEstoque;
-    this.erroEntrada = '';
-    if (!this.editandoEstoque) {
-      this.entradaPorId = {};
+  filtrados(): ProdutoCatalogoItem[] {
+    if (this.aba === 'lotes') return [];
+
+    const q = this.normalizarBusca(this.busca);
+    let list = this.itens.slice();
+    if (q) {
+      list = list.filter((p) => {
+        const campos = [p.produto, p.categoria, (p as { marca?: string }).marca];
+        return campos.some((c) => this.normalizarBusca(String(c ?? '')).includes(q));
+      });
+    }
+
+    const dir = this.ordenacaoDir === 'asc' ? 1 : -1;
+    list.sort((a, b) => {
+      switch (this.ordenacaoColuna) {
+        case 'estoque':
+          return (this.estoqueUnidades(a) - this.estoqueUnidades(b)) * dir;
+        case 'preco': {
+          const pa = this.precoNum(a) ?? 0;
+          const pb = this.precoNum(b) ?? 0;
+          return (pa - pb) * dir;
+        }
+        case 'comissao':
+          return 0;
+        case 'nome':
+        default: {
+          const na = this.normalizarBusca(a.produto ?? '');
+          const nb = this.normalizarBusca(b.produto ?? '');
+          return na.localeCompare(nb, 'pt-BR') * dir;
+        }
+      }
+    });
+    return list;
+  }
+
+  totalFiltrado(): number {
+    return this.filtrados().length;
+  }
+
+  itensPagina(): ProdutoCatalogoItem[] {
+    const all = this.filtrados();
+    const start = (this.pagina - 1) * this.itensPorPagina;
+    return all.slice(start, start + this.itensPorPagina);
+  }
+
+  totalPaginas(): number {
+    const n = this.totalFiltrado();
+    return Math.max(1, Math.ceil(n / this.itensPorPagina) || 1);
+  }
+
+  paginaAnterior(): void {
+    if (this.pagina > 1) this.pagina--;
+  }
+
+  paginaSeguinte(): void {
+    if (this.pagina < this.totalPaginas()) this.pagina++;
+  }
+
+  togglePerPageMenu(ev: Event): void {
+    ev.stopPropagation();
+    if (this.carregando) return;
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarItensPorPagina(n: number, ev: Event): void {
+    ev.stopPropagation();
+    this.itensPorPagina = n;
+    this.perPageMenuAberto = false;
+    this.pagina = 1;
+  }
+
+  estaSelecionado(id: number): boolean {
+    return this.selecionados.has(id);
+  }
+
+  toggleSelecionado(p: ProdutoCatalogoItem, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (checked) this.selecionados.add(p.id);
+    else this.selecionados.delete(p.id);
+  }
+
+  todosDaPaginaSelecionados(): boolean {
+    const page = this.itensPagina();
+    return page.length > 0 && page.every((p) => this.selecionados.has(p.id));
+  }
+
+  toggleSelecionarTodos(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    for (const p of this.itensPagina()) {
+      if (checked) this.selecionados.add(p.id);
+      else this.selecionados.delete(p.id);
     }
   }
 
-  aplicarEntrada(p: ProdutoCatalogoItem): void {
-    const raw = String(this.entradaPorId[p.id] ?? '').trim();
-    const n = parseInt(raw, 10);
-    if (!Number.isFinite(n) || n <= 0) {
-      this.erroEntrada = 'Indique um número inteiro maior que zero.';
-      return;
-    }
-    this.erroEntrada = '';
-    this.aplicandoId = p.id;
-    this.api.incrementarEstoqueProduto(p.id, n).subscribe({
-      next: (item) => {
-        const row = this.itens.find((x) => x.id === p.id);
-        if (row) {
-          row.estoque = item.estoque;
-        }
-        this.entradaPorId[p.id] = '';
-        this.aplicandoId = null;
-      },
-      error: (e: Error) => {
-        this.aplicandoId = null;
-        this.erroEntrada =
-          e.message || 'Não foi possível atualizar o estoque.';
-      },
-    });
+  exibirTexto(v: string | null | undefined): string {
+    const s = String(v ?? '').trim();
+    return s || '—';
+  }
+
+  marcaProduto(p: ProdutoCatalogoItem): string {
+    return this.exibirTexto((p as { marca?: string | null }).marca);
+  }
+
+  comissaoProduto(_p: ProdutoCatalogoItem): string {
+    return '—';
   }
 
   precoNum(p: ProdutoCatalogoItem): number | null {
@@ -116,19 +302,49 @@ export class EstoqueComponent implements OnInit {
     return Number.isFinite(n) ? n : null;
   }
 
-  /** Unidades em stock (texto da BD). */
   estoqueUnidades(p: ProdutoCatalogoItem): number {
     const v = p.estoque;
     if (v == null || v === '') return 0;
     if (typeof v === 'number' && Number.isFinite(v)) return v;
-    let t = String(v)
-      .replace(/\s/g, '')
-      .trim();
+    let t = String(v).replace(/\s/g, '').trim();
     if (!t) return 0;
     if (t.includes(',')) {
       t = t.replace(/\./g, '').replace(',', '.');
     }
     const n = parseFloat(t.replace(/[^\d.-]/g, ''));
     return Number.isFinite(n) ? n : 0;
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(ev: KeyboardEvent): void {
+    if (this.filtrosAbertos) {
+      ev.preventDefault();
+      this.filtrosAbertos = false;
+      return;
+    }
+    if (this.perPageMenuAberto) {
+      ev.preventDefault();
+      this.perPageMenuAberto = false;
+      return;
+    }
+    if (this.buscaAberta) {
+      ev.preventDefault();
+      this.fecharPainelBusca();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: MouseEvent): void {
+    const t = ev.target as HTMLElement | null;
+    if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
+      this.fecharPainelBusca();
+    }
+    if (
+      this.perPageMenuAberto &&
+      t &&
+      !t.closest('.list-footer__per-page')
+    ) {
+      this.perPageMenuAberto = false;
+    }
   }
 }

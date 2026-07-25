@@ -15,7 +15,7 @@ $list-table-card-radius: 12px;
   align-self: stretch;
   transition: box-shadow 0.1s;
   border-radius: $list-table-card-radius;
-  background: var(--color-surface, #fff);
+  background: #fff;
   box-sizing: border-box;
 }
 
@@ -23,6 +23,7 @@ $list-table-card-radius: 12px;
 .comandas-table-card,
 .drawer-table-card,
 .orcamentos-table-card,
+.produtos-table-card,
 .prof-stack-table-wrap,
 .prof-comissoes-table-wrap,
 .wa-table-wrap,
@@ -33,6 +34,7 @@ $list-table-card-radius: 12px;
 .list-table-card > .table-wrap,
 .comandas-table-card > .table-wrap,
 .orcamentos-table-card > .table-wrap,
+.produtos-table-card > .table-wrap,
 .drawer-table-card > .drawer-table-wrap {
   overflow-x: clip;
   overflow-y: visible;

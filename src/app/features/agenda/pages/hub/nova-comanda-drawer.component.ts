@@ -855,13 +855,15 @@ export class NovaComandaDrawerComponent implements OnInit {
     ) {
       return;
     }
-    const implicit = this.somaDescontosExibidosPorItensComanda();
-    const v = Math.round((api > 0 ? api : implicit) * 100) / 100;
+    /**
+     * Só `desconto_comanda` (API). Nunca copiar «Desc.» dos itens para este
+     * campo — isso gravava o desconto do item como desconto da comanda e,
+     * ao Salvar, apagava o da pivot.
+     */
+    const v = Math.round(Math.max(0, api) * 100) / 100;
     if (Math.abs(local - v) <= 0.005) {
       this.descontoResumoCtrl.markAsPristine();
-      if (v > 0.005) {
-        this.descontoSessaoReais = v;
-      }
+      this.descontoSessaoReais = v > 0.005 ? v : null;
       return;
     }
     this.descontoResumoCtrl.setValue(formataMoedaBrl(v), {
@@ -1076,7 +1078,8 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (!id || !this.podeFaturar()) return;
     this.fecharOutrosMenu();
     const r = this.resumoPagamentos;
-    const bruto = this.subtotalBrutoAntesDescontoResumo();
+    /** Subtotal = soma dos totais de linha (já com desconto por item). */
+    const bruto = this.somaTotaisItensComanda();
     const desc = this.descontoAtualReais();
     const creditoAUsar = this.valorMonetarioCampoResumo(
       this.creditoResumoCtrl.value,
@@ -1395,7 +1398,7 @@ export class NovaComandaDrawerComponent implements OnInit {
     return Number.isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : 0;
   }
 
-  /** Total antes de abater crédito (bruto − desconto − cashback). */
+  /** Total antes de abater crédito (subtotal dos itens − desconto da comanda − cashback). */
   totalAntesAplicarCredito(): number {
     const cash = this.cashbackComandaReais();
     const apiTotal = this.resumoPagamentos?.total;
@@ -1407,11 +1410,12 @@ export class NovaComandaDrawerComponent implements OnInit {
     ) {
       return Math.max(0, Math.round((apiTotal - cash) * 100) / 100);
     }
-    const bruto = this.subtotalBrutoAntesDescontoResumo();
-    const desc = this.descontoAtualReais();
+    /** Totais das linhas já vêm líquidos do desconto por item. */
+    const subtotalItens = this.somaTotaisItensComanda();
+    const descComanda = this.descontoAtualReais();
     return Math.max(
       0,
-      Math.round((bruto - desc - cash) * 100) / 100,
+      Math.round((subtotalItens - descComanda - cash) * 100) / 100,
     );
   }
 
@@ -1520,34 +1524,6 @@ export class NovaComandaDrawerComponent implements OnInit {
       if (n != null) sum += Math.max(0, n);
     }
     return Math.round(sum * 100) / 100;
-  }
-
-  /** Soma das colunas «Desc.» por item (só desconto da pivot; Mega/Pacote = «—»). */
-  private somaDescontosExibidosPorItensComanda(): number {
-    let sum = 0;
-    for (const b of this.blocosLeitura()) {
-      const stripe = this.faixaPrecoBloc(b);
-      if (!stripe) continue;
-      const raw = String(stripe.desconto ?? '').trim();
-      if (!raw || raw === '—') continue;
-      const n = valorMonetarioParaNumero(raw);
-      if (n != null && Number.isFinite(n) && n > 0) sum += n;
-    }
-    return Math.round(sum * 100) / 100;
-  }
-
-  /**
-   * Subtotal «bruto» antes do campo resumo: totais já líquidos na tabela + descontos
-   * mostrados por linha, para não duplicar a subtracção no total.
-   */
-  private subtotalBrutoAntesDescontoResumo(): number {
-    return (
-      Math.round(
-        (this.somaTotaisItensComanda() +
-          this.somaDescontosExibidosPorItensComanda()) *
-          100,
-      ) / 100
-    );
   }
 
   valorMonetarioCampoResumo(s: string): number {

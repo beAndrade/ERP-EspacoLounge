@@ -256,7 +256,9 @@ export interface ComandaPagamentoItem {
 
 /** Resumo financeiro consolidado de uma comanda. */
 export interface ComandaResumoPagamentos {
+  /** Subtotal após descontos por item (sem desconto da comanda). */
   total_bruto: number;
+  /** Só desconto da comanda (`desconto_comanda`); não inclui desconto por item. */
   desconto: number;
   total: number;
   total_pago: number;

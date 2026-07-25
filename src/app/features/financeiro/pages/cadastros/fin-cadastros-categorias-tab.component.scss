@@ -15,11 +15,26 @@
 
 .fin-cad-tab__card {
   margin-top: 0.25rem;
+  box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
+  border: 1px solid rgba(0 0 0 / 3%);
+  border-radius: 12px;
+  background: #fff;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: box-shadow 0.1s;
+
+  > .table-wrap {
+    overflow-x: clip;
+    overflow-y: visible;
+    border-radius: 12px;
+  }
 }
 
 .fin-cad-tab__table {
   table-layout: fixed;
   width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
 
   col.fin-cad-tab__col-acoes {
     width: clamp(72px, 6vw, 88px);

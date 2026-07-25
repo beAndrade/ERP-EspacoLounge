@@ -281,7 +281,7 @@
   border: 1px solid rgba(0 0 0 / 3%);
   transition: box-shadow 0.1s;
   border-radius: 12px;
-  background: var(--color-surface, #fff);
+  background: #fff;
   box-sizing: border-box;
   overflow: visible;
 
@@ -300,6 +300,7 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  font-size: 14px;
 }
 
 col.comandas-table__col-ticket {
@@ -332,14 +333,14 @@ col.comandas-table__col-menu {
 
 thead th {
   position: relative;
-  background: #fafaf9;
-  padding: 12px 8px;
+  background: #fafafa;
+  padding: 12px 10px;
   font-weight: 600;
   font-size: 14px;
-  color: #000000bf;
+  color: rgba(0, 0, 0, 0.75);
   text-transform: none;
   letter-spacing: normal;
-  border-bottom: none;
+  border-bottom: 1px solid #efefef;
   transition: background 0.2s ease;
 }
 
@@ -351,7 +352,7 @@ thead th.col-pagamento {
 th,
 td {
   text-align: left;
-  padding: 12px 8px;
+  padding: 12px 10px;
   vertical-align: middle;
 }
 
@@ -374,16 +375,6 @@ tbody tr.comandas-table__row--selected:hover > td:not(.table-body__busy):not(.ta
   background: #f0f3ff;
 }
 
-thead th + th::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 1px;
-  background: #efefef;
-}
-
 thead th,
 tbody td {
   position: relative;
@@ -401,10 +392,6 @@ tbody tr > td:not(.table-body__busy):not(.table-body__empty) {
 
 thead th.col-ticket {
   text-align: start;
-
-  &::before {
-    display: none;
-  }
 }
 
 .comandas-th-sort-wrap {
@@ -421,7 +408,7 @@ thead th.col-ticket {
   width: 100%;
   min-height: 45px;
   box-sizing: border-box;
-  padding: 0 8px;
+  padding: 0 10px;
   margin: 0;
   border: none;
   background: transparent;

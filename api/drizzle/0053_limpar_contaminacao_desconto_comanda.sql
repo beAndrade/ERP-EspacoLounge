@@ -1,4 +1,5 @@
--- Limpa contaminação: desconto da comanda ecoado em atendimentos / pivot.
+-- Limpa contaminação: desconto da comanda ecoado em atendimentos (legado).
+-- NÃO limpar atendimento_itens.desconto — esse campo é desconto por item.
 
 -- 1) Sufixo «Desconto: R$ …» na descrição + coluna desconto da linha.
 UPDATE "atendimentos" a
@@ -26,15 +27,3 @@ WHERE a."id_atendimento" = p."id_atendimento"
   AND coalesce(trim(a."desconto"), '') <> ''
   AND regexp_replace(coalesce(a."desconto", ''), '[^\d,]', '', 'g')
     = regexp_replace(p."desconto_comanda", '[^\d,]', '', 'g');
-
--- 3) Eco do valor de desconto_comanda na pivot (origem do «Desc.» no item).
-UPDATE "atendimento_itens" i
-SET "desconto" = NULL
-FROM "atendimentos_pedido" p
-WHERE i."id_atendimento" = p."id_atendimento"
-  AND coalesce(trim(p."desconto_comanda"), '') <> ''
-  AND i."desconto" IS NOT NULL
-  AND round(i."desconto"::numeric, 2) = round(
-    replace(regexp_replace(p."desconto_comanda", '[^\d,]', '', 'g'), ',', '.')::numeric,
-    2
-  );

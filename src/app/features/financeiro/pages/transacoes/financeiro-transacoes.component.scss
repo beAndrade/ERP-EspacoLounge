@@ -228,9 +228,16 @@
   margin: 0;
   align-self: stretch;
   overflow: visible;
+  box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
+  border: 1px solid rgba(0 0 0 / 3%);
+  border-radius: 12px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: box-shadow 0.1s;
 
   > .table-wrap {
     overflow: visible;
+    border-radius: 12px;
   }
 }
 
@@ -245,18 +252,20 @@
 .fin-transacoes-table {
   table-layout: fixed;
   width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
 }
 
 .fin-transacoes-table thead th {
   box-sizing: border-box;
-  height: 69px;
-  padding-top: 0;
-  padding-bottom: 0;
+  min-height: 45px;
+  height: auto;
+  padding: 12px 10px;
   color: rgba(0, 0, 0, 0.75);
   font-weight: 600;
   font-size: 14px;
   background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #efefef;
   vertical-align: middle;
 }
 
@@ -267,30 +276,18 @@
 
 .fin-transacoes-table tbody td {
   box-sizing: border-box;
-  height: 65.84px;
+  height: auto;
+  min-height: 48px;
+  padding: 12px 10px;
   transition:
     background 0.2s,
     border-color 0.2s;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #efefef;
   vertical-align: middle;
 }
 
-.fin-transacoes-table thead th + th::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 1px;
-  background: #efefef;
-}
-
-.fin-transacoes-table thead th.col-data + th::before {
-  display: none;
-}
-
 .fin-transacoes-table thead th.col-data {
-  background: #f0f0f0;
+  background: #fafafa;
   padding: 0;
 }
 
@@ -305,12 +302,13 @@
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  height: 69px;
+  min-height: 45px;
+  height: auto;
   box-sizing: border-box;
-  padding: 0 8px;
+  padding: 0 10px;
   margin: 0;
   border: none;
-  background: #f0f0f0;
+  background: transparent;
   font: inherit;
   font-weight: 600;
   font-size: 14px;
@@ -432,11 +430,13 @@
   width: clamp(72px, 6vw, 88px);
 }
 
-/* Titular (maior) + forma/categoria (iguais entre si, flexíveis). */
+/* Titular um pouco mais estreito; forma ganha o espaço (cabe «Forma de pagamento»). */
 .fin-transacoes-table__col-titular {
-  width: 40%;
+  width: 32%;
 }
-.fin-transacoes-table__col-forma,
+.fin-transacoes-table__col-forma {
+  width: 23%;
+}
 .fin-transacoes-table__col-cat {
   width: 15%;
 }
@@ -457,6 +457,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.fin-transacoes-table tbody td.col-titular {
+  /* Duas linhas (titular + subtítulo): cada uma com reticências próprias. */
+  white-space: normal;
 }
 
 .fin-transacoes-table {
@@ -575,6 +580,10 @@
 
 .fin-transacoes__titular {
   display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
   font-size: 13.3333px;
   line-height: 1.35;
@@ -595,6 +604,12 @@
 
 .fin-transacoes__sub {
   display: block;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.35;
@@ -604,6 +619,10 @@
 
 .fin-transacoes__descricao {
   display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14px;
   font-weight: 500;
   line-height: 1.35;

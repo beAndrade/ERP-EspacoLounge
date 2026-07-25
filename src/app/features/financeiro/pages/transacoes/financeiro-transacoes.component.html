@@ -616,7 +616,10 @@
                           } @else {
                             <span class="fin-transacoes__titular">{{ row.titular }}</span>
                           }
-                          <span class="fin-transacoes__sub">{{ row.subtitulo }}</span>
+                          <span
+                            class="fin-transacoes__sub"
+                            [attr.title]="row.subtitulo || null"
+                          >{{ row.subtitulo }}</span>
                         } @else if (podeAbrirPerfilTitular(row)) {
                           <button
                             type="button"

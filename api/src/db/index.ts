@@ -1072,8 +1072,8 @@ BEGIN
 END $$;
 `));
   /**
-   * Contaminação pré-separação: desconto da comanda em descrição / linhas / pivot.
-   * Idempotente — seguro em bases já migradas com 0053.
+   * Contaminação pré-separação: desconto da comanda na descrição / coluna legado
+   * de `atendimentos`. Nunca limpar `atendimento_itens.desconto` — é desconto por item.
    */
   await db.execute(sql.raw(`
 UPDATE "atendimentos" a
@@ -1101,17 +1101,5 @@ WHERE a."id_atendimento" = p."id_atendimento"
   AND coalesce(trim(a."desconto"), '') <> ''
   AND regexp_replace(coalesce(a."desconto", ''), '[^\\d,]', '', 'g')
     = regexp_replace(p."desconto_comanda", '[^\\d,]', '', 'g');
-`));
-  await db.execute(sql.raw(`
-UPDATE "atendimento_itens" i
-SET "desconto" = NULL
-FROM "atendimentos_pedido" p
-WHERE i."id_atendimento" = p."id_atendimento"
-  AND coalesce(trim(p."desconto_comanda"), '') <> ''
-  AND i."desconto" IS NOT NULL
-  AND round(i."desconto"::numeric, 2) = round(
-    replace(regexp_replace(p."desconto_comanda", '[^\\d,]', '', 'g'), ',', '.')::numeric,
-    2
-  );
 `));
 }
