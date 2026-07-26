@@ -15,7 +15,7 @@
   flex: auto;
   border: 1px solid rgba(0 0 0 / 3%);
   transition: box-shadow 0.1s;
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0;
   background: var(--color-surface, #fff);
   box-sizing: border-box;
   overflow: visible;
@@ -24,7 +24,7 @@
     /* `clip` no eixo X não força o Y a `auto` (ao contrário de `hidden`). */
     overflow-x: clip;
     overflow-y: visible;
-    border-radius: 12px;
+    border-radius: 12px 12px 0 0;
   }
 
   /* Tooltip na última coluna não pode ficar preso no clip horizontal. */

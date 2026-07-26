@@ -181,36 +181,6 @@
   position: relative;
 }
 
-.list-footer__per-page-menu {
-  position: absolute;
-  right: 0;
-  bottom: 100%;
-  margin: 0 0 4px;
-  padding: 4px 0;
-  list-style: none;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 5;
-
-  button {
-    display: block;
-    width: 100%;
-    padding: 0.4rem 0.75rem;
-    border: none;
-    background: none;
-    font: inherit;
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-
-    &:hover {
-      background: #f3f4f6;
-    }
-  }
-}
-
 .fin-transacoes__acao-hint {
   margin: 0 0 0.5rem;
   padding: 0.5rem 0.75rem;
@@ -230,14 +200,14 @@
   overflow: visible;
   box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
   border: 1px solid rgba(0 0 0 / 3%);
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0;
   background: #fff;
   box-sizing: border-box;
   transition: box-shadow 0.1s;
 
   > .table-wrap {
     overflow: visible;
-    border-radius: 12px;
+    border-radius: 12px 12px 0 0;
   }
 }
 
@@ -871,7 +841,8 @@
 }
 
 .fin-transacoes__footer {
-  border-top: 1px solid #efefef;
+  border-top: none;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 /**

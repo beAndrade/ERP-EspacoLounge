@@ -4,19 +4,22 @@
  */
 $list-table-card-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
 $list-table-card-border: 1px solid rgba(0 0 0 / 3%);
-$list-table-card-radius: 12px;
+/** Só cantos superiores — base do card fica reta (footer / fundo). */
+$list-table-card-radius: 12px 12px 0 0;
 
 @mixin list-table-card-surface {
   box-shadow: $list-table-card-shadow;
   flex: auto;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   border: $list-table-card-border;
   align-self: stretch;
   transition: box-shadow 0.1s;
   border-radius: $list-table-card-radius;
   background: #fff;
   box-sizing: border-box;
+  padding: 0;
 }
 
 .list-table-card,

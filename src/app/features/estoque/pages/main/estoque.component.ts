@@ -151,13 +151,6 @@ export class EstoqueComponent implements OnInit {
   }
 
   onNovo(): void {
-    const categorias = [
-      ...new Set(
-        this.itens
-          .map((p) => String(p.categoria ?? '').trim())
-          .filter(Boolean),
-      ),
-    ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
     const marcas = [
       ...new Set(
         this.itens
@@ -165,10 +158,32 @@ export class EstoqueComponent implements OnInit {
           .filter(Boolean),
       ),
     ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-    this.produtoDrawer.abrirNovo({
-      categorias,
-      marcas,
-      onSalvo: () => this.carregar(),
+    this.api.listCategoriasCatalogo(false).subscribe({
+      next: (cats) => {
+        const categorias = (cats ?? [])
+          .map((c) => String(c.nome ?? '').trim())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        this.produtoDrawer.abrirNovo({
+          categorias,
+          marcas,
+          onSalvo: () => this.carregar(),
+        });
+      },
+      error: () => {
+        const categorias = [
+          ...new Set(
+            this.itens
+              .map((p) => String(p.categoria ?? '').trim())
+              .filter(Boolean),
+          ),
+        ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        this.produtoDrawer.abrirNovo({
+          categorias,
+          marcas,
+          onSalvo: () => this.carregar(),
+        });
+      },
     });
   }
 

@@ -20,12 +20,16 @@ describe('AppComponent', () => {
     expect(fixture.componentInstance.title).toEqual('Espaço Lounge');
   });
 
-  it('should render brand with title', () => {
+  it('should render brand with Nexa Beauty wordmark', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.brand')?.textContent).toContain(
-      'Espaço Lounge',
+    const brand = compiled.querySelector('.brand');
+    expect(brand?.querySelector('.brand__name')?.textContent?.trim()).toBe(
+      'nexa',
+    );
+    expect(brand?.querySelector('.brand__tag')?.textContent?.trim().toUpperCase()).toBe(
+      'BEAUTY',
     );
   });
 });

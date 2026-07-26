@@ -32,6 +32,7 @@ export class MarcasComponent implements OnInit {
   pagina = 1;
   porPagina = 20;
   readonly opcoesPorPagina = [10, 20, 50];
+  perPageMenuAberto = false;
   selecionados = new Set<string>();
 
   ordenacaoColuna: 'nome' | 'itens' = 'nome';
@@ -181,8 +182,16 @@ export class MarcasComponent implements OnInit {
     );
   }
 
-  onPorPaginaChange(): void {
+  togglePerPageMenu(ev?: Event): void {
+    ev?.stopPropagation();
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarPorPagina(n: number, ev?: Event): void {
+    ev?.stopPropagation();
+    this.porPagina = n;
     this.pagina = 1;
+    this.perPageMenuAberto = false;
   }
 
   rotuloItens(n: number): string {
@@ -216,7 +225,8 @@ export class MarcasComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.filtrosAbertos) this.filtrosAbertos = false;
+    if (this.perPageMenuAberto) this.perPageMenuAberto = false;
+    else if (this.filtrosAbertos) this.filtrosAbertos = false;
     else if (this.buscaAberta) this.buscaAberta = false;
   }
 
@@ -225,6 +235,9 @@ export class MarcasComponent implements OnInit {
     const t = ev.target as HTMLElement | null;
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.buscaAberta = false;
+    }
+    if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
+      this.perPageMenuAberto = false;
     }
   }
 }

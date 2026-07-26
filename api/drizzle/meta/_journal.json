@@ -386,6 +386,13 @@
       "when": 1775698300000,
       "tag": "0054_produtos_cadastro_campos",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1775698400000,
+      "tag": "0055_categorias_catalogo",
+      "breakpoints": true
     }
   ]
 }

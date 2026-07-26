@@ -678,118 +678,111 @@
             </table>
           </div>
 
-          <footer class="comandas-footer">
-            <div class="comandas-footer__toolbar">
-              <span class="comandas-footer__total">
-                {{ carregando ? '…' : totalFiltrado() }} no total
-              </span>
-              <div class="comandas-footer__pager">
-                <button
-                  type="button"
-                  class="comandas-footer__chev"
-                  (click)="paginaAnterior()"
-                  [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
-                  aria-label="Página anterior"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="m15 18-6-6 6-6" />
-                  </svg>
-                </button>
-                <span class="comandas-footer__page-num" aria-current="page">{{ pagina }}</span>
-                <button
-                  type="button"
-                  class="comandas-footer__chev"
-                  (click)="paginaSeguinte()"
-                  [disabled]="
-                    carregando || pagina >= totalPaginas() || totalFiltrado() === 0
-                  "
-                  aria-label="Página seguinte"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div
-              class="comandas-footer__per-page comandas-footer__per-page-dropdown"
-            >
-              <span id="comandas-per-page-label" class="sr-only"
-                >Itens por página</span
-              >
+          <footer class="list-footer comandas-footer">
+            <span class="list-footer__total comandas-footer__total">
+              {{ carregando ? '…' : totalFiltrado() }} no total
+            </span>
+            <div class="list-footer__pager comandas-footer__pager">
               <button
                 type="button"
-                class="comandas-footer__per-page-trigger"
-                [disabled]="carregando"
-                [attr.aria-expanded]="perPageMenuAberto"
-                aria-haspopup="listbox"
-                [attr.aria-labelledby]="'comandas-per-page-label'"
-                aria-controls="comandas-per-page-listbox"
-                (click)="togglePerPageMenu($event)"
+                class="list-footer__chev comandas-footer__chev"
+                (click)="paginaAnterior()"
+                [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
+                aria-label="Página anterior"
               >
-                <div class="comandas-footer__per-page-trigger-box">
-                  <span class="comandas-footer__per-page-value"
-                    >{{ itensPorPagina }} / página</span
-                  >
-                  <span class="comandas-footer__per-page-chev" aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </span>
-                </div>
-              </button>
-              @if (perPageMenuAberto) {
-                <div
-                  id="comandas-per-page-listbox"
-                  class="comandas-footer__per-page-panel"
-                  role="listbox"
-                  [attr.aria-labelledby]="'comandas-per-page-label'"
-                  (click)="$event.stopPropagation()"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
                 >
-                  @for (n of opcoesItensPorPagina; track n) {
-                    <button
-                      type="button"
-                      class="comandas-footer__per-page-option"
-                      [class.comandas-footer__per-page-option--selected]="
-                        n === itensPorPagina
-                      "
-                      role="option"
-                      [attr.aria-selected]="n === itensPorPagina"
-                      (click)="selecionarItensPorPagina(n, $event)"
-                    >
-                      {{ n }} / página
-                    </button>
-                  }
-                </div>
-              }
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <span class="list-footer__page-num comandas-footer__page-num" aria-current="page">{{
+                pagina
+              }}</span>
+              <button
+                type="button"
+                class="list-footer__chev comandas-footer__chev"
+                (click)="paginaSeguinte()"
+                [disabled]="
+                  carregando || pagina >= totalPaginas() || totalFiltrado() === 0
+                "
+                aria-label="Página seguinte"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+              <div class="list-footer__per-page">
+                <span id="comandas-per-page-label" class="sr-only">Itens por página</span>
+                <button
+                  type="button"
+                  class="list-footer__per-page-trigger"
+                  [disabled]="carregando"
+                  [attr.aria-expanded]="perPageMenuAberto"
+                  aria-haspopup="listbox"
+                  aria-labelledby="comandas-per-page-label"
+                  aria-controls="comandas-per-page-listbox"
+                  (click)="togglePerPageMenu($event)"
+                >
+                  <span>{{ itensPorPagina }} / página</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                @if (perPageMenuAberto) {
+                  <div
+                    id="comandas-per-page-listbox"
+                    class="list-footer__per-page-panel"
+                    role="listbox"
+                    aria-labelledby="comandas-per-page-label"
+                    (click)="$event.stopPropagation()"
+                  >
+                    @for (n of opcoesItensPorPagina; track n) {
+                      <button
+                        type="button"
+                        class="list-footer__per-page-option"
+                        [class.list-footer__per-page-option--active]="n === itensPorPagina"
+                        role="option"
+                        [attr.aria-selected]="n === itensPorPagina"
+                        (click)="selecionarItensPorPagina(n, $event)"
+                      >
+                        {{ n }} / página
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
             </div>
           </footer>
         </div>

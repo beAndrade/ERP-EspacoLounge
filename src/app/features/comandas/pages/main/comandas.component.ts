@@ -311,6 +311,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
     if (
       this.perPageMenuAberto &&
+      !t?.closest?.('.list-footer__per-page') &&
       !t?.closest?.('.comandas-footer__per-page-dropdown')
     ) {
       this.perPageMenuAberto = false;

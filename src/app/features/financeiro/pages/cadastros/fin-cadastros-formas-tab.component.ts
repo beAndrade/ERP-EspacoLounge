@@ -1,5 +1,6 @@
 import {
   Component,
+  HostListener,
   Input,
   OnChanges,
   OnInit,
@@ -133,6 +134,18 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
 
   paginaSeguinte(): void {
     if (this.podePaginaSeguinte) this.pagina++;
+  }
+
+  togglePerPageMenu(ev?: Event): void {
+    ev?.stopPropagation();
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarItensPorPagina(n: number, ev?: Event): void {
+    ev?.stopPropagation();
+    this.itensPorPagina = n;
+    this.pagina = 1;
+    this.perPageMenuAberto = false;
   }
 
   abrirNovo(): void {
@@ -311,5 +324,13 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
         this.toast.show(e.message || 'Não foi possível excluir.');
       },
     });
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: MouseEvent): void {
+    const t = ev.target as HTMLElement | null;
+    if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
+      this.perPageMenuAberto = false;
+    }
   }
 }

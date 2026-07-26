@@ -11,6 +11,7 @@ import {
   AtendimentoListaItem,
   CabeloCatalogoItem,
   CaixaDiaResumo,
+  CategoriaCatalogoItem,
   CategoriaFinanceiraItem,
   ComandaPagamentoItem,
   ComandaResumoPagamentos,
@@ -472,6 +473,51 @@ export class SheetsApiService {
         map((r) => this.unwrap(r)),
         map((d) => d.items),
       );
+  }
+
+  listCategoriasCatalogo(incluirInativas = false): Observable<CategoriaCatalogoItem[]> {
+    let params = new HttpParams();
+    if (incluirInativas) params = params.set('incluir_inativas', '1');
+    return this.http
+      .get<ApiResponse<{ items: CategoriaCatalogoItem[] }>>(
+        this.url('/api/categorias'),
+        { params },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  criarCategoriaCatalogo(body: {
+    nome: string;
+    ativo?: boolean;
+  }): Observable<{ id: number }> {
+    return this.http
+      .post<ApiResponse<{ id: number }>>(this.url('/api/categorias'), body)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  atualizarCategoriaCatalogo(
+    id: number,
+    body: { nome?: string; ativo?: boolean },
+  ): Observable<{ ok: boolean }> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/categorias/${id}`),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  excluirCategoriaCatalogo(
+    id: number,
+  ): Observable<{ ok: boolean; result?: string }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean; result?: string }>>(
+        this.url(`/api/categorias/${id}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   listFinCategoriasCadastro(incluirInativas = false): Observable<FinCategoriaCadastroItem[]> {

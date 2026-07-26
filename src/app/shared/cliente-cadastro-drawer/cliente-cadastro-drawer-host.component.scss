@@ -329,12 +329,6 @@ app-servico-cadastro-drawer-host {
   padding-bottom: 8px;
   color: #3f3f46;
 
-  &--required::after {
-    content: '*';
-    color: #dc2626;
-    font-weight: 600;
-  }
-
   &--with-help {
     width: fit-content;
     max-width: 100%;

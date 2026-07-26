@@ -1,5 +1,6 @@
 import {
   Component,
+  HostListener,
   Input,
   OnChanges,
   OnInit,
@@ -114,6 +115,18 @@ export class FinCadastrosCategoriasTabComponent implements OnInit, OnChanges {
     if (this.podePaginaSeguinte) this.pagina++;
   }
 
+  togglePerPageMenu(ev?: Event): void {
+    ev?.stopPropagation();
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarItensPorPagina(n: number, ev?: Event): void {
+    ev?.stopPropagation();
+    this.itensPorPagina = n;
+    this.pagina = 1;
+    this.perPageMenuAberto = false;
+  }
+
   abrirNovo(): void {
     this.editando = null;
     this.drawerTitulo = 'Categoria';
@@ -225,5 +238,13 @@ export class FinCadastrosCategoriasTabComponent implements OnInit, OnChanges {
 
   rotuloNatureza(n: 'receita' | 'despesa'): string {
     return n === 'receita' ? 'Crédito' : 'Débito';
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: MouseEvent): void {
+    const t = ev.target as HTMLElement | null;
+    if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
+      this.perPageMenuAberto = false;
+    }
   }
 }

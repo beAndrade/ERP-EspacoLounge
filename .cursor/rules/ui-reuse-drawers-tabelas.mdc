@@ -1,0 +1,42 @@
+---
+description: Reutilizar UI de drawers, tabelas, botões, inputs e validação (não reinventar)
+globs: src/app/**/*.{html,scss,ts}
+alwaysApply: false
+---
+
+# Reuso de UI (drawers, tabelas, formulários)
+
+Ao criar ou alterar **drawer**, **tabela/lista**, **form de cadastro** ou **rodapé de ações**:
+
+## Princípio
+
+**Reutilizar antes de inventar.** Copiar/adaptar o padrão já existente no projeto; não redesenhar padding, hover, focus, validação ou tipografia do zero.
+
+## Referências canónicas (preferir nesta ordem)
+
+1. **Shell de drawer:** regra `drawer-stack` + classes `cliente-drawer` / `cliente-shell` / `cliente-head` / `cliente-drawer-footer`.
+2. **Asterisco obrigatório:** `src/app/styles/form-req.scss` — classe `.form-req` (ou legado listado lá); asterisco **antes** do label.
+3. **Lista/tabela:** `list-page-shell` + `table-card-shell` (páginas de lista).
+4. **Filtros laterais:** padrão Clientes — painel animado + card Status (`clientes-filtros-card` / equivalente); botão Filtrar com `list-head__toolbar-btn--filtro-on` + pulse `list-head__toolbar-btn--pulse-once-filtro`.
+5. **Switch:** `.drawer-switch` em `cliente-drawer-table.scss`; pulse de clique = `drawer-switch--pulse` (ver `cliente-debitos-tab` / categorias).
+6. **Cadastro simples recente (Nome + Ativo):** `categorias` drawer — botões, input, focus, erro, footer.
+
+## Tokens / estados a reaproveitar
+
+| Elemento | Padrão |
+|---|---|
+| Primário | `#505afb`; hover `#7a88ff`; texto `#fff` |
+| Ghost | borda `#f1f1f1`, fundo `#fff`, texto `rgba(0,0,0,.75)`; hover borda/texto `#7a88ff` |
+| Input default | borda `#f1f1f1`, `border-radius: 12px`, padding `4px 11px` |
+| Input hover | borda `#7a88ff` |
+| Input focus | borda `#505afb`; `box-shadow: 0 0 0 2px rgba(5,55,255,.06)` |
+| Input erro | borda `#ff4d4f`; mensagem `Campo obrigatório` em `#ff4d4f` / `14px` |
+| Labels | `15px` / `500` / `rgba(0,0,0,.75)` |
+| Footer drawer cadastro | padding `8px 16px`; gap botões `8px`; botões altura `32px` |
+
+## Ao pedir “novo drawer / nova tabela”
+
+1. Procurar página/drawer semelhante (categorias, serviço, produto, financeiro, cliente).
+2. Reusar HTML de classes + SCSS compartilhado; overrides só no host da feature.
+3. Validação inline no campo (borda + texto), não só toast, quando for formulário de cadastro.
+4. Não duplicar regras de asterisco, botão ou input se já existem em `styles/` ou no shell cliente.

@@ -483,6 +483,14 @@ export interface FinCategoriaCadastroItem {
   sistema: boolean;
 }
 
+/** Categoria de produtos/serviços (`GET /api/categorias`). */
+export interface CategoriaCatalogoItem {
+  id: number;
+  nome: string;
+  ativo: boolean;
+  qtd_itens: number;
+}
+
 /** Forma de pagamento — cadastro admin (`GET /api/financeiro/formas-pagamento`). */
 export interface FinFormaPagamentoCadastroItem {
   id: number;

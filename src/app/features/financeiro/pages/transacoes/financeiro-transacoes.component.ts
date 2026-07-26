@@ -1558,7 +1558,9 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     if (!t?.closest?.('.fin-transacoes-novo-menu')) {
       this.fecharNovoMenuAnimado();
     }
-    this.perPageMenuAberto = false;
+    if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
+      this.perPageMenuAberto = false;
+    }
     this.pagoPopoverLinhaId = null;
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.fecharPainelBusca();
@@ -1976,5 +1978,10 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     this.itensPorPagina = n;
     this.pagina = 1;
     this.perPageMenuAberto = false;
+  }
+
+  togglePerPageMenu(ev?: Event): void {
+    ev?.stopPropagation();
+    this.perPageMenuAberto = !this.perPageMenuAberto;
   }
 }

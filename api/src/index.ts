@@ -98,6 +98,12 @@ import {
   updateServico,
   type ServicoWriteInput,
 } from './services/servicos-domain';
+import {
+  atualizarCategoriaCatalogoApi,
+  criarCategoriaCatalogoApi,
+  excluirCategoriaCatalogoApi,
+  listCategoriasCatalogoApi,
+} from './services/categorias-catalogo-domain';
 
 const clienteCadastroBodySchema = t.Object({
   nome: t.String(),
@@ -1185,6 +1191,83 @@ const app = new Elysia({ adapter: node() })
     ok({ items: await listPacotesQueratinaApi(db) }),
   )
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))
+  .get('/api/categorias', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const incluirInativas =
+        q.incluir_inativas === '1' || q.incluirInativas === '1';
+      return ok({
+        items: await listCategoriasCatalogoApi(db, { incluirInativas }),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .post(
+    '/api/categorias',
+    async ({ body }) => {
+      try {
+        const b = body as { nome?: string; ativo?: boolean };
+        const id = await criarCategoriaCatalogoApi(db, {
+          nome: String(b.nome ?? ''),
+          ativo: b.ativo,
+        });
+        return ok({ id });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      body: t.Object({
+        nome: t.String(),
+        ativo: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .patch(
+    '/api/categorias/:id',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as { nome?: string; ativo?: boolean };
+        await atualizarCategoriaCatalogoApi(db, id, {
+          nome: b.nome !== undefined ? String(b.nome) : undefined,
+          ativo: b.ativo,
+        });
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        nome: t.Optional(t.String()),
+        ativo: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .delete('/api/categorias/:id', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const result = await excluirCategoriaCatalogoApi(db, id);
+      return ok({ ok: true, result });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+      return fail('VALIDATION', msg);
+    }
+  })
   .post(
     '/api/produtos',
     async ({ body }) => {

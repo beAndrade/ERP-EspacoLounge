@@ -1,15 +1,29 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { lerServicoTexto } from '../../../../core/utils/servico-campos';
+import type {
+  ProdutoCatalogoItem,
+  Servico,
+} from '../../../../core/models/api.models';
 
 export interface CategoriaListaItem {
-  id: string;
+  id: number;
   nome: string;
+  ativo: boolean;
   qtdItens: number;
 }
+
+export interface CategoriaAssociacaoItem {
+  id: string;
+  nome: string;
+  tipo: 'servico' | 'produto';
+}
+
+const DRAWER_ANIM_MS = 430;
+const CATEGORIA_SALVA_TOAST_MSG = 'Categoria salva com sucesso!';
 
 @Component({
   selector: 'app-categorias',
@@ -18,7 +32,7 @@ export interface CategoriaListaItem {
   templateUrl: './categorias.component.html',
   styleUrl: './categorias.component.scss',
 })
-export class CategoriasComponent implements OnInit {
+export class CategoriasComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
 
@@ -30,17 +44,51 @@ export class CategoriasComponent implements OnInit {
   buscaAberta = false;
   filtrosAbertos = false;
   pulsoToolbarBusca = false;
+  pulsoToolbarFiltro = false;
+  private readonly duracaoPulsoToolbarMs = 600;
+  private tPulsoFiltro = 0;
+  /** Filtro de status: só ativas por omissão; inativas só com filtro. */
+  filtroAtivas = true;
+  filtroInativas = false;
 
   pagina = 1;
   porPagina = 20;
   readonly opcoesPorPagina = [10, 20, 50];
-  selecionados = new Set<string>();
+  perPageMenuAberto = false;
+  selecionados = new Set<number>();
 
-  ordenacaoColuna: 'nome' | 'itens' = 'nome';
+  ordenacaoColuna: 'nome' = 'nome';
   ordenacaoDir: 'asc' | 'desc' = 'asc';
+
+  /** Catálogo em memória para o drawer de associações. */
+  private produtosCatalogo: ProdutoCatalogoItem[] = [];
+  private servicosCatalogo: Servico[] = [];
+
+  associacoesAberto = false;
+  associacoesPanelOpen = false;
+  associacoesCategoria: CategoriaListaItem | null = null;
+  associacoesItens: CategoriaAssociacaoItem[] = [];
+  private associacoesCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  cadastroAberto = false;
+  cadastroPanelOpen = false;
+  cadastroNome = '';
+  cadastroAtivo = true;
+  cadastroSalvando = false;
+  cadastroNomeErro = false;
+  private cadastroCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
     this.carregar();
+  }
+
+  ngOnDestroy(): void {
+    if (this.associacoesCloseTimer != null) {
+      clearTimeout(this.associacoesCloseTimer);
+    }
+    if (this.cadastroCloseTimer != null) {
+      clearTimeout(this.cadastroCloseTimer);
+    }
   }
 
   get buscaPlaceholder(): string {
@@ -51,29 +99,19 @@ export class CategoriasComponent implements OnInit {
     this.carregando = true;
     this.erro = '';
     forkJoin({
+      categorias: this.api.listCategoriasCatalogo(true),
       produtos: this.api.listProdutos(),
       servicos: this.api.listServicos(),
     }).subscribe({
-      next: ({ produtos, servicos }) => {
-        const counts = new Map<string, number>();
-        this.labelByKey.clear();
-        const bump = (raw: string | null | undefined) => {
-          const nome = String(raw ?? '').trim();
-          if (!nome) return;
-          const key = nome.toLocaleLowerCase('pt-BR');
-          counts.set(key, (counts.get(key) ?? 0) + 1);
-          if (!this.labelByKey.has(key)) this.labelByKey.set(key, nome);
-        };
-        for (const p of produtos) bump(p.categoria);
-        for (const s of servicos) bump(lerServicoTexto(s, 'Categoria'));
-
-        this.itens = [...counts.entries()]
-          .map(([key, qtd]) => ({
-            id: key,
-            nome: this.labelByKey.get(key) ?? key,
-            qtdItens: qtd,
-          }))
-          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      next: ({ categorias, produtos, servicos }) => {
+        this.produtosCatalogo = produtos ?? [];
+        this.servicosCatalogo = servicos ?? [];
+        this.itens = (categorias ?? []).map((c) => ({
+          id: c.id,
+          nome: c.nome,
+          ativo: c.ativo !== false,
+          qtdItens: Number(c.qtd_itens ?? 0),
+        }));
         this.carregando = false;
         this.pagina = 1;
         this.selecionados.clear();
@@ -86,12 +124,9 @@ export class CategoriasComponent implements OnInit {
     });
   }
 
-  private readonly labelByKey = new Map<string, string>();
-
   onBuscaWrapClick(): void {
     if (!this.buscaAberta) {
-      this.pulsoToolbarBusca = true;
-      window.setTimeout(() => (this.pulsoToolbarBusca = false), 600);
+      this.dispararPulsoToolbar('busca');
       this.buscaAberta = true;
       queueMicrotask(() =>
         document.getElementById('categorias-busca-input')?.focus(),
@@ -103,21 +138,137 @@ export class CategoriasComponent implements OnInit {
     this.pagina = 1;
   }
 
-  toggleFiltros(): void {
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
+    this.dispararPulsoToolbar('filtro');
     this.filtrosAbertos = !this.filtrosAbertos;
   }
 
+  private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
+    if (which === 'busca') {
+      this.pulsoToolbarBusca = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarBusca = true;
+        window.setTimeout(() => {
+          this.pulsoToolbarBusca = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+      return;
+    }
+    window.clearTimeout(this.tPulsoFiltro);
+    this.pulsoToolbarFiltro = false;
+    queueMicrotask(() => {
+      this.pulsoToolbarFiltro = true;
+      this.tPulsoFiltro = window.setTimeout(() => {
+        this.pulsoToolbarFiltro = false;
+      }, this.duracaoPulsoToolbarMs);
+    });
+  }
+
   limparFiltros(): void {
+    this.filtroAtivas = true;
+    this.filtroInativas = false;
     this.pagina = 1;
   }
 
   aplicarFiltros(): void {
     this.pagina = 1;
-    this.filtrosAbertos = false;
+  }
+
+  toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (which === 'ativos') this.filtroAtivas = checked;
+    else this.filtroInativas = checked;
+    this.pagina = 1;
+  }
+
+  get filtroStatusAtivo(): boolean {
+    return !this.filtroAtivas || this.filtroInativas;
   }
 
   onNovo(): void {
-    this.toast.show('Cadastro de categorias em breve.');
+    this.abrirCadastro();
+  }
+
+  toggleCadastroAtivo(ev: Event): void {
+    if (this.cadastroSalvando) return;
+    this.cadastroAtivo = !this.cadastroAtivo;
+    const el = ev.currentTarget as HTMLElement | null;
+    if (el) this.pulsarSwitch(el);
+  }
+
+  private pulsarSwitch(el: HTMLElement): void {
+    el.classList.remove('drawer-switch--pulse');
+    void el.offsetWidth;
+    el.classList.add('drawer-switch--pulse');
+    window.setTimeout(() => el.classList.remove('drawer-switch--pulse'), 1500);
+  }
+
+  private abrirCadastro(): void {
+    if (this.cadastroCloseTimer != null) {
+      clearTimeout(this.cadastroCloseTimer);
+      this.cadastroCloseTimer = null;
+    }
+    this.cadastroNome = '';
+    this.cadastroAtivo = true;
+    this.cadastroSalvando = false;
+    this.cadastroNomeErro = false;
+    this.cadastroAberto = true;
+    this.cadastroPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.cadastroPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  fecharCadastro(): void {
+    if (!this.cadastroAberto || this.cadastroSalvando) return;
+    this.cadastroPanelOpen = false;
+    if (this.cadastroCloseTimer != null) {
+      clearTimeout(this.cadastroCloseTimer);
+    }
+    this.cadastroCloseTimer = setTimeout(() => {
+      this.cadastroCloseTimer = null;
+      this.cadastroAberto = false;
+      this.cadastroNome = '';
+      this.cadastroAtivo = true;
+      this.cadastroNomeErro = false;
+    }, DRAWER_ANIM_MS);
+  }
+
+  onCadastroNomeInput(): void {
+    if (this.cadastroNomeErro && this.cadastroNome.trim()) {
+      this.cadastroNomeErro = false;
+    }
+  }
+
+  salvarCadastro(): void {
+    const nome = this.cadastroNome.trim();
+    if (this.cadastroSalvando) return;
+    if (!nome) {
+      this.cadastroNomeErro = true;
+      return;
+    }
+    this.cadastroNomeErro = false;
+    this.cadastroSalvando = true;
+    this.erro = '';
+    this.api
+      .criarCategoriaCatalogo({ nome, ativo: this.cadastroAtivo })
+      .subscribe({
+        next: () => {
+          this.cadastroSalvando = false;
+          this.fecharCadastro();
+          this.toast.show(CATEGORIA_SALVA_TOAST_MSG);
+          this.carregar();
+        },
+        error: (e: Error) => {
+          this.cadastroSalvando = false;
+          this.toast.show(e.message || 'Não foi possível salvar a categoria.');
+        },
+      });
   }
 
   onEditar(item: CategoriaListaItem): void {
@@ -128,7 +279,64 @@ export class CategoriasComponent implements OnInit {
     this.toast.show(`Exclusão de «${item.nome}» em breve.`);
   }
 
-  onOrdenarColuna(col: 'nome' | 'itens', ev?: Event): void {
+  private keyNome(nome: string): string {
+    return String(nome ?? '')
+      .trim()
+      .toLocaleLowerCase('pt-BR');
+  }
+
+  abrirAssociacoes(item: CategoriaListaItem, ev?: Event): void {
+    ev?.stopPropagation();
+    if (item.qtdItens <= 0) return;
+    const key = this.keyNome(item.nome);
+    const out: CategoriaAssociacaoItem[] = [];
+    for (const s of this.servicosCatalogo) {
+      const cat = lerServicoTexto(s, 'Categoria', 'categoria');
+      if (this.keyNome(cat) !== key) continue;
+      const nome =
+        lerServicoTexto(s, 'Serviço', 'Servico', 'servico', 'nome') ||
+        `Serviço #${s.id}`;
+      out.push({ id: `s-${s.id}`, nome, tipo: 'servico' });
+    }
+    for (const p of this.produtosCatalogo) {
+      const cat = String(p.categoria ?? '').trim();
+      if (this.keyNome(cat) !== key) continue;
+      const nome = String(p.produto ?? '').trim() || `Produto #${p.id}`;
+      out.push({ id: `p-${p.id}`, nome, tipo: 'produto' });
+    }
+    out.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    this.associacoesCategoria = item;
+    this.associacoesItens = out;
+    this.associacoesAberto = true;
+    this.associacoesPanelOpen = false;
+    if (this.associacoesCloseTimer != null) {
+      clearTimeout(this.associacoesCloseTimer);
+      this.associacoesCloseTimer = null;
+    }
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.associacoesPanelOpen = true;
+        });
+      });
+    });
+  }
+
+  fecharAssociacoes(): void {
+    if (!this.associacoesAberto) return;
+    this.associacoesPanelOpen = false;
+    if (this.associacoesCloseTimer != null) {
+      clearTimeout(this.associacoesCloseTimer);
+    }
+    this.associacoesCloseTimer = setTimeout(() => {
+      this.associacoesCloseTimer = null;
+      this.associacoesAberto = false;
+      this.associacoesCategoria = null;
+      this.associacoesItens = [];
+    }, DRAWER_ANIM_MS);
+  }
+
+  onOrdenarColuna(col: 'nome', ev?: Event): void {
     ev?.stopPropagation();
     if (this.ordenacaoColuna === col) {
       this.ordenacaoDir = this.ordenacaoDir === 'asc' ? 'desc' : 'asc';
@@ -139,7 +347,7 @@ export class CategoriasComponent implements OnInit {
     this.pagina = 1;
   }
 
-  tooltipOrdenacao(col: 'nome' | 'itens'): string {
+  tooltipOrdenacao(col: 'nome'): string {
     if (this.ordenacaoColuna !== col) return 'clique para ordenar';
     return this.ordenacaoDir === 'asc' ? 'ascendente' : 'descendente';
   }
@@ -154,17 +362,15 @@ export class CategoriasComponent implements OnInit {
 
   filtrados(): CategoriaListaItem[] {
     const q = this.normalizar(this.busca);
-    let list = this.itens.slice();
+    let list = this.itens.filter((i) => {
+      if (i.ativo) return this.filtroAtivas;
+      return this.filtroInativas;
+    });
     if (q) {
       list = list.filter((i) => this.normalizar(i.nome).includes(q));
     }
     const dir = this.ordenacaoDir === 'asc' ? 1 : -1;
-    list.sort((a, b) => {
-      if (this.ordenacaoColuna === 'itens') {
-        return (a.qtdItens - b.qtdItens) * dir;
-      }
-      return a.nome.localeCompare(b.nome, 'pt-BR') * dir;
-    });
+    list.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR') * dir);
     return list;
   }
 
@@ -189,7 +395,15 @@ export class CategoriasComponent implements OnInit {
     );
   }
 
-  onPorPaginaChange(): void {
+  togglePerPageMenu(ev: Event): void {
+    ev.stopPropagation();
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarPorPagina(n: number, ev: Event): void {
+    ev.stopPropagation();
+    this.porPagina = n;
+    this.perPageMenuAberto = false;
     this.pagina = 1;
   }
 
@@ -199,7 +413,7 @@ export class CategoriasComponent implements OnInit {
     return `Possui ${n} itens associados`;
   }
 
-  estaSelecionado(id: string): boolean {
+  estaSelecionado(id: number): boolean {
     return this.selecionados.has(id);
   }
 
@@ -222,9 +436,20 @@ export class CategoriasComponent implements OnInit {
     }
   }
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.filtrosAbertos) this.filtrosAbertos = false;
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(ev: KeyboardEvent): void {
+    if (this.cadastroAberto) {
+      ev.preventDefault();
+      this.fecharCadastro();
+      return;
+    }
+    if (this.associacoesAberto) {
+      ev.preventDefault();
+      this.fecharAssociacoes();
+      return;
+    }
+    if (this.perPageMenuAberto) this.perPageMenuAberto = false;
+    else if (this.filtrosAbertos) this.filtrosAbertos = false;
     else if (this.buscaAberta) this.buscaAberta = false;
   }
 
@@ -233,6 +458,9 @@ export class CategoriasComponent implements OnInit {
     const t = ev.target as HTMLElement | null;
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.buscaAberta = false;
+    }
+    if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
+      this.perPageMenuAberto = false;
     }
   }
 }

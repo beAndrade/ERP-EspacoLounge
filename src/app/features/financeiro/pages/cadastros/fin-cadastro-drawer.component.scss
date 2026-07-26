@@ -92,11 +92,6 @@
   font-weight: 500;
   color: #34363b;
 
-  &--req::after {
-    content: ' *';
-    color: #ff4d4f;
-  }
-
   &--with-tip {
     display: inline-flex;
     align-items: center;

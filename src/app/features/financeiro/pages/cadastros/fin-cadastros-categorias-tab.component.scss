@@ -17,16 +17,16 @@
   margin-top: 0.25rem;
   box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
   border: 1px solid rgba(0 0 0 / 3%);
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0;
   background: #fff;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   transition: box-shadow 0.1s;
 
   > .table-wrap {
     overflow-x: clip;
     overflow-y: visible;
-    border-radius: 12px;
+    border-radius: 12px 12px 0 0;
   }
 }
 

@@ -3,7 +3,7 @@
  */
 import { asc, eq, max, sql } from 'drizzle-orm';
 import type { Db } from '../db';
-import { atendimentoItens, servicos } from '../db/schema';
+import { atendimentoItens, categorias, servicos } from '../db/schema';
 import { normalizeMoneyTextForDb } from '../lib/normalize-money-text';
 import { listServicosForApi } from './queries';
 
@@ -232,6 +232,16 @@ export async function deleteServico(db: Db, idRaw: string | number) {
 }
 
 export async function listCategoriasServicos(db: Db): Promise<string[]> {
+  const fromCatalog = await db
+    .select({ nome: categorias.nome })
+    .from(categorias)
+    .where(eq(categorias.ativo, true))
+    .orderBy(asc(categorias.nome));
+  if (fromCatalog.length > 0) {
+    return fromCatalog
+      .map((r) => String(r.nome ?? '').trim())
+      .filter((s) => s.length > 0);
+  }
   const rows = await db
     .selectDistinct({ categoria: servicos.categoria })
     .from(servicos)

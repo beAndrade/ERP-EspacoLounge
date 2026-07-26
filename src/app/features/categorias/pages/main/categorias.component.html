@@ -1,27 +1,44 @@
 <div class="list-page categorias-page">
-  <div class="list-layout" [class.list-layout--filtros-open]="filtrosAbertos">
+  <div
+    class="list-layout"
+    [class.list-layout--filtros-abertos]="filtrosAbertos"
+  >
     <aside
       class="categorias-filtros-drawer"
       [class.categorias-filtros-drawer--open]="filtrosAbertos"
       aria-label="Filtros de categorias"
+      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
     >
       <div class="categorias-filtros-drawer__inner">
-        <header class="categorias-filtros-drawer__head">
-          <h2>Filtros</h2>
-          <button type="button" (click)="filtrosAbertos = false" aria-label="Fechar filtros">
-            ×
-          </button>
-        </header>
-        <p class="categorias-filtros-drawer__hint">Filtros avançados em breve.</p>
+        <section class="categorias-filtros-card">
+          <h3 class="categorias-filtros-card__title">Status</h3>
+          <div class="categorias-filtros-card__body">
+            <label class="categorias-filtros-check">
+              <input
+                type="checkbox"
+                name="cat_filtro_ativos"
+                [checked]="filtroAtivas"
+                (change)="toggleFiltroStatus('ativos', $event)"
+              />
+              Ativos
+            </label>
+            <label class="categorias-filtros-check">
+              <input
+                type="checkbox"
+                name="cat_filtro_inativos"
+                [checked]="filtroInativas"
+                (change)="toggleFiltroStatus('inativos', $event)"
+              />
+              Inativos
+            </label>
+          </div>
+        </section>
+
         <footer class="categorias-filtros-drawer__footer">
-          <button type="button" class="categorias-filtros-drawer__btn" (click)="limparFiltros()">
-            Limpar
+          <button type="button" class="btn btn--ghost" (click)="limparFiltros()">
+            Limpar filtros
           </button>
-          <button
-            type="button"
-            class="categorias-filtros-drawer__btn categorias-filtros-drawer__btn--primary"
-            (click)="aplicarFiltros()"
-          >
+          <button type="button" class="btn" (click)="aplicarFiltros()">
             Aplicar
           </button>
         </footer>
@@ -84,8 +101,12 @@
               <button
                 type="button"
                 class="list-head__toolbar-btn"
-                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
-                (click)="toggleFiltros()"
+                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos || filtroStatusAtivo"
+                [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+                (click)="toggleFiltros($event)"
+                aria-label="Abrir filtros"
+                [attr.aria-expanded]="filtrosAbertos"
+                title="Filtrar"
               >
                 <svg
                   class="list-icon-sm list-icon-sm--funnel"
@@ -193,40 +214,7 @@
                       </span>
                     </button>
                   </th>
-                  <th class="categorias-th-sort-wrap" scope="col">
-                    <button
-                      type="button"
-                      class="categorias-th-sort"
-                      (click)="onOrdenarColuna('itens', $event)"
-                      [attr.aria-label]="'Ordenar por itens — ' + tooltipOrdenacao('itens')"
-                    >
-                      <span class="categorias-th-sort__label">Itens</span>
-                      <span class="categorias-th-sort__icons" aria-hidden="true">
-                        <svg
-                          class="categorias-th-sort__tri categorias-th-sort__tri--up"
-                          [class.categorias-th-sort__tri--on]="
-                            ordenacaoColuna === 'itens' && ordenacaoDir === 'asc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
-                        </svg>
-                        <svg
-                          class="categorias-th-sort__tri categorias-th-sort__tri--down"
-                          [class.categorias-th-sort__tri--on]="
-                            ordenacaoColuna === 'itens' && ordenacaoDir === 'desc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
-                        </svg>
-                      </span>
-                    </button>
-                  </th>
+                  <th class="col-itens" scope="col">Itens</th>
                   <th class="col-acoes" scope="col">Ações</th>
                 </tr>
               </thead>
@@ -241,7 +229,10 @@
                   </tr>
                 } @else {
                   @for (c of paginaItens(); track c.id) {
-                    <tr [class.list-table__row--selected]="estaSelecionado(c.id)">
+                    <tr
+                      [class.list-table__row--selected]="estaSelecionado(c.id)"
+                      [class.list-table__row--inativa]="!c.ativo"
+                    >
                       <td class="col-check">
                         <input
                           type="checkbox"
@@ -251,25 +242,29 @@
                         />
                       </td>
                       <td class="col-nome">
-                        <div
-                          class="col-nome__cell col-nome__cell--clickable"
-                          role="button"
-                          tabindex="0"
+                        <button
+                          type="button"
+                          class="col-nome__cell col-nome__cell--clickable categorias-link"
                           [attr.aria-label]="'Editar categoria ' + c.nome"
                           (click)="onEditar(c)"
-                          (keydown.enter)="onEditar(c)"
-                          (keydown.space)="onEditar(c); $event.preventDefault()"
                         >
                           <span class="col-nome__link">{{ c.nome }}</span>
-                        </div>
+                        </button>
                       </td>
-                      <td>
-                        <span
-                          class="categorias-itens"
-                          [class.categorias-itens--vazio]="c.qtdItens <= 0"
-                        >
-                          {{ rotuloItens(c.qtdItens) }}
-                        </span>
+                      <td class="col-itens">
+                        @if (c.qtdItens > 0) {
+                          <button
+                            type="button"
+                            class="categorias-itens categorias-link"
+                            (click)="abrirAssociacoes(c, $event)"
+                          >
+                            {{ rotuloItens(c.qtdItens) }}
+                          </button>
+                        } @else {
+                          <span class="categorias-itens categorias-itens--vazio">
+                            {{ rotuloItens(c.qtdItens) }}
+                          </span>
+                        }
                       </td>
                       <td class="col-acoes">
                         <div class="list-row-acoes">
@@ -282,8 +277,8 @@
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
+                              width="13.33"
+                              height="13.33"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -308,8 +303,8 @@
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
+                              width="13.33"
+                              height="13.33"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -337,34 +332,96 @@
             <div class="list-footer__pager">
               <button
                 type="button"
-                class="list-footer__page-btn"
+                class="list-footer__chev"
                 [disabled]="pagina <= 1"
                 (click)="irPagina(-1)"
                 aria-label="Página anterior"
               >
-                ‹
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
               </button>
               <span class="list-footer__page-num">{{ pagina }}</span>
               <button
                 type="button"
-                class="list-footer__page-btn"
+                class="list-footer__chev"
                 [disabled]="pagina >= totalPaginas()"
                 (click)="irPagina(1)"
                 aria-label="Próxima página"
               >
-                ›
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
               </button>
-              <select
-                class="list-footer__per-page"
-                [(ngModel)]="porPagina"
-                (ngModelChange)="onPorPaginaChange()"
-                name="porPagina"
-                aria-label="Itens por página"
-              >
-                @for (n of opcoesPorPagina; track n) {
-                  <option [ngValue]="n">{{ n }} / página</option>
+              <div class="list-footer__per-page">
+                <button
+                  type="button"
+                  class="list-footer__per-page-trigger"
+                  [attr.aria-expanded]="perPageMenuAberto"
+                  aria-haspopup="listbox"
+                  aria-label="Itens por página"
+                  (click)="togglePerPageMenu($event)"
+                >
+                  <span>{{ porPagina }} / página</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                @if (perPageMenuAberto) {
+                  <div
+                    class="list-footer__per-page-panel"
+                    role="listbox"
+                    aria-label="Itens por página"
+                    (click)="$event.stopPropagation()"
+                  >
+                    @for (n of opcoesPorPagina; track n) {
+                      <button
+                        type="button"
+                        class="list-footer__per-page-option"
+                        [class.list-footer__per-page-option--active]="n === porPagina"
+                        role="option"
+                        [attr.aria-selected]="n === porPagina"
+                        (click)="selecionarPorPagina(n, $event)"
+                      >
+                        {{ n }} / página
+                      </button>
+                    }
+                  </div>
                 }
-              </select>
+              </div>
             </div>
           </footer>
         </div>
@@ -372,3 +429,182 @@
     </div>
   </div>
 </div>
+
+@if (associacoesAberto) {
+  <div
+    class="overlay"
+    [class.overlay--open]="associacoesPanelOpen"
+    aria-hidden="true"
+    (click)="fecharAssociacoes()"
+  ></div>
+  <div
+    class="app-drawer cliente-drawer cliente-drawer--associacoes"
+    [class.app-drawer--open]="associacoesPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Associações"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">Associações</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="fecharAssociacoes()"
+          aria-label="Fechar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+      <div class="cliente-body-scroll">
+        <div class="cliente-body categorias-associacoes-body">
+          <div class="cliente-main">
+            <div class="categorias-associacoes-card">
+              <div class="categorias-associacoes-card__head">Serviço/Produto</div>
+              <ul class="categorias-associacoes-card__list" role="list">
+                @for (a of associacoesItens; track a.id) {
+                  <li class="categorias-associacoes-card__item">{{ a.nome }}</li>
+                } @empty {
+                  <li class="categorias-associacoes-card__empty">
+                    Nenhum serviço ou produto associado.
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (cadastroAberto) {
+  <div
+    class="overlay"
+    [class.overlay--open]="cadastroPanelOpen"
+    aria-hidden="true"
+    (click)="fecharCadastro()"
+  ></div>
+  <div
+    class="app-drawer cliente-drawer cliente-drawer--categoria-cadastro"
+    [class.app-drawer--open]="cadastroPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Nova categoria"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">Nova categoria</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="fecharCadastro()"
+          aria-label="Fechar"
+          [disabled]="cadastroSalvando"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="cliente-body-scroll categorias-cadastro-scroll">
+        <div class="categorias-cadastro-form">
+          <div class="categorias-cadastro-form__row">
+            <div class="categorias-cadastro-form__col categorias-cadastro-form__col--nome">
+              <label class="categorias-cadastro-form__label" for="categorias-cadastro-nome">
+                <span class="categorias-cadastro-form__req" aria-hidden="true">*</span>Nome
+              </label>
+              <input
+                id="categorias-cadastro-nome"
+                type="text"
+                class="categorias-cadastro-form__input"
+                [class.categorias-cadastro-form__input--error]="cadastroNomeErro"
+                [(ngModel)]="cadastroNome"
+                name="cadastroNomeCategoria"
+                placeholder="Nome"
+                autocomplete="off"
+                [disabled]="cadastroSalvando"
+                [attr.aria-invalid]="cadastroNomeErro"
+                (input)="onCadastroNomeInput()"
+                (keydown.enter)="salvarCadastro()"
+              />
+              @if (cadastroNomeErro) {
+                <span class="categorias-cadastro-form__error" role="alert"
+                  >Campo obrigatório</span
+                >
+              }
+            </div>
+            <div class="categorias-cadastro-form__col categorias-cadastro-form__col--ativo">
+              <span class="categorias-cadastro-form__ativo-label">Ativo</span>
+              <button
+                type="button"
+                class="drawer-switch"
+                [class.drawer-switch--on]="cadastroAtivo"
+                [attr.aria-pressed]="cadastroAtivo"
+                aria-label="Ativo"
+                (click)="toggleCadastroAtivo($event)"
+                [disabled]="cadastroSalvando"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cliente-drawer-footer">
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--ghost"
+          (click)="fecharCadastro()"
+          [disabled]="cadastroSalvando"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--primary"
+          (click)="salvarCadastro()"
+          [disabled]="cadastroSalvando"
+        >
+          {{ cadastroSalvando ? 'Salvando…' : 'Salvar' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

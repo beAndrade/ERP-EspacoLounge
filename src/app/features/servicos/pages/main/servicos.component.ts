@@ -1,7 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import type { Servico } from '../../../../core/models/api.models';
 import { valorMonetarioParaNumero } from '../../../../core/utils/atendimento-display';
@@ -24,6 +24,8 @@ export class ServicosComponent implements OnInit, OnDestroy {
   carregando = false;
   erro = '';
   itens: Servico[] = [];
+  /** Categorias ativas do catálogo (para datalist do drawer). */
+  private categoriasAtivas: string[] = [];
 
   busca = '';
   buscaAberta = false;
@@ -38,6 +40,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
   pagina = 1;
   porPagina = 20;
   readonly opcoesPorPagina = [10, 20, 50];
+  perPageMenuAberto = false;
 
   selecionados = new Set<string>();
 
@@ -75,9 +78,16 @@ export class ServicosComponent implements OnInit, OnDestroy {
   carregar(opts?: { focarId?: string }): void {
     this.carregando = true;
     this.erro = '';
-    this.api.listServicos().subscribe({
-      next: (items) => {
-        this.itens = items;
+    forkJoin({
+      servicos: this.api.listServicos(),
+      categorias: this.api.listCategoriasCatalogo(false),
+    }).subscribe({
+      next: ({ servicos, categorias }) => {
+        this.itens = servicos;
+        this.categoriasAtivas = (categorias ?? [])
+          .map((c) => String(c.nome ?? '').trim())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'));
         this.carregando = false;
         this.selecionados.clear();
         if (opts?.focarId) {
@@ -128,6 +138,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   categoriasDisponiveis(): string[] {
+    if (this.categoriasAtivas.length > 0) return this.categoriasAtivas.slice();
     const set = new Set<string>();
     for (const s of this.itens) {
       const c = String(s['Categoria'] ?? '').trim();
@@ -274,8 +285,16 @@ export class ServicosComponent implements OnInit, OnDestroy {
     );
   }
 
-  onPorPaginaChange(): void {
+  togglePerPageMenu(ev?: Event): void {
+    ev?.stopPropagation();
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarPorPagina(n: number, ev?: Event): void {
+    ev?.stopPropagation();
+    this.porPagina = n;
     this.pagina = 1;
+    this.perPageMenuAberto = false;
   }
 
   onBuscaWrapClick(): void {
@@ -296,6 +315,9 @@ export class ServicosComponent implements OnInit, OnDestroy {
     const t = ev.target as HTMLElement | null;
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       if (!this.busca.trim()) this.buscaAberta = false;
+    }
+    if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
+      this.perPageMenuAberto = false;
     }
   }
 
