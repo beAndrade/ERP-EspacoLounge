@@ -12,7 +12,30 @@
             [class.painel-prof-rank__pct--up]="(vm().vsAnteriorPct ?? 0) > 0"
             [class.painel-prof-rank__pct--down]="(vm().vsAnteriorPct ?? 0) < 0"
           >
-            {{ formatPct(vm().vsAnteriorPct) }}
+            <span class="painel-prof-rank__pct-val">{{
+              formatPct(vm().vsAnteriorPct)
+            }}</span>
+            @if ((vm().vsAnteriorPct ?? 0) > 0) {
+              <svg
+                class="painel-prof-rank__pct-icon"
+                viewBox="0 0 10 8"
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
+                <polygon points="5,0 10,8 0,8" />
+              </svg>
+            } @else if ((vm().vsAnteriorPct ?? 0) < 0) {
+              <svg
+                class="painel-prof-rank__pct-icon"
+                viewBox="0 0 10 8"
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
+                <polygon points="0,0 10,0 5,8" />
+              </svg>
+            }
           </span>
           <span class="painel-prof-rank__metric-tip" role="tooltip">
             Total no período anterior: {{ vm().totalPeriodoAnterior }}
@@ -23,7 +46,7 @@
         <app-painel-sparkline
           class="painel-prof-rank__spark"
           [points]="vm().spark"
-          color="#505afb"
+          color="#6bade0"
           [filled]="true"
           [baselineZero]="true"
           [syncContext]="false"

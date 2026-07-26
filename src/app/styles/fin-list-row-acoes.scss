@@ -34,10 +34,10 @@
   }
 
   .list-row-acoes__btn--delete {
-    color: #ff4d4f;
+    color: var(--color-error);
 
     svg {
-      color: #ff4d4f;
+      color: var(--color-error);
     }
   }
 }

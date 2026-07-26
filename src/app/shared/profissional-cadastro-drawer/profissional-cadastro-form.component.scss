@@ -20,13 +20,13 @@
   }
 
   &:hover {
-    border-color: #505afb;
+    border-color: var(--color-primary);
     outline: 0;
   }
 
   &:focus {
-    border-color: #505afb;
-    box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
     outline: 0;
   }
 

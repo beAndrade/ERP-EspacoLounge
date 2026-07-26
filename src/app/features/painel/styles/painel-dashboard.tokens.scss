@@ -1,21 +1,21 @@
 /** Tokens e utilitários visuais do dashboard premium. */
 :root,
 .painel {
-  --painel-blue: #505afb;
-  --painel-blue-soft: #eef0ff;
+  --painel-blue: var(--color-primary);
+  --painel-blue-soft: color-mix(in srgb, var(--color-primary) 12%, #fff);
   --painel-purple: #7c6bf0;
   --painel-radius: 12px;
   --painel-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --painel-dur: 280ms;
   --painel-shadow: 0 0 10px 2px #f3f3f3;
   --painel-shadow-hover:
-    0 14px 32px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(80, 90, 251, 0.08);
-  --painel-border: #f1f2f9;
-  --painel-border-hover: #e4e7f5;
-  --painel-text: #111827;
-  --painel-muted: #6b7280;
-  --painel-up: #059669;
-  --painel-down: #dc2626;
+    0 14px 32px rgba(15, 23, 42, 0.1), 0 2px 8px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --painel-border: var(--color-border, #e2e8f0);
+  --painel-border-hover: color-mix(in srgb, var(--color-border, #e2e8f0) 70%, #94a3b8);
+  --painel-text: var(--color-text, #0f172a);
+  --painel-muted: var(--color-muted, #64748b);
+  --painel-up: var(--color-success, #22c55e);
+  --painel-down: var(--color-error, #ef4444);
 }
 
 .painel-enter {

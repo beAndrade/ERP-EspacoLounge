@@ -19,6 +19,7 @@
                   <div
                     class="painel-chart-heatmap__cell"
                     [class.painel-chart-heatmap__cell--on]="c.p.value > 0"
+                    [class.painel-chart-heatmap__cell--hot]="c.hot"
                     [style.--heat-alpha]="c.heatAlpha"
                     [attr.aria-label]="c.dia + ' ' + row.horaLabel + ': ' + c.p.value"
                   >

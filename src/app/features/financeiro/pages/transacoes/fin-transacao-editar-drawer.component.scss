@@ -164,8 +164,8 @@
 
     &:focus {
       outline: none;
-      border-color: #7a88ff;
-      box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+      border-color: var(--color-primary-hover);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
     }
 
     &:disabled {
@@ -239,7 +239,7 @@
     padding: 0 20px;
     border: none;
     border-radius: 8px;
-    background: var(--color-primary, #505afb);
+    background: var(--color-primary);
     color: #fff;
     font-size: 14px;
     font-weight: 600;

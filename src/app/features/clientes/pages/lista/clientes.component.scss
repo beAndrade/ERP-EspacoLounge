@@ -110,7 +110,7 @@
     width: 16px;
     height: 16px;
     margin: 0;
-    accent-color: var(--color-primary, #505afb);
+    accent-color: var(--color-primary);
     cursor: pointer;
   }
 }
@@ -175,7 +175,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-primary, #505afb);
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -206,8 +206,8 @@
   }
 
   .btn:not(.btn--ghost) {
-    border-color: var(--color-primary, #505afb);
-    background: var(--color-primary, #505afb);
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: var(--color-primary-contrast, #fff);
   }
 }
@@ -286,7 +286,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: -2px;
   }
 }
@@ -318,7 +318,7 @@
     transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
   &--on {
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     opacity: 1;
     transform: scale(1);
   }

@@ -11,9 +11,9 @@ const MAX_W = VB_W - PAD_X * 2; // 441
 const CX = PAD_X + MAX_W / 2; // 250.5
 
 const FILLS = [
-  'rgb(80, 90, 251)',
-  'rgba(80, 90, 251, 0.7)',
-  'rgba(80, 90, 251, 0.4)',
+  '#6BADE0',
+  'rgba(107, 173, 224, 0.7)',
+  'rgba(107, 173, 224, 0.4)',
 ];
 
 function trapezoidPath(

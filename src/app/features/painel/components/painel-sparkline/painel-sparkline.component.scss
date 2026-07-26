@@ -8,7 +8,7 @@
   position: relative;
   width: 100%;
   height: 2.5rem;
-  color: var(--spark-color, #505afb);
+  color: var(--spark-color, var(--color-primary));
 
   &--filled {
     height: 3.25rem;
@@ -28,14 +28,14 @@
 }
 
 .painel-sparkline__area {
-  fill: var(--spark-color, #505afb);
+  fill: var(--spark-color, var(--color-primary));
   fill-opacity: 0.6;
   stroke: none;
   pointer-events: none;
 }
 
 .painel-sparkline__curve {
-  stroke: var(--spark-color, #505afb);
+  stroke: var(--spark-color, var(--color-primary));
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -52,7 +52,7 @@
 }
 
 .painel-sparkline__axis {
-  stroke: var(--spark-color, #505afb);
+  stroke: var(--spark-color, var(--color-primary));
   stroke-width: 1;
   stroke-opacity: 0.45;
   vector-effect: non-scaling-stroke;
@@ -60,7 +60,7 @@
 }
 
 .painel-sparkline__tick {
-  stroke: var(--spark-color, #505afb);
+  stroke: var(--spark-color, var(--color-primary));
   stroke-width: 1;
   stroke-opacity: 0.45;
   vector-effect: non-scaling-stroke;
@@ -75,7 +75,7 @@
 }
 
 .painel-sparkline__dot {
-  fill: var(--spark-color, #505afb);
+  fill: var(--spark-color, var(--color-primary));
   stroke: #fff;
   stroke-width: 1.5;
   vector-effect: non-scaling-stroke;

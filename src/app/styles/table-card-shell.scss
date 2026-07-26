@@ -3,7 +3,7 @@
  * Preferir estas classes no markup; wraps órfãos listados também herdam o visual.
  */
 $list-table-card-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
-$list-table-card-border: 1px solid rgba(0 0 0 / 3%);
+$list-table-card-border: 1px solid var(--color-border, #e2e8f0);
 /** Só cantos superiores — base do card fica reta (footer / fundo). */
 $list-table-card-radius: 12px 12px 0 0;
 
@@ -17,7 +17,7 @@ $list-table-card-radius: 12px 12px 0 0;
   align-self: stretch;
   transition: box-shadow 0.1s;
   border-radius: $list-table-card-radius;
-  background: #fff;
+  background: var(--color-card, #ffffff);
   box-sizing: border-box;
   padding: 0;
 }

@@ -121,7 +121,7 @@
   font: inherit;
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   cursor: pointer;
 
   &:hover {
@@ -197,8 +197,8 @@
   }
 
   &:hover:not(:disabled):checked {
-    background-color: color-mix(in srgb, var(--color-primary, #505afb) 68%, #fff);
-    border-color: color-mix(in srgb, var(--color-primary, #505afb) 68%, #fff);
+    background-color: color-mix(in srgb, var(--color-primary) 68%, #fff);
+    border-color: color-mix(in srgb, var(--color-primary) 68%, #fff);
     transition:
       background-color 0.22s var(--list-check-ease),
       border-color 0.22s var(--list-check-ease),
@@ -210,8 +210,8 @@
   }
 
   &:checked {
-    background-color: var(--color-primary, #505afb);
-    border-color: var(--color-primary, #505afb);
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
     box-shadow: none;
 
     &::after {
@@ -233,7 +233,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: 2px;
   }
 }
@@ -352,8 +352,8 @@
 
 /* Ativo: anel preenchido + centro branco vazado */
 .fin-filtros-radio input:checked + .fin-filtros-radio__dot {
-  border-color: var(--color-primary, #505afb);
-  background-color: var(--color-primary, #505afb);
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
 
   &::after {
     opacity: 1;
@@ -364,7 +364,7 @@
 /* Tipo de data: hover no texto ou no círculo (só não marcado) — borda vinho */
 .fin-filtros-card--tipo-data {
   .fin-filtros-radio:has(input:not(:checked)):hover .fin-filtros-radio__dot {
-    border-color: #811741;
+    border-color: var(--color-primary);
     background-color: #fff;
   }
 }

@@ -420,7 +420,7 @@ thead th.col-ticket {
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: -2px;
   }
 }
@@ -452,7 +452,7 @@ thead th.col-ticket {
     transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
   &--on {
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     opacity: 1;
     transform: scale(1);
   }
@@ -491,7 +491,7 @@ thead th.col-ticket {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #389e0d;
+    color: var(--color-success);
     line-height: 0;
 
     svg {
@@ -711,7 +711,7 @@ tbody td.col-ticket {
   white-space: nowrap;
 
   &--aviso {
-    color: var(--drawer-badge-pendente-fg, #d4380d);
+    color: var(--drawer-badge-pendente-fg);
     background: var(--drawer-badge-pendente-bg, #fff2e8);
     border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
@@ -730,7 +730,7 @@ tbody td.col-ticket {
   }
 
   &--ok {
-    color: var(--drawer-badge-ok-fg, #389e0d);
+    color: var(--drawer-badge-ok-fg);
     background: var(--drawer-badge-ok-bg, #f6ffed);
     border-color: var(--drawer-badge-ok-border, #b7eb8f);
   }
@@ -744,7 +744,7 @@ tbody td.col-ticket {
   /** «Em atraso» na coluna Pagamento (dívida pendente após o dia da comanda). */
   &--atraso {
     @include badge-atraso.badge-atraso-com-icone-relogio;
-    color: var(--drawer-badge-atraso-fg, #cf1322);
+    color: var(--drawer-badge-atraso-fg);
     background: var(--drawer-badge-atraso-bg, #fff1f0);
     border-color: var(--drawer-badge-atraso-border, #ffa39e);
   }
@@ -761,7 +761,7 @@ tbody td.col-ticket {
 
   &--sub {
     margin-top: 4px;
-    color: var(--drawer-badge-pendente-fg, #d4380d);
+    color: var(--drawer-badge-pendente-fg);
     background: var(--drawer-badge-pendente-bg, #fff2e8);
     border-color: var(--drawer-badge-pendente-border, #ffbb96);
     line-height: 18px;
@@ -849,22 +849,22 @@ tbody tr.comandas-table__row--menu-open {
     }
 
     &:focus-visible {
-      outline: 2px solid color-mix(in srgb, #4f46e5 40%, transparent);
+      outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
       outline-offset: 1px;
     }
   }
 
   .row-menu__item--excluir {
-    color: #ff4d4f;
+    color: var(--color-error);
     background: #fff;
 
     &:hover:not(:disabled) {
       color: #fff;
-      background: #ff4d4f;
+      background: var(--color-error);
     }
 
     &:focus-visible {
-      outline: 2px solid color-mix(in srgb, #ff4d4f 45%, transparent);
+      outline: 2px solid color-mix(in srgb, var(--color-error) 45%, transparent);
       outline-offset: 1px;
     }
   }
@@ -916,7 +916,7 @@ tbody tr.comandas-table__row--menu-open {
 .comandas-footer__page-num {
   min-width: 24px;
   height: 24px;
-  color: #505afb;
+  color: var(--color-primary);
 }
 
 .overlay {
@@ -967,6 +967,17 @@ tbody tr.comandas-table__row--menu-open {
     flex-direction: column;
     min-height: 0;
     max-height: 100%;
+  }
+
+  /**
+   * Comanda: sem inset horizontal (como no hub). O fechar fica em `right: 0`
+   * dentro do painel — evita o overflow cortar o fundo no hover.
+   */
+  &:has(> app-nova-comanda-drawer) {
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   &:has(> app-agenda-novo.agenda-novo--somente-comanda) {

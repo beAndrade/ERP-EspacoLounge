@@ -248,7 +248,7 @@
   height: 36px;
   border: none;
   border-radius: 12px;
-  background: #70c040;
+  background: var(--color-success);
   color: #fff;
   font-size: 14px;
   font-weight: 500;
@@ -272,7 +272,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
@@ -287,7 +287,7 @@
   &:focus-visible {
     outline: none;
     text-decoration: underline;
-    box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.35);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
     border-radius: 4px;
   }
 }

@@ -13,6 +13,7 @@
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
   --modal-sidebar-w: 359px;
   --modal-col-gap: 1.25rem;
   /** Esquerda: só o gap (encontro com a sidebar). Direita: até a borda da viewport. */
@@ -23,8 +24,8 @@
   --radius: 14px;
   --drawer-field-h: 38px;
   --drawer-field-stroke: #f1f1f1;
-  --drawer-field-stroke-hover: #7a88ff;
-  --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+  --drawer-field-stroke-hover: var(--color-primary-hover);
+  --drawer-field-focus-ring: color-mix(in srgb, var(--color-primary) 6%, transparent);
   --comanda-col-tipo: 120px;
   --comanda-col-pro: clamp(6.1rem, 9.2vw, 7.35rem);
   --comanda-col-qtd: 58.06px;
@@ -32,6 +33,12 @@
   /** Largura da coluna da faixa monetária (igual em todas as linhas do mesmo painel). */
   --nc-leitura-money-col: minmax(17.5rem, 48%);
   padding-inline: 0;
+}
+
+:host-context(.comandas-page) {
+  .nc-drawer {
+    padding-left: 15px;
+  }
 }
 
 .nc-drawer {
@@ -212,16 +219,17 @@
 }
 
 /**
- * Cabeçalho dentro do scroll de `.nc-drawer__main`: o título rola com o fluxo;
- * só o `.nc-modal-close` usa `position: sticky` (referência Ant Design).
+ * Cabeçalho dentro do scroll: só o título (o fechar vive no `:host`, fora do overflow).
  */
 .nc-modal-header--drawer-scroll {
   flex-shrink: 0;
   z-index: 8;
   background: #fff;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   gap: 0.5rem;
+  /** Reserva a área do fechar absoluto no canto do host (60px). */
+  padding-right: 60px;
 }
 
 .nc-modal-header--drawer-scroll .nc-modal-title {
@@ -240,7 +248,7 @@
   padding: 30px 0 10px;
 }
 
-/** = `agenda-modal__close` (drawer). Posicionamento sticky no cabeçalho rolável — ver `.nc-modal-header--drawer-scroll`. */
+/** Fechar — base (ícone + hit area 60×60). */
 .nc-modal-close {
   box-sizing: border-box;
   display: inline-flex;
@@ -254,7 +262,7 @@
   margin-inline-end: 0;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: rgba(0, 0, 0, 0.45);
   font: inherit;
@@ -264,11 +272,14 @@
   cursor: pointer;
   transition:
     background-color 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    border-radius 0.2s ease;
 
   &:hover {
-    background: #f5f5f4;
-    color: var(--color-text);
+    color: rgba(0, 0, 0, 0.75);
+    background-color: rgba(0, 0, 0, 0.06);
+    text-decoration: none;
+    border-radius: 6px;
   }
 
   &:focus-visible {
@@ -277,14 +288,15 @@
   }
 }
 
-.nc-modal-header--drawer-scroll .nc-modal-close {
-  position: sticky;
+/**
+ * Fechar no canto do host (irmão do `.nc-drawer`), fora de qualquer overflow
+ * da coluna — hover completo e encostado ao topo/direita da viewport.
+ */
+.nc-modal-close--host {
+  position: absolute;
   top: 0;
-  z-index: 40;
-  align-self: flex-start;
-  flex-shrink: 0;
-  margin-right: calc(-1 * var(--drawer-pad-x, 15px));
-  background: #fff;
+  right: 0;
+  z-index: 50;
 }
 
 /** = `form-shell__flow--modal` (coluna direita; scroll em `.nc-drawer__main`). */
@@ -587,7 +599,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-primary, #505afb);
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
 }
@@ -781,8 +793,8 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(80, 90, 251, 0.18);
-  color: #505afb;
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -790,7 +802,7 @@
   transition: background 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: rgba(80, 90, 251, 0.28);
+    background: color-mix(in srgb, var(--color-primary) 28%, transparent);
   }
 
   &--disabled {
@@ -963,8 +975,8 @@
 
   /** Igual a `.agenda-modal__footer .btn.btn-footer--danger` no agendamento. */
   .btn.btn-footer--danger {
-    background: #ff4d4f;
-    border-color: #ff4d4f;
+    background: var(--color-error);
+    border-color: var(--color-error);
     color: #fff;
 
     &:hover:not(:disabled) {
@@ -1127,31 +1139,31 @@
   border-color: var(--drawer-btn-ghost-border, #e7e5e4);
 
   &:hover:not(:disabled) {
-    color: var(--drawer-btn-ghost-hover-fg, #7a88ff);
-    border-color: var(--drawer-btn-ghost-hover-border, #7a88ff);
+    color: var(--drawer-btn-ghost-hover-fg);
+    border-color: var(--drawer-btn-ghost-hover-border);
     background: var(--drawer-btn-ghost-hover-bg, #ffffff);
   }
 }
 
 .btn-footer--primary-nc {
-  background: var(--drawer-btn-primary-bg, #505afb);
-  border-color: var(--drawer-btn-primary-border, #505afb);
+  background: var(--drawer-btn-primary-bg);
+  border-color: var(--drawer-btn-primary-border);
   color: var(--drawer-btn-primary-fg, #fff);
 
   &:hover:not(:disabled) {
-    background: var(--drawer-btn-primary-hover-bg, #7b82fc);
-    border-color: var(--drawer-btn-primary-hover-border, #7b82fc);
+    background: var(--drawer-btn-primary-hover-bg);
+    border-color: var(--drawer-btn-primary-hover-border);
   }
 }
 
 .btn-footer--faturar {
-  background: var(--drawer-btn-faturar-bg, #70c040);
-  border-color: var(--drawer-btn-faturar-border, #70c040);
+  background: var(--drawer-btn-faturar-bg);
+  border-color: var(--drawer-btn-faturar-border);
   color: var(--drawer-btn-faturar-fg, #fff);
 
   &:hover:not(:disabled) {
-    background: var(--drawer-btn-faturar-hover-bg, #85c94f);
-    border-color: var(--drawer-btn-faturar-hover-border, #85c94f);
+    background: var(--drawer-btn-faturar-hover-bg);
+    border-color: var(--drawer-btn-faturar-hover-border);
   }
 }
 
@@ -1241,7 +1253,7 @@
 
   &--primary {
     border: none;
-    background: #505afb;
+    background: var(--color-primary);
     color: #fff;
 
     &:hover:not(:disabled) {
@@ -1477,7 +1489,7 @@
   padding: 0;
   border: none;
   border-radius: 0.65rem;
-  background: #ff4d4f;
+  background: var(--color-error);
   color: #fff;
   cursor: pointer;
   transition:
@@ -1644,19 +1656,19 @@
     font-weight: 600;
     line-height: 1;
     letter-spacing: 0.02em;
-    color: var(--drawer-badge-pendente-fg, #d4380d);
+    color: var(--drawer-badge-pendente-fg);
     background: var(--drawer-badge-pendente-bg, #fff2e8);
     border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
 
   &.badge--ok {
-    color: var(--drawer-badge-ok-fg, #389e0d);
+    color: var(--drawer-badge-ok-fg);
     background: var(--drawer-badge-ok-bg, #f6ffed);
     border-color: var(--drawer-badge-ok-border, #b7eb8f);
   }
 
   &.badge--warn {
-    color: var(--drawer-badge-pendente-fg, #d4380d);
+    color: var(--drawer-badge-pendente-fg);
     background: var(--drawer-badge-pendente-bg, #fff2e8);
     border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
@@ -1774,7 +1786,7 @@
 
   &[data-tipo='Pacote'] {
     background: #fce7f3;
-    color: #9d174d;
+    color: var(--color-primary);
   }
 
   &[data-tipo='Cabelo'] {
@@ -2088,7 +2100,7 @@
 
   &:focus-visible {
     outline: 0;
-    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring, rgba(5, 55, 255, 0.06));
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring, color-mix(in srgb, var(--color-primary) 6%, transparent));
   }
 
   &:disabled {

@@ -129,7 +129,7 @@ app-servico-cadastro-drawer-host {
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
   background: #fef2f2;
-  color: #b91c1c;
+  color: var(--color-error);
   font-size: 0.875rem;
 }
 
@@ -183,7 +183,7 @@ app-servico-cadastro-drawer-host {
   height: 24px;
   padding: 1px 7px 0;
   border-radius: 6px;
-  background: #505afb;
+  background: var(--color-primary);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -195,9 +195,9 @@ app-servico-cadastro-drawer-host {
     box-shadow 0.15s ease;
 
   &:hover {
-    color: #505afb;
+    color: var(--color-primary);
     background: #fff;
-    box-shadow: 0 2px 0 rgba(5, 55, 255, 0.06);
+    box-shadow: 0 2px 0 color-mix(in srgb, var(--color-primary) 6%, transparent);
   }
 }
 

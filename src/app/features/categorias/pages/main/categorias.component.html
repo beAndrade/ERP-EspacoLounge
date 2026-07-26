@@ -509,14 +509,14 @@
     [class.app-drawer--open]="cadastroPanelOpen"
     role="dialog"
     aria-modal="true"
-    aria-label="Nova categoria"
+    [attr.aria-label]="cadastroTitulo"
     (click)="$event.stopPropagation()"
   >
     <div class="cliente-shell">
       <header class="cliente-head">
         <div class="cliente-head__title-wrap">
           <div class="cliente-head__title-row">
-            <h2 class="cliente-head__title">Nova categoria</h2>
+            <h2 class="cliente-head__title">{{ cadastroTitulo }}</h2>
           </div>
         </div>
         <button

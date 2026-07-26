@@ -436,7 +436,7 @@
   line-height: 1.4;
   align-items: center;
   gap: 0.72rem;
-  color: #4f46e5;
+  color: var(--color-primary);
   text-decoration: none;
   cursor: pointer;
   border-radius: 0;
@@ -481,7 +481,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4f46e5;
+  color: var(--color-primary);
   line-height: 0;
   align-self: center;
 }
@@ -512,17 +512,17 @@
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):hover,
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):focus-visible {
   text-decoration: none;
-  color: #4f46e5;
+  color: var(--color-primary);
 }
 
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):hover .sidebar-block__link-ico,
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):focus-visible
   .sidebar-block__link-ico {
-  color: #4f46e5;
+  color: var(--color-primary);
 }
 
 .sidebar-block__linklike:focus-visible {
-  outline: 2px solid color-mix(in srgb, #4f46e5 40%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
   outline-offset: 1px;
 }
 

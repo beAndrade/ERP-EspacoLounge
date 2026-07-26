@@ -17,14 +17,15 @@ const HORAS = [
 ] as const;
 
 /**
- * Opacidade de #505AFB (sobre branco) para contraste ≈ com texto rgba(0,0,0,.75):
- * 1→8.46, 2→6.56, 3→4.66, 4+→3.43 (teto visual deste azul).
+ * Intensidade do bloco (sobre branco) — passos bem espaçados para
+ * diferenciar 1 / 2 / 3 / 4 / 5+ com primary (#6BADE0).
  */
 function heatAlphaPorContagem(n: number): number {
   if (n <= 0) return 0;
-  if (n === 1) return 0.256;
-  if (n === 2) return 0.505;
-  if (n === 3) return 0.779;
+  if (n === 1) return 0.22;
+  if (n === 2) return 0.42;
+  if (n === 3) return 0.62;
+  if (n === 4) return 0.82;
   return 1;
 }
 
@@ -65,6 +66,7 @@ export class PainelChartHeatmapComponent {
           dia,
           key: `${diaIdx}-${hora}`,
           heatAlpha: heatAlphaPorContagem(p.value),
+          hot: p.value >= 4,
         };
       }),
     }));

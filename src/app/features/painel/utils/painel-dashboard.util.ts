@@ -429,7 +429,7 @@ export function mapAtendimentosParaPainelPeriodo(
     return {
       label: meta.label,
       value: count,
-      meta: { pct, cor: meta.cor },
+      meta: { pct, cor: meta.corGrelha },
     };
   });
 

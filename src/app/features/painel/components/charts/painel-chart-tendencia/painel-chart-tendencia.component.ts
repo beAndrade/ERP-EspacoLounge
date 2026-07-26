@@ -53,7 +53,6 @@ export class PainelChartTendenciaComponent implements AfterViewInit, OnDestroy {
   private readonly tip = inject(PainelChartTooltipService);
 
   readonly series = input<PainelChartPoint[]>([]);
-  readonly color = input('#505afb');
   readonly pointHover = output<PainelChartPoint | null>();
 
   readonly plotRef = viewChild<ElementRef<HTMLElement>>('plot');

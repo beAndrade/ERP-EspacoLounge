@@ -323,7 +323,7 @@ $periodo-row-gap: 6px;
 .periodo-filtro__backdrop--comissoes-sidebar {
   &.periodo-filtro__backdrop--open,
   &.periodo-filtro__backdrop--portal.periodo-filtro__backdrop--open {
-    box-shadow: 0 1px 4px rgba(129, 23, 65, 0.18);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
 }
 
@@ -566,7 +566,7 @@ $periodo-row-gap: 6px;
 
     &:hover,
     &:focus-within {
-      border-bottom-color: #811741;
+      border-bottom-color: var(--color-primary);
     }
   }
 
@@ -603,7 +603,7 @@ $periodo-row-gap: 6px;
 
     &:hover {
       background: transparent;
-      color: #811741;
+      color: var(--color-primary);
     }
   }
 }
@@ -651,7 +651,7 @@ $periodo-row-gap: 6px;
 
   &.periodo-filtro--bar-ativo .periodo-filtro__bar {
     border-color: #f1f1f1;
-    box-shadow: 0 1px 4px rgba(129, 23, 65, 0.18);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
 
   &.periodo-filtro--sublinhado-slide .periodo-filtro__inputs {
@@ -676,7 +676,7 @@ $periodo-row-gap: 6px;
   }
 
   &.periodo-filtro--sublinhado-slide .periodo-filtro__underline-slide {
-    background: #811741;
+    background: var(--color-primary);
   }
 
   .periodo-filtro__field {

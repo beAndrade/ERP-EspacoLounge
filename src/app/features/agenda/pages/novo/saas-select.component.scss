@@ -31,12 +31,12 @@
     box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    border-color: #7a88ff;
+    border-color: var(--color-primary-hover);
   }
 
   &:focus-visible {
     outline: none;
-    border-color: var(--color-primary, #6366f1);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
   }
 
@@ -273,7 +273,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   cursor: pointer;
   text-align: left;
   transition: background 0.12s ease;
@@ -283,7 +283,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-primary, #505afb);
+    outline: 2px solid var(--color-primary);
     outline-offset: -2px;
   }
 }
@@ -332,7 +332,7 @@
   }
 
   &.saas-select-host--open .saas-select__trigger--combobox {
-    border-color: var(--color-primary, #6366f1);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
   }
 }
@@ -343,7 +343,7 @@
 
   &:focus-visible {
     outline: none;
-    border-color: var(--color-primary, #6366f1);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
   }
 }
@@ -379,7 +379,7 @@
 
 :host.saas-select-host--open .saas-select__trigger,
 :host.saas-select-host--open .saas-select__trigger--combobox {
-  border-color: var(--color-primary, #505afb);
+  border-color: var(--color-primary);
 }
 
 :host.saas-select-host--trigger-cursor-text .saas-select__trigger {

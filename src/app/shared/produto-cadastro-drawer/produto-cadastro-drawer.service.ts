@@ -6,6 +6,8 @@ import { extractApiErrorMessage } from '../../core/utils/api-error-message';
 import {
   moedaAPartirDosDigitos,
   moedaParaPayload,
+  normalizarMoedaExibicao,
+  normalizarPercentualExibicao,
   percentualAPartirDosDigitos,
   percentualParaPayload,
 } from '../../core/utils/brl-digit-input';
@@ -49,6 +51,7 @@ export class ProdutoCadastroDrawerService {
   readonly panelOpen = signal(false);
 
   modo: 'novo' | 'editar' = 'novo';
+  editandoId: number | null = null;
   abaAtiva: ProdutoCadastroAba = 'Cadastro';
   salvando = false;
   erro = '';
@@ -101,9 +104,27 @@ export class ProdutoCadastroDrawerService {
   ): void {
     this.resetForm();
     this.modo = 'novo';
+    this.editandoId = null;
     this.callbacks = opts ?? null;
     this.categoriasOpcoes = opts?.categorias ?? [];
     this.marcasOpcoes = opts?.marcas ?? [];
+    this.abrirPainel();
+  }
+
+  abrirEdicao(
+    item: ProdutoCatalogoItem,
+    opts?: ProdutoDrawerCallbacks & {
+      categorias?: string[];
+      marcas?: string[];
+    },
+  ): void {
+    this.resetForm();
+    this.modo = 'editar';
+    this.editandoId = item.id;
+    this.callbacks = opts ?? null;
+    this.categoriasOpcoes = opts?.categorias ?? [];
+    this.marcasOpcoes = opts?.marcas ?? [];
+    this.preencherForm(item);
     this.abrirPainel();
   }
 
@@ -119,6 +140,7 @@ export class ProdutoCadastroDrawerService {
       this.erro = '';
       this.salvando = false;
       this.modo = 'novo';
+      this.editandoId = null;
       this.resetForm();
     }, DRAWER_ANIM_MS);
   }
@@ -187,39 +209,46 @@ export class ProdutoCadastroDrawerService {
 
     this.salvando = true;
     this.erro = '';
-    this.api
-      .createProduto({
-        produto: nome,
-        categoria,
-        marca: this.marca.trim() || null,
-        preco: moedaParaPayload(this.precoVenda),
-        custo: moedaParaPayload(this.custoCompra),
-        estoque_inicial: this.estoqueInicial.trim() || '0',
-        estoque_minimo: this.estoqueMinimo.trim() || '0',
-        unidade,
-        preco_profissional: moedaParaPayload(this.precoProfissional),
-        custo_adicional: moedaParaPayload(this.custoAdicional),
-        comissao_padrao: percentualParaPayload(this.comissaoPadrao),
-        codigo_item: this.codigoItem.trim() || null,
-        codigo_barras: this.codigoBarras.trim() || null,
-        observacoes: this.observacoes.trim() || null,
-        foto_url: foto || null,
-      })
-      .subscribe({
-        next: (item) => {
-          this.salvando = false;
-          this.toast.show('Produto criado com sucesso!');
-          this.callbacks?.onSalvo?.(item);
-          this.salvo$.next(item);
-          this.fechar();
-        },
-        error: (e: unknown) => {
-          this.salvando = false;
-          this.erro =
-            extractApiErrorMessage(e) ||
-            'Não foi possível salvar o produto.';
-        },
-      });
+    const payload = {
+      produto: nome,
+      categoria,
+      marca: this.marca.trim() || null,
+      preco: moedaParaPayload(this.precoVenda),
+      custo: moedaParaPayload(this.custoCompra),
+      estoque_inicial: this.estoqueInicial.trim() || '0',
+      estoque_minimo: this.estoqueMinimo.trim() || '0',
+      unidade,
+      preco_profissional: moedaParaPayload(this.precoProfissional),
+      custo_adicional: moedaParaPayload(this.custoAdicional),
+      comissao_padrao: percentualParaPayload(this.comissaoPadrao),
+      codigo_item: this.codigoItem.trim() || null,
+      codigo_barras: this.codigoBarras.trim() || null,
+      observacoes: this.observacoes.trim() || null,
+      foto_url: foto || null,
+    };
+    const req$ =
+      this.modo === 'editar' && this.editandoId != null
+        ? this.api.updateProduto(this.editandoId, payload)
+        : this.api.createProduto(payload);
+    req$.subscribe({
+      next: (item) => {
+        this.salvando = false;
+        this.toast.show(
+          this.modo === 'editar'
+            ? 'Produto atualizado com sucesso!'
+            : 'Produto criado com sucesso!',
+        );
+        this.callbacks?.onSalvo?.(item);
+        this.salvo$.next(item);
+        this.fechar();
+      },
+      error: (e: unknown) => {
+        this.salvando = false;
+        this.erro =
+          extractApiErrorMessage(e) ||
+          'Não foi possível salvar o produto.';
+      },
+    });
   }
 
   private abrirPainel(): void {
@@ -235,6 +264,27 @@ export class ProdutoCadastroDrawerService {
         });
       });
     });
+  }
+
+  private preencherForm(item: ProdutoCatalogoItem): void {
+    this.nome = String(item.produto ?? '').trim();
+    this.categoria = String(item.categoria ?? '').trim();
+    this.marca = String(item.marca ?? '').trim();
+    this.precoVenda = normalizarMoedaExibicao(item.preco);
+    this.custoCompra = normalizarMoedaExibicao(item.custo);
+    const u = String(item.unidade ?? '').trim().toLowerCase();
+    this.registroSaida =
+      u === 'ml' ? 'em ml' : u === 'g' || u === 'gramas' ? 'em gramas' : 'em unidade';
+    this.unidadeEquivalente = '1';
+    this.estoqueMinimo = String(item.estoque_minimo ?? '0').trim() || '0';
+    this.estoqueInicial = String(item.estoque_inicial ?? item.estoque ?? '0').trim() || '0';
+    this.precoProfissional = normalizarMoedaExibicao(item.preco_profissional);
+    this.custoAdicional = normalizarMoedaExibicao(item.custo_adicional);
+    this.comissaoPadrao = normalizarPercentualExibicao(item.comissao_padrao);
+    this.codigoItem = String(item.codigo_item ?? '').trim();
+    this.codigoBarras = String(item.codigo_barras ?? '').trim();
+    this.observacoes = String(item.observacoes ?? '').trim();
+    this.fotoUrl = String(item.foto_url ?? '').trim();
   }
 
   private resetForm(): void {

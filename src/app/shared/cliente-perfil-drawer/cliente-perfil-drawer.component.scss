@@ -14,7 +14,7 @@
 }
 
 .cliente-perfil-drawer.app-drawer {
-  --cliente-accent: #505afb;
+  --cliente-accent: var(--color-primary);
   --cliente-drawer-shell-w: 1200px;
   --cliente-nav-item-h: 35px;
   --cliente-nav-gap: 16px;
@@ -63,7 +63,7 @@
     flex: 1 1 100%;
     margin: 0 0 4px;
     font-size: 13px;
-    color: #dc2626;
+    color: var(--color-error);
   }
 }
 
@@ -89,20 +89,20 @@
     font-weight: 400;
 
     &:hover:not(:disabled) {
-      color: #7a88ff;
-      border-color: #7a88ff;
+      color: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
       background: #ffffff;
     }
   }
 
   &--primary {
-    border: 1px solid #505afb;
-    background: #505afb;
+    border: 1px solid var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
 
     &:hover:not(:disabled) {
-      background: #7a88ff;
-      border-color: #7a88ff;
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
       color: #fff;
     }
   }
@@ -255,7 +255,7 @@
   transition: color 0.32s ease;
 
   &:hover {
-    color: #7a88ff;
+    color: var(--color-primary-hover);
   }
 
   &--active {

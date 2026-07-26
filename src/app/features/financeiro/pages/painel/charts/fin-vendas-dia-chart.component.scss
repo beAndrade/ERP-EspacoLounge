@@ -7,7 +7,7 @@
 .fin-vendas {
   --fin-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --fin-blue: #3b82f6;
-  --fin-blue-deep: #2563eb;
+  --fin-blue-deep: var(--color-primary);
 
   display: flex;
   flex-direction: column;

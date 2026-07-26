@@ -305,10 +305,10 @@
 
 @keyframes hubToolbarMenuItemPulse {
   0% {
-    box-shadow: inset 0 0 0 0 rgba(129, 23, 65, 0.22);
+    box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--color-primary) 22%, transparent);
   }
   55% {
-    box-shadow: inset 0 0 0 3px rgba(129, 23, 65, 0);
+    box-shadow: inset 0 0 0 3px transparent;
   }
   100% {
     box-shadow: none;
@@ -427,8 +427,8 @@
   }
 
   &:hover:not(:disabled):checked {
-    background-color: color-mix(in srgb, var(--color-primary, #505afb) 68%, #fff);
-    border-color: color-mix(in srgb, var(--color-primary, #505afb) 68%, #fff);
+    background-color: color-mix(in srgb, var(--color-primary) 68%, #fff);
+    border-color: color-mix(in srgb, var(--color-primary) 68%, #fff);
   }
 
   &:active:not(:disabled) {
@@ -436,8 +436,8 @@
   }
 
   &:checked {
-    background-color: var(--color-primary, #505afb);
-    border-color: var(--color-primary, #505afb);
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
     box-shadow: none;
 
     &::after {
@@ -459,7 +459,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: 2px;
   }
 }
@@ -1230,7 +1230,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   font: inherit;
   font-size: inherit;
   font-weight: 500;
-  color: #505afb;
+  color: var(--color-primary);
   cursor: pointer;
   text-decoration: none;
   pointer-events: auto;
@@ -1281,7 +1281,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   width: 15px;
   height: 15px;
   flex-shrink: 0;
-  color: var(--color-primary, #9d174d);
+  color: var(--color-primary);
 }
 
 .hub-float-cal {
@@ -1427,7 +1427,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   }
 
   &--weekend:not(&--fora):not(&--selected) {
-    color: #ff4d4f;
+    color: var(--color-error);
   }
 
   &--hoje:not(&--selected) {
@@ -1435,7 +1435,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   }
 
   &--selected {
-    background: var(--color-primary, #505afb);
+    background: var(--color-primary);
     color: #fff;
     font-weight: 600;
   }
@@ -1462,7 +1462,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   cursor: pointer;
 
   &:hover {
@@ -1702,8 +1702,8 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
 }
 
 .hub-remarcar-modal__btn--sim {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #fff;
 }
 
@@ -1776,16 +1776,16 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
     box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
 
     &:hover:not(:disabled) {
-      color: #7a88ff;
-      border-color: #7a88ff;
+      color: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
       background: #fff;
     }
   }
 
   .comandas-modal__btn--confirm {
-    border-color: #ff4d4f;
+    border-color: var(--color-error);
     background: #fff;
-    color: #ff4d4f;
+    color: var(--color-error);
     box-shadow: 0 2px 0 rgba(255, 38, 5, 0.06);
 
     &:hover:not(:disabled) {
@@ -3082,7 +3082,7 @@ $month-num-fg-muted: #00000028;
     .hub-header__nav-icon {
       width: 16px;
       height: 16px;
-      color: #9d174d;
+      color: var(--color-primary);
     }
   }
 
@@ -3122,7 +3122,7 @@ $month-num-fg-muted: #00000028;
     filter: none;
     text-shadow: none;
     outline: none;
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     font: inherit;
     font-size: 16px;
     font-weight: 400;
@@ -3199,7 +3199,7 @@ $month-num-fg-muted: #00000028;
     }
 
     .list-head__toolbar-btn--filtro-on {
-      color: var(--color-primary, #505afb);
+      color: var(--color-primary);
     }
   }
 
@@ -3423,7 +3423,7 @@ $month-num-fg-muted: #00000028;
 
       &--selected {
         border-radius: 2px;
-        background: var(--color-primary, #505afb);
+        background: var(--color-primary);
       }
     }
 
@@ -3577,7 +3577,7 @@ $month-num-fg-muted: #00000028;
     padding: 0.7rem 1rem;
     border: none;
     border-radius: 8px;
-    background: var(--color-primary, #505afb);
+    background: var(--color-primary);
     color: #fff;
     font: inherit;
     font-size: 0.95rem;
@@ -3960,15 +3960,15 @@ $month-num-fg-muted: #00000028;
 }
 
 .hub-card-tip__action--servico {
-  color: #505afb;
+  color: var(--color-primary);
   cursor: pointer;
 
   > span:not(.hub-card-tip__swatch) {
-    color: #505afb;
+    color: var(--color-primary);
   }
 
   &:hover {
-    background: rgba(80, 90, 251, 0.06);
+    background: color-mix(in srgb, var(--color-primary) 6%, transparent);
   }
 }
 
@@ -3990,7 +3990,7 @@ $month-num-fg-muted: #00000028;
   &.hub-card-tip__action--hot,
   .hub-card-tip__action-wrap--status:hover &,
   .hub-card-tip__action-wrap--cor:hover & {
-    background: rgba(80, 90, 251, 0.1);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 }
 
@@ -4064,7 +4064,7 @@ $month-num-fg-muted: #00000028;
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    background: rgba(80, 90, 251, 0.08);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   }
 
   &:disabled {
@@ -4083,22 +4083,22 @@ $month-num-fg-muted: #00000028;
 }
 
 .hub-card-tip__action--comanda {
-  color: #505afb;
+  color: var(--color-primary);
   cursor: pointer;
 
   > span:not(.hub-card-tip__swatch) {
     font-size: 14px;
     font-weight: 500;
     text-align: left;
-    color: #505afb;
+    color: var(--color-primary);
   }
 
   > svg:not(.hub-card-tip__chev) {
-    color: #505afb;
+    color: var(--color-primary);
   }
 
   &:hover {
-    background: rgba(80, 90, 251, 0.06);
+    background: color-mix(in srgb, var(--color-primary) 6%, transparent);
   }
 
   &:focus,
@@ -4123,7 +4123,7 @@ $month-num-fg-muted: #00000028;
   }
 
   &:hover {
-    background: rgba(80, 90, 251, 0.1);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 
   &:focus,

@@ -57,18 +57,9 @@
 }
 
 .painel-tend__bar {
+  fill: var(--color-primary);
   opacity: 0.92;
   pointer-events: none;
-  transform-origin: center bottom;
-  transform-box: fill-box;
-  transition:
-    opacity 200ms ease,
-    filter 200ms ease;
-
-  &--active {
-    opacity: 1;
-    filter: drop-shadow(0 4px 8px rgba(80, 90, 251, 0.28));
-  }
 }
 
 .painel-tend__empty {

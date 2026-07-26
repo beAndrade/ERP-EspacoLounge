@@ -9,9 +9,9 @@
   color: #000000bf;
   --cred-body-pad-x: 30px;
   --drawer-field-h: 38px;
-  --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+  --drawer-field-focus-ring: color-mix(in srgb, var(--color-primary) 6%, transparent);
   --cred-field-focus-shadow:
-    inset 0 0 0 1px #7a88ff,
+    inset 0 0 0 1px var(--color-primary-hover),
     0 0 0 2px var(--drawer-field-focus-ring);
 }
 
@@ -128,7 +128,7 @@
   box-shadow: inset 0 0 0 1px #f1f1f1;
 
   &:hover {
-    box-shadow: inset 0 0 0 1px #7a88ff;
+    box-shadow: inset 0 0 0 1px var(--color-primary-hover);
   }
 
   &:focus,
@@ -154,7 +154,7 @@
   box-shadow: inset 0 0 0 1px #f1f1f1;
 
   &:hover {
-    box-shadow: inset 0 0 0 1px #7a88ff;
+    box-shadow: inset 0 0 0 1px var(--color-primary-hover);
   }
 
   &:focus,
@@ -213,7 +213,7 @@
     }
 
     &.active {
-      background: #4f46e5;
+      background: var(--color-primary);
 
       &::after {
         transform: translateX(var(--knob-x-end));
@@ -273,19 +273,19 @@
     border-color: #e7e5e4;
 
     &:hover:not(:disabled) {
-      color: #7a88ff;
-      border-color: #7a88ff;
+      color: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
     }
   }
 
   &--primary {
-    background: #505afb;
+    background: var(--color-primary);
     color: #fff;
-    border-color: #505afb;
+    border-color: var(--color-primary);
 
     &:hover:not(:disabled) {
-      background: #7b82fc;
-      border-color: #7b82fc;
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
     }
   }
 }

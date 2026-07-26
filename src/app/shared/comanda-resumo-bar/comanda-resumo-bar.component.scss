@@ -2,8 +2,8 @@
   display: block;
   --drawer-field-h: 38px;
   --drawer-field-stroke: #f1f1f1;
-  --drawer-field-stroke-hover: #7a88ff;
-  --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+  --drawer-field-stroke-hover: var(--color-primary-hover);
+  --drawer-field-focus-ring: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
 .comanda-resumo-bar {

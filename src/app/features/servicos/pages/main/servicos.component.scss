@@ -100,7 +100,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: -2px;
   }
 }
@@ -132,7 +132,7 @@
     transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
   &--on {
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     opacity: 1;
     transform: scale(1);
   }
@@ -144,7 +144,7 @@
 }
 
 .servicos-table .col-nome__cell--clickable:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -152,13 +152,14 @@
 .servicos-table .col-nome__link {
   display: inline-block;
   max-width: 100%;
-  color: rgb(80, 90, 251);
+  color: var(--color-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .servicos-table .col-nome__cell--clickable:hover .col-nome__link {
+  color: var(--color-primary-hover);
   text-decoration: underline;
 }
 
@@ -238,7 +239,7 @@
 }
 
 .servicos-filtros-drawer__btn--primary {
-  background: var(--color-primary, #505afb);
+  background: var(--color-primary);
   color: #fff;
 }
 

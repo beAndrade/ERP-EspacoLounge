@@ -58,7 +58,7 @@
 .col-info {
   text-align: center;
   vertical-align: middle;
-  color: #811741;
+  color: var(--color-primary);
 }
 
 .prof-info-tip {
@@ -84,7 +84,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #811741;
+  color: var(--color-primary);
   cursor: help;
 
   svg {
@@ -167,7 +167,7 @@
   justify-content: center;
   vertical-align: middle;
   margin: 0 0.15rem;
-  color: #811741;
+  color: var(--color-primary);
 
   svg {
     display: block;
@@ -186,7 +186,7 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #811741;
+  color: var(--color-primary);
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -306,7 +306,7 @@
   letter-spacing: 0;
   text-transform: none;
   color: #fff;
-  background: var(--color-primary, #505afb);
+  background: var(--color-primary);
 }
 
 .col-nome__cell--clickable {
@@ -319,7 +319,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(80, 90, 251, 0.45);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: 2px;
   }
 }

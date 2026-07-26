@@ -844,7 +844,7 @@
   font-weight: normal;
   font-size: 14px;
   line-height: 1.5714285714285714;
-  color: #ff4d4f;
+  color: var(--color-error);
   cursor: pointer;
   text-align: left;
   border-radius: 6px;
@@ -858,7 +858,7 @@
     display: flex;
     margin: 0;
     padding: 5px 12px;
-    background: #ff4d4f;
+    background: var(--color-error);
     color: #fff;
   }
 
@@ -873,7 +873,7 @@
   display: block;
   width: 12px;
   height: 12px;
-  color: #ff4d4f;
+  color: var(--color-error);
   transition: all 0.2s;
 }
 
@@ -1153,13 +1153,13 @@ select::-ms-expand {
 
   .data-field__wrap:focus-within .data-field__display {
     outline: none;
-    border-color: var(--color-primary, #6366f1);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
   }
 }
 
 .data-field__wrap:focus-within .data-field__display {
-  outline: 2px solid var(--color-primary, #2563eb);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -1239,21 +1239,21 @@ textarea {
   border-color: var(--drawer-btn-ghost-border, #e7e5e4);
 
   &:hover:not(:disabled) {
-    color: var(--drawer-btn-ghost-hover-fg, #7a88ff);
-    border-color: var(--drawer-btn-ghost-hover-border, #7a88ff);
+    color: var(--drawer-btn-ghost-hover-fg);
+    border-color: var(--drawer-btn-ghost-hover-border);
     background: var(--drawer-btn-ghost-hover-bg, #ffffff);
   }
 }
 
 .agenda-modal__footer .btn.btn-footer--comanda {
-  background: var(--drawer-btn-faturar-bg, #70c040);
-  border-color: var(--drawer-btn-faturar-border, #70c040);
+  background: var(--drawer-btn-faturar-bg);
+  border-color: var(--drawer-btn-faturar-border);
   color: var(--drawer-btn-faturar-fg, #fff);
 
   /** Mesmo padrão que `--danger`: só fundo + borda mais claros, sem scale/filter. */
   &:hover:not(:disabled) {
-    background: var(--drawer-btn-faturar-hover-bg, #85c94f);
-    border-color: var(--drawer-btn-faturar-hover-border, #85c94f);
+    background: var(--drawer-btn-faturar-hover-bg);
+    border-color: var(--drawer-btn-faturar-hover-border);
   }
 
   &:disabled {
@@ -1263,8 +1263,8 @@ textarea {
 }
 
 .agenda-modal__footer .btn.btn-footer--danger {
-  background: #ff4d4f;
-  border-color: #ff4d4f;
+  background: var(--color-error);
+  border-color: var(--color-error);
   color: #fff;
 
   &:hover:not(:disabled) {
@@ -1275,14 +1275,14 @@ textarea {
 
 .agenda-modal__footer .btn.btn-footer.primary,
 .agenda-modal__footer .agenda-modal__footer-salvar.btn {
-  background: var(--drawer-btn-primary-bg, #505afb);
-  border-color: var(--drawer-btn-primary-border, #505afb);
+  background: var(--drawer-btn-primary-bg);
+  border-color: var(--drawer-btn-primary-border);
   color: var(--drawer-btn-primary-fg, #fff);
 
   /** Mesmo padrão que `--danger`: só fundo + borda mais claros, sem scale/filter. */
   &:hover:not(:disabled) {
-    background: var(--drawer-btn-primary-hover-bg, #7b82fc);
-    border-color: var(--drawer-btn-primary-hover-border, #7b82fc);
+    background: var(--drawer-btn-primary-hover-bg);
+    border-color: var(--drawer-btn-primary-hover-border);
   }
 }
 
@@ -1309,7 +1309,7 @@ textarea {
   padding: 0;
   border: none;
   border-radius: 0.65rem;
-  background: #ff4d4f;
+  background: var(--color-error);
   color: #fff;
   cursor: pointer;
   transition:
@@ -2290,7 +2290,7 @@ textarea {
 
   /* estado ativo */
   .block-toggles--inline .toggle.active {
-    background: #4f46e5;
+    background: var(--color-primary);
     --toggle-pulse-color: rgba(79, 70, 229, 0.35);
     filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
   }
@@ -2800,19 +2800,19 @@ textarea {
 :host.agenda-novo--drawer .form.form--modal.form--validation-visible ::ng-deep {
   app-saas-select.ng-invalid.ng-touched .saas-select__trigger,
   app-agenda-horario-slots.ng-invalid.ng-touched .ahs__trigger {
-    border-color: #cf1322 !important;
+    border-color: var(--color-error) !important;
     box-shadow: 0 0 0 1px rgba(207, 19, 34, 0.22);
   }
 
   .data-field:has(input.ng-invalid.ng-touched) .data-field__display {
-    border-color: #cf1322 !important;
+    border-color: var(--color-error) !important;
     box-shadow: 0 0 0 1px rgba(207, 19, 34, 0.22);
   }
 
   input.ng-invalid.ng-touched:not([type='checkbox']):not([type='radio']),
   textarea.ng-invalid.ng-touched,
   select.ng-invalid.ng-touched {
-    border-color: #cf1322 !important;
+    border-color: var(--color-error) !important;
     box-shadow: 0 0 0 1px rgba(207, 19, 34, 0.22);
   }
 }
@@ -2865,7 +2865,7 @@ textarea {
 
   app-saas-select.saas-select-host--open .saas-select__trigger,
   app-saas-select.saas-select-host--open .saas-select__trigger:hover:not(:disabled) {
-    border-color: var(--color-primary, #505afb);
+    border-color: var(--color-primary);
   }
 
   .servico-row--drawer.servico-row--layout-produto-drawer
@@ -3111,14 +3111,14 @@ textarea {
     min-width: 0;
     min-height: 32px;
     height: 32px;
-    border: 1px solid #505afb;
+    border: 1px solid var(--color-primary);
     border-radius: 12px;
     padding: 0 0.9rem;
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1.2;
     cursor: pointer;
-    background: #505afb;
+    background: var(--color-primary);
     color: #fff;
   }
 
@@ -3129,8 +3129,8 @@ textarea {
 
   .itens-atendimento--modal
     .arpc-proximos-saved__chip:not(.arpc-proximos-saved__chip--ativo):hover {
-    background: #7b82fc;
-    border-color: #7b82fc;
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
   }
 
   /* Dia em edição (único com --ativo): bloqueado, estilo do print */
@@ -3295,11 +3295,11 @@ textarea {
 
   &--primary {
     border: none;
-    background: #6366f1;
+    background: var(--color-primary);
     color: #fff;
 
     &:hover {
-      background: #4f46e5;
+      background: var(--color-primary);
     }
   }
 }
@@ -3378,15 +3378,15 @@ textarea {
     color: #4b4e57;
 
     &:hover:not(:disabled) {
-      color: #7a88ff;
-      border-color: #7a88ff;
+      color: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
       background: #ffffff;
     }
   }
 
   .comandas-modal__btn--confirm {
-    border-color: #ff4d4f;
-    color: #ff4d4f;
+    border-color: var(--color-error);
+    color: var(--color-error);
     background: #ffffff;
 
     &:hover:not(:disabled) {

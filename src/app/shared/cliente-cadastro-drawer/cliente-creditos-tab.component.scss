@@ -84,7 +84,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid #7a88ff;
+    outline: 2px solid var(--color-primary-hover);
     outline-offset: 2px;
   }
 }

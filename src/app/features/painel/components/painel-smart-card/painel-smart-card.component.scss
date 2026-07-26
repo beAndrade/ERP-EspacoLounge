@@ -5,7 +5,7 @@
 }
 
 .painel-smart-card {
-  --psc-blue: var(--painel-blue, #505afb);
+  --psc-blue: var(--painel-blue);
   --psc-collapsed-h: 168px;
   /* Ease que comeca suave (sem “pop” no inicio). */
   --psc-ease: cubic-bezier(0.33, 0.1, 0.25, 1);
@@ -145,7 +145,7 @@
   width: 40px;
   height: 40px;
   line-height: 0;
-  border-radius: 999px;
+  border-radius: 12px;
   color: var(--psc-blue);
   background: #eef0ff;
 
@@ -227,7 +227,7 @@
   cursor: pointer;
 
   &:hover {
-    color: #7a88ff;
+    color: var(--color-primary-hover);
   }
 }
 

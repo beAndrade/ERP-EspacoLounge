@@ -14,13 +14,9 @@
     gap: 0.5rem;
   }
 
-  /* Igual a Serviços: sem hover de linha na tabela. */
-  .list-table tbody tr:hover td:not(.table-body__busy):not(.table-body__empty) {
-    background: transparent;
-  }
-
+  /* Igual a Serviços: hover de linha do shell (`#fafafa`). */
   .list-table tbody tr.list-table__row--selected:hover td {
-    background: #f0f3ff;
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
   }
 }
 
@@ -38,7 +34,7 @@
   border-radius: 8px;
   background: #fff1f0;
   border: 1px solid #ffccc7;
-  color: #cf1322;
+  color: var(--color-error);
   font-size: 14px;
 }
 
@@ -169,12 +165,29 @@
   white-space: nowrap;
 }
 
-.produtos-table .col-nome .col-nome__text {
-  display: block;
+.produtos-table .col-nome .col-nome__cell--clickable {
+  cursor: pointer;
   max-width: 100%;
+}
+
+.produtos-table .col-nome .col-nome__cell--clickable:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.produtos-table .col-nome .col-nome__link {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--color-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.produtos-table .col-nome .col-nome__cell--clickable:hover .col-nome__link {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
 }
 
 .produtos-th-sort-wrap {
@@ -203,7 +216,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: -2px;
   }
 }
@@ -235,7 +248,7 @@
     transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
   &--on {
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     opacity: 1;
     transform: scale(1);
   }

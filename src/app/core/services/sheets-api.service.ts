@@ -218,6 +218,21 @@ export class SheetsApiService {
       );
   }
 
+  updateProduto(
+    id: number,
+    payload: ProdutoWritePayload,
+  ): Observable<ProdutoCatalogoItem> {
+    return this.http
+      .patch<ApiResponse<{ item: ProdutoCatalogoItem }>>(
+        this.url(`/api/produtos/${encodeURIComponent(String(id))}`),
+        payload,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
   /** Entrada manual de unidades no `produtos.estoque` (PATCH na API). */
   incrementarEstoqueProduto(
     id: number,

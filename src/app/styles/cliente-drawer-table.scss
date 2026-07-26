@@ -375,7 +375,7 @@
 
   &--on,
   &[aria-pressed='true'] {
-    background: var(--color-primary, #505afb);
+    background: var(--color-primary);
 
     &::after {
       transform: translateX(var(--toggle-travel));
@@ -392,7 +392,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: 2px;
   }
 
@@ -403,7 +403,7 @@
 
 @keyframes drawerSwitchPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(80, 90, 251, 0.35);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 35%, transparent);
   }
   70% {
     box-shadow: 0 0 0 8px transparent;
@@ -456,11 +456,11 @@
   }
 
   &--view {
-    color: #505afb;
+    color: var(--color-primary);
 
     &:hover:not(:disabled) {
       background: transparent;
-      color: #505afb;
+      color: var(--color-primary);
     }
 
     svg {
@@ -470,36 +470,36 @@
     }
 
     &:disabled {
-      color: #505afb;
+      color: var(--color-primary);
     }
   }
 
   &--edit:not(:disabled) {
-    color: #2563eb;
+    color: var(--color-primary);
     opacity: 1;
 
     &:hover {
       background: transparent;
-      color: color-mix(in srgb, #2563eb 78%, #fff);
+      color: color-mix(in srgb, var(--color-primary) 78%, #fff);
     }
   }
 
   &--delete:not(:disabled) {
-    color: #dc2626;
+    color: var(--color-error);
     opacity: 1;
 
     &:hover {
       background: transparent;
-      color: color-mix(in srgb, #dc2626 78%, #fff);
+      color: color-mix(in srgb, var(--color-error) 78%, #fff);
     }
   }
 
   &--print {
-    color: #505afb;
+    color: var(--color-primary);
 
     &:hover:not(:disabled) {
       background: transparent;
-      color: #505afb;
+      color: var(--color-primary);
     }
 
     svg {
@@ -518,7 +518,7 @@
   background: transparent;
   font-size: 13.3333px;
   font-weight: 600;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   cursor: pointer;
   text-decoration: none;
 
@@ -539,14 +539,14 @@
   white-space: nowrap;
 
   &--aviso {
-    color: var(--drawer-badge-pendente-fg, #d4380d);
+    color: var(--drawer-badge-pendente-fg);
     background: var(--drawer-badge-pendente-bg, #fff2e8);
     border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
 
   &--atraso {
     @include badge-atraso-icon.badge-atraso-com-icone-relogio;
-    color: var(--drawer-badge-atraso-fg, #cf1322);
+    color: var(--drawer-badge-atraso-fg);
     background: var(--drawer-badge-atraso-bg, #fff1f0);
     border-color: var(--drawer-badge-atraso-border, #ffa39e);
   }

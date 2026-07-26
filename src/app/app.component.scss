@@ -38,9 +38,9 @@
 }
 
 .app-sidebar {
-  --sidebar-fg: #fafaf9;
-  --sidebar-active: rgba(255, 255, 255, 0.14);
-  --sidebar-hover: rgba(255, 255, 255, 0.08);
+  --sidebar-fg: #f8fafc;
+  --sidebar-active: color-mix(in srgb, var(--color-primary) 28%, var(--color-sidebar-hover));
+  --sidebar-hover: var(--color-sidebar-hover);
   /** Cabeçalhos de dropdown e fila de secção */
   /** Itens de 1.º nível no nav (prints / DevTools) */
   --sidebar-nav-tier1-bg: transparent;
@@ -54,10 +54,10 @@
   --sidebar-nav-radius: 6px;
   --sidebar-dd-bg: var(--sidebar-nav-tier1-bg);
   /** Só cabeçalhos / link de 1.º nível — hover sobre fundo transparente */
-  --sidebar-dd-hover: rgba(255, 255, 255, 0.16);
-  --sidebar-dd-section: rgba(255, 255, 255, 0.2);
+  --sidebar-dd-hover: var(--color-sidebar-hover);
+  --sidebar-dd-section: var(--sidebar-active);
   /** Só subitens dos dropdowns */
-  --sidebar-sub-hover: rgba(255, 255, 255, 0.2);
+  --sidebar-sub-hover: var(--color-sidebar-hover);
   --sidebar-nav-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --sidebar-nav-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --sidebar-hover-ms: 320ms;
@@ -87,7 +87,7 @@
   padding: 0 0 0.75rem 0;
   display: flex;
   flex-direction: column;
-  background: #1f2937;
+  background: var(--color-sidebar);
   color: var(--sidebar-fg);
   box-shadow: 1px 0 0 rgba(0, 0, 0, 0.06);
   border-right: none;
@@ -845,7 +845,7 @@
   box-sizing: border-box;
 }
 .app-drawer input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):hover {
-  border-color: var(--color-primary, #505afb);
+  border-color: var(--color-primary);
 }
 
 .shell-mobile-backdrop {
@@ -874,7 +874,7 @@
   border: 1px solid #e7e5e4;
   border-radius: var(--radius, 8px);
   background: var(--color-surface, #fff);
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }

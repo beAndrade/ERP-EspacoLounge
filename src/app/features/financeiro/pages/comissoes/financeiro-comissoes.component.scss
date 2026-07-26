@@ -65,11 +65,11 @@
   transition: color 0.15s ease;
 
   &:hover:not(&--active) {
-    color: #811741;
+    color: var(--color-primary);
   }
 
   &--active {
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
 
     &::after {
       content: '';
@@ -78,7 +78,7 @@
       right: 0;
       bottom: -1px;
       height: 2px;
-      background: var(--color-primary, #505afb);
+      background: var(--color-primary);
     }
   }
 }
@@ -171,14 +171,14 @@
 
       &:hover,
       &:focus-within {
-        border-color: var(--color-primary, #505afb);
-        box-shadow: 0 2px 10px rgba(80, 90, 251, 0.12);
+        border-color: var(--color-primary);
+        box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 12%, transparent);
       }
     }
 
     ::ng-deep .periodo-filtro--bar-ativo .periodo-filtro__bar {
-      border-color: var(--color-primary, #505afb);
-      box-shadow: 0 2px 10px rgba(80, 90, 251, 0.12);
+      border-color: var(--color-primary);
+      box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 12%, transparent);
     }
 
     ::ng-deep .periodo-filtro__inputs {
@@ -218,7 +218,7 @@
     }
 
     ::ng-deep .periodo-filtro--sublinhado-slide .periodo-filtro__underline-slide {
-      background: var(--color-primary, #505afb);
+      background: var(--color-primary);
     }
 
     ::ng-deep .periodo-filtro__sep {
@@ -324,8 +324,8 @@
     box-shadow 0.15s ease;
 
   &:hover {
-    border-color: var(--color-primary, #505afb);
-    box-shadow: 0 2px 10px rgba(80, 90, 251, 0.14);
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 14%, transparent);
   }
 }
 
@@ -338,7 +338,7 @@
   height: 48px;
   border-radius: 50%;
   background: #f3f4f6;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
 }
 
 .fin-comissoes__prof-text {
@@ -462,18 +462,18 @@
       background 0.2s ease;
 
     &:hover:not(:disabled) {
-      border-color: #811741;
+      border-color: var(--color-primary);
       box-shadow: none;
     }
 
     &:focus-visible {
-      border-color: #811741;
+      border-color: var(--color-primary);
       box-shadow: none;
     }
   }
 
   ::ng-deep .saas-select--open .saas-select__trigger {
-    border-color: #811741;
+    border-color: var(--color-primary);
     box-shadow: none;
   }
 
@@ -551,7 +551,7 @@
     margin: 0;
     padding: 0.65rem 0.75rem;
     font-weight: 600;
-    color: #505afb;
+    color: var(--color-primary);
     background: #fff;
     transition: none;
 
@@ -592,13 +592,13 @@
     box-shadow 0.16s ease;
 
   &:hover {
-    border-color: #811741;
+    border-color: var(--color-primary);
   }
 
   &:focus {
     outline: none;
-    border-color: #811741;
-    box-shadow: 0 0 0 3px rgba(80, 90, 251, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
 
   &::-ms-expand {
@@ -614,7 +614,7 @@
   font: inherit;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   cursor: pointer;
   text-align: left;
 
@@ -737,7 +737,7 @@
 .fin-comissoes-table__comanda-link {
   margin-left: 0.2rem;
   font-weight: 500;
-  color: #505afb;
+  color: var(--color-primary);
   text-decoration: none;
 
   &:hover {
@@ -854,13 +854,13 @@
     }
 
     &:hover:not(:disabled) {
-      border-color: #811741;
+      border-color: var(--color-primary);
       transition-delay: 0s, 0.16s, 0s;
     }
 
     &:checked {
-      background-color: var(--color-primary, #505afb);
-      border-color: var(--color-primary, #505afb);
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
 
       &::after {
         opacity: 1;
@@ -870,7 +870,7 @@
 
     &:focus-visible {
       outline: 2px solid
-        color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+        color-mix(in srgb, var(--color-primary) 45%, transparent);
       outline-offset: 2px;
     }
   }
@@ -937,7 +937,7 @@
 }
 
 .fin-comissoes__resumo-saldo {
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
 }
 
 .fin-comissoes-table--pagas {
@@ -1081,7 +1081,7 @@
 }
 
 .fin-comissoes__bar-total-item--liquido .fin-comissoes__bar-total-value {
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
 }
 
 .fin-comissoes__btn-pagar {
@@ -1098,7 +1098,7 @@
   cursor: not-allowed;
 
   &:not(:disabled) {
-    background: var(--color-primary, #505afb);
+    background: var(--color-primary);
     cursor: pointer;
 
     &:hover {
@@ -1216,8 +1216,8 @@
     background: var(--color-surface, #fff);
 
     &--selected {
-      border-color: var(--color-primary, #505afb);
-      background: color-mix(in srgb, var(--color-primary, #505afb) 6%, #fff);
+      border-color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-primary) 6%, #fff);
     }
   }
 

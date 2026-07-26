@@ -114,7 +114,7 @@ app-produto-cadastro-drawer-host {
   border-radius: 8px;
   background: #fff1f0;
   border: 1px solid #ffccc7;
-  color: #cf1322;
+  color: var(--color-error);
   font-size: 14px;
 }
 
@@ -163,8 +163,8 @@ app-produto-cadastro-drawer-host {
   padding: 0.35rem 0.75rem;
   border-radius: 8px;
   border: none;
-  background: color-mix(in srgb, var(--color-primary, #505afb) 12%, #fff);
-  color: var(--color-primary, #505afb);
+  background: color-mix(in srgb, var(--color-primary) 12%, #fff);
+  color: var(--color-primary);
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;

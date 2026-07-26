@@ -153,7 +153,7 @@
   background: transparent;
   font: inherit;
   font-weight: 500;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   cursor: pointer;
   text-decoration: none;
 }
@@ -287,7 +287,7 @@
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary, #505afb) 45%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: -2px;
   }
 }
@@ -322,7 +322,7 @@
     transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
   &--on {
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     opacity: 1;
     transform: scale(1);
   }
@@ -557,7 +557,7 @@
   font-weight: 600;
   font-size: 13.3333px;
   line-height: 1.35;
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
 
   &--btn {
     border: none;
@@ -607,13 +607,13 @@
     text-align: left;
     font: inherit;
     line-height: inherit;
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     text-decoration: none;
   }
 }
 
 .fin-transacoes__link {
-  color: var(--color-primary, #505afb);
+  color: var(--color-primary);
   font-weight: 500;
 
   &--comissao {
@@ -644,20 +644,20 @@
   }
 
   &--ok {
-    color: var(--drawer-badge-ok-fg, #389e0d);
+    color: var(--drawer-badge-ok-fg);
     background: var(--drawer-badge-ok-bg, #f6ffed);
     border-color: var(--drawer-badge-ok-border, #b7eb8f);
   }
 
   &--warn {
-    color: var(--drawer-badge-pendente-fg, #d4380d);
+    color: var(--drawer-badge-pendente-fg);
     background: var(--drawer-badge-pendente-bg, #fff2e8);
     border-color: var(--drawer-badge-pendente-border, #ffbb96);
   }
 
   &--atraso {
     @include badge-atraso.badge-atraso-com-icone-relogio;
-    color: var(--drawer-badge-atraso-fg, #cf1322);
+    color: var(--drawer-badge-atraso-fg);
     background: var(--drawer-badge-atraso-bg, #fff1f0);
     border-color: var(--drawer-badge-atraso-border, #ffa39e);
   }
@@ -685,7 +685,7 @@
   z-index: 0;
   border-radius: 12px;
   pointer-events: none;
-  box-shadow: 0 0 0 0 rgba(157, 23, 77, 0);
+  box-shadow: 0 0 0 0 transparent;
 
   &--on {
     animation: fin-transacoes-novo-pulse-ring 0.6s ease-out 1 forwards;
@@ -699,7 +699,7 @@
 
 @keyframes fin-transacoes-novo-pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(157, 23, 77, 0.28);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 28%, transparent);
   }
   55% {
     box-shadow: 0 0 0 5px rgba(0, 0, 0, 0);
@@ -824,10 +824,10 @@
   }
 
   &--vale {
-    color: #2563eb;
+    color: var(--color-primary);
 
     svg {
-      color: #2563eb;
+      color: var(--color-primary);
     }
   }
 
@@ -978,7 +978,7 @@
 
   .comandas-modal__btn--confirm {
     color: #fff;
-    background: #ff4d4f;
+    background: var(--color-error);
 
     &:hover:not(:disabled) {
       background: #ff7875;
@@ -991,8 +991,8 @@
     color: rgba(0, 0, 0, 0.75);
 
     &:hover:not(:disabled) {
-      color: #7a88ff;
-      border-color: #7a88ff;
+      color: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
       background: #ffffff;
     }
   }

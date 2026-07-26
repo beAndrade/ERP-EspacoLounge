@@ -126,7 +126,7 @@
   cursor: pointer;
 
   &:hover {
-    border-color: #7a88ff;
-    color: #7a88ff;
+    border-color: var(--color-primary-hover);
+    color: var(--color-primary-hover);
   }
 }

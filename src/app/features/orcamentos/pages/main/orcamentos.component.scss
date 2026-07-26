@@ -73,9 +73,9 @@
   cursor: pointer;
 
   &--on {
-    border-color: color-mix(in srgb, var(--color-primary, #505afb) 55%, #fff);
-    background: color-mix(in srgb, var(--color-primary, #505afb) 12%, #fff);
-    color: var(--color-primary, #505afb);
+    border-color: color-mix(in srgb, var(--color-primary) 55%, #fff);
+    background: color-mix(in srgb, var(--color-primary) 12%, #fff);
+    color: var(--color-primary);
   }
 }
 
@@ -157,7 +157,7 @@
   opacity: 0.4;
 
   &--on {
-    color: var(--color-primary, #505afb);
+    color: var(--color-primary);
     opacity: 1;
   }
 }
@@ -353,8 +353,8 @@
 }
 
 .orcamentos-modal__primary {
-  background: var(--color-primary, #505afb) !important;
-  border-color: var(--color-primary, #505afb) !important;
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
   color: #fff !important;
 }
 

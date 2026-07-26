@@ -139,15 +139,15 @@
   border-color: var(--painel-blue);
   background: var(--painel-blue);
   color: #fff;
-  box-shadow: 0 1px 2px rgba(80, 90, 251, 0.25);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-primary) 25%, transparent);
 
   svg {
     color: #fff;
   }
 
   &:hover:not(:disabled):not(.list-head__toolbar-btn--filtro-on):not(.list-head__toolbar-btn--link) {
-    border-color: #7a88ff;
-    background: #7a88ff;
+    border-color: var(--color-primary-hover);
+    background: var(--color-primary-hover);
     color: #fff;
 
     svg {
@@ -219,7 +219,7 @@
 
 .painel-periodo-wrap {
   /** Sublinhado deslizante azul, filtro inline sem card/aside (igual ao Painel Financeiro). */
-  --color-primary: var(--painel-blue, #505afb);
+  --color-primary: var(--painel-blue);
   --periodo-field-line: 3.5px;
 
   position: relative;
@@ -529,10 +529,10 @@
   }
 
   &--active {
-    color: #505afb;
+    color: var(--color-primary);
 
     &::after {
-      background: #505afb;
+      background: var(--color-primary);
     }
   }
 }
@@ -738,7 +738,7 @@
   margin: 0 0 0.4rem;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .painel-tip-doc__list,
@@ -768,6 +768,6 @@
 
 .painel-tip-doc__result {
   font-weight: 700;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 

@@ -48,8 +48,18 @@
   text-align: left;
   color: rgba(0, 0, 0, 0.75);
 
+  &--up,
+  &--up .painel-ticket__delta-pct {
+    color: #36ab18 !important;
+  }
+
   &--up .painel-ticket__delta-icon {
-    fill: #36ab18;
+    fill: #36ab18 !important;
+  }
+
+  &--down,
+  &--down .painel-ticket__delta-pct {
+    color: #dc2626;
   }
 
   &--down .painel-ticket__delta-icon {
@@ -66,7 +76,7 @@
   font-size: 14px;
   font-weight: bold;
   text-align: left;
-  color: rgba(0, 0, 0, 0.75);
+  color: inherit;
 }
 
 .painel-ticket__delta-icon {

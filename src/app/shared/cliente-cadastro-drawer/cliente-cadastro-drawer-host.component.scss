@@ -115,7 +115,7 @@ app-servico-cadastro-drawer-host {
     --cliente-drawer-shell-w: 1200px;
     --cliente-form-col-gap: 16px;
     --cliente-field-input-max: 421.78px;
-    --cliente-accent: #505afb;
+    --cliente-accent: var(--color-primary);
     left: auto;
     right: 0;
     width: min(var(--cliente-drawer-shell-w), 100vw);
@@ -398,7 +398,7 @@ app-servico-cadastro-drawer-host {
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(80, 90, 251, 0.45);
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
     outline-offset: 1px;
   }
 }
@@ -531,7 +531,7 @@ app-servico-cadastro-drawer-host {
   transition: color 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
   &:hover {
-    color: #7a88ff;
+    color: var(--color-primary-hover);
     background: transparent;
   }
 
@@ -660,7 +660,7 @@ app-servico-cadastro-drawer-host {
   }
 
   &--danger {
-    background: #dc2626;
+    background: var(--color-error);
     color: #fff;
 
     &:hover {
@@ -738,14 +738,14 @@ app-servico-cadastro-drawer-host {
   }
 
   &:hover {
-    border-color: #505afb;
+    border-color: var(--color-primary);
     outline: 0;
     background-color: #ffffff;
   }
 
   &:focus {
-    border-color: #505afb;
-    box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
     outline: 0;
     background-color: #ffffff;
   }
@@ -754,13 +754,13 @@ app-servico-cadastro-drawer-host {
 .cliente-field--error .cliente-field__inner > input {
   border-width: 1px;
   border-style: solid;
-  border-color: #ff4d4f !important;
+  border-color: var(--color-error) !important;
   background: #ffffff !important;
   box-shadow: none !important;
 
   &:hover,
   &:focus {
-    border-color: #ff4d4f !important;
+    border-color: var(--color-error) !important;
     box-shadow: none !important;
   }
 }
@@ -770,19 +770,19 @@ app-servico-cadastro-drawer-host {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.35;
-  color: #ff4d4f;
+  color: var(--color-error);
 }
 
 .cliente-phone-input.cliente-field__control--error {
   border-width: 1px;
   border-style: solid;
-  border-color: #ff4d4f;
+  border-color: var(--color-error);
   background: #ffffff;
   box-shadow: none;
 
   &:hover,
   &:focus-within {
-    border-color: #ff4d4f;
+    border-color: var(--color-error);
     box-shadow: none;
   }
 }
@@ -799,14 +799,14 @@ app-servico-cadastro-drawer-host {
   transition: all 0.2s linear;
 
   &:hover {
-    border-color: #505afb;
+    border-color: var(--color-primary);
     outline: 0;
     background-color: #ffffff;
   }
 
   &:focus-within {
-    border-color: #505afb;
-    box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
     outline: 0;
     background-color: #ffffff;
   }
@@ -1007,14 +1007,14 @@ app-servico-cadastro-drawer-host {
     }
 
     &:hover {
-      border-color: #505afb;
+      border-color: var(--color-primary);
       outline: 0;
       background-color: #ffffff;
     }
 
     &:focus {
-      border-color: #505afb;
-      box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
       outline: 0;
       background-color: #ffffff;
     }
@@ -1097,7 +1097,7 @@ app-servico-cadastro-drawer-host {
   }
 
   .block-toggles--inline .toggle.active {
-    background: #4f46e5;
+    background: var(--color-primary);
     --toggle-pulse-color: rgba(79, 70, 229, 0.35);
     filter: drop-shadow(0 1px 4px rgba(79, 70, 229, 0.22));
   }
@@ -1200,31 +1200,31 @@ app-servico-cadastro-drawer-host {
     font-weight: 400;
 
     &:hover:not(:disabled) {
-      color: #7a88ff;
-      border-color: #7a88ff;
+      color: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
       background: #ffffff;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(122, 136, 255, 0.35);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-hover) 35%, transparent);
     }
   }
 
   &--primary {
-    border: 1px solid #505afb;
-    background: #505afb;
+    border: 1px solid var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
 
     &:hover:not(:disabled) {
-      background: #7a88ff;
-      border-color: #7a88ff;
+      background: var(--color-primary-hover);
+      border-color: var(--color-primary-hover);
       color: #fff;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.45);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 45%, transparent);
     }
   }
 }
@@ -1295,11 +1295,11 @@ app-servico-cadastro-drawer-host {
 
     .cliente-discount__field {
       border-right: none;
-      box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.08);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 8%, transparent);
     }
 
     .cliente-discount__toggle {
-      box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.08);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 8%, transparent);
     }
   }
 
@@ -1520,11 +1520,11 @@ app-servico-cadastro-drawer-host {
   &:hover,
   &:focus-within {
     .cliente-social-input__prefix {
-      border-color: #505afb;
+      border-color: var(--color-primary);
     }
 
     input {
-      border-color: #505afb;
+      border-color: var(--color-primary);
       outline: 0;
       background-color: #ffffff;
     }
@@ -1571,14 +1571,14 @@ app-servico-cadastro-drawer-host {
     transition: all 0.2s linear;
 
     &:hover {
-      border-color: #505afb;
+      border-color: var(--color-primary);
       outline: 0;
       background-color: #ffffff;
     }
 
     &:focus {
-      border-color: #505afb;
-      box-shadow: 0 0 0 2px rgba(5, 55, 255, 0.06);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
       outline: 0;
       background-color: #ffffff;
     }
@@ -1759,7 +1759,7 @@ app-servico-cadastro-drawer-host {
         box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 
       &:hover {
-        color: #7a88ff;
+        color: var(--color-primary-hover);
         background: transparent;
       }
 
@@ -1853,7 +1853,7 @@ app-servico-cadastro-drawer-host {
   text-align: left;
 
   &--error {
-    color: #ff4d4f;
+    color: var(--color-error);
   }
 }
 

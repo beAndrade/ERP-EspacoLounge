@@ -76,7 +76,13 @@ export class CategoriasComponent implements OnInit, OnDestroy {
   cadastroAtivo = true;
   cadastroSalvando = false;
   cadastroNomeErro = false;
+  /** `null` = nova; item = edição. */
+  cadastroEditando: CategoriaListaItem | null = null;
   private cadastroCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  get cadastroTitulo(): string {
+    return this.cadastroEditando ? 'Editar categoria' : 'Nova categoria';
+  }
 
   ngOnInit(): void {
     this.carregar();
@@ -187,7 +193,7 @@ export class CategoriasComponent implements OnInit, OnDestroy {
   }
 
   onNovo(): void {
-    this.abrirCadastro();
+    this.abrirCadastro(null, true);
   }
 
   toggleCadastroAtivo(ev: Event): void {
@@ -204,13 +210,23 @@ export class CategoriasComponent implements OnInit, OnDestroy {
     window.setTimeout(() => el.classList.remove('drawer-switch--pulse'), 1500);
   }
 
-  private abrirCadastro(): void {
+  private focarCampoNome(): void {
+    queueMicrotask(() => {
+      document.getElementById('categorias-cadastro-nome')?.focus();
+    });
+  }
+
+  private abrirCadastro(
+    item: CategoriaListaItem | null,
+    focarNome = false,
+  ): void {
     if (this.cadastroCloseTimer != null) {
       clearTimeout(this.cadastroCloseTimer);
       this.cadastroCloseTimer = null;
     }
-    this.cadastroNome = '';
-    this.cadastroAtivo = true;
+    this.cadastroEditando = item;
+    this.cadastroNome = item?.nome ?? '';
+    this.cadastroAtivo = item ? item.ativo !== false : true;
     this.cadastroSalvando = false;
     this.cadastroNomeErro = false;
     this.cadastroAberto = true;
@@ -219,6 +235,7 @@ export class CategoriasComponent implements OnInit, OnDestroy {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           this.cadastroPanelOpen = true;
+          if (focarNome) this.focarCampoNome();
         });
       });
     });
@@ -233,6 +250,7 @@ export class CategoriasComponent implements OnInit, OnDestroy {
     this.cadastroCloseTimer = setTimeout(() => {
       this.cadastroCloseTimer = null;
       this.cadastroAberto = false;
+      this.cadastroEditando = null;
       this.cadastroNome = '';
       this.cadastroAtivo = true;
       this.cadastroNomeErro = false;
@@ -255,24 +273,33 @@ export class CategoriasComponent implements OnInit, OnDestroy {
     this.cadastroNomeErro = false;
     this.cadastroSalvando = true;
     this.erro = '';
-    this.api
-      .criarCategoriaCatalogo({ nome, ativo: this.cadastroAtivo })
-      .subscribe({
-        next: () => {
-          this.cadastroSalvando = false;
-          this.fecharCadastro();
-          this.toast.show(CATEGORIA_SALVA_TOAST_MSG);
-          this.carregar();
-        },
-        error: (e: Error) => {
-          this.cadastroSalvando = false;
-          this.toast.show(e.message || 'Não foi possível salvar a categoria.');
-        },
-      });
+    const editando = this.cadastroEditando;
+    const onOk = () => {
+      this.cadastroSalvando = false;
+      this.fecharCadastro();
+      this.toast.show(CATEGORIA_SALVA_TOAST_MSG);
+      this.carregar();
+    };
+    const onErr = (e: Error) => {
+      this.cadastroSalvando = false;
+      this.toast.show(e.message || 'Não foi possível salvar a categoria.');
+    };
+    if (editando) {
+      this.api
+        .atualizarCategoriaCatalogo(editando.id, {
+          nome,
+          ativo: this.cadastroAtivo,
+        })
+        .subscribe({ next: onOk, error: onErr });
+    } else {
+      this.api
+        .criarCategoriaCatalogo({ nome, ativo: this.cadastroAtivo })
+        .subscribe({ next: onOk, error: onErr });
+    }
   }
 
   onEditar(item: CategoriaListaItem): void {
-    this.toast.show(`Edição de «${item.nome}» em breve.`);
+    this.abrirCadastro(item, false);
   }
 
   onExcluir(item: CategoriaListaItem): void {

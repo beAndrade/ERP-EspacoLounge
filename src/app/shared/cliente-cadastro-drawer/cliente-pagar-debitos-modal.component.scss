@@ -78,13 +78,13 @@
   transition: border-color 0.15s ease;
 
   &:hover:not(:disabled) {
-    border-color: #7a88ff;
+    border-color: var(--color-primary-hover);
   }
 
   &:focus-visible {
     outline: none;
-    border-color: #505afb;
-    box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.2);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
   }
 
   &:disabled {
@@ -143,13 +143,13 @@
   }
 
   &:hover:not(:disabled) {
-    border-color: #7a88ff;
+    border-color: var(--color-primary-hover);
   }
 
   &:focus {
     outline: none;
-    border-color: #505afb;
-    box-shadow: 0 0 0 2px rgba(80, 90, 251, 0.2);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
   }
 
   &:disabled {
@@ -198,8 +198,8 @@
 }
 
 .cliente-pagar-modal__btn--confirm {
-  border-color: var(--color-primary, #505afb);
-  background: var(--color-primary, #505afb);
+  border-color: var(--color-primary);
+  background: var(--color-primary);
   color: #fff;
 
   &:hover:not(:disabled) {

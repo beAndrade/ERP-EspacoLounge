@@ -97,46 +97,62 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
 }
 
 :root {
-  --color-bg: #f8f8f8;
+  /**
+   * Identidade visual — Nexa Beauty
+   * Fonte de verdade para cores do sistema.
+   */
+  --color-sidebar: #0f172a;
+  --color-sidebar-hover: #1e293b;
+  --color-primary: #6bade0;
+  --color-primary-hover: #5b9bd5;
+  --color-primary-contrast: #ffffff;
+  --color-success: #22c55e;
+  --color-success-hover: #16a34a;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-bg: #f8fafc;
   --color-surface: #ffffff;
-  --color-text: #1c1917;
-  --color-muted: #57534e;
-  --color-primary: #9d174d;
-  --color-primary-contrast: #fff;
+  --color-card: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-muted: #94a3b8;
+
   --radius: 12px;
   --touch-min: 44px;
+
   /** Rodapés de drawers/modais (ghost / primário / faturar). */
-  --drawer-btn-ghost-fg: #000000bf;
-  --drawer-btn-ghost-border: #e7e5e4;
-  --drawer-btn-ghost-hover-fg: #7a88ff;
-  --drawer-btn-ghost-hover-border: #7a88ff;
+  --drawer-btn-ghost-fg: color-mix(in srgb, var(--color-text) 75%, transparent);
+  --drawer-btn-ghost-border: var(--color-border);
+  --drawer-btn-ghost-hover-fg: var(--color-primary);
+  --drawer-btn-ghost-hover-border: var(--color-primary);
   --drawer-btn-ghost-hover-bg: #ffffff;
-  --drawer-btn-primary-bg: #505afb;
-  --drawer-btn-primary-border: #505afb;
-  --drawer-btn-primary-fg: #ffffff;
-  --drawer-btn-primary-hover-bg: #7b82fc;
-  --drawer-btn-primary-hover-border: #7b82fc;
-  --drawer-btn-faturar-bg: #70c040;
-  --drawer-btn-faturar-border: #70c040;
+  --drawer-btn-primary-bg: var(--color-primary);
+  --drawer-btn-primary-border: var(--color-primary);
+  --drawer-btn-primary-fg: var(--color-primary-contrast);
+  --drawer-btn-primary-hover-bg: var(--color-primary-hover);
+  --drawer-btn-primary-hover-border: var(--color-primary-hover);
+  --drawer-btn-faturar-bg: var(--color-success);
+  --drawer-btn-faturar-border: var(--color-success);
   --drawer-btn-faturar-fg: #ffffff;
-  --drawer-btn-faturar-hover-bg: #85c94f;
-  --drawer-btn-faturar-hover-border: #85c94f;
+  --drawer-btn-faturar-hover-bg: var(--color-success-hover);
+  --drawer-btn-faturar-hover-border: var(--color-success-hover);
+
   /** Badges de status (drawers + listagens alinhadas). */
-  --drawer-badge-pendente-fg: #d4380d;
-  --drawer-badge-pendente-bg: #fff2e8;
-  --drawer-badge-pendente-border: #ffbb96;
-  --drawer-badge-pago-fg: #166534;
+  --drawer-badge-pendente-fg: #b45309;
+  --drawer-badge-pendente-bg: #fffbeb;
+  --drawer-badge-pendente-border: #fcd34d;
+  --drawer-badge-pago-fg: #15803d;
   --drawer-badge-pago-bg: #dcfce7;
   --drawer-badge-pago-border: #bbf7d0;
-  --drawer-badge-atraso-fg: #cf1322;
-  --drawer-badge-atraso-bg: #fff1f0;
-  --drawer-badge-atraso-border: #ffa39e;
-  --drawer-badge-credito-fg: #3730a3;
-  --drawer-badge-credito-bg: #e0e7ff;
-  --drawer-badge-credito-border: #c7d2fe;
-  --drawer-badge-ok-fg: #389e0d;
-  --drawer-badge-ok-bg: #f6ffed;
-  --drawer-badge-ok-border: #b7eb8f;
+  --drawer-badge-atraso-fg: #b91c1c;
+  --drawer-badge-atraso-bg: #fef2f2;
+  --drawer-badge-atraso-border: #fecaca;
+  --drawer-badge-credito-fg: #0e7490;
+  --drawer-badge-credito-bg: #cffafe;
+  --drawer-badge-credito-border: #a5f3fc;
+  --drawer-badge-ok-fg: #15803d;
+  --drawer-badge-ok-bg: #f0fdf4;
+  --drawer-badge-ok-border: #bbf7d0;
   font-family: Inter, sans-serif;
 }
 

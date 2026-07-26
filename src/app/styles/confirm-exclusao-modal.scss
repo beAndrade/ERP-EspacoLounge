@@ -83,11 +83,11 @@
 }
 
 .comandas-modal__btn--confirm {
-  border-color: #ff4d4f;
-  color: #ff4d4f;
+  border-color: var(--color-error);
+  color: var(--color-error);
 
   &:hover:not(:disabled) {
-    background: #ff4d4f;
+    background: var(--color-error);
     color: #fff;
   }
 }

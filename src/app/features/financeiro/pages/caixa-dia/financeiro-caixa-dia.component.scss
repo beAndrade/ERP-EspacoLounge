@@ -295,7 +295,7 @@
 
   &.destaque {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 1px rgba(157, 23, 77, 0.12);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
   }
 }
 

@@ -35,13 +35,13 @@
 .cliente-avatar--lista {
   width: 28px;
   height: 28px;
-  color: #505afb;
+  color: var(--color-primary);
 
   .cliente-avatar__ico {
     width: 14px;
     height: 14px;
     stroke-width: 1.5;
-    color: rgba(80, 90, 251, 0.5);
+    color: color-mix(in srgb, var(--color-primary) 50%, transparent);
   }
 
   &.cliente-avatar--com-foto {
@@ -54,7 +54,7 @@
 .cliente-avatar--tip {
   width: 40px;
   height: 40px;
-  color: #505afb;
+  color: var(--color-primary);
   background: transparent;
   border: 1px solid #00000040;
   border-radius: 50%;
@@ -65,7 +65,7 @@
     width: 20px;
     height: 20px;
     stroke-width: 1.5;
-    color: rgba(80, 90, 251, 0.5);
+    color: color-mix(in srgb, var(--color-primary) 50%, transparent);
   }
 
   img {

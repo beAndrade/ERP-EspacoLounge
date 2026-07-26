@@ -16,10 +16,10 @@
   --fat-fg: #000000bf;
   --drawer-field-h: 38px;
   --drawer-field-stroke: #f1f1f1;
-  --drawer-field-stroke-hover: #7a88ff;
-  --drawer-field-focus-ring: rgba(5, 55, 255, 0.06);
+  --drawer-field-stroke-hover: var(--color-primary-hover);
+  --drawer-field-focus-ring: color-mix(in srgb, var(--color-primary) 6%, transparent);
   --fat-field-focus-shadow:
-    inset 0 0 0 1px #7a88ff,
+    inset 0 0 0 1px var(--color-primary-hover),
     0 0 0 2px var(--drawer-field-focus-ring);
 }
 
@@ -162,7 +162,7 @@
   }
 
   &:hover {
-    box-shadow: inset 0 0 0 1px #7a88ff;
+    box-shadow: inset 0 0 0 1px var(--color-primary-hover);
   }
 
   &:focus,
@@ -202,12 +202,12 @@ input[type='number'].fat-field__input {
       box-shadow 0.2s linear;
 
     &:hover {
-      border-color: #7a88ff;
+      border-color: var(--color-primary-hover);
     }
 
     &:focus-within,
     &:has(.fat-field__input--parcelas:focus-visible) {
-      border-color: #7a88ff;
+      border-color: var(--color-primary-hover);
       box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
     }
   }
@@ -328,7 +328,7 @@ input[type='number'].fat-field__input {
   }
 
   .fat-data-field__display:hover {
-    box-shadow: inset 0 0 0 1px #7a88ff;
+    box-shadow: inset 0 0 0 1px var(--color-primary-hover);
   }
 
   .fat-data-field__wrap:focus-within .fat-data-field__display {
@@ -520,8 +520,8 @@ input[type='number'].fat-field__input {
   }
 
   &:hover:not(:disabled) {
-    color: #7a88ff;
-    border-color: #7a88ff;
+    color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
     background: #ffffff;
   }
 
@@ -674,7 +674,7 @@ input[type='number'].fat-field__input {
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
-  color: #505afb;
+  color: var(--color-primary);
   cursor: pointer;
   flex-shrink: 0;
   /* Compensa o peso visual do square-pen (parece mais baixo). */
@@ -851,7 +851,7 @@ input[type='number'].fat-field__input {
   letter-spacing: 0.02em;
 
   &.fat-pag-badge--pago {
-    color: #389e0d;
+    color: var(--color-success);
     background: #f6ffed;
     border: 1px solid #b7eb8f;
 
@@ -864,7 +864,7 @@ input[type='number'].fat-field__input {
   }
 
   &.fat-pag-badge--pendente {
-    color: var(--drawer-badge-pendente-fg, #d4380d);
+    color: var(--drawer-badge-pendente-fg);
     background: var(--drawer-badge-pendente-bg, #fff2e8);
     border: 1px solid var(--drawer-badge-pendente-border, #ffbb96);
   }
@@ -877,7 +877,7 @@ input[type='number'].fat-field__input {
 
   &.fat-pag-badge--atraso {
     @include badge-atraso.badge-atraso-com-icone-relogio;
-    color: var(--drawer-badge-atraso-fg, #cf1322);
+    color: var(--drawer-badge-atraso-fg);
     background: var(--drawer-badge-atraso-bg, #fff1f0);
     border: 1px solid var(--drawer-badge-atraso-border, #ffa39e);
   }
@@ -1031,20 +1031,20 @@ input[type='number'].fat-field__input {
     border-color: var(--drawer-btn-ghost-border, #e7e5e4);
 
     &:hover:not(:disabled) {
-      color: var(--drawer-btn-ghost-hover-fg, #7a88ff);
-      border-color: var(--drawer-btn-ghost-hover-border, #7a88ff);
+      color: var(--drawer-btn-ghost-hover-fg);
+      border-color: var(--drawer-btn-ghost-hover-border);
       background: var(--drawer-btn-ghost-hover-bg, #ffffff);
     }
   }
 
   &.fat-btn--primary {
-    background: var(--drawer-btn-primary-bg, #505afb);
+    background: var(--drawer-btn-primary-bg);
     color: var(--drawer-btn-primary-fg, #ffffff);
-    border-color: var(--drawer-btn-primary-border, #505afb);
+    border-color: var(--drawer-btn-primary-border);
 
     &:hover:not(:disabled) {
-      background: var(--drawer-btn-primary-hover-bg, #7b82fc);
-      border-color: var(--drawer-btn-primary-hover-border, #7b82fc);
+      background: var(--drawer-btn-primary-hover-bg);
+      border-color: var(--drawer-btn-primary-hover-border);
     }
 
     margin-left: auto;
@@ -1052,13 +1052,13 @@ input[type='number'].fat-field__input {
 
   &.fat-btn--faturar {
     margin-left: auto;
-    background: var(--drawer-btn-faturar-bg, #70c040);
+    background: var(--drawer-btn-faturar-bg);
     color: var(--drawer-btn-faturar-fg, #ffffff);
-    border-color: var(--drawer-btn-faturar-border, #70c040);
+    border-color: var(--drawer-btn-faturar-border);
 
     &:hover:not(:disabled) {
-      background: var(--drawer-btn-faturar-hover-bg, #85c94f);
-      border-color: var(--drawer-btn-faturar-hover-border, #85c94f);
+      background: var(--drawer-btn-faturar-hover-bg);
+      border-color: var(--drawer-btn-faturar-hover-border);
     }
   }
 
@@ -1331,7 +1331,7 @@ input[type='number'].fat-field__input {
   }
 
   &:hover {
-    box-shadow: inset 0 0 0 1px #7a88ff;
+    box-shadow: inset 0 0 0 1px var(--color-primary-hover);
   }
 
   &:focus,
@@ -1339,8 +1339,8 @@ input[type='number'].fat-field__input {
     outline: 0;
     /* Igual a `--fat-field-focus-shadow` do drawer. */
     box-shadow:
-      inset 0 0 0 1px #7a88ff,
-      0 0 0 2px rgba(5, 55, 255, 0.06);
+      inset 0 0 0 1px var(--color-primary-hover),
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
   }
 }
 
@@ -1358,15 +1358,15 @@ input[type='number'].fat-field__input {
 
   &:hover {
     border-color: transparent;
-    box-shadow: inset 0 0 0 1px #7a88ff;
+    box-shadow: inset 0 0 0 1px var(--color-primary-hover);
   }
 
   &:focus,
   &:focus-visible {
     border-color: transparent;
     box-shadow:
-      inset 0 0 0 1px #7a88ff,
-      0 0 0 2px rgba(5, 55, 255, 0.06);
+      inset 0 0 0 1px var(--color-primary-hover),
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
   }
 }
 

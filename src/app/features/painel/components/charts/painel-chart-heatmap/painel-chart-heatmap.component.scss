@@ -116,10 +116,19 @@
 
   &--on {
     /**
-     * Contraste alvo (texto rgba(0,0,0,.75) sobre #505AFB):
-     * 1→~8.46, 2→~6.56, 3→~4.66, 4+→~3.43 via --heat-alpha.
+     * Usa --heat-alpha (0–1) definido no template por contagem.
+     * Mix com branco para degraus legíveis no primary claro.
      */
-    background: rgba(80, 90, 251, var(--heat-alpha, 0.256));
+    background: color-mix(
+      in srgb,
+      var(--color-primary) calc(var(--heat-alpha, 0.22) * 100%),
+      #fff
+    );
+  }
+
+  &--hot {
+    color: rgba(15, 23, 42, 0.92);
+    font-weight: 600;
   }
 }
 

@@ -127,15 +127,15 @@
     box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    border-color: #7a88ff;
+    border-color: var(--color-primary-hover);
   }
 
   &:focus {
     outline: none;
-    border-color: #7a88ff;
+    border-color: var(--color-primary-hover);
     box-shadow:
-      inset 0 0 0 1px #7a88ff,
-      0 0 0 2px rgba(5, 55, 255, 0.06);
+      inset 0 0 0 1px var(--color-primary-hover),
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
   }
 
   &:disabled {
@@ -189,8 +189,8 @@
   }
 
   &--primary {
-    border: 1px solid var(--color-primary, #505afb);
-    background: var(--color-primary, #505afb);
+    border: 1px solid var(--color-primary);
+    background: var(--color-primary);
     color: #fff;
 
     &:hover:not(:disabled) {

@@ -60,20 +60,20 @@
   border: 1px solid transparent;
 
   &--ok {
-    color: #389e0d;
+    color: var(--color-success);
     background: #f6ffed;
     border-color: #b7eb8f;
   }
 
   &--debito {
-    color: #cf1322;
+    color: var(--color-error);
     background: #fff1f0;
     border-color: #ffa39e;
   }
 }
 
 .fin-cad-tab__table .badge--baixa-auto {
-  color: #389e0d;
+  color: var(--color-success);
   background: #f6ffed;
   border-color: #b7eb8f;
 }

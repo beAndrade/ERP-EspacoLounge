@@ -30,7 +30,7 @@
   border: none;
   border-radius: 12px;
   background: #fff;
-  color: var(--color-primary, #2563eb);
+  color: var(--color-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -109,7 +109,7 @@
   padding: 10px;
   border: none;
   border-radius: 12px;
-  background: var(--color-primary, #2563eb);
+  background: var(--color-primary);
   color: rgba(255, 255, 255, 0.95);
   cursor: pointer;
   text-align: center;

@@ -95,18 +95,43 @@
 }
 
 .painel-prof-rank__pct {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   font-size: 16px;
   font-weight: normal;
   text-align: left;
   color: rgba(0, 0, 0, 0.75);
 
-  &--up {
-    color: #059669;
+  &--up,
+  &--up .painel-prof-rank__pct-val {
+    color: #36ab18 !important;
   }
 
-  &--down {
+  &--up .painel-prof-rank__pct-icon {
+    fill: #36ab18 !important;
+  }
+
+  &--down,
+  &--down .painel-prof-rank__pct-val {
     color: #dc2626;
   }
+
+  &--down .painel-prof-rank__pct-icon {
+    fill: #dc2626;
+  }
+}
+
+.painel-prof-rank__pct-val {
+  font: inherit;
+  color: inherit;
+}
+
+.painel-prof-rank__pct-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
 }
 
 .painel-prof-rank__spark {

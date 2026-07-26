@@ -25,7 +25,7 @@
   min-width: 38px;
   min-height: 38px;
   background: #f8f8f8;
-  color: rgba(129, 23, 65, 0.75);
+  color: color-mix(in srgb, var(--color-primary) 75%, transparent);
 
   .profissional-avatar__ico {
     width: 20px;

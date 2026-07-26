@@ -248,7 +248,7 @@ app-profissional-cadastro-drawer-host {
 
   .cliente-drawer.cliente-drawer--profissional .prof-nav-mobile {
     --prof-nav-h: 44px;
-    --prof-nav-accent: var(--cliente-accent, #505afb);
+    --prof-nav-accent: var(--cliente-accent);
     --prof-nav-menu-anim: 0.18s cubic-bezier(0.22, 1, 0.36, 1);
     display: flex;
     align-items: stretch;

@@ -223,3 +223,51 @@ export async function criarProdutoApi(
   if (!row) throw new Error('Não foi possível criar o produto.');
   return mapProdutoRow(row);
 }
+
+export async function atualizarProdutoApi(
+  db: Db,
+  id: number,
+  input: CriarProdutoInput,
+): Promise<ProdutoCatalogoApi> {
+  const produtoId = Math.trunc(Number(id));
+  if (!Number.isFinite(produtoId) || produtoId < 1) {
+    throw new Error('Produto inválido.');
+  }
+  const nome = String(input.produto ?? '').trim();
+  if (!nome) throw new Error('Informe o nome do produto.');
+  const categoria = textoOpcional(input.categoria);
+  if (!categoria) throw new Error('Informe a categoria.');
+
+  const [existing] = await db
+    .select()
+    .from(produtos)
+    .where(eq(produtos.id, produtoId))
+    .limit(1);
+  if (!existing) throw new Error('Produto não encontrado.');
+
+  const estoqueMinimo = textoOpcional(input.estoque_minimo) ?? existing.estoqueMinimo ?? '0';
+
+  const [row] = await db
+    .update(produtos)
+    .set({
+      produto: nome,
+      categoria,
+      marca: textoOpcional(input.marca),
+      preco: textoOpcional(input.preco),
+      custo: textoOpcional(input.custo),
+      estoqueMinimo,
+      unidade: textoOpcional(input.unidade) ?? existing.unidade ?? 'unidade',
+      precoProfissional: textoOpcional(input.preco_profissional),
+      custoAdicional: textoOpcional(input.custo_adicional),
+      comissaoPadrao: textoOpcional(input.comissao_padrao),
+      codigoItem: textoOpcional(input.codigo_item),
+      codigoBarras: textoOpcional(input.codigo_barras),
+      observacoes: textoOpcional(input.observacoes),
+      fotoUrl: textoOpcional(input.foto_url),
+    })
+    .where(eq(produtos.id, produtoId))
+    .returning();
+
+  if (!row) throw new Error('Não foi possível atualizar o produto.');
+  return mapProdutoRow(row);
+}

@@ -63,7 +63,7 @@
 .prof-comissoes-table__remove {
   padding: 0.25rem 0.5rem;
   font-size: 0.8125rem;
-  color: var(--brand, #811741);
+  color: var(--brand, var(--color-primary));
   background: none;
   border: none;
   cursor: pointer;
