@@ -1335,7 +1335,12 @@ export class NovaComandaDrawerComponent implements OnInit {
       cliente?.telefone?.trim() ||
       '';
     const digitos = telefoneBrDigitos(tel);
-    if (digitos.length < 10) return;
+    if (digitos.length < 10) {
+      this.toast.showWarning(
+        'Cliente sem telemóvel válido para enviar WhatsApp.',
+      );
+      return;
+    }
 
     const linha = this.linhasAtendimentoApi[0];
     const dataYmd = (linha?.data ?? ctx?.dataYmd ?? '').slice(0, 10);

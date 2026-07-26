@@ -701,7 +701,7 @@
   padding: 0 0 0.35rem;
   margin-top: 0;
   margin-bottom: var(--nc-obs-resumo-gap, 1rem);
-  border-top: 1px solid var(--drawer-stroke, #ececec);
+  border-top: none;
   background: #fff;
 
   :host.agenda-novo--drawer & {
@@ -727,19 +727,6 @@
 
   .agenda-modal__footer-salvar {
     margin-left: auto;
-  }
-
-  :host.agenda-novo--drawer & {
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: calc(-1 * var(--drawer-bleed-l, 0px));
-      right: calc(-1 * var(--drawer-bleed-r, 0px));
-      height: 1px;
-      background: var(--drawer-stroke, #ececec);
-      pointer-events: none;
-    }
   }
 
   :host:not(.agenda-novo--drawer) & {

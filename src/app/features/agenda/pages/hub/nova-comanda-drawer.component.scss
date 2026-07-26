@@ -35,7 +35,8 @@
   padding-inline: 0;
 }
 
-:host-context(.comandas-page) {
+:host-context(.comandas-page),
+:host-context(.cliente-comanda-empilhada) {
   .nc-drawer {
     padding-left: 15px;
   }
@@ -118,6 +119,9 @@
 
   .nc-leitura__info {
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     min-height: var(--drawer-field-h);
     padding: 0.35rem 0.55rem;
     border: none;
@@ -129,6 +133,13 @@
   .nc-leitura__titulo,
   .nc-leitura__sub {
     color: var(--nc-readonly-fg);
+  }
+
+  .nc-leitura__titulo {
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    line-height: 1.25;
   }
 
   .nc-leitura__money-val {
@@ -492,18 +503,6 @@
   background: #fff;
   box-shadow: none;
   position: relative;
-
-  /** Borda top até o encontro com a sidebar (só atravessa o gap). */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: calc(-1 * var(--drawer-bleed-l, 0px));
-    right: calc(-1 * var(--drawer-bleed-r, 0px));
-    height: 1px;
-    background: var(--drawer-stroke, #ececec);
-    pointer-events: none;
-  }
 }
 
 .nc-itens__title {
@@ -955,18 +954,7 @@
   z-index: 20;
   overflow: visible;
   border-top: none;
-
-  /** Linha até o encontro com a sidebar (só o gap; não atravessa a coluna do cliente). */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: calc(-1 * var(--drawer-bleed-l, 0px));
-    right: calc(-1 * var(--drawer-bleed-r, 0px));
-    height: 1px;
-    background: var(--drawer-stroke, #ececec);
-    pointer-events: none;
-  }
+  pointer-events: auto;
 
   /** Com dropdown aberto, sobe ainda mais (conteúdo da comanda / selects). */
   &:has(.nc-outros-wrap--open) {
@@ -1629,7 +1617,7 @@
    ==================================================================== */
 
 /**
- * Badges de status: mesmas regras visuais que `comandas.component.scss` (`.badge`).
+ * Badges de status: mesma formatação da coluna Status em `comandas.component.scss`.
  */
 .nc-itens .badge {
   display: inline-block;
@@ -1638,27 +1626,16 @@
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 22px;
   white-space: nowrap;
 
-  &.badge--aviso,
-  &.badge--pendente {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    height: 22px;
-    min-height: 22px;
-    padding: 0 0.45rem;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.02em;
-    color: var(--drawer-badge-pendente-fg);
-    background: var(--drawer-badge-pendente-bg, #fff2e8);
-    border-color: var(--drawer-badge-pendente-border, #ffbb96);
+  /** «Finalizado» — cinza + texto branco (coluna Status). */
+  &.badge--finalizado,
+  &.badge--info {
+    background-color: rgb(119, 119, 119);
+    color: #fff;
+    border-color: transparent;
   }
 
   &.badge--ok {
@@ -1667,10 +1644,11 @@
     border-color: var(--drawer-badge-ok-border, #b7eb8f);
   }
 
+  /** «Pendente» — mesma laranja da coluna Status. */
   &.badge--warn {
-    color: var(--drawer-badge-pendente-fg);
-    background: var(--drawer-badge-pendente-bg, #fff2e8);
-    border-color: var(--drawer-badge-pendente-border, #ffbb96);
+    color: #c2410c;
+    background: #fff7ed;
+    border-color: #fdba74;
   }
 }
 
@@ -1717,7 +1695,7 @@
   column-gap: 0.35rem;
   row-gap: 0.35rem;
 
-  /** Só título/tag: uma linha flex (`.nc-leitura__row-head`). */
+  /** Só título: uma linha flex (`.nc-leitura__row-head`). */
   &:not(.nc-leitura__row--stack-money) {
     display: flex;
     flex-wrap: wrap;
@@ -1725,7 +1703,7 @@
   }
 
   /**
-   * Com faixa monetária: cabeçalho (tipo + nome) e, por baixo, divisor + valores em largura útil.
+   * Com faixa monetária: cabeçalho (nome) e, por baixo, divisor + valores em largura útil.
    */
   &--stack-money {
     display: flex;
@@ -1738,7 +1716,7 @@
 .nc-leitura__row-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.35rem;
   min-width: 0;
 
@@ -1754,55 +1732,10 @@
   border-bottom: none;
 }
 
-.nc-leitura__tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 70px;
-  height: 22px;
-  padding: 0 0.55rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  border-radius: 6px;
-  background: #eef2ff;
-  color: #4338ca;
-  flex-shrink: 0;
-
-  &[data-tipo='Serviço'] {
-    background: #eef2ff;
-    color: #4338ca;
-  }
-
-  &[data-tipo='Produto'] {
-    background: #ecfeff;
-    color: #155e75;
-  }
-
-  &[data-tipo='Mega'] {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  &[data-tipo='Pacote'] {
-    background: #fce7f3;
-    color: var(--color-primary);
-  }
-
-  &[data-tipo='Cabelo'] {
-    background: #ede9fe;
-    color: #5b21b6;
-  }
-
-  &[data-tipo='Outro'] {
-    background: #f1f5f9;
-    color: #475569;
-  }
-}
-
 .nc-leitura__info {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 0.15rem;
   min-width: 0;
   /** Largura conforme o texto — o espaço livre vai para `.nc-leitura__money--end`. */
@@ -2081,9 +2014,9 @@
   min-height: 38px;
   padding: 0 1.05rem;
   border-radius: 10px;
-  border: 1px solid #c7d2fe;
-  background: #eef2ff;
-  color: #3730a3;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, #fff);
+  background: color-mix(in srgb, var(--color-primary) 12%, #fff);
+  color: var(--color-primary-hover);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -2094,13 +2027,14 @@
     box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: #e0e7ff;
-    border-color: #a5b4fc;
+    background: color-mix(in srgb, var(--color-primary) 20%, #fff);
+    border-color: color-mix(in srgb, var(--color-primary) 55%, #fff);
+    color: var(--color-primary-hover);
   }
 
   &:focus-visible {
     outline: 0;
-    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring, color-mix(in srgb, var(--color-primary) 6%, transparent));
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
   }
 
   &:disabled {
