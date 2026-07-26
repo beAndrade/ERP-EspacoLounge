@@ -1,7 +1,9 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 export interface MarcaListaItem {
   id: string;
@@ -9,14 +11,16 @@ export interface MarcaListaItem {
   qtdItens: number;
 }
 
+const DRAWER_ANIM_MS = 430;
+
 @Component({
   selector: 'app-marcas',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, UiTipTriggerComponent],
   templateUrl: './marcas.component.html',
   styleUrl: './marcas.component.scss',
 })
-export class MarcasComponent implements OnInit {
+export class MarcasComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
 
@@ -35,13 +39,33 @@ export class MarcasComponent implements OnInit {
   perPageMenuAberto = false;
   selecionados = new Set<string>();
 
-  ordenacaoColuna: 'nome' | 'itens' = 'nome';
+  ordenacaoColuna: 'nome' = 'nome';
   ordenacaoDir: 'asc' | 'desc' = 'asc';
 
   private readonly labelByKey = new Map<string, string>();
 
+  cadastroAberto = false;
+  cadastroPanelOpen = false;
+  cadastroNome = '';
+  cadastroAtivo = true;
+  cadastroSalvando = false;
+  cadastroNomeErro = false;
+  /** `null` = nova; item = edição. */
+  cadastroEditando: MarcaListaItem | null = null;
+  private cadastroCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  get cadastroTitulo(): string {
+    return this.cadastroEditando ? 'Editar marca' : 'Nova marca';
+  }
+
   ngOnInit(): void {
     this.carregar();
+  }
+
+  ngOnDestroy(): void {
+    if (this.cadastroCloseTimer != null) {
+      clearTimeout(this.cadastroCloseTimer);
+    }
   }
 
   get buscaPlaceholder(): string {
@@ -110,18 +134,97 @@ export class MarcasComponent implements OnInit {
   }
 
   onNovo(): void {
-    this.toast.show('Cadastro de marcas em breve.');
+    this.abrirCadastro(null, true);
+  }
+
+  toggleCadastroAtivo(ev: Event): void {
+    if (this.cadastroSalvando) return;
+    this.cadastroAtivo = !this.cadastroAtivo;
+    const el = ev.currentTarget as HTMLElement | null;
+    if (el) this.pulsarSwitch(el);
+  }
+
+  private pulsarSwitch(el: HTMLElement): void {
+    el.classList.remove('drawer-switch--pulse');
+    void el.offsetWidth;
+    el.classList.add('drawer-switch--pulse');
+    window.setTimeout(() => el.classList.remove('drawer-switch--pulse'), 1500);
+  }
+
+  private focarCampoNome(): void {
+    queueMicrotask(() => {
+      document.getElementById('marcas-cadastro-nome')?.focus();
+    });
+  }
+
+  private abrirCadastro(item: MarcaListaItem | null, focarNome = false): void {
+    if (this.cadastroCloseTimer != null) {
+      clearTimeout(this.cadastroCloseTimer);
+      this.cadastroCloseTimer = null;
+    }
+    this.cadastroEditando = item;
+    this.cadastroNome = item?.nome ?? '';
+    this.cadastroAtivo = true;
+    this.cadastroSalvando = false;
+    this.cadastroNomeErro = false;
+    this.cadastroAberto = true;
+    this.cadastroPanelOpen = false;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.cadastroPanelOpen = true;
+          if (focarNome) this.focarCampoNome();
+        });
+      });
+    });
+  }
+
+  fecharCadastro(): void {
+    if (!this.cadastroAberto || this.cadastroSalvando) return;
+    this.cadastroPanelOpen = false;
+    if (this.cadastroCloseTimer != null) {
+      clearTimeout(this.cadastroCloseTimer);
+    }
+    this.cadastroCloseTimer = setTimeout(() => {
+      this.cadastroCloseTimer = null;
+      this.cadastroAberto = false;
+      this.cadastroEditando = null;
+      this.cadastroNome = '';
+      this.cadastroAtivo = true;
+      this.cadastroNomeErro = false;
+    }, DRAWER_ANIM_MS);
+  }
+
+  onCadastroNomeInput(): void {
+    if (this.cadastroNomeErro && this.cadastroNome.trim()) {
+      this.cadastroNomeErro = false;
+    }
+  }
+
+  salvarCadastro(): void {
+    const nome = this.cadastroNome.trim();
+    if (this.cadastroSalvando) return;
+    if (!nome) {
+      this.cadastroNomeErro = true;
+      return;
+    }
+    this.cadastroNomeErro = false;
+    this.toast.show(
+      this.cadastroEditando
+        ? `Edição de «${nome}» em breve.`
+        : 'Cadastro de marcas em breve.',
+    );
   }
 
   onEditar(item: MarcaListaItem): void {
-    this.toast.show(`Edição de «${item.nome}» em breve.`);
+    this.abrirCadastro(item, false);
   }
 
   onExcluir(item: MarcaListaItem): void {
     this.toast.show(`Exclusão de «${item.nome}» em breve.`);
   }
 
-  onOrdenarColuna(col: 'nome' | 'itens', ev?: Event): void {
+  onOrdenarColuna(col: 'nome', ev?: Event): void {
     ev?.stopPropagation();
     if (this.ordenacaoColuna === col) {
       this.ordenacaoDir = this.ordenacaoDir === 'asc' ? 'desc' : 'asc';
@@ -132,9 +235,12 @@ export class MarcasComponent implements OnInit {
     this.pagina = 1;
   }
 
-  tooltipOrdenacao(col: 'nome' | 'itens'): string {
-    if (this.ordenacaoColuna !== col) return 'clique para ordenar';
-    return this.ordenacaoDir === 'asc' ? 'ascendente' : 'descendente';
+  tooltipOrdenacao(col: 'nome'): string {
+    return tooltipOrdenacaoProximoClique(
+      this.ordenacaoColuna,
+      this.ordenacaoDir,
+      col,
+    );
   }
 
   private normalizar(s: string): string {
@@ -152,12 +258,7 @@ export class MarcasComponent implements OnInit {
       list = list.filter((i) => this.normalizar(i.nome).includes(q));
     }
     const dir = this.ordenacaoDir === 'asc' ? 1 : -1;
-    list.sort((a, b) => {
-      if (this.ordenacaoColuna === 'itens') {
-        return (a.qtdItens - b.qtdItens) * dir;
-      }
-      return a.nome.localeCompare(b.nome, 'pt-BR') * dir;
-    });
+    list.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR') * dir);
     return list;
   }
 
@@ -223,8 +324,13 @@ export class MarcasComponent implements OnInit {
     }
   }
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(ev: KeyboardEvent): void {
+    if (this.cadastroAberto) {
+      ev.preventDefault();
+      this.fecharCadastro();
+      return;
+    }
     if (this.perPageMenuAberto) this.perPageMenuAberto = false;
     else if (this.filtrosAbertos) this.filtrosAbertos = false;
     else if (this.buscaAberta) this.buscaAberta = false;

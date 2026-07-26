@@ -186,7 +186,11 @@
                     />
                   </th>
                   <th class="col-nome servicos-th-sort-wrap" scope="col">
-                    <button
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('nome')"
+                    >
+                      <button
                       type="button"
                       class="servicos-th-sort"
                       (click)="onOrdenarColuna('nome', $event)"
@@ -220,9 +224,14 @@
                         </svg>
                       </span>
                     </button>
+                    </app-ui-tip-trigger>
                   </th>
-                  <th class="servicos-th-sort-wrap" scope="col">
-                    <button
+                  <th class="col-valor servicos-th-sort-wrap" scope="col">
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('valor')"
+                    >
+                      <button
                       type="button"
                       class="servicos-th-sort"
                       (click)="onOrdenarColuna('valor', $event)"
@@ -256,9 +265,14 @@
                         </svg>
                       </span>
                     </button>
+                    </app-ui-tip-trigger>
                   </th>
-                  <th class="servicos-th-sort-wrap" scope="col">
-                    <button
+                  <th class="col-comissao servicos-th-sort-wrap" scope="col">
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('comissao')"
+                    >
+                      <button
                       type="button"
                       class="servicos-th-sort"
                       (click)="onOrdenarColuna('comissao', $event)"
@@ -292,9 +306,14 @@
                         </svg>
                       </span>
                     </button>
+                    </app-ui-tip-trigger>
                   </th>
                   <th class="servicos-th-sort-wrap" scope="col">
-                    <button
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('duracao')"
+                    >
+                      <button
                       type="button"
                       class="servicos-th-sort"
                       (click)="onOrdenarColuna('duracao', $event)"
@@ -328,9 +347,14 @@
                         </svg>
                       </span>
                     </button>
+                    </app-ui-tip-trigger>
                   </th>
                   <th class="servicos-th-sort-wrap" scope="col">
-                    <button
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('categoria')"
+                    >
+                      <button
                       type="button"
                       class="servicos-th-sort"
                       (click)="onOrdenarColuna('categoria', $event)"
@@ -364,9 +388,14 @@
                         </svg>
                       </span>
                     </button>
+                    </app-ui-tip-trigger>
                   </th>
-                  <th class="servicos-th-sort-wrap" scope="col">
-                    <button
+                  <th class="col-mostra servicos-th-sort-wrap" scope="col">
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('mostra')"
+                    >
+                      <button
                       type="button"
                       class="servicos-th-sort"
                       (click)="onOrdenarColuna('mostra', $event)"
@@ -402,15 +431,20 @@
                         </svg>
                       </span>
                     </button>
+                    </app-ui-tip-trigger>
                   </th>
                   <th class="col-acoes" scope="col">Ações</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody [attr.aria-busy]="carregando || null">
                 @if (carregando) {
-                  <tr>
-                    <td colspan="8" class="table-body__busy">A carregar…</td>
-                  </tr>
+                  @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+                    <tr class="list-table__skeleton-row" aria-hidden="true">
+                      <td colspan="8">
+                        <span class="list-skeleton-bar"></span>
+                      </td>
+                    </tr>
+                  }
                 } @else if (paginaItens().length === 0) {
                   <tr>
                     <td colspan="8" class="table-body__empty">Nenhum serviço encontrado.</td>
@@ -439,7 +473,7 @@
                           <span class="col-nome__link">{{ rotuloServico(s) }}</span>
                         </div>
                       </td>
-                      <td>
+                      <td class="col-valor">
                         @if (valorExibicao(s) != null) {
                           {{ valorPrefixo(s)
                           }}{{ valorExibicao(s)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
@@ -447,10 +481,10 @@
                           —
                         }
                       </td>
-                      <td>{{ comissaoExibicao(s) }}</td>
+                      <td class="col-comissao">{{ comissaoExibicao(s) }}</td>
                       <td>{{ duracaoExibicao(s) }}</td>
                       <td>{{ categoriaServico(s) }}</td>
-                      <td>{{ mostraNoSite(s) }}</td>
+                      <td class="col-mostra">{{ mostraNoSite(s) }}</td>
                       <td class="col-acoes">
                         <div class="list-row-acoes">
                           <button

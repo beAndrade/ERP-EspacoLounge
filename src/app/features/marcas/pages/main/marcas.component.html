@@ -160,81 +160,60 @@
                     />
                   </th>
                   <th class="col-nome marcas-th-sort-wrap" scope="col">
-                    <button
-                      type="button"
-                      class="marcas-th-sort"
-                      (click)="onOrdenarColuna('nome', $event)"
-                      [attr.aria-label]="'Ordenar por nome — ' + tooltipOrdenacao('nome')"
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('nome')"
                     >
-                      <span class="marcas-th-sort__label">Nome</span>
-                      <span class="marcas-th-sort__icons" aria-hidden="true">
-                        <svg
-                          class="marcas-th-sort__tri marcas-th-sort__tri--up"
-                          [class.marcas-th-sort__tri--on]="
-                            ordenacaoColuna === 'nome' && ordenacaoDir === 'asc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
-                        </svg>
-                        <svg
-                          class="marcas-th-sort__tri marcas-th-sort__tri--down"
-                          [class.marcas-th-sort__tri--on]="
-                            ordenacaoColuna === 'nome' && ordenacaoDir === 'desc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
-                        </svg>
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        class="marcas-th-sort"
+                        (click)="onOrdenarColuna('nome', $event)"
+                        [attr.aria-label]="
+                          'Ordenar por nome — ' + tooltipOrdenacao('nome')
+                        "
+                      >
+                        <span class="marcas-th-sort__label">Nome</span>
+                        <span class="marcas-th-sort__icons" aria-hidden="true">
+                          <svg
+                            class="marcas-th-sort__tri marcas-th-sort__tri--up"
+                            [class.marcas-th-sort__tri--on]="
+                              ordenacaoColuna === 'nome' && ordenacaoDir === 'asc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                          </svg>
+                          <svg
+                            class="marcas-th-sort__tri marcas-th-sort__tri--down"
+                            [class.marcas-th-sort__tri--on]="
+                              ordenacaoColuna === 'nome' &&
+                              ordenacaoDir === 'desc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                          </svg>
+                        </span>
+                      </button>
+                    </app-ui-tip-trigger>
                   </th>
-                  <th class="marcas-th-sort-wrap" scope="col">
-                    <button
-                      type="button"
-                      class="marcas-th-sort"
-                      (click)="onOrdenarColuna('itens', $event)"
-                      [attr.aria-label]="'Ordenar por itens — ' + tooltipOrdenacao('itens')"
-                    >
-                      <span class="marcas-th-sort__label">Itens</span>
-                      <span class="marcas-th-sort__icons" aria-hidden="true">
-                        <svg
-                          class="marcas-th-sort__tri marcas-th-sort__tri--up"
-                          [class.marcas-th-sort__tri--on]="
-                            ordenacaoColuna === 'itens' && ordenacaoDir === 'asc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
-                        </svg>
-                        <svg
-                          class="marcas-th-sort__tri marcas-th-sort__tri--down"
-                          [class.marcas-th-sort__tri--on]="
-                            ordenacaoColuna === 'itens' && ordenacaoDir === 'desc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
-                        </svg>
-                      </span>
-                    </button>
-                  </th>
+                  <th class="col-itens" scope="col">Itens</th>
                   <th class="col-acoes" scope="col">Ações</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody [attr.aria-busy]="carregando || null">
                 @if (carregando) {
-                  <tr>
-                    <td colspan="4" class="table-body__busy">A carregar…</td>
-                  </tr>
+                  @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+                    <tr class="list-table__skeleton-row" aria-hidden="true">
+                      <td colspan="4">
+                        <span class="list-skeleton-bar"></span>
+                      </td>
+                    </tr>
+                  }
                 } @else if (paginaItens().length === 0) {
                   <tr>
                     <td colspan="4" class="table-body__empty">Nenhuma marca encontrada.</td>
@@ -251,19 +230,16 @@
                         />
                       </td>
                       <td class="col-nome">
-                        <div
-                          class="col-nome__cell col-nome__cell--clickable"
-                          role="button"
-                          tabindex="0"
+                        <button
+                          type="button"
+                          class="col-nome__cell col-nome__cell--clickable marcas-link"
                           [attr.aria-label]="'Editar marca ' + c.nome"
                           (click)="onEditar(c)"
-                          (keydown.enter)="onEditar(c)"
-                          (keydown.space)="onEditar(c); $event.preventDefault()"
                         >
                           <span class="col-nome__link">{{ c.nome }}</span>
-                        </div>
+                        </button>
                       </td>
-                      <td>
+                      <td class="col-itens">
                         <span
                           class="marcas-itens"
                           [class.marcas-itens--vazio]="c.qtdItens <= 0"
@@ -282,8 +258,8 @@
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
+                              width="13.33"
+                              height="13.33"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -308,8 +284,8 @@
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
+                              width="13.33"
+                              height="13.33"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -434,3 +410,115 @@
     </div>
   </div>
 </div>
+
+@if (cadastroAberto) {
+  <div
+    class="overlay"
+    [class.overlay--open]="cadastroPanelOpen"
+    aria-hidden="true"
+    (click)="fecharCadastro()"
+  ></div>
+  <div
+    class="app-drawer cliente-drawer cliente-drawer--marca-cadastro"
+    [class.app-drawer--open]="cadastroPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="cadastroTitulo"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">{{ cadastroTitulo }}</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="fecharCadastro()"
+          aria-label="Fechar"
+          [disabled]="cadastroSalvando"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="cliente-body-scroll marcas-cadastro-scroll">
+        <div class="marcas-cadastro-form">
+          <div class="marcas-cadastro-form__row">
+            <div class="marcas-cadastro-form__col marcas-cadastro-form__col--nome">
+              <label class="marcas-cadastro-form__label" for="marcas-cadastro-nome">
+                <span class="marcas-cadastro-form__req" aria-hidden="true">*</span>Nome
+              </label>
+              <input
+                id="marcas-cadastro-nome"
+                type="text"
+                class="marcas-cadastro-form__input"
+                [class.marcas-cadastro-form__input--error]="cadastroNomeErro"
+                [(ngModel)]="cadastroNome"
+                name="cadastroNomeMarca"
+                placeholder="Nome"
+                autocomplete="off"
+                [disabled]="cadastroSalvando"
+                [attr.aria-invalid]="cadastroNomeErro"
+                (input)="onCadastroNomeInput()"
+                (keydown.enter)="salvarCadastro()"
+              />
+              @if (cadastroNomeErro) {
+                <span class="marcas-cadastro-form__error" role="alert"
+                  >Campo obrigatório</span
+                >
+              }
+            </div>
+            <div class="marcas-cadastro-form__col marcas-cadastro-form__col--ativo">
+              <span class="marcas-cadastro-form__ativo-label">Ativo</span>
+              <button
+                type="button"
+                class="drawer-switch"
+                [class.drawer-switch--on]="cadastroAtivo"
+                [attr.aria-pressed]="cadastroAtivo"
+                aria-label="Ativo"
+                (click)="toggleCadastroAtivo($event)"
+                [disabled]="cadastroSalvando"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cliente-drawer-footer">
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--ghost"
+          (click)="fecharCadastro()"
+          [disabled]="cadastroSalvando"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--primary"
+          (click)="salvarCadastro()"
+          [disabled]="cadastroSalvando"
+        >
+          {{ cadastroSalvando ? 'Salvando…' : 'Salvar' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

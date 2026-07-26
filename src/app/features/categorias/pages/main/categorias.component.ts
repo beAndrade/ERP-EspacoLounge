@@ -8,6 +8,8 @@ import type {
   ProdutoCatalogoItem,
   Servico,
 } from '../../../../core/models/api.models';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 export interface CategoriaListaItem {
   id: number;
@@ -28,7 +30,7 @@ const CATEGORIA_SALVA_TOAST_MSG = 'Categoria salva com sucesso!';
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, UiTipTriggerComponent],
   templateUrl: './categorias.component.html',
   styleUrl: './categorias.component.scss',
 })
@@ -171,20 +173,15 @@ export class CategoriasComponent implements OnInit, OnDestroy {
     });
   }
 
-  limparFiltros(): void {
-    this.filtroAtivas = true;
-    this.filtroInativas = false;
-    this.pagina = 1;
-  }
-
-  aplicarFiltros(): void {
-    this.pagina = 1;
-  }
-
   toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
     const checked = (ev.target as HTMLInputElement).checked;
     if (which === 'ativos') this.filtroAtivas = checked;
     else this.filtroInativas = checked;
+    // Evita lista vazia se ambos ficarem desmarcados.
+    if (!this.filtroAtivas && !this.filtroInativas) {
+      if (which === 'ativos') this.filtroInativas = true;
+      else this.filtroAtivas = true;
+    }
     this.pagina = 1;
   }
 
@@ -375,8 +372,11 @@ export class CategoriasComponent implements OnInit, OnDestroy {
   }
 
   tooltipOrdenacao(col: 'nome'): string {
-    if (this.ordenacaoColuna !== col) return 'clique para ordenar';
-    return this.ordenacaoDir === 'asc' ? 'ascendente' : 'descendente';
+    return tooltipOrdenacaoProximoClique(
+      this.ordenacaoColuna,
+      this.ordenacaoDir,
+      col,
+    );
   }
 
   private normalizar(s: string): string {

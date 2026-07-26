@@ -5,7 +5,7 @@
   box-sizing: border-box;
 
   .list-table-card {
-    overflow: visible;
+    overflow: hidden;
   }
 
   .list-head__actions--servicos {
@@ -17,6 +17,13 @@
 
 .servicos-table {
   table-layout: fixed;
+
+  tbody td {
+    height: 47px;
+    min-height: 47px;
+    max-height: 47px;
+    box-sizing: border-box;
+  }
 }
 
 .servicos-table__col-check {
@@ -24,15 +31,33 @@
 }
 
 .servicos-table__col-nome {
-  width: 28%;
+  width: auto;
 }
 
-.servicos-table__col-valor {
-  width: 12%;
-}
-
+.servicos-table__col-valor,
 .servicos-table__col-comissao {
-  width: 18%;
+  width: 110px;
+}
+
+.servicos-table thead th.col-valor,
+.servicos-table tbody td.col-valor,
+.servicos-table thead th.col-comissao,
+.servicos-table tbody td.col-comissao {
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+  text-align: end;
+}
+
+.servicos-table thead th.col-valor .servicos-th-sort,
+.servicos-table thead th.col-comissao .servicos-th-sort {
+  justify-content: flex-end;
+  text-align: end;
+}
+
+.servicos-table thead th.col-valor .servicos-th-sort__label,
+.servicos-table thead th.col-comissao .servicos-th-sort__label {
+  flex: 0 1 auto;
 }
 
 .servicos-table__col-duracao {
@@ -44,7 +69,21 @@
 }
 
 .servicos-table__col-mostra {
-  width: 9%;
+  width: 15%;
+}
+
+.servicos-table thead th.col-mostra,
+.servicos-table tbody td.col-mostra {
+  text-align: center;
+}
+
+.servicos-table thead th.col-mostra .servicos-th-sort {
+  justify-content: center;
+  text-align: center;
+}
+
+.servicos-table thead th.col-mostra .servicos-th-sort__label {
+  flex: 0 1 auto;
 }
 
 .servicos-table__col-acoes {
@@ -86,7 +125,8 @@
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  min-height: 45px;
+  height: 47.56px;
+  min-height: 47.56px;
   box-sizing: border-box;
   padding: 0 8px;
   margin: 0;
@@ -160,7 +200,6 @@
 
 .servicos-table .col-nome__cell--clickable:hover .col-nome__link {
   color: var(--color-primary-hover);
-  text-decoration: underline;
 }
 
 .servicos-filtros-drawer {

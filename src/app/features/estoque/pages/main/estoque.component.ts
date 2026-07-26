@@ -10,6 +10,8 @@ import { FormsModule } from '@angular/forms';
 import { ProdutoCatalogoItem } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { ProdutoCadastroDrawerService } from '../../../../shared/produto-cadastro-drawer/produto-cadastro-drawer.service';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 export type ProdutosAba = 'produtos' | 'lotes';
 export type ProdutosOrdenacaoColuna =
@@ -21,7 +23,7 @@ export type ProdutosOrdenacaoColuna =
 @Component({
   selector: 'app-estoque',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, DecimalPipe],
+  imports: [FormsModule, CurrencyPipe, DecimalPipe, UiTipTriggerComponent],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './estoque.component.html',
   styleUrl: './estoque.component.scss',
@@ -236,8 +238,11 @@ export class EstoqueComponent implements OnInit {
   }
 
   tooltipOrdenacao(col: ProdutosOrdenacaoColuna): string {
-    if (this.ordenacaoColuna !== col) return 'clique para ordenar';
-    return this.ordenacaoDir === 'asc' ? 'ascendente' : 'descendente';
+    return tooltipOrdenacaoProximoClique(
+      this.ordenacaoColuna,
+      this.ordenacaoDir,
+      col,
+    );
   }
 
   private normalizarBusca(s: string): string {

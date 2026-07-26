@@ -186,144 +186,179 @@
                     />
                   </th>
                   <th class="col-nome produtos-th-sort-wrap" scope="col">
-                    <button
-                      type="button"
-                      class="produtos-th-sort"
-                      (click)="onOrdenarColuna('nome', $event)"
-                      [attr.aria-label]="'Ordenar por nome — ' + tooltipOrdenacao('nome')"
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('nome')"
                     >
-                      <span class="produtos-th-sort__label">Nome</span>
-                      <span class="produtos-th-sort__icons" aria-hidden="true">
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'nome' && ordenacaoDir === 'asc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
-                        </svg>
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'nome' && ordenacaoDir === 'desc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
-                        </svg>
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        class="produtos-th-sort"
+                        (click)="onOrdenarColuna('nome', $event)"
+                        [attr.aria-label]="
+                          'Ordenar por nome — ' + tooltipOrdenacao('nome')
+                        "
+                      >
+                        <span class="produtos-th-sort__label">Nome</span>
+                        <span class="produtos-th-sort__icons" aria-hidden="true">
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--up"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'nome' && ordenacaoDir === 'asc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                          </svg>
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--down"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'nome' &&
+                              ordenacaoDir === 'desc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                          </svg>
+                        </span>
+                      </button>
+                    </app-ui-tip-trigger>
                   </th>
                   <th scope="col">Marca</th>
                   <th scope="col">Categoria</th>
                   <th class="produtos-th-sort-wrap" scope="col">
-                    <button
-                      type="button"
-                      class="produtos-th-sort"
-                      (click)="onOrdenarColuna('estoque', $event)"
-                      [attr.aria-label]="'Ordenar por estoque — ' + tooltipOrdenacao('estoque')"
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('estoque')"
                     >
-                      <span class="produtos-th-sort__label">Estoque</span>
-                      <span class="produtos-th-sort__icons" aria-hidden="true">
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'estoque' && ordenacaoDir === 'asc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
-                        </svg>
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'estoque' && ordenacaoDir === 'desc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
-                        </svg>
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        class="produtos-th-sort"
+                        (click)="onOrdenarColuna('estoque', $event)"
+                        [attr.aria-label]="
+                          'Ordenar por estoque — ' + tooltipOrdenacao('estoque')
+                        "
+                      >
+                        <span class="produtos-th-sort__label">Estoque</span>
+                        <span class="produtos-th-sort__icons" aria-hidden="true">
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--up"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'estoque' &&
+                              ordenacaoDir === 'asc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                          </svg>
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--down"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'estoque' &&
+                              ordenacaoDir === 'desc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                          </svg>
+                        </span>
+                      </button>
+                    </app-ui-tip-trigger>
                   </th>
                   <th class="produtos-th-sort-wrap" scope="col">
-                    <button
-                      type="button"
-                      class="produtos-th-sort"
-                      (click)="onOrdenarColuna('preco', $event)"
-                      [attr.aria-label]="
-                        'Ordenar por preço de venda — ' + tooltipOrdenacao('preco')
-                      "
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('preco')"
                     >
-                      <span class="produtos-th-sort__label">Preço de venda</span>
-                      <span class="produtos-th-sort__icons" aria-hidden="true">
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'preco' && ordenacaoDir === 'asc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
-                        </svg>
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'preco' && ordenacaoDir === 'desc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
-                        </svg>
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        class="produtos-th-sort"
+                        (click)="onOrdenarColuna('preco', $event)"
+                        [attr.aria-label]="
+                          'Ordenar por preço de venda — ' +
+                          tooltipOrdenacao('preco')
+                        "
+                      >
+                        <span class="produtos-th-sort__label">Preço de venda</span>
+                        <span class="produtos-th-sort__icons" aria-hidden="true">
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--up"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'preco' &&
+                              ordenacaoDir === 'asc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                          </svg>
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--down"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'preco' &&
+                              ordenacaoDir === 'desc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                          </svg>
+                        </span>
+                      </button>
+                    </app-ui-tip-trigger>
                   </th>
                   <th class="produtos-th-sort-wrap" scope="col">
-                    <button
-                      type="button"
-                      class="produtos-th-sort"
-                      (click)="onOrdenarColuna('comissao', $event)"
-                      [attr.aria-label]="'Ordenar por comissão — ' + tooltipOrdenacao('comissao')"
+                    <app-ui-tip-trigger
+                      fill
+                      [tip]="tooltipOrdenacao('comissao')"
                     >
-                      <span class="produtos-th-sort__label">Comissão</span>
-                      <span class="produtos-th-sort__icons" aria-hidden="true">
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--up"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'comissao' && ordenacaoDir === 'asc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,0 10,6 0,6" fill="currentColor" />
-                        </svg>
-                        <svg
-                          class="produtos-th-sort__tri produtos-th-sort__tri--down"
-                          [class.produtos-th-sort__tri--on]="
-                            ordenacaoColuna === 'comissao' && ordenacaoDir === 'desc'
-                          "
-                          width="10"
-                          height="6"
-                          viewBox="0 0 10 6"
-                        >
-                          <polygon points="5,6 0,0 10,0" fill="currentColor" />
-                        </svg>
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        class="produtos-th-sort"
+                        (click)="onOrdenarColuna('comissao', $event)"
+                        [attr.aria-label]="
+                          'Ordenar por comissão — ' +
+                          tooltipOrdenacao('comissao')
+                        "
+                      >
+                        <span class="produtos-th-sort__label">Comissão</span>
+                        <span class="produtos-th-sort__icons" aria-hidden="true">
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--up"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'comissao' &&
+                              ordenacaoDir === 'asc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,0 10,6 0,6" fill="currentColor" />
+                          </svg>
+                          <svg
+                            class="produtos-th-sort__tri produtos-th-sort__tri--down"
+                            [class.produtos-th-sort__tri--on]="
+                              ordenacaoColuna === 'comissao' &&
+                              ordenacaoDir === 'desc'
+                            "
+                            width="10"
+                            height="6"
+                            viewBox="0 0 10 6"
+                          >
+                            <polygon points="5,6 0,0 10,0" fill="currentColor" />
+                          </svg>
+                        </span>
+                      </button>
+                    </app-ui-tip-trigger>
                   </th>
                   <th class="col-config" scope="col" aria-label="Configurar colunas">
                     <svg
@@ -346,13 +381,15 @@
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody [attr.aria-busy]="carregando || null">
                 @if (carregando) {
-                  <tr>
-                    <td class="table-body__busy" colspan="8">
-                      <span class="table-body__busy-text">Carregando…</span>
-                    </td>
-                  </tr>
+                  @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
+                    <tr class="list-table__skeleton-row" aria-hidden="true">
+                      <td colspan="8">
+                        <span class="list-skeleton-bar"></span>
+                      </td>
+                    </tr>
+                  }
                 } @else if (totalFiltrado() === 0) {
                   <tr>
                     <td class="table-body__empty" colspan="8">

@@ -8,11 +8,13 @@ import { valorMonetarioParaNumero } from '../../../../core/utils/atendimento-dis
 import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
 import { lerServicoTexto } from '../../../../core/utils/servico-campos';
 import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 @Component({
   selector: 'app-servicos',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe],
+  imports: [FormsModule, CurrencyPipe, UiTipTriggerComponent],
   templateUrl: './servicos.component.html',
   styleUrl: './servicos.component.scss',
 })
@@ -195,12 +197,11 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   tooltipOrdenacao(col: typeof this.ordenacaoColuna): string {
-    if (this.ordenacaoColuna !== col) {
-      return 'Clique organiza por ascendente';
-    }
-    return this.ordenacaoDir === 'asc'
-      ? 'Clique organiza por descendente'
-      : 'Clique organiza por ascendente';
+    return tooltipOrdenacaoProximoClique(
+      this.ordenacaoColuna,
+      this.ordenacaoDir,
+      col,
+    );
   }
 
   private compararOrdenacao(a: Servico, b: Servico): number {

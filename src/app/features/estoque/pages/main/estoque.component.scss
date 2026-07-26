@@ -2,10 +2,11 @@
 
 .produtos-page {
   padding-right: 10px;
+  padding-bottom: 24px;
   box-sizing: border-box;
 
   .list-table-card {
-    overflow: visible;
+    overflow: hidden;
   }
 
   .list-head__actions--produtos {
@@ -25,7 +26,8 @@
 }
 
 .produtos-page .list-page__tabs {
-  margin: 0 0 0.75rem;
+  margin: 0;
+  border-bottom: none;
 }
 
 .list-page__error {
@@ -111,6 +113,13 @@
 
 .produtos-table {
   table-layout: fixed;
+
+  tbody td {
+    height: 47px;
+    min-height: 47px;
+    max-height: 47px;
+    box-sizing: border-box;
+  }
 }
 
 .produtos-table__col-check {
@@ -187,7 +196,6 @@
 
 .produtos-table .col-nome .col-nome__cell--clickable:hover .col-nome__link {
   color: var(--color-primary-hover);
-  text-decoration: underline;
 }
 
 .produtos-th-sort-wrap {
@@ -202,7 +210,8 @@
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  min-height: 45px;
+  height: 47.56px;
+  min-height: 47.56px;
   box-sizing: border-box;
   padding: 0 8px;
   margin: 0;

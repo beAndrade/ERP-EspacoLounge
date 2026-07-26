@@ -322,6 +322,159 @@
         </div>
       </div>
 
+      <div
+        class="nav-expand"
+        [class.nav-expand--open]="navExpandIsOpen('cadastros')"
+        [class.nav-expand--active]="sectionActive('cadastros')"
+      >
+        <button
+          type="button"
+          class="nav-expand__trigger"
+          (click)="onNavExpandTrigger($event, 'cadastros')"
+          [attr.aria-expanded]="navExpandIsOpen('cadastros')"
+          aria-controls="nav-expand-cadastros"
+          aria-label="Cadastros — abrir subitens"
+        >
+          <svg
+            class="nav-expand__trigger-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 21a8 8 0 0 0-16 0" />
+            <circle cx="10" cy="8" r="5" />
+            <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+          </svg>
+          <span class="nav-expand__trigger-label">Cadastros</span>
+          <svg
+            class="nav-chevron"
+            [class.nav-chevron--open]="navExpandIsOpen('cadastros')"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <g transform="translate(12, 9)">
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
+                <path
+                  d="M0 0 L-7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
+                <path
+                  d="M0 0 L7.5 7.5"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+            </g>
+          </svg>
+        </button>
+        <div class="nav-sidebar__panel">
+        <ul id="nav-expand-cadastros" class="nav-expand__sub" role="list">
+          <li>
+            <a
+              routerLink="/clientes"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: false }"
+              class="nav-item nav-item--sub"
+              aria-label="Clientes"
+              title="Clientes"
+            >
+              <svg
+                class="nav-item__icon lucide lucide-user-round-icon lucide-user-round"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="8" r="5" />
+                <path d="M20 21a8 8 0 0 0-16 0" />
+              </svg>
+              <span class="nav-item__label">Clientes</span>
+            </a>
+          </li>
+          @if (sessao.isAdmin()) {
+          <li>
+            <a
+              routerLink="/profissionais"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Profissionais"
+              title="Profissionais"
+            >
+              <svg
+                class="nav-item__icon lucide lucide-users-round-icon lucide-users-round"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 21a8 8 0 0 0-16 0" />
+                <circle cx="10" cy="8" r="5" />
+                <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+              </svg>
+              <span class="nav-item__label">Profissionais</span>
+            </a>
+          </li>
+          }
+          @if (sessao.isAdmin()) {
+          <li>
+            <a
+              routerLink="/fornecedores"
+              routerLinkActive="active"
+              class="nav-item nav-item--sub"
+              aria-label="Fornecedores"
+              title="Fornecedores"
+            >
+              <svg
+                class="nav-item__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 21a8 8 0 0 0-16 0" />
+                <circle cx="10" cy="8" r="5" />
+                <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+              </svg>
+              <span class="nav-item__label">Fornecedores</span>
+            </a>
+          </li>
+          }
+        </ul>
+        </div>
+      </div>
+
       @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
@@ -773,158 +926,6 @@
       </div>
       }
 
-      <div
-        class="nav-expand"
-        [class.nav-expand--open]="navExpandIsOpen('cadastros')"
-        [class.nav-expand--active]="sectionActive('cadastros')"
-      >
-        <button
-          type="button"
-          class="nav-expand__trigger"
-          (click)="onNavExpandTrigger($event, 'cadastros')"
-          [attr.aria-expanded]="navExpandIsOpen('cadastros')"
-          aria-controls="nav-expand-cadastros"
-          aria-label="Cadastros — abrir subitens"
-        >
-          <svg
-            class="nav-expand__trigger-icon"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M18 21a8 8 0 0 0-16 0" />
-            <circle cx="10" cy="8" r="5" />
-            <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
-          </svg>
-          <span class="nav-expand__trigger-label">Cadastros</span>
-          <svg
-            class="nav-chevron"
-            [class.nav-chevron--open]="navExpandIsOpen('cadastros')"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <g transform="translate(12, 9)">
-              <g class="nav-chevron__arm-g nav-chevron__arm-g--l">
-                <path
-                  d="M0 0 L-7.5 7.5"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </g>
-              <g class="nav-chevron__arm-g nav-chevron__arm-g--r">
-                <path
-                  d="M0 0 L7.5 7.5"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </g>
-            </g>
-          </svg>
-        </button>
-        <div class="nav-sidebar__panel">
-        <ul id="nav-expand-cadastros" class="nav-expand__sub" role="list">
-          <li>
-            <a
-              routerLink="/clientes"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: false }"
-              class="nav-item nav-item--sub"
-              aria-label="Clientes"
-              title="Clientes"
-            >
-              <svg
-                class="nav-item__icon lucide lucide-user-round-icon lucide-user-round"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="8" r="5" />
-                <path d="M20 21a8 8 0 0 0-16 0" />
-              </svg>
-              <span class="nav-item__label">Clientes</span>
-            </a>
-          </li>
-          @if (sessao.isAdmin()) {
-          <li>
-            <a
-              routerLink="/profissionais"
-              routerLinkActive="active"
-              class="nav-item nav-item--sub"
-              aria-label="Profissionais"
-              title="Profissionais"
-            >
-              <svg
-                class="nav-item__icon lucide lucide-users-round-icon lucide-users-round"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M18 21a8 8 0 0 0-16 0" />
-                <circle cx="10" cy="8" r="5" />
-                <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
-              </svg>
-              <span class="nav-item__label">Profissionais</span>
-            </a>
-          </li>
-          }
-          @if (sessao.isAdmin()) {
-          <li>
-            <a
-              routerLink="/fornecedores"
-              routerLinkActive="active"
-              class="nav-item nav-item--sub"
-              aria-label="Fornecedores"
-              title="Fornecedores"
-            >
-              <svg
-                class="nav-item__icon"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M18 21a8 8 0 0 0-16 0" />
-                <circle cx="10" cy="8" r="5" />
-                <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
-              </svg>
-              <span class="nav-item__label">Fornecedores</span>
-            </a>
-          </li>
-          }
-        </ul>
-        </div>
-      </div>
 
       @if (sessao.isAdmin()) {
       <div
