@@ -185,8 +185,14 @@ export class ClienteCadastroDrawerService {
   /** Drawer «Visualizando comanda» por cima da ficha (sem fechar nem mudar de rota). */
   comandaEmpilhadaAberta = false;
   comandaEmpilhadaPanelOpen = false;
+  /** Após animação de abertura: desliga transition (evita tremida ao fechar empilhados). */
+  panelSettled = false;
+  comandaEmpilhadaSettled = false;
   comandaEmpilhadaContexto: ComandaDrawerContextoAgenda | null = null;
   carregandoComandaEmpilhada = false;
+  private panelSettleTimer: ReturnType<typeof setTimeout> | null = null;
+  private comandaEmpilhadaSettleTimer: ReturnType<typeof setTimeout> | null =
+    null;
   /** Ficha do cliente empilhada (links da sidebar de comanda/agendamento). */
   fichaEmpilhadaAberta = false;
   fichaEmpilhadaPanelOpen = false;
@@ -435,6 +441,7 @@ export class ClienteCadastroDrawerService {
     if (!this.aberto) return;
     this.fecharFichaEmpilhadaSincrono();
     this.fecharComandaEmpilhadaSincrono();
+    this.cancelarPanelSettled();
     this.saveSub?.unsubscribe();
     this.saveSub = null;
     this.ocultarClienteNavLockTooltip();
@@ -581,6 +588,7 @@ export class ClienteCadastroDrawerService {
       aposAnimacao?.();
       return;
     }
+    this.cancelarComandaEmpilhadaSettled();
     this.comandaEmpilhadaPanelOpen = false;
     if (this.comandaEmpilhadaCloseTimer != null) {
       clearTimeout(this.comandaEmpilhadaCloseTimer);
@@ -591,14 +599,15 @@ export class ClienteCadastroDrawerService {
       this.comandaEmpilhadaContexto = null;
       this.carregandoComandaEmpilhada = false;
       const cid = this.clienteId?.trim();
+      /** Soft: não esvazia a aba (evita tremida/flash na ficha por baixo). */
       if (cid && this.abaAtiva === 'Agendamentos') {
-        this.carregarAgendamentosHistorico(cid);
+        this.carregarAgendamentosHistorico(cid, { soft: true });
       }
       if (cid && this.abaAtiva === 'Débitos') {
-        this.carregarDebitosPainel(cid);
+        this.carregarDebitosPainel(cid, { soft: true });
       }
       if (cid && this.abaAtiva === 'Vendas') {
-        this.carregarVendasHistorico(cid);
+        this.carregarVendasHistorico(cid, { soft: true });
       }
       this.appRef.tick();
       aposAnimacao?.();
@@ -610,6 +619,7 @@ export class ClienteCadastroDrawerService {
       clearTimeout(this.comandaEmpilhadaCloseTimer);
       this.comandaEmpilhadaCloseTimer = null;
     }
+    this.cancelarComandaEmpilhadaSettled();
     this.comandaEmpilhadaPanelOpen = false;
     this.comandaEmpilhadaAberta = false;
     this.comandaEmpilhadaContexto = null;
@@ -638,10 +648,120 @@ export class ClienteCadastroDrawerService {
     const idAt = idAtendimento.trim();
     const cid = this.clienteId?.trim();
     if (!idAt || !cid) return;
+
+    const hint = this.hintComandaEmpilhadaLocal(idAt);
+    const numero =
+      hint?.numeroComanda != null &&
+      Number.isFinite(hint.numeroComanda) &&
+      hint.numeroComanda > 0
+        ? hint.numeroComanda
+        : null;
+
+    /** Sem hint local (ex.: link externo): fallback API — igual ao fluxo antigo. */
+    if (!hint) {
+      this.carregarEAbrirComandaEmpilhadaViaApi(idAt, opts);
+      return;
+    }
+    if (opts.acessar && numero == null) return;
+
+    this.abrirComandaEmpilhadaComContexto({
+      acessar: opts.acessar,
+      idAtendimento: idAt,
+      numeroComandaTitulo: numero ?? 1,
+      clienteId: cid,
+      cliente: {
+        id: cid,
+        nome: this.cadastroNome?.trim() || '—',
+      } as Cliente,
+      opcoesClientes: [
+        {
+          value: cid,
+          label: this.cadastroNome?.trim() || '—',
+        },
+      ],
+      dataYmd: hint.dataYmd,
+      linhasSnapshot: [],
+    });
+  }
+
+  /**
+   * Metadados já na ficha (Débitos / Agendamentos / Vendas) — abre já,
+   * sem esperar rede (o `nova-comanda-drawer` carrega itens sozinho).
+   */
+  private hintComandaEmpilhadaLocal(
+    idAtendimento: string,
+  ): { numeroComanda: number | null; dataYmd: string | null } | null {
+    const idAt = idAtendimento.trim();
+    if (!idAt) return null;
+
+    const aberta = this.comandasAbertoLinhas.find(
+      (r) => String(r.idAtendimento ?? '').trim() === idAt,
+    );
+    if (aberta) {
+      const y = String(aberta.dataYmd ?? '').trim().slice(0, 10);
+      return {
+        numeroComanda: aberta.numeroComanda,
+        dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null,
+      };
+    }
+
+    const debito = this.debitosLinhas.find(
+      (r) => String(r.idAtendimento ?? '').trim() === idAt,
+    );
+    if (debito) {
+      return {
+        numeroComanda: debito.numeroComanda,
+        dataYmd: null,
+      };
+    }
+
+    const ag = this.agendamentosLinhas.find(
+      (r) => String(r.idAtendimento ?? '').trim() === idAt,
+    );
+    if (ag) {
+      const y = String(ag.dataYmd ?? '').trim().slice(0, 10);
+      return {
+        numeroComanda: ag.numeroComanda,
+        dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null,
+      };
+    }
+
+    const venda = this.vendasLinhas.find(
+      (r) => String(r.idAtendimento ?? '').trim() === idAt,
+    );
+    if (venda) {
+      const y = String(venda.dataYmd ?? '').trim().slice(0, 10);
+      return {
+        numeroComanda: venda.numeroComanda,
+        dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null,
+      };
+    }
+
+    return null;
+  }
+
+  private abrirComandaEmpilhadaComContexto(
+    ctx: ComandaDrawerContextoAgenda,
+  ): void {
+    this.comandaEmpilhadaContexto = ctx;
+    this.carregandoComandaEmpilhada = false;
+    this.abrirPainelComandaEmpilhada();
+    this.appRef.tick();
+  }
+
+  private carregarEAbrirComandaEmpilhadaViaApi(
+    idAtendimento: string,
+    opts: { acessar: boolean },
+  ): void {
+    const idAt = idAtendimento.trim();
+    const cid = this.clienteId?.trim();
+    if (!idAt || !cid) return;
     this.carregandoComandaEmpilhada = true;
     forkJoin({
       items: this.api.listAgendamentos(undefined, undefined, idAt),
-      clientes: this.api.listClientes().pipe(catchError(() => of([] as Cliente[]))),
+      clientes: this.api
+        .listClientes()
+        .pipe(catchError(() => of([] as Cliente[]))),
     }).subscribe({
       next: ({ items, clientes }) => {
         if (this.clienteId !== cid) return;
@@ -670,7 +790,7 @@ export class ClienteCadastroDrawerService {
             nome: this.cadastroNome?.trim() || '—',
           } as Cliente);
         const dataYmd = (g.data || '').slice(0, 10);
-        this.comandaEmpilhadaContexto = {
+        this.abrirComandaEmpilhadaComContexto({
           acessar: opts.acessar,
           idAtendimento: idAt,
           numeroComandaTitulo: numeroComanda ?? 1,
@@ -679,10 +799,7 @@ export class ClienteCadastroDrawerService {
           opcoesClientes: this.opcoesClientesParaComandaEmpilhada(clientes),
           dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(dataYmd) ? dataYmd : null,
           linhasSnapshot: [],
-        };
-        this.carregandoComandaEmpilhada = false;
-        this.abrirPainelComandaEmpilhada();
-        this.appRef.tick();
+        });
       },
       error: () => {
         if (this.clienteId !== cid) return;
@@ -702,16 +819,60 @@ export class ClienteCadastroDrawerService {
   }
 
   private abrirPainelComandaEmpilhada(): void {
+    this.cancelarComandaEmpilhadaSettled();
     this.comandaEmpilhadaAberta = true;
     this.comandaEmpilhadaPanelOpen = false;
     queueMicrotask(() => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           this.comandaEmpilhadaPanelOpen = true;
+          this.agendarComandaEmpilhadaSettled();
           this.appRef.tick();
         });
       });
     });
+  }
+
+  private agendarComandaEmpilhadaSettled(): void {
+    if (this.comandaEmpilhadaSettleTimer != null) {
+      clearTimeout(this.comandaEmpilhadaSettleTimer);
+    }
+    this.comandaEmpilhadaSettleTimer = setTimeout(() => {
+      this.comandaEmpilhadaSettleTimer = null;
+      if (this.comandaEmpilhadaAberta && this.comandaEmpilhadaPanelOpen) {
+        this.comandaEmpilhadaSettled = true;
+        this.appRef.tick();
+      }
+    }, DRAWER_ANIM_MS);
+  }
+
+  private cancelarComandaEmpilhadaSettled(): void {
+    if (this.comandaEmpilhadaSettleTimer != null) {
+      clearTimeout(this.comandaEmpilhadaSettleTimer);
+      this.comandaEmpilhadaSettleTimer = null;
+    }
+    this.comandaEmpilhadaSettled = false;
+  }
+
+  private agendarPanelSettled(): void {
+    if (this.panelSettleTimer != null) {
+      clearTimeout(this.panelSettleTimer);
+    }
+    this.panelSettleTimer = setTimeout(() => {
+      this.panelSettleTimer = null;
+      if (this.aberto && this.panelOpen) {
+        this.panelSettled = true;
+        this.appRef.tick();
+      }
+    }, DRAWER_ANIM_MS);
+  }
+
+  private cancelarPanelSettled(): void {
+    if (this.panelSettleTimer != null) {
+      clearTimeout(this.panelSettleTimer);
+      this.panelSettleTimer = null;
+    }
+    this.panelSettled = false;
   }
 
   onClienteNavTooltipEnter(event: Event, aba: string, imediato = false): void {
@@ -1048,6 +1209,7 @@ export class ClienteCadastroDrawerService {
     this.secaoRedesAberta = false;
     this.secaoConfiguracoesAberta = true;
 
+    this.cancelarPanelSettled();
     this.aberto = true;
     this.bloquearScrollPagina();
     this.panelOpen = false;
@@ -1055,6 +1217,7 @@ export class ClienteCadastroDrawerService {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           this.panelOpen = true;
+          this.agendarPanelSettled();
         });
       });
     });
@@ -1265,14 +1428,20 @@ export class ClienteCadastroDrawerService {
     this.appRef.tick();
   }
 
-  private carregarDebitosPainel(clienteId: string): void {
+  private carregarDebitosPainel(
+    clienteId: string,
+    opts?: { soft?: boolean },
+  ): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
-    this.carregandoDebitosPainel = true;
-    this.debitosLinhas = [];
-    this.comandasAbertoLinhas = [];
-    this.debitosTotal = 0;
-    this.comandasAbertoTotal = 0;
+    const soft = opts?.soft === true;
+    this.carregandoDebitosPainel = !soft;
+    if (!soft) {
+      this.debitosLinhas = [];
+      this.comandasAbertoLinhas = [];
+      this.debitosTotal = 0;
+      this.comandasAbertoTotal = 0;
+    }
     this.api.listAgendamentos().subscribe({
       next: (items) => {
         if (this.clienteId !== cid || this.abaAtiva !== 'Débitos') return;
@@ -1290,23 +1459,31 @@ export class ClienteCadastroDrawerService {
       },
       error: () => {
         if (this.clienteId !== cid) return;
-        this.debitosLinhas = [];
-        this.comandasAbertoLinhas = [];
-        this.debitosTotal = 0;
-        this.comandasAbertoTotal = 0;
+        if (!soft) {
+          this.debitosLinhas = [];
+          this.comandasAbertoLinhas = [];
+          this.debitosTotal = 0;
+          this.comandasAbertoTotal = 0;
+        }
         this.carregandoDebitosPainel = false;
         this.appRef.tick();
       },
     });
   }
 
-  private carregarAgendamentosHistorico(clienteId: string): void {
+  private carregarAgendamentosHistorico(
+    clienteId: string,
+    opts?: { soft?: boolean },
+  ): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
+    const soft = opts?.soft === true;
     const ini = String(this.agendamentosFiltroInicio ?? '').trim().slice(0, 10);
     const fim = String(this.agendamentosFiltroFim ?? '').trim().slice(0, 10);
-    this.carregandoAgendamentosHistorico = true;
-    this.agendamentosLinhas = [];
+    this.carregandoAgendamentosHistorico = !soft;
+    if (!soft) {
+      this.agendamentosLinhas = [];
+    }
     this.api
       .listAgendamentos(ini || undefined, fim || undefined, undefined, true)
       .subscribe({
@@ -1323,20 +1500,28 @@ export class ClienteCadastroDrawerService {
       },
       error: () => {
         if (this.clienteId !== cid) return;
-        this.agendamentosLinhas = [];
+        if (!soft) {
+          this.agendamentosLinhas = [];
+        }
         this.carregandoAgendamentosHistorico = false;
         this.appRef.tick();
       },
     });
   }
 
-  private carregarVendasHistorico(clienteId: string): void {
+  private carregarVendasHistorico(
+    clienteId: string,
+    opts?: { soft?: boolean },
+  ): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
+    const soft = opts?.soft === true;
     const ini = String(this.vendasFiltroInicio ?? '').trim().slice(0, 10);
     const fim = String(this.vendasFiltroFim ?? '').trim().slice(0, 10);
-    this.carregandoVendasHistorico = true;
-    this.vendasLinhas = [];
+    this.carregandoVendasHistorico = !soft;
+    if (!soft) {
+      this.vendasLinhas = [];
+    }
     this.api.listAgendamentos(ini || undefined, fim || undefined).subscribe({
       next: (items) => {
         if (this.clienteId !== cid || this.abaAtiva !== 'Vendas') return;
@@ -1351,7 +1536,9 @@ export class ClienteCadastroDrawerService {
       },
       error: () => {
         if (this.clienteId !== cid) return;
-        this.vendasLinhas = [];
+        if (!soft) {
+          this.vendasLinhas = [];
+        }
         this.carregandoVendasHistorico = false;
         this.appRef.tick();
       },

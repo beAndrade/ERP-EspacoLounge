@@ -219,6 +219,13 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
 
   onComandaEmpilhadaDataYmd(ymd: string | null): void {
     this.comandaEmpilhadaDataYmd = ymd;
+    const ctx = this.d.comandaEmpilhadaContexto;
+    if (!ctx) return;
+    const next = (ymd ?? '').trim().slice(0, 10);
+    const cur = (ctx.dataYmd ?? '').trim().slice(0, 10);
+    if (next && /^\d{4}-\d{2}-\d{2}$/.test(next) && next !== cur) {
+      this.d.comandaEmpilhadaContexto = { ...ctx, dataYmd: next };
+    }
   }
 
   onSalvarComandaEmpilhada(): void {
@@ -232,7 +239,13 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   onEditarAgendamentoDesdeComandaEmpilhada(): void {
     const ctx = this.d.comandaEmpilhadaContexto;
     const idAt = ctx?.idAtendimento?.trim();
-    const ymd = (ctx?.dataYmd ?? '').trim();
+    const ymd = (
+      this.comandaEmpilhadaDataYmd ??
+      ctx?.dataYmd ??
+      ''
+    )
+      .trim()
+      .slice(0, 10);
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
     this.abrirEditAgendamentoEmpilhado(idAt, ymd);
   }

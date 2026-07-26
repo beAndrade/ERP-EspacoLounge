@@ -19,7 +19,7 @@ app-servico-cadastro-drawer-host {
   pointer-events: none !important;
   --z-cliente-global-overlay: 1620;
   --z-cliente-global-drawer: 1630;
-  --cliente-drawer-shell-w: 960px;
+  --cliente-drawer-shell-w: 1024px;
 }
 
 .overlay--servico-cadastro {
@@ -50,7 +50,10 @@ app-servico-cadastro-drawer-host {
 .cliente-drawer.cliente-drawer--servico.app-drawer {
   --drawer-inset-x: 0;
   --drawer-pad-x: 0;
-  --cliente-drawer-shell-w: 960px;
+  --cliente-drawer-shell-w: 1024px;
+  --cliente-form-col-gap: 16px;
+  --cliente-field-input-max: 421.78px;
+  --cliente-accent: var(--color-primary);
   position: fixed !important;
   top: 0 !important;
   right: 0 !important;
@@ -60,7 +63,7 @@ app-servico-cadastro-drawer-host {
   display: flex !important;
   flex-direction: column !important;
   box-sizing: border-box !important;
-  width: min(960px, 100vw) !important;
+  width: min(1024px, 100vw) !important;
   max-width: 100vw !important;
   height: 100vh !important;
   height: 100dvh !important;
@@ -137,14 +140,14 @@ app-servico-cadastro-drawer-host {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.75rem;
   margin: 0 auto;
 }
 
 .servico-cadastro-form__foto-preview {
-  width: 100px;
-  min-height: 100px;
-  height: 100px;
+  width: 118px;
+  min-height: 118px;
+  height: 118px;
   border-radius: 12px;
   background: #ffffff;
   border: none;
@@ -226,7 +229,7 @@ app-servico-cadastro-drawer-host {
 .servico-cadastro-form__field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0;
   min-width: 0;
   width: 100%;
 }
@@ -235,37 +238,26 @@ app-servico-cadastro-drawer-host {
   width: 100%;
 }
 
-.servico-cadastro-form__label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #334155;
-}
-
 .servico-cadastro-form__hint {
   margin: 0;
-  font-size: 0.75rem;
-  color: #64748b;
+  font-size: 12px;
+  color: #a1a1aa;
   line-height: 1.35;
 }
 
-.servico-cadastro-form__input,
-.servico-cadastro-form__select,
-.servico-cadastro-form__textarea {
+.servico-cadastro-form__block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
   width: 100%;
-  box-sizing: border-box;
-  min-height: 40px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font: inherit;
-  font-size: 0.875rem;
-  color: #0f172a;
-  background: #fff;
 }
 
-.servico-cadastro-form__textarea {
-  min-height: 96px;
-  resize: vertical;
+.servico-cadastro-form__block-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.75);
+  line-height: 1.3;
 }
 
 .servico-cadastro-form__preco {
@@ -282,7 +274,7 @@ app-servico-cadastro-drawer-host {
 .servico-cadastro-form__preco-col {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0;
   min-width: 0;
   flex: 0 0 7.5rem;
   width: 7.5rem;
@@ -321,17 +313,60 @@ app-servico-cadastro-drawer-host {
   }
 }
 
-.servico-cadastro-form__tamanho-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.85rem;
+.servico-cadastro-form__tamanho-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #f1f1f1;
+  border-radius: 12px;
+  box-sizing: border-box;
 }
 
-.servico-cadastro-form__tamanho-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  min-width: 0;
+.servico-cadastro-form__tamanho-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th,
+  td {
+    padding: 0.55rem 0.65rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f1f1;
+    box-sizing: border-box;
+  }
+
+  thead th {
+    font-size: 12px;
+    font-weight: 600;
+    color: #71717a;
+    text-align: left;
+    background: #fafafa;
+    white-space: nowrap;
+  }
+
+  tbody th {
+    width: 7.5rem;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.75);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .servico-cadastro-form__input,
+  .servico-cadastro-form__select {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.servico-cadastro-form__field--duracao-padrao {
+  max-width: 220px;
 }
 
 .sr-only {
@@ -353,8 +388,11 @@ app-servico-cadastro-drawer-host {
 
   .servico-cadastro-form__row,
   .servico-cadastro-form__row--2,
-  .servico-cadastro-form__row--3,
-  .servico-cadastro-form__tamanho-grid {
+  .servico-cadastro-form__row--3 {
     grid-template-columns: 1fr;
+  }
+
+  .servico-cadastro-form__field--duracao-padrao {
+    max-width: none;
   }
 }

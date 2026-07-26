@@ -1,14 +1,19 @@
 ﻿@use '../../styles/breakpoints' as bp;
 
 /**
- * Empilhamento global: ficha do cliente acima de comanda/faturar das p├íginas
- * (transa├º├╡es, comandas, comiss├╡es ΓÇö z-index at├⌐ ~1105).
+ * Empilhamento global: ficha do cliente acima de comanda/faturar das páginas
+ * (transações, comandas, comissões — host z-index 1280+).
  *
- * N├úo usar `:host` aqui ΓÇö com ViewEncapsulation.None o pseudo n├úo casa no DOM real.
+ * Z-index *interno* é relativo (1, 2, 3…) dentro do stacking context do host.
+ * Assim o `.overlay { z-index: 999 }` de outras páginas não sobe o véu
+ * à frente do drawer (bug: escurecia a face do painel).
+ *
+ * Não usar `:host` aqui — com ViewEncapsulation.None o pseudo não casa no DOM real.
  */
 app-cliente-cadastro-drawer-host,
 app-profissional-cadastro-drawer-host,
-app-servico-cadastro-drawer-host {
+app-servico-cadastro-drawer-host,
+app-produto-cadastro-drawer-host {
   display: block;
   position: fixed;
   inset: 0;
@@ -20,120 +25,133 @@ app-servico-cadastro-drawer-host {
   border: none;
   overflow: visible;
   pointer-events: none;
-  --z-cliente-global-overlay: 1280;
-  --z-cliente-global-drawer: 1282;
-  --z-cliente-stack-overlay: 1284;
-  --z-cliente-stack-drawer: 1285;
-  --z-cliente-stack-edit-overlay: 1286;
-  --z-cliente-stack-edit-drawer: 1287;
-  --z-cliente-stack-ficha-overlay: 1288;
-  --z-cliente-stack-ficha-drawer: 1289;
-  --z-cliente-stack-credito-overlay: 1290;
-  --z-cliente-stack-credito-drawer: 1291;
-  --z-cliente-stack-faturar-overlay: 1292;
-  --z-cliente-stack-faturar-drawer: 1293;
+  isolation: isolate;
+  --z-cliente-global-overlay: 1;
+  --z-cliente-global-drawer: 2;
+  --z-cliente-stack-overlay: 3;
+  --z-cliente-stack-drawer: 4;
+  --z-cliente-stack-edit-overlay: 5;
+  --z-cliente-stack-edit-drawer: 6;
+  --z-cliente-stack-ficha-overlay: 7;
+  --z-cliente-stack-ficha-drawer: 8;
+  --z-cliente-stack-credito-overlay: 9;
+  --z-cliente-stack-credito-drawer: 10;
+  --z-cliente-stack-faturar-overlay: 11;
+  --z-cliente-stack-faturar-drawer: 12;
 }
 
-app-servico-cadastro-drawer-host {
+app-servico-cadastro-drawer-host,
+app-produto-cadastro-drawer-host {
   z-index: 1620;
-  --z-cliente-global-overlay: 1620;
-  --z-cliente-global-drawer: 1630;
 }
 
-/* ViewEncapsulation.None ΓÇö n├úo usar `.app-drawer` sozinho (afeta outros m├│dulos). */
-.cliente-drawer.app-drawer,
-.cliente-comanda-empilhada.app-drawer,
-.cliente-credito-empilhada.app-drawer,
-.cliente-faturar-empilhada.app-drawer,
-.cliente-edit-ag-empilhada.app-drawer,
-.cliente-ficha-empilhada.app-drawer {
-  --drawer-inset-x: 15px;
-  --drawer-pad-x: var(--drawer-inset-x);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: var(--z-cliente-global-drawer, 1282);
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  background: #ffffff;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  transform: translateX(100%);
-  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
-
-  &.app-drawer--open {
-    transform: translateX(0);
-  }
-}
-
-.cliente-drawer.app-drawer {
-  @include bp.drawer-anchor-fixed-width;
-}
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: calc(var(--z-cliente-global-overlay, 1280) - 1);
-  box-sizing: border-box;
-  background: #00000073;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1);
-
-  &--open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-.overlay--cliente {
-  z-index: var(--z-cliente-global-overlay, 1280);
-  background: #00000073;
-  pointer-events: none;
-
-  &.overlay--open {
-    pointer-events: auto;
-  }
-}
-
-.cliente-drawer {
-  padding: 0;
-  pointer-events: none;
-
-  &.app-drawer--open {
-    pointer-events: auto;
-  }
-
-  &.app-drawer {
-    z-index: var(--z-cliente-global-drawer, 1282);
-    /* Encostado ├á direita. M├íx. 1200px em ecr├ús grandes. */
-    --drawer-inset-x: 0;
-    --drawer-pad-x: 0;
-    --cliente-drawer-shell-w: 1200px;
-    --cliente-form-col-gap: 16px;
-    --cliente-field-input-max: 421.78px;
-    --cliente-accent: var(--color-primary);
-    left: auto;
+/* ViewEncapsulation.None — escopar no host (não usar `.overlay` / `.app-drawer` sozinhos). */
+app-cliente-cadastro-drawer-host,
+app-profissional-cadastro-drawer-host,
+app-servico-cadastro-drawer-host,
+app-produto-cadastro-drawer-host {
+  .cliente-drawer.app-drawer,
+  .cliente-comanda-empilhada.app-drawer,
+  .cliente-credito-empilhada.app-drawer,
+  .cliente-faturar-empilhada.app-drawer,
+  .cliente-edit-ag-empilhada.app-drawer,
+  .cliente-ficha-empilhada.app-drawer {
+    --drawer-inset-x: 15px;
+    --drawer-pad-x: var(--drawer-inset-x);
+    position: fixed;
+    top: 0;
+    left: 0;
     right: 0;
-    width: min(var(--cliente-drawer-shell-w), 100vw);
-    max-width: 100vw;
-    padding-inline: 0;
+    bottom: 0;
+    z-index: var(--z-cliente-global-drawer);
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
+    box-sizing: border-box;
+    background: #ffffff;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(100%);
+    transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
 
-    > app-cliente-drawer-shell,
-    > .cliente-shell {
+    &.app-drawer--open {
+      transform: translateX(0);
+    }
+
+    /**
+     * Após a animação de abertura: sem transition em `transform`.
+     * Evita tremida quando um drawer empilhado fecha/desmonta por cima.
+     */
+    &.app-drawer--open.app-drawer--settled {
+      transition: none;
+    }
+  }
+
+  .cliente-drawer.app-drawer {
+    @include bp.drawer-anchor-fixed-width;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-cliente-global-overlay);
+    box-sizing: border-box;
+    background: #00000073;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &.overlay--open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  .overlay.overlay--cliente {
+    z-index: var(--z-cliente-global-overlay);
+    background: #00000073;
+    pointer-events: none;
+
+    &.overlay--open {
+      pointer-events: auto;
+    }
+  }
+
+  .cliente-drawer {
+    padding: 0;
+    pointer-events: none;
+
+    &.app-drawer--open {
+      pointer-events: auto;
+    }
+
+    &.app-drawer {
+      z-index: var(--z-cliente-global-drawer);
+      /* Encostado à direita. Máx. 1200px em ecrãs grandes. */
+      --drawer-inset-x: 0;
+      --drawer-pad-x: 0;
+      --cliente-drawer-shell-w: 1200px;
+      --cliente-form-col-gap: 16px;
+      --cliente-field-input-max: 421.78px;
+      --cliente-accent: var(--color-primary);
+      left: auto;
+      right: 0;
+      width: min(var(--cliente-drawer-shell-w), 100vw);
+      max-width: 100vw;
+      padding-inline: 0;
       display: flex;
-      flex: 1 1 auto;
       flex-direction: column;
       min-height: 0;
-      max-height: 100%;
-      width: 100%;
+      overflow: hidden;
+
+      > app-cliente-drawer-shell,
+      > .cliente-shell {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+        max-height: 100%;
+        width: 100%;
+      }
     }
   }
 }
@@ -152,7 +170,7 @@ app-servico-cadastro-drawer-host {
   flex: 0 0 auto;
   min-height: 90px;
   border-bottom: none;
-  padding: 30px 50px 10px 30px;
+  padding: 30px 50px 20px 30px;
   display: flex;
   align-items: center;
   box-sizing: border-box;
@@ -202,11 +220,12 @@ app-servico-cadastro-drawer-host {
 .cliente-head__title {
   margin: 0;
   padding: 0;
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.2;
   color: #000000bf;
   letter-spacing: -0.02em;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -266,7 +285,7 @@ app-servico-cadastro-drawer-host {
 
 .cliente-body {
   --cliente-nav-pad-start: 30px;
-  --cliente-nav-item-w: 173px;
+  --cliente-nav-item-w: 177.25px;
   --cliente-nav-col-w: calc(var(--cliente-nav-pad-start) + var(--cliente-nav-item-w));
 
   flex: 1 1 auto;
@@ -319,7 +338,9 @@ app-servico-cadastro-drawer-host {
   }
 }
 
-.cliente-field-label {
+.cliente-field-label,
+.servico-cadastro-form__label,
+.produto-cadastro-form__label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -511,7 +532,7 @@ app-servico-cadastro-drawer-host {
 .cliente-nav__item {
   position: relative;
   z-index: 0;
-  width: var(--cliente-nav-item-w, 173px);
+  width: var(--cliente-nav-item-w, 177.25px);
   max-width: 100%;
   text-align: left;
   border: none;
@@ -519,16 +540,18 @@ app-servico-cadastro-drawer-host {
   -webkit-tap-highlight-color: transparent;
   background: transparent;
   margin: 0;
-  padding: 0 24px 0 0;
+  padding: 8px 0;
   min-height: var(--cliente-nav-item-h);
   box-sizing: border-box;
   display: flex;
   align-items: center;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: #52525b;
+  outline: none;
   cursor: pointer;
-  transition: color 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  white-space: nowrap;
+  transition: color 0.3s;
 
   &:hover {
     color: var(--color-primary-hover);
@@ -537,7 +560,7 @@ app-servico-cadastro-drawer-host {
 
   &--active {
     color: var(--cliente-accent);
-    font-weight: 600;
+    font-weight: 400;
     background: transparent;
   }
 
@@ -566,8 +589,12 @@ app-servico-cadastro-drawer-host {
 
 .cliente-nav__label {
   position: relative;
-  display: inline-block;
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   max-width: 100%;
+  white-space: nowrap;
 }
 
 .cliente-main {
@@ -719,8 +746,14 @@ app-servico-cadastro-drawer-host {
   }
 }
 
-/* S├│ inputs de texto diretos ΓÇö n├úo interfere com `input` dentro de `.cliente-phone-input`. */
-.cliente-form-grid .cliente-field__inner > input {
+/* Só inputs de texto diretos — não interfere com `input` dentro de `.cliente-phone-input`. */
+.cliente-form-grid .cliente-field__inner > input,
+.servico-cadastro-form__input,
+.servico-cadastro-form__select,
+.servico-cadastro-form__textarea,
+.produto-cadastro-form__input,
+.produto-cadastro-form__select,
+.produto-cadastro-form__textarea {
   height: 32px;
   width: 100%;
   box-sizing: border-box;
@@ -749,6 +782,44 @@ app-servico-cadastro-drawer-host {
     outline: 0;
     background-color: #ffffff;
   }
+}
+
+.servico-cadastro-form__select,
+.produto-cadastro-form__select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  cursor: pointer;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+
+  &:hover,
+  &:focus {
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236bade0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+}
+
+.servico-cadastro-form__textarea,
+.produto-cadastro-form__textarea {
+  height: auto;
+  min-height: 96px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.produto-cadastro-form__section {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000bf;
+  line-height: 1.3;
 }
 
 .cliente-field--error .cliente-field__inner > input {
@@ -1863,24 +1934,77 @@ app-servico-cadastro-drawer-host {
 }
 
 /* Drawers empilhados sobre a ficha do cliente (Visualizar comanda, etc.) */
-.overlay--cliente-comanda-empilhada {
-  z-index: var(--z-cliente-stack-overlay);
-}
+app-cliente-cadastro-drawer-host,
+app-profissional-cadastro-drawer-host,
+app-servico-cadastro-drawer-host {
+  .overlay.overlay--cliente-comanda-empilhada {
+    z-index: var(--z-cliente-stack-overlay);
+  }
 
-.overlay--cliente-credito-empilhada {
-  z-index: var(--z-cliente-stack-credito-overlay);
-}
+  .overlay.overlay--cliente-credito-empilhada {
+    z-index: var(--z-cliente-stack-credito-overlay);
+  }
 
-.overlay--cliente-faturar-empilhada {
-  z-index: var(--z-cliente-stack-faturar-overlay);
-}
+  .overlay.overlay--cliente-faturar-empilhada {
+    z-index: var(--z-cliente-stack-faturar-overlay);
+  }
 
-.overlay--cliente-edit-ag-empilhada {
-  z-index: var(--z-cliente-stack-edit-overlay);
-}
+  .overlay.overlay--cliente-edit-ag-empilhada {
+    z-index: var(--z-cliente-stack-edit-overlay);
+  }
 
-.overlay--cliente-ficha-empilhada {
-  z-index: var(--z-cliente-stack-ficha-overlay);
+  .overlay.overlay--cliente-ficha-empilhada {
+    z-index: var(--z-cliente-stack-ficha-overlay);
+  }
+
+  .cliente-comanda-empilhada.app-drawer {
+    z-index: var(--z-cliente-stack-drawer);
+    background: #ffffff;
+  }
+
+  .cliente-credito-empilhada.app-drawer {
+    z-index: var(--z-cliente-stack-credito-drawer);
+    left: auto;
+    right: 0;
+    width: min(480px, 100vw);
+    max-width: 100vw;
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+
+    > app-cliente-atualizar-credito-drawer {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      max-height: 100%;
+    }
+  }
+
+  .cliente-faturar-empilhada.app-drawer {
+    z-index: var(--z-cliente-stack-faturar-drawer);
+    left: auto;
+    right: 0;
+    width: min(480px, 100vw);
+    max-width: 100vw;
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+
+    > app-faturar-drawer {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      max-height: 100%;
+    }
+  }
+
+  .cliente-edit-ag-empilhada.app-drawer {
+    z-index: var(--z-cliente-stack-edit-drawer);
+  }
+
+  .cliente-ficha-empilhada.app-drawer {
+    z-index: var(--z-cliente-stack-ficha-drawer);
+  }
 }
 
 /**
@@ -1899,23 +2023,27 @@ app-servico-cadastro-drawer-host {
   }
 }
 
+/**
+ * Mantém a ficha inerte enquanto o painel empilhado ainda está no DOM
+ * (inclui a animação de fecho) — evita tremida ao reativar pointer-events cedo.
+ */
 app-cliente-cadastro-drawer-host:has(
-    .cliente-comanda-empilhada.app-drawer--open,
-    .cliente-credito-empilhada.app-drawer--open,
-    .cliente-faturar-empilhada.app-drawer--open,
-    .cliente-edit-ag-empilhada.app-drawer--open,
-    .cliente-ficha-empilhada.app-drawer--open
+    .cliente-comanda-empilhada.app-drawer,
+    .cliente-credito-empilhada.app-drawer,
+    .cliente-faturar-empilhada.app-drawer,
+    .cliente-edit-ag-empilhada.app-drawer,
+    .cliente-ficha-empilhada.app-drawer
   )
   .cliente-drawer.app-drawer--open {
   pointer-events: none;
 }
 
 app-profissional-cadastro-drawer-host:has(
-    .cliente-comanda-empilhada.app-drawer--open,
-    .cliente-credito-empilhada.app-drawer--open,
-    .cliente-faturar-empilhada.app-drawer--open,
-    .cliente-edit-ag-empilhada.app-drawer--open,
-    .cliente-ficha-empilhada.app-drawer--open
+    .cliente-comanda-empilhada.app-drawer,
+    .cliente-credito-empilhada.app-drawer,
+    .cliente-faturar-empilhada.app-drawer,
+    .cliente-edit-ag-empilhada.app-drawer,
+    .cliente-ficha-empilhada.app-drawer
   )
   .cliente-drawer.app-drawer--open {
   pointer-events: none;
@@ -1944,29 +2072,28 @@ app-profissional-cadastro-drawer-host:has(
 
 .cliente-comanda-empilhada.app-drawer {
   z-index: var(--z-cliente-stack-drawer);
-  left: auto;
-  right: 0;
-  width: min(1400px, 100vw);
-  padding: 0 var(--drawer-inset-x, 15px);
-  --drawer-pad-x: var(--drawer-inset-x, 15px);
+  /**
+   * Mesmo shell que Comandas (`:has(> app-nova-comanda-drawer)`):
+   * sem inset no painel — o respiro esquerdo fica no `.nc-drawer`.
+   */
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  padding: 0;
+  overflow: hidden;
 
   > app-nova-comanda-drawer {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
+    min-width: 0;
     max-height: 100%;
+    height: 100%;
+    pointer-events: auto;
   }
 }
 
 .cliente-credito-empilhada.app-drawer {
-  z-index: var(--z-cliente-stack-credito-drawer);
-  left: auto;
-  right: 0;
-  width: min(480px, 100vw);
-  --drawer-inset-x: 0;
-  --drawer-pad-x: 0;
-
   > app-cliente-atualizar-credito-drawer {
     display: flex;
     flex: 1 1 auto;
@@ -1977,13 +2104,6 @@ app-profissional-cadastro-drawer-host:has(
 }
 
 .cliente-faturar-empilhada.app-drawer {
-  z-index: var(--z-cliente-stack-faturar-drawer);
-  left: auto;
-  right: 0;
-  width: min(480px, 100vw);
-  --drawer-inset-x: 0;
-  --drawer-pad-x: 0;
-
   > app-faturar-drawer {
     display: flex;
     flex: 1 1 auto;

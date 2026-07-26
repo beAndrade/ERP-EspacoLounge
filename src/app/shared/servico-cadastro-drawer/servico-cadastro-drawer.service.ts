@@ -123,7 +123,7 @@ export class ServicoCadastroDrawerService {
     this.idEdicao = null;
     this.callbacks = opts ?? null;
     this.categoriasOpcoes = opts?.categorias ?? [];
-    this.abrirPainel();
+    this.abrirPainel({ focarNome: true });
   }
 
   abrirEdicao(
@@ -258,7 +258,7 @@ export class ServicoCadastroDrawerService {
     });
   }
 
-  private abrirPainel(): void {
+  private abrirPainel(opts?: { focarNome?: boolean }): void {
     this.abaAtiva = 'Cadastro';
     this.erro = '';
     this.panelOpen.set(false);
@@ -268,6 +268,11 @@ export class ServicoCadastroDrawerService {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           this.panelOpen.set(true);
+          if (opts?.focarNome) {
+            queueMicrotask(() => {
+              document.getElementById('servico-cadastro-nome')?.focus();
+            });
+          }
         });
       });
     });

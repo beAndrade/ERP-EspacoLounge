@@ -8,6 +8,7 @@
     <div
       class="app-drawer cliente-drawer"
       [class.app-drawer--open]="d.panelOpen"
+      [class.app-drawer--settled]="d.panelSettled"
       role="dialog"
       aria-modal="true"
       [attr.aria-label]="d.ariaLabelDrawer()"
@@ -49,13 +50,14 @@
     @if (d.comandaEmpilhadaAberta && d.comandaEmpilhadaContexto) {
       <div
         class="overlay overlay--cliente-comanda-empilhada"
-        [class.overlay--open]="d.comandaEmpilhadaAberta"
+        [class.overlay--open]="d.comandaEmpilhadaPanelOpen"
         aria-hidden="true"
         (click)="fecharComandaEmpilhada()"
       ></div>
       <div
         class="app-drawer cliente-comanda-empilhada app-drawer--comanda"
         [class.app-drawer--open]="d.comandaEmpilhadaPanelOpen"
+        [class.app-drawer--settled]="d.comandaEmpilhadaSettled"
         role="dialog"
         aria-modal="true"
         [attr.aria-label]="ariaLabelComandaEmpilhada()"

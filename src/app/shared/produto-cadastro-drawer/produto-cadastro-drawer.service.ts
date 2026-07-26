@@ -108,7 +108,7 @@ export class ProdutoCadastroDrawerService {
     this.callbacks = opts ?? null;
     this.categoriasOpcoes = opts?.categorias ?? [];
     this.marcasOpcoes = opts?.marcas ?? [];
-    this.abrirPainel();
+    this.abrirPainel({ focarNome: true });
   }
 
   abrirEdicao(
@@ -251,7 +251,7 @@ export class ProdutoCadastroDrawerService {
     });
   }
 
-  private abrirPainel(): void {
+  private abrirPainel(opts?: { focarNome?: boolean }): void {
     this.abaAtiva = 'Cadastro';
     this.erro = '';
     this.panelOpen.set(false);
@@ -261,6 +261,11 @@ export class ProdutoCadastroDrawerService {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           this.panelOpen.set(true);
+          if (opts?.focarNome) {
+            queueMicrotask(() => {
+              document.getElementById('produto-cadastro-nome')?.focus();
+            });
+          }
         });
       });
     });

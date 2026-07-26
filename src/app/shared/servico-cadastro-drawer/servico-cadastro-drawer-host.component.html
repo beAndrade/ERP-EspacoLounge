@@ -135,6 +135,7 @@
                     name="servicoNome"
                     placeholder="Informe o nome"
                     autocomplete="off"
+                    id="servico-cadastro-nome"
                   />
                 </label>
 
@@ -159,223 +160,287 @@
                     </datalist>
                   </label>
 
-                  <div class="servico-cadastro-form__field">
-                    <span class="servico-cadastro-form__label">Preço de venda</span>
+                  <label class="servico-cadastro-form__field">
+                    <span class="servico-cadastro-form__label">
+                      <span class="servico-cadastro-form__req" aria-hidden="true">*</span>
+                      Tipo de preço
+                    </span>
                     <select
                       class="servico-cadastro-form__select"
                       [(ngModel)]="d.tipo"
                       name="servicoTipo"
                     >
                       <option value="Fixo">Preço fixo</option>
-                      <option value="Tamanho">Por tamanho</option>
+                      <option value="Tamanho">Por tamanho do cabelo</option>
                     </select>
-                  </div>
+                  </label>
                 </div>
 
-                @if (d.tipo === 'Tamanho') {
+                @if (d.tipo === 'Fixo') {
                   <div
-                    class="servico-cadastro-form__tamanho-grid"
+                    class="servico-cadastro-form__block"
                     role="group"
-                    aria-label="Preços e durações por tamanho"
+                    aria-label="Preço fixo"
                   >
-                    <div class="servico-cadastro-form__tamanho-col">
-                      <span class="servico-cadastro-form__label">Curto</span>
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.precoCurto"
-                        name="precoCurto"
-                        placeholder="Preço"
-                        aria-label="Preço Curto"
-                        (input)="d.onMoedaInput('precoCurto', $event)"
-                      />
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.comissaoCurto"
-                        name="comissaoCurto"
-                        placeholder="Comissão"
-                        aria-label="Comissão Curto"
-                        (input)="d.onMoedaInput('comissaoCurto', $event)"
-                      />
-                      <select
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.duracaoCurto"
-                        name="duracaoCurto"
-                        aria-label="Duração Curto"
-                      >
-                        <option [ngValue]="null">Padrão</option>
-                        @for (m of d.opcoesDuracaoCom(d.duracaoCurto); track m) {
-                          <option [ngValue]="m">{{ m }} min</option>
-                        }
-                      </select>
-                    </div>
-                    <div class="servico-cadastro-form__tamanho-col">
-                      <span class="servico-cadastro-form__label">Médio</span>
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.precoMedio"
-                        name="precoMedio"
-                        placeholder="Preço"
-                        aria-label="Preço Médio"
-                        (input)="d.onMoedaInput('precoMedio', $event)"
-                      />
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.comissaoMedio"
-                        name="comissaoMedio"
-                        placeholder="Comissão"
-                        aria-label="Comissão Médio"
-                        (input)="d.onMoedaInput('comissaoMedio', $event)"
-                      />
-                      <select
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.duracaoMedio"
-                        name="duracaoMedio"
-                        aria-label="Duração Médio"
-                      >
-                        <option [ngValue]="null">Padrão</option>
-                        @for (m of d.opcoesDuracaoCom(d.duracaoMedio); track m) {
-                          <option [ngValue]="m">{{ m }} min</option>
-                        }
-                      </select>
-                    </div>
-                    <div class="servico-cadastro-form__tamanho-col">
-                      <span class="servico-cadastro-form__label">M/L</span>
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.precoMl"
-                        name="precoMl"
-                        placeholder="Preço"
-                        aria-label="Preço M/L"
-                        (input)="d.onMoedaInput('precoMl', $event)"
-                      />
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.comissaoMl"
-                        name="comissaoMl"
-                        placeholder="Comissão"
-                        aria-label="Comissão M/L"
-                        (input)="d.onMoedaInput('comissaoMl', $event)"
-                      />
-                      <select
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.duracaoMl"
-                        name="duracaoMl"
-                        aria-label="Duração M/L"
-                      >
-                        <option [ngValue]="null">Padrão</option>
-                        @for (m of d.opcoesDuracaoCom(d.duracaoMl); track m) {
-                          <option [ngValue]="m">{{ m }} min</option>
-                        }
-                      </select>
-                    </div>
-                    <div class="servico-cadastro-form__tamanho-col">
-                      <span class="servico-cadastro-form__label">Longo</span>
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.precoLongo"
-                        name="precoLongo"
-                        placeholder="Preço"
-                        aria-label="Preço Longo"
-                        (input)="d.onMoedaInput('precoLongo', $event)"
-                      />
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.comissaoLongo"
-                        name="comissaoLongo"
-                        placeholder="Comissão"
-                        aria-label="Comissão Longo"
-                        (input)="d.onMoedaInput('comissaoLongo', $event)"
-                      />
-                      <select
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.duracaoLongo"
-                        name="duracaoLongo"
-                        aria-label="Duração Longo"
-                      >
-                        <option [ngValue]="null">Padrão</option>
-                        @for (m of d.opcoesDuracaoCom(d.duracaoLongo); track m) {
-                          <option [ngValue]="m">{{ m }} min</option>
-                        }
-                      </select>
+                    <p class="servico-cadastro-form__block-title">Preço e comissão</p>
+                    <div class="servico-cadastro-form__row servico-cadastro-form__row--3">
+                      <label class="servico-cadastro-form__field">
+                        <span class="servico-cadastro-form__label">Valor</span>
+                        <input
+                          type="text"
+                          inputmode="numeric"
+                          autocomplete="off"
+                          class="servico-cadastro-form__input"
+                          [(ngModel)]="d.valorBase"
+                          name="servicoValorBase"
+                          placeholder="R$ 0,00"
+                          (input)="d.onMoedaInput('valorBase', $event)"
+                        />
+                      </label>
+                      <div class="servico-cadastro-form__field">
+                        <div class="servico-cadastro-form__preco servico-cadastro-form__preco--labeled">
+                          <label class="servico-cadastro-form__preco-col">
+                            <span class="servico-cadastro-form__label">Comissão</span>
+                            <select
+                              class="servico-cadastro-form__select"
+                              [(ngModel)]="d.comissaoUnidade"
+                              name="comissaoUnidade"
+                              (ngModelChange)="d.onComissaoUnidadeChange()"
+                            >
+                              <option value="pct">%</option>
+                              <option value="fixa">R$</option>
+                            </select>
+                          </label>
+                          <label class="servico-cadastro-form__preco-col servico-cadastro-form__preco-col--grow">
+                            <span class="servico-cadastro-form__label">Valor</span>
+                            <input
+                              type="text"
+                              inputmode="numeric"
+                              autocomplete="off"
+                              class="servico-cadastro-form__input"
+                              [(ngModel)]="d.comissaoValor"
+                              name="comissaoValor"
+                              [placeholder]="
+                                d.comissaoUnidade === 'pct' ? '0 %' : 'R$ 0,00'
+                              "
+                              (input)="d.onComissaoValorInput($event)"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      <label class="servico-cadastro-form__field">
+                        <span class="servico-cadastro-form__label">Duração</span>
+                        <select
+                          class="servico-cadastro-form__input"
+                          [(ngModel)]="d.duracaoMinutos"
+                          name="duracaoMinutos"
+                        >
+                          @for (m of d.opcoesDuracaoCom(d.duracaoMinutos); track m) {
+                            <option [ngValue]="m">{{ m }} min</option>
+                          }
+                        </select>
+                      </label>
                     </div>
                   </div>
-                  <p class="servico-cadastro-form__hint">
-                    Em cada coluna: preço, comissão (R$) e duração. «Padrão» usa a duração abaixo.
-                  </p>
-                }
+                } @else {
+                  <div
+                    class="servico-cadastro-form__block"
+                    role="group"
+                    aria-label="Preços por tamanho do cabelo"
+                  >
+                    <p class="servico-cadastro-form__block-title">
+                      Preços por tamanho do cabelo
+                    </p>
+                    <p class="servico-cadastro-form__hint">
+                      Informe preço, comissão (R$) e duração em cada faixa. Se a duração
+                      estiver em «Padrão», usa a duração padrão abaixo.
+                    </p>
 
-                @if (d.tipo === 'Fixo') {
-                  <div class="servico-cadastro-form__row servico-cadastro-form__row--3">
-                    <label class="servico-cadastro-form__field">
-                      <span class="servico-cadastro-form__label">Valor</span>
-                      <input
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        class="servico-cadastro-form__input"
-                        [(ngModel)]="d.valorBase"
-                        name="servicoValorBase"
-                        placeholder="R$ 0,00"
-                        (input)="d.onMoedaInput('valorBase', $event)"
-                      />
-                    </label>
-                    <div class="servico-cadastro-form__field">
-                      <div class="servico-cadastro-form__preco servico-cadastro-form__preco--labeled">
-                        <label class="servico-cadastro-form__preco-col">
-                          <span class="servico-cadastro-form__label">Comissão</span>
-                          <select
-                            class="servico-cadastro-form__select"
-                            [(ngModel)]="d.comissaoUnidade"
-                            name="comissaoUnidade"
-                            (ngModelChange)="d.onComissaoUnidadeChange()"
-                          >
-                            <option value="pct">%</option>
-                            <option value="fixa">R$</option>
-                          </select>
-                        </label>
-                        <label class="servico-cadastro-form__preco-col servico-cadastro-form__preco-col--grow">
-                          <span class="servico-cadastro-form__label">Valor</span>
-                          <input
-                            type="text"
-                            inputmode="numeric"
-                            autocomplete="off"
-                            class="servico-cadastro-form__input"
-                            [(ngModel)]="d.comissaoValor"
-                            name="comissaoValor"
-                            [placeholder]="
-                              d.comissaoUnidade === 'pct' ? '0 %' : 'R$ 0,00'
-                            "
-                            (input)="d.onComissaoValorInput($event)"
-                          />
-                        </label>
-                      </div>
+                    <div class="servico-cadastro-form__tamanho-table-wrap">
+                      <table class="servico-cadastro-form__tamanho-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Tamanho</th>
+                            <th scope="col">Preço</th>
+                            <th scope="col">Comissão (R$)</th>
+                            <th scope="col">Duração</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th scope="row">Curto</th>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.precoCurto"
+                                name="precoCurto"
+                                placeholder="R$ 0,00"
+                                aria-label="Preço Curto"
+                                (input)="d.onMoedaInput('precoCurto', $event)"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.comissaoCurto"
+                                name="comissaoCurto"
+                                placeholder="R$ 0,00"
+                                aria-label="Comissão Curto"
+                                (input)="d.onMoedaInput('comissaoCurto', $event)"
+                              />
+                            </td>
+                            <td>
+                              <select
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.duracaoCurto"
+                                name="duracaoCurto"
+                                aria-label="Duração Curto"
+                              >
+                                <option [ngValue]="null">Padrão</option>
+                                @for (m of d.opcoesDuracaoCom(d.duracaoCurto); track m) {
+                                  <option [ngValue]="m">{{ m }} min</option>
+                                }
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th scope="row">Médio</th>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.precoMedio"
+                                name="precoMedio"
+                                placeholder="R$ 0,00"
+                                aria-label="Preço Médio"
+                                (input)="d.onMoedaInput('precoMedio', $event)"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.comissaoMedio"
+                                name="comissaoMedio"
+                                placeholder="R$ 0,00"
+                                aria-label="Comissão Médio"
+                                (input)="d.onMoedaInput('comissaoMedio', $event)"
+                              />
+                            </td>
+                            <td>
+                              <select
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.duracaoMedio"
+                                name="duracaoMedio"
+                                aria-label="Duração Médio"
+                              >
+                                <option [ngValue]="null">Padrão</option>
+                                @for (m of d.opcoesDuracaoCom(d.duracaoMedio); track m) {
+                                  <option [ngValue]="m">{{ m }} min</option>
+                                }
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th scope="row">Médio/Longo</th>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.precoMl"
+                                name="precoMl"
+                                placeholder="R$ 0,00"
+                                aria-label="Preço Médio/Longo"
+                                (input)="d.onMoedaInput('precoMl', $event)"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.comissaoMl"
+                                name="comissaoMl"
+                                placeholder="R$ 0,00"
+                                aria-label="Comissão Médio/Longo"
+                                (input)="d.onMoedaInput('comissaoMl', $event)"
+                              />
+                            </td>
+                            <td>
+                              <select
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.duracaoMl"
+                                name="duracaoMl"
+                                aria-label="Duração Médio/Longo"
+                              >
+                                <option [ngValue]="null">Padrão</option>
+                                @for (m of d.opcoesDuracaoCom(d.duracaoMl); track m) {
+                                  <option [ngValue]="m">{{ m }} min</option>
+                                }
+                              </select>
+                            </td>
+                          </tr>
+                          <tr>
+                            <th scope="row">Longo</th>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.precoLongo"
+                                name="precoLongo"
+                                placeholder="R$ 0,00"
+                                aria-label="Preço Longo"
+                                (input)="d.onMoedaInput('precoLongo', $event)"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.comissaoLongo"
+                                name="comissaoLongo"
+                                placeholder="R$ 0,00"
+                                aria-label="Comissão Longo"
+                                (input)="d.onMoedaInput('comissaoLongo', $event)"
+                              />
+                            </td>
+                            <td>
+                              <select
+                                class="servico-cadastro-form__input"
+                                [(ngModel)]="d.duracaoLongo"
+                                name="duracaoLongo"
+                                aria-label="Duração Longo"
+                              >
+                                <option [ngValue]="null">Padrão</option>
+                                @for (m of d.opcoesDuracaoCom(d.duracaoLongo); track m) {
+                                  <option [ngValue]="m">{{ m }} min</option>
+                                }
+                              </select>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
-                    <label class="servico-cadastro-form__field">
-                      <span class="servico-cadastro-form__label">Duração</span>
+
+                    <label class="servico-cadastro-form__field servico-cadastro-form__field--duracao-padrao">
+                      <span class="servico-cadastro-form__label">Duração padrão</span>
                       <select
                         class="servico-cadastro-form__input"
                         [(ngModel)]="d.duracaoMinutos"
@@ -387,19 +452,6 @@
                       </select>
                     </label>
                   </div>
-                } @else {
-                  <label class="servico-cadastro-form__field">
-                    <span class="servico-cadastro-form__label">Duração padrão</span>
-                    <select
-                      class="servico-cadastro-form__input"
-                      [(ngModel)]="d.duracaoMinutos"
-                      name="duracaoMinutos"
-                    >
-                      @for (m of d.opcoesDuracaoCom(d.duracaoMinutos); track m) {
-                        <option [ngValue]="m">{{ m }} min</option>
-                      }
-                    </select>
-                  </label>
                 }
 
                 <label class="servico-cadastro-form__field servico-cadastro-form__field--full">

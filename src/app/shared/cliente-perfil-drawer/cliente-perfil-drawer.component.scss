@@ -244,15 +244,17 @@
 .cliente-perfil-drawer .cliente-nav__item {
   width: 100%;
   min-height: var(--cliente-nav-item-h);
-  padding: 0 24px 0 0;
+  padding: 8px 0;
   border: none;
   background: transparent;
   text-align: left;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: #52525b;
+  outline: none;
   cursor: pointer;
-  transition: color 0.32s ease;
+  white-space: nowrap;
+  transition: color 0.3s;
 
   &:hover {
     color: var(--color-primary-hover);
@@ -260,7 +262,7 @@
 
   &--active {
     color: var(--cliente-accent);
-    font-weight: 600;
+    font-weight: 400;
   }
 
   &--active:hover {

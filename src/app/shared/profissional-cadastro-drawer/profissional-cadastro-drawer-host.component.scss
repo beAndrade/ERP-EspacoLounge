@@ -58,13 +58,16 @@ app-profissional-cadastro-drawer-host {
 
   .cliente-nav__item {
     min-height: var(--cliente-nav-item-h);
-    padding: 0 24px 0 0;
+    padding: 8px 0;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
+    outline: none;
+    white-space: nowrap;
+    transition: color 0.3s;
   }
 
   .cliente-nav__item--active {
-    font-weight: 600;
+    font-weight: 400;
     color: var(--cliente-accent);
   }
 
