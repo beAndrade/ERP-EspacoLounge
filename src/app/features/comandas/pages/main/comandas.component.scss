@@ -272,21 +272,23 @@
 }
 
 .comandas-table-card {
-  align-self: stretch;
-  isolation: isolate;
   box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
   flex: auto;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   border: 1px solid rgba(0 0 0 / 3%);
+  align-self: stretch;
   transition: box-shadow 0.1s;
   border-radius: 12px 12px 0 0;
   background: #fff;
   box-sizing: border-box;
+  padding: 0;
+  isolation: isolate;
+  /* Menus de ação da linha — não clipar. Cantos via radius no thead/wrap. */
   overflow: visible;
 
   > .table-wrap {
-    /* `visible`: o menu de ações da linha não fica cortado / atrás do card. */
     overflow: visible;
     border-radius: 12px 12px 0 0;
   }
@@ -342,6 +344,14 @@ thead th {
   letter-spacing: normal;
   border-bottom: 1px solid #efefef;
   transition: background 0.2s ease;
+
+  &:first-child {
+    border-top-left-radius: 12px;
+  }
+
+  &:last-child {
+    border-top-right-radius: 12px;
+  }
 }
 
 thead th.col-status,

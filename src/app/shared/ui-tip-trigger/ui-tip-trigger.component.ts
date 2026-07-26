@@ -12,12 +12,16 @@ import {
 import { UI_TIP_SHOW_DELAY_MS } from './ui-tip-delay';
 
 export type UiTipAlign = 'center' | 'end' | 'start';
+export type UiTipPlacement = 'auto' | 'above';
 
 /** Tooltip escuro padrão do sistema (`ui-tooltip.scss`). */
 @Component({
   selector: 'app-ui-tip-trigger',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
+  host: {
+    '[class.ui-tip-trigger-host--fill]': 'fill()',
+  },
   template: `
     <span
       #anchor
@@ -26,6 +30,7 @@ export type UiTipAlign = 'center' | 'end' | 'start';
       [class.ui-tip-trigger--align-start]="align() === 'start'"
       [class.ui-tip-trigger--open]="tipOpen() && !floating()"
       [class.ui-tip-trigger--floating]="floating()"
+      [class.ui-tip-trigger--fill]="fill()"
       (click)="onTriggerClick($event)"
     >
       <ng-content />
@@ -45,6 +50,13 @@ export class UiTipTriggerComponent implements OnDestroy {
    * balão inline relativo ao trigger.
    */
   readonly floating = input(true, { transform: booleanAttribute });
+  /** Preenche a célula do cabeçalho (tabelas com botão de ordenação a 100%). */
+  readonly fill = input(false, { transform: booleanAttribute });
+  /**
+   * `above` — sempre por cima do trigger (ex.: cabeçalhos de ordenação).
+   * `auto` — preferir cima; se não couber, desce.
+   */
+  readonly placement = input<UiTipPlacement>('auto');
   readonly tipOpen = signal(false);
 
   @ViewChild('anchor', { static: true })
@@ -195,6 +207,15 @@ export class UiTipTriggerComponent implements OnDestroy {
     if (!anchor) {
       return new DOMRect();
     }
+    /** Cabeçalhos de ordenação: ancorar no rótulo (ex. "Nome"), não na coluna toda. */
+    if (this.fill()) {
+      const label = anchor.querySelector<HTMLElement>(
+        '[class*="-th-sort__label"]',
+      );
+      if (label) {
+        return label.getBoundingClientRect();
+      }
+    }
     const el =
       anchor.querySelector<HTMLElement>(
         'button, a, [role="button"], .drawer-switch',
@@ -253,11 +274,17 @@ export class UiTipTriggerComponent implements OnDestroy {
         Math.min(left, window.innerWidth - panelW - margin),
       );
     } else {
+      /** Centro horizontal do trigger; vertical acima (ou auto). */
       left = triggerRect.left + triggerRect.width / 2 - panelW / 2;
       top = triggerRect.top - panelH - gap;
-      if (top < margin) {
+      /** Cabeçalhos de ordenação (`fill`) ficam no topo da página — nunca inverter. */
+      const forceAbove = this.placement() === 'above' || this.fill();
+      if (top < margin && !forceAbove) {
         top = triggerRect.bottom + gap;
         place = 'below';
+      } else if (top < margin) {
+        top = margin;
+        place = 'above';
       }
       left = Math.max(
         margin,

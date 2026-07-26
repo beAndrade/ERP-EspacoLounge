@@ -152,7 +152,11 @@
           <thead>
             <tr>
               <th class="orcamentos-th-sort-wrap" scope="col">
-                <button
+                <app-ui-tip-trigger
+                  fill
+                  [tip]="tooltipOrdenacao('ticket')"
+                >
+                  <button
                   type="button"
                   class="orcamentos-th-sort"
                   (click)="onOrdenarColuna('ticket', $event)"
@@ -184,9 +188,14 @@
                     </svg>
                   </span>
                 </button>
+                </app-ui-tip-trigger>
               </th>
               <th class="orcamentos-th-sort-wrap" scope="col">
-                <button
+                <app-ui-tip-trigger
+                  fill
+                  [tip]="tooltipOrdenacao('data')"
+                >
+                  <button
                   type="button"
                   class="orcamentos-th-sort"
                   (click)="onOrdenarColuna('data', $event)"
@@ -218,9 +227,14 @@
                     </svg>
                   </span>
                 </button>
+                </app-ui-tip-trigger>
               </th>
               <th class="orcamentos-th-sort-wrap" scope="col">
-                <button
+                <app-ui-tip-trigger
+                  fill
+                  [tip]="tooltipOrdenacao('cliente')"
+                >
+                  <button
                   type="button"
                   class="orcamentos-th-sort"
                   (click)="onOrdenarColuna('cliente', $event)"
@@ -252,6 +266,7 @@
                     </svg>
                   </span>
                 </button>
+                </app-ui-tip-trigger>
               </th>
               <th scope="col">Status</th>
               <th scope="col">Valor</th>

@@ -30,6 +30,8 @@ import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variave
 import { AgendaNovoComponent } from '../../../agenda/pages/novo/agenda-novo.component';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 registerLocaleData(localePt);
 
@@ -66,6 +68,7 @@ function formataMoeda(n: number): string {
     DecimalPipe,
     AgendaNovoComponent,
     WhatsappEnviarModalComponent,
+    UiTipTriggerComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './orcamentos.component.html',
@@ -345,12 +348,11 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   }
 
   tooltipOrdenacao(col: typeof this.ordenacaoColuna): string {
-    if (this.ordenacaoColuna !== col) {
-      return 'Clique organiza por ascendente';
-    }
-    return this.ordenacaoDir === 'asc'
-      ? 'Clique organiza por descendente'
-      : 'Clique organiza por ascendente';
+    return tooltipOrdenacaoProximoClique(
+      this.ordenacaoColuna,
+      this.ordenacaoDir,
+      col,
+    );
   }
 
   rotuloTicket(g: OrcamentoGrupo): string {

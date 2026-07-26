@@ -40,6 +40,8 @@ import {
   type PagamentoColuna,
   type StatusComandaColuna,
 } from '../../../../core/utils/comanda-status.util';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 registerLocaleData(localePt);
 
@@ -90,6 +92,7 @@ function formataMoeda(n: number): string {
     NovaComandaDrawerComponent,
     FaturarDrawerComponent,
     AgendaNovoComponent,
+    UiTipTriggerComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './comandas.component.html',
@@ -893,12 +896,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   tooltipOrdenacao(col: typeof this.ordenacaoColuna): string {
-    if (this.ordenacaoColuna !== col) {
-      return 'Clique organiza por ascendente';
-    }
-    return this.ordenacaoDir === 'asc'
-      ? 'Clique organiza por descendente'
-      : 'Clique organiza por ascendente';
+    return tooltipOrdenacaoProximoClique(
+      this.ordenacaoColuna,
+      this.ordenacaoDir,
+      col,
+    );
   }
 
   /**
