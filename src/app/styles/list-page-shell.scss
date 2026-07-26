@@ -1,5 +1,7 @@
 /* Shell reutilizável: toolbar + tabela + rodapé (comandas, clientes, …). */
 
+@use './table-card-shell' as table-card;
+
 $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
 
 .list-page {
@@ -10,6 +12,7 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
   width: 100%;
   max-width: none;
   box-sizing: border-box;
+  padding-bottom: 24px;
 }
 
 .list-layout {
@@ -78,15 +81,17 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
 
 .list-page__tab {
   position: relative;
-  margin: 0;
-  padding: 0.65rem 1rem 0.75rem;
+  margin: 0 20px 0 0;
+  padding: 4px 0 12px;
   border: none;
   background: none;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 16px;
   font-weight: 600;
-  color: #78716c;
+  line-height: 16px;
+  color: #585858;
   cursor: pointer;
+  transition: color 0.1s;
 
   &::after {
     content: '';
@@ -99,12 +104,13 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
     border-radius: 2px 2px 0 0;
   }
 
-  &:hover {
-    color: #44403c;
+  &:hover:not(.list-page__tab--active) {
+    color: var(--color-primary);
   }
 
   &--active {
     color: var(--color-primary);
+    cursor: default;
 
     &::after {
       background: var(--color-primary);
@@ -476,24 +482,14 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
 }
 
 .list-table-card {
-  box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
-  flex: auto;
+  @include table-card.list-table-card-surface;
   width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  border: 1px solid rgba(0 0 0 / 3%);
   align-self: stretch;
-  transition: box-shadow 0.1s;
-  border-radius: 12px 12px 0 0;
-  background: #fff;
-  box-sizing: border-box;
-  overflow: visible;
-  padding: 0;
 
   > .table-wrap {
     overflow-x: clip;
     overflow-y: visible;
-    border-radius: 12px 12px 0 0;
+    border-radius: table-card.$list-table-card-radius;
   }
 }
 
@@ -512,7 +508,8 @@ col.drawer-table__col-check {
 
 .list-table input[type='checkbox'],
 .comandas-table input[type='checkbox'],
-.drawer-table input[type='checkbox'] {
+.drawer-table input[type='checkbox'],
+.categorias-filtros-check input[type='checkbox'] {
   --list-check-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --list-check-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
 
@@ -594,7 +591,8 @@ col.drawer-table__col-check {
 @media (prefers-reduced-motion: reduce) {
   .list-table input[type='checkbox'],
   .comandas-table input[type='checkbox'],
-  .drawer-table input[type='checkbox'] {
+  .drawer-table input[type='checkbox'],
+  .categorias-filtros-check input[type='checkbox'] {
     transition-duration: 0.01ms;
 
     &::after {
@@ -610,17 +608,29 @@ col.drawer-table__col-check {
 .list-table thead th {
   background: #fafafa;
   padding: 12px 10px;
+  height: 47.56px;
+  box-sizing: border-box;
   font-weight: 600;
   font-size: 14px;
   color: rgba(0, 0, 0, 0.75);
   text-align: left;
   vertical-align: middle;
   border-bottom: 1px solid #f0f0f0;
+
+  &:first-child {
+    border-top-left-radius: 12px;
+  }
+
+  &:last-child {
+    border-top-right-radius: 12px;
+  }
 }
 
 .list-table tbody td {
-  padding: 12px 10px;
-  height: 48px;
+  padding: 0 10px;
+  height: 47px;
+  min-height: 47px;
+  max-height: 47px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
   font-size: 14px;
@@ -636,7 +646,7 @@ col.drawer-table__col-check {
   background: #fafafa;
 }
 
-.list-table tbody tr:hover td:not(.table-body__busy):not(.table-body__empty) {
+.list-table tbody tr:hover:not(.list-table__skeleton-row) td:not(.table-body__busy):not(.table-body__empty) {
   background: #fafafa;
 }
 
@@ -825,6 +835,45 @@ tbody td.col-check + td {
   padding: 2.5rem 1rem;
   text-align: center;
   color: var(--color-muted);
+}
+
+/** Placeholder de linhas enquanto a lista carrega (sem texto “A carregar…”). */
+.list-table__skeleton-row td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.list-skeleton-bar {
+  display: block;
+  height: 12px;
+  width: 42%;
+  max-width: 16rem;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0f0f0 0%, #e6e6e6 45%, #f0f0f0 90%);
+  background-size: 200% 100%;
+  animation: list-skeleton-shimmer 1.15s ease-in-out infinite;
+}
+
+.list-table__skeleton-row:nth-child(2n) .list-skeleton-bar {
+  width: 58%;
+}
+
+.list-table__skeleton-row:nth-child(3n) .list-skeleton-bar {
+  width: 34%;
+}
+
+.list-table__skeleton-row:nth-child(4n) .list-skeleton-bar {
+  width: 50%;
+}
+
+@keyframes list-skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 .table-empty {

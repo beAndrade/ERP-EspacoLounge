@@ -3,23 +3,26 @@
  * Preferir estas classes no markup; wraps órfãos listados também herdam o visual.
  */
 $list-table-card-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
-$list-table-card-border: 1px solid var(--color-border, #e2e8f0);
+$list-table-card-border: 1px solid rgba(0 0 0 / 3%);
 /** Só cantos superiores — base do card fica reta (footer / fundo). */
 $list-table-card-radius: 12px 12px 0 0;
 
 @mixin list-table-card-surface {
   box-shadow: $list-table-card-shadow;
   flex: auto;
-  width: 100%;
+  /* Em flex-row o `0` deixa o card encolher; a largura útil vem do grow. */
+  width: 0;
   max-width: 100%;
   min-width: 0;
   border: $list-table-card-border;
-  align-self: stretch;
+  align-self: start;
   transition: box-shadow 0.1s;
   border-radius: $list-table-card-radius;
   background: var(--color-card, #ffffff);
   box-sizing: border-box;
   padding: 0;
+  /* Clipa o thead nos cantos superiores arredondados. */
+  overflow: hidden;
 }
 
 .list-table-card,
@@ -34,6 +37,14 @@ $list-table-card-radius: 12px 12px 0 0;
   @include list-table-card-surface;
 }
 
+/** Em coluna (listagens), preencher a largura do main sem perder o truque flex. */
+.list-layout__main > .list-table-card,
+.list-page > .list-table-card,
+.list-layout__main .list-table-card {
+  width: 100%;
+  align-self: stretch;
+}
+
 .list-table-card > .table-wrap,
 .comandas-table-card > .table-wrap,
 .orcamentos-table-card > .table-wrap,
@@ -42,4 +53,20 @@ $list-table-card-radius: 12px 12px 0 0;
   overflow-x: clip;
   overflow-y: visible;
   border-radius: $list-table-card-radius;
+}
+
+/**
+ * Altura uniforme das linhas — global (não depende do @use encapsulado
+ * por página). Tabelas de Controle e demais listagens com `.list-table`.
+ */
+.list-table > tbody > tr {
+  height: 47px;
+}
+
+.list-table > tbody > tr > td {
+  height: 47px;
+  min-height: 47px;
+  max-height: 47px;
+  box-sizing: border-box;
+  vertical-align: middle;
 }

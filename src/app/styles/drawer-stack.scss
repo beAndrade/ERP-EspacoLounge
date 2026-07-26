@@ -32,3 +32,78 @@
     pointer-events: auto;
   }
 }
+
+/** Toggle Ativo/Inativo usado nos drawers de cadastro (categorias, marcas, …). */
+.drawer-switch {
+  --toggle-w: 44px;
+  --toggle-h: 22px;
+  --toggle-pad: 2px;
+  --knob-size: 18px;
+  --toggle-travel: calc(
+    var(--toggle-w) - (var(--toggle-pad) * 2) - var(--knob-size)
+  );
+
+  position: relative;
+  flex-shrink: 0;
+  width: var(--toggle-w);
+  height: var(--toggle-h);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: calc((var(--toggle-h) - var(--knob-size)) / 2);
+    left: var(--toggle-pad);
+    width: var(--knob-size);
+    height: var(--knob-size);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &--on,
+  &[aria-pressed='true'] {
+    background: var(--color-primary);
+
+    &::after {
+      transform: translateX(var(--toggle-travel));
+    }
+  }
+
+  &:hover:not(:disabled) {
+    background: #bfbfbf;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+    outline-offset: 2px;
+  }
+
+  &.drawer-switch--pulse {
+    animation: drawerSwitchPulse 1.5s ease-out;
+  }
+}
+
+@keyframes drawerSwitchPulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
