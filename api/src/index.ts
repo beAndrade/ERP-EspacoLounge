@@ -165,6 +165,31 @@ const servicoWriteBodySchema = t.Object({
   duracao_longo: t.Optional(t.Union([t.Number(), t.Null()])),
 });
 
+const nullableStr = t.Optional(t.Union([t.String(), t.Null()]));
+
+/** POST/PATCH produtos — o front envia `null` em campos vazios (moeda, %, texto). */
+const produtoWriteBodySchema = t.Object(
+  {
+    produto: t.Optional(t.String()),
+    nome: t.Optional(t.String()),
+    categoria: t.Optional(t.Union([t.String(), t.Null()])),
+    marca: nullableStr,
+    preco: nullableStr,
+    custo: nullableStr,
+    estoque_inicial: nullableStr,
+    estoque_minimo: nullableStr,
+    unidade: nullableStr,
+    preco_profissional: nullableStr,
+    custo_adicional: nullableStr,
+    comissao_padrao: nullableStr,
+    codigo_item: nullableStr,
+    codigo_barras: nullableStr,
+    observacoes: nullableStr,
+    foto_url: nullableStr,
+  },
+  { additionalProperties: true },
+);
+
 /** Campos explícitos — `additionalProperties` sozinho não preserva `foto_url` no body parseado. */
 const profissionalCadastroBodySchema = t.Object({
   nome: t.Optional(t.String()),
@@ -1422,29 +1447,7 @@ const app = new Elysia({ adapter: node() })
         return fail('SERVER', msg);
       }
     },
-    {
-      body: t.Object(
-        {
-          produto: t.Optional(t.String()),
-          nome: t.Optional(t.String()),
-          categoria: t.Optional(t.String()),
-          marca: t.Optional(t.String()),
-          preco: t.Optional(t.String()),
-          custo: t.Optional(t.String()),
-          estoque_inicial: t.Optional(t.String()),
-          estoque_minimo: t.Optional(t.String()),
-          unidade: t.Optional(t.String()),
-          preco_profissional: t.Optional(t.String()),
-          custo_adicional: t.Optional(t.String()),
-          comissao_padrao: t.Optional(t.String()),
-          codigo_item: t.Optional(t.String()),
-          codigo_barras: t.Optional(t.String()),
-          observacoes: t.Optional(t.String()),
-          foto_url: t.Optional(t.String()),
-        },
-        { additionalProperties: true },
-      ),
-    },
+    { body: produtoWriteBodySchema },
   )
   .patch(
     '/api/produtos/:id',
@@ -1521,27 +1524,7 @@ const app = new Elysia({ adapter: node() })
     },
     {
       params: t.Object({ id: t.String() }),
-      body: t.Object(
-        {
-          produto: t.Optional(t.String()),
-          nome: t.Optional(t.String()),
-          categoria: t.Optional(t.String()),
-          marca: t.Optional(t.String()),
-          preco: t.Optional(t.String()),
-          custo: t.Optional(t.String()),
-          estoque_inicial: t.Optional(t.String()),
-          estoque_minimo: t.Optional(t.String()),
-          unidade: t.Optional(t.String()),
-          preco_profissional: t.Optional(t.String()),
-          custo_adicional: t.Optional(t.String()),
-          comissao_padrao: t.Optional(t.String()),
-          codigo_item: t.Optional(t.String()),
-          codigo_barras: t.Optional(t.String()),
-          observacoes: t.Optional(t.String()),
-          foto_url: t.Optional(t.String()),
-        },
-        { additionalProperties: true },
-      ),
+      body: produtoWriteBodySchema,
     },
   )
   .patch(
