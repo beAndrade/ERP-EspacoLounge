@@ -1,4 +1,4 @@
-﻿@use '../../styles/breakpoints' as bp;
+@use '../../styles/breakpoints' as bp;
 
 /**
  * Empilhamento global: ficha do cliente acima de comanda/faturar das páginas
@@ -348,7 +348,7 @@ app-produto-cadastro-drawer-host {
   font-weight: 500;
   line-height: 1.2;
   padding-bottom: 8px;
-  color: #3f3f46;
+  color: rgba(0, 0, 0, 0.75);
 
   &--with-help {
     width: fit-content;
@@ -766,8 +766,12 @@ app-produto-cadastro-drawer-host {
   transition: all 0.2s linear;
 
   &::placeholder {
+    margin: 0;
+    padding: 0;
     font-size: 14px;
-    color: #a1a1aa;
+    font-weight: 400;
+    color: #d4d4d8;
+    opacity: 1;
   }
 
   &:hover {
@@ -791,34 +795,36 @@ app-produto-cadastro-drawer-host {
   padding-right: 28px;
   cursor: pointer;
   background-color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d4d4d8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
-  background-size: 12px;
+  background-size: 16px;
 
   &:hover,
   &:focus {
     background-color: #ffffff;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236bade0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d4d4d8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 }
 
 .servico-cadastro-form__textarea,
 .produto-cadastro-form__textarea {
-  height: auto;
-  min-height: 96px;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  max-width: 100%;
+  height: 54px !important;
+  min-height: 54px !important;
+  padding: 4px 11px;
+  line-height: 1.5714285714285714;
+  vertical-align: bottom;
+  transition: all 0.3s;
   resize: vertical;
-  line-height: 1.45;
 }
 
 .produto-cadastro-form__section {
   margin: 0.5rem 0 0;
   padding: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #000000bf;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.75);
   line-height: 1.3;
 }
 

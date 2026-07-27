@@ -313,9 +313,14 @@
   cursor: pointer;
   border-radius: 8px;
 
+  .col-nome__text {
+    font-weight: 400;
+    color: var(--color-link);
+  }
+
   &:hover .col-nome__text,
   &:focus-visible .col-nome__text {
-    color: rgb(80, 90, 251);
+    color: var(--color-link-hover);
   }
 
   &:focus-visible {

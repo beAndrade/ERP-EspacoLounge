@@ -263,9 +263,9 @@
 
   font-size: 0.8125rem;
 
-  font-weight: 500;
+  font-weight: 400;
 
-  color: var(--color-primary);
+  color: var(--color-link);
 
   cursor: pointer;
 
@@ -280,6 +280,8 @@
 
 
   &:hover {
+
+    color: var(--color-link-hover);
 
     text-decoration: underline;
 

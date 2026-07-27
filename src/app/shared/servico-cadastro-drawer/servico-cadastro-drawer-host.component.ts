@@ -9,16 +9,19 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { portalHostElementToBody } from '../drawer-body-portal';
+import { SaasSelectComponent } from '../../features/agenda/pages/novo/saas-select.component';
+import { CursorFimValorDirective } from '../../core/directives/cursor-fim-valor.directive';
 import {
   SERVICO_ABAS,
   ServicoCadastroDrawerService,
   type ServicoCadastroAba,
 } from './servico-cadastro-drawer.service';
+import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
 
 @Component({
   selector: 'app-servico-cadastro-drawer-host',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SaasSelectComponent, CursorFimValorDirective],
   templateUrl: './servico-cadastro-drawer-host.component.html',
   styleUrl: './servico-cadastro-drawer-host.component.scss',
   encapsulation: ViewEncapsulation.None,
@@ -27,6 +30,7 @@ export class ServicoCadastroDrawerHostComponent implements OnInit, OnDestroy {
   readonly d = inject(ServicoCadastroDrawerService);
   readonly abas = SERVICO_ABAS;
 
+  private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
   private readonly hostEl = inject(ElementRef<HTMLElement>).nativeElement;
   private restoreBodyPortal: (() => void) | null = null;
 
@@ -42,6 +46,7 @@ export class ServicoCadastroDrawerHostComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
     if (!this.d.aberto()) return;
+    if (this.categoriaDrawer.aberto()) return;
     if (ev.defaultPrevented) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();

@@ -50,7 +50,7 @@ export class AgendaCorSelectComponent implements ControlValueAccessor {
 
   criando = false;
   novoNome = '';
-  novaCorHex = '#505afb';
+  novaCorHex = '#3f769d';
 
   get opcaoAtual(): AgendaCorOpcao {
     return this.opcoes.find((o) => o.id === this.inner) ?? this.opcoes[0];
@@ -109,7 +109,7 @@ export class AgendaCorSelectComponent implements ControlValueAccessor {
     ev.stopPropagation();
     this.criando = true;
     this.novoNome = '';
-    this.novaCorHex = '#505afb';
+    this.novaCorHex = '#3f769d';
     queueMicrotask(() => this.nomeCriarInput?.nativeElement.focus());
   }
 

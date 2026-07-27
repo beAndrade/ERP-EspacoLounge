@@ -1,30 +1,35 @@
 <div class="list-page marcas-page">
-  <div class="list-layout" [class.list-layout--filtros-open]="filtrosAbertos">
+  <div class="list-layout" [class.list-layout--filtros-abertos]="filtrosAbertos">
     <aside
       class="marcas-filtros-drawer"
       [class.marcas-filtros-drawer--open]="filtrosAbertos"
       aria-label="Filtros de marcas"
+      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
     >
       <div class="marcas-filtros-drawer__inner">
-        <header class="marcas-filtros-drawer__head">
-          <h2>Filtros</h2>
-          <button type="button" (click)="filtrosAbertos = false" aria-label="Fechar filtros">
-            ×
-          </button>
-        </header>
-        <p class="marcas-filtros-drawer__hint">Filtros avançados em breve.</p>
-        <footer class="marcas-filtros-drawer__footer">
-          <button type="button" class="marcas-filtros-drawer__btn" (click)="limparFiltros()">
-            Limpar
-          </button>
-          <button
-            type="button"
-            class="marcas-filtros-drawer__btn marcas-filtros-drawer__btn--primary"
-            (click)="aplicarFiltros()"
-          >
-            Aplicar
-          </button>
-        </footer>
+        <section class="marcas-filtros-card">
+          <h3 class="marcas-filtros-card__title">Status</h3>
+          <div class="marcas-filtros-card__body">
+            <label class="marcas-filtros-check">
+              <input
+                type="checkbox"
+                name="marca_filtro_ativos"
+                [checked]="filtroAtivas"
+                (change)="toggleFiltroStatus('ativos', $event)"
+              />
+              Ativos
+            </label>
+            <label class="marcas-filtros-check">
+              <input
+                type="checkbox"
+                name="marca_filtro_inativos"
+                [checked]="filtroInativas"
+                (change)="toggleFiltroStatus('inativos', $event)"
+              />
+              Inativos
+            </label>
+          </div>
+        </section>
       </div>
     </aside>
 
@@ -84,7 +89,8 @@
               <button
                 type="button"
                 class="list-head__toolbar-btn"
-                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos || filtrosStatusAtivos()"
+                [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
                 (click)="toggleFiltros()"
               >
                 <svg
@@ -220,7 +226,10 @@
                   </tr>
                 } @else {
                   @for (c of paginaItens(); track c.id) {
-                    <tr [class.list-table__row--selected]="estaSelecionado(c.id)">
+                    <tr
+                      [class.list-table__row--selected]="estaSelecionado(c.id)"
+                      [class.list-table__row--inativa]="!c.ativo"
+                    >
                       <td class="col-check">
                         <input
                           type="checkbox"

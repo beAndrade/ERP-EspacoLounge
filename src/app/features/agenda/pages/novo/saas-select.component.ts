@@ -282,6 +282,7 @@ export class SaasSelectComponent
    * `queueMicrotask` sozinho falha no 1.º clique — o utilizador tinha de clicar de novo.
    */
   private focusSearchFieldAfterOpen(): void {
+    if (!this.showFilter && this.layout !== 'sidebar') return;
     afterNextRender(
       () => {
         if (!this.panelOpen || this.isDisabled) return;

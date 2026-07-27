@@ -104,6 +104,12 @@ import {
   excluirCategoriaCatalogoApi,
   listCategoriasCatalogoApi,
 } from './services/categorias-catalogo-domain';
+import {
+  atualizarMarcaCatalogoApi,
+  criarMarcaCatalogoApi,
+  excluirMarcaCatalogoApi,
+  listMarcasCatalogoApi,
+} from './services/marcas-catalogo-domain';
 
 const clienteCadastroBodySchema = t.Object({
   nome: t.String(),
@@ -1261,6 +1267,83 @@ const app = new Elysia({ adapter: node() })
         return fail('VALIDATION', 'id inválido');
       }
       const result = await excluirCategoriaCatalogoApi(db, id);
+      return ok({ ok: true, result });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+      return fail('VALIDATION', msg);
+    }
+  })
+  .get('/api/marcas', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const incluirInativas =
+        q.incluir_inativas === '1' || q.incluirInativas === '1';
+      return ok({
+        items: await listMarcasCatalogoApi(db, { incluirInativas }),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .post(
+    '/api/marcas',
+    async ({ body }) => {
+      try {
+        const b = body as { nome?: string; ativo?: boolean };
+        const id = await criarMarcaCatalogoApi(db, {
+          nome: String(b.nome ?? ''),
+          ativo: b.ativo,
+        });
+        return ok({ id });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      body: t.Object({
+        nome: t.String(),
+        ativo: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .patch(
+    '/api/marcas/:id',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as { nome?: string; ativo?: boolean };
+        await atualizarMarcaCatalogoApi(db, id, {
+          nome: b.nome !== undefined ? String(b.nome) : undefined,
+          ativo: b.ativo,
+        });
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        nome: t.Optional(t.String()),
+        ativo: t.Optional(t.Boolean()),
+      }),
+    },
+  )
+  .delete('/api/marcas/:id', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const result = await excluirMarcaCatalogoApi(db, id);
       return ok({ ok: true, result });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

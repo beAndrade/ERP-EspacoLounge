@@ -749,6 +749,17 @@ tbody td.col-check + td {
   white-space: nowrap;
 }
 
+.col-nome__link {
+  font-weight: 400;
+  color: var(--color-link);
+  text-decoration: none;
+
+  .col-nome__cell--clickable:hover &,
+  .col-nome__cell--clickable:focus-visible & {
+    color: var(--color-link-hover);
+  }
+}
+
 .col-creditos {
   font-variant-numeric: tabular-nums;
 

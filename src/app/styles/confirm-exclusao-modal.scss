@@ -1,4 +1,4 @@
-/** Modal de confirmação de exclusão (comandas, clientes, …). */
+/** Modal de confirmação de exclusão (comandas, clientes, categorias, …). */
 
 .comandas-modal-overlay {
   position: fixed;
@@ -8,23 +8,35 @@
 }
 
 .comandas-modal {
+  box-sizing: border-box;
   position: fixed;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 1201;
-  width: min(520px, calc(100vw - 32px));
-  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 416px;
+  max-width: calc(100vw - 32px);
+  min-height: 254px;
+  border: 0;
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
-  padding: 22px 24px 20px;
+  background-clip: padding-box;
+  box-shadow:
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
   text-align: center;
+  pointer-events: auto;
 }
 
 .comandas-modal__icon-wrap {
   display: flex;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 .comandas-modal__icon {
@@ -39,24 +51,29 @@
 }
 
 .comandas-modal__title {
-  margin: 0 0 10px;
-  font-size: 36px;
+  margin: 0 0 15px;
+  font-size: 18px;
   font-weight: 700;
-  color: #2f3136;
+  line-height: 1.5;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .comandas-modal__text {
-  margin: 0;
-  color: #34363b;
-  font-size: 18px;
-  line-height: 1.35;
+  margin: auto 0 0;
+  padding-bottom: 0;
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 16px;
+  line-height: 1.5714285714285714;
+  text-align: center;
+  word-wrap: break-word;
 }
 
 .comandas-modal__actions {
   display: flex;
   justify-content: center;
   gap: 14px;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 .comandas-modal__btn {
@@ -70,6 +87,8 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s linear;
+  -webkit-tap-highlight-color: transparent;
 
   &:disabled {
     opacity: 0.6;
@@ -78,16 +97,27 @@
 }
 
 .comandas-modal__btn--cancel {
-  border-color: #ebedf0;
-  color: #4b4e57;
+  border-color: #f1f1f1;
+  background: #fff;
+  color: rgba(0, 0, 0, 0.75);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+
+  &:hover:not(:disabled) {
+    color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    background: #fff;
+  }
 }
 
 .comandas-modal__btn--confirm {
   border-color: var(--color-error);
+  background: #fff;
   color: var(--color-error);
+  box-shadow: 0 2px 0 rgba(255, 38, 5, 0.06);
 
   &:hover:not(:disabled) {
-    background: var(--color-error);
-    color: #fff;
+    color: #ff7875;
+    border-color: #ffa39e;
+    background: #fff;
   }
 }

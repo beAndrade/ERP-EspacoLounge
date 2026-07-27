@@ -700,11 +700,12 @@ tbody td.col-ticket {
 .link-ticket,
 .link-cliente {
   font-size: 13.3333px;
-  font-weight: 600;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   text-decoration: none;
 
   &:hover {
+    color: var(--color-link-hover);
     text-decoration: none;
   }
 }

@@ -71,7 +71,7 @@ export class PainelSparklineComponent {
   private readonly ctx = inject(PainelDashboardContextService);
 
   readonly points = input<PainelSparkPoint[]>([]);
-  readonly color = input<string>('#505afb');
+  readonly color = input<string>('#3f769d');
   /** Área preenchida + curva suave (estilo Belasis). */
   readonly filled = input(false);
   /** Âncora o eixo Y em zero (contagens diárias). */

@@ -241,15 +241,14 @@ export class ServicosComponent implements OnInit, OnDestroy {
   private comissaoSortKey(s: Servico): number {
     const tipo = lerServicoTexto(s, 'Tipo', 'tipo').toLowerCase();
     if (tipo === 'tamanho') {
-      const vals = [
-        lerServicoTexto(s, 'Curto', 'curto'),
-        lerServicoTexto(s, 'Médio', 'medio'),
-        lerServicoTexto(s, 'M/L', 'm_l'),
-        lerServicoTexto(s, 'Longo', 'longo'),
-      ]
-        .map((v) => valorMonetarioParaNumero(v))
-        .filter((n): n is number => n != null && n > 0);
-      if (vals.length) return Math.min(...vals);
+      const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct')
+        .replace('%', '')
+        .replace(',', '.');
+      if (pct) {
+        const n = Number.parseFloat(pct);
+        if (Number.isFinite(n)) return n;
+      }
+      return -1;
     }
     const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct')
       .replace('%', '')
@@ -406,21 +405,14 @@ export class ServicosComponent implements OnInit, OnDestroy {
 
   comissaoExibicao(s: Servico): string {
     const tipo = lerServicoTexto(s, 'Tipo', 'tipo').toLowerCase();
+    // Por tamanho: só a % (R$ por faixa é calculado no cadastro, não na lista).
     if (tipo === 'tamanho') {
-      const faixas: [string, string][] = [
-        ['C', lerServicoTexto(s, 'Curto', 'curto')],
-        ['M', lerServicoTexto(s, 'Médio', 'medio')],
-        ['M/L', lerServicoTexto(s, 'M/L', 'm_l')],
-        ['L', lerServicoTexto(s, 'Longo', 'longo')],
-      ];
-      const partes = faixas
-        .map(([label, raw]) => {
-          const n = valorMonetarioParaNumero(raw);
-          if (n == null || n <= 0) return null;
-          return `${label} ${formataMoedaBrl(n)}`;
-        })
-        .filter((p): p is string => p != null);
-      if (partes.length) return partes.join(' · ');
+      const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct');
+      if (pct) {
+        const n = pct.replace('%', '').trim();
+        return n ? `% ${n}` : '—';
+      }
+      return '—';
     }
 
     const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct');

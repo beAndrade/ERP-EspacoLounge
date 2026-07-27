@@ -376,7 +376,7 @@ function indiceDiaSemanaSegunda(ymd: string): number {
 }
 
 const CATEGORIA_META: readonly { label: string; cor: string }[] = [
-  { label: 'Serviços', cor: '#3b82f6' },
+  { label: 'Serviços', cor: '#3f769d' },
   { label: 'Produtos', cor: '#34d399' },
   { label: 'Pacotes', cor: '#f59e0b' },
   { label: 'Outros', cor: '#a78bfa' },

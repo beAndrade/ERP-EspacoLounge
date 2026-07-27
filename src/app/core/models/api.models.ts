@@ -491,6 +491,14 @@ export interface CategoriaCatalogoItem {
   qtd_itens: number;
 }
 
+/** Marca de produtos (`GET /api/marcas`). */
+export interface MarcaCatalogoItem {
+  id: number;
+  nome: string;
+  ativo: boolean;
+  qtd_itens: number;
+}
+
 /** Forma de pagamento — cadastro admin (`GET /api/financeiro/formas-pagamento`). */
 export interface FinFormaPagamentoCadastroItem {
   id: number;

@@ -142,43 +142,37 @@
                 </label>
 
                 <div class="produto-cadastro-form__row">
-                  <label class="produto-cadastro-form__field">
+                  <div class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">
                       <span class="produto-cadastro-form__req" aria-hidden="true">*</span>
                       Categoria
                     </span>
-                    <input
-                      type="text"
-                      class="produto-cadastro-form__input"
-                      list="produto-categorias-list"
+                    <app-saas-select
                       [(ngModel)]="d.categoria"
                       name="produtoCategoria"
-                      placeholder="Categoria"
-                      autocomplete="off"
+                      [options]="d.opcoesCategoriaSelect()"
+                      placeholder="Selecione…"
+                      [showFilter]="false"
+                      [showCriarCliente]="true"
+                      criarButtonLabel="Clique para criar"
+                      triggerCursor="text"
+                      aria-label="Categoria"
+                      (painelAberto)="d.carregarCategorias()"
+                      (criarCliente)="d.abrirCriarCategoria()"
                     />
-                    <datalist id="produto-categorias-list">
-                      @for (c of d.categoriasOpcoes; track c) {
-                        <option [value]="c"></option>
-                      }
-                    </datalist>
-                  </label>
-                  <label class="produto-cadastro-form__field">
+                  </div>
+                  <div class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Marca</span>
-                    <input
-                      type="text"
-                      class="produto-cadastro-form__input"
-                      list="produto-marcas-list"
+                    <app-saas-select
                       [(ngModel)]="d.marca"
                       name="produtoMarca"
-                      placeholder="Marca"
-                      autocomplete="off"
+                      [options]="d.opcoesMarcaSelect()"
+                      placeholder="Selecione…"
+                      [showFilter]="false"
+                      triggerCursor="text"
+                      aria-label="Marca"
                     />
-                    <datalist id="produto-marcas-list">
-                      @for (m of d.marcasOpcoes; track m) {
-                        <option [value]="m"></option>
-                      }
-                    </datalist>
-                  </label>
+                  </div>
                 </div>
 
                 <div class="produto-cadastro-form__row">
@@ -213,21 +207,21 @@
                 <h3 class="produto-cadastro-form__section">Estoque</h3>
 
                 <div class="produto-cadastro-form__row">
-                  <label class="produto-cadastro-form__field">
+                  <div class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">
                       <span class="produto-cadastro-form__req" aria-hidden="true">*</span>
                       Registro de saída
                     </span>
-                    <select
-                      class="produto-cadastro-form__select"
+                    <app-saas-select
                       [(ngModel)]="d.registroSaida"
                       name="registroSaida"
-                    >
-                      <option value="em unidade">em unidade</option>
-                      <option value="em ml">em ml</option>
-                      <option value="em gramas">em gramas</option>
-                    </select>
-                  </label>
+                      [options]="d.opcoesRegistroSaidaSelect"
+                      [showFilter]="false"
+                      triggerCursor="text"
+                      placeholder="Selecione…"
+                      aria-label="Registro de saída"
+                    />
+                  </div>
                   <label class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Uma unidade equivale a</span>
                     <div class="produto-cadastro-form__suffix">
@@ -364,7 +358,7 @@
                   <span class="produto-cadastro-form__label">Observações</span>
                   <textarea
                     class="produto-cadastro-form__textarea"
-                    rows="4"
+                    rows="2"
                     [(ngModel)]="d.observacoes"
                     name="observacoes"
                     placeholder="Anotações"

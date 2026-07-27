@@ -1,0 +1,29 @@
+---
+description: Chat e textos do agente sempre em português do Brasil (PT-BR), nunca PT-PT.
+alwaysApply: true
+---
+
+# Idioma: PT-BR obrigatório
+
+- Respostas ao utilizador: **sempre português do Brasil (PT-BR)**.
+- **Nunca** usar português de Portugal (PT-PT) no chat, em commits sugeridos, comentários novos ou copy de UI.
+
+## Vocabulário (usar BR / evitar PT)
+
+| Usar (BR) | Evitar (PT) |
+|---|---|
+| usuário | utilizador |
+| você | tu / (formas europeias) |
+| tela | ecrã |
+| arquivo | ficheiro |
+| botão / clicar | (ok) — preferir “clicar”, não “clique em” à europeia forçada |
+| senha | palavra-passe |
+| celular / telefone | telemóvel |
+| a gente / nós | (evitar “nós” só quando soar PT-PT) |
+| gravar / salvar | (evitar “registar” quando o projeto já usa “salvar”) |
+| colocar / botar | pôr / punha / mete |
+
+## Tom
+
+- Direto e claro, como num produto BR.
+- Se uma regra antiga do repo disser “utilizador” ou soar PT-PT, **no chat** continue em PT-BR mesmo assim.

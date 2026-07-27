@@ -219,15 +219,15 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--psc-blue);
+  color: var(--color-link);
   font: inherit;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   text-decoration: none;
   cursor: pointer;
 
   &:hover {
-    color: var(--color-primary-hover);
+    color: var(--color-link-hover);
   }
 }
 

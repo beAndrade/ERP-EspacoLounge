@@ -21,7 +21,7 @@ export class PainelChartBarsComponent {
   private readonly ctx = inject(PainelDashboardContextService);
 
   readonly series = input<PainelChartPoint[]>([]);
-  readonly color = input('#505afb');
+  readonly color = input('#3f769d');
   readonly horizontal = input(false);
 
   readonly pointHover = output<PainelChartPoint | null>();

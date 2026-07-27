@@ -436,7 +436,7 @@
   line-height: 1.4;
   align-items: center;
   gap: 0.72rem;
-  color: var(--color-primary);
+  color: var(--color-link);
   text-decoration: none;
   cursor: pointer;
   border-radius: 0;
@@ -481,7 +481,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
+  color: var(--color-link);
   line-height: 0;
   align-self: center;
 }
@@ -512,13 +512,13 @@
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):hover,
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):focus-visible {
   text-decoration: none;
-  color: var(--color-primary);
+  color: var(--color-link-hover);
 }
 
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):hover .sidebar-block__link-ico,
 .sidebar-block__linklike:not(.sidebar-block__linklike--alert):focus-visible
   .sidebar-block__link-ico {
-  color: var(--color-primary);
+  color: var(--color-link-hover);
 }
 
 .sidebar-block__linklike:focus-visible {

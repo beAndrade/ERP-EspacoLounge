@@ -1922,7 +1922,7 @@ textarea {
   }
 
   ::ng-deep .saas-select__trigger .saas-select__icons {
-    color: var(--drawer-input-text-idle);
+    color: #d4d4d8;
   }
 
   ::ng-deep
@@ -1932,12 +1932,15 @@ textarea {
         )
     )
     .saas-select__icons {
-    color: var(--drawer-input-text-filled);
+    color: #d4d4d8;
   }
 
-  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger,
-  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger .saas-select__icons {
+  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger {
     color: var(--drawer-input-text-idle);
+  }
+
+  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger .saas-select__icons {
+    color: #d4d4d8;
   }
 
   ::ng-deep .saas-select__trigger .saas-select__value-row:not(.saas-select__value-row--placeholder) .saas-select__value {
@@ -3358,6 +3361,7 @@ textarea {
     line-height: 1;
     text-align: center;
     background: #ffffff;
+    transition: all 0.2s linear;
   }
 
   .comandas-modal__btn--cancel {

@@ -266,6 +266,22 @@ export const categorias = pgTable(
   ],
 );
 
+/** Catálogo de marcas de produtos (texto livre espelhado em `produtos.marca`). */
+export const marcas = pgTable(
+  'marcas',
+  {
+    id: serial('id').primaryKey(),
+    nome: text('nome').notNull(),
+    ativo: boolean('ativo').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('marcas_nome_lower_uidx').on(sql`lower(trim(${t.nome}))`),
+  ],
+);
+
 export const regrasMega = pgTable('regras_mega', {
   id: serial('id').primaryKey(),
   pacote: text('pacote').notNull(),

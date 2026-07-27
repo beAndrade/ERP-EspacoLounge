@@ -6,12 +6,14 @@ import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 export interface MarcaListaItem {
-  id: string;
+  id: number;
   nome: string;
+  ativo: boolean;
   qtdItens: number;
 }
 
 const DRAWER_ANIM_MS = 430;
+const MARCA_SALVA_TOAST_MSG = 'Marca salva com sucesso!';
 
 @Component({
   selector: 'app-marcas',
@@ -32,17 +34,19 @@ export class MarcasComponent implements OnInit, OnDestroy {
   buscaAberta = false;
   filtrosAbertos = false;
   pulsoToolbarBusca = false;
+  pulsoToolbarFiltro = false;
+  private readonly duracaoPulsoToolbarMs = 600;
+  filtroAtivas = true;
+  filtroInativas = false;
 
   pagina = 1;
   porPagina = 20;
   readonly opcoesPorPagina = [10, 20, 50];
   perPageMenuAberto = false;
-  selecionados = new Set<string>();
+  selecionados = new Set<number>();
 
   ordenacaoColuna: 'nome' = 'nome';
   ordenacaoDir: 'asc' | 'desc' = 'asc';
-
-  private readonly labelByKey = new Map<string, string>();
 
   cadastroAberto = false;
   cadastroPanelOpen = false;
@@ -75,24 +79,14 @@ export class MarcasComponent implements OnInit, OnDestroy {
   carregar(): void {
     this.carregando = true;
     this.erro = '';
-    this.api.listProdutos().subscribe({
-      next: (produtos) => {
-        const counts = new Map<string, number>();
-        this.labelByKey.clear();
-        for (const p of produtos) {
-          const nome = String(p.marca ?? '').trim();
-          if (!nome) continue;
-          const key = nome.toLocaleLowerCase('pt-BR');
-          counts.set(key, (counts.get(key) ?? 0) + 1);
-          if (!this.labelByKey.has(key)) this.labelByKey.set(key, nome);
-        }
-        this.itens = [...counts.entries()]
-          .map(([key, qtd]) => ({
-            id: key,
-            nome: this.labelByKey.get(key) ?? key,
-            qtdItens: qtd,
-          }))
-          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    this.api.listMarcasCatalogo(true).subscribe({
+      next: (marcas) => {
+        this.itens = (marcas ?? []).map((m) => ({
+          id: m.id,
+          nome: m.nome,
+          ativo: m.ativo !== false,
+          qtdItens: Number(m.qtd_itens ?? 0),
+        }));
         this.carregando = false;
         this.pagina = 1;
         this.selecionados.clear();
@@ -108,7 +102,10 @@ export class MarcasComponent implements OnInit, OnDestroy {
   onBuscaWrapClick(): void {
     if (!this.buscaAberta) {
       this.pulsoToolbarBusca = true;
-      window.setTimeout(() => (this.pulsoToolbarBusca = false), 600);
+      window.setTimeout(
+        () => (this.pulsoToolbarBusca = false),
+        this.duracaoPulsoToolbarMs,
+      );
       this.buscaAberta = true;
       queueMicrotask(() =>
         document.getElementById('marcas-busca-input')?.focus(),
@@ -122,15 +119,34 @@ export class MarcasComponent implements OnInit, OnDestroy {
 
   toggleFiltros(): void {
     this.filtrosAbertos = !this.filtrosAbertos;
+    if (this.filtrosAbertos) {
+      this.pulsoToolbarFiltro = true;
+      window.setTimeout(
+        () => (this.pulsoToolbarFiltro = false),
+        this.duracaoPulsoToolbarMs,
+      );
+    }
+  }
+
+  toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (which === 'ativos') this.filtroAtivas = checked;
+    else this.filtroInativas = checked;
+    if (!this.filtroAtivas && !this.filtroInativas) {
+      if (which === 'ativos') this.filtroInativas = true;
+      else this.filtroAtivas = true;
+    }
+    this.pagina = 1;
+  }
+
+  filtrosStatusAtivos(): boolean {
+    return !this.filtroAtivas || this.filtroInativas;
   }
 
   limparFiltros(): void {
+    this.filtroAtivas = true;
+    this.filtroInativas = false;
     this.pagina = 1;
-  }
-
-  aplicarFiltros(): void {
-    this.pagina = 1;
-    this.filtrosAbertos = false;
   }
 
   onNovo(): void {
@@ -164,7 +180,7 @@ export class MarcasComponent implements OnInit, OnDestroy {
     }
     this.cadastroEditando = item;
     this.cadastroNome = item?.nome ?? '';
-    this.cadastroAtivo = true;
+    this.cadastroAtivo = item ? item.ativo !== false : true;
     this.cadastroSalvando = false;
     this.cadastroNomeErro = false;
     this.cadastroAberto = true;
@@ -209,11 +225,34 @@ export class MarcasComponent implements OnInit, OnDestroy {
       return;
     }
     this.cadastroNomeErro = false;
-    this.toast.show(
-      this.cadastroEditando
-        ? `Edição de «${nome}» em breve.`
-        : 'Cadastro de marcas em breve.',
-    );
+    this.cadastroSalvando = true;
+    this.erro = '';
+    const editando = this.cadastroEditando;
+    const onOk = () => {
+      this.cadastroSalvando = false;
+      if (!this.cadastroAtivo && !this.filtroInativas) {
+        this.filtroInativas = true;
+      }
+      this.fecharCadastro();
+      this.toast.show(MARCA_SALVA_TOAST_MSG);
+      this.carregar();
+    };
+    const onErr = (e: Error) => {
+      this.cadastroSalvando = false;
+      this.toast.show(e.message || 'Não foi possível salvar a marca.');
+    };
+    if (editando) {
+      this.api
+        .atualizarMarcaCatalogo(editando.id, {
+          nome,
+          ativo: this.cadastroAtivo,
+        })
+        .subscribe({ next: onOk, error: onErr });
+    } else {
+      this.api
+        .criarMarcaCatalogo({ nome, ativo: this.cadastroAtivo })
+        .subscribe({ next: onOk, error: onErr });
+    }
   }
 
   onEditar(item: MarcaListaItem): void {
@@ -253,7 +292,10 @@ export class MarcasComponent implements OnInit, OnDestroy {
 
   filtrados(): MarcaListaItem[] {
     const q = this.normalizar(this.busca);
-    let list = this.itens.slice();
+    let list = this.itens.filter((i) => {
+      if (i.ativo) return this.filtroAtivas;
+      return this.filtroInativas;
+    });
     if (q) {
       list = list.filter((i) => this.normalizar(i.nome).includes(q));
     }
@@ -301,7 +343,7 @@ export class MarcasComponent implements OnInit, OnDestroy {
     return `Possui ${n} itens associados`;
   }
 
-  estaSelecionado(id: string): boolean {
+  estaSelecionado(id: number): boolean {
     return this.selecionados.has(id);
   }
 

@@ -181,11 +181,15 @@
   background: transparent;
   font: inherit;
   font-size: 0.88rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1;
-  color: var(--color-primary);
+  color: var(--color-link);
   cursor: pointer;
   text-align: left;
+
+  &:hover {
+    color: var(--color-link-hover);
+  }
 }
 
 .agenda-cor-select__criar-ico {

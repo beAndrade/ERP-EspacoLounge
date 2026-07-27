@@ -25,11 +25,11 @@ Ao criar ou alterar **drawer**, **tabela/lista**, **form de cadastro** ou **roda
 
 | Elemento | Padrão |
 |---|---|
-| Primário | `#505afb`; hover `#7a88ff`; texto `#fff` |
-| Ghost | borda `#f1f1f1`, fundo `#fff`, texto `rgba(0,0,0,.75)`; hover borda/texto `#7a88ff` |
+| Primário | `#3f769d`; hover `#2f5e7e`; texto `#fff` |
+| Ghost | borda `#f1f1f1`, fundo `#fff`, texto `rgba(0,0,0,.75)`; hover borda/texto `#2f5e7e` |
 | Input default | borda `#f1f1f1`, `border-radius: 12px`, padding `4px 11px` |
-| Input hover | borda `#7a88ff` |
-| Input focus | borda `#505afb`; `box-shadow: 0 0 0 2px rgba(5,55,255,.06)` |
+| Input hover | borda `#2f5e7e` |
+| Input focus | borda `#3f769d`; `box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent)` |
 | Input erro | borda `#ff4d4f`; mensagem `Campo obrigatório` em `#ff4d4f` / `14px` |
 | Labels | `15px` / `500` / `rgba(0,0,0,.75)` |
 | Footer drawer cadastro | padding `8px 16px`; gap botões `8px`; botões altura `32px` |

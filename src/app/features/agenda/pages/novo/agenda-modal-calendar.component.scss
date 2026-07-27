@@ -119,12 +119,13 @@
   background: none;
   padding: 0.2rem 0.5rem;
   font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   cursor: pointer;
   border-radius: 6px;
 
   &:hover {
+    color: var(--color-link-hover);
     background: #e6f4ff;
   }
 }

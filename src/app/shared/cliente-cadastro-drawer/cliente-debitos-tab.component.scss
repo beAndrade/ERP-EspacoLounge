@@ -272,15 +272,16 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-link);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
 
   &:hover {
+    color: var(--color-link-hover);
     text-decoration: underline;
   }
 

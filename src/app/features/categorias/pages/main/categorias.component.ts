@@ -26,6 +26,7 @@ export interface CategoriaAssociacaoItem {
 
 const DRAWER_ANIM_MS = 430;
 const CATEGORIA_SALVA_TOAST_MSG = 'Categoria salva com sucesso!';
+const CATEGORIA_EXCLUIDA_TOAST_MSG = 'Categoria excluída com sucesso!';
 
 @Component({
   selector: 'app-categorias',
@@ -81,6 +82,9 @@ export class CategoriasComponent implements OnInit, OnDestroy {
   /** `null` = nova; item = edição. */
   cadastroEditando: CategoriaListaItem | null = null;
   private cadastroCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  exclusaoModalItem: CategoriaListaItem | null = null;
+  exclusaoModalSalvando = false;
 
   get cadastroTitulo(): string {
     return this.cadastroEditando ? 'Editar categoria' : 'Nova categoria';
@@ -299,8 +303,37 @@ export class CategoriasComponent implements OnInit, OnDestroy {
     this.abrirCadastro(item, false);
   }
 
-  onExcluir(item: CategoriaListaItem): void {
-    this.toast.show(`Exclusão de «${item.nome}» em breve.`);
+  onExcluir(item: CategoriaListaItem, ev?: Event): void {
+    ev?.stopPropagation();
+    this.exclusaoModalItem = item;
+  }
+
+  fecharModalExclusao(): void {
+    if (this.exclusaoModalSalvando) return;
+    this.exclusaoModalItem = null;
+  }
+
+  confirmarModalExclusao(): void {
+    const item = this.exclusaoModalItem;
+    if (!item || this.exclusaoModalSalvando) return;
+    this.exclusaoModalSalvando = true;
+    this.api.excluirCategoriaCatalogo(item.id).subscribe({
+      next: (res) => {
+        this.exclusaoModalSalvando = false;
+        this.exclusaoModalItem = null;
+        this.selecionados.delete(item.id);
+        this.toast.show(
+          res.result === 'deactivated'
+            ? 'Categoria desativada (já usada em serviços ou produtos).'
+            : CATEGORIA_EXCLUIDA_TOAST_MSG,
+        );
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.exclusaoModalSalvando = false;
+        this.toast.show(e.message || 'Não foi possível excluir a categoria.');
+      },
+    });
   }
 
   private keyNome(nome: string): string {
@@ -465,6 +498,11 @@ export class CategoriasComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (this.exclusaoModalItem) {
+      ev.preventDefault();
+      this.fecharModalExclusao();
+      return;
+    }
     if (this.cadastroAberto) {
       ev.preventDefault();
       this.fecharCadastro();

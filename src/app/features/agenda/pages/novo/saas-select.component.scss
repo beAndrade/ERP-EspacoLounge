@@ -67,7 +67,7 @@
 
 .saas-select__value-row--placeholder .saas-select__value {
   color: var(--color-muted, #78716c);
-  font-weight: var(--drawer-input-font-weight, 500);
+  font-weight: var(--drawer-input-font-weight, 400);
 }
 
 .saas-select__hint {
@@ -87,12 +87,16 @@
   top: 50%;
   transform: translateY(-50%);
   display: flex;
-  color: currentColor;
+  color: #d4d4d8;
   pointer-events: none;
 }
 
 .saas-select__icon {
   display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  stroke-width: 1.5;
 }
 
 /** Sombra no wrapper: o interior mantém `overflow: hidden` sem recortar a sombra. */
@@ -203,13 +207,15 @@
   cursor: pointer;
   color: var(--color-text, #1c1917);
 
-  &:hover {
+  /** Opção activa mantém o fundo — sem hover. */
+  &:hover:not(.saas-select__option--active) {
     background: #f5f5f4;
   }
 
   &--active {
     font-weight: 600;
     background: #eef2ff;
+    cursor: default;
 
     .saas-select__option-label {
       font-weight: 600;
@@ -271,14 +277,15 @@
   background: #fff;
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1;
-  color: var(--color-primary);
+  color: var(--color-link);
   cursor: pointer;
   text-align: left;
   transition: background 0.12s ease;
 
   &:hover {
+    color: var(--color-link-hover);
     background: #f8fafc;
   }
 
@@ -358,13 +365,14 @@
   background: transparent;
   font: inherit;
   font-size: var(--drawer-field-font-size, 0.95rem);
-  font-weight: var(--drawer-input-font-weight, 500);
+  font-weight: var(--drawer-input-font-weight, 400);
   color: inherit;
   outline: none;
   cursor: text;
 
   &::placeholder {
     color: inherit;
+    font-weight: 400;
     opacity: 1;
   }
 

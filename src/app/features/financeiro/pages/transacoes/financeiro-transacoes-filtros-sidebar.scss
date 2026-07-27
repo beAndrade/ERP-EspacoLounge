@@ -120,11 +120,12 @@
   background: none;
   font: inherit;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   cursor: pointer;
 
   &:hover {
+    color: var(--color-link-hover);
     text-decoration: underline;
   }
 

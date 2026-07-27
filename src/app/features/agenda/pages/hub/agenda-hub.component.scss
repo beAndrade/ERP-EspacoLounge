@@ -349,10 +349,12 @@
   background: none;
   font: inherit;
   font-size: 0.8rem;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   cursor: pointer;
 
   &:hover {
+    color: var(--color-link-hover);
     text-decoration: underline;
   }
 }
@@ -1166,7 +1168,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   font-size: 0.82rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--color-muted);
+  color: rgba(0, 0, 0, 0.75);
   text-align: center;
   line-height: $agenda-slot-row-h;
   padding: 0;
@@ -1229,13 +1231,14 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   background: none;
   font: inherit;
   font-size: inherit;
-  font-weight: 500;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   cursor: pointer;
   text-decoration: none;
   pointer-events: auto;
 
   &:hover {
+    color: var(--color-link-hover);
     text-decoration: underline;
   }
 }
@@ -1461,11 +1464,12 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   background: none;
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   cursor: pointer;
 
   &:hover {
+    color: var(--color-link-hover);
     text-decoration: underline;
   }
 }
@@ -1765,7 +1769,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
     padding: 0 15px;
     border-radius: 12px;
     font-size: 14px;
-    transition: transform 0.1s !important;
+    transition: all 0.2s linear;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -3122,7 +3126,7 @@ $month-num-fg-muted: #00000028;
     filter: none;
     text-shadow: none;
     outline: none;
-    color: var(--color-primary);
+    color: var(--color-link);
     font: inherit;
     font-size: 16px;
     font-weight: 400;
@@ -3960,15 +3964,20 @@ $month-num-fg-muted: #00000028;
 }
 
 .hub-card-tip__action--servico {
-  color: var(--color-primary);
+  color: var(--color-link);
   cursor: pointer;
 
   > span:not(.hub-card-tip__swatch) {
-    color: var(--color-primary);
+    color: var(--color-link);
   }
 
   &:hover {
     background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+    color: var(--color-link-hover);
+
+    > span:not(.hub-card-tip__swatch) {
+      color: var(--color-link-hover);
+    }
   }
 }
 
@@ -4083,22 +4092,28 @@ $month-num-fg-muted: #00000028;
 }
 
 .hub-card-tip__action--comanda {
-  color: var(--color-primary);
+  color: var(--color-link);
   cursor: pointer;
 
   > span:not(.hub-card-tip__swatch) {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     text-align: left;
-    color: var(--color-primary);
+    color: var(--color-link);
   }
 
   > svg:not(.hub-card-tip__chev) {
-    color: var(--color-primary);
+    color: var(--color-link);
   }
 
   &:hover {
     background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+    color: var(--color-link-hover);
+
+    > span:not(.hub-card-tip__swatch),
+    > svg:not(.hub-card-tip__chev) {
+      color: var(--color-link-hover);
+    }
   }
 
   &:focus,

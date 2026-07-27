@@ -9,16 +9,18 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { portalHostElementToBody } from '../drawer-body-portal';
+import { SaasSelectComponent } from '../../features/agenda/pages/novo/saas-select.component';
 import {
   PRODUTO_ABAS,
   ProdutoCadastroDrawerService,
   type ProdutoCadastroAba,
 } from './produto-cadastro-drawer.service';
+import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
 
 @Component({
   selector: 'app-produto-cadastro-drawer-host',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SaasSelectComponent],
   templateUrl: './produto-cadastro-drawer-host.component.html',
   styleUrl: './produto-cadastro-drawer-host.component.scss',
   encapsulation: ViewEncapsulation.None,
@@ -27,6 +29,7 @@ export class ProdutoCadastroDrawerHostComponent implements OnInit, OnDestroy {
   readonly d = inject(ProdutoCadastroDrawerService);
   readonly abas = PRODUTO_ABAS;
 
+  private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
   private readonly hostEl = inject(ElementRef<HTMLElement>).nativeElement;
   private restoreBodyPortal: (() => void) | null = null;
 
@@ -42,6 +45,7 @@ export class ProdutoCadastroDrawerHostComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
     if (!this.d.aberto()) return;
+    if (this.categoriaDrawer.aberto()) return;
     if (ev.defaultPrevented) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();

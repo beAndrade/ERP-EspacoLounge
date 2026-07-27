@@ -103,9 +103,12 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
    */
   --color-sidebar: #0f172a;
   --color-sidebar-hover: #1e293b;
-  --color-primary: #6bade0;
-  --color-primary-hover: #5b9bd5;
+  --color-primary: #3f769d;
+  --color-primary-hover: #2f5e7e;
   --color-primary-contrast: #ffffff;
+  /** Links acompanham o primary (tom com mais contraste). */
+  --color-link: var(--color-primary);
+  --color-link-hover: var(--color-primary-hover);
   --color-success: #22c55e;
   --color-success-hover: #16a34a;
   --color-warning: #f59e0b;
@@ -221,7 +224,12 @@ app-profissional-cadastro-drawer-host {
 }
 
 a {
-  color: var(--color-primary);
+  color: var(--color-link);
+  font-weight: 400;
+
+  &:hover {
+    color: var(--color-link-hover);
+  }
 }
 
 button,

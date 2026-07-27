@@ -122,7 +122,7 @@ import { AppToastService } from './app-toast.service';
       }
 
       .app-toast__icon--info {
-        background: #505afb;
+        background: #3f769d;
         color: #fff;
       }
 

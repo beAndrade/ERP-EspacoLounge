@@ -35,16 +35,9 @@
     gap: 0.5rem;
   }
 
-  .list-table tbody tr:hover td:not(.table-body__busy):not(.table-body__empty) {
-    background: #fff;
-  }
-
-  .list-table tbody tr:hover td.col-nome:not(.table-body__busy):not(.table-body__empty) {
-    background: #fafafa;
-  }
-
+  /* Igual a Serviços/Produtos: hover de linha do shell (`#fafafa`). */
   .list-table tbody tr.list-table__row--selected:hover td {
-    background: #f0f3ff;
+    background: color-mix(in srgb, var(--color-primary) 8%, #fff);
   }
 
   .list-table tbody tr.list-table__row--inativa td {
@@ -261,18 +254,25 @@
   background: transparent;
   font: inherit;
   text-align: left;
+
+  &:hover .col-nome__link,
+  &:focus-visible .col-nome__link {
+    color: var(--color-link-hover);
+    text-decoration: none;
+  }
 }
 
 .categorias-table .col-nome__cell--clickable:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
-  outline-offset: -2px;
-  border-radius: 0;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .categorias-table .col-nome__link {
   display: inline-block;
   max-width: 100%;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -289,20 +289,16 @@
   }
 }
 
-.categorias-table .col-nome__cell--clickable:hover .col-nome__link {
-  color: var(--color-primary-hover);
-  text-decoration: none;
-}
-
 .categorias-itens {
   display: inline;
   margin: 0;
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-link);
   font: inherit;
   font-size: 14px;
+  font-weight: 400;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -310,6 +306,7 @@
   &:hover,
   &:focus,
   &:focus-visible {
+    color: var(--color-link-hover);
     text-decoration: none;
   }
 

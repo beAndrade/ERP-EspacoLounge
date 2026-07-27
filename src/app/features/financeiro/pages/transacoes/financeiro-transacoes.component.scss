@@ -152,10 +152,14 @@
   border: none;
   background: transparent;
   font: inherit;
-  font-weight: 500;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   cursor: pointer;
   text-decoration: none;
+
+  &:hover {
+    color: var(--color-link-hover);
+  }
 }
 
 .fin-transacoes__icon-btn {
@@ -554,10 +558,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 13.3333px;
   line-height: 1.35;
-  color: var(--color-primary);
+  color: var(--color-link);
 
   &--btn {
     border: none;
@@ -569,6 +573,10 @@
     font: inherit;
     line-height: inherit;
     text-decoration: none;
+
+    &:hover {
+      color: var(--color-link-hover);
+    }
   }
 }
 
@@ -607,14 +615,22 @@
     text-align: left;
     font: inherit;
     line-height: inherit;
-    color: var(--color-primary);
+    color: var(--color-link);
     text-decoration: none;
+
+    &:hover {
+      color: var(--color-link-hover);
+    }
   }
 }
 
 .fin-transacoes__link {
-  color: var(--color-primary);
-  font-weight: 500;
+  color: var(--color-link);
+  font-weight: 400;
+
+  &:hover {
+    color: var(--color-link-hover);
+  }
 
   &--comissao {
     color: var(--list-body-text, #000000bf);
@@ -974,6 +990,10 @@
     margin: 0;
     font-size: 17px;
     line-height: 1.4;
+  }
+
+  .comandas-modal__btn {
+    transition: all 0.2s linear;
   }
 
   .comandas-modal__btn--confirm {

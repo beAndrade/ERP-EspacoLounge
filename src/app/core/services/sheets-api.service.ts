@@ -32,6 +32,7 @@ import {
   FinFormaPagamentoCadastroItem,
   FinFormaPagamentoOpcaoItem,
   FinTransacaoItem,
+  MarcaCatalogoItem,
   MovimentacaoListaItem,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
@@ -531,6 +532,51 @@ export class SheetsApiService {
     return this.http
       .delete<ApiResponse<{ ok: boolean; result?: string }>>(
         this.url(`/api/categorias/${id}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listMarcasCatalogo(incluirInativas = false): Observable<MarcaCatalogoItem[]> {
+    let params = new HttpParams();
+    if (incluirInativas) params = params.set('incluir_inativas', '1');
+    return this.http
+      .get<ApiResponse<{ items: MarcaCatalogoItem[] }>>(
+        this.url('/api/marcas'),
+        { params },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  criarMarcaCatalogo(body: {
+    nome: string;
+    ativo?: boolean;
+  }): Observable<{ id: number }> {
+    return this.http
+      .post<ApiResponse<{ id: number }>>(this.url('/api/marcas'), body)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  atualizarMarcaCatalogo(
+    id: number,
+    body: { nome?: string; ativo?: boolean },
+  ): Observable<{ ok: boolean }> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/marcas/${id}`),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  excluirMarcaCatalogo(
+    id: number,
+  ): Observable<{ ok: boolean; result?: string }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean; result?: string }>>(
+        this.url(`/api/marcas/${id}`),
       )
       .pipe(map((r) => this.unwrap(r)));
   }

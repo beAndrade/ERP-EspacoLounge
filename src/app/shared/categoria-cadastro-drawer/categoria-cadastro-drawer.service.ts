@@ -1,0 +1,113 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { AppToastService } from '../app-toast/app-toast.service';
+import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { extractApiErrorMessage } from '../../core/utils/api-error-message';
+
+export type CategoriaDrawerCallbacks = {
+  onSalvo?: (nome: string) => void;
+};
+
+@Injectable({ providedIn: 'root' })
+export class CategoriaCadastroDrawerService {
+  private readonly api = inject(SheetsApiService);
+  private readonly toast = inject(AppToastService);
+
+  readonly aberto = signal(false);
+  readonly panelOpen = signal(false);
+
+  nome = '';
+  ativo = true;
+  salvando = false;
+  nomeErro = false;
+
+  private callbacks: CategoriaDrawerCallbacks | null = null;
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  abrirNovo(opts?: CategoriaDrawerCallbacks): void {
+    if (this.closeTimer != null) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = null;
+    }
+    this.callbacks = opts ?? null;
+    this.nome = '';
+    this.ativo = true;
+    this.salvando = false;
+    this.nomeErro = false;
+    this.aberto.set(true);
+    this.panelOpen.set(false);
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.panelOpen.set(true);
+          this.focarNome();
+        });
+      });
+    });
+  }
+
+  fechar(): void {
+    if (!this.aberto() || this.salvando) return;
+    this.panelOpen.set(false);
+    if (this.closeTimer != null) clearTimeout(this.closeTimer);
+    this.closeTimer = setTimeout(() => {
+      this.closeTimer = null;
+      this.aberto.set(false);
+      this.callbacks = null;
+      this.nome = '';
+      this.ativo = true;
+      this.nomeErro = false;
+      this.salvando = false;
+    }, DRAWER_ANIM_MS);
+  }
+
+  onNomeInput(): void {
+    if (this.nomeErro && this.nome.trim()) {
+      this.nomeErro = false;
+    }
+  }
+
+  toggleAtivo(ev: Event): void {
+    if (this.salvando) return;
+    this.ativo = !this.ativo;
+    const el = ev.currentTarget as HTMLElement | null;
+    if (!el) return;
+    el.classList.remove('drawer-switch--pulse');
+    void el.offsetWidth;
+    el.classList.add('drawer-switch--pulse');
+    window.setTimeout(() => el.classList.remove('drawer-switch--pulse'), 1500);
+  }
+
+  salvar(): void {
+    const nome = this.nome.trim();
+    if (this.salvando) return;
+    if (!nome) {
+      this.nomeErro = true;
+      this.focarNome();
+      return;
+    }
+    this.nomeErro = false;
+    this.salvando = true;
+    this.api.criarCategoriaCatalogo({ nome, ativo: this.ativo }).subscribe({
+      next: () => {
+        this.salvando = false;
+        const onSalvo = this.callbacks?.onSalvo;
+        this.toast.show('Categoria salva com sucesso!');
+        this.fechar();
+        onSalvo?.(nome);
+      },
+      error: (e: unknown) => {
+        this.salvando = false;
+        this.toast.show(
+          extractApiErrorMessage(e) || 'Não foi possível salvar a categoria.',
+        );
+      },
+    });
+  }
+
+  private focarNome(): void {
+    queueMicrotask(() => {
+      document.getElementById('categoria-cadastro-drawer-nome')?.focus();
+    });
+  }
+}

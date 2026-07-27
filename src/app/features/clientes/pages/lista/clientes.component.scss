@@ -388,9 +388,9 @@
   background: transparent;
   font: inherit;
   font-size: inherit;
-  font-weight: normal;
+  font-weight: 400;
   line-height: inherit;
-  color: rgb(80, 90, 251);
+  color: var(--color-link);
   cursor: pointer;
   text-decoration: none;
   text-align: left;
@@ -402,7 +402,7 @@
   &:hover,
   &:focus-visible {
     text-decoration: none;
-    color: rgb(80, 90, 251);
+    color: var(--color-link-hover);
   }
 }
 

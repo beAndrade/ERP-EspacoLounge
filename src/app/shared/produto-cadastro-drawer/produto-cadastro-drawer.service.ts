@@ -13,6 +13,8 @@ import {
 } from '../../core/utils/brl-digit-input';
 import { AppToastService } from '../app-toast/app-toast.service';
 import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
+import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
 
 export const PRODUTO_ABAS = [
   'Cadastro',
@@ -45,6 +47,7 @@ export type ProdutoDrawerCallbacks = {
 export class ProdutoCadastroDrawerService {
   private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
+  private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
 
   readonly salvo$ = new Subject<ProdutoCatalogoItem>();
   readonly aberto = signal(false);
@@ -76,6 +79,12 @@ export class ProdutoCadastroDrawerService {
   categoriasOpcoes: string[] = [];
   marcasOpcoes: string[] = [];
 
+  readonly opcoesRegistroSaidaSelect: SaasSelectOption[] = [
+    { value: 'em unidade', label: 'em unidade' },
+    { value: 'em ml', label: 'em ml' },
+    { value: 'em gramas', label: 'em gramas' },
+  ];
+
   private callbacks: ProdutoDrawerCallbacks | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
   private pageScrollLockAtivo = false;
@@ -96,6 +105,54 @@ export class ProdutoCadastroDrawerService {
     return ABAS_DESABILITADAS.has(aba);
   }
 
+  opcoesCategoriaSelect(): SaasSelectOption[] {
+    const nomes = [...this.categoriasOpcoes];
+    const atual = String(this.categoria ?? '').trim();
+    if (atual && !nomes.includes(atual)) {
+      nomes.unshift(atual);
+    }
+    return nomes.map((nome) => ({ value: nome, label: nome }));
+  }
+
+  opcoesMarcaSelect(): SaasSelectOption[] {
+    const nomes = [...this.marcasOpcoes];
+    const atual = String(this.marca ?? '').trim();
+    if (atual && !nomes.includes(atual)) {
+      nomes.unshift(atual);
+    }
+    return nomes.map((nome) => ({ value: nome, label: nome }));
+  }
+
+  carregarCategorias(): void {
+    this.api.listCategoriasCatalogo(false).subscribe({
+      next: (cats) => {
+        this.categoriasOpcoes = (cats ?? [])
+          .map((c) => String(c.nome ?? '').trim())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      },
+      error: () => {
+        /* Mantém lista já passada pelo caller. */
+      },
+    });
+  }
+
+  abrirCriarCategoria(): void {
+    this.categoriaDrawer.abrirNovo({
+      onSalvo: (nome) => {
+        const n = String(nome ?? '').trim();
+        if (!n) return;
+        if (!this.categoriasOpcoes.some((c) => c === n)) {
+          this.categoriasOpcoes = [...this.categoriasOpcoes, n].sort((a, b) =>
+            a.localeCompare(b, 'pt-BR'),
+          );
+        }
+        this.categoria = n;
+        this.carregarCategorias();
+      },
+    });
+  }
+
   abrirNovo(
     opts?: ProdutoDrawerCallbacks & {
       categorias?: string[];
@@ -108,6 +165,7 @@ export class ProdutoCadastroDrawerService {
     this.callbacks = opts ?? null;
     this.categoriasOpcoes = opts?.categorias ?? [];
     this.marcasOpcoes = opts?.marcas ?? [];
+    this.carregarCategorias();
     this.abrirPainel({ focarNome: true });
   }
 
@@ -125,6 +183,7 @@ export class ProdutoCadastroDrawerService {
     this.categoriasOpcoes = opts?.categorias ?? [];
     this.marcasOpcoes = opts?.marcas ?? [];
     this.preencherForm(item);
+    this.carregarCategorias();
     this.abrirPainel();
   }
 

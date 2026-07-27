@@ -63,11 +63,16 @@
 .prof-comissoes-table__remove {
   padding: 0.25rem 0.5rem;
   font-size: 0.8125rem;
-  color: var(--brand, var(--color-primary));
+  font-weight: 400;
+  color: var(--color-link);
   background: none;
   border: none;
   cursor: pointer;
   text-decoration: underline;
+
+  &:hover:not(:disabled) {
+    color: var(--color-link-hover);
+  }
 
   &:disabled {
     opacity: 0.5;

@@ -393,6 +393,13 @@
       "when": 1775698400000,
       "tag": "0055_categorias_catalogo",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1775698500000,
+      "tag": "0056_marcas_catalogo",
+      "breakpoints": true
     }
   ]
 }

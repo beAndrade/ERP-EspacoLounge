@@ -192,14 +192,15 @@
 .servicos-table .col-nome__link {
   display: inline-block;
   max-width: 100%;
-  color: var(--color-primary);
+  font-weight: 400;
+  color: var(--color-link);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .servicos-table .col-nome__cell--clickable:hover .col-nome__link {
-  color: var(--color-primary-hover);
+  color: var(--color-link-hover);
 }
 
 .servicos-filtros-drawer {
