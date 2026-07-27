@@ -103,9 +103,10 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
     const ctx = this.d.comandaEmpilhadaContexto;
     if (ctx && !ctx.acessar) return 'Nova comanda';
     const n = ctx?.numeroComandaTitulo;
-    return typeof n === 'number' && n > 0
-      ? `Visualizando comanda #${n}`
-      : 'Visualizando comanda';
+    const rotulo =
+      typeof n === 'number' && n > 0 ? `comanda #${n}` : 'comanda';
+    /** Pendente = edição; finalizada = só visualização (título no filho confirma). */
+    return `Editando ${rotulo}`;
   }
 
   @HostListener('document:keydown.escape', ['$event'])

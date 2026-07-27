@@ -196,9 +196,11 @@ export class ClienteCadastroDrawerService {
   /** Ficha do cliente empilhada (links da sidebar de comanda/agendamento). */
   fichaEmpilhadaAberta = false;
   fichaEmpilhadaPanelOpen = false;
+  fichaEmpilhadaSettled = false;
   private abaAtivaAntesFichaEmpilhada: ClienteCadastroAba = 'Cadastro';
   private fichaEmpilhadaCallbacks: ClienteCadastroDrawerCallbacks | null = null;
   private fichaEmpilhadaCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private fichaEmpilhadaSettleTimer: ReturnType<typeof setTimeout> | null = null;
   /** Host empilha drawer «Editar agendamento» (aba Agendamentos). */
   editarAgendamentoHistoricoHandler:
     | ((idAtendimento: string, dataYmd: string) => void)
@@ -313,7 +315,7 @@ export class ClienteCadastroDrawerService {
   }
 
   /**
-   * Abre a ficha do cliente empilhada (mantém comanda/agendamento por baixo).
+   * Abre a ficha do cliente empilhada por cima (mantém comanda/agendamento).
    */
   abrirFichaEmpilhadaPorSidebar(
     payload: AbrirCadastroClientePayload = {},
@@ -328,6 +330,7 @@ export class ClienteCadastroDrawerService {
 
     if (this.fichaEmpilhadaAberta) {
       this.selecionarAba(aba);
+      this.appRef.tick();
       return;
     }
 
@@ -342,6 +345,7 @@ export class ClienteCadastroDrawerService {
       aposAnimacao?.();
       return;
     }
+    this.cancelarFichaEmpilhadaSettled();
     this.fichaEmpilhadaPanelOpen = false;
     if (this.fichaEmpilhadaCloseTimer != null) {
       clearTimeout(this.fichaEmpilhadaCloseTimer);
@@ -362,6 +366,7 @@ export class ClienteCadastroDrawerService {
       clearTimeout(this.fichaEmpilhadaCloseTimer);
       this.fichaEmpilhadaCloseTimer = null;
     }
+    this.cancelarFichaEmpilhadaSettled();
     this.fichaEmpilhadaPanelOpen = false;
     this.fichaEmpilhadaAberta = false;
     this.fichaEmpilhadaCallbacks = null;
@@ -371,16 +376,45 @@ export class ClienteCadastroDrawerService {
   }
 
   private abrirPainelFichaEmpilhada(): void {
+    this.cancelarFichaEmpilhadaSettled();
     this.fichaEmpilhadaAberta = true;
     this.fichaEmpilhadaPanelOpen = false;
+    this.appRef.tick();
     queueMicrotask(() => {
       requestAnimationFrame(() => {
+        const el = document.querySelector(
+          '.cliente-ficha-empilhada.app-drawer',
+        ) as HTMLElement | null;
+        // Força o estado fechado (translateX 100%) a pintar antes do --open.
+        void el?.offsetWidth;
         requestAnimationFrame(() => {
           this.fichaEmpilhadaPanelOpen = true;
+          this.agendarFichaEmpilhadaSettled();
           this.appRef.tick();
         });
       });
     });
+  }
+
+  private agendarFichaEmpilhadaSettled(): void {
+    if (this.fichaEmpilhadaSettleTimer != null) {
+      clearTimeout(this.fichaEmpilhadaSettleTimer);
+    }
+    this.fichaEmpilhadaSettleTimer = setTimeout(() => {
+      this.fichaEmpilhadaSettleTimer = null;
+      if (this.fichaEmpilhadaAberta && this.fichaEmpilhadaPanelOpen) {
+        this.fichaEmpilhadaSettled = true;
+        this.appRef.tick();
+      }
+    }, DRAWER_ANIM_MS);
+  }
+
+  private cancelarFichaEmpilhadaSettled(): void {
+    if (this.fichaEmpilhadaSettleTimer != null) {
+      clearTimeout(this.fichaEmpilhadaSettleTimer);
+      this.fichaEmpilhadaSettleTimer = null;
+    }
+    this.fichaEmpilhadaSettled = false;
   }
 
   private callbacksSidebarAtivos(): ClienteCadastroDrawerCallbacks | null {
@@ -657,8 +691,8 @@ export class ClienteCadastroDrawerService {
         ? hint.numeroComanda
         : null;
 
-    /** Sem hint local (ex.: link externo): fallback API — igual ao fluxo antigo. */
-    if (!hint) {
+    /** Sem data local: fallback API (ex.: débito legado sem dataYmd). */
+    if (!hint || !hint.dataYmd) {
       this.carregarEAbrirComandaEmpilhadaViaApi(idAt, opts);
       return;
     }
@@ -709,9 +743,10 @@ export class ClienteCadastroDrawerService {
       (r) => String(r.idAtendimento ?? '').trim() === idAt,
     );
     if (debito) {
+      const y = String(debito.dataYmd ?? '').trim().slice(0, 10);
       return {
         numeroComanda: debito.numeroComanda,
-        dataYmd: null,
+        dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null,
       };
     }
 

@@ -37,11 +37,19 @@ export type ClientePainelResumo = {
   ultimosServicos: ClientePainelUltimoServico[];
 };
 
-function ymdParaExibicaoDdMmYyyy(ymd: string): string {
-  const y = String(ymd ?? '').trim().slice(0, 10);
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(y);
-  if (!m) return y || '—';
-  return `${m[3]}/${m[2]}/${m[1]}`;
+/** Ex.: `23 jul, 2026`. */
+function ymdParaExibicaoDdMmmAaaa(ymd: string): string {
+  const d = parseYmd(ymd);
+  if (!d) {
+    const y = String(ymd ?? '').trim().slice(0, 10);
+    return y || '—';
+  }
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = d
+    .toLocaleDateString('pt-BR', { month: 'short' })
+    .replace(/\./g, '')
+    .trim();
+  return `${dia} ${mes}, ${d.getFullYear()}`;
 }
 
 function parseYmd(ymd: string | null | undefined): Date | null {
@@ -169,7 +177,7 @@ export function calcularPainelCliente(
         descricao: descricaoGrupo(g),
         profissional: profissionalGrupo(g),
         dataYmd: (g.data || '').slice(0, 10),
-        dataExibicao: ymdParaExibicaoDdMmYyyy(g.data),
+        dataExibicao: ymdParaExibicaoDdMmmAaaa(g.data),
         numeroComanda:
           typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null,
       };

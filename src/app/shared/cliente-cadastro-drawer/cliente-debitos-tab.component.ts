@@ -75,6 +75,14 @@ export class ClienteDebitosTabComponent {
     this.d.visualizarComandaAgendamento(idAtendimento);
   }
 
+  /** Abre o drawer «Editando itens da comanda» (slide R→L). */
+  editarComanda(row: ClienteComandaAbertaLinhaUi): void {
+    const idAt = String(row.idAtendimento ?? '').trim();
+    const ymd = String(row.dataYmd ?? '').trim().slice(0, 10);
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.d.editarAgendamentoHistorico(idAt, ymd);
+  }
+
   pedirExcluirComanda(row: ClienteComandaAbertaLinhaUi): void {
     if (this.excluindoComanda()) return;
     this.comandaPendenteExclusao.set(row);

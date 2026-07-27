@@ -902,6 +902,8 @@ tbody td.col-check + td {
 }
 
 .list-footer {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -913,6 +915,7 @@ tbody td.col-check + td {
   border-bottom: 1px solid #f0f0f0;
   font-size: 0.9rem;
   color: var(--color-muted);
+  overflow: visible;
 }
 
 .list-footer__total {
@@ -1054,11 +1057,12 @@ select.list-footer__per-page {
 }
 
 .list-footer__per-page-panel {
+  /* Rodapé no fundo da listagem: abre para cima para não sair do viewport. */
   position: absolute;
   right: 0;
-  top: calc(100% + 4px);
-  bottom: auto;
-  z-index: 20;
+  bottom: calc(100% + 4px);
+  top: auto;
+  z-index: 30;
   min-width: 100%;
   padding: 0.25rem;
   border: 1px solid #e7e5e4;

@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { Cliente } from '../../../../core/models/api.models';
 import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
@@ -17,6 +18,10 @@ import {
   formatarDataDdMmYyyy,
 } from '../../../../core/utils/br-document-masks';
 import { parseFiltroDataDdMm } from '../../../../core/utils/atendimento-display';
+import {
+  totaisDebitosPorClienteId,
+  type TotaisDebitosCliente,
+} from '../../../../core/utils/comanda-status.util';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 
@@ -51,6 +56,7 @@ const CLIENTES_COLUNAS_IMPLEMENTADAS = new Set<ClienteColunaId>([
   'cpf',
   'rg',
   'cidade',
+  'debitos',
 ]);
 
 /** Pesos relativos das colunas flexíveis (check/ações ficam em px/rem fixos). */
@@ -76,7 +82,6 @@ const CLIENTES_COLUNAS_PADRAO: ClienteColunaId[] = [
   'celular',
   'nascimento',
   'creditos',
-  'debitos',
   'observacoes',
 ];
 
@@ -100,6 +105,8 @@ export class ClientesComponent implements OnInit, OnDestroy {
   carregando = false;
   erro = '';
   itens: Cliente[] = [];
+  /** Totais de débitos / comandas em aberto por id do cliente. */
+  private totaisDebitosPorCliente = new Map<string, TotaisDebitosCliente>();
 
   busca = '';
   buscaAberta = false;
@@ -173,9 +180,15 @@ export class ClientesComponent implements OnInit, OnDestroy {
   carregar(): void {
     this.carregando = true;
     this.erro = '';
-    this.api.listClientes().subscribe({
-      next: (items) => {
-        this.itens = items ?? [];
+    forkJoin({
+      clientes: this.api.listClientes(),
+      atendimentos: this.api.listAgendamentos(),
+    }).subscribe({
+      next: ({ clientes, atendimentos }) => {
+        this.itens = clientes ?? [];
+        this.totaisDebitosPorCliente = totaisDebitosPorClienteId(
+          atendimentos ?? [],
+        );
         this.carregando = false;
         this.pagina = 1;
         this.selecionados.clear();
@@ -307,7 +320,17 @@ export class ClientesComponent implements OnInit, OnDestroy {
   }
 
   onEditarCliente(c: Cliente): void {
-    this.abrirPerfilCliente(c);
+    const id = c.id?.trim();
+    if (!id) return;
+    this.cadastroDrawer.abrirEdicao(id, {
+      nomeLista: c.nome?.trim() ?? '',
+      fotoUrlInicial: c.fotoUrl,
+      abaInicial: 'Cadastro',
+      callbacks: {
+        onSalvo: (salvo) => this.atualizarClienteNaLista(salvo),
+        onClienteCarregado: (salvo) => this.atualizarClienteNaLista(salvo),
+      },
+    });
   }
 
   onExcluirCliente(c: Cliente): void {
@@ -363,6 +386,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
     this.cadastroDrawer.abrirEdicao(id, {
       nomeLista: cliente.nome?.trim() ?? '',
       fotoUrlInicial: cliente.fotoUrl,
+      abaInicial: 'Painel',
       callbacks: {
         onSalvo: (c) => this.atualizarClienteNaLista(c),
         onClienteCarregado: (c) => this.atualizarClienteNaLista(c),
@@ -482,7 +506,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
     if (this.filtroComCelular && !temCelular) return false;
     if (this.filtroSemCelular && temCelular) return false;
 
-    const temDebito = (c.creditoSaldo ?? 0) < -0.005;
+    const temDebito = this.debitosTotalCliente(c) > 0.005;
     if (this.filtroComDebito && !temDebito) return false;
     if (this.filtroSemDebito && temDebito) return false;
 
@@ -617,6 +641,23 @@ export class ClientesComponent implements OnInit, OnDestroy {
     return (c.creditoSaldo ?? 0) < 0;
   }
 
+  debitosTotalCliente(c: Cliente): number {
+    return this.totaisDebitosPorCliente.get(c.id)?.debitosTotal ?? 0;
+  }
+
+  debitoComValor(c: Cliente): boolean {
+    return this.debitosTotalCliente(c) > 0.005;
+  }
+
+  exibirDebitos(c: Cliente): string {
+    const n = this.debitosTotalCliente(c);
+    if (n <= 0.005) return '—';
+    return n.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+  }
+
   colunaVisivel(id: ClienteColunaId): boolean {
     return this.colunasVisiveis.has(id);
   }
@@ -684,6 +725,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
     else this.colunasVisiveis.delete(id);
     this.colunasVisiveis = new Set(this.colunasVisiveis);
     this.salvarColunas();
+    this.fecharColunasMenu();
   }
 
   restaurarColunasPadrao(): void {

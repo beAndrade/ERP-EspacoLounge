@@ -90,7 +90,7 @@
         [class.app-drawer--open]="editAgendamentoEmpilhadoPanelOpen"
         role="dialog"
         aria-modal="true"
-        aria-label="Editar agendamento"
+        aria-label="Editando itens da comanda"
         (click)="$event.stopPropagation()"
       >
         <app-agenda-novo
@@ -116,6 +116,7 @@
       <div
         class="app-drawer cliente-ficha-empilhada"
         [class.app-drawer--open]="d.fichaEmpilhadaPanelOpen"
+        [class.app-drawer--settled]="d.fichaEmpilhadaSettled"
         role="dialog"
         aria-modal="true"
         [attr.aria-label]="d.ariaLabelDrawer()"

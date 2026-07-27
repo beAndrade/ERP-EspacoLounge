@@ -28,32 +28,92 @@
   color: #6b7280;
 }
 
-/* ---- Cartões de destaque (topo) ---- */
-.painel-destaques {
+/* ---- Grid único de cards (3 colunas, como Belasis) ---- */
+.painel-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 8px;
+  width: calc(100% + 8px);
+  margin: 0 -4px;
+  box-sizing: border-box;
 }
 
-.painel-destaque {
+.painel-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-height: 108px;
-  padding: 18px 20px;
-  border-radius: 16px;
+  justify-content: center;
+  gap: 4px;
+  min-height: 88px;
+  padding: 16px 18px;
+  margin: 0;
+  border: 1px dashed #d6e4f0;
+  border-radius: 12px;
+  background: #eef6fc;
+  color: #1f2937;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-.painel-destaque__ico {
+.painel-card__ico {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 14px;
+  right: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(63, 125, 251, 0.12);
+  color: #3f7dfb;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.painel-card__valor {
+  padding-right: 42px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel-card__valor--texto {
+  font-size: 20px;
+}
+
+.painel-card__label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.painel-card--destaque {
+  min-height: 108px;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 16px;
+}
+
+.painel-card--destaque .painel-card__valor {
+  font-size: 30px;
+}
+
+.painel-card--destaque .painel-card__valor--texto {
+  font-size: 24px;
+}
+
+.painel-card--destaque .painel-card__label {
+  opacity: 0.9;
+}
+
+.painel-card--destaque .painel-card__ico {
+  top: 16px;
+  right: 16px;
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -64,131 +124,46 @@
   }
 }
 
-.painel-destaque__valor {
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-.painel-destaque__valor--texto {
-  font-size: 26px;
-}
-
-.painel-destaque__label {
-  font-size: 13px;
-  font-weight: 500;
-  opacity: 0.85;
-}
-
-.painel-destaque--roxo {
+.painel-card--roxo {
   background: #edecfe;
   color: #2e2b6b;
 
-  .painel-destaque__ico {
+  .painel-card__ico {
     background: #dcd9fb;
     color: #6b5ce7;
   }
-  .painel-destaque__label {
+
+  .painel-card__label {
     color: #6f6b9e;
-    opacity: 1;
   }
 }
 
-.painel-destaque--azul {
+.painel-card--azul {
   background: #3f7dfb;
   color: #fff;
 
-  .painel-destaque__ico {
+  .painel-card__ico {
     background: rgba(255, 255, 255, 0.22);
     color: #fff;
   }
+
+  .painel-card__label {
+    color: rgba(255, 255, 255, 0.9);
+  }
 }
 
-.painel-destaque--verde {
+.painel-card--verde {
   background: #23b26d;
   color: #fff;
 
-  .painel-destaque__ico {
+  .painel-card__ico {
     background: rgba(255, 255, 255, 0.22);
     color: #fff;
   }
-}
 
-/* ---- Cartões pequenos (grid) ---- */
-.painel-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.painel-mini {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 86px;
-  padding: 16px 18px;
-  background: #fff;
-  border: 1px solid hsl(220, 13%, 91%);
-  border-radius: 14px;
-  box-sizing: border-box;
-}
-
-.painel-mini__ico {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-
-  svg {
-    width: 19px;
-    height: 19px;
+  .painel-card__label {
+    color: rgba(255, 255, 255, 0.9);
   }
-}
-
-.painel-mini__valor {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.15;
-  color: #1f2937;
-  font-variant-numeric: tabular-nums;
-}
-
-.painel-mini__label {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #6b7280;
-}
-
-.painel-mini__ico--roxo {
-  background: #ede9fe;
-  color: #7c5cf0;
-}
-.painel-mini__ico--indigo {
-  background: #e0e7ff;
-  color: #4f6ef7;
-}
-.painel-mini__ico--verde {
-  background: #dcfce7;
-  color: #16a34a;
-}
-.painel-mini__ico--teal {
-  background: #ccfbf1;
-  color: #0d9488;
-}
-.painel-mini__ico--vermelho {
-  background: #fee2e2;
-  color: #ef4444;
-}
-.painel-mini__ico--ambar {
-  background: #fef3c7;
-  color: #d97706;
 }
 
 /* ---- Últimos serviços ---- */
@@ -196,12 +171,17 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 16px;
-  border: 1px solid hsl(220, 13%, 91%);
-  border-radius: 14px;
+  padding: 24px;
+  border: none;
+  border-radius: 0 0 14px 14px;
   background: #fff;
   box-sizing: border-box;
   overflow: hidden;
+
+  .drawer-table-card {
+    border: none;
+    box-shadow: none;
+  }
 }
 
 .painel-servicos__titulo {
@@ -212,38 +192,34 @@
   color: #000000bf;
 }
 
-.painel-servicos__link {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  &:hover {
-    text-decoration: none;
-  }
-}
-
 .painel-servicos .drawer-table-empty {
   padding-block: 2.25rem 2.5rem;
 }
 
 col.drawer-table__col-desc-wide {
-  width: 46%;
+  width: 54%;
 }
 
 col.drawer-table__col-prof {
-  width: 30%;
+  width: 22%;
 }
 
 col.drawer-table__col-data {
   width: 24%;
 }
 
-.drawer-table--painel-servicos .col-desc,
-.drawer-table--painel-servicos .col-prof {
+.drawer-table--painel-servicos tbody td.col-desc,
+.drawer-table--painel-servicos tbody td.col-prof,
+.drawer-table--painel-servicos thead th.col-desc,
+.drawer-table--painel-servicos thead th.col-prof {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.drawer-table--painel-servicos tbody td.col-desc {
+  /* Com `table-layout: fixed`, força reticências no texto longo. */
+  max-width: 0;
 }
 
 .drawer-table--painel-servicos .col-data {
@@ -252,8 +228,7 @@ col.drawer-table__col-data {
 }
 
 @media (max-width: 720px) {
-  .painel-destaques,
-  .painel-grid {
+  .painel-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

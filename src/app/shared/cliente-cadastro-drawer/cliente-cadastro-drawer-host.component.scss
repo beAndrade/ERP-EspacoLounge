@@ -54,7 +54,6 @@ app-produto-cadastro-drawer-host {
   .cliente-comanda-empilhada.app-drawer,
   .cliente-credito-empilhada.app-drawer,
   .cliente-faturar-empilhada.app-drawer,
-  .cliente-edit-ag-empilhada.app-drawer,
   .cliente-ficha-empilhada.app-drawer {
     --drawer-inset-x: 15px;
     --drawer-pad-x: var(--drawer-inset-x);
@@ -83,6 +82,45 @@ app-produto-cadastro-drawer-host {
      */
     &.app-drawer--open.app-drawer--settled {
       transition: none;
+    }
+  }
+
+  /** Editando itens: âncora à direita + slide R→L (não full-bleed left:0). */
+  .cliente-edit-ag-empilhada.app-drawer {
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: auto;
+    right: 0;
+    z-index: var(--z-cliente-stack-edit-drawer);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: min(1400px, 100vw);
+    max-width: 100vw;
+    padding: 0;
+    background: #ffffff;
+    overflow: hidden;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(100%);
+    transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &.app-drawer--open {
+      transform: translateX(0);
+    }
+
+    &.app-drawer--open.app-drawer--settled {
+      transition: none;
+    }
+
+    > app-agenda-novo {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      max-height: 100%;
     }
   }
 
@@ -325,7 +363,7 @@ app-produto-cadastro-drawer-host {
 
     th {
       font-size: 14px;
-      color: #000000bf;
+      color: rgba(0, 0, 0, 0.75);
       font-weight: 600;
       text-transform: none;
       letter-spacing: normal;
@@ -2004,12 +2042,28 @@ app-servico-cadastro-drawer-host {
     }
   }
 
-  .cliente-edit-ag-empilhada.app-drawer {
-    z-index: var(--z-cliente-stack-edit-drawer);
-  }
-
   .cliente-ficha-empilhada.app-drawer {
     z-index: var(--z-cliente-stack-ficha-drawer);
+    background: #ffffff;
+    /* Encima da comanda: ancora à direita e slide R→L (mesma animação do sistema). */
+    left: auto;
+    right: 0;
+    width: min(var(--cliente-drawer-shell-w, 1200px), 100vw);
+    max-width: 100vw;
+    padding: 0;
+    overflow: hidden;
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    transform: translateX(100%);
+    transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &.app-drawer--open {
+      transform: translateX(0);
+    }
+
+    &.app-drawer--open.app-drawer--settled {
+      transition: none;
+    }
   }
 }
 
@@ -2044,6 +2098,21 @@ app-cliente-cadastro-drawer-host:has(
   pointer-events: none;
 }
 
+/** Comanda fica inerte enquanto a ficha empilhada está aberta por cima. */
+app-cliente-cadastro-drawer-host:has(
+    .cliente-ficha-empilhada.app-drawer.app-drawer--open
+  )
+  .cliente-comanda-empilhada.app-drawer {
+  pointer-events: none;
+}
+
+app-cliente-cadastro-drawer-host:has(
+    .cliente-ficha-empilhada.app-drawer.app-drawer--open
+  )
+  .overlay.overlay--cliente-comanda-empilhada {
+  pointer-events: none;
+}
+
 app-profissional-cadastro-drawer-host:has(
     .cliente-comanda-empilhada.app-drawer,
     .cliente-credito-empilhada.app-drawer,
@@ -2060,9 +2129,22 @@ app-profissional-cadastro-drawer-host:has(
   left: auto;
   right: 0;
   width: min(var(--cliente-drawer-shell-w, 1200px), 100vw);
+  max-width: 100vw;
   padding: 0;
+  overflow: hidden;
   --drawer-inset-x: 0;
   --drawer-pad-x: 0;
+  background: #ffffff;
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+  }
+
+  &.app-drawer--open.app-drawer--settled {
+    transition: none;
+  }
 
   > app-cliente-drawer-shell {
     display: flex;
@@ -2124,7 +2206,17 @@ app-profissional-cadastro-drawer-host:has(
   left: auto;
   right: 0;
   width: min(1400px, 100vw);
-  padding: 0 var(--drawer-inset-x, 15px);
+  max-width: 100vw;
+  padding: 0;
+  overflow: hidden;
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+  }
 
   > app-agenda-novo {
     display: flex;

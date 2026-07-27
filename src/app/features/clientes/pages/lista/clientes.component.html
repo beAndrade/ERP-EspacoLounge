@@ -350,6 +350,12 @@
                     [style.width]="larguraColunaFlex('cidade')"
                   />
                 }
+                @if (colunaVisivel('debitos')) {
+                  <col
+                    class="clientes-table__col-debitos"
+                    [style.width]="larguraColunaFlex('debitos')"
+                  />
+                }
                 <col class="clientes-table__col-acoes" />
               </colgroup>
               <thead>
@@ -425,6 +431,9 @@
                   }
                   @if (colunaVisivel('cidade')) {
                     <th scope="col">Cidade</th>
+                  }
+                  @if (colunaVisivel('debitos')) {
+                    <th class="col-debitos" scope="col">Débitos</th>
                   }
                   <th class="col-acoes" scope="col">
                     <span class="sr-only">Configurações da coluna</span>
@@ -593,6 +602,14 @@
                       }
                       @if (colunaVisivel('cidade')) {
                         <td>{{ exibirCidade(c) }}</td>
+                      }
+                      @if (colunaVisivel('debitos')) {
+                        <td
+                          class="col-debitos"
+                          [class.col-debitos--positivo]="debitoComValor(c)"
+                        >
+                          {{ exibirDebitos(c) }}
+                        </td>
                       }
                       <td class="col-acoes">
                         <div class="list-row-acoes">

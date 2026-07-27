@@ -25,13 +25,4 @@ export class ClientePainelTabComponent {
     const v = Number.isFinite(n) ? n : 0;
     return `${v.toFixed(1)}%`;
   }
-
-  rotuloComanda(numero: number | null): string {
-    return numero != null && numero > 0 ? `#${numero}` : '—';
-  }
-
-  verComanda(idAtendimento: string): void {
-    if (!idAtendimento) return;
-    this.d.visualizarComandaAgendamento(idAtendimento);
-  }
 }

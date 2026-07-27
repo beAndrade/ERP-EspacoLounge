@@ -411,6 +411,15 @@
   }
 }
 
+.clientes-table tbody td.col-debitos {
+  word-break: keep-all;
+  white-space: nowrap;
+
+  &.col-debitos--positivo {
+    color: red;
+  }
+}
+
 .clientes-table tbody td.col-nome {
   background: #fafafa;
 }
@@ -483,6 +492,11 @@ col.clientes-table__col-check {
 
 .clientes-table thead th.col-creditos,
 .clientes-table tbody td.col-creditos {
+  text-align: end;
+}
+
+.clientes-table thead th.col-debitos,
+.clientes-table tbody td.col-debitos {
   text-align: end;
 }
 
@@ -678,9 +692,11 @@ col.clientes-table__col-check {
 }
 
 .clientes-table td.col-acoes {
-  padding: 0 8px;
+  padding: 12px 8px;
+  box-sizing: border-box;
   text-align: right;
   vertical-align: middle;
+  overflow: hidden;
 }
 
 .clientes-table .list-row-acoes {
@@ -688,9 +704,12 @@ col.clientes-table__col-check {
   align-items: center;
   justify-content: flex-end;
   gap: 0.2rem;
-  height: 100%;
-  max-height: 47px;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: none;
   margin: 0;
+  box-sizing: border-box;
 }
 
 .clientes-table .list-row-acoes__sep {
@@ -703,12 +722,15 @@ col.clientes-table__col-check {
 }
 
 .clientes-table .list-row-acoes__btn {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  max-width: 22px;
+  max-height: 22px;
   padding: 0;
   flex-shrink: 0;
+  box-sizing: border-box;
   background: transparent;
 
   &:hover:not(:disabled) {

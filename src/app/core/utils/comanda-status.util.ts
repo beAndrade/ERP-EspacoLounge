@@ -308,6 +308,8 @@ export function contagensSidebarParaCliente(
 export interface ClienteDebitoLinhaUi {
   idAtendimento: string;
   numeroComanda: number | null;
+  /** Data da comanda/atendimento (YYYY-MM-DD) — necessária para abrir o drawer. */
+  dataYmd: string;
   descricao: string;
   vencimentoYmd: string;
   valorReais: number;
@@ -418,9 +420,11 @@ export function painelDebitosClienteFromAtendimentos(
 
     /** Faturada com pagamento em atraso → «Débitos». */
     if (pagamentoColunaFromGrupo(g) === 'atrasado') {
+      const dataComanda = String(g.data ?? '').trim().slice(0, 10);
       debitos.push({
         idAtendimento: idAt,
         numeroComanda: numero,
+        dataYmd: /^\d{4}-\d{2}-\d{2}$/.test(dataComanda) ? dataComanda : '',
         descricao: rotuloComandaDebito(numero, nome),
         vencimentoYmd: vencimentoDebitoGrupo(g),
         valorReais: valorMonetarioGrupoCliente(g),
@@ -451,4 +455,50 @@ export function totalComandasAbertoCliente(
   return Math.round(
     linhas.reduce((s, d) => s + d.valorReais, 0) * 100,
   ) / 100;
+}
+
+export type TotaisDebitosCliente = {
+  debitosTotal: number;
+  comandasAbertoTotal: number;
+};
+
+/**
+ * Totais de débitos / comandas em aberto por `idCliente` (uma passagem).
+ * Mesma regra de `painelDebitosClienteFromAtendimentos` (sem fallback por nome).
+ */
+export function totaisDebitosPorClienteId(
+  items: AtendimentoListaItem[],
+): Map<string, TotaisDebitosCliente> {
+  const map = new Map<string, TotaisDebitosCliente>();
+  const ensure = (cid: string): TotaisDebitosCliente => {
+    let row = map.get(cid);
+    if (!row) {
+      row = { debitosTotal: 0, comandasAbertoTotal: 0 };
+      map.set(cid, row);
+    }
+    return row;
+  };
+
+  for (const g of agruparAtendimentosEmComandas(items)) {
+    const cid = idClienteDoGrupo(g);
+    if (!cid) continue;
+    if (comandaQuitadaNasCifrasGrupo(g)) continue;
+
+    const statusCol = statusComandaColunaFromGrupo(g);
+    const valor = valorMonetarioGrupoCliente(g);
+
+    if (statusCol === 'pendente') {
+      const row = ensure(cid);
+      row.comandasAbertoTotal =
+        Math.round((row.comandasAbertoTotal + valor) * 100) / 100;
+      continue;
+    }
+
+    if (pagamentoColunaFromGrupo(g) === 'atrasado') {
+      const row = ensure(cid);
+      row.debitosTotal = Math.round((row.debitosTotal + valor) * 100) / 100;
+    }
+  }
+
+  return map;
 }
