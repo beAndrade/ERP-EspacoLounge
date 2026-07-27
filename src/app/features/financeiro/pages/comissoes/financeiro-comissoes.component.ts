@@ -277,7 +277,7 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     const id = this.profissionalIdSidebar;
     const porId = this.profissionais().find((p) => p.id === id);
     if (porId?.nome) return porId.nome;
-    return this.profissionalSelecionado()?.nome ?? '—';
+    return this.profissionalSelecionado()?.nome ?? '';
   }
 
   formatarData(ymd: string): string {
@@ -447,7 +447,7 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     nomeLista: string,
     cliente: Cliente | null,
   ): SaasSelectOption[] {
-    const label = cliente?.nome?.trim() || nomeLista || cid || '—';
+    const label = cliente?.nome?.trim() || nomeLista || cid || '';
     return [{ value: cid, label }];
   }
 

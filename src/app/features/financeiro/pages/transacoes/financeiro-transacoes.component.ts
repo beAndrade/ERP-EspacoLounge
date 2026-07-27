@@ -709,7 +709,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     if (sub && sub !== '—') return sub;
     const desc = String(row.descricao ?? '').trim();
     if (desc) return desc;
-    return String(row.titular ?? '').trim() || '—';
+    return String(row.titular ?? '').trim();
   }
 
   /** Serviços/comanda: nome do cliente + linha de referência (Belasis). */
@@ -1294,7 +1294,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private linhaPassaForma(row: FinTransacaoLinhaUi): boolean {
     if (!this.opcoesFiltroCarregadas) return true;
     if (this.formasMarcadas.size === 0) return false;
-    const forma = row.formaPagamento.trim() || '—';
+    const forma = row.formaPagamento.trim();
     if (this.formasMarcadas.has(forma)) return true;
     /**
      * Parcela «A receber (cartão) · Visa»: se o utilizador marcou o prefixo
@@ -1789,7 +1789,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     cliente: Cliente | null,
   ): SaasSelectOption[] {
     const label =
-      cliente?.nome?.trim() || nomeLista || cid || '—';
+      cliente?.nome?.trim() || nomeLista || cid || '';
     return [{ value: cid, label }];
   }
 

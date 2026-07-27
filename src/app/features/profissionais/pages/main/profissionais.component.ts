@@ -1,9 +1,12 @@
 import {
+  AfterViewInit,
   Component,
+  ElementRef,
   HostListener,
   inject,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,11 +26,16 @@ type AbaProfissionais = 'ativos' | 'inativos';
   templateUrl: './profissionais.component.html',
   styleUrl: './profissionais.component.scss',
 })
-export class ProfissionaisComponent implements OnInit, OnDestroy {
+export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
 
+  @ViewChild('tabsNav', { read: ElementRef })
+  private tabsNav?: ElementRef<HTMLElement>;
+
   aba: AbaProfissionais = 'ativos';
+  tabsIndicatorLeft = 0;
+  tabsIndicatorWidth = 0;
   busca = '';
   buscaAberta = false;
   pulsoToolbarBusca = false;
@@ -65,6 +73,10 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
     this.carregar();
   }
 
+  ngAfterViewInit(): void {
+    this.sincronizarIndicadorTabs();
+  }
+
   ngOnDestroy(): void {
     this.cancelarArraste();
   }
@@ -89,6 +101,23 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
   definirAba(aba: AbaProfissionais): void {
     if (this.aba === aba) return;
     this.aba = aba;
+    this.sincronizarIndicadorTabs();
+  }
+
+  private sincronizarIndicadorTabs(): void {
+    // Mede pela aba escolhida (não pela classe --active): o DOM ainda
+    // pode não ter atualizado a classe no mesmo tick do clique.
+    const medir = () => {
+      const nav = this.tabsNav?.nativeElement;
+      if (!nav) return;
+      const alvo = nav.querySelector(
+        `.list-page__tab[data-aba="${this.aba}"]`,
+      ) as HTMLElement | null;
+      if (!alvo) return;
+      this.tabsIndicatorLeft = alvo.offsetLeft;
+      this.tabsIndicatorWidth = alvo.offsetWidth;
+    };
+    requestAnimationFrame(medir);
   }
 
   get buscaPlaceholder(): string {
@@ -202,11 +231,11 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
 
   exibirCelular(p: ProfissionalListaItem): string {
     const f = formatarCelularBr(p.celular);
-    return f || '—';
+    return f || '';
   }
 
   exibirEmail(_p: ProfissionalListaItem): string {
-    return '—';
+    return '';
   }
 
   ehProfissionalAdmin(p: ProfissionalListaItem): boolean {

@@ -289,10 +289,18 @@
           </div>
         </header>
 
-        <nav class="list-page__tabs" aria-label="Filtrar por status">
+        <nav
+          #tabsNav
+          class="list-page__tabs"
+          aria-label="Filtrar por status"
+          [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
+          [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
+        >
+          <span class="list-page__tabs-indicator" aria-hidden="true"></span>
           <button
             type="button"
             class="list-page__tab"
+            data-aba="ativos"
             [class.list-page__tab--active]="aba === 'ativos'"
             [attr.aria-current]="aba === 'ativos' ? 'page' : null"
             (click)="definirAba('ativos')"
@@ -302,6 +310,7 @@
           <button
             type="button"
             class="list-page__tab"
+            data-aba="inativos"
             [class.list-page__tab--active]="aba === 'inativos'"
             [attr.aria-current]="aba === 'inativos' ? 'page' : null"
             (click)="definirAba('inativos')"

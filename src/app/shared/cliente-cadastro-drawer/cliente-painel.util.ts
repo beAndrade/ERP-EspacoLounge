@@ -42,7 +42,7 @@ function ymdParaExibicaoDdMmmAaaa(ymd: string): string {
   const d = parseYmd(ymd);
   if (!d) {
     const y = String(ymd ?? '').trim().slice(0, 10);
-    return y || '—';
+    return y || '';
   }
   const dia = String(d.getDate()).padStart(2, '0');
   const mes = d
@@ -75,7 +75,7 @@ function descricaoGrupo(g: ComandaGrupoResumo): string {
     if (!label || label === '—') continue;
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
-  if (counts.size === 0) return '—';
+  if (counts.size === 0) return '';
   return [...counts.entries()]
     .map(([label, n]) => (n > 1 ? `(${n}x) ${label}` : label))
     .join(', ');
@@ -86,7 +86,7 @@ function profissionalGrupo(g: ComandaGrupoResumo): string {
     const p = String(l.profissional ?? '').trim();
     if (p) return p;
   }
-  return '—';
+  return '';
 }
 
 function valorGrupo(g: ComandaGrupoResumo): number {

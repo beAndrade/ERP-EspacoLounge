@@ -251,7 +251,7 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
         }).format(fixa),
       );
     }
-    return parts.length ? parts.join(' · ') : '—';
+    return parts.length ? parts.join(' · ') : '';
   }
 
   rotuloPrazo(row: FinFormaPagamentoCadastroItem): string {

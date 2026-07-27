@@ -359,7 +359,7 @@
                     valorNum(m.valor) | currency: 'BRL' : 'symbol' : '1.2-2'
                   }}
                 </td>
-                <td>{{ m.metodo_pagamento ?? '—' }}</td>
+                <td>{{ m.metodo_pagamento ?? '' }}</td>
               }
               <td>{{ rotuloOrigem(m.origem) }}</td>
               <td>{{ detalheDespesa(m) }}</td>
@@ -404,7 +404,7 @@
                   </div>
                 </td>
               } @else {
-                <td>{{ m.descricao ?? '—' }}</td>
+                <td>{{ m.descricao ?? '' }}</td>
               }
             </tr>
           }

@@ -17,7 +17,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 20px 24px 28px;
+  padding: 0 24px 28px;
   border-right: 1px solid hsl(220, 13%, 91%);
   box-sizing: border-box;
 }
@@ -28,7 +28,7 @@
   color: #6b7280;
 }
 
-/* ---- Grid único de cards (3 colunas, como Belasis) ---- */
+/* ---- Grid único: todos os cards com a mesma estrutura (ícone | valor+label) ---- */
 .painel-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -38,90 +38,113 @@
   box-sizing: border-box;
 }
 
-.painel-card {
-  position: relative;
+.painel-cards__cell {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  min-height: 88px;
-  padding: 16px 18px;
+  min-width: 0;
+
+  > .painel-card {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+.painel-card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: 80px;
+  min-height: 80px;
   margin: 0;
-  border: 1px dashed #d6e4f0;
-  border-radius: 12px;
-  background: #eef6fc;
+  padding: 0;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
   color: #1f2937;
   box-sizing: border-box;
   overflow: hidden;
 }
 
+button.painel-card {
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  text-align: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+
+  &:hover {
+    filter: brightness(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+    z-index: 1;
+  }
+}
+
 .painel-card__ico {
-  position: absolute;
-  top: 14px;
-  right: 14px;
+  flex: 0 0 80px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: rgba(63, 125, 251, 0.12);
-  color: #3f7dfb;
+  width: 80px;
+  height: 80px;
+  background: transparent;
+  color: #6366f1;
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 35px;
+    height: 35px;
   }
+}
+
+.painel-card__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 12px 6px 20px;
+  box-sizing: border-box;
 }
 
 .painel-card__valor {
-  padding-right: 42px;
   font-size: 22px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .painel-card__valor--texto {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .painel-card__label {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  line-height: 1.3;
+  color: #8c8c8c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* Destaques: mesma estrutura; só mudam cores (bloco ícone + fundo do card). */
 .painel-card--destaque {
-  min-height: 108px;
-  padding: 18px 20px;
   border: none;
-  border-radius: 16px;
 }
 
 .painel-card--destaque .painel-card__valor {
-  font-size: 30px;
-}
-
-.painel-card--destaque .painel-card__valor--texto {
   font-size: 24px;
 }
 
-.painel-card--destaque .painel-card__label {
-  opacity: 0.9;
-}
-
-.painel-card--destaque .painel-card__ico {
-  top: 16px;
-  right: 16px;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-
-  svg {
-    width: 22px;
-    height: 22px;
-  }
+.painel-card--destaque .painel-card__valor--texto {
+  font-size: 18px;
 }
 
 .painel-card--roxo {
@@ -129,8 +152,8 @@
   color: #2e2b6b;
 
   .painel-card__ico {
-    background: #dcd9fb;
-    color: #6b5ce7;
+    background: #7266ba;
+    color: #fff;
   }
 
   .painel-card__label {
@@ -143,12 +166,12 @@
   color: #fff;
 
   .painel-card__ico {
-    background: rgba(255, 255, 255, 0.22);
+    background: #2f6ae0;
     color: #fff;
   }
 
   .painel-card__label {
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.88);
   }
 }
 
@@ -157,12 +180,12 @@
   color: #fff;
 
   .painel-card__ico {
-    background: rgba(255, 255, 255, 0.22);
+    background: #1c9a5c;
     color: #fff;
   }
 
   .painel-card__label {
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.88);
   }
 }
 

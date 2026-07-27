@@ -30,7 +30,7 @@ export type ClienteAgendamentoHistoricoLinha = {
 function ymdParaExibicaoDdMmYyyy(ymd: string): string {
   const y = String(ymd ?? '').trim().slice(0, 10);
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(y);
-  if (!m) return y || '—';
+  if (!m) return y || '';
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
@@ -66,7 +66,7 @@ function rotuloStatusAgenda(id: string | null | undefined): {
 
 function servicoExibicaoGrupo(g: ComandaGrupoResumo): string {
   const l0 = g.linhas[0];
-  if (!l0) return '—';
+  if (!l0) return '';
   const partes = new Set<string>();
   for (const l of g.linhas) {
     const t = String(l.tipo ?? '').trim().toLowerCase();
@@ -81,7 +81,7 @@ function servicoExibicaoGrupo(g: ComandaGrupoResumo): string {
     if (r && r !== '—') partes.add(r);
   }
   if (partes.size === 0) {
-    return linhaResumoAtendimentoLista(l0).trim() || '—';
+    return linhaResumoAtendimentoLista(l0).trim();
   }
   return [...partes].join(' · ');
 }
@@ -91,7 +91,7 @@ function profissionalExibicaoGrupo(g: ComandaGrupoResumo): string {
     const p = String(l.profissional ?? '').trim();
     if (p) return p;
   }
-  return '—';
+  return '';
 }
 
 /**

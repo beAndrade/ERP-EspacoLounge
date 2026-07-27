@@ -16,6 +16,10 @@ registerLocaleData(localePt);
 export class ClientePainelTabComponent {
   readonly d = inject(ClienteCadastroDrawerService);
 
+  selecionarAba(aba: string): void {
+    this.d.selecionarAba(aba);
+  }
+
   diasLabel(n: number | null): string {
     if (n == null) return '—';
     return n === 1 ? '1 dia' : `${n} dias`;

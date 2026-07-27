@@ -468,11 +468,11 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   rotuloServico(s: Servico): string {
-    return String(s['Serviço'] ?? '').trim() || '—';
+    return String(s['Serviço'] ?? '').trim();
   }
 
   categoriaServico(s: Servico): string {
-    return String(s['Categoria'] ?? '').trim() || '—';
+    return String(s['Categoria'] ?? '').trim();
   }
 
   mostraNoSite(s: Servico): string {
@@ -509,7 +509,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
     const tipo = lerServicoTexto(s, 'Tipo', 'tipo').toLowerCase();
     if (tipo === 'tamanho') {
       const pcts = this.comissaoPctsPorFaixa(s);
-      if (pcts.length === 0) return '—';
+      if (pcts.length === 0) return '';
       const min = Math.min(...pcts);
       const max = Math.max(...pcts);
       return min === max ? `% ${min}` : `% ${min}–${max}`;
@@ -518,7 +518,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
     const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct');
     if (pct) {
       const n = pct.replace('%', '').trim();
-      return n ? `% ${n}` : '—';
+      return n ? `% ${n}` : '';
     }
     const fixa = valorMonetarioParaNumero(
       lerServicoTexto(s, 'Comissão Fixa', 'comissao_fixa'),
@@ -526,7 +526,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
     if (fixa != null && fixa > 0) {
       return formataMoedaBrl(fixa);
     }
-    return '—';
+    return '';
   }
 
   /** % por faixa a partir de R$/preço (ou `comissao_pct` legado). */
@@ -571,7 +571,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
       }
     }
     const m = Number(s['duracao_minutos'] ?? 30);
-    if (!Number.isFinite(m) || m <= 0) return '—';
+    if (!Number.isFinite(m) || m <= 0) return '';
     return `${m} min`;
   }
 

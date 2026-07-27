@@ -149,13 +149,13 @@ export class FinanceiroCaixaDiaComponent implements OnInit {
     if (o === 'atendimento_confirmacao') return 'Confirmação atendimento';
     if (o === 'manual') return 'Manual';
     if (o === 'despesa_cadastro') return 'Despesa (cadastro)';
-    return o || '—';
+    return o || '';
   }
 
   /** Ex.: `20260420-…712e6` — ID completo no `title` ao passar o rato. */
   rotuloIdAtendimento(id: string | null | undefined): string {
     const t = String(id ?? '').trim();
-    if (!t) return '—';
+    if (!t) return '';
     if (t.length <= 22) return t;
     return `${t.slice(0, 9)}…${t.slice(-8)}`;
   }
@@ -258,7 +258,7 @@ export class FinanceiroCaixaDiaComponent implements OnInit {
     const cl = String(m.despesa_categoria_livre ?? '').trim();
     if (t) partes.push(t);
     if (cl) partes.push(cl);
-    return partes.length ? partes.join(' · ') : '—';
+    return partes.length ? partes.join(' · ') : '';
   }
 
   categoriasPorNatureza(natureza: 'receita' | 'despesa'): CategoriaFinanceiraItem[] {

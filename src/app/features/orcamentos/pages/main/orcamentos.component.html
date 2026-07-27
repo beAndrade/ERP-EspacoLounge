@@ -289,7 +289,7 @@
                 <tr>
                   <td>{{ rotuloTicket(g) }}</td>
                   <td>{{ dataDdMmBarraAaaa(g.data) }}</td>
-                  <td>{{ g.nomeCliente || '—' }}</td>
+                  <td>{{ g.nomeCliente || '' }}</td>
                   <td>
                     <span
                       class="orcamentos-badge"
@@ -305,7 +305,7 @@
                           | number: '1.2-2' : 'pt-BR'
                       }}
                     } @else {
-                      —
+
                     }
                   </td>
                   <td class="col-menu" (click)="$event.stopPropagation()">

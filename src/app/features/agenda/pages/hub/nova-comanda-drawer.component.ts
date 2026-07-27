@@ -530,9 +530,9 @@ export class NovaComandaDrawerComponent implements OnInit {
               String(l.produtoNome ?? '').trim() ||
                 linhaResumoAtendimentoLista(l) ||
                 String(l.descricao ?? '').trim() ||
-                '—',
+                '',
             )
-          : linhaResumoAtendimentoLista(l) || l.descricao || '—';
+          : linhaResumoAtendimentoLista(l) || l.descricao || '';
       const profissional = String(l.profissional ?? '').trim();
       const subParts: string[] = [];
       if (profissional) subParts.push(`Profissional: ${profissional}`);
@@ -632,7 +632,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       mostrarQtd,
       textoQtd,
       unitario: formataMoedaBrl(Math.max(0, unitRaw ?? 0)),
-      desconto: desc > 0 ? formataMoedaBrl(desc) : '—',
+      desconto: desc > 0 ? formataMoedaBrl(desc) : '',
       total: formataMoedaBrl(total),
     };
   }
@@ -678,7 +678,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           mostrarQtd,
           textoQtd,
           unitario: formataMoedaBrl(unit),
-          desconto: '—',
+          desconto: '',
           total: formataMoedaBrl(total),
         };
       }
@@ -714,8 +714,8 @@ export class NovaComandaDrawerComponent implements OnInit {
       return {
         mostrarQtd,
         textoQtd,
-        unitario: '—',
-        desconto: '—',
+        unitario: '',
+        desconto: '',
         total: formataMoedaBrl(totalMega),
       };
     }
@@ -1454,7 +1454,7 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   dataComandaExibicao(): string {
     const ymd = this.contexto()?.dataYmd?.trim();
-    if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '—';
+    if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '';
     const p = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd);
     return p ? `${p[3]}/${p[2]}/${p[1]}` : ymd;
   }

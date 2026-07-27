@@ -119,7 +119,7 @@ export class FinComissoesPagarDrawerComponent {
   }
 
   dataExibicaoLinha(p: PagamentoRascunho): string {
-    return ymdToDdMmYyyy(p.dataYmd) || '—';
+    return ymdToDdMmYyyy(p.dataYmd) || '';
   }
 
   vencimentoYmd(): string {

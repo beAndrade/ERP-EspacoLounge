@@ -64,7 +64,7 @@
 
                 <td>{{ row.created_at | date: 'dd/MM/yyyy HH:mm' }}</td>
 
-                <td>{{ row.cliente_nome || '—' }}</td>
+                <td>{{ row.cliente_nome || '' }}</td>
 
                 <td>{{ row.telefone }}</td>
 
@@ -78,7 +78,7 @@
 
                 <td class="wa-logs-tab__conteudo">{{ row.conteudo }}</td>
 
-                <td>{{ row.erro || '—' }}</td>
+                <td>{{ row.erro || '' }}</td>
 
               </tr>
 

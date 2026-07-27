@@ -26,8 +26,39 @@
 }
 
 .produtos-page .list-page__tabs {
+  position: relative;
   margin: 0;
   border-bottom: none;
+
+  .list-page__tabs-indicator {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: var(--tabs-indicator-width, 0px);
+    transform: translateX(var(--tabs-indicator-left, 0px));
+    background: var(--color-primary);
+    border-radius: 2px 2px 0 0;
+    pointer-events: none;
+    z-index: 1;
+    transition:
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .list-page__tab {
+    &::after {
+      display: none;
+    }
+
+    &--active {
+      cursor: default;
+
+      &:hover {
+        color: var(--color-primary);
+      }
+    }
+  }
 }
 
 .list-page__error {

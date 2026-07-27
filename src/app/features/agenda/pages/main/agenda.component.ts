@@ -118,7 +118,7 @@ export class AgendaComponent implements OnInit {
       }
       grupos.push({
         trackId,
-        nomeCliente: linhas[0].nomeCliente?.trim() || '—',
+        nomeCliente: linhas[0].nomeCliente?.trim() || '',
         linhas,
         total: tem ? Math.round(sum * 100) / 100 : null,
       });

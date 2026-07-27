@@ -134,10 +134,18 @@
           </div>
         </header>
 
-        <nav class="list-page__tabs" aria-label="Secções de produtos">
+        <nav
+          #tabsNav
+          class="list-page__tabs"
+          aria-label="Seções de produtos"
+          [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
+          [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
+        >
+          <span class="list-page__tabs-indicator" aria-hidden="true"></span>
           <button
             type="button"
             class="list-page__tab"
+            data-aba="produtos"
             [class.list-page__tab--active]="aba === 'produtos'"
             [attr.aria-current]="aba === 'produtos' ? 'page' : null"
             (click)="definirAba('produtos')"
@@ -147,6 +155,7 @@
           <button
             type="button"
             class="list-page__tab"
+            data-aba="lotes"
             [class.list-page__tab--active]="aba === 'lotes'"
             [attr.aria-current]="aba === 'lotes' ? 'page' : null"
             (click)="definirAba('lotes')"
@@ -435,7 +444,7 @@
                         @if (precoNum(p) !== null) {
                           {{ precoNum(p)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
                         } @else {
-                          —
+
                         }
                       </td>
                       <td class="col-num">{{ comissaoProduto(p) }}</td>

@@ -574,7 +574,7 @@
                         </div>
                       </td>
                       @if (colunaVisivel('email')) {
-                        <td>{{ c.email?.trim() ? c.email : '—' }}</td>
+                        <td>{{ c.email?.trim() ? c.email : '' }}</td>
                       }
                       @if (colunaVisivel('celular')) {
                         <td>{{ exibirCelular(c) }}</td>

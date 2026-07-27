@@ -618,17 +618,17 @@ export class ClientesComponent implements OnInit, OnDestroy {
   exibirCelular(c: Cliente): string {
     const cel = String(c.celular ?? '').trim();
     const tel = String(c.telefoneFixo ?? c.telefone ?? '').trim();
-    return cel || tel || '—';
+    return cel || tel || '';
   }
 
   exibirNascimento(c: Cliente): string {
     const a = String(c.aniversario ?? '').trim();
-    return a || '—';
+    return a || '';
   }
 
   exibirCpf(c: Cliente): string {
     const raw = String(c.cpf ?? '').trim();
-    if (!raw) return '—';
+    if (!raw) return '';
     const fmt = formatarCpfBr(raw);
     return fmt || raw;
   }
@@ -651,7 +651,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
 
   exibirDebitos(c: Cliente): string {
     const n = this.debitosTotalCliente(c);
-    if (n <= 0.005) return '—';
+    if (n <= 0.005) return '';
     return n.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
@@ -735,7 +735,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
 
   exibirCashback(c: Cliente): string {
     const n = c.cashbackSaldo;
-    if (n == null || !Number.isFinite(n)) return '—';
+    if (n == null || !Number.isFinite(n)) return '';
     return n.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
@@ -743,11 +743,11 @@ export class ClientesComponent implements OnInit, OnDestroy {
   }
 
   exibirRg(c: Cliente): string {
-    return String(c.rg ?? '').trim() || '—';
+    return String(c.rg ?? '').trim();
   }
 
   exibirCidade(c: Cliente): string {
-    return String(c.cidade ?? '').trim() || '—';
+    return String(c.cidade ?? '').trim();
   }
 
   private carregarColunasSalvas(): void {

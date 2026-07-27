@@ -91,7 +91,7 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
   line-height: 16px;
   color: #585858;
   cursor: pointer;
-  transition: color 0.1s;
+  transition: color 0.2s ease;
 
   &::after {
     content: '';
@@ -104,6 +104,7 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
     border-radius: 2px 2px 0 0;
   }
 
+  /* Hover só nas tabs inativas. */
   &:hover:not(.list-page__tab--active) {
     color: var(--color-primary);
   }
@@ -111,6 +112,10 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
   &--active {
     color: var(--color-primary);
     cursor: default;
+
+    &:hover {
+      color: var(--color-primary);
+    }
 
     &::after {
       background: var(--color-primary);

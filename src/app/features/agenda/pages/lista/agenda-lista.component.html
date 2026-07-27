@@ -79,13 +79,12 @@
             @for (a of itens; track $index) {
               <tr>
                 <td>{{ dataDdMmAaaa(a.data) }}</td>
-                <td>{{ a.nomeCliente || '—' }}</td>
-                <td>{{ a.descricao || '—' }}</td>
+                <td>{{ a.nomeCliente || '' }}</td>
+                <td>{{ a.descricao || '' }}</td>
                 <td>
                   @if (valorNum(a.valor) !== null) {
                     {{ valorNum(a.valor)! | number: '1.2-2' }}
                   } @else {
-                    —
                   }
                 </td>
               </tr>
@@ -106,8 +105,8 @@
               }}</span>
             }
           </div>
-          <p class="agenda-lista-card__cliente">{{ a.nomeCliente || '—' }}</p>
-          <p class="agenda-lista-card__desc">{{ a.descricao || '—' }}</p>
+          <p class="agenda-lista-card__cliente">{{ a.nomeCliente || '' }}</p>
+          <p class="agenda-lista-card__desc">{{ a.descricao || '' }}</p>
         </li>
       }
     </ul>

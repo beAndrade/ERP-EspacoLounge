@@ -1752,7 +1752,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
           }
         }
       }
-      const nomeCliente = linhas[0].nomeCliente?.trim() || '—';
+      const nomeCliente = linhas[0].nomeCliente?.trim() || '';
       const data = (linhas[0].data || '').slice(0, 10);
       let sum = 0;
       let temValor = false;

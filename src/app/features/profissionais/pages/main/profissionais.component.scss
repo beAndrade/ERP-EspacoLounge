@@ -4,11 +4,51 @@
   padding-right: 10px;
   box-sizing: border-box;
 
+  .list-page__tabs {
+    position: relative;
+    margin-bottom: 0;
+    border-bottom: none;
+
+    .list-page__tabs-indicator {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 2px;
+      width: var(--tabs-indicator-width, 0px);
+      transform: translateX(var(--tabs-indicator-left, 0px));
+      background: var(--color-primary);
+      border-radius: 2px 2px 0 0;
+      pointer-events: none;
+      z-index: 1;
+      transition:
+        transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .list-page__tab {
+      &::after {
+        display: none;
+      }
+
+      &--active {
+        cursor: default;
+
+        &:hover {
+          color: var(--color-primary);
+        }
+      }
+    }
+  }
+
   .list-table-card {
+    width: 100%;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
 
     > .table-wrap {
-      border-radius: 12px 12px 0 0;
+      border-radius: 12px;
+      overflow: hidden;
     }
   }
 
@@ -26,11 +66,20 @@
     box-shadow: none;
 
     thead th {
+      color: rgba(0, 0, 0, 0.85);
+      font-weight: 500;
+      background: #fafafa;
+      padding: 12px 8px;
       height: 47px;
       box-sizing: border-box;
-      background: #fafafa;
-      border-top: 1px solid #f3f4f6;
-      border-bottom: 1px solid #f3f4f6;
+      border-top: none;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.3s;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      word-break: keep-all;
     }
 
     tbody td {

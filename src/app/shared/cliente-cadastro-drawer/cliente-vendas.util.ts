@@ -27,7 +27,7 @@ export const ymdFimFiltroVendasPadrao = ymdFimFiltroAgendamentosPadrao;
 function ymdParaExibicaoDdMmYyyy(ymd: string): string {
   const y = String(ymd ?? '').trim().slice(0, 10);
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(y);
-  if (!m) return y || '—';
+  if (!m) return y || '';
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
@@ -38,7 +38,7 @@ function descricaoVendasGrupo(g: ComandaGrupoResumo): string {
     if (!label || label === '—') continue;
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
-  if (counts.size === 0) return '—';
+  if (counts.size === 0) return '';
   return [...counts.entries()]
     .map(([label, n]) => `(${n}x) ${label}`)
     .join(', ');
@@ -49,7 +49,7 @@ function profissionalExibicaoGrupo(g: ComandaGrupoResumo): string {
     const p = String(l.profissional ?? '').trim();
     if (p) return p;
   }
-  return '—';
+  return '';
 }
 
 function valorTotalGrupo(g: ComandaGrupoResumo): number {

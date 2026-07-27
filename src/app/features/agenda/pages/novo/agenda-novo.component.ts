@@ -1691,7 +1691,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (tipo === 'Serviço') return this.totalEstimadoServicoLinhaBrl(i);
     if (tipo === 'Produto') return this.totalEstimadoProdutoLinhaBrl(i);
     if (tipo === 'Cabelo') return this.totalEstimadoCabeloLinhaBrl(i);
-    return '—';
+    return '';
   }
 
   private valorCampoResumoWalkIn(s: string): number {
@@ -1767,9 +1767,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Exibição read-only na grelha do modal (linhas Serviço). */
   duracaoServicoLinhaExibicao(linhaIndex: number): string {
     const g = this.linhasItensArray.at(linhaIndex);
-    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '';
     const sid = String(g.get('servico_id')?.value ?? '').trim();
-    if (!sid) return '—';
+    if (!sid) return '';
     const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
     const n = this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
     return `${n} min`;
@@ -1778,7 +1778,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Modal (e leitura): produto — total estimado qtd × (preço manual ou catálogo) − desconto. */
   totalEstimadoProdutoLinhaBrl(linhaIndex: number): string {
     const g = this.linhasItensArray.at(linhaIndex);
-    if (!g || g.get('itemTipo')?.value !== 'Produto') return '—';
+    if (!g || g.get('itemTipo')?.value !== 'Produto') return '';
     const q = Math.max(0.01, Number(g.get('quantidade')?.value) || 1);
     const nome = String(g.get('produto')?.value ?? '').trim();
     const manual = this.parseValorPt(
@@ -1803,7 +1803,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    */
   totalEstimadoServicoLinhaBrl(linhaIndex: number): string {
     const g = this.linhasItensArray.at(linhaIndex);
-    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '—';
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return '';
     const q = Math.max(0.01, Number(g.get('quantidade')?.value) || 1);
     const sid = String(g.get('servico_id')?.value ?? '').trim();
     const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
@@ -1829,7 +1829,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   /** Total da linha de Cabelo: max(0, valor_cabelo − desconto). */
   totalEstimadoCabeloLinhaBrl(linhaIndex: number): string {
     const g = this.linhasItensArray.at(linhaIndex);
-    if (!g || g.get('itemTipo')?.value !== 'Cabelo') return '—';
+    if (!g || g.get('itemTipo')?.value !== 'Cabelo') return '';
     const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? '').trim());
     const unit = v != null && v > 0 ? v : 0;
     const desc =
@@ -5029,19 +5029,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Exibe o fim previsto (HH:mm) para linhas de Serviço (catálogo) na ordem do formulário. */
   horarioFinalExibicao(): string {
-    if (!this.temLinhaServicoCatalogo()) return '—';
+    if (!this.temLinhaServicoCatalogo()) return '';
     const dataYmd = normalizarDataIso(
       String(this.form.controls.data.value ?? ''),
     );
     const hi = normalizarHoraHHmm(
       String(this.form.controls.hora_inicial.value ?? ''),
     );
-    if (!dataYmd || !hi) return '—';
+    if (!dataYmd || !hi) return '';
     const totalMin = this.duracaoMinutosAgendaServicos();
     const anchor = slotInicioFimBrasilia(dataYmd, hi, 30);
-    if (!anchor) return '—';
+    if (!anchor) return '';
     const cur = parseSqlLocalDateTime(anchor.inicio);
-    if (!cur) return '—';
+    if (!cur) return '';
     const end = addMinutesToParts(cur, totalMin);
     return `${String(end.hh).padStart(2, '0')}:${String(end.mm).padStart(2, '0')}`;
   }

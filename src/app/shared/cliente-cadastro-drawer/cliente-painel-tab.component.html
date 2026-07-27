@@ -5,129 +5,334 @@
     @let r = d.painelResumo;
 
     <section class="painel-cards" aria-label="Indicadores do cliente">
-      <article class="painel-card painel-card--destaque painel-card--roxo">
+      <div class="painel-cards__cell">
+        <article class="painel-card painel-card--destaque painel-card--roxo">
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 3h12M6 21h12M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9s8 5 8 9" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-hourglass"
+          >
+            <path d="M5 22h14" />
+            <path d="M5 2h14" />
+            <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+            <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
           </svg>
         </span>
-        <span class="painel-card__valor">{{ r?.diasSemVir ?? '—' }}</span>
-        <span class="painel-card__label">
-          {{ r?.diasSemVir != null ? diasLabel(r!.diasSemVir) + ' sem vir' : 'Nunca veio' }}
-        </span>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">{{ r?.diasSemVir ?? '—' }}</span>
+          <span class="painel-card__label">
+            {{ r?.diasSemVir != null ? diasLabel(r!.diasSemVir) + ' sem vir' : 'Nunca veio' }}
+          </span>
+        </div>
       </article>
+      </div>
 
-      <article class="painel-card painel-card--destaque painel-card--azul">
+      <div class="painel-cards__cell">
+        <article class="painel-card painel-card--destaque painel-card--azul">
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L4.5 9.7l5.9-.9L12 3.5z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-star"
+          >
+            <path
+              d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+            />
           </svg>
         </span>
-        <span class="painel-card__valor painel-card__valor--texto">Sem avaliação</span>
-        <span class="painel-card__label">Última avaliação</span>
+        <div class="painel-card__body">
+          <span class="painel-card__valor painel-card__valor--texto">Sem avaliação</span>
+          <span class="painel-card__label">Última avaliação</span>
+        </div>
       </article>
+      </div>
 
-      <article class="painel-card painel-card--destaque painel-card--verde">
+      <div class="painel-cards__cell">
+        <button
+          type="button"
+          class="painel-card painel-card--destaque painel-card--verde"
+          (click)="selecionarAba('Vendas')"
+          aria-label="Ver faturamento na aba Vendas"
+        >
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v10M15.2 9.2c0-1.2-1.4-2.2-3.2-2.2S8.8 8 8.8 9.2 10.2 11 12 11s3.2 1 3.2 2.2-1.4 2.2-3.2 2.2-3.2-1-3.2-2.2" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-circle-dollar-sign"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+            <path d="M12 18V6" />
           </svg>
         </span>
-        <span class="painel-card__valor painel-card__valor--texto">
-          {{ (r?.faturamento ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
-        </span>
-        <span class="painel-card__label">Faturamento</span>
-      </article>
+        <div class="painel-card__body">
+          <span class="painel-card__valor painel-card__valor--texto">
+            {{ (r?.faturamento ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </span>
+          <span class="painel-card__label">Faturamento</span>
+        </div>
+        </button>
+      </div>
 
-      <article class="painel-card">
+      <div class="painel-cards__cell">
+        <button
+          type="button"
+          class="painel-card"
+          (click)="selecionarAba('Débitos')"
+          aria-label="Ver débitos na aba Débitos"
+        >
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 7H4a1 1 0 0 0-1 1v3a2 2 0 0 1 0 4v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-4V8a1 1 0 0 0-1-1z" />
-            <path d="M12 11v2" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-wallet"
+          >
+            <path
+              d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"
+            />
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
           </svg>
         </span>
-        <span class="painel-card__valor">
-          {{ (r?.debitosTotal ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
-        </span>
-        <span class="painel-card__label">Débitos</span>
-      </article>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">
+            {{ (r?.debitosTotal ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </span>
+          <span class="painel-card__label">Débitos</span>
+        </div>
+        </button>
+      </div>
 
-      <article class="painel-card">
+      <div class="painel-cards__cell">
+        <button
+          type="button"
+          class="painel-card"
+          (click)="selecionarAba('Pacotes')"
+          aria-label="Ver pacotes em aberto na aba Pacotes"
+        >
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="4" width="6" height="6" rx="1.2" />
-            <rect x="14" y="4" width="6" height="6" rx="1.2" />
-            <rect x="4" y="14" width="6" height="6" rx="1.2" />
-            <rect x="14" y="14" width="6" height="6" rx="1.2" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-boxes"
+          >
+            <path
+              d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"
+            />
+            <path d="m7 16.5-4.74-2.85" />
+            <path d="m7 16.5 5-3" />
+            <path d="M7 16.5v5.17" />
+            <path
+              d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"
+            />
+            <path d="m17 16.5-5-3" />
+            <path d="m17 16.5 4.74-2.85" />
+            <path d="M17 16.5v5.17" />
+            <path
+              d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"
+            />
+            <path d="M12 8 7.26 5.15" />
+            <path d="m12 8 4.74-2.85" />
+            <path d="M12 13.5V8" />
           </svg>
         </span>
-        <span class="painel-card__valor">{{ r?.pacotesAberto ?? 0 }}</span>
-        <span class="painel-card__label">Pacotes em aberto</span>
-      </article>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">{{ r?.pacotesAberto ?? 0 }}</span>
+          <span class="painel-card__label">Pacotes em aberto</span>
+        </div>
+        </button>
+      </div>
 
-      <article class="painel-card">
+      <div class="painel-cards__cell">
+        <button
+          type="button"
+          class="painel-card"
+          (click)="selecionarAba('Créditos')"
+          aria-label="Ver crédito na aba Créditos"
+        >
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="8.5" />
-            <path d="M12 7.5v9M14.3 9.4c0-1-1-1.6-2.3-1.6s-2.3.7-2.3 1.6 1 1.5 2.3 1.5 2.3.7 2.3 1.6-1 1.6-2.3 1.6-2.3-.7-2.3-1.6" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-piggy-bank"
+          >
+            <path
+              d="M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3a3.16 3.16 0 0 0 2-2h1a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-1a5 5 0 0 0-2-4V3a4 4 0 0 0-3.2 1.6l-.3.4H11a6 6 0 0 0-6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z"
+            />
+            <path d="M16 10h.01" />
+            <path d="M2 8v1a2 2 0 0 0 2 2h1" />
           </svg>
         </span>
-        <span class="painel-card__valor">
-          {{ d.creditoSaldo | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
-        </span>
-        <span class="painel-card__label">Crédito</span>
-      </article>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">
+            {{ d.creditoSaldo | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </span>
+          <span class="painel-card__label">Crédito</span>
+        </div>
+        </button>
+      </div>
 
-      <article class="painel-card">
+      <div class="painel-cards__cell">
+        <button
+          type="button"
+          class="painel-card"
+          (click)="selecionarAba('Cashback')"
+          aria-label="Ver cashback na aba Cashback"
+        >
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v3M8 8h8l1 11H7L8 8z" />
-            <path d="M9 11c1.5 1 4.5 1 6 0" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-hand-coins"
+          >
+            <path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17" />
+            <path
+              d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"
+            />
+            <path d="m2 16 6 6" />
+            <circle cx="16" cy="9" r="2.9" />
+            <circle cx="6" cy="5" r="3" />
           </svg>
         </span>
-        <span class="painel-card__valor">
-          {{ d.cashbackSaldo | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
-        </span>
-        <span class="painel-card__label">Cashback</span>
-      </article>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">
+            {{ d.cashbackSaldo | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </span>
+          <span class="painel-card__label">Cashback</span>
+        </div>
+        </button>
+      </div>
 
-      <article class="painel-card">
+      <div class="painel-cards__cell">
+        <article class="painel-card">
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 7l6 6 4-4 6 6" />
-            <path d="M20 15v-4h-4" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-trending-down"
+          >
+            <path d="M16 17h6v-6" />
+            <path d="m22 17-8.5-8.5-5 5L2 7" />
           </svg>
         </span>
-        <span class="painel-card__valor">
-          {{ percentualLabel(r?.taxaCancelamentoPct ?? 0) }}
-        </span>
-        <span class="painel-card__label">Taxa de cancelamento</span>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">
+            {{ percentualLabel(r?.taxaCancelamentoPct ?? 0) }}
+          </span>
+          <span class="painel-card__label">Taxa de cancelamento</span>
+        </div>
       </article>
+      </div>
 
-      <article class="painel-card">
+      <div class="painel-cards__cell">
+        <article class="painel-card">
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="8.5" />
-            <path d="M12 7.5V12l3 2" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-clock-4"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
           </svg>
         </span>
-        <span class="painel-card__valor">{{ diasLabel(r?.tempoComoClienteDias ?? null) }}</span>
-        <span class="painel-card__label">Tempo como cliente</span>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">{{ diasLabel(r?.tempoComoClienteDias ?? null) }}</span>
+          <span class="painel-card__label">Tempo como cliente</span>
+        </div>
       </article>
+      </div>
 
-      <article class="painel-card">
+      <div class="painel-cards__cell">
+        <article class="painel-card">
         <span class="painel-card__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 17l6-6 4 4 6-6" />
-            <path d="M20 9V13h-4" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-trending-up"
+          >
+            <path d="M16 7h6v6" />
+            <path d="m22 7-8.5 8.5-5-5L2 17" />
           </svg>
         </span>
-        <span class="painel-card__valor">
-          {{ r?.taxaRetornoDias != null ? diasLabel(r!.taxaRetornoDias) : 'Sem retorno' }}
-        </span>
-        <span class="painel-card__label">Taxa de retorno</span>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">
+            {{ r?.taxaRetornoDias != null ? diasLabel(r!.taxaRetornoDias) : 'Sem retorno' }}
+          </span>
+          <span class="painel-card__label">Taxa de retorno</span>
+        </div>
       </article>
+      </div>
     </section>
 
     <section class="painel-servicos" aria-labelledby="painel-servicos-titulo">

@@ -83,12 +83,12 @@ function titularFromItem(item: FinTransacaoItem): string {
   if (d) {
     if (d.length <= 80) return d;
   }
-  return String(item.categoria_nome ?? '').trim() || '—';
+  return String(item.categoria_nome ?? '').trim();
 }
 
 export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLinhaUi {
   const v = valorNum(item.valor);
-  const forma = String(item.metodo_pagamento ?? '').trim() || '—';
+  const forma = String(item.metodo_pagamento ?? '').trim();
   const taxaPct = item.taxa_percentual ?? 0;
   const taxaFixa = item.taxa_fixa ?? 0;
   const valorLiquido = calcularValorLiquido(v, item.natureza, taxaPct, taxaFixa);
@@ -97,10 +97,10 @@ export function mapFinTransacaoItemToUi(item: FinTransacaoItem): FinTransacaoLin
     dataYmd: String(item.data_mov).slice(0, 10),
     criadoEmYmd: String(item.criado_em ?? item.data_mov).slice(0, 10),
     titular: titularFromItem(item),
-    subtitulo: String(item.subtitulo ?? '').trim() || '—',
-    origem: String(item.origem_label ?? '').trim() || '—',
+    subtitulo: String(item.subtitulo ?? '').trim(),
+    origem: String(item.origem_label ?? '').trim(),
     formaPagamento: forma,
-    categoria: String(item.categoria_nome ?? '').trim() || '—',
+    categoria: String(item.categoria_nome ?? '').trim(),
     categoriaId: item.categoria_id,
     descricao: item.descricao,
     valorBruto: v,

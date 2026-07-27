@@ -22,7 +22,7 @@ export class ClienteVendasTabComponent {
     if (typeof numero === 'number' && Number.isFinite(numero) && numero > 0) {
       return `#${numero}`;
     }
-    return '—';
+    return '';
   }
 
   aplicarFiltroDatas(): void {

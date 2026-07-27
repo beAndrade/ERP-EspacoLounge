@@ -1,10 +1,13 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
+  ElementRef,
   HostListener,
   inject,
   LOCALE_ID,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ProdutoCatalogoItem } from '../../../../core/models/api.models';
@@ -28,15 +31,20 @@ export type ProdutosOrdenacaoColuna =
   templateUrl: './estoque.component.html',
   styleUrl: './estoque.component.scss',
 })
-export class EstoqueComponent implements OnInit {
+export class EstoqueComponent implements OnInit, AfterViewInit {
   private readonly api = inject(SheetsApiService);
   private readonly produtoDrawer = inject(ProdutoCadastroDrawerService);
+
+  @ViewChild('tabsNav', { read: ElementRef })
+  private tabsNav?: ElementRef<HTMLElement>;
 
   carregando = false;
   erro = '';
   itens: ProdutoCatalogoItem[] = [];
 
   aba: ProdutosAba = 'produtos';
+  tabsIndicatorLeft = 0;
+  tabsIndicatorWidth = 0;
 
   busca = '';
   buscaAberta = false;
@@ -58,6 +66,10 @@ export class EstoqueComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
+  }
+
+  ngAfterViewInit(): void {
+    this.sincronizarIndicadorTabs();
   }
 
   carregar(): void {
@@ -90,6 +102,21 @@ export class EstoqueComponent implements OnInit {
     this.aba = aba;
     this.pagina = 1;
     this.selecionados.clear();
+    this.sincronizarIndicadorTabs();
+  }
+
+  private sincronizarIndicadorTabs(): void {
+    const medir = () => {
+      const nav = this.tabsNav?.nativeElement;
+      if (!nav) return;
+      const alvo = nav.querySelector(
+        `.list-page__tab[data-aba="${this.aba}"]`,
+      ) as HTMLElement | null;
+      if (!alvo) return;
+      this.tabsIndicatorLeft = alvo.offsetLeft;
+      this.tabsIndicatorWidth = alvo.offsetWidth;
+    };
+    requestAnimationFrame(medir);
   }
 
   private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
@@ -354,7 +381,7 @@ export class EstoqueComponent implements OnInit {
 
   exibirTexto(v: string | null | undefined): string {
     const s = String(v ?? '').trim();
-    return s || '—';
+    return s || '';
   }
 
   marcaProduto(p: ProdutoCatalogoItem): string {
@@ -363,7 +390,7 @@ export class EstoqueComponent implements OnInit {
 
   comissaoProduto(p: ProdutoCatalogoItem): string {
     const c = String(p.comissao_padrao ?? '').trim();
-    if (!c) return '—';
+    if (!c) return '';
     return c.includes('%') ? c : `${c} %`;
   }
 

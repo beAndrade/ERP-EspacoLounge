@@ -14,7 +14,7 @@ import {
 export function dataDdMmAaaa(ymd: string): string {
   const s = (ymd || '').trim();
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (!m) return s || '—';
+  if (!m) return s || '';
   return `${m[3]}-${m[2]}-${m[1]}`;
 }
 
@@ -22,7 +22,7 @@ export function dataDdMmAaaa(ymd: string): string {
 export function dataDdMmBarraAaaa(ymd: string): string {
   const s = (ymd || '').trim();
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (!m) return s || '—';
+  if (!m) return s || '';
   return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
@@ -209,7 +209,7 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     if (nome && desc && desc !== nome) {
       return `${nome} — ${desc}`;
     }
-    return nome || desc || '—';
+    return nome || desc || '';
   }
   if (t === 'pacote' || isTipoPacoteQueratinaNorm(t)) {
     const pac = (l.pacote || '').trim();
@@ -217,24 +217,24 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     const rotulo =
       t === 'pacote' ? 'Pacote' : 'Pacote Adesivo+Queratina';
     if (!et) {
-      return pac ? `${rotulo} • ${pac}` : '—';
+      return pac ? `${rotulo} • ${pac}` : '';
     }
     /* Com etapa: sempre incluir o pacote (antes só aparecia a etapa). */
     if (pac && et) {
       return `${pac} — ${et}`;
     }
-    return et || pac || '—';
+    return et || pac || '';
   }
   if (t === 'mega') {
     const pac = (l.pacote || '').trim();
     const et = (l.etapa || '').trim();
     if (!et) {
-      return pac ? `Mega • ${pac}` : '—';
+      return pac ? `Mega • ${pac}` : '';
     }
     if (pac && et) {
       return `${pac} — ${et}`;
     }
-    return et || pac || '—';
+    return et || pac || '';
   }
   if (t === 'serviço') {
     const nome = (l.servicosRef || '').trim();
@@ -242,14 +242,14 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     if (nome && tam) {
       return `${nome} — ${tam}`;
     }
-    return nome || (l.descricao || '').trim() || '—';
+    return nome || (l.descricao || '').trim() || '';
   }
   const nomeServ = (l.servicosRef || '').trim();
   const tamServ = (l.tamanho || '').trim();
   if (nomeServ && tamServ) {
     return `${nomeServ} — ${tamServ}`;
   }
-  return (l.descricao || '').trim() || '—';
+  return (l.descricao || '').trim() || '';
 }
 
 /**
