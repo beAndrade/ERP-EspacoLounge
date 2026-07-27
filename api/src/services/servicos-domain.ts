@@ -5,6 +5,7 @@ import { asc, eq, max, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { atendimentoItens, categorias, servicos } from '../db/schema';
 import { normalizeMoneyTextForDb } from '../lib/normalize-money-text';
+import { normalizePercentTextForDb } from '../lib/normalize-percent-text';
 import { listServicosForApi } from './queries';
 
 export type ServicoTipoCatalogo = 'Fixo' | 'Tamanho';
@@ -76,7 +77,7 @@ function valoresGravacao(input: ServicoWriteInput) {
   const fotoUrl = trimOrNull(input.foto_url);
   const mostraNoSite = input.mostra_no_site !== false;
 
-  const comissaoPct = trimOrNull(input.comissao_pct);
+  const comissaoPct = normalizePercentTextForDb(input.comissao_pct);
   const comissaoFixa = textoMoedaOuNull(input.comissao_fixa);
   /** Uma unidade de comissão: se % preenchida, limpa R$ (e vice-versa quando só R$). */
   let pct = comissaoPct;

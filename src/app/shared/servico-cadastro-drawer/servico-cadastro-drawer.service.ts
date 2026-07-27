@@ -633,7 +633,7 @@ export class ServicoCadastroDrawerService {
     const preco = valorMonetarioParaNumero(precoFmt);
     const pctStr = percentualParaPayload(this.comissaoValor);
     if (preco == null || preco <= 0 || !pctStr) return null;
-    const pct = Number(pctStr);
+    const pct = parseInt(pctStr.replace(/\D/g, ''), 10);
     if (!Number.isFinite(pct) || pct <= 0) return null;
     return formataMoedaBrl((preco * pct) / 100);
   }

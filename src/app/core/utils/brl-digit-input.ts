@@ -79,5 +79,5 @@ export function percentualParaPayload(raw: string): string | null {
   const digits = String(raw ?? '').replace(/\D/g, '');
   const n = parseInt(digits, 10);
   if (!Number.isFinite(n) || n <= 0) return null;
-  return String(n);
+  return `${n}%`;
 }

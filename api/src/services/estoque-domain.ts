@@ -1,6 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../db';
 import { atendimentoItens, produtos } from '../db/schema';
+import { normalizeMoneyTextForDb } from '../lib/normalize-money-text';
+import { normalizePercentTextForDb } from '../lib/normalize-percent-text';
 import { toNumberPt } from './finance-domain';
 
 /** Quantidade disponível em estoque a partir do texto da coluna `produtos.estoque`. */
@@ -204,15 +206,15 @@ export async function criarProdutoApi(
       produto: nome,
       categoria,
       marca: textoOpcional(input.marca),
-      preco: textoOpcional(input.preco),
-      custo: textoOpcional(input.custo),
+      preco: normalizeMoneyTextForDb(input.preco),
+      custo: normalizeMoneyTextForDb(input.custo),
       estoque: estoqueStr,
       estoqueInicial: estoqueStr,
       estoqueMinimo: textoOpcional(input.estoque_minimo) ?? '0',
       unidade: textoOpcional(input.unidade) ?? 'unidade',
-      precoProfissional: textoOpcional(input.preco_profissional),
-      custoAdicional: textoOpcional(input.custo_adicional),
-      comissaoPadrao: textoOpcional(input.comissao_padrao),
+      precoProfissional: normalizeMoneyTextForDb(input.preco_profissional),
+      custoAdicional: normalizeMoneyTextForDb(input.custo_adicional),
+      comissaoPadrao: normalizePercentTextForDb(input.comissao_padrao),
       codigoItem: textoOpcional(input.codigo_item),
       codigoBarras: textoOpcional(input.codigo_barras),
       observacoes: textoOpcional(input.observacoes),
@@ -253,13 +255,13 @@ export async function atualizarProdutoApi(
       produto: nome,
       categoria,
       marca: textoOpcional(input.marca),
-      preco: textoOpcional(input.preco),
-      custo: textoOpcional(input.custo),
+      preco: normalizeMoneyTextForDb(input.preco),
+      custo: normalizeMoneyTextForDb(input.custo),
       estoqueMinimo,
       unidade: textoOpcional(input.unidade) ?? existing.unidade ?? 'unidade',
-      precoProfissional: textoOpcional(input.preco_profissional),
-      custoAdicional: textoOpcional(input.custo_adicional),
-      comissaoPadrao: textoOpcional(input.comissao_padrao),
+      precoProfissional: normalizeMoneyTextForDb(input.preco_profissional),
+      custoAdicional: normalizeMoneyTextForDb(input.custo_adicional),
+      comissaoPadrao: normalizePercentTextForDb(input.comissao_padrao),
       codigoItem: textoOpcional(input.codigo_item),
       codigoBarras: textoOpcional(input.codigo_barras),
       observacoes: textoOpcional(input.observacoes),

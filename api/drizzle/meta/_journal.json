@@ -400,6 +400,13 @@
       "when": 1775698500000,
       "tag": "0056_marcas_catalogo",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1775698600000,
+      "tag": "0057_padronizar_texto_moeda_pct",
+      "breakpoints": true
     }
   ]
 }
