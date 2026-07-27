@@ -126,7 +126,7 @@
 
                 <label class="servico-cadastro-form__field servico-cadastro-form__field--full">
                   <span class="servico-cadastro-form__label">
-                    <span class="servico-cadastro-form__req" aria-hidden="true">*</span> Nome
+                    <span class="servico-cadastro-form__req" aria-hidden="true">*</span>Nome
                   </span>
                   <input
                     type="text"
@@ -142,7 +142,7 @@
                 <div class="servico-cadastro-form__row servico-cadastro-form__row--meta">
                   <div class="servico-cadastro-form__field servico-cadastro-form__field--categoria">
                     <span class="servico-cadastro-form__label">
-                      <span class="servico-cadastro-form__req" aria-hidden="true">*</span> Categoria
+                      <span class="servico-cadastro-form__req" aria-hidden="true">*</span>Categoria
                     </span>
                     <app-saas-select
                       [(ngModel)]="d.categoria"
@@ -162,8 +162,9 @@
 
                   <div class="servico-cadastro-form__field servico-cadastro-form__field--tipo">
                     <span class="servico-cadastro-form__label">
-                      <span class="servico-cadastro-form__req" aria-hidden="true">*</span>
-                      Tipo de preço
+                      <span class="servico-cadastro-form__req" aria-hidden="true"
+                        >*</span
+                      >Tipo de preço
                     </span>
                     <app-saas-select
                       [(ngModel)]="d.tipo"
@@ -198,8 +199,7 @@
                   >
                     <div class="servico-cadastro-form__field">
                       <span class="servico-cadastro-form__label">
-                        <span class="servico-cadastro-form__req" aria-hidden="true">*</span>
-                        Valor
+                        <span class="servico-cadastro-form__req" aria-hidden="true">*</span>Valor
                       </span>
                       <div class="servico-cadastro-form__valor-input">
                         <span class="servico-cadastro-form__valor-input__prefix" aria-hidden="true"
@@ -512,6 +512,82 @@
                   ></textarea>
                 </label>
               </div>
+            } @else if (d.abaAtiva === 'Produtos consumidos') {
+              <div class="servico-cadastro-form servico-cadastro-consumidos">
+                <p class="servico-cadastro-consumidos__hint">
+                  Produtos baixados do estoque automaticamente quando este serviço
+                  for faturado (quantidade por execução).
+                </p>
+
+                <div class="servico-cadastro-form__row">
+                  <div class="servico-cadastro-form__field">
+                    <span class="servico-cadastro-form__label">Produto</span>
+                    <app-saas-select
+                      [(ngModel)]="d.consumidoProdutoId"
+                      name="consumidoProduto"
+                      [options]="d.opcoesProdutoConsumidoSelect()"
+                      [useNumericOutput]="true"
+                      [showFilter]="true"
+                      placeholder="Selecione…"
+                      aria-label="Produto consumido"
+                      (painelAberto)="d.carregarProdutosCatalogo()"
+                    />
+                  </div>
+                  <label class="servico-cadastro-form__field">
+                    <span class="servico-cadastro-form__label">
+                      Quantidade
+                      @if (d.unidadeProdutoConsumido(d.consumidoProdutoId); as u) {
+                        <span class="servico-cadastro-consumidos__unidade">({{ u }})</span>
+                      }
+                    </span>
+                    <input
+                      type="text"
+                      inputmode="decimal"
+                      class="servico-cadastro-form__input"
+                      [(ngModel)]="d.consumidoQuantidade"
+                      name="consumidoQuantidade"
+                      placeholder="Ex.: 15"
+                      autocomplete="off"
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  class="cliente-footer-btn cliente-footer-btn--ghost servico-cadastro-consumidos__add"
+                  (click)="d.adicionarConsumido()"
+                >
+                  Adicionar à receita
+                </button>
+
+                @if (d.consumidos.length === 0) {
+                  <p class="cliente-tab-placeholder">
+                    Nenhum produto na receita deste serviço.
+                  </p>
+                } @else {
+                  <ul class="servico-cadastro-consumidos__lista">
+                    @for (c of d.consumidos; track c.produto_id) {
+                      <li class="servico-cadastro-consumidos__item">
+                        <div class="servico-cadastro-consumidos__item-main">
+                          <strong>{{ c.produto }}</strong>
+                          <span
+                            >{{ c.quantidade }}
+                            {{ c.unidade }}</span
+                          >
+                        </div>
+                        <button
+                          type="button"
+                          class="servico-cadastro-consumidos__rm"
+                          (click)="d.removerConsumido(c.produto_id)"
+                          aria-label="Remover produto da receita"
+                        >
+                          Remover
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
             } @else {
               <p class="cliente-tab-placeholder">
                 A secção «{{ d.abaAtiva }}» estará disponível em breve.
@@ -521,7 +597,7 @@
         </div>
       </div>
 
-      @if (d.abaAtiva === 'Cadastro') {
+      @if (d.abaAtiva === 'Cadastro' || d.abaAtiva === 'Produtos consumidos') {
         <footer class="cliente-drawer-footer">
           <button
             type="button"

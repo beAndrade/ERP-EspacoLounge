@@ -234,6 +234,7 @@ export async function listProdutosApi(db: Db) {
       estoque_inicial: r.estoqueInicial,
       estoque_minimo: r.estoqueMinimo,
       unidade: r.unidade != null ? String(r.unidade) : '',
+      unidade_equivalente: r.unidadeEquivalente,
       preco_profissional: r.precoProfissional,
       custo_adicional: r.custoAdicional,
       comissao_padrao: r.comissaoPadrao,

@@ -34,7 +34,7 @@ import {
   regrasMegaQueratina,
   servicos,
 } from '../db/schema';
-import { darBaixaEstoqueProdutosDoPedido } from './estoque-domain';
+import { darBaixaEstoqueDoPedido } from './estoque-domain';
 import {
   formatMoedaReciboPt,
   inserirReceitaConfirmacaoPagamento,
@@ -2780,6 +2780,9 @@ export async function finalizarCobrancaPorIdAtendimento(
 
   await aplicarDescontoComandaPorIdAtendimento(db, id, descontoRaw);
 
+  /** Baixa estoque antes de marcar finalizada — se falhar, a cobrança permanece aberta. */
+  await darBaixaEstoqueDoPedido(db, id);
+
   const resumoAntes = await getResumoComanda(db, id);
   let atualizadas = 0;
   for (const r of rows) {
@@ -3126,7 +3129,7 @@ export async function confirmarPagamentoPorIdAtendimento(
     return { linhasAtualizadas: 0, movimentacaoId: null };
   }
 
-  await darBaixaEstoqueProdutosDoPedido(db, id);
+  await darBaixaEstoqueDoPedido(db, id);
   const total = totalLiquidoConfirmacao(candidatas);
   if (total <= 0) {
     return { linhasAtualizadas: 0, movimentacaoId: null };

@@ -179,6 +179,7 @@ const produtoWriteBodySchema = t.Object(
     estoque_inicial: nullableStr,
     estoque_minimo: nullableStr,
     unidade: nullableStr,
+    unidade_equivalente: nullableStr,
     preco_profissional: nullableStr,
     custo_adicional: nullableStr,
     comissao_padrao: nullableStr,
@@ -226,7 +227,13 @@ import {
   listComissoesResumidasApi,
   recalcularTotaisComissaoFolhaPorPeriodo,
 } from './services/folha-domain';
-import { incrementarEstoqueProduto, criarProdutoApi, atualizarProdutoApi } from './services/estoque-domain';
+import {
+  incrementarEstoqueProduto,
+  criarProdutoApi,
+  atualizarProdutoApi,
+  listServicoProdutosConsumidos,
+  replaceServicoProdutosConsumidos,
+} from './services/estoque-domain';
 import { isPublicApiPath, authenticateRequest } from './lib/auth-guard';
 import {
   alterarEmailUsuario,
@@ -1213,6 +1220,66 @@ const app = new Elysia({ adapter: node() })
     },
     { params: t.Object({ id: t.String() }) },
   )
+  .get('/api/servicos/:id/produtos-consumidos', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const items = await listServicoProdutosConsumidos(db, id);
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/inválido/i.test(msg)) return fail('VALIDATION', msg);
+      return fail('SERVER', msg);
+    }
+  })
+  .put(
+    '/api/servicos/:id/produtos-consumidos',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as { items?: unknown };
+        const rawItems = Array.isArray(b.items) ? b.items : [];
+        const items = rawItems.map((row) => {
+          const r = row as Record<string, unknown>;
+          return {
+            produto_id: Number(r.produto_id ?? r.produtoId),
+            quantidade: r.quantidade as number | string,
+          };
+        });
+        const saved = await replaceServicoProdutosConsumidos(db, id, items);
+        return ok({ items: saved });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/inválido|duplicado|maior que zero|não existem|receita/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object(
+        {
+          items: t.Array(
+            t.Object(
+              {
+                produto_id: t.Optional(t.Number()),
+                produtoId: t.Optional(t.Number()),
+                quantidade: t.Union([t.Number(), t.String()]),
+              },
+              { additionalProperties: true },
+            ),
+          ),
+        },
+        { additionalProperties: true },
+      ),
+    },
+  )
   .get('/api/regras-mega', async () => ok({ items: await listRegrasMegaApi(db) }))
   .get('/api/pacotes', async () => ok({ items: await listPacotesApi(db) }))
   .get('/api/regras-mega-queratina', async () =>
@@ -1400,6 +1467,12 @@ const app = new Elysia({ adapter: node() })
                 ? String(b.estoqueMinimo)
                 : null,
           unidade: b.unidade != null ? String(b.unidade) : null,
+          unidade_equivalente:
+            b.unidade_equivalente != null
+              ? String(b.unidade_equivalente)
+              : b.unidadeEquivalente != null
+                ? String(b.unidadeEquivalente)
+                : null,
           preco_profissional:
             b.preco_profissional != null
               ? String(b.preco_profissional)
@@ -1474,6 +1547,12 @@ const app = new Elysia({ adapter: node() })
                 ? String(b.estoqueMinimo)
                 : null,
           unidade: b.unidade != null ? String(b.unidade) : null,
+          unidade_equivalente:
+            b.unidade_equivalente != null
+              ? String(b.unidade_equivalente)
+              : b.unidadeEquivalente != null
+                ? String(b.unidadeEquivalente)
+                : null,
           preco_profissional:
             b.preco_profissional != null
               ? String(b.preco_profissional)
@@ -1535,19 +1614,28 @@ const app = new Elysia({ adapter: node() })
         if (!Number.isFinite(id) || id <= 0) {
           return fail('VALIDATION', 'id inválido');
         }
-        const ad = Number((body as { adicionar?: unknown }).adicionar);
-        if (!Number.isFinite(ad) || ad <= 0) {
-          return fail(
-            'VALIDATION',
-            'adicionar deve ser um número maior que zero',
-          );
-        }
-        const item = await incrementarEstoqueProduto(db, id, ad);
+        const b = body as {
+          adicionar?: unknown;
+          adicionar_unidades?: unknown;
+          adicionarUnidades?: unknown;
+        };
+        const adicionarRaw = b.adicionar;
+        const unidadesRaw = b.adicionar_unidades ?? b.adicionarUnidades;
+        const item = await incrementarEstoqueProduto(db, id, {
+          adicionar:
+            adicionarRaw != null && adicionarRaw !== ''
+              ? Number(adicionarRaw)
+              : undefined,
+          adicionar_unidades:
+            unidadesRaw != null && unidadesRaw !== ''
+              ? Number(unidadesRaw)
+              : undefined,
+        });
         return ok({ item });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
-        if (/maior que zero|inteiro/i.test(msg)) {
+        if (/maior que zero|inteiro|Informe adicionar/i.test(msg)) {
           return fail('VALIDATION', msg);
         }
         return fail('SERVER', msg);
@@ -1556,7 +1644,11 @@ const app = new Elysia({ adapter: node() })
     {
       params: t.Object({ id: t.String() }),
       body: t.Object(
-        { adicionar: t.Number() },
+        {
+          adicionar: t.Optional(t.Number()),
+          adicionar_unidades: t.Optional(t.Number()),
+          adicionarUnidades: t.Optional(t.Number()),
+        },
         { additionalProperties: true },
       ),
     },

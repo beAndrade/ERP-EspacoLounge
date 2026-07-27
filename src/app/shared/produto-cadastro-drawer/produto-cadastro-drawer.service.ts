@@ -271,6 +271,16 @@ export class ProdutoCadastroDrawerService {
     el.value = v;
   }
 
+  stepInteiro(
+    campo: 'estoqueMinimo' | 'estoqueInicial' | 'unidadeEquivalente',
+    delta: 1 | -1,
+  ): void {
+    const min = campo === 'unidadeEquivalente' ? 1 : 0;
+    const cur = parseInt(String(this[campo] ?? '0').replace(/\D/g, ''), 10);
+    const n = Number.isFinite(cur) ? cur : min;
+    this[campo] = String(Math.max(min, n + delta));
+  }
+
   salvar(): void {
     if (this.salvando) return;
     const nome = this.nome.trim();
@@ -311,6 +321,10 @@ export class ProdutoCadastroDrawerService {
       estoque_inicial: this.estoqueInicial.trim() || '0',
       estoque_minimo: this.estoqueMinimo.trim() || '0',
       unidade,
+      unidade_equivalente:
+        unidade === 'unidade'
+          ? '1'
+          : this.unidadeEquivalente.trim() || '1',
       preco_profissional: moedaParaPayload(this.precoProfissional),
       custo_adicional: moedaParaPayload(this.custoAdicional),
       comissao_padrao: percentualParaPayload(this.comissaoPadrao),
@@ -373,7 +387,8 @@ export class ProdutoCadastroDrawerService {
     const u = String(item.unidade ?? '').trim().toLowerCase();
     this.registroSaida =
       u === 'ml' ? 'em ml' : u === 'g' || u === 'gramas' ? 'em gramas' : 'em unidade';
-    this.unidadeEquivalente = '1';
+    const eq = String(item.unidade_equivalente ?? '1').trim();
+    this.unidadeEquivalente = eq && eq !== '0' ? eq : '1';
     this.estoqueMinimo = String(item.estoque_minimo ?? '0').trim() || '0';
     this.estoqueInicial = String(item.estoque_inicial ?? item.estoque ?? '0').trim() || '0';
     this.precoProfissional = normalizarMoedaExibicao(item.preco_profissional);

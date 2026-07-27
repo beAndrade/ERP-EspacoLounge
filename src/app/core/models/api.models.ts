@@ -360,6 +360,8 @@ export interface ProdutoCatalogoItem {
   estoque_inicial?: unknown;
   estoque_minimo?: unknown;
   unidade: string;
+  /** ml/g por 1 unidade física (frasco); default efetivo 1. */
+  unidade_equivalente?: string | null;
   preco_profissional?: string | null;
   custo_adicional?: string | null;
   comissao_padrao?: string | null;
@@ -378,6 +380,7 @@ export interface ProdutoWritePayload {
   estoque_inicial?: string | null;
   estoque_minimo?: string | null;
   unidade?: string | null;
+  unidade_equivalente?: string | null;
   preco_profissional?: string | null;
   custo_adicional?: string | null;
   comissao_padrao?: string | null;
@@ -385,6 +388,16 @@ export interface ProdutoWritePayload {
   codigo_barras?: string | null;
   observacoes?: string | null;
   foto_url?: string | null;
+}
+
+/** Receita: produto consumido por 1 execução do serviço. */
+export interface ServicoProdutoConsumidoItem {
+  id?: number;
+  servico_id?: number;
+  produto_id: number;
+  produto: string;
+  unidade: string;
+  quantidade: string;
 }
 
 /** Referência da aba Cabelos (MVP: ajuda visual; valor vem manual). */

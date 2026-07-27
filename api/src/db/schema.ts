@@ -241,6 +241,11 @@ export const produtos = pgTable('produtos', {
   estoqueInicial: text('estoque_inicial'),
   estoqueMinimo: text('estoque_minimo'),
   unidade: text('unidade'),
+  /**
+   * Quantos ml/g equivalem a 1 unidade física (frasco).
+   * Usado na entrada: N frascos → N × equivalente no saldo (`estoque`).
+   */
+  unidadeEquivalente: text('unidade_equivalente'),
   precoProfissional: text('preco_profissional'),
   custoAdicional: text('custo_adicional'),
   comissaoPadrao: text('comissao_padrao'),
@@ -249,6 +254,54 @@ export const produtos = pgTable('produtos', {
   observacoes: text('observacoes'),
   fotoUrl: text('foto_url'),
 });
+
+/**
+ * Receita de consumo: quantos `produtos` (na unidade do produto) saem
+ * por 1 execução do serviço.
+ */
+export const servicoProdutosConsumidos = pgTable(
+  'servico_produtos_consumidos',
+  {
+    id: serial('id').primaryKey(),
+    servicoId: integer('servico_id')
+      .notNull()
+      .references(() => servicos.id, { onDelete: 'cascade' }),
+    produtoId: integer('produto_id')
+      .notNull()
+      .references(() => produtos.id, { onDelete: 'restrict' }),
+    quantidade: numeric('quantidade', { precision: 14, scale: 3 }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('servico_produtos_consumidos_servico_produto_uq').on(
+      t.servicoId,
+      t.produtoId,
+    ),
+    index('servico_produtos_consumidos_servico_idx').on(t.servicoId),
+    index('servico_produtos_consumidos_produto_idx').on(t.produtoId),
+  ],
+);
+
+/** Ledger de estoque (entrada, baixa de venda, consumo por serviço, ajuste). */
+export const estoqueMovimentos = pgTable(
+  'estoque_movimentos',
+  {
+    id: serial('id').primaryKey(),
+    produtoId: integer('produto_id')
+      .notNull()
+      .references(() => produtos.id, { onDelete: 'restrict' }),
+    idAtendimento: text('id_atendimento'),
+    tipo: text('tipo').notNull(),
+    quantidade: numeric('quantidade', { precision: 14, scale: 3 }).notNull(),
+    saldoApos: text('saldo_apos'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index('estoque_movimentos_produto_idx').on(t.produtoId),
+    index('estoque_movimentos_id_atendimento_idx').on(t.idAtendimento),
+  ],
+);
 
 /** Catálogo de categorias de produtos/serviços (texto livre espelhado em `produtos.categoria` / `servicos.categoria`). */
 export const categorias = pgTable(
@@ -403,6 +456,14 @@ export const atendimentosPedido = pgTable('atendimentos_pedido', {
   }),
   /** `id_atendimento` de origem se este pedido veio de conversão (auditoria). */
   orcamentoConvertidoDe: text('orcamento_convertido_de'),
+  /**
+   * Quando a comanda baixou estoque pela 1.ª finalização da cobrança
+   * (idempotência: não rebaixa em reentradas).
+   */
+  estoqueBaixadoEm: timestamp('estoque_baixado_em', {
+    withTimezone: true,
+    mode: 'string',
+  }),
 });
 
 export const atendimentoItens = pgTable(

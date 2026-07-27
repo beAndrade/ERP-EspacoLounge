@@ -42,6 +42,7 @@ import {
   ProfissionalListaItem,
   RegraMegaItem,
   Servico,
+  ServicoProdutoConsumidoItem,
   ServicoWritePayload,
 } from '../models/api.models';
 import { enriquecerRotuloPacote } from '../utils/pacote-descricao';
@@ -234,10 +235,10 @@ export class SheetsApiService {
       );
   }
 
-  /** Entrada manual de unidades no `produtos.estoque` (PATCH na API). */
+  /** Entrada manual no `produtos.estoque` (PATCH). */
   incrementarEstoqueProduto(
     id: number,
-    adicionar: number,
+    opts: { adicionar?: number; adicionar_unidades?: number },
   ): Observable<{ id: number; produto: string; estoque: string }> {
     return this.http
       .patch<
@@ -248,11 +249,43 @@ export class SheetsApiService {
         this.url(
           `/api/produtos/${encodeURIComponent(String(id))}/estoque`,
         ),
-        { adicionar },
+        opts,
       )
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.item),
+      );
+  }
+
+  listServicoProdutosConsumidos(
+    servicoId: number | string,
+  ): Observable<ServicoProdutoConsumidoItem[]> {
+    return this.http
+      .get<ApiResponse<{ items: ServicoProdutoConsumidoItem[] }>>(
+        this.url(
+          `/api/servicos/${encodeURIComponent(String(servicoId))}/produtos-consumidos`,
+        ),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items ?? []),
+      );
+  }
+
+  replaceServicoProdutosConsumidos(
+    servicoId: number | string,
+    items: { produto_id: number; quantidade: number | string }[],
+  ): Observable<ServicoProdutoConsumidoItem[]> {
+    return this.http
+      .put<ApiResponse<{ items: ServicoProdutoConsumidoItem[] }>>(
+        this.url(
+          `/api/servicos/${encodeURIComponent(String(servicoId))}/produtos-consumidos`,
+        ),
+        { items },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items ?? []),
       );
   }
 

@@ -418,7 +418,7 @@
 .cliente-drawer.cliente-drawer--marca-cadastro.app-drawer {
   --drawer-inset-x: 0;
   --drawer-pad-x: 0;
-  --cliente-nav-item-w: 177.25px;
+  --cliente-nav-item-w: 177px;
   position: fixed;
   top: 0;
   left: auto;
@@ -587,7 +587,7 @@
 
 .marcas-cadastro-form__req {
   color: var(--color-error, #ff4d4f);
-  margin-right: 2px;
+  margin: 0 4px 0 0;
 }
 
 .marcas-cadastro-form__ativo-label {

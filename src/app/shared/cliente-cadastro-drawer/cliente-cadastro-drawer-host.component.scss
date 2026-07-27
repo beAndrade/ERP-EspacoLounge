@@ -323,8 +323,11 @@ app-produto-cadastro-drawer-host {
 
 .cliente-body {
   --cliente-nav-pad-start: 30px;
-  --cliente-nav-item-w: 177.25px;
-  --cliente-nav-col-w: calc(var(--cliente-nav-pad-start) + var(--cliente-nav-item-w));
+  --cliente-nav-item-w: 177px;
+  /* +1px: border-right do .cliente-nav (box-sizing: border-box). */
+  --cliente-nav-col-w: calc(
+    var(--cliente-nav-pad-start) + var(--cliente-nav-item-w) + 1px
+  );
 
   flex: 1 1 auto;
   min-height: 100%;
@@ -381,7 +384,7 @@ app-produto-cadastro-drawer-host {
 .produto-cadastro-form__label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0;
   font-size: 15px;
   font-weight: 500;
   line-height: 1.2;
@@ -389,6 +392,7 @@ app-produto-cadastro-drawer-host {
   color: rgba(0, 0, 0, 0.75);
 
   &--with-help {
+    gap: 6px;
     width: fit-content;
     max-width: 100%;
     justify-content: flex-start;
@@ -570,7 +574,7 @@ app-produto-cadastro-drawer-host {
 .cliente-nav__item {
   position: relative;
   z-index: 0;
-  width: var(--cliente-nav-item-w, 177.25px);
+  width: 100%;
   max-width: 100%;
   text-align: left;
   border: none;
@@ -578,13 +582,17 @@ app-produto-cadastro-drawer-host {
   -webkit-tap-highlight-color: transparent;
   background: transparent;
   margin: 0;
-  padding: 8px 0;
+  /* Altura fixa = indicador; padding vertical estourava 35px → 37px e desalinhava. */
+  padding: 0;
+  height: var(--cliente-nav-item-h);
   min-height: var(--cliente-nav-item-h);
+  max-height: var(--cliente-nav-item-h);
   box-sizing: border-box;
   display: flex;
   align-items: center;
   font-size: 14px;
   font-weight: 400;
+  line-height: 1.2;
   color: #52525b;
   outline: none;
   cursor: pointer;
@@ -858,12 +866,35 @@ app-produto-cadastro-drawer-host {
 }
 
 .produto-cadastro-form__section {
-  margin: 0.5rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.75rem 0 0;
   padding: 0;
   font-size: 15px;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.75);
   line-height: 1.3;
+  white-space: nowrap;
+
+  &::before,
+  &::after {
+    content: '';
+    position: relative;
+    border-block-start: 1px solid #f0f1f4;
+    border-block-end: 0;
+    transform: translateY(50%);
+  }
+
+  &::before {
+    flex: 0 0 1.5rem;
+    width: 1.5rem;
+  }
+
+  &::after {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 
 .cliente-field--error .cliente-field__inner > input {
@@ -1864,6 +1895,9 @@ app-produto-cadastro-drawer-host {
 
     &__item {
       width: auto;
+      height: auto;
+      min-height: var(--cliente-nav-item-h);
+      max-height: none;
       margin-top: 0;
       padding: 8px 24px 8px 0;
       text-align: left;

@@ -826,6 +826,71 @@ app-servico-cadastro-drawer-host {
   border: 0;
 }
 
+.servico-cadastro-consumidos__hint {
+  margin: 0 0 1rem;
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.servico-cadastro-consumidos__unidade {
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.servico-cadastro-consumidos__add {
+  margin: 0.25rem 0 1rem;
+  width: fit-content;
+}
+
+.servico-cadastro-consumidos__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.servico-cadastro-consumidos__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #f0f1f4;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.servico-cadastro-consumidos__item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+
+  strong {
+    font-weight: 500;
+  }
+
+  span {
+    color: rgba(0, 0, 0, 0.55);
+  }
+}
+
+.servico-cadastro-consumidos__rm {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--color-error, #ef4444);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0.25rem 0.35rem;
+}
+
 @media (max-width: 720px) {
   .servico-cadastro-main {
     padding: 0 16px 20px;

@@ -12,6 +12,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ProdutoCatalogoItem } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { extractApiErrorMessage } from '../../../../core/utils/api-error-message';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { ProdutoCadastroDrawerService } from '../../../../shared/produto-cadastro-drawer/produto-cadastro-drawer.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
@@ -34,6 +36,7 @@ export type ProdutosOrdenacaoColuna =
 export class EstoqueComponent implements OnInit, AfterViewInit {
   private readonly api = inject(SheetsApiService);
   private readonly produtoDrawer = inject(ProdutoCadastroDrawerService);
+  private readonly toast = inject(AppToastService);
 
   @ViewChild('tabsNav', { read: ElementRef })
   private tabsNav?: ElementRef<HTMLElement>;
@@ -41,6 +44,11 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
   carregando = false;
   erro = '';
   itens: ProdutoCatalogoItem[] = [];
+
+  entradaProduto: ProdutoCatalogoItem | null = null;
+  entradaQtd = '1';
+  entradaSalvando = false;
+  entradaErro = '';
 
   aba: ProdutosAba = 'produtos';
   tabsIndicatorLeft = 0;
@@ -253,6 +261,57 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
     });
   }
 
+  abrirEntrada(p: ProdutoCatalogoItem, ev?: Event): void {
+    ev?.stopPropagation();
+    this.entradaProduto = p;
+    this.entradaQtd = '1';
+    this.entradaErro = '';
+    this.entradaSalvando = false;
+  }
+
+  fecharEntrada(): void {
+    if (this.entradaSalvando) return;
+    this.entradaProduto = null;
+    this.entradaErro = '';
+  }
+
+  rotuloEntradaUnidade(p: ProdutoCatalogoItem): string {
+    const u = String(p.unidade ?? 'unidade').trim().toLowerCase();
+    if (u === 'ml' || u === 'g') return 'frasco(s)';
+    return 'unidade(s)';
+  }
+
+  confirmarEntrada(): void {
+    const p = this.entradaProduto;
+    if (!p || this.entradaSalvando) return;
+    const q = Number(String(this.entradaQtd).replace(',', '.'));
+    if (!Number.isFinite(q) || q <= 0) {
+      this.entradaErro = 'Informe uma quantidade maior que zero.';
+      return;
+    }
+    const u = String(p.unidade ?? 'unidade').trim().toLowerCase();
+    this.entradaSalvando = true;
+    this.entradaErro = '';
+    const opts =
+      u === 'ml' || u === 'g'
+        ? { adicionar_unidades: q }
+        : { adicionar: Math.trunc(q) };
+    this.api.incrementarEstoqueProduto(p.id, opts).subscribe({
+      next: () => {
+        this.entradaSalvando = false;
+        this.entradaProduto = null;
+        this.toast.show('Estoque atualizado.');
+        this.carregar();
+      },
+      error: (e: unknown) => {
+        this.entradaSalvando = false;
+        this.entradaErro =
+          extractApiErrorMessage(e) ||
+          'Não foi possível registrar a entrada.';
+      },
+    });
+  }
+
   onOrdenarColuna(col: ProdutosOrdenacaoColuna, ev?: Event): void {
     ev?.stopPropagation();
     if (this.ordenacaoColuna === col) {
@@ -433,6 +492,11 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (this.entradaProduto) {
+      ev.preventDefault();
+      this.fecharEntrada();
+      return;
+    }
     if (this.filtrosAbertos) {
       ev.preventDefault();
       this.filtrosAbertos = false;

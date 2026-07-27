@@ -368,20 +368,21 @@
                       </button>
                     </app-ui-tip-trigger>
                   </th>
+                  <th scope="col" class="col-acoes">Ações</th>
                 </tr>
               </thead>
               <tbody [attr.aria-busy]="carregando || null">
                 @if (carregando) {
                   @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
                     <tr class="list-table__skeleton-row" aria-hidden="true">
-                      <td colspan="7">
+                      <td colspan="8">
                         <span class="list-skeleton-bar"></span>
                       </td>
                     </tr>
                   }
                 } @else if (totalFiltrado() === 0) {
                   <tr>
-                    <td class="table-body__empty" colspan="7">
+                    <td class="table-body__empty" colspan="8">
                       <div class="table-empty">
                         <span class="table-empty__icon-wrap" aria-hidden="true">
                           <svg
@@ -448,6 +449,15 @@
                         }
                       </td>
                       <td class="col-num">{{ comissaoProduto(p) }}</td>
+                      <td class="col-acoes">
+                        <button
+                          type="button"
+                          class="produtos-entrada-btn"
+                          (click)="abrirEntrada(p, $event)"
+                        >
+                          Entrada
+                        </button>
+                      </td>
                     </tr>
                   }
                 }
@@ -561,3 +571,55 @@
     </div>
   </div>
 </div>
+
+@if (entradaProduto; as ep) {
+  <div
+    class="produtos-entrada-overlay"
+    (click)="fecharEntrada()"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="produtos-entrada-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="'Entrada de estoque — ' + (ep.produto || '')"
+    (click)="$event.stopPropagation()"
+  >
+    <h2 class="produtos-entrada-modal__title">Entrada de estoque</h2>
+    <p class="produtos-entrada-modal__nome">{{ ep.produto }}</p>
+    <label class="produtos-entrada-modal__field">
+      <span
+        >Quantidade ({{ rotuloEntradaUnidade(ep) }})</span
+      >
+      <input
+        type="text"
+        inputmode="decimal"
+        [(ngModel)]="entradaQtd"
+        name="entradaQtd"
+        autocomplete="off"
+        [disabled]="entradaSalvando"
+      />
+    </label>
+    @if (entradaErro) {
+      <p class="produtos-entrada-modal__erro" role="alert">{{ entradaErro }}</p>
+    }
+    <div class="produtos-entrada-modal__actions">
+      <button
+        type="button"
+        class="btn btn--ghost"
+        (click)="fecharEntrada()"
+        [disabled]="entradaSalvando"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="btn"
+        (click)="confirmarEntrada()"
+        [disabled]="entradaSalvando"
+      >
+        {{ entradaSalvando ? 'Salvando…' : 'Confirmar' }}
+      </button>
+    </div>
+  </div>
+}

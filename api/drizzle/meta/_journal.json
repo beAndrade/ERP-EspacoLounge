@@ -407,6 +407,13 @@
       "when": 1775698600000,
       "tag": "0057_padronizar_texto_moeda_pct",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1775698700000,
+      "tag": "0058_estoque_consumo_servico",
+      "breakpoints": true
     }
   ]
 }

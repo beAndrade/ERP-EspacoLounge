@@ -1,7 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, switchMap, of } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
-import type { Servico, ServicoWritePayload } from '../../core/models/api.models';
+import type {
+  ProdutoCatalogoItem,
+  Servico,
+  ServicoProdutoConsumidoItem,
+  ServicoWritePayload,
+} from '../../core/models/api.models';
 import { AppToastService } from '../app-toast/app-toast.service';
 import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
@@ -108,6 +113,17 @@ export class ServicoCadastroDrawerService {
   mostraNoSite = true;
   fotoUrl = '';
 
+  /** Receita de produtos consumidos (aba). */
+  consumidos: {
+    produto_id: number;
+    produto: string;
+    unidade: string;
+    quantidade: string;
+  }[] = [];
+  consumidoProdutoId: number | null = null;
+  consumidoQuantidade = '';
+  produtosCatalogo: ProdutoCatalogoItem[] = [];
+
   readonly opcoesDuracaoMinutos = [15, 20, 30, 45, 60, 90, 120];
 
   readonly opcoesTipoSelect: SaasSelectOption[] = [
@@ -169,6 +185,88 @@ export class ServicoCadastroDrawerService {
     return nomes.map((nome) => ({ value: nome, label: nome }));
   }
 
+  opcoesProdutoConsumidoSelect(): SaasSelectOption[] {
+    const usados = new Set(this.consumidos.map((c) => c.produto_id));
+    return this.produtosCatalogo
+      .filter((p) => !usados.has(p.id) || p.id === this.consumidoProdutoId)
+      .map((p) => ({
+        value: String(p.id),
+        label: `${String(p.produto ?? '').trim() || `Produto #${p.id}`}${
+          p.unidade ? ` (${p.unidade})` : ''
+        }`,
+      }));
+  }
+
+  unidadeProdutoConsumido(produtoId: number | null): string {
+    if (produtoId == null) return '';
+    const p = this.produtosCatalogo.find((x) => x.id === produtoId);
+    return p?.unidade ? String(p.unidade) : '';
+  }
+
+  carregarProdutosCatalogo(): void {
+    this.api.listProdutos().subscribe({
+      next: (items) => {
+        this.produtosCatalogo = items ?? [];
+      },
+      error: () => {
+        this.produtosCatalogo = [];
+      },
+    });
+  }
+
+  carregarConsumidos(servicoId: string | number): void {
+    this.api.listServicoProdutosConsumidos(servicoId).subscribe({
+      next: (items: ServicoProdutoConsumidoItem[]) => {
+        this.consumidos = (items ?? []).map((i) => ({
+          produto_id: i.produto_id,
+          produto: i.produto,
+          unidade: i.unidade,
+          quantidade: String(i.quantidade),
+        }));
+      },
+      error: () => {
+        this.consumidos = [];
+      },
+    });
+  }
+
+  adicionarConsumido(): void {
+    const pid = Number(this.consumidoProdutoId);
+    if (!Number.isFinite(pid) || pid < 1) {
+      this.erro = 'Selecione um produto.';
+      return;
+    }
+    const qRaw = String(this.consumidoQuantidade ?? '')
+      .trim()
+      .replace(',', '.');
+    const q = Number(qRaw);
+    if (!Number.isFinite(q) || q <= 0) {
+      this.erro = 'Informe a quantidade consumida (maior que zero).';
+      return;
+    }
+    if (this.consumidos.some((c) => c.produto_id === pid)) {
+      this.erro = 'Este produto já está na receita.';
+      return;
+    }
+    const p = this.produtosCatalogo.find((x) => x.id === pid);
+    this.consumidos = [
+      ...this.consumidos,
+      {
+        produto_id: pid,
+        produto: String(p?.produto ?? '').trim() || `Produto #${pid}`,
+        unidade: String(p?.unidade ?? 'unidade'),
+        quantidade: String(Math.round(q * 1000) / 1000),
+      },
+    ];
+    this.consumidoProdutoId = null;
+    this.consumidoQuantidade = '';
+    this.erro = '';
+  }
+
+  removerConsumido(produtoId: number): void {
+    this.consumidos = this.consumidos.filter((c) => c.produto_id !== produtoId);
+  }
+
   /** Recarrega categorias ativas do catálogo (`GET /api/categorias`). */
   carregarCategorias(): void {
     this.api.listCategoriasCatalogo(false).subscribe({
@@ -208,6 +306,7 @@ export class ServicoCadastroDrawerService {
     this.callbacks = opts ?? null;
     this.categoriasOpcoes = opts?.categorias ?? [];
     this.carregarCategorias();
+    this.carregarProdutosCatalogo();
     this.abrirPainel({ focarNome: true });
   }
 
@@ -222,6 +321,8 @@ export class ServicoCadastroDrawerService {
     this.categoriasOpcoes = opts?.categorias ?? [];
     this.preencherDeItem(item);
     this.carregarCategorias();
+    this.carregarProdutosCatalogo();
+    this.carregarConsumidos(this.idEdicao);
     this.abrirPainel();
   }
 
@@ -244,6 +345,9 @@ export class ServicoCadastroDrawerService {
 
   setAba(aba: ServicoCadastroAba): void {
     this.abaAtiva = aba;
+    if (aba === 'Produtos consumidos') {
+      this.carregarProdutosCatalogo();
+    }
   }
 
   onMoedaInput(campo: ServicoMoedaCampo, ev: Event): void {
@@ -396,25 +500,42 @@ export class ServicoCadastroDrawerService {
       ? this.api.createServico(payload)
       : this.api.updateServico(this.idEdicao!, payload);
 
-    req.subscribe({
-      next: (item) => {
-        this.salvando = false;
-        this.toast.show(
-          criando
-            ? 'Serviço criado com sucesso!'
-            : 'Serviço atualizado com sucesso!',
-        );
-        this.callbacks?.onSalvo?.(item);
-        this.salvo$.next(item);
-        this.fechar();
-      },
-      error: (e: unknown) => {
-        this.salvando = false;
-        this.erro =
-          extractApiErrorMessage(e) ||
-          'Não foi possível salvar o serviço.';
-      },
-    });
+    const receita = this.consumidos.map((c) => ({
+      produto_id: c.produto_id,
+      quantidade: c.quantidade,
+    }));
+
+    req
+      .pipe(
+        switchMap((item) => {
+          const sid = Number(item.id ?? this.idEdicao);
+          if (!Number.isFinite(sid) || sid < 1) {
+            return of(item);
+          }
+          return this.api
+            .replaceServicoProdutosConsumidos(sid, receita)
+            .pipe(switchMap(() => of(item)));
+        }),
+      )
+      .subscribe({
+        next: (item) => {
+          this.salvando = false;
+          this.toast.show(
+            criando
+              ? 'Serviço criado com sucesso!'
+              : 'Serviço atualizado com sucesso!',
+          );
+          this.callbacks?.onSalvo?.(item);
+          this.salvo$.next(item);
+          this.fechar();
+        },
+        error: (e: unknown) => {
+          this.salvando = false;
+          this.erro =
+            extractApiErrorMessage(e) ||
+            'Não foi possível salvar o serviço.';
+        },
+      });
   }
 
   private abrirPainel(opts?: { focarNome?: boolean }): void {
@@ -501,6 +622,9 @@ export class ServicoCadastroDrawerService {
     this.descricao = '';
     this.mostraNoSite = true;
     this.fotoUrl = '';
+    this.consumidos = [];
+    this.consumidoProdutoId = null;
+    this.consumidoQuantidade = '';
     this.erro = '';
   }
 

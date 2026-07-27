@@ -128,7 +128,7 @@
 
                 <label class="produto-cadastro-form__field produto-cadastro-form__field--full">
                   <span class="produto-cadastro-form__label">
-                    <span class="produto-cadastro-form__req" aria-hidden="true">*</span> Nome
+                    <span class="produto-cadastro-form__req" aria-hidden="true">*</span>Nome
                   </span>
                   <input
                     type="text"
@@ -144,8 +144,7 @@
                 <div class="produto-cadastro-form__row">
                   <div class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">
-                      <span class="produto-cadastro-form__req" aria-hidden="true">*</span>
-                      Categoria
+                      <span class="produto-cadastro-form__req" aria-hidden="true">*</span>Categoria
                     </span>
                     <app-saas-select
                       [(ngModel)]="d.categoria"
@@ -215,21 +214,23 @@
                 <div class="produto-cadastro-form__row">
                   <div class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">
-                      <span class="produto-cadastro-form__req" aria-hidden="true">*</span>
-                      Registro de saída
+                      <span class="produto-cadastro-form__req" aria-hidden="true"
+                        >*</span
+                      >Registro de saída
                     </span>
                     <app-saas-select
                       [(ngModel)]="d.registroSaida"
                       name="registroSaida"
                       [options]="d.opcoesRegistroSaidaSelect"
                       [showFilter]="false"
-                      [showSearchIconOnOpen]="true"
-                      triggerCursor="text"
                       placeholder="Selecione…"
                       aria-label="Registro de saída"
                     />
                   </div>
-                  <label class="produto-cadastro-form__field">
+                  <label
+                    class="produto-cadastro-form__field"
+                    [hidden]="d.registroSaida === 'em unidade'"
+                  >
                     <span class="produto-cadastro-form__label">Uma unidade equivale a</span>
                     <div class="produto-cadastro-form__suffix">
                       <input
@@ -244,23 +245,73 @@
                       <span class="produto-cadastro-form__suffix-label">{{
                         rotuloUnidade()
                       }}</span>
+                      <span class="produto-cadastro-form__spin" aria-hidden="true">
+                        <button
+                          type="button"
+                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--up"
+                          (mousedown)="$event.preventDefault()"
+                          (click)="d.stepInteiro('unidadeEquivalente', 1); $event.stopPropagation()"
+                          aria-label="Aumentar unidade equivalente"
+                        ></button>
+                        <button
+                          type="button"
+                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--down"
+                          (mousedown)="$event.preventDefault()"
+                          (click)="d.stepInteiro('unidadeEquivalente', -1); $event.stopPropagation()"
+                          aria-label="Diminuir unidade equivalente"
+                        ></button>
+                      </span>
                     </div>
                   </label>
                 </div>
 
                 <div class="produto-cadastro-form__row">
-                  <label class="produto-cadastro-form__field">
-                    <span class="produto-cadastro-form__label">
-                      Estoque mínimo
-                      <span
-                        class="produto-cadastro-form__info"
-                        title="Alerta quando o estoque ficar abaixo deste valor"
-                        aria-label="Alerta quando o estoque ficar abaixo deste valor"
-                        >i</span
+                  <div class="produto-cadastro-form__field">
+                    <span
+                      class="produto-cadastro-form__label produto-cadastro-form__label--with-help"
+                    >
+                      <label for="produto-estoque-minimo" class="produto-cadastro-form__label__text"
+                        >Estoque mínimo</label
                       >
+                      <span class="cliente-field-help">
+                        <button
+                          type="button"
+                          class="cliente-info-btn cliente-info-btn--field-help"
+                          aria-describedby="produto-estoque-minimo-help-tip"
+                          aria-label="Ajuda sobre estoque mínimo"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                            <path d="M12 17h.01" />
+                          </svg>
+                        </button>
+                        <span
+                          id="produto-estoque-minimo-help-tip"
+                          class="cliente-field-help-tooltip"
+                          role="tooltip"
+                        >
+                          Abaixo dessa quantidade,<br />
+                          o sistema avisará que o estoque<br />
+                          precisa ser reposto
+                        </span>
+                      </span>
                     </span>
                     <div class="produto-cadastro-form__suffix">
                       <input
+                        id="produto-estoque-minimo"
                         type="text"
                         inputmode="numeric"
                         autocomplete="off"
@@ -272,8 +323,24 @@
                       <span class="produto-cadastro-form__suffix-label">{{
                         rotuloUnidade()
                       }}</span>
+                      <span class="produto-cadastro-form__spin" aria-hidden="true">
+                        <button
+                          type="button"
+                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--up"
+                          (mousedown)="$event.preventDefault()"
+                          (click)="d.stepInteiro('estoqueMinimo', 1); $event.stopPropagation()"
+                          aria-label="Aumentar estoque mínimo"
+                        ></button>
+                        <button
+                          type="button"
+                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--down"
+                          (mousedown)="$event.preventDefault()"
+                          (click)="d.stepInteiro('estoqueMinimo', -1); $event.stopPropagation()"
+                          aria-label="Diminuir estoque mínimo"
+                        ></button>
+                      </span>
                     </div>
-                  </label>
+                  </div>
                   <label class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Estoque inicial</span>
                     <div class="produto-cadastro-form__suffix">
@@ -289,6 +356,22 @@
                       <span class="produto-cadastro-form__suffix-label">{{
                         rotuloUnidade()
                       }}</span>
+                      <span class="produto-cadastro-form__spin" aria-hidden="true">
+                        <button
+                          type="button"
+                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--up"
+                          (mousedown)="$event.preventDefault()"
+                          (click)="d.stepInteiro('estoqueInicial', 1); $event.stopPropagation()"
+                          aria-label="Aumentar estoque inicial"
+                        ></button>
+                        <button
+                          type="button"
+                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--down"
+                          (mousedown)="$event.preventDefault()"
+                          (click)="d.stepInteiro('estoqueInicial', -1); $event.stopPropagation()"
+                          aria-label="Diminuir estoque inicial"
+                        ></button>
+                      </span>
                     </div>
                   </label>
                 </div>

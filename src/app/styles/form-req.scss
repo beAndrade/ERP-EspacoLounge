@@ -2,6 +2,7 @@
  * Asterisco de campo obrigatório — padrão único do sistema.
  * Usar `<span class="form-req" aria-hidden="true">*</span>` antes do texto do label,
  * ou as classes legadas listadas abaixo.
+ * Sem gap/margin após o `*` — cola no texto do título.
  */
 .form-req,
 .categorias-cadastro-form__req,
@@ -12,7 +13,7 @@
 .minha-conta-req,
 .cred-req {
   display: inline-block;
-  margin-inline-end: 4px;
+  margin: 0 4px 0 0;
   color: var(--color-error);
   font-size: 14px;
   font-family: SimSun, sans-serif;
@@ -25,7 +26,7 @@
 .fin-edit-field__label--req::before {
   content: '*';
   display: inline-block;
-  margin-inline-end: 4px;
+  margin: 0 4px 0 0;
   color: var(--color-error);
   font-size: 14px;
   font-family: SimSun, sans-serif;
