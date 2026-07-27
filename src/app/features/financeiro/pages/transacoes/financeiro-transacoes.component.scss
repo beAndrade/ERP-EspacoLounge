@@ -988,33 +988,8 @@
 .fin-transacoes-exclusao-modal {
   .fin-transacoes-estorno-modal__text {
     margin: 0;
-    font-size: 17px;
-    line-height: 1.4;
-  }
-
-  .comandas-modal__btn {
-    transition: all 0.2s linear;
-  }
-
-  .comandas-modal__btn--confirm {
-    color: #fff;
-    background: var(--color-error);
-
-    &:hover:not(:disabled) {
-      background: #ff7875;
-    }
-  }
-
-  .comandas-modal__btn--cancel {
-    border-color: #f1f1f1;
-    background: #ffffff;
-    color: rgba(0, 0, 0, 0.75);
-
-    &:hover:not(:disabled) {
-      color: var(--color-primary-hover);
-      border-color: var(--color-primary-hover);
-      background: #ffffff;
-    }
+    font-size: 16px;
+    line-height: 1.5714285714285714;
   }
 }
 

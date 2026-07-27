@@ -287,7 +287,8 @@
                           <button
                             type="button"
                             class="list-row-acoes__btn list-row-acoes__btn--delete"
-                            (click)="onExcluir(c)"
+                            (click)="onExcluir(c, $event)"
+                            [disabled]="exclusaoModalSalvando && exclusaoModalItem?.id === c.id"
                             aria-label="Excluir marca"
                             title="Excluir"
                           >
@@ -528,6 +529,47 @@
           {{ cadastroSalvando ? 'Salvando…' : 'Salvar' }}
         </button>
       </footer>
+    </div>
+  </div>
+}
+
+@if (exclusaoModalItem) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalExclusao()"
+  ></div>
+  <div
+    class="comandas-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmar exclusão"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir essa marca?
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="exclusaoModalSalvando"
+        (click)="fecharModalExclusao()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="exclusaoModalSalvando"
+        (click)="confirmarModalExclusao()"
+      >
+        {{ exclusaoModalSalvando ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
     </div>
   </div>
 }

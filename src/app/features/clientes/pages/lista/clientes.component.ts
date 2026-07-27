@@ -18,8 +18,67 @@ import {
 } from '../../../../core/utils/br-document-masks';
 import { parseFiltroDataDdMm } from '../../../../core/utils/atendimento-display';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 
 type OrdenacaoNome = 'asc' | 'desc';
+
+export type ClienteColunaId =
+  | 'email'
+  | 'celular'
+  | 'nascimento'
+  | 'creditos'
+  | 'cashback'
+  | 'cpf'
+  | 'rg'
+  | 'hashtags'
+  | 'cidade'
+  | 'debitos'
+  | 'pacotes_em_aberto'
+  | 'ultima_avaliacao'
+  | 'observacoes';
+
+type ClienteColunaOpcao = { id: ClienteColunaId; label: string };
+
+const CLIENTES_COLUNAS_STORAGE_KEY = 'espacolounge.clientes.colunas-visiveis';
+
+/** Colunas já renderizadas na tabela (as demais só aparecem no menu por enquanto). */
+const CLIENTES_COLUNAS_IMPLEMENTADAS = new Set<ClienteColunaId>([
+  'email',
+  'celular',
+  'nascimento',
+  'creditos',
+  'cashback',
+  'cpf',
+  'rg',
+  'cidade',
+]);
+
+/** Pesos relativos das colunas flexíveis (check/ações ficam em px/rem fixos). */
+const CLIENTES_COLUNAS_PESOS: Record<'nome' | ClienteColunaId, number> = {
+  nome: 25,
+  email: 15,
+  celular: 14,
+  nascimento: 11,
+  creditos: 11,
+  cashback: 11,
+  cpf: 13,
+  rg: 11,
+  hashtags: 12,
+  cidade: 11,
+  debitos: 11,
+  pacotes_em_aberto: 14,
+  ultima_avaliacao: 13,
+  observacoes: 16,
+};
+
+const CLIENTES_COLUNAS_PADRAO: ClienteColunaId[] = [
+  'email',
+  'celular',
+  'nascimento',
+  'creditos',
+  'debitos',
+  'observacoes',
+];
 
 @Component({
   selector: 'app-clientes',
@@ -28,6 +87,7 @@ type OrdenacaoNome = 'asc' | 'desc';
     FormsModule,
     CurrencyPipe,
     ClienteAvatarComponent,
+    UiTipTriggerComponent,
   ],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
@@ -78,12 +138,36 @@ export class ClientesComponent implements OnInit, OnDestroy {
   clientePendenteExclusao: Cliente | null = null;
   excluindoClienteModal = false;
 
+  colunasMenuAberto = false;
+  /** Mantém o menu no DOM durante a animação de fechamento. */
+  colunasMenuMontado = false;
+  private colunasMenuAnimTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly colunasMenuAnimMs = 200;
+  readonly colunasOpcoes: ClienteColunaOpcao[] = [
+    { id: 'email', label: 'E-mail' },
+    { id: 'celular', label: 'Celular' },
+    { id: 'nascimento', label: 'Nascimento' },
+    { id: 'creditos', label: 'Créditos' },
+    { id: 'cashback', label: 'Cashback' },
+    { id: 'cpf', label: 'CPF' },
+    { id: 'rg', label: 'RG' },
+    { id: 'hashtags', label: 'Hashtags' },
+    { id: 'cidade', label: 'Cidade' },
+    { id: 'debitos', label: 'Débitos' },
+    { id: 'pacotes_em_aberto', label: 'Pacotes em aberto' },
+    { id: 'ultima_avaliacao', label: 'Última avaliação' },
+    { id: 'observacoes', label: 'Observações' },
+  ];
+  colunasVisiveis = new Set<ClienteColunaId>(CLIENTES_COLUNAS_PADRAO);
+
   ngOnInit(): void {
+    this.carregarColunasSalvas();
     this.carregar();
   }
 
   ngOnDestroy(): void {
     this.clearNomeSortTipShowTimer();
+    this.clearColunasMenuAnimTimer();
   }
 
   carregar(): void {
@@ -529,6 +613,129 @@ export class ClientesComponent implements OnInit, OnDestroy {
     return (c.creditoSaldo ?? 0) > 0;
   }
 
+  creditoNegativo(c: Cliente): boolean {
+    return (c.creditoSaldo ?? 0) < 0;
+  }
+
+  colunaVisivel(id: ClienteColunaId): boolean {
+    return this.colunasVisiveis.has(id);
+  }
+
+  /**
+   * Largura % da coluna flexível, redistribuída pelos pesos das colunas
+   * atualmente visíveis (mantém proporção relativa ao esconder/mostrar).
+   */
+  larguraColunaFlex(id: 'nome' | ClienteColunaId): string {
+    let total = CLIENTES_COLUNAS_PESOS.nome;
+    for (const colId of CLIENTES_COLUNAS_IMPLEMENTADAS) {
+      if (this.colunasVisiveis.has(colId)) {
+        total += CLIENTES_COLUNAS_PESOS[colId];
+      }
+    }
+    if (total <= 0) return '0%';
+    const pct = (CLIENTES_COLUNAS_PESOS[id] / total) * 100;
+    return `${pct.toFixed(4)}%`;
+  }
+
+  totalColunasTabela(): number {
+    let visiveisImplementadas = 0;
+    for (const id of this.colunasVisiveis) {
+      if (CLIENTES_COLUNAS_IMPLEMENTADAS.has(id)) visiveisImplementadas += 1;
+    }
+    return 2 + visiveisImplementadas + 1;
+  }
+
+  toggleColunasMenu(ev: Event): void {
+    ev.stopPropagation();
+    if (this.colunasMenuAberto) this.fecharColunasMenu();
+    else this.abrirColunasMenu();
+  }
+
+  abrirColunasMenu(): void {
+    this.clearColunasMenuAnimTimer();
+    this.colunasMenuMontado = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.colunasMenuAberto = true;
+      });
+    });
+  }
+
+  fecharColunasMenu(): void {
+    if (!this.colunasMenuMontado) return;
+    this.colunasMenuAberto = false;
+    this.clearColunasMenuAnimTimer();
+    this.colunasMenuAnimTimer = setTimeout(() => {
+      this.colunasMenuMontado = false;
+      this.colunasMenuAnimTimer = null;
+    }, this.colunasMenuAnimMs);
+  }
+
+  private clearColunasMenuAnimTimer(): void {
+    if (this.colunasMenuAnimTimer != null) {
+      clearTimeout(this.colunasMenuAnimTimer);
+      this.colunasMenuAnimTimer = null;
+    }
+  }
+
+  toggleColuna(id: ClienteColunaId, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (checked) this.colunasVisiveis.add(id);
+    else this.colunasVisiveis.delete(id);
+    this.colunasVisiveis = new Set(this.colunasVisiveis);
+    this.salvarColunas();
+  }
+
+  restaurarColunasPadrao(): void {
+    this.colunasVisiveis = new Set(CLIENTES_COLUNAS_PADRAO);
+    this.salvarColunas();
+  }
+
+  exibirCashback(c: Cliente): string {
+    const n = c.cashbackSaldo;
+    if (n == null || !Number.isFinite(n)) return '—';
+    return n.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+  }
+
+  exibirRg(c: Cliente): string {
+    return String(c.rg ?? '').trim() || '—';
+  }
+
+  exibirCidade(c: Cliente): string {
+    return String(c.cidade ?? '').trim() || '—';
+  }
+
+  private carregarColunasSalvas(): void {
+    try {
+      const raw = localStorage.getItem(CLIENTES_COLUNAS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return;
+      const valid = new Set(this.colunasOpcoes.map((c) => c.id));
+      const next = parsed.filter(
+        (id): id is ClienteColunaId =>
+          typeof id === 'string' && valid.has(id as ClienteColunaId),
+      );
+      if (next.length > 0) this.colunasVisiveis = new Set(next);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private salvarColunas(): void {
+    try {
+      localStorage.setItem(
+        CLIENTES_COLUNAS_STORAGE_KEY,
+        JSON.stringify([...this.colunasVisiveis]),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
     if (ev.defaultPrevented) return;
@@ -538,6 +745,12 @@ export class ClientesComponent implements OnInit, OnDestroy {
       if (!this.excluindoClienteModal) {
         this.fecharModalExcluirCliente();
       }
+      return;
+    }
+    if (this.colunasMenuMontado) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      this.fecharColunasMenu();
       return;
     }
     if (this.cadastroDrawer.isAberto) {
@@ -575,6 +788,13 @@ export class ClientesComponent implements OnInit, OnDestroy {
       !t.closest('.list-footer__per-page')
     ) {
       this.perPageMenuAberto = false;
+    }
+    if (
+      this.colunasMenuMontado &&
+      t &&
+      !t.closest('.clientes-th-acoes-wrap')
+    ) {
+      this.fecharColunasMenu();
     }
   }
 }

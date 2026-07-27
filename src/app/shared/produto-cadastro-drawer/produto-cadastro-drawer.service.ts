@@ -14,6 +14,7 @@ import {
 import { AppToastService } from '../app-toast/app-toast.service';
 import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
+import { MarcaCadastroDrawerService } from '../marca-cadastro-drawer/marca-cadastro-drawer.service';
 import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
 
 export const PRODUTO_ABAS = [
@@ -48,6 +49,7 @@ export class ProdutoCadastroDrawerService {
   private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
   private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
+  private readonly marcaDrawer = inject(MarcaCadastroDrawerService);
 
   readonly salvo$ = new Subject<ProdutoCatalogoItem>();
   readonly aberto = signal(false);
@@ -153,6 +155,36 @@ export class ProdutoCadastroDrawerService {
     });
   }
 
+  carregarMarcas(): void {
+    this.api.listMarcasCatalogo(false).subscribe({
+      next: (marcas) => {
+        this.marcasOpcoes = (marcas ?? [])
+          .map((m) => String(m.nome ?? '').trim())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      },
+      error: () => {
+        /* Mantém lista já passada pelo caller. */
+      },
+    });
+  }
+
+  abrirCriarMarca(): void {
+    this.marcaDrawer.abrirNovo({
+      onSalvo: (nome) => {
+        const n = String(nome ?? '').trim();
+        if (!n) return;
+        if (!this.marcasOpcoes.some((m) => m === n)) {
+          this.marcasOpcoes = [...this.marcasOpcoes, n].sort((a, b) =>
+            a.localeCompare(b, 'pt-BR'),
+          );
+        }
+        this.marca = n;
+        this.carregarMarcas();
+      },
+    });
+  }
+
   abrirNovo(
     opts?: ProdutoDrawerCallbacks & {
       categorias?: string[];
@@ -166,6 +198,7 @@ export class ProdutoCadastroDrawerService {
     this.categoriasOpcoes = opts?.categorias ?? [];
     this.marcasOpcoes = opts?.marcas ?? [];
     this.carregarCategorias();
+    this.carregarMarcas();
     this.abrirPainel({ focarNome: true });
   }
 
@@ -184,6 +217,7 @@ export class ProdutoCadastroDrawerService {
     this.marcasOpcoes = opts?.marcas ?? [];
     this.preencherForm(item);
     this.carregarCategorias();
+    this.carregarMarcas();
     this.abrirPainel();
   }
 

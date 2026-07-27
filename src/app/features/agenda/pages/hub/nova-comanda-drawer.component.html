@@ -438,40 +438,44 @@
 
 @if (modalConfirmExcluirAberto) {
   <div
-    class="nc-comanda-diag"
+    class="comandas-modal-overlay comandas-modal-overlay--elevated"
+    aria-hidden="true"
+    (click)="fecharModalExcluir()"
+  ></div>
+  <div
+    class="comandas-modal comandas-modal--elevated"
     role="dialog"
     aria-modal="true"
     aria-labelledby="nc-comanda-excluir-titulo"
+    (click)="$event.stopPropagation()"
   >
-    <div class="nc-comanda-diag__backdrop" (click)="fecharModalExcluir()"></div>
-    <div class="nc-comanda-diag__panel nc-comanda-diag__panel--confirm">
-      <h2 id="nc-comanda-excluir-titulo" class="nc-comanda-diag__title">
-        {{ tituloModalExcluir() }}
-      </h2>
-      <p class="nc-comanda-diag__text">
-        {{ textoModalExcluir() }}
-      </p>
-      @if (erroExcluir) {
-        <p class="nc-comanda-diag__erro" role="alert">{{ erroExcluir }}</p>
-      }
-      <div class="nc-comanda-diag__actions">
-        <button
-          type="button"
-          class="nc-comanda-diag__btn"
-          (click)="fecharModalExcluir()"
-          [disabled]="excluindo"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          class="nc-comanda-diag__btn nc-comanda-diag__btn--danger"
-          (click)="confirmarExcluirComanda()"
-          [disabled]="excluindo"
-        >
-          {{ excluindo ? 'Excluindo…' : 'Excluir' }}
-        </button>
-      </div>
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      {{ textoModalExcluir() }}
+    </p>
+    @if (erroExcluir) {
+      <p class="comandas-modal__erro" role="alert">{{ erroExcluir }}</p>
+    }
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        (click)="fecharModalExcluir()"
+        [disabled]="excluindo"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        (click)="confirmarExcluirComanda()"
+        [disabled]="excluindo"
+      >
+        {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
     </div>
   </div>
 }

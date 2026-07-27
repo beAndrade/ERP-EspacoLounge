@@ -16,6 +16,7 @@ import {
   type ProdutoCadastroAba,
 } from './produto-cadastro-drawer.service';
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
+import { MarcaCadastroDrawerService } from '../marca-cadastro-drawer/marca-cadastro-drawer.service';
 
 @Component({
   selector: 'app-produto-cadastro-drawer-host',
@@ -30,6 +31,7 @@ export class ProdutoCadastroDrawerHostComponent implements OnInit, OnDestroy {
   readonly abas = PRODUTO_ABAS;
 
   private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
+  private readonly marcaDrawer = inject(MarcaCadastroDrawerService);
   private readonly hostEl = inject(ElementRef<HTMLElement>).nativeElement;
   private restoreBodyPortal: (() => void) | null = null;
 
@@ -46,6 +48,7 @@ export class ProdutoCadastroDrawerHostComponent implements OnInit, OnDestroy {
   onEscape(ev: KeyboardEvent): void {
     if (!this.d.aberto()) return;
     if (this.categoriaDrawer.aberto()) return;
+    if (this.marcaDrawer.aberto()) return;
     if (ev.defaultPrevented) return;
     ev.preventDefault();
     ev.stopImmediatePropagation();

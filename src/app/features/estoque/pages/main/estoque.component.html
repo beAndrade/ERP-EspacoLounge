@@ -172,7 +172,6 @@
                 <col class="produtos-table__col-estoque" />
                 <col class="produtos-table__col-preco" />
                 <col class="produtos-table__col-comissao" />
-                <col class="produtos-table__col-config" />
               </colgroup>
               <thead>
                 <tr>
@@ -360,39 +359,20 @@
                       </button>
                     </app-ui-tip-trigger>
                   </th>
-                  <th class="col-config" scope="col" aria-label="Configurar colunas">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
-                      />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  </th>
                 </tr>
               </thead>
               <tbody [attr.aria-busy]="carregando || null">
                 @if (carregando) {
                   @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
                     <tr class="list-table__skeleton-row" aria-hidden="true">
-                      <td colspan="8">
+                      <td colspan="7">
                         <span class="list-skeleton-bar"></span>
                       </td>
                     </tr>
                   }
                 } @else if (totalFiltrado() === 0) {
                   <tr>
-                    <td class="table-body__empty" colspan="8">
+                    <td class="table-body__empty" colspan="7">
                       <div class="table-empty">
                         <span class="table-empty__icon-wrap" aria-hidden="true">
                           <svg
@@ -459,7 +439,6 @@
                         }
                       </td>
                       <td class="col-num">{{ comissaoProduto(p) }}</td>
-                      <td class="col-config" aria-hidden="true"></td>
                     </tr>
                   }
                 }

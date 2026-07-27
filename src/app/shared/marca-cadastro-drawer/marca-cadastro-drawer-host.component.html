@@ -1,0 +1,116 @@
+@if (d.aberto()) {
+  <div
+    class="overlay overlay--marca-cadastro"
+    [class.overlay--open]="d.panelOpen()"
+    aria-hidden="true"
+    (click)="d.fechar()"
+  ></div>
+  <div
+    class="marca-cadastro-drawer app-drawer cliente-drawer cliente-drawer--marca-cadastro-shared"
+    [class.app-drawer--open]="d.panelOpen()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Nova marca"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">Nova marca</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="d.fechar()"
+          aria-label="Fechar"
+          [disabled]="d.salvando"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="cliente-body-scroll marca-cadastro-scroll">
+        <div class="marca-cadastro-form">
+          <div class="marca-cadastro-form__row">
+            <div class="marca-cadastro-form__col marca-cadastro-form__col--nome">
+              <label
+                class="marca-cadastro-form__label"
+                for="marca-cadastro-drawer-nome"
+              >
+                <span class="marca-cadastro-form__req" aria-hidden="true"
+                  >*</span
+                >Nome
+              </label>
+              <input
+                id="marca-cadastro-drawer-nome"
+                type="text"
+                class="marca-cadastro-form__input"
+                [class.marca-cadastro-form__input--error]="d.nomeErro"
+                [(ngModel)]="d.nome"
+                name="marcaCadastroNome"
+                placeholder="Nome"
+                autocomplete="off"
+                [disabled]="d.salvando"
+                [attr.aria-invalid]="d.nomeErro"
+                (input)="d.onNomeInput()"
+                (keydown.enter)="d.salvar()"
+              />
+              @if (d.nomeErro) {
+                <span class="marca-cadastro-form__error" role="alert"
+                  >Campo obrigatório</span
+                >
+              }
+            </div>
+            <div class="marca-cadastro-form__col marca-cadastro-form__col--ativo">
+              <span class="marca-cadastro-form__ativo-label">Ativo</span>
+              <button
+                type="button"
+                class="drawer-switch"
+                [class.drawer-switch--on]="d.ativo"
+                [attr.aria-pressed]="d.ativo"
+                aria-label="Ativo"
+                (click)="d.toggleAtivo($event)"
+                [disabled]="d.salvando"
+              ></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="cliente-drawer-footer">
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--ghost"
+          (click)="d.fechar()"
+          [disabled]="d.salvando"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--primary"
+          (click)="d.salvar()"
+          [disabled]="d.salvando"
+        >
+          {{ d.salvando ? 'Salvando…' : 'Salvar' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

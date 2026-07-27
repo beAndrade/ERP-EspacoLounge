@@ -214,10 +214,45 @@ app-produto-cadastro-drawer-host {
     stroke-width: 1.5;
   }
 
+  .saas-select__icon--search {
+    width: 14px;
+    height: 14px;
+  }
+
+  /**
+   * Trial open/close: desce com fade ao abrir; recolhe para cima com fade ao fechar.
+   * Sem animação no ícone (chevron ↔ search).
+   */
+  .saas-select__panel-elev {
+    z-index: 40;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-12px);
+    transform-origin: top center;
+    pointer-events: none;
+    transition:
+      opacity 0.2s linear,
+      transform 0.2s linear,
+      visibility 0s linear 0.2s;
+    will-change: transform, opacity;
+  }
+
+  .saas-select__panel-elev--open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition:
+      opacity 0.2s linear,
+      transform 0.2s linear,
+      visibility 0s linear 0s;
+  }
+
   .saas-select__panel {
     border-radius: 8px;
     border-color: #f1f1f1;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    z-index: 40;
   }
 
   .saas-select__option {
@@ -225,15 +260,26 @@ app-produto-cadastro-drawer-host {
     min-height: 36px;
     font-weight: 400;
 
+    .saas-select__option-label {
+      font-size: 14px;
+      font-weight: 400;
+    }
+
     &--active,
     &--active .saas-select__option-label {
-      font-weight: 400;
+      font-weight: 700;
     }
   }
 
-  .saas-select__panel-elev,
-  .saas-select__panel {
-    z-index: 40;
+  .saas-select__criar {
+    width: 100%;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .saas-select__criar-ico {
+    width: 20px;
+    height: 20px;
   }
 
   app-saas-select.saas-select-host--open {

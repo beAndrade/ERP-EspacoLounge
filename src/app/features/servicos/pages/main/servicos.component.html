@@ -1,161 +1,201 @@
 <div class="list-page servicos-page">
-  <div class="list-layout" [class.list-layout--filtros-open]="filtrosAbertos">
+  <div class="list-page__lead">
+    <header class="list-head">
+      <div class="list-head__title-row">
+        <div class="list-head__left">
+          <h1 class="list-head__title">Serviços</h1>
+        </div>
+        <div class="list-head__actions list-head__actions--servicos">
+          <div
+            class="list-head__busca-wrap"
+            [class.list-head__busca-wrap--open]="buscaAberta"
+            role="search"
+            (click)="onBuscaWrapClick()"
+          >
+            <span class="list-head__busca-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m21 21-4.34-4.34" />
+                <circle cx="11" cy="11" r="8" />
+              </svg>
+            </span>
+            <span
+              class="list-head__busca-label"
+              [class.list-head__busca-label--hidden]="buscaAberta"
+              aria-hidden="true"
+              >Buscar</span
+            >
+            <label class="sr-only" for="servicos-busca-input">Buscar serviços</label>
+            <input
+              id="servicos-busca-input"
+              type="text"
+              class="list-head__busca-input"
+              [(ngModel)]="busca"
+              name="buscaServicos"
+              [placeholder]="buscaPlaceholder"
+              [class.list-head__busca-input--search-open]="buscaAberta"
+              [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+              (input)="onBuscaInput()"
+              aria-label="Buscar serviços"
+              title="Buscar"
+            />
+          </div>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos || filtroAlgumAtivo"
+            [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+            (click)="toggleFiltros($event)"
+            aria-label="Abrir filtros"
+            [attr.aria-expanded]="filtrosAbertos"
+            title="Filtrar"
+          >
+            <svg
+              class="list-icon-sm list-icon-sm--funnel"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+              />
+            </svg>
+            <span class="list-head__toolbar-label">Filtrar</span>
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+            (click)="abrirNovo()"
+          >
+            <svg
+              class="list-icon-sm"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span>Novo</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <div
+    class="list-layout"
+    [class.list-layout--filtros-abertos]="filtrosAbertos"
+  >
     <aside
       class="servicos-filtros-drawer"
       [class.servicos-filtros-drawer--open]="filtrosAbertos"
       aria-label="Filtros de serviços"
+      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
     >
       <div class="servicos-filtros-drawer__inner">
-        <header class="servicos-filtros-drawer__head">
-          <h2>Filtros</h2>
-          <button type="button" (click)="filtrosAbertos = false" aria-label="Fechar filtros">
-            ×
-          </button>
-        </header>
-        <label class="servicos-filtros-drawer__field">
-          <span>Tipo</span>
-          <select [(ngModel)]="filtroTipo" name="filtroTipo">
-            <option value="">Todos</option>
-            <option value="Fixo">Fixo</option>
-            <option value="Tamanho">Por tamanho</option>
-          </select>
-        </label>
-        <label class="servicos-filtros-drawer__field">
-          <span>Categoria</span>
-          <select [(ngModel)]="filtroCategoria" name="filtroCategoria">
-            <option value="">Todas</option>
+        <section class="servicos-filtros-card">
+          <h3 class="servicos-filtros-card__title">Status</h3>
+          <div class="servicos-filtros-card__body">
+            <label class="servicos-filtros-check">
+              <input
+                type="checkbox"
+                name="svc_filtro_mostra_sim"
+                [checked]="filtroMostraSim"
+                (change)="toggleFiltroMostra('sim', $event)"
+              />
+              Ativos
+            </label>
+            <label class="servicos-filtros-check">
+              <input
+                type="checkbox"
+                name="svc_filtro_mostra_nao"
+                [checked]="filtroMostraNao"
+                (change)="toggleFiltroMostra('nao', $event)"
+              />
+              Inativos
+            </label>
+          </div>
+        </section>
+
+        <section class="servicos-filtros-card">
+          <h3 class="servicos-filtros-card__title">Tipo</h3>
+          <div class="servicos-filtros-card__body">
+            <label class="servicos-filtros-check">
+              <input
+                type="checkbox"
+                name="svc_filtro_tipo_fixo"
+                [checked]="filtroTipoFixo"
+                (change)="toggleFiltroTipo('fixo', $event)"
+              />
+              Preço fixo
+            </label>
+            <label class="servicos-filtros-check">
+              <input
+                type="checkbox"
+                name="svc_filtro_tipo_tamanho"
+                [checked]="filtroTipoTamanho"
+                (change)="toggleFiltroTipo('tamanho', $event)"
+              />
+              Por tamanho
+            </label>
+          </div>
+        </section>
+
+        <section class="servicos-filtros-card">
+          <h3 class="servicos-filtros-card__title">Categorias</h3>
+          <div class="servicos-filtros-card__body">
+            <label class="servicos-filtros-check">
+              <input
+                type="checkbox"
+                name="svc_filtro_cat_todas"
+                [checked]="todasCategoriasSelecionadas()"
+                (change)="toggleTodasCategorias($event)"
+              />
+              Selecionar tudo
+            </label>
             @for (c of categoriasDisponiveis(); track c) {
-              <option [value]="c">{{ c }}</option>
+              <label class="servicos-filtros-check">
+                <input
+                  type="checkbox"
+                  [name]="'svc_filtro_cat_' + c"
+                  [checked]="categoriaFiltroMarcada(c)"
+                  (change)="toggleFiltroCategoria(c, $event)"
+                />
+                {{ c }}
+              </label>
             }
-          </select>
-        </label>
-        <label class="servicos-filtros-drawer__field">
-          <span>Mostra no site</span>
-          <select [(ngModel)]="filtroMostraSite" name="filtroMostraSite">
-            <option value="">Todos</option>
-            <option value="sim">Sim</option>
-            <option value="nao">Não</option>
-          </select>
-        </label>
-        <footer class="servicos-filtros-drawer__footer">
-          <button type="button" class="servicos-filtros-drawer__btn" (click)="limparFiltros()">
-            Limpar
-          </button>
-          <button
-            type="button"
-            class="servicos-filtros-drawer__btn servicos-filtros-drawer__btn--primary"
-            (click)="aplicarFiltros()"
-          >
-            Aplicar
-          </button>
-        </footer>
+          </div>
+        </section>
       </div>
     </aside>
 
     <div class="list-layout__main">
-      <div class="list-page__lead">
-        <header class="list-head">
-          <div class="list-head__title-row">
-            <div class="list-head__left">
-              <h1 class="list-head__title">Serviços</h1>
-            </div>
-            <div class="list-head__actions list-head__actions--servicos">
-              <div
-                class="list-head__busca-wrap"
-                [class.list-head__busca-wrap--open]="buscaAberta"
-                role="search"
-                (click)="onBuscaWrapClick()"
-              >
-                <span class="list-head__busca-icon" aria-hidden="true">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="m21 21-4.34-4.34" />
-                    <circle cx="11" cy="11" r="8" />
-                  </svg>
-                </span>
-                <span
-                  class="list-head__busca-label"
-                  [class.list-head__busca-label--hidden]="buscaAberta"
-                  aria-hidden="true"
-                  >Buscar</span
-                >
-                <label class="sr-only" for="servicos-busca-input">Buscar serviços</label>
-                <input
-                  id="servicos-busca-input"
-                  type="text"
-                  class="list-head__busca-input"
-                  [(ngModel)]="busca"
-                  name="buscaServicos"
-                  [placeholder]="buscaPlaceholder"
-                  [class.list-head__busca-input--search-open]="buscaAberta"
-                  autocomplete="off"
-                  (click)="$event.stopPropagation()"
-                  (input)="onBuscaInput()"
-                  aria-label="Buscar serviços"
-                  title="Buscar"
-                />
-              </div>
-              <button
-                type="button"
-                class="list-head__toolbar-btn"
-                (click)="filtrosAbertos = !filtrosAbertos"
-              >
-                <svg
-                  class="list-icon-sm"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-                  />
-                </svg>
-                <span class="list-head__toolbar-label">Filtrar</span>
-              </button>
-              <button
-                type="button"
-                class="list-head__toolbar-btn list-head__toolbar-btn--link"
-                (click)="abrirNovo()"
-              >
-                <svg
-                  class="list-icon-sm"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
-                <span>Novo</span>
-              </button>
-            </div>
-          </div>
-        </header>
-      </div>
-
       @if (erro) {
         <p class="alert" role="alert">{{ erro }}</p>
       }
@@ -650,24 +690,44 @@
 </div>
 
 @if (excluirModalAberto && excluirAlvo) {
-  <div class="servicos-modal-backdrop" (click)="fecharExcluir()"></div>
-  <div class="servicos-modal" role="dialog" aria-modal="true" aria-labelledby="servicos-excluir-title">
-    <h3 id="servicos-excluir-title">Excluir serviço</h3>
-    <p>
-      Remover «{{ rotuloServico(excluirAlvo) }}»? Esta ação não pode ser desfeita.
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharExcluir()"
+  ></div>
+  <div
+    class="comandas-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="servicos-excluir-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 id="servicos-excluir-title" class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir esse serviço?
     </p>
     @if (excluirErro) {
-      <p class="servicos-modal__erro" role="alert">{{ excluirErro }}</p>
+      <p class="comandas-modal__erro" role="alert">{{ excluirErro }}</p>
     }
-    <div class="servicos-modal__actions">
-      <button type="button" (click)="fecharExcluir()" [disabled]="excluindo">Cancelar</button>
+    <div class="comandas-modal__actions">
       <button
         type="button"
-        class="servicos-modal__btn--danger"
-        (click)="confirmarExcluir()"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
         [disabled]="excluindo"
+        (click)="fecharExcluir()"
       >
-        {{ excluindo ? 'A excluir…' : 'Excluir' }}
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="excluindo"
+        (click)="confirmarExcluir()"
+      >
+        {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
       </button>
     </div>
   </div>

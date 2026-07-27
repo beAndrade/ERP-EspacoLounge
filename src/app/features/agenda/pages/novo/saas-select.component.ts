@@ -79,6 +79,11 @@ export class SaasSelectComponent
   @Input() useNumericOutput = false;
   /** Quando falso, o painel mostra a lista completa (sem barra "Pesquisar"). */
   @Input() showFilter = true;
+  /**
+   * Com painel aberto, troca o chevron pelo ícone de lupa
+   * (mesmo sem barra de filtro — trial nos drawers).
+   */
+  @Input() showSearchIconOnOpen = false;
   @Input() showCriarCliente = false;
   /** Texto do botão no rodapé do painel (ex.: «Criar profissional»). */
   @Input() criarButtonLabel = 'Criar cliente';
@@ -141,7 +146,6 @@ export class SaasSelectComponent
   }
 
   get displayLabel(): string {
-    if (this.inner === '') return '';
     const hit = this.options.find(
       (o) => String(o.value) === String(this.inner),
     );
@@ -149,7 +153,6 @@ export class SaasSelectComponent
   }
 
   get displayHint(): string {
-    if (this.inner === '') return '';
     const hit = this.options.find(
       (o) => String(o.value) === String(this.inner),
     );
@@ -158,8 +161,17 @@ export class SaasSelectComponent
 
   /** Compara valor da opção com o interno (evita falha número vs string). */
   optionIsSelected(opt: SaasSelectOption): boolean {
-    if (this.inner === '') return false;
     return String(opt.value) === String(this.inner);
+  }
+
+  /** Lupa no gatilho enquanto o painel está aberto. */
+  get showTriggerSearchIcon(): boolean {
+    return this.panelOpen && (this.showFilter || this.showSearchIconOnOpen);
+  }
+
+  /** Campo editável no gatilho (filtrar opções ao digitar). */
+  get typeInTriggerWhenOpen(): boolean {
+    return this.showFilter || this.showSearchIconOnOpen;
   }
 
   get filteredOptions(): SaasSelectOption[] {
@@ -282,7 +294,7 @@ export class SaasSelectComponent
    * `queueMicrotask` sozinho falha no 1.º clique — o utilizador tinha de clicar de novo.
    */
   private focusSearchFieldAfterOpen(): void {
-    if (!this.showFilter && this.layout !== 'sidebar') return;
+    if (!this.typeInTriggerWhenOpen && this.layout !== 'sidebar') return;
     afterNextRender(
       () => {
         if (!this.panelOpen || this.isDisabled) return;

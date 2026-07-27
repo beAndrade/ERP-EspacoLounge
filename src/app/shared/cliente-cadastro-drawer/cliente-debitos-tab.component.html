@@ -597,14 +597,14 @@
   (fechar)="fecharWhatsappModal()"
 />
 
-@if (excluirComandaModalAberto() && comandaPendenteExclusao(); as gExcluir) {
+@if (excluirComandaModalAberto() && comandaPendenteExclusao()) {
   <div
-    class="comandas-modal-overlay cliente-debitos-exclusao-overlay"
+    class="comandas-modal-overlay comandas-modal-overlay--elevated"
     aria-hidden="true"
     (click)="fecharModalExcluirComanda()"
   ></div>
   <div
-    class="comandas-modal cliente-debitos-exclusao-modal"
+    class="comandas-modal comandas-modal--elevated"
     role="dialog"
     aria-modal="true"
     aria-label="Confirmação de exclusão"
@@ -614,8 +614,7 @@
     </div>
     <h3 class="comandas-modal__title">Atenção</h3>
     <p class="comandas-modal__text">
-      Tem certeza que deseja excluir a comanda
-      {{ rotuloComanda(gExcluir.numeroComanda) }}?
+      Tem certeza que deseja excluir essa comanda?
     </p>
     <div class="comandas-modal__actions">
       <button

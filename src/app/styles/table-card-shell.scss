@@ -37,12 +37,14 @@ $list-table-card-radius: 12px 12px 0 0;
   @include list-table-card-surface;
 }
 
-/** Em coluna (listagens), preencher a largura do main sem perder o truque flex. */
+/** Em coluna (listagens), preencher a largura do main sem alongar além do conteúdo. */
 .list-layout__main > .list-table-card,
 .list-page > .list-table-card,
 .list-layout__main .list-table-card {
   width: 100%;
   align-self: stretch;
+  flex: 0 0 auto;
+  height: auto;
 }
 
 .list-table-card > .table-wrap,

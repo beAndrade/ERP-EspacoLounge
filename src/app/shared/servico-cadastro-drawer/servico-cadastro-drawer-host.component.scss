@@ -129,7 +129,6 @@ app-servico-cadastro-drawer-host {
   --drawer-input-font-weight: 400;
   --drawer-field-font-size: 14px;
 
-  /** Select da comanda (`app-saas-select`), alinhado aos inputs 32px do drawer. */
   app-saas-select {
     display: block;
     width: 100%;
@@ -211,10 +210,41 @@ app-servico-cadastro-drawer-host {
     stroke-width: 1.5;
   }
 
+  .saas-select__icon--search {
+    width: 14px;
+    height: 14px;
+  }
+
+  .saas-select__panel-elev {
+    z-index: 40;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-12px);
+    transform-origin: top center;
+    pointer-events: none;
+    transition:
+      opacity 0.2s linear,
+      transform 0.2s linear,
+      visibility 0s linear 0.2s;
+    will-change: transform, opacity;
+  }
+
+  .saas-select__panel-elev--open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition:
+      opacity 0.2s linear,
+      transform 0.2s linear,
+      visibility 0s linear 0s;
+  }
+
   .saas-select__panel {
     border-radius: 8px;
     border-color: #f1f1f1;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    z-index: 40;
   }
 
   .saas-select__option {
@@ -222,15 +252,26 @@ app-servico-cadastro-drawer-host {
     min-height: 36px;
     font-weight: 400;
 
+    .saas-select__option-label {
+      font-size: 14px;
+      font-weight: 400;
+    }
+
     &--active,
     &--active .saas-select__option-label {
-      font-weight: 400;
+      font-weight: 700;
     }
   }
 
-  .saas-select__panel-elev,
-  .saas-select__panel {
-    z-index: 40;
+  .saas-select__criar {
+    width: 100%;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .saas-select__criar-ico {
+    width: 20px;
+    height: 20px;
   }
 
   app-saas-select.saas-select-host--open {
@@ -426,21 +467,21 @@ app-servico-cadastro-drawer-host {
   z-index: 1;
   overflow: visible;
 
-  app-saas-select {
+  ::ng-deep app-saas-select {
     width: 100%;
     height: 100%;
   }
 
-  app-saas-select.saas-select-host--open {
+  ::ng-deep app-saas-select.saas-select-host--open {
     z-index: 50;
   }
 
-  .saas-select {
+  ::ng-deep .saas-select {
     height: 100%;
     overflow: visible;
   }
 
-  .saas-select__trigger {
+  ::ng-deep .saas-select__trigger {
     height: 100%;
     min-height: 100% !important;
     max-height: 100% !important;
@@ -450,30 +491,41 @@ app-servico-cadastro-drawer-host {
     background: #fff !important;
     padding-left: 11px;
     padding-right: 2rem;
-    transition: border-color 0.2s linear;
+    transition:
+      border-color 0.2s linear,
+      box-shadow 0.2s linear;
 
-    &:hover:not(:disabled),
-    &:focus-visible {
+    &:hover:not(:disabled) {
       border-color: var(--color-primary) !important;
       box-shadow: none !important;
     }
-  }
 
-  .saas-select__trigger--open,
-  app-saas-select.saas-select-host--open .saas-select__trigger {
-    border-color: var(--color-primary) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent) !important;
-    color: #18181b !important;
-
-    .saas-select__value,
-    .saas-select__value-row--placeholder .saas-select__value,
-    .saas-select__value-row--open .saas-select__value {
-      color: #18181b !important;
+    &:focus,
+    &:focus-visible {
+      border-color: var(--color-primary) !important;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent) !important;
     }
   }
 
-  .saas-select__panel-elev,
-  .saas-select__panel {
+  ::ng-deep .saas-select:focus-within .saas-select__trigger,
+  ::ng-deep .saas-select__trigger--open,
+  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent) !important;
+    color: #d4d4d8 !important;
+
+    .saas-select__value,
+    .saas-select__value-row--placeholder .saas-select__value,
+    .saas-select__value-row--open .saas-select__value,
+    .saas-select__icons,
+    .saas-select__trigger-input,
+    .saas-select__trigger-input::placeholder {
+      color: #d4d4d8 !important;
+    }
+  }
+
+  ::ng-deep .saas-select__panel-elev,
+  ::ng-deep .saas-select__panel {
     z-index: 60;
   }
 }
@@ -482,18 +534,19 @@ app-servico-cadastro-drawer-host {
   flex: 0 1 64%;
   max-width: 64%;
 
-  .saas-select__trigger {
+  ::ng-deep .saas-select__trigger {
     border-right: none !important;
     border-radius: 8px 0 0 8px !important;
 
     &:hover:not(:disabled),
+    &:focus,
     &:focus-visible {
       border-right: none !important;
     }
   }
 
-  .saas-select__trigger--open,
-  app-saas-select.saas-select-host--open .saas-select__trigger {
+  ::ng-deep .saas-select__trigger--open,
+  ::ng-deep app-saas-select.saas-select-host--open .saas-select__trigger {
     border-right: none !important;
   }
 
@@ -721,10 +774,6 @@ app-servico-cadastro-drawer-host {
     text-align: left;
     background: #fafafa;
     white-space: nowrap;
-  }
-
-  .servico-cadastro-form__tamanho-td-comissao {
-    vertical-align: middle;
   }
 
   tbody th {

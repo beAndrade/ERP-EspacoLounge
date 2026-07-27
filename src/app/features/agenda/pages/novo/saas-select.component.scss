@@ -31,13 +31,17 @@
     box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    border-color: var(--color-primary-hover);
+    border-color: var(--color-primary);
   }
 
+  &:focus,
   &:focus-visible {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    box-shadow: var(
+      --saas-select-focus-shadow,
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent)
+    );
   }
 
   &:disabled {
@@ -97,6 +101,11 @@
   height: 1.25rem;
   flex-shrink: 0;
   stroke-width: 1.5;
+}
+
+.saas-select__icon--search {
+  width: 0.9375rem;
+  height: 0.9375rem;
 }
 
 /** Sombra no wrapper: o interior mantém `overflow: hidden` sem recortar a sombra. */
@@ -340,7 +349,10 @@
 
   &.saas-select-host--open .saas-select__trigger--combobox {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    box-shadow: var(
+      --saas-select-focus-shadow,
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent)
+    );
   }
 }
 
@@ -348,10 +360,14 @@
   cursor: text;
   outline: none;
 
+  &:focus,
   &:focus-visible {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    box-shadow: var(
+      --saas-select-focus-shadow,
+      0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent)
+    );
   }
 }
 
@@ -388,6 +404,10 @@
 :host.saas-select-host--open .saas-select__trigger,
 :host.saas-select-host--open .saas-select__trigger--combobox {
   border-color: var(--color-primary);
+  box-shadow: var(
+    --saas-select-focus-shadow,
+    0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent)
+  );
 }
 
 :host.saas-select-host--trigger-cursor-text .saas-select__trigger {

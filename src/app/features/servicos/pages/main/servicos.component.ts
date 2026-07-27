@@ -33,11 +33,18 @@ export class ServicosComponent implements OnInit, OnDestroy {
   buscaAberta = false;
   buscaPlaceholder = 'Buscar serviços';
   pulsoToolbarBusca = false;
+  pulsoToolbarFiltro = false;
+  private readonly duracaoPulsoToolbarMs = 420;
+  private tPulsoFiltro = 0;
 
   filtrosAbertos = false;
-  filtroTipo: '' | 'Fixo' | 'Tamanho' = '';
-  filtroMostraSite: '' | 'sim' | 'nao' = '';
-  filtroCategoria = '';
+  /** Status: Ativos = mostra no site; Inativos = ocultos do site. */
+  filtroMostraSim = true;
+  filtroMostraNao = true;
+  filtroTipoFixo = true;
+  filtroTipoTamanho = true;
+  /** `null` = todas as categorias; Set = só as marcadas. */
+  private filtroCategorias: Set<string> | null = null;
 
   pagina = 1;
   porPagina = 20;
@@ -126,9 +133,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
   private irParaServicoNaLista(id: string): void {
     this.busca = '';
     this.buscaAberta = false;
-    this.filtroTipo = '';
-    this.filtroCategoria = '';
-    this.filtroMostraSite = '';
+    this.limparFiltros();
     this.filtrosAbertos = false;
 
     const idx = this.filtrados().findIndex((s) => String(s.id) === id);
@@ -157,24 +162,23 @@ export class ServicosComponent implements OnInit, OnDestroy {
         .trim()
         .toLowerCase();
       if (q && !nome.includes(q) && !cat.includes(q)) return false;
-      if (this.filtroTipo) {
-        const t = String(s['Tipo'] ?? '')
-          .trim()
-          .toLowerCase();
-        if (this.filtroTipo === 'Fixo' && t !== 'fixo') return false;
-        if (this.filtroTipo === 'Tamanho' && t !== 'tamanho') return false;
+
+      const noSite = s['mostra_no_site'] !== false;
+      if (noSite && !this.filtroMostraSim) return false;
+      if (!noSite && !this.filtroMostraNao) return false;
+
+      const t = String(s['Tipo'] ?? '')
+        .trim()
+        .toLowerCase();
+      const isFixo = t !== 'tamanho';
+      if (isFixo && !this.filtroTipoFixo) return false;
+      if (!isFixo && !this.filtroTipoTamanho) return false;
+
+      if (this.filtroCategorias) {
+        const catNome = String(s['Categoria'] ?? '').trim();
+        if (!this.filtroCategorias.has(catNome)) return false;
       }
-      if (this.filtroCategoria) {
-        if (String(s['Categoria'] ?? '').trim() !== this.filtroCategoria) {
-          return false;
-        }
-      }
-      if (this.filtroMostraSite === 'sim' && s['mostra_no_site'] === false) {
-        return false;
-      }
-      if (this.filtroMostraSite === 'nao' && s['mostra_no_site'] !== false) {
-        return false;
-      }
+
       return true;
     });
 
@@ -241,13 +245,8 @@ export class ServicosComponent implements OnInit, OnDestroy {
   private comissaoSortKey(s: Servico): number {
     const tipo = lerServicoTexto(s, 'Tipo', 'tipo').toLowerCase();
     if (tipo === 'tamanho') {
-      const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct')
-        .replace('%', '')
-        .replace(',', '.');
-      if (pct) {
-        const n = Number.parseFloat(pct);
-        if (Number.isFinite(n)) return n;
-      }
+      const pcts = this.comissaoPctsPorFaixa(s);
+      if (pcts.length > 0) return Math.min(...pcts);
       return -1;
     }
     const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct')
@@ -300,6 +299,7 @@ export class ServicosComponent implements OnInit, OnDestroy {
   onBuscaWrapClick(): void {
     if (!this.buscaAberta) {
       this.buscaAberta = true;
+      this.dispararPulsoToolbar('busca');
       queueMicrotask(() => {
         document.getElementById('servicos-busca-input')?.focus();
       });
@@ -308,6 +308,96 @@ export class ServicosComponent implements OnInit, OnDestroy {
 
   onBuscaInput(): void {
     this.pagina = 1;
+  }
+
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
+    this.dispararPulsoToolbar('filtro');
+    this.filtrosAbertos = !this.filtrosAbertos;
+  }
+
+  private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
+    if (which === 'busca') {
+      this.pulsoToolbarBusca = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarBusca = true;
+        window.setTimeout(() => {
+          this.pulsoToolbarBusca = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+      return;
+    }
+    window.clearTimeout(this.tPulsoFiltro);
+    this.pulsoToolbarFiltro = false;
+    queueMicrotask(() => {
+      this.pulsoToolbarFiltro = true;
+      this.tPulsoFiltro = window.setTimeout(() => {
+        this.pulsoToolbarFiltro = false;
+      }, this.duracaoPulsoToolbarMs);
+    });
+  }
+
+  toggleFiltroMostra(which: 'sim' | 'nao', ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (which === 'sim') this.filtroMostraSim = checked;
+    else this.filtroMostraNao = checked;
+    if (!this.filtroMostraSim && !this.filtroMostraNao) {
+      if (which === 'sim') this.filtroMostraNao = true;
+      else this.filtroMostraSim = true;
+    }
+    this.pagina = 1;
+  }
+
+  toggleFiltroTipo(which: 'fixo' | 'tamanho', ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (which === 'fixo') this.filtroTipoFixo = checked;
+    else this.filtroTipoTamanho = checked;
+    if (!this.filtroTipoFixo && !this.filtroTipoTamanho) {
+      if (which === 'fixo') this.filtroTipoTamanho = true;
+      else this.filtroTipoFixo = true;
+    }
+    this.pagina = 1;
+  }
+
+  todasCategoriasSelecionadas(): boolean {
+    return this.filtroCategorias === null;
+  }
+
+  categoriaFiltroMarcada(cat: string): boolean {
+    return this.filtroCategorias === null || this.filtroCategorias.has(cat);
+  }
+
+  toggleTodasCategorias(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    this.filtroCategorias = checked ? null : new Set();
+    this.pagina = 1;
+  }
+
+  toggleFiltroCategoria(cat: string, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    const todas = this.categoriasDisponiveis();
+    if (this.filtroCategorias === null) {
+      this.filtroCategorias = new Set(todas);
+    }
+    if (checked) this.filtroCategorias.add(cat);
+    else this.filtroCategorias.delete(cat);
+    if (
+      this.filtroCategorias.size === 0 ||
+      (todas.length > 0 && todas.every((c) => this.filtroCategorias!.has(c)))
+    ) {
+      this.filtroCategorias = this.filtroCategorias.size === 0 ? new Set() : null;
+    }
+    this.pagina = 1;
+  }
+
+  get filtroAlgumAtivo(): boolean {
+    return (
+      !this.filtroMostraSim ||
+      !this.filtroMostraNao ||
+      !this.filtroTipoFixo ||
+      !this.filtroTipoTamanho ||
+      this.filtroCategorias !== null
+    );
   }
 
   @HostListener('document:click', ['$event'])
@@ -319,6 +409,18 @@ export class ServicosComponent implements OnInit, OnDestroy {
     if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
       this.perPageMenuAberto = false;
     }
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(ev: KeyboardEvent): void {
+    if (this.excluirModalAberto) {
+      ev.preventDefault();
+      this.fecharExcluir();
+      return;
+    }
+    if (this.perPageMenuAberto) this.perPageMenuAberto = false;
+    else if (this.filtrosAbertos) this.filtrosAbertos = false;
+    else if (this.buscaAberta) this.buscaAberta = false;
   }
 
   abrirNovo(): void {
@@ -405,14 +507,12 @@ export class ServicosComponent implements OnInit, OnDestroy {
 
   comissaoExibicao(s: Servico): string {
     const tipo = lerServicoTexto(s, 'Tipo', 'tipo').toLowerCase();
-    // Por tamanho: só a % (R$ por faixa é calculado no cadastro, não na lista).
     if (tipo === 'tamanho') {
-      const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct');
-      if (pct) {
-        const n = pct.replace('%', '').trim();
-        return n ? `% ${n}` : '—';
-      }
-      return '—';
+      const pcts = this.comissaoPctsPorFaixa(s);
+      if (pcts.length === 0) return '—';
+      const min = Math.min(...pcts);
+      const max = Math.max(...pcts);
+      return min === max ? `% ${min}` : `% ${min}–${max}`;
     }
 
     const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct');
@@ -427,6 +527,34 @@ export class ServicosComponent implements OnInit, OnDestroy {
       return formataMoedaBrl(fixa);
     }
     return '—';
+  }
+
+  /** % por faixa a partir de R$/preço (ou `comissao_pct` legado). */
+  private comissaoPctsPorFaixa(s: Servico): number[] {
+    const faixas: Array<[string[], string[]]> = [
+      [['Preço Curto', 'preco_curto'], ['Curto', 'curto']],
+      [['Preço Médio', 'preco_medio'], ['Médio', 'medio']],
+      [['Preço Médio/Longo', 'preco_medio_longo'], ['M/L', 'm_l']],
+      [['Preço Longo', 'preco_longo'], ['Longo', 'longo']],
+    ];
+    const out: number[] = [];
+    for (const [precoKeys, comKeys] of faixas) {
+      const preco = valorMonetarioParaNumero(lerServicoTexto(s, ...precoKeys));
+      const comissao = valorMonetarioParaNumero(lerServicoTexto(s, ...comKeys));
+      if (preco != null && preco > 0 && comissao != null && comissao > 0) {
+        out.push(Math.round((comissao / preco) * 100));
+      }
+    }
+    if (out.length > 0) return out;
+    const pct = lerServicoTexto(s, 'Comissão %', 'comissao_pct')
+      .replace('%', '')
+      .replace(',', '.')
+      .trim();
+    if (pct) {
+      const n = Number.parseFloat(pct);
+      if (Number.isFinite(n) && n > 0) return [n];
+    }
+    return [];
   }
 
   duracaoExibicao(s: Servico): string {
@@ -502,14 +630,11 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   limparFiltros(): void {
-    this.filtroTipo = '';
-    this.filtroMostraSite = '';
-    this.filtroCategoria = '';
-    this.pagina = 1;
-  }
-
-  aplicarFiltros(): void {
-    this.filtrosAbertos = false;
+    this.filtroMostraSim = true;
+    this.filtroMostraNao = true;
+    this.filtroTipoFixo = true;
+    this.filtroTipoTamanho = true;
+    this.filtroCategorias = null;
     this.pagina = 1;
   }
 }

@@ -14,6 +14,7 @@ export interface MarcaListaItem {
 
 const DRAWER_ANIM_MS = 430;
 const MARCA_SALVA_TOAST_MSG = 'Marca salva com sucesso!';
+const MARCA_EXCLUIDA_TOAST_MSG = 'Marca excluída com sucesso!';
 
 @Component({
   selector: 'app-marcas',
@@ -57,6 +58,9 @@ export class MarcasComponent implements OnInit, OnDestroy {
   /** `null` = nova; item = edição. */
   cadastroEditando: MarcaListaItem | null = null;
   private cadastroCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  exclusaoModalItem: MarcaListaItem | null = null;
+  exclusaoModalSalvando = false;
 
   get cadastroTitulo(): string {
     return this.cadastroEditando ? 'Editar marca' : 'Nova marca';
@@ -259,8 +263,37 @@ export class MarcasComponent implements OnInit, OnDestroy {
     this.abrirCadastro(item, false);
   }
 
-  onExcluir(item: MarcaListaItem): void {
-    this.toast.show(`Exclusão de «${item.nome}» em breve.`);
+  onExcluir(item: MarcaListaItem, ev?: Event): void {
+    ev?.stopPropagation();
+    this.exclusaoModalItem = item;
+  }
+
+  fecharModalExclusao(): void {
+    if (this.exclusaoModalSalvando) return;
+    this.exclusaoModalItem = null;
+  }
+
+  confirmarModalExclusao(): void {
+    const item = this.exclusaoModalItem;
+    if (!item || this.exclusaoModalSalvando) return;
+    this.exclusaoModalSalvando = true;
+    this.api.excluirMarcaCatalogo(item.id).subscribe({
+      next: (res) => {
+        this.exclusaoModalSalvando = false;
+        this.exclusaoModalItem = null;
+        this.selecionados.delete(item.id);
+        this.toast.show(
+          res.result === 'deactivated'
+            ? 'Marca desativada (já usada em produtos).'
+            : MARCA_EXCLUIDA_TOAST_MSG,
+        );
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.exclusaoModalSalvando = false;
+        this.toast.show(e.message || 'Não foi possível excluir a marca.');
+      },
+    });
   }
 
   onOrdenarColuna(col: 'nome', ev?: Event): void {
@@ -368,6 +401,11 @@ export class MarcasComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (this.exclusaoModalItem) {
+      ev.preventDefault();
+      this.fecharModalExclusao();
+      return;
+    }
     if (this.cadastroAberto) {
       ev.preventDefault();
       this.fecharCadastro();

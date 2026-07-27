@@ -48,9 +48,9 @@
         </span>
       }
       <span class="saas-select__icons" aria-hidden="true">
-        @if (panelOpen) {
+        @if (showTriggerSearchIcon) {
           <svg
-            class="saas-select__icon"
+            class="saas-select__icon saas-select__icon--search"
             xmlns="http://www.w3.org/2000/svg"
             width="20"
             height="20"
@@ -58,9 +58,11 @@
             viewBox="0 0 24 24"
             stroke="currentColor"
             stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <circle cx="11" cy="11" r="7" />
-            <path stroke-linecap="round" d="M21 21l-4.35-4.35" />
+            <path d="m21 21-4.34-4.34" />
+            <circle cx="11" cy="11" r="8" />
           </svg>
         } @else {
           <svg
@@ -90,7 +92,7 @@
       (mousedown)="onTriggerMouseDown($event)"
       (click)="togglePanel($event)"
     >
-      @if (panelOpen && showFilter) {
+      @if (panelOpen && typeInTriggerWhenOpen) {
         <span class="saas-select__value-row saas-select__value-row--editing">
           <input
             #triggerInputBtn
@@ -123,9 +125,9 @@
         </span>
       }
       <span class="saas-select__icons" aria-hidden="true">
-        @if (panelOpen && showFilter) {
+        @if (showTriggerSearchIcon) {
           <svg
-            class="saas-select__icon"
+            class="saas-select__icon saas-select__icon--search"
             xmlns="http://www.w3.org/2000/svg"
             width="20"
             height="20"
@@ -133,9 +135,11 @@
             viewBox="0 0 24 24"
             stroke="currentColor"
             stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <circle cx="11" cy="11" r="7" />
-            <path stroke-linecap="round" d="M21 21l-4.35-4.35" />
+            <path d="m21 21-4.34-4.34" />
+            <circle cx="11" cy="11" r="8" />
           </svg>
         } @else {
           <svg

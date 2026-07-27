@@ -1,0 +1,283 @@
+@use '../../styles/drawer-stack';
+@use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
+
+/**
+ * Drawer «Nova marca» — empilha acima do drawer de serviço/produto.
+ */
+app-marca-cadastro-drawer-host {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1720 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+.overlay--marca-cadastro {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1720 !important;
+  box-sizing: border-box !important;
+  background: #00000073 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.43s;
+}
+
+.overlay--marca-cadastro.overlay--open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
+}
+
+.marca-cadastro-drawer.app-drawer,
+.cliente-drawer.cliente-drawer--marca-cadastro-shared.app-drawer {
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  z-index: 1730 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  width: min(600px, 100vw) !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12) !important;
+  overflow: hidden !important;
+  pointer-events: none;
+  transform: translateX(100%) !important;
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  will-change: transform;
+}
+
+.marca-cadastro-drawer.app-drawer.app-drawer--open,
+.cliente-drawer.cliente-drawer--marca-cadastro-shared.app-drawer.app-drawer--open {
+  transform: translateX(0) !important;
+  pointer-events: auto !important;
+}
+
+.marca-cadastro-drawer.app-drawer > .cliente-shell,
+.cliente-drawer.cliente-drawer--marca-cadastro-shared.app-drawer > .cliente-shell {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  width: 100% !important;
+}
+
+.marca-cadastro-drawer .cliente-head {
+  padding: 30px 50px 20px 30px;
+}
+
+.marca-cadastro-drawer .cliente-head__close {
+  top: 0;
+  right: 0;
+  z-index: 2;
+}
+
+.marca-cadastro-drawer .cliente-head__title {
+  text-align: left;
+  font-size: 20px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.marca-cadastro-drawer .cliente-drawer-footer {
+  padding: 8px 16px;
+  gap: 8px;
+  border-top: 1px solid rgba(5, 5, 5, 0.06);
+}
+
+.marca-cadastro-drawer .cliente-footer-btn--ghost {
+  width: auto;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 15px;
+  border-radius: 12px;
+  border: 1px solid #f1f1f1;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+  background: #ffffff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+  transition: transform 0.1s !important;
+
+  &:hover:not(:disabled) {
+    color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    background: #ffffff;
+  }
+}
+
+.marca-cadastro-drawer .cliente-footer-btn--primary {
+  width: auto;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 15px;
+  border-radius: 12px;
+  border: 1px solid var(--color-primary);
+  font-size: 14px;
+  color: #fff;
+  background: var(--color-primary);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--color-primary) 6%, transparent);
+  transition: transform 0.1s !important;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    color: #fff;
+    filter: none;
+  }
+}
+
+.marca-cadastro-scroll {
+  padding: 0 30px 10px;
+  box-sizing: border-box;
+}
+
+.marca-cadastro-form {
+  width: 100%;
+  max-width: 100%;
+}
+
+.marca-cadastro-form__row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.marca-cadastro-form__col--nome {
+  flex: 1 1 400px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  .marca-cadastro-form__label {
+    margin-bottom: 8px;
+  }
+}
+
+.marca-cadastro-form__col--ativo {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.marca-cadastro-form__label {
+  font-weight: 500;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.marca-cadastro-form__req {
+  color: var(--color-error, #ef4444);
+  margin-right: 0.2rem;
+}
+
+.marca-cadastro-form__ativo-label {
+  font-weight: 500;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+}
+
+.marca-cadastro-form__input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 11px;
+  border: 1px solid #f1f1f1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: rgba(0, 0, 0, 0.75);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  outline: none;
+  transition: all 0.2s;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &:hover:not(:disabled):not(:focus):not(.marca-cadastro-form__input--error) {
+    border-color: var(--color-primary-hover);
+    background: #ffffff;
+  }
+
+  &:focus:not(.marca-cadastro-form__input--error) {
+    outline: 0;
+    border-color: var(--color-primary);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
+  }
+
+  &--error,
+  &--error:hover,
+  &--error:focus {
+    background: #ffffff;
+    border: 1px solid var(--color-error);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.marca-cadastro-form__error {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  color: var(--color-error);
+}
+
+.marca-cadastro-drawer .drawer-switch {
+  border-radius: 100px;
+
+  &--on,
+  &[aria-pressed='true'] {
+    background: var(--color-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+    }
+  }
+
+  &:hover:not(:disabled):not(.drawer-switch--on):not([aria-pressed='true']) {
+    background: #bfbfbf;
+  }
+}

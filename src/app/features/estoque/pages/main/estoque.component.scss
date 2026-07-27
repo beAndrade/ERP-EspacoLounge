@@ -141,10 +141,6 @@
   width: 12%;
 }
 
-.produtos-table__col-config {
-  width: 48px;
-}
-
 .produtos-table thead th.col-check,
 .produtos-table tbody td.col-check {
   width: 48px;
@@ -159,14 +155,6 @@
 .produtos-table tbody td.col-check input[type='checkbox'] {
   display: block;
   margin: 0 auto;
-}
-
-.produtos-table thead th.col-config,
-.produtos-table tbody td.col-config {
-  width: 48px;
-  min-width: 48px;
-  text-align: center;
-  color: #a8a29e;
 }
 
 .produtos-table .col-num {

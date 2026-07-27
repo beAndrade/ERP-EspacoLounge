@@ -153,6 +153,7 @@
                       [options]="d.opcoesCategoriaSelect()"
                       placeholder="Selecione…"
                       [showFilter]="false"
+                      [showSearchIconOnOpen]="true"
                       [showCriarCliente]="true"
                       criarButtonLabel="Clique para criar"
                       triggerCursor="text"
@@ -169,8 +170,13 @@
                       [options]="d.opcoesMarcaSelect()"
                       placeholder="Selecione…"
                       [showFilter]="false"
+                      [showSearchIconOnOpen]="true"
+                      [showCriarCliente]="true"
+                      criarButtonLabel="Clique para criar"
                       triggerCursor="text"
                       aria-label="Marca"
+                      (painelAberto)="d.carregarMarcas()"
+                      (criarCliente)="d.abrirCriarMarca()"
                     />
                   </div>
                 </div>
@@ -217,6 +223,7 @@
                       name="registroSaida"
                       [options]="d.opcoesRegistroSaidaSelect"
                       [showFilter]="false"
+                      [showSearchIconOnOpen]="true"
                       triggerCursor="text"
                       placeholder="Selecione…"
                       aria-label="Registro de saída"

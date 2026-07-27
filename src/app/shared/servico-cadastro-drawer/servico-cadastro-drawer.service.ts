@@ -28,6 +28,12 @@ export type ServicoMoedaCampo =
   | 'precoLongo'
   | 'custoAdicional';
 
+export type ServicoComissaoPctFaixaCampo =
+  | 'comissaoPctCurto'
+  | 'comissaoPctMedio'
+  | 'comissaoPctMl'
+  | 'comissaoPctLongo';
+
 export const SERVICO_ABAS = [
   'Cadastro',
   'Configurações',
@@ -73,15 +79,21 @@ export class ServicoCadastroDrawerService {
   precoLongo = '';
   /**
    * Comissão R$ por faixa (`servicos.curto` / `medio` / `m_l` / `longo`).
-   * Em tipo Tamanho a UI edita % e estas colunas são calculadas no save.
+   * Em tipo Tamanho a UI edita % por faixa; no save grava R$ = preço × %.
    */
   comissaoCurto = '';
   comissaoMedio = '';
   comissaoMl = '';
   comissaoLongo = '';
+  /** % por faixa (UI Tamanho); sincronizado com R$ das colunas no load/save. */
+  comissaoPctCurto = '';
+  comissaoPctMedio = '';
+  comissaoPctMl = '';
+  comissaoPctLongo = '';
   custoAdicional = '';
   /** Fixo → `fixa` (R$); Tamanho → `pct` (%). */
   comissaoUnidade: 'pct' | 'fixa' = 'fixa';
+  /** Comissão R$ no preço fixo (`comissao_fixa`). */
   comissaoValor = '';
   /** Texto no input composto (sem R$ / sem %), sincronizado com o modelo. */
   valorBaseUi = '';
@@ -265,18 +277,22 @@ export class ServicoCadastroDrawerService {
   onComissaoValorInput(ev: Event): void {
     const el = ev.target as HTMLInputElement | null;
     if (!el) return;
-    if (this.comissaoUnidade === 'pct') {
-      const fmt = percentualAPartirDosDigitos(el.value);
-      this.comissaoValor = fmt;
-      this.comissaoValorUi = this.percentualSemSufixo(fmt);
-      el.value = this.comissaoValorUi;
-      this.colocarCursorNoFim(el);
-      return;
-    }
     const fmt = moedaAPartirDosDigitos(el.value);
     this.comissaoValor = fmt;
     this.comissaoValorUi = this.moedaSemPrefixo(fmt);
     el.value = this.comissaoValorUi;
+    this.colocarCursorNoFim(el);
+  }
+
+  onComissaoPctFaixaInput(
+    campo: ServicoComissaoPctFaixaCampo,
+    ev: Event,
+  ): void {
+    const el = ev.target as HTMLInputElement | null;
+    if (!el) return;
+    const fmt = percentualAPartirDosDigitos(el.value);
+    this[campo] = fmt;
+    el.value = this.percentualSemSufixo(fmt);
     this.colocarCursorNoFim(el);
   }
 
@@ -296,10 +312,7 @@ export class ServicoCadastroDrawerService {
 
   private syncValorUi(): void {
     this.valorBaseUi = this.moedaSemPrefixo(this.valorBase);
-    this.comissaoValorUi =
-      this.comissaoUnidade === 'pct'
-        ? this.percentualSemSufixo(this.comissaoValor)
-        : this.moedaSemPrefixo(this.comissaoValor);
+    this.comissaoValorUi = this.moedaSemPrefixo(this.comissaoValor);
   }
 
   /** Caret no fim — síncrono (digitação). */
@@ -312,7 +325,7 @@ export class ServicoCadastroDrawerService {
     }
   }
 
-  /** Preço fixo → comissão em R$; por tamanho → comissão em %. */
+  /** Preço fixo → comissão em R$; por tamanho → comissão em % por faixa. */
   onTipoChange(tipo: string): void {
     const nextTipo: 'Fixo' | 'Tamanho' =
       tipo === 'Tamanho' ? 'Tamanho' : 'Fixo';
@@ -323,13 +336,11 @@ export class ServicoCadastroDrawerService {
       this.comissaoUnidade = nextUnidade;
       this.comissaoValor = '';
       this.comissaoValorUi = '';
+      this.comissaoPctCurto = '';
+      this.comissaoPctMedio = '';
+      this.comissaoPctMl = '';
+      this.comissaoPctLongo = '';
     }
-  }
-
-  /** Comissão R$ calculada a partir do % e do preço da faixa (exibição). */
-  comissaoFaixaCalculada(precoFmt: string): string {
-    const fmt = this.calcularComissaoReaisDePreco(precoFmt);
-    return fmt ?? '—';
   }
 
   private static readonly FOTO_URL_MAX_CHARS = 520_000;
@@ -473,6 +484,10 @@ export class ServicoCadastroDrawerService {
     this.comissaoMedio = '';
     this.comissaoMl = '';
     this.comissaoLongo = '';
+    this.comissaoPctCurto = '';
+    this.comissaoPctMedio = '';
+    this.comissaoPctMl = '';
+    this.comissaoPctLongo = '';
     this.custoAdicional = '';
     this.comissaoUnidade = 'fixa';
     this.comissaoValor = '';
@@ -529,14 +544,24 @@ export class ServicoCadastroDrawerService {
     this.comissaoUnidade = this.tipo === 'Fixo' ? 'fixa' : 'pct';
     if (this.tipo === 'Fixo') {
       this.comissaoValor = normalizarMoedaExibicao(fixaRaw);
+      this.comissaoPctCurto = '';
+      this.comissaoPctMedio = '';
+      this.comissaoPctMl = '';
+      this.comissaoPctLongo = '';
     } else {
-      const pctFmt = normalizarPercentualExibicao(pct);
-      this.comissaoValor =
-        pctFmt ||
+      this.comissaoValor = '';
+      const pctGlobal = normalizarPercentualExibicao(pct);
+      this.comissaoPctCurto =
         this.derivarPctDeFaixa(this.precoCurto, this.comissaoCurto) ||
+        pctGlobal;
+      this.comissaoPctMedio =
         this.derivarPctDeFaixa(this.precoMedio, this.comissaoMedio) ||
-        this.derivarPctDeFaixa(this.precoMl, this.comissaoMl) ||
-        this.derivarPctDeFaixa(this.precoLongo, this.comissaoLongo);
+        pctGlobal;
+      this.comissaoPctMl =
+        this.derivarPctDeFaixa(this.precoMl, this.comissaoMl) || pctGlobal;
+      this.comissaoPctLongo =
+        this.derivarPctDeFaixa(this.precoLongo, this.comissaoLongo) ||
+        pctGlobal;
     }
     const dur = Number(item['duracao_minutos'] ?? 30);
     this.duracaoMinutos = Number.isFinite(dur) && dur > 0 ? dur : 30;
@@ -560,20 +585,11 @@ export class ServicoCadastroDrawerService {
         this.comissaoValor = moedaAPartirDosDigitos(this.comissaoValorUi);
       }
     }
-    if (
-      this.tipo === 'Tamanho' &&
-      this.comissaoValorUi.trim() &&
-      valorDigitosVazio(this.comissaoValor)
-    ) {
-      this.comissaoValor = percentualAPartirDosDigitos(this.comissaoValorUi);
-    }
 
-    const comissaoPct =
-      this.tipo === 'Tamanho'
-        ? percentualParaPayload(this.comissaoValor)
-        : null;
     const comissaoFixa =
       this.tipo === 'Fixo' ? moedaParaPayload(this.comissaoValor) : null;
+    const comissaoPct =
+      this.tipo === 'Tamanho' ? this.comissaoPctComumParaPayload() : null;
 
     const base: ServicoWritePayload = {
       nome,
@@ -616,11 +632,20 @@ export class ServicoCadastroDrawerService {
       preco_medio: moedaParaPayload(this.precoMedio),
       preco_medio_longo: moedaParaPayload(this.precoMl),
       preco_longo: moedaParaPayload(this.precoLongo),
-      // Comissão R$ por tamanho = preço × % (colunas legadas curto/medio/m_l/longo).
-      curto: this.calcularComissaoReaisDePreco(this.precoCurto),
-      medio: this.calcularComissaoReaisDePreco(this.precoMedio),
-      m_l: this.calcularComissaoReaisDePreco(this.precoMl),
-      longo: this.calcularComissaoReaisDePreco(this.precoLongo),
+      // Comissão R$ por tamanho = preço × % da faixa (colunas curto/medio/m_l/longo).
+      curto: this.calcularComissaoReaisDePreco(
+        this.precoCurto,
+        this.comissaoPctCurto,
+      ),
+      medio: this.calcularComissaoReaisDePreco(
+        this.precoMedio,
+        this.comissaoPctMedio,
+      ),
+      m_l: this.calcularComissaoReaisDePreco(this.precoMl, this.comissaoPctMl),
+      longo: this.calcularComissaoReaisDePreco(
+        this.precoLongo,
+        this.comissaoPctLongo,
+      ),
       duracao_curto: this.duracaoCurto,
       duracao_medio: this.duracaoMedio,
       duracao_m_l: this.duracaoMl,
@@ -628,10 +653,29 @@ export class ServicoCadastroDrawerService {
     };
   }
 
+  /**
+   * Se as 4 % forem iguais e preenchidas, grava em `comissao_pct` (lista/legado).
+   * Caso contrário null — a fonte por faixa fica em curto/medio/m_l/longo (R$).
+   */
+  private comissaoPctComumParaPayload(): string | null {
+    const payloads = [
+      percentualParaPayload(this.comissaoPctCurto),
+      percentualParaPayload(this.comissaoPctMedio),
+      percentualParaPayload(this.comissaoPctMl),
+      percentualParaPayload(this.comissaoPctLongo),
+    ].filter((v): v is string => !!v);
+    if (payloads.length === 0) return null;
+    const first = payloads[0];
+    return payloads.every((p) => p === first) ? first : null;
+  }
+
   /** `preço × comissão%` → texto BRL para API (null se sem dados). */
-  private calcularComissaoReaisDePreco(precoFmt: string): string | null {
+  private calcularComissaoReaisDePreco(
+    precoFmt: string,
+    pctFmt: string,
+  ): string | null {
     const preco = valorMonetarioParaNumero(precoFmt);
-    const pctStr = percentualParaPayload(this.comissaoValor);
+    const pctStr = percentualParaPayload(pctFmt);
     if (preco == null || preco <= 0 || !pctStr) return null;
     const pct = parseInt(pctStr.replace(/\D/g, ''), 10);
     if (!Number.isFinite(pct) || pct <= 0) return null;

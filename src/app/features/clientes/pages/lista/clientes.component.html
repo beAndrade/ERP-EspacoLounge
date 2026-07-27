@@ -298,12 +298,58 @@
             <table class="list-table clientes-table">
               <colgroup>
                 <col class="clientes-table__col-check" />
-                <col class="clientes-table__col-nome" />
-                <col class="clientes-table__col-email" />
-                <col class="clientes-table__col-celular" />
-                <col class="clientes-table__col-nascimento" />
-                <col class="clientes-table__col-creditos" />
-                <col class="clientes-table__col-cpf" />
+                <col
+                  class="clientes-table__col-nome"
+                  [style.width]="larguraColunaFlex('nome')"
+                />
+                @if (colunaVisivel('email')) {
+                  <col
+                    class="clientes-table__col-email"
+                    [style.width]="larguraColunaFlex('email')"
+                  />
+                }
+                @if (colunaVisivel('celular')) {
+                  <col
+                    class="clientes-table__col-celular"
+                    [style.width]="larguraColunaFlex('celular')"
+                  />
+                }
+                @if (colunaVisivel('nascimento')) {
+                  <col
+                    class="clientes-table__col-nascimento"
+                    [style.width]="larguraColunaFlex('nascimento')"
+                  />
+                }
+                @if (colunaVisivel('creditos')) {
+                  <col
+                    class="clientes-table__col-creditos"
+                    [style.width]="larguraColunaFlex('creditos')"
+                  />
+                }
+                @if (colunaVisivel('cashback')) {
+                  <col
+                    class="clientes-table__col-cashback"
+                    [style.width]="larguraColunaFlex('cashback')"
+                  />
+                }
+                @if (colunaVisivel('cpf')) {
+                  <col
+                    class="clientes-table__col-cpf"
+                    [style.width]="larguraColunaFlex('cpf')"
+                  />
+                }
+                @if (colunaVisivel('rg')) {
+                  <col
+                    class="clientes-table__col-rg"
+                    [style.width]="larguraColunaFlex('rg')"
+                  />
+                }
+                @if (colunaVisivel('cidade')) {
+                  <col
+                    class="clientes-table__col-cidade"
+                    [style.width]="larguraColunaFlex('cidade')"
+                  />
+                }
                 <col class="clientes-table__col-acoes" />
               </colgroup>
               <thead>
@@ -356,26 +402,118 @@
                       </span>
                     </button>
                   </th>
-                  <th scope="col">E-mail</th>
-                  <th scope="col">Celular</th>
-                  <th scope="col">Nascimento</th>
-                  <th scope="col">Créditos</th>
-                  <th scope="col">CPF</th>
+                  @if (colunaVisivel('email')) {
+                    <th scope="col">E-mail</th>
+                  }
+                  @if (colunaVisivel('celular')) {
+                    <th scope="col">Celular</th>
+                  }
+                  @if (colunaVisivel('nascimento')) {
+                    <th scope="col">Nascimento</th>
+                  }
+                  @if (colunaVisivel('creditos')) {
+                    <th class="col-creditos" scope="col">Créditos</th>
+                  }
+                  @if (colunaVisivel('cashback')) {
+                    <th class="col-cashback" scope="col">Cashback</th>
+                  }
+                  @if (colunaVisivel('cpf')) {
+                    <th scope="col">CPF</th>
+                  }
+                  @if (colunaVisivel('rg')) {
+                    <th scope="col">RG</th>
+                  }
+                  @if (colunaVisivel('cidade')) {
+                    <th scope="col">Cidade</th>
+                  }
                   <th class="col-acoes" scope="col">
-                    <span class="sr-only">Ações</span>
+                    <span class="sr-only">Configurações da coluna</span>
+                    <div class="clientes-th-acoes-wrap">
+                      <app-ui-tip-trigger
+                        tip="Configurações da coluna"
+                        align="end"
+                      >
+                        <button
+                          type="button"
+                          class="clientes-th-acoes-icon-wrap"
+                          [class.clientes-th-acoes-icon-wrap--open]="colunasMenuAberto"
+                          (click)="toggleColunasMenu($event)"
+                          [attr.aria-expanded]="colunasMenuAberto"
+                          aria-haspopup="true"
+                          aria-label="Configurações da coluna"
+                        >
+                          <svg
+                            class="clientes-th-acoes-icon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+                            />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </button>
+                      </app-ui-tip-trigger>
+                      @if (colunasMenuMontado) {
+                        <ul
+                          class="clientes-colunas-menu"
+                          [class.clientes-colunas-menu--open]="colunasMenuAberto"
+                          role="menu"
+                          aria-label="Colunas visíveis"
+                          (click)="$event.stopPropagation()"
+                        >
+                          <li>
+                            <div class="clientes-colunas-menu__head">
+                              <span class="clientes-colunas-menu__title">Colunas</span>
+                              <button
+                                type="button"
+                                class="clientes-colunas-menu__padrao"
+                                (click)="restaurarColunasPadrao()"
+                              >
+                                Padrão
+                              </button>
+                            </div>
+                          </li>
+                          <li class="clientes-colunas-menu__items-wrap">
+                            <ul class="clientes-colunas-menu__items">
+                              @for (col of colunasOpcoes; track col.id) {
+                                <li role="menuitem">
+                                  <label class="clientes-filtros-check clientes-colunas-menu__check">
+                                    <input
+                                      type="checkbox"
+                                      [checked]="colunaVisivel(col.id)"
+                                      (change)="toggleColuna(col.id, $event)"
+                                    />
+                                    {{ col.label }}
+                                  </label>
+                                </li>
+                              }
+                            </ul>
+                          </li>
+                        </ul>
+                      }
+                    </div>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 @if (carregando) {
                   <tr>
-                    <td class="table-body__busy" colspan="8">
+                    <td class="table-body__busy" [attr.colspan]="totalColunasTabela()">
                       <span class="table-body__busy-text">Carregando…</span>
                     </td>
                   </tr>
                 } @else if (totalFiltrado() === 0) {
                   <tr>
-                    <td class="table-body__empty" colspan="8">
+                    <td class="table-body__empty" [attr.colspan]="totalColunasTabela()">
                       <div class="table-empty" role="status">
                         <span class="table-empty__icon-wrap" aria-hidden="true">
                           <svg
@@ -426,16 +564,36 @@
                           </button>
                         </div>
                       </td>
-                      <td>{{ c.email?.trim() ? c.email : '—' }}</td>
-                      <td>{{ exibirCelular(c) }}</td>
-                      <td>{{ exibirNascimento(c) }}</td>
-                      <td
-                        class="col-creditos"
-                        [class.col-creditos--positivo]="creditoPositivo(c)"
-                      >
-                        {{ (c.creditoSaldo ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' }}
-                      </td>
-                      <td class="col-cpf">{{ exibirCpf(c) }}</td>
+                      @if (colunaVisivel('email')) {
+                        <td>{{ c.email?.trim() ? c.email : '—' }}</td>
+                      }
+                      @if (colunaVisivel('celular')) {
+                        <td>{{ exibirCelular(c) }}</td>
+                      }
+                      @if (colunaVisivel('nascimento')) {
+                        <td>{{ exibirNascimento(c) }}</td>
+                      }
+                      @if (colunaVisivel('creditos')) {
+                        <td
+                          class="col-creditos"
+                          [class.col-creditos--positivo]="creditoPositivo(c)"
+                          [class.col-creditos--negativo]="creditoNegativo(c)"
+                        >
+                          {{ (c.creditoSaldo ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                        </td>
+                      }
+                      @if (colunaVisivel('cashback')) {
+                        <td class="col-cashback">{{ exibirCashback(c) }}</td>
+                      }
+                      @if (colunaVisivel('cpf')) {
+                        <td class="col-cpf">{{ exibirCpf(c) }}</td>
+                      }
+                      @if (colunaVisivel('rg')) {
+                        <td>{{ exibirRg(c) }}</td>
+                      }
+                      @if (colunaVisivel('cidade')) {
+                        <td>{{ exibirCidade(c) }}</td>
+                      }
                       <td class="col-acoes">
                         <div class="list-row-acoes">
                           <button

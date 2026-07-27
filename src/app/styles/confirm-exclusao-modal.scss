@@ -121,3 +121,21 @@
     background: #fff;
   }
 }
+
+.comandas-modal__erro {
+  margin: 8px 0 0;
+  width: 100%;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-error, #ef4444);
+  text-align: center;
+}
+
+/** Empilhar acima de drawers (comanda, cliente, hub). */
+.comandas-modal-overlay--elevated {
+  z-index: 5000;
+}
+
+.comandas-modal--elevated {
+  z-index: 5001;
+}

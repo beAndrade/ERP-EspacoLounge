@@ -1276,12 +1276,6 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.modalConfirmExcluirAberto = true;
   }
 
-  tituloModalExcluir(): string {
-    return this.modoExclusaoConfirmar === 'somente_comanda'
-      ? 'Excluir somente comanda?'
-      : 'Excluir comanda e agendamentos?';
-  }
-
   textoModalExcluir(): string {
     return this.modoExclusaoConfirmar === 'somente_comanda'
       ? 'A comanda e os pagamentos serão removidos. O agendamento permanece na agenda para criar uma nova comanda.'

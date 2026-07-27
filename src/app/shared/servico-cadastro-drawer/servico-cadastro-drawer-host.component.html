@@ -150,6 +150,7 @@
                       [options]="d.opcoesCategoriaSelect()"
                       placeholder="Selecione…"
                       [showFilter]="false"
+                      [showSearchIconOnOpen]="true"
                       [showCriarCliente]="true"
                       criarButtonLabel="Clique para criar"
                       triggerCursor="text"
@@ -170,7 +171,6 @@
                       [options]="d.opcoesTipoSelect"
                       placeholder="Selecione…"
                       [showFilter]="false"
-                      triggerCursor="text"
                       aria-label="Tipo de preço"
                       (ngModelChange)="d.onTipoChange($event)"
                     />
@@ -184,7 +184,6 @@
                       [options]="d.opcoesDuracaoSelect(d.duracaoMinutos)"
                       [useNumericOutput]="true"
                       [showFilter]="false"
-                      triggerCursor="text"
                       placeholder="Selecione…"
                       aria-label="Duração"
                     />
@@ -284,11 +283,8 @@
                                 />
                               </div>
                             </td>
-                            <td rowspan="4" class="servico-cadastro-form__tamanho-td-comissao">
-                              <div
-                                class="servico-cadastro-form__valor-input"
-                                title="Comissão % (igual para todos os tamanhos)"
-                              >
+                            <td>
+                              <div class="servico-cadastro-form__valor-input">
                                 <span
                                   class="servico-cadastro-form__valor-input__prefix"
                                   aria-hidden="true"
@@ -299,13 +295,13 @@
                                   inputmode="numeric"
                                   autocomplete="off"
                                   class="servico-cadastro-form__valor-input__field"
-                                  name="comissaoValorPct"
+                                  name="comissaoPctCurto"
                                   placeholder="0"
-                                  aria-label="Comissão percentual"
+                                  aria-label="Comissão % Curto"
                                   appCursorFimValor
-                                  [ngModel]="d.comissaoValorUi"
+                                  [ngModel]="d.percentualSemSufixo(d.comissaoPctCurto)"
                                   [ngModelOptions]="{ standalone: true }"
-                                  (input)="d.onComissaoValorInput($event)"
+                                  (input)="d.onComissaoPctFaixaInput('comissaoPctCurto', $event)"
                                 />
                               </div>
                             </td>
@@ -347,6 +343,28 @@
                               </div>
                             </td>
                             <td>
+                              <div class="servico-cadastro-form__valor-input">
+                                <span
+                                  class="servico-cadastro-form__valor-input__prefix"
+                                  aria-hidden="true"
+                                  >%</span
+                                >
+                                <input
+                                  type="text"
+                                  inputmode="numeric"
+                                  autocomplete="off"
+                                  class="servico-cadastro-form__valor-input__field"
+                                  name="comissaoPctMedio"
+                                  placeholder="0"
+                                  aria-label="Comissão % Médio"
+                                  appCursorFimValor
+                                  [ngModel]="d.percentualSemSufixo(d.comissaoPctMedio)"
+                                  [ngModelOptions]="{ standalone: true }"
+                                  (input)="d.onComissaoPctFaixaInput('comissaoPctMedio', $event)"
+                                />
+                              </div>
+                            </td>
+                            <td>
                               <app-saas-select
                                 [(ngModel)]="d.duracaoMedio"
                                 name="duracaoMedio"
@@ -384,6 +402,28 @@
                               </div>
                             </td>
                             <td>
+                              <div class="servico-cadastro-form__valor-input">
+                                <span
+                                  class="servico-cadastro-form__valor-input__prefix"
+                                  aria-hidden="true"
+                                  >%</span
+                                >
+                                <input
+                                  type="text"
+                                  inputmode="numeric"
+                                  autocomplete="off"
+                                  class="servico-cadastro-form__valor-input__field"
+                                  name="comissaoPctMl"
+                                  placeholder="0"
+                                  aria-label="Comissão % Médio/Longo"
+                                  appCursorFimValor
+                                  [ngModel]="d.percentualSemSufixo(d.comissaoPctMl)"
+                                  [ngModelOptions]="{ standalone: true }"
+                                  (input)="d.onComissaoPctFaixaInput('comissaoPctMl', $event)"
+                                />
+                              </div>
+                            </td>
+                            <td>
                               <app-saas-select
                                 [(ngModel)]="d.duracaoMl"
                                 name="duracaoMl"
@@ -417,6 +457,28 @@
                                   [ngModel]="d.moedaSemPrefixo(d.precoLongo)"
                                   [ngModelOptions]="{ standalone: true }"
                                   (input)="d.onMoedaCompostaInput('precoLongo', $event)"
+                                />
+                              </div>
+                            </td>
+                            <td>
+                              <div class="servico-cadastro-form__valor-input">
+                                <span
+                                  class="servico-cadastro-form__valor-input__prefix"
+                                  aria-hidden="true"
+                                  >%</span
+                                >
+                                <input
+                                  type="text"
+                                  inputmode="numeric"
+                                  autocomplete="off"
+                                  class="servico-cadastro-form__valor-input__field"
+                                  name="comissaoPctLongo"
+                                  placeholder="0"
+                                  aria-label="Comissão % Longo"
+                                  appCursorFimValor
+                                  [ngModel]="d.percentualSemSufixo(d.comissaoPctLongo)"
+                                  [ngModelOptions]="{ standalone: true }"
+                                  (input)="d.onComissaoPctFaixaInput('comissaoPctLongo', $event)"
                                 />
                               </div>
                             </td>
