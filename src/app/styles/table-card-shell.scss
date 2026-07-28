@@ -9,13 +9,12 @@ $list-table-card-radius: 12px 12px 0 0;
 
 @mixin list-table-card-surface {
   box-shadow: $list-table-card-shadow;
-  flex: auto;
-  /* Em flex-row o `0` deixa o card encolher; a largura útil vem do grow. */
-  width: 0;
+  flex: 0 0 auto;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
   border: $list-table-card-border;
-  align-self: start;
+  align-self: stretch;
   transition: box-shadow 0.1s;
   border-radius: $list-table-card-radius;
   background: var(--color-card, #ffffff);
@@ -36,10 +35,20 @@ $list-table-card-radius: 12px 12px 0 0;
   @include list-table-card-surface;
 }
 
+/** Em layouts flex-row pontuais, o card pode encolher via modificador. */
+.list-table-card--flex-shrink {
+  flex: auto;
+  width: 0;
+  align-self: start;
+}
+
 /** Em coluna (listagens), preencher a largura do main sem alongar além do conteúdo. */
 .list-layout__main > .list-table-card,
 .list-page > .list-table-card,
-.list-layout__main .list-table-card {
+.list-layout__main .list-table-card,
+.list-page .list-table-card,
+.fin-comissoes__table-panel .list-table-card,
+.fin-comissoes__table-card {
   width: 100%;
   align-self: stretch;
   flex: 0 0 auto;

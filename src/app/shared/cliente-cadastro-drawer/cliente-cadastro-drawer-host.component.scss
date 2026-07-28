@@ -1,4 +1,5 @@
 @use '../../styles/breakpoints' as bp;
+@use '../../styles/drawer-responsive' as dr;
 
 /**
  * Empilhamento global: ficha do cliente acima de comanda/faturar das páginas
@@ -55,17 +56,20 @@ app-produto-cadastro-drawer-host {
   .cliente-credito-empilhada.app-drawer,
   .cliente-faturar-empilhada.app-drawer,
   .cliente-ficha-empilhada.app-drawer {
-    --drawer-inset-x: 15px;
-    --drawer-pad-x: var(--drawer-inset-x);
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    --drawer-preferred-w: 1650px;
     position: fixed;
     top: 0;
-    left: 0;
     right: 0;
+    left: max(0px, calc(100vw - var(--drawer-preferred-w)));
     bottom: 0;
     z-index: var(--z-cliente-global-drawer);
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    width: auto;
+    max-width: 100vw;
     background: #ffffff;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -89,16 +93,17 @@ app-produto-cadastro-drawer-host {
   .cliente-edit-ag-empilhada.app-drawer {
     --drawer-inset-x: 0;
     --drawer-pad-x: 0;
+    --drawer-preferred-w: 1650px;
     position: fixed;
     top: 0;
     bottom: 0;
-    left: auto;
     right: 0;
+    left: max(0px, calc(100vw - var(--drawer-preferred-w)));
     z-index: var(--z-cliente-stack-edit-drawer);
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    width: min(1400px, 100vw);
+    width: auto;
     max-width: 100vw;
     padding: 0;
     background: #ffffff;
@@ -171,6 +176,7 @@ app-produto-cadastro-drawer-host {
       --cliente-form-col-gap: 16px;
       --cliente-field-input-max: 421.78px;
       --cliente-accent: var(--color-primary);
+      @include dr.drawer-as-container(cliente-ficha);
       left: auto;
       right: 0;
       width: min(var(--cliente-drawer-shell-w), 100vw);
@@ -193,6 +199,8 @@ app-produto-cadastro-drawer-host {
     }
   }
 }
+
+@include dr.drawer-responsive-chrome('.cliente-drawer.app-drawer');
 
 .cliente-shell {
   flex: 1 1 auto;
@@ -2042,9 +2050,10 @@ app-servico-cadastro-drawer-host {
 
   .cliente-credito-empilhada.app-drawer {
     z-index: var(--z-cliente-stack-credito-drawer);
-    left: auto;
+    --drawer-preferred-w: 480px;
+    left: max(0px, calc(100vw - var(--drawer-preferred-w)));
     right: 0;
-    width: min(480px, 100vw);
+    width: auto;
     max-width: 100vw;
     --drawer-inset-x: 0;
     --drawer-pad-x: 0;
@@ -2060,9 +2069,10 @@ app-servico-cadastro-drawer-host {
 
   .cliente-faturar-empilhada.app-drawer {
     z-index: var(--z-cliente-stack-faturar-drawer);
-    left: auto;
+    --drawer-preferred-w: 480px;
+    left: max(0px, calc(100vw - var(--drawer-preferred-w)));
     right: 0;
-    width: min(480px, 100vw);
+    width: auto;
     max-width: 100vw;
     --drawer-inset-x: 0;
     --drawer-pad-x: 0;
@@ -2237,9 +2247,10 @@ app-profissional-cadastro-drawer-host:has(
 
 .cliente-edit-ag-empilhada.app-drawer {
   z-index: var(--z-cliente-stack-edit-drawer);
-  left: auto;
+  --drawer-preferred-w: 1650px;
   right: 0;
-  width: min(1400px, 100vw);
+  left: max(0px, calc(100vw - var(--drawer-preferred-w)));
+  width: auto;
   max-width: 100vw;
   padding: 0;
   overflow: hidden;

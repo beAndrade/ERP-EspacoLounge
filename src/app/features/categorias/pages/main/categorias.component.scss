@@ -1,5 +1,6 @@
 @use '../../../../styles/list-page-shell';
 @use '../../../../styles/drawer-stack';
+@use '../../../../styles/breakpoints' as bp;
 
 .categorias-page {
   padding: 0;
@@ -430,8 +431,6 @@
   --drawer-pad-x: 0;
   position: fixed;
   top: 0;
-  left: auto;
-  right: 0;
   bottom: 0;
   z-index: 1100;
   display: flex;
@@ -443,6 +442,7 @@
   transform: translateX(100%);
   transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
+  @include bp.drawer-shell-anchor;
 
   &.app-drawer--open {
     transform: translateX(0);
@@ -460,9 +460,6 @@
 }
 
 .cliente-drawer.cliente-drawer--associacoes.app-drawer {
-  width: min(550px, 100vw);
-  max-width: 100vw;
-
   .categorias-associacoes-body.cliente-body {
     display: block;
     width: 100%;
@@ -527,8 +524,6 @@
 
 .cliente-drawer.cliente-drawer--categoria-cadastro.app-drawer {
   --cliente-nav-item-w: 177px;
-  width: min(600px, 100vw);
-  max-width: 100vw;
 
   .cliente-head {
     padding: 30px 50px 20px 30px;

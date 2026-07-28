@@ -1,0 +1,114 @@
+@use 'breakpoints' as bp;
+
+/// Drawer lateral encostado à direita com shell contínuo (≤1650 = 100vw).
+/// `$max-width` legado: a âncora usa sempre `$drawer-shell-max` para não “pular”.
+@mixin drawer-flush-right($max-width) {
+  @include bp.drawer-shell-anchor(bp.$drawer-shell-max);
+}
+
+/// Mantido por compatibilidade; NÃO usa container-type (quebra flex/altura
+/// em vários drawers). Preferir media queries no chrome.
+@mixin drawer-as-container($name) {
+  /* no-op: container-type removido por regressão de layout */
+}
+
+/// Chrome responsivo — escopo opcional via $scope (seletor do drawer).
+/// Sem $scope, NÃO emite regras (evita media query global quebrando headers).
+/// Ex.: @include drawer-responsive-chrome('.cliente-drawer--produto')
+@mixin drawer-responsive-chrome($scope: null) {
+  @if $scope == null or $scope == '' {
+    @warn 'drawer-responsive-chrome: passe o seletor do drawer (ex.: ".cliente-drawer--produto").';
+  } @else {
+    @include bp.bp-down(drawer-tablet) {
+      #{$scope} .cliente-head {
+        min-height: 72px;
+        padding: 20px 40px 16px 20px;
+      }
+
+      #{$scope} .cliente-head__title {
+        font-size: 18px;
+      }
+
+      #{$scope} .cliente-drawer-footer {
+        padding: 10px 16px 14px;
+        gap: 8px;
+      }
+    }
+
+    @include bp.bp-down(drawer-form) {
+      #{$scope} .cliente-head {
+        min-height: 64px;
+        padding: 16px 36px 12px 16px;
+      }
+
+      #{$scope} .cliente-head__title {
+        font-size: 17px;
+      }
+
+      #{$scope} .cliente-drawer-footer {
+        padding: 10px 12px 12px;
+      }
+
+      #{$scope} .cliente-footer-btn {
+        min-width: 0;
+        height: 36px;
+        min-height: 36px;
+        padding: 0 12px;
+      }
+    }
+
+    @include bp.bp-down(comanda-col-sm) {
+      #{$scope} .cliente-head {
+        min-height: 56px;
+        padding: 12px 32px 10px 12px;
+      }
+
+      #{$scope} .cliente-head__title {
+        font-size: 16px;
+      }
+
+      #{$scope} .cliente-drawer-footer {
+        flex-wrap: wrap;
+        padding: 8px 10px 10px;
+      }
+    }
+  }
+}
+
+/// Atalho: flush (sem container-type).
+@mixin drawer-responsive-shell($max-width, $name: null) {
+  @include drawer-flush-right($max-width);
+}
+
+/// Listagens: só paddings/título — sem forçar width 100% nas actions
+/// (quebrava a toolbar em várias páginas).
+@mixin list-page-responsive-pad {
+  @include bp.bp-down(drawer-tablet) {
+    .list-page {
+      padding-bottom: 16px;
+    }
+
+    .list-head__title {
+      font-size: 20px;
+    }
+
+    .list-head__title-row {
+      gap: 0.65rem;
+      min-height: 44px;
+    }
+  }
+
+  @include bp.bp-down(shell-mobile) {
+    .list-page {
+      padding-bottom: 12px;
+    }
+
+    .list-head__title {
+      font-size: 18px;
+    }
+
+    .list-head__title-row {
+      gap: 0.5rem;
+    }
+  }
+}

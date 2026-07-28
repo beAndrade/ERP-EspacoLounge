@@ -400,6 +400,26 @@ export interface ServicoProdutoConsumidoItem {
   quantidade: string;
 }
 
+/** Linha do ledger `estoque_movimentos`. */
+export interface EstoqueMovimentoItem {
+  id: number;
+  produto_id: number;
+  id_atendimento: string | null;
+  tipo: string;
+  origem: string;
+  tipo_exibicao: 'Entrada' | 'Saída' | string;
+  quantidade: string;
+  saldo_anterior: string;
+  saldo_apos: string | null;
+  created_at: string;
+  descricao: string;
+  /** Lote/validade quando existir (pode vir vazio). */
+  lote?: string | null;
+  /** Nome de quem fez o movimento. */
+  profissional?: string | null;
+  profissional_id?: number | null;
+}
+
 /** Referência da aba Cabelos (MVP: ajuda visual; valor vem manual). */
 export interface CabeloCatalogoItem {
   cor: string;

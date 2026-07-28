@@ -411,12 +411,29 @@ export class SaasSelectComponent
     if (spaceBelow < Math.min(estPanelH, 200) && r.top > estPanelH + gap) {
       topPx = Math.max(gap, r.top - estPanelH - gap);
     }
-    const leftPx = Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8));
+    /** Piso só quando o trigger encolhe abaixo do padrão (CSS var resolvida). */
+    const minRaw = getComputedStyle(this.host.nativeElement)
+      .getPropertyValue('--saas-select-panel-min-width')
+      .trim();
+    let widthPx = r.width;
+    if (minRaw && minRaw !== '100%') {
+      const parsed = Number.parseFloat(minRaw);
+      if (Number.isFinite(parsed) && parsed > widthPx) {
+        widthPx = parsed;
+      }
+    }
+    widthPx = Math.min(widthPx, window.innerWidth - 16);
+    /** Alinha à esquerda do input; se não couber, desloca para caber na VW. */
+    let leftPx = r.left;
+    if (leftPx + widthPx > window.innerWidth - 8) {
+      leftPx = Math.max(8, window.innerWidth - widthPx - 8);
+    }
+    leftPx = Math.max(8, leftPx);
     this.fixedPanelStyle = {
       position: 'fixed',
       top: `${topPx}px`,
       left: `${leftPx}px`,
-      width: `${r.width}px`,
+      width: `${widthPx}px`,
       'z-index': '10060',
     };
   }

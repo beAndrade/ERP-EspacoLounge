@@ -1,4 +1,5 @@
 @use '../../styles/breakpoints' as bp;
+@use '../../styles/drawer-responsive' as dr;
 
 @use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
 
@@ -12,10 +13,8 @@ app-profissional-cadastro-drawer-host {
 /* Drawer profissional — mesma base do cliente, dimensões pedidas. */
 .cliente-drawer.cliente-drawer--profissional.app-drawer {
   --cliente-drawer-shell-w: 1200px;
-  left: auto;
-  right: 0;
-  width: min(1200px, 100vw);
-  max-width: 100vw;
+  @include dr.drawer-as-container(profissional-cadastro);
+  @include bp.drawer-shell-anchor;
 
   .cliente-head {
     flex: 0 0 80px;
@@ -141,9 +140,7 @@ app-profissional-cadastro-drawer-host {
   top: 0;
   right: 0;
   bottom: 0;
-  left: auto;
-  width: min(960px, 100vw);
-  max-width: 100vw;
+  @include bp.drawer-shell-anchor;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -163,7 +160,7 @@ app-profissional-cadastro-drawer-host {
 }
 
 .cliente-drawer.cliente-drawer--profissional.app-drawer {
-  @include bp.drawer-anchor-fixed-width(bp.$cliente-drawer-max-width);
+  @include bp.drawer-shell-anchor;
 }
 
 /* Nav horizontal + menu overflow (mobile). */
@@ -463,3 +460,6 @@ app-profissional-cadastro-drawer-host {
     }
   }
 }
+
+/* Head fixo 80px — não aplicar chrome genérico. */
+

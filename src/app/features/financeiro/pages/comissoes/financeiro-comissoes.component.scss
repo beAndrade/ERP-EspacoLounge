@@ -1129,15 +1129,16 @@
 }
 
 .fin-comissoes-drawer.app-drawer {
+  --drawer-preferred-w: 1650px;
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  left: auto;
+  left: max(0px, calc(100vw - var(--drawer-preferred-w)));
   z-index: 1105;
   display: flex;
   flex-direction: column;
-  width: 100vw;
+  width: auto;
   max-width: 100vw;
   height: 100vh;
   min-height: 0;
@@ -1170,7 +1171,7 @@
   }
 
   &.app-drawer--comanda {
-    --drawer-inset-x: 15px;
+    --drawer-inset-x: 0;
     z-index: 1103;
     box-sizing: border-box;
     padding: 0 var(--drawer-inset-x);
@@ -1179,18 +1180,13 @@
 
 @media (min-width: 1024px) {
   .fin-comissoes-drawer.app-drawer.app-drawer--pagar {
-    width: min(480px, 100vw);
-    left: auto;
+    --drawer-preferred-w: 480px;
+    width: auto;
+    left: max(0px, calc(100vw - var(--drawer-preferred-w)));
   }
 }
 
-@media (min-width: 1648px) {
-  .fin-comissoes-drawer.app-drawer.app-drawer--comanda {
-    left: max(320px, calc(100vw - 1400px));
-    width: auto;
-    right: 0;
-  }
-}
+/* Shell contínuo 1650px em `.fin-comissoes-drawer` — sem media query de pulo. */
 
 .fin-comissoes-col--placeholder {
   display: none;

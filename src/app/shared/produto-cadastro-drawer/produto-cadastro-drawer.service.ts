@@ -16,6 +16,11 @@ import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-draw
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
 import { MarcaCadastroDrawerService } from '../marca-cadastro-drawer/marca-cadastro-drawer.service';
 import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
+import {
+  codigoUnidadeAPartirDoLabelSelect,
+  labelUnidadeProduto,
+  PRODUTO_UNIDADES,
+} from '../../core/utils/produto-unidade';
 
 export const PRODUTO_ABAS = [
   'Cadastro',
@@ -29,6 +34,7 @@ export const PRODUTO_ABAS = [
 export type ProdutoCadastroAba = (typeof PRODUTO_ABAS)[number];
 
 const ABAS_DESABILITADAS: ReadonlySet<ProdutoCadastroAba> = new Set([
+  'Cashback',
   'Retorno',
   'Serviços vinculados',
   'Configurar nota fiscal',
@@ -66,7 +72,7 @@ export class ProdutoCadastroDrawerService {
   marca = '';
   precoVenda = '';
   custoCompra = '';
-  registroSaida: 'em unidade' | 'em ml' | 'em gramas' = 'em unidade';
+  registroSaida = 'em unidade';
   unidadeEquivalente = '1';
   estoqueMinimo = '0';
   estoqueInicial = '0';
@@ -81,11 +87,22 @@ export class ProdutoCadastroDrawerService {
   categoriasOpcoes: string[] = [];
   marcasOpcoes: string[] = [];
 
-  readonly opcoesRegistroSaidaSelect: SaasSelectOption[] = [
-    { value: 'em unidade', label: 'em unidade' },
-    { value: 'em ml', label: 'em ml' },
-    { value: 'em gramas', label: 'em gramas' },
-  ];
+  readonly opcoesRegistroSaidaSelect: SaasSelectOption[] = PRODUTO_UNIDADES.map(
+    (u) => ({ value: u.label, label: u.label }),
+  );
+
+  /** Só “em unidade” trava o campo de equivalência. */
+  bloqueiaEquivalenteUnidade(): boolean {
+    return (
+      codigoUnidadeAPartirDoLabelSelect(this.registroSaida) === 'unidade'
+    );
+  }
+
+  onRegistroSaidaChange(): void {
+    if (this.bloqueiaEquivalenteUnidade()) {
+      this.unidadeEquivalente = '1';
+    }
+  }
 
   private callbacks: ProdutoDrawerCallbacks | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -248,7 +265,7 @@ export class ProdutoCadastroDrawerService {
     if (!el) return;
     const fmt = moedaAPartirDosDigitos(el.value);
     this[campo] = fmt;
-    el.value = fmt;
+    el.value = this.moedaSemPrefixo(fmt);
   }
 
   onComissaoInput(ev: Event): void {
@@ -256,7 +273,21 @@ export class ProdutoCadastroDrawerService {
     if (!el) return;
     const fmt = percentualAPartirDosDigitos(el.value);
     this.comissaoPadrao = fmt;
-    el.value = fmt;
+    el.value = this.percentualSemSufixo(fmt);
+  }
+
+  /** Exibição no input composto (prefixo R$ fora do campo). */
+  moedaSemPrefixo(raw: string): string {
+    const s = String(raw ?? '').trim();
+    if (!s) return '';
+    return s.replace(/^R\$\s*/i, '').trim();
+  }
+
+  /** Exibição no input composto (prefixo % fora do campo). */
+  percentualSemSufixo(raw: string): string {
+    const s = String(raw ?? '').trim();
+    if (!s) return '';
+    return s.replace(/%/g, '').trim();
   }
 
   onInteiroInput(
@@ -303,12 +334,7 @@ export class ProdutoCadastroDrawerService {
       return;
     }
 
-    const unidade =
-      this.registroSaida === 'em ml'
-        ? 'ml'
-        : this.registroSaida === 'em gramas'
-          ? 'g'
-          : 'unidade';
+    const unidade = codigoUnidadeAPartirDoLabelSelect(this.registroSaida);
 
     this.salvando = true;
     this.erro = '';
@@ -384,9 +410,8 @@ export class ProdutoCadastroDrawerService {
     this.marca = String(item.marca ?? '').trim();
     this.precoVenda = normalizarMoedaExibicao(item.preco);
     this.custoCompra = normalizarMoedaExibicao(item.custo);
-    const u = String(item.unidade ?? '').trim().toLowerCase();
-    this.registroSaida =
-      u === 'ml' ? 'em ml' : u === 'g' || u === 'gramas' ? 'em gramas' : 'em unidade';
+    const u = String(item.unidade ?? '').trim();
+    this.registroSaida = labelUnidadeProduto(u);
     const eq = String(item.unidade_equivalente ?? '1').trim();
     this.unidadeEquivalente = eq && eq !== '0' ? eq : '1';
     this.estoqueMinimo = String(item.estoque_minimo ?? '0').trim() || '0';

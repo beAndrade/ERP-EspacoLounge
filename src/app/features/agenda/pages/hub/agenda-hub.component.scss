@@ -1,6 +1,7 @@
 @use '../../../../styles/drawer-stack';
 @use '../../../../styles/list-page-shell';
 @use '../../../../styles/breakpoints' as bp;
+@use '../../../../styles/drawer-responsive' as dr;
 
 :host.agenda-hub-host {
   display: block;
@@ -1808,10 +1809,8 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
 
 /**
  * Painel lateral ancorado à direita.
- * Largura preferida = sidebar 359px + fluxo 1290px = 1649px.
- * Viewport maior: drawer fica 1649px à direita (escorrega para a esquerda ao
- * reduzir a janela). Quando a borda esquerda encosta em 0, a largura passa a
- * ser 100% da viewport e o conteúdo interno adapta-se — sem “pulo”.
+ * Shell contínuo 1650px: viewport ≤1650 → 100vw; acima → `left` cresce
+ * (afasta da esquerda) sem “pulo” de breakpoint.
  * Fechado: translateX(100%); aberto: translateX(0).
  */
 .app-drawer {
@@ -1828,7 +1827,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
    * `.form-shell--modal` 0 (eixo X) → cabeçalho modal só `padding: 20px 0` → rodapé modal
    * no drawer usa `var(--drawer-pad-x)` em `agenda-novo.component.scss`.
    */
-  --drawer-preferred-w: 1649px;
+  --drawer-preferred-w: 1650px;
   --drawer-inset-x: 0;
   --drawer-pad-x: 0;
   position: fixed;
@@ -1924,7 +1923,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   &--faturar {
     z-index: 1007;
     background: #ffffff;
-    /* Largura própria; não herda o preferred de 1649px do painel principal. */
+    /* Largura própria; não herda o preferred de 1650px do painel principal. */
     --drawer-preferred-w: 480px;
     left: max(0px, calc(100vw - var(--drawer-preferred-w)));
 
@@ -1943,6 +1942,8 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
     --drawer-preferred-w: 480px;
   }
 }
+
+/* Chrome cliente-head não se aplica ao shell da agenda. */
 
 /* Camadas extra: edição de itens acima da comanda (alinhar com /comandas). */
 .app-drawer--edit-agendamento {

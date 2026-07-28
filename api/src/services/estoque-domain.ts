@@ -1,11 +1,13 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import {
   atendimentoItens,
   atendimentosPedido,
   estoqueMovimentos,
+  profissionais,
   produtos,
   servicoProdutosConsumidos,
+  usuarios,
 } from '../db/schema';
 import { normalizeMoneyTextForDb } from '../lib/normalize-money-text';
 import { normalizePercentTextForDb } from '../lib/normalize-percent-text';
@@ -13,6 +15,7 @@ import { toNumberPt } from './finance-domain';
 
 export type EstoqueMovimentoTipo =
   | 'entrada'
+  | 'estoque_inicial'
   | 'baixa_venda'
   | 'baixa_consumo_servico'
   | 'ajuste';
@@ -40,10 +43,17 @@ function roundQty(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
+export type EstoqueMovimentoActor = {
+  usuario_id?: number | null;
+  profissional_id?: number | null;
+};
+
 type BaixaAgregada = {
   produtoId: number;
   venda: number;
   consumo: number;
+  profissionalVendaId: number | null;
+  profissionalConsumoId: number | null;
 };
 
 /**
@@ -80,6 +90,7 @@ export async function darBaixaEstoqueDoPedido(
         produtoId: atendimentoItens.produtoId,
         servicoId: atendimentoItens.servicoId,
         quantidade: atendimentoItens.quantidade,
+        profissionalId: atendimentoItens.profissionalId,
       })
       .from(atendimentoItens)
       .where(eq(atendimentoItens.idAtendimento, id));
@@ -90,6 +101,7 @@ export async function darBaixaEstoqueDoPedido(
       produtoId: number,
       campo: 'venda' | 'consumo',
       qtd: number,
+      profissionalId: number | null,
     ) => {
       const q = roundQty(Math.max(0, qtd));
       if (q <= 0) return;
@@ -97,18 +109,34 @@ export async function darBaixaEstoqueDoPedido(
         produtoId,
         venda: 0,
         consumo: 0,
+        profissionalVendaId: null,
+        profissionalConsumoId: null,
       };
       cur[campo] = roundQty(cur[campo] + q);
+      if (profissionalId != null && Number.isFinite(profissionalId) && profissionalId > 0) {
+        if (campo === 'venda' && cur.profissionalVendaId == null) {
+          cur.profissionalVendaId = profissionalId;
+        }
+        if (campo === 'consumo' && cur.profissionalConsumoId == null) {
+          cur.profissionalConsumoId = profissionalId;
+        }
+      }
       agregados.set(produtoId, cur);
     };
 
     for (const l of linhas) {
       if (l.tipo === 'produto' && l.produtoId != null) {
-        bump(l.produtoId, 'venda', Number(l.quantidade ?? 0));
+        bump(
+          l.produtoId,
+          'venda',
+          Number(l.quantidade ?? 0),
+          l.profissionalId ?? null,
+        );
       }
     }
 
     const servicoQtys = new Map<number, number>();
+    const servicoProf = new Map<number, number | null>();
     for (const l of linhas) {
       if (l.tipo !== 'servico' || l.servicoId == null) continue;
       const q = Math.max(0, Number(l.quantidade ?? 0));
@@ -117,6 +145,9 @@ export async function darBaixaEstoqueDoPedido(
         l.servicoId,
         roundQty((servicoQtys.get(l.servicoId) ?? 0) + q),
       );
+      if (!servicoProf.has(l.servicoId)) {
+        servicoProf.set(l.servicoId, l.profissionalId ?? null);
+      }
     }
 
     const servicoIds = Array.from(servicoQtys.keys());
@@ -136,7 +167,12 @@ export async function darBaixaEstoqueDoPedido(
         if (!Number.isFinite(porServico) || porServico <= 0 || vezes <= 0) {
           continue;
         }
-        bump(r.produtoId, 'consumo', porServico * vezes);
+        bump(
+          r.produtoId,
+          'consumo',
+          porServico * vezes,
+          servicoProf.get(r.servicoId) ?? null,
+        );
       }
     }
 
@@ -178,6 +214,7 @@ export async function darBaixaEstoqueDoPedido(
           tipo: 'baixa_venda',
           quantidade: String(agg.venda),
           saldoApos: saldoStr,
+          profissionalId: agg.profissionalVendaId,
         });
       }
       if (agg.consumo > 0) {
@@ -189,6 +226,7 @@ export async function darBaixaEstoqueDoPedido(
           tipo: 'baixa_consumo_servico',
           quantidade: String(agg.consumo),
           saldoApos: saldoStr,
+          profissionalId: agg.profissionalConsumoId,
         });
       }
 
@@ -215,6 +253,178 @@ export async function darBaixaEstoqueProdutosDoPedido(
   await darBaixaEstoqueDoPedido(tx, idAtendimento);
 }
 
+export type EstoqueMovimentoApi = {
+  id: number;
+  produto_id: number;
+  id_atendimento: string | null;
+  tipo: EstoqueMovimentoTipo | string;
+  origem: string;
+  tipo_exibicao: 'Entrada' | 'Saída';
+  quantidade: string;
+  saldo_anterior: string;
+  saldo_apos: string | null;
+  created_at: string;
+  descricao: string;
+  /** Reservado para lotes/validades (ainda sem coluna na BD). */
+  lote: string | null;
+  /** Nome de quem fez o movimento (profissional ou usuário). */
+  profissional: string | null;
+  profissional_id: number | null;
+};
+
+function rotuloOrigem(tipo: string): string {
+  switch (tipo) {
+    case 'entrada':
+    case 'estoque_inicial':
+      return 'Ajuste manual';
+    case 'baixa_venda':
+      return 'Venda na comanda';
+    case 'baixa_consumo_servico':
+      return 'Consumo em serviço';
+    case 'ajuste':
+      return 'Ajuste';
+    default:
+      return tipo || 'Movimento';
+  }
+}
+
+function isEntradaTipo(tipo: string): boolean {
+  return tipo === 'entrada' || tipo === 'estoque_inicial' || tipo === 'ajuste';
+}
+
+export async function listEstoqueMovimentosProduto(
+  db: Db,
+  produtoId: number,
+): Promise<EstoqueMovimentoApi[]> {
+  const pid = Math.trunc(Number(produtoId));
+  if (!Number.isFinite(pid) || pid < 1) {
+    throw new Error('Produto inválido.');
+  }
+
+  const [prod] = await db
+    .select({
+      id: produtos.id,
+      estoque: produtos.estoque,
+      estoqueInicial: produtos.estoqueInicial,
+    })
+    .from(produtos)
+    .where(eq(produtos.id, pid))
+    .limit(1);
+  if (!prod) throw new Error('Produto não encontrado');
+
+  let rows = await db
+    .select({
+      id: estoqueMovimentos.id,
+      produtoId: estoqueMovimentos.produtoId,
+      idAtendimento: estoqueMovimentos.idAtendimento,
+      tipo: estoqueMovimentos.tipo,
+      quantidade: estoqueMovimentos.quantidade,
+      saldoApos: estoqueMovimentos.saldoApos,
+      createdAt: estoqueMovimentos.createdAt,
+      profissionalId: estoqueMovimentos.profissionalId,
+      usuarioId: estoqueMovimentos.usuarioId,
+      profissionalNome: profissionais.nome,
+      usuarioNome: usuarios.nomeExibicao,
+    })
+    .from(estoqueMovimentos)
+    .leftJoin(
+      profissionais,
+      eq(estoqueMovimentos.profissionalId, profissionais.id),
+    )
+    .leftJoin(usuarios, eq(estoqueMovimentos.usuarioId, usuarios.id))
+    .where(eq(estoqueMovimentos.produtoId, pid))
+    .orderBy(desc(estoqueMovimentos.createdAt), desc(estoqueMovimentos.id));
+
+  // Produtos criados antes desta regra: gera o lançamento inicial a partir
+  // do estoque cadastrado, para o histórico não ficar vazio.
+  if (rows.length === 0) {
+    const q =
+      parseQuantidadeEstoque(prod.estoqueInicial) ||
+      parseQuantidadeEstoque(prod.estoque);
+    const saldo = formatEstoqueArmazenamento(q);
+    await db.insert(estoqueMovimentos).values({
+      produtoId: pid,
+      idAtendimento: null,
+      tipo: 'estoque_inicial',
+      quantidade: String(q),
+      saldoApos: saldo,
+    });
+    rows = await db
+      .select({
+        id: estoqueMovimentos.id,
+        produtoId: estoqueMovimentos.produtoId,
+        idAtendimento: estoqueMovimentos.idAtendimento,
+        tipo: estoqueMovimentos.tipo,
+        quantidade: estoqueMovimentos.quantidade,
+        saldoApos: estoqueMovimentos.saldoApos,
+        createdAt: estoqueMovimentos.createdAt,
+        profissionalId: estoqueMovimentos.profissionalId,
+        usuarioId: estoqueMovimentos.usuarioId,
+        profissionalNome: profissionais.nome,
+        usuarioNome: usuarios.nomeExibicao,
+      })
+      .from(estoqueMovimentos)
+      .leftJoin(
+        profissionais,
+        eq(estoqueMovimentos.profissionalId, profissionais.id),
+      )
+      .leftJoin(usuarios, eq(estoqueMovimentos.usuarioId, usuarios.id))
+      .where(eq(estoqueMovimentos.produtoId, pid))
+      .orderBy(desc(estoqueMovimentos.createdAt), desc(estoqueMovimentos.id));
+  }
+
+  return rows.map((r) => {
+    const tipo = String(r.tipo ?? '');
+    const q = parseQuantidadeEstoque(String(r.quantidade));
+    const saldoApos = parseQuantidadeEstoque(r.saldoApos);
+    const entrada = isEntradaTipo(tipo);
+    const anterior = entrada
+      ? Math.max(0, roundQty(saldoApos - q))
+      : roundQty(saldoApos + q);
+    const idAt = r.idAtendimento != null ? String(r.idAtendimento).trim() : '';
+    let descricao = '';
+    if (tipo === 'estoque_inicial') {
+      descricao = 'Lançamento de estoque inicial';
+    } else if (tipo === 'entrada' && !idAt) {
+      descricao = 'Entrada manual de estoque';
+    } else if (tipo === 'baixa_venda') {
+      descricao = idAt ? `Baixa por venda (comanda ${idAt})` : 'Baixa por venda';
+    } else if (tipo === 'baixa_consumo_servico') {
+      descricao = idAt
+        ? `Consumo em serviço (comanda ${idAt})`
+        : 'Consumo em serviço';
+    } else if (tipo === 'ajuste') {
+      descricao = 'Ajuste de estoque';
+    }
+
+    const nomeProf = String(r.profissionalNome ?? '').trim();
+    const nomeUser = String(r.usuarioNome ?? '').trim();
+    const profissional = nomeProf || nomeUser || null;
+
+    return {
+      id: r.id,
+      produto_id: r.produtoId,
+      id_atendimento: idAt || null,
+      tipo,
+      origem: rotuloOrigem(tipo),
+      tipo_exibicao: entrada ? 'Entrada' : 'Saída',
+      quantidade: formatEstoqueArmazenamento(q),
+      saldo_anterior: formatEstoqueArmazenamento(anterior),
+      saldo_apos: r.saldoApos,
+      created_at:
+        typeof r.createdAt === 'string'
+          ? r.createdAt
+          : r.createdAt instanceof Date
+            ? r.createdAt.toISOString()
+            : String(r.createdAt ?? ''),
+      descricao,
+      lote: null,
+      profissional,
+      profissional_id: r.profissionalId ?? null,
+    };
+  });
+}
+
 export type IncrementarEstoqueInput = {
   /** Delta direto na unidade de saída (ml/g/unidade). */
   adicionar?: number;
@@ -223,6 +433,8 @@ export type IncrementarEstoqueInput = {
    * quando a unidade de saída é ml/g.
    */
   adicionar_unidades?: number;
+  /** Quem registrou a entrada. */
+  actor?: EstoqueMovimentoActor;
 };
 
 /**
@@ -257,7 +469,7 @@ export async function incrementarEstoqueProduto(
       if (!Number.isFinite(u) || u <= 0) {
         throw new Error('Quantidade de unidades deve ser maior que zero.');
       }
-      if (unidade === 'ml' || unidade === 'g') {
+      if (unidadeUsaEquivalente(unidade)) {
         delta = roundQty(u * eqv);
       } else {
         if (Math.trunc(u) !== u) {
@@ -270,13 +482,13 @@ export async function incrementarEstoqueProduto(
       if (!Number.isFinite(a) || a <= 0) {
         throw new Error('Quantidade a adicionar deve ser maior que zero.');
       }
-      if (unidade === 'unidade') {
+      if (unidadeUsaEquivalente(unidade)) {
+        delta = roundQty(a);
+      } else {
         if (Math.trunc(a) !== a) {
           throw new Error('Use um número inteiro de unidades.');
         }
         delta = Math.trunc(a);
-      } else {
-        delta = roundQty(a);
       }
     } else {
       throw new Error('Informe adicionar ou adicionar_unidades.');
@@ -293,12 +505,22 @@ export async function incrementarEstoqueProduto(
       .update(produtos)
       .set({ estoque: estoqueStr })
       .where(eq(produtos.id, produtoId));
+    const actorProf = opts.actor?.profissional_id;
+    const actorUser = opts.actor?.usuario_id;
     await tx.insert(estoqueMovimentos).values({
       produtoId,
       idAtendimento: null,
       tipo: 'entrada',
       quantidade: String(delta),
       saldoApos: estoqueStr,
+      profissionalId:
+        actorProf != null && Number.isFinite(actorProf) && actorProf > 0
+          ? Math.trunc(actorProf)
+          : null,
+      usuarioId:
+        actorUser != null && Number.isFinite(actorUser) && actorUser > 0
+          ? Math.trunc(actorUser)
+          : null,
     });
     const nome = String(row.produto || '').trim();
     return { id: produtoId, produto: nome, estoque: estoqueStr };
@@ -308,6 +530,23 @@ export async function incrementarEstoqueProduto(
 function textoOpcional(v: unknown): string | null {
   const s = String(v ?? '').trim();
   return s.length > 0 ? s : null;
+}
+
+/** Unidades contínuas: entrada por frasco × `unidade_equivalente`. */
+const UNIDADES_MEDIDA_CONTINUA = new Set([
+  'ml',
+  'g',
+  'l',
+  'mg',
+  'kg',
+  'cm',
+  'm',
+]);
+
+function unidadeUsaEquivalente(unidade: string): boolean {
+  const u = String(unidade || 'unidade').trim().toLowerCase();
+  if (u === 'gramas' || u === 'mililitros') return true;
+  return UNIDADES_MEDIDA_CONTINUA.has(u);
 }
 
 function normalizarUnidadeEquivalente(
@@ -382,6 +621,7 @@ export type CriarProdutoInput = {
   codigo_barras?: string | null;
   observacoes?: string | null;
   foto_url?: string | null;
+  actor?: EstoqueMovimentoActor;
 };
 
 export async function criarProdutoApi(
@@ -427,15 +667,25 @@ export async function criarProdutoApi(
 
   if (!row) throw new Error('Não foi possível criar o produto.');
 
-  if (estoqueNum > 0) {
-    await db.insert(estoqueMovimentos).values({
-      produtoId: row.id,
-      idAtendimento: null,
-      tipo: 'entrada',
-      quantidade: String(estoqueNum),
-      saldoApos: estoqueStr,
-    });
-  }
+  // Sempre grava o lançamento inicial (mesmo com quantidade 0), para o
+  // histórico de movimentações refletir a criação do produto.
+  const actorProf = input.actor?.profissional_id;
+  const actorUser = input.actor?.usuario_id;
+  await db.insert(estoqueMovimentos).values({
+    produtoId: row.id,
+    idAtendimento: null,
+    tipo: 'estoque_inicial',
+    quantidade: String(estoqueNum),
+    saldoApos: estoqueStr,
+    profissionalId:
+      actorProf != null && Number.isFinite(actorProf) && actorProf > 0
+        ? Math.trunc(actorProf)
+        : null,
+    usuarioId:
+      actorUser != null && Number.isFinite(actorUser) && actorUser > 0
+        ? Math.trunc(actorUser)
+        : null,
+  });
 
   return mapProdutoRow(row);
 }
@@ -494,6 +744,49 @@ export async function atualizarProdutoApi(
 
   if (!row) throw new Error('Não foi possível atualizar o produto.');
   return mapProdutoRow(row);
+}
+
+export async function excluirProdutoApi(
+  db: Db,
+  idRaw: string | number,
+): Promise<{ id: number }> {
+  const produtoId = Math.trunc(Number(idRaw));
+  if (!Number.isFinite(produtoId) || produtoId < 1) {
+    throw new Error('Produto inválido.');
+  }
+
+  const [exist] = await db
+    .select({ id: produtos.id })
+    .from(produtos)
+    .where(eq(produtos.id, produtoId))
+    .limit(1);
+  if (!exist) throw new Error('Produto não encontrado.');
+
+  const [usoReceita] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(servicoProdutosConsumidos)
+    .where(eq(servicoProdutosConsumidos.produtoId, produtoId));
+  if (Number(usoReceita?.n ?? 0) > 0) {
+    throw new Error(
+      'Não é possível excluir: este produto está vinculado a serviços.',
+    );
+  }
+
+  const [usoComanda] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(atendimentoItens)
+    .where(eq(atendimentoItens.produtoId, produtoId));
+  if (Number(usoComanda?.n ?? 0) > 0) {
+    throw new Error(
+      'Não é possível excluir: este produto já foi usado em comandas.',
+    );
+  }
+
+  await db
+    .delete(estoqueMovimentos)
+    .where(eq(estoqueMovimentos.produtoId, produtoId));
+  await db.delete(produtos).where(eq(produtos.id, produtoId));
+  return { id: produtoId };
 }
 
 export type ServicoProdutoConsumidoApi = {

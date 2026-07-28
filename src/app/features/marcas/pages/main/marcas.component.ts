@@ -121,15 +121,17 @@ export class MarcasComponent implements OnInit, OnDestroy {
     this.pagina = 1;
   }
 
-  toggleFiltros(): void {
-    this.filtrosAbertos = !this.filtrosAbertos;
-    if (this.filtrosAbertos) {
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
+    this.pulsoToolbarFiltro = false;
+    queueMicrotask(() => {
       this.pulsoToolbarFiltro = true;
       window.setTimeout(
         () => (this.pulsoToolbarFiltro = false),
         this.duracaoPulsoToolbarMs,
       );
-    }
+    });
+    this.filtrosAbertos = !this.filtrosAbertos;
   }
 
   toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {

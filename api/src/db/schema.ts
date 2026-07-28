@@ -293,6 +293,14 @@ export const estoqueMovimentos = pgTable(
     tipo: text('tipo').notNull(),
     quantidade: numeric('quantidade', { precision: 14, scale: 3 }).notNull(),
     saldoApos: text('saldo_apos'),
+    /** Quem fez o movimento (quando aplicável). */
+    profissionalId: integer('profissional_id').references(() => profissionais.id, {
+      onDelete: 'set null',
+    }),
+    /** Conta de acesso que registrou o movimento (entradas manuais). */
+    usuarioId: integer('usuario_id').references(() => usuarios.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -300,6 +308,7 @@ export const estoqueMovimentos = pgTable(
   (t) => [
     index('estoque_movimentos_produto_idx').on(t.produtoId),
     index('estoque_movimentos_id_atendimento_idx').on(t.idAtendimento),
+    index('estoque_movimentos_profissional_id_idx').on(t.profissionalId),
   ],
 );
 

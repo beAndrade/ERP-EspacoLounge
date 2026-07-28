@@ -141,6 +141,10 @@
   padding: 0 !important;
 }
 
+.servicos-table thead th.col-nome.servicos-th-sort-wrap {
+  background: #f0f0f0;
+}
+
 .servicos-th-sort {
   display: flex;
   align-items: center;

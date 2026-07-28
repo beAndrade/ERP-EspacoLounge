@@ -322,13 +322,16 @@
   align-items: baseline;
   gap: 0.4rem 0.5rem;
   min-width: 0;
+  width: 100%;
 }
 
 .painel-card-metric-unit {
+  flex-shrink: 0;
   font-size: 0.95rem;
   font-weight: 500;
   color: #6b7280;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .painel-reveal {

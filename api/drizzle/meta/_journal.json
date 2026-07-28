@@ -414,6 +414,13 @@
       "when": 1775698700000,
       "tag": "0058_estoque_consumo_servico",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1775698800000,
+      "tag": "0059_estoque_movimentos_profissional",
+      "breakpoints": true
     }
   ]
 }

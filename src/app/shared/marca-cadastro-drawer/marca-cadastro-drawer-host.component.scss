@@ -1,4 +1,5 @@
 @use '../../styles/drawer-stack';
+@use '../../styles/drawer-responsive' as dr;
 @use '../cliente-cadastro-drawer/cliente-cadastro-drawer-host.component.scss' as *;
 
 /**
@@ -45,22 +46,22 @@ app-marca-cadastro-drawer-host {
 .cliente-drawer.cliente-drawer--marca-cadastro-shared.app-drawer {
   --drawer-inset-x: 0;
   --drawer-pad-x: 0;
+  @include dr.drawer-as-container(marca-cadastro);
   position: fixed !important;
   top: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  left: auto !important;
+  left: max(0px, calc(100vw - 1650px)) !important;
   z-index: 1730 !important;
   display: flex !important;
   flex-direction: column !important;
   box-sizing: border-box !important;
-  width: min(600px, 100vw) !important;
+  width: auto !important;
   max-width: 100vw !important;
   height: 100vh !important;
   height: 100dvh !important;
   min-height: 0 !important;
   margin: 0 !important;
-  margin-left: auto !important;
   padding: 0 !important;
   background: #ffffff !important;
   box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12) !important;
@@ -281,3 +282,6 @@ app-marca-cadastro-drawer-host {
     background: #bfbfbf;
   }
 }
+
+@include dr.drawer-responsive-chrome('.marca-cadastro-drawer, .cliente-drawer--marca-cadastro-shared');
+

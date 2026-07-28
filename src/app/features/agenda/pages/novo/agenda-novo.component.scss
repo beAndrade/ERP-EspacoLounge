@@ -152,7 +152,7 @@
 
   &--modal {
     /**
-     * Proporção ideal 359 : 1290 (= drawer preferido 1649px).
+     * Proporção ideal 359 : 1290 (= drawer preferido 1650px).
      * As duas colunas encolhem juntas quando o drawer afunila — sem min-width
      * rígido que corte o conteúdo à direita.
      */
@@ -330,8 +330,12 @@
   min-width: 60px;
   min-height: 60px;
   margin: 0;
-  /* Compensa o `padding-inline: 15px` de `.form-shell__flow--modal`. */
-  margin-right: -15px;
+  /**
+   * Cola na borda direita do painel: cancela o `padding-inline: 15px` do flow
+   * e qualquer `--drawer-inset-x` herdado do `.app-drawer` (ex.: 15px em hosts
+   * que ainda não zeraram o inset).
+   */
+  margin-right: calc(-15px - var(--drawer-inset-x, 0px));
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -2088,12 +2092,16 @@ textarea {
 :host.agenda-novo--drawer .form.form--modal {
   /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
   padding-inline: 0;
-  /** Coluna «Tipo de linha»: 240px (ex.: «Pacote Adesivo+Queratina»). */
-  --drawer-tipo-linha-col: 240px;
+  /** Coluna «Tipo de linha»: trigger estreito; painel abre ≥ padrão / rótulos longos. */
+  --drawer-tipo-linha-col: 124px;
+  --drawer-tipo-linha-col-padrao: 124px;
+  --drawer-tipo-linha-panel-min: 240px;
   /** Descrição (Serviço/Produto) ocupa a área livre da linha. */
   --drawer-descricao-col: auto;
   /** Profissional em Serviço / Produto. */
-  --drawer-pro-col: 175px;
+  --drawer-pro-col: 128px;
+  /** Largura padrão do Pro (não encolhe nos BPs) — piso do dropdown. */
+  --drawer-pro-col-padrao: 128px;
   /** Tamanho (Serviço). */
   --drawer-tamanho-col: 150px;
   /**
@@ -2101,8 +2109,15 @@ textarea {
    * Largura alvo + piso: o valor («R$ 110,00») não pode desaparecer no input.
    * Em ecrãs estreitos encolhe a Descrição (reticências), não estes campos.
    */
-  --drawer-money-col: 112px;
-  --drawer-money-col-min: 7rem;
+  --drawer-money-col: 124px;
+  --drawer-money-col-min: 124px;
+  /** Desconto: mais estreito; o restante vai para a Descrição. */
+  --drawer-money-desconto-col: 100px;
+  /**
+   * Piso do painel Descrição: só alarga o dropdown quando o trigger
+   * fica menor que este valor (telas estreitas).
+   */
+  --drawer-descricao-panel-min: 420px;
   /** Padrão do drawer: inputs com 38px de altura. */
   --touch-min: 38px;
   --radius: 14px;
@@ -2225,6 +2240,40 @@ textarea {
   .servico-row--drawer .servico-row__field > span:first-of-type,
   .etapa-row--etapas-modal .etapa-row__etapa-cel > span:first-of-type {
     margin-bottom: var(--drawer-label-below);
+  }
+
+  /**
+   * Selects do drawer: painel = largura do trigger; só usa piso (`*-padrao` /
+   * `*-panel-min`) quando o input encolhe abaixo do padrão (telas menores).
+   */
+  .servico-row--drawer .servico-row__field--tipo-linha {
+    overflow: visible;
+    --saas-select-panel-width: 100%;
+    --saas-select-panel-min-width: max(
+      var(--drawer-tipo-linha-col-padrao),
+      var(--drawer-tipo-linha-panel-min)
+    );
+
+    ::ng-deep .saas-select__value,
+    ::ng-deep .saas-select__trigger-input {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .servico-row--drawer .servico-row__field--pro,
+  .servico-row--drawer .servico-row__field--pro-cabelo-modal {
+    overflow: visible;
+    --saas-select-panel-width: 100%;
+    --saas-select-panel-min-width: var(--drawer-pro-col-padrao);
+
+    ::ng-deep .saas-select__value,
+    ::ng-deep .saas-select__trigger-input {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   /** Lembrete: respiro horizontal para o ripple/sombra não ser cortado pelo scroll (overflow-x). */
@@ -2553,6 +2602,8 @@ textarea {
       max-width: none;
       /** Não usar overflow:hidden aqui — corta o painel do `app-saas-select`. */
       overflow: visible;
+      --saas-select-panel-width: 100%;
+      --saas-select-panel-min-width: var(--drawer-descricao-panel-min);
 
       app-saas-select,
       ::ng-deep .saas-select,
@@ -2579,10 +2630,11 @@ textarea {
     }
 
     .servico-row__field--pro {
-      flex: 0 1 var(--drawer-pro-col);
+      flex: 0 0 var(--drawer-pro-col);
       width: var(--drawer-pro-col);
-      min-width: 6rem;
+      min-width: var(--drawer-pro-col);
       max-width: var(--drawer-pro-col);
+      box-sizing: border-box;
     }
 
     .servico-row__field--money,
@@ -2590,7 +2642,7 @@ textarea {
       flex: 0 0 var(--drawer-money-col);
       width: var(--drawer-money-col);
       min-width: var(--drawer-money-col-min);
-      max-width: none;
+      max-width: var(--drawer-money-col);
       box-sizing: border-box;
 
       input,
@@ -2598,6 +2650,13 @@ textarea {
         min-width: 0;
         font-variant-numeric: tabular-nums;
       }
+    }
+
+    .servico-row__field--money-desconto {
+      flex: 0 0 var(--drawer-money-desconto-col);
+      width: var(--drawer-money-desconto-col);
+      min-width: var(--drawer-money-desconto-col);
+      max-width: var(--drawer-money-desconto-col);
     }
 
     .servico-row__actions--drawer {
@@ -2613,9 +2672,10 @@ textarea {
   .servico-row--drawer:has(.servico-row__field--tamanho):has(
       .servico-row__total-estimado
     ):not(:has(.cabelo-calc--nested)) {
-    --drawer-money-col: 112px;
+    --drawer-money-col: 124px;
+    --drawer-money-col-min: 124px;
     --drawer-tamanho-col: 104px;
-    --drawer-pro-col: 120px;
+    --drawer-pro-col: 112px;
     --drawer-tipo-linha-col: 124px;
   }
 
@@ -2661,6 +2721,9 @@ textarea {
       width: auto;
       min-width: 0;
       max-width: none;
+      overflow: visible;
+      --saas-select-panel-width: 100%;
+      --saas-select-panel-min-width: var(--drawer-descricao-panel-min);
     }
 
     .servico-row__field--tamanho {
@@ -2702,30 +2765,37 @@ textarea {
 
   /**
    * Em viewports estreitos: aperta Tipo/Pro/Tamanho.
-   * Dinheiro mantém o piso; a Descrição encolhe com reticências.
+   * Dinheiro e o painel do dropdown Descrição mantêm o piso; o trigger encolhe.
    */
   @media (max-width: 1400px) {
-    --drawer-money-col: 112px;
+    --drawer-money-col: 124px;
+    --drawer-money-col-min: 124px;
     --drawer-tamanho-col: 112px;
-    --drawer-pro-col: 120px;
-    --drawer-tipo-linha-col: 128px;
+    --drawer-pro-col: 100px;
+    --drawer-tipo-linha-col: 116px;
+    --drawer-tipo-linha-panel-min: 220px;
+    --drawer-descricao-panel-min: 400px;
   }
 
   @media (max-width: 1200px) {
-    --drawer-tipo-linha-col: 112px;
-    --drawer-pro-col: 104px;
+    --drawer-tipo-linha-col: 104px;
+    --drawer-pro-col: 88px;
     --drawer-tamanho-col: 96px;
-    --drawer-money-col: 112px;
+    --drawer-money-col: 120px;
+    --drawer-money-col-min: 120px;
+    --drawer-tipo-linha-panel-min: 200px;
+    --drawer-descricao-panel-min: 360px;
   }
 
   @media (max-width: 1400px) {
     .servico-row--drawer:has(.servico-row__field--tamanho):has(
         .servico-row__total-estimado
       ):not(:has(.cabelo-calc--nested)) {
-      --drawer-money-col: 112px;
+      --drawer-money-col: 120px;
+      --drawer-money-col-min: 120px;
       --drawer-tamanho-col: 96px;
-      --drawer-pro-col: 108px;
-      --drawer-tipo-linha-col: 116px;
+      --drawer-pro-col: 92px;
+      --drawer-tipo-linha-col: 108px;
     }
   }
 
@@ -2733,10 +2803,11 @@ textarea {
     .servico-row--drawer:has(.servico-row__field--tamanho):has(
         .servico-row__total-estimado
       ):not(:has(.cabelo-calc--nested)) {
-      --drawer-money-col: 112px;
+      --drawer-money-col: 116px;
+      --drawer-money-col-min: 116px;
       --drawer-tamanho-col: 88px;
-      --drawer-pro-col: 96px;
-      --drawer-tipo-linha-col: 104px;
+      --drawer-pro-col: 80px;
+      --drawer-tipo-linha-col: 96px;
     }
   }
 

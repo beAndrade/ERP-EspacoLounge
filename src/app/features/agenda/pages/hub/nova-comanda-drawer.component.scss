@@ -27,9 +27,12 @@
   --drawer-field-stroke-hover: var(--color-primary-hover);
   --drawer-field-focus-ring: color-mix(in srgb, var(--color-primary) 6%, transparent);
   --comanda-col-tipo: 120px;
+  --comanda-col-tipo-padrao: 120px;
   --comanda-col-pro: clamp(6.1rem, 9.2vw, 7.35rem);
+  --comanda-col-pro-padrao: 7.35rem;
   --comanda-col-qtd: 58.06px;
   --comanda-col-money: 110px;
+  --comanda-descricao-panel-min: 420px;
   /** Largura da coluna da faixa monetária (igual em todas as linhas do mesmo painel). */
   --nc-leitura-money-col: minmax(17.5rem, 48%);
   padding-inline: 0;
@@ -1336,11 +1339,20 @@
     max-width: var(--comanda-col-tipo);
     box-sizing: border-box;
     padding-left: 2px;
+    overflow: visible;
+    --saas-select-panel-width: 100%;
+    --saas-select-panel-min-width: max(
+      var(--comanda-col-tipo-padrao),
+      240px
+    );
   }
 
   .servico-row__field--descricao {
     flex: 2.45 1 9.5rem;
     min-width: 9.5rem;
+    overflow: visible;
+    --saas-select-panel-width: 100%;
+    --saas-select-panel-min-width: var(--comanda-descricao-panel-min);
   }
 
   .servico-row__field--tamanho {
@@ -1351,6 +1363,9 @@
   .servico-row__field--pro {
     flex: 0 0 var(--comanda-col-pro);
     min-width: var(--comanda-col-pro);
+    overflow: visible;
+    --saas-select-panel-width: 100%;
+    --saas-select-panel-min-width: var(--comanda-col-pro-padrao);
   }
 
   .servico-row__field--comanda-qtd {

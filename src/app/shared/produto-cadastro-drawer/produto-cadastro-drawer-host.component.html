@@ -183,29 +183,45 @@
                 <div class="produto-cadastro-form__row">
                   <label class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Preço de venda</span>
-                    <input
-                      type="text"
-                      inputmode="numeric"
-                      autocomplete="off"
-                      class="produto-cadastro-form__input"
-                      [(ngModel)]="d.precoVenda"
-                      name="precoVenda"
-                      placeholder="R$ 0,00"
-                      (input)="d.onMoedaInput('precoVenda', $event)"
-                    />
+                    <div class="produto-cadastro-form__valor-input">
+                      <span class="produto-cadastro-form__valor-input__prefix" aria-hidden="true"
+                        >R$</span
+                      >
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__valor-input__field"
+                        name="precoVenda"
+                        placeholder="0,00"
+                        aria-label="Preço de venda"
+                        appCursorFimValor
+                        [ngModel]="d.moedaSemPrefixo(d.precoVenda)"
+                        [ngModelOptions]="{ standalone: true }"
+                        (input)="d.onMoedaInput('precoVenda', $event)"
+                      />
+                    </div>
                   </label>
                   <label class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Custo de compra</span>
-                    <input
-                      type="text"
-                      inputmode="numeric"
-                      autocomplete="off"
-                      class="produto-cadastro-form__input"
-                      [(ngModel)]="d.custoCompra"
-                      name="custoCompra"
-                      placeholder="R$ 0,00"
-                      (input)="d.onMoedaInput('custoCompra', $event)"
-                    />
+                    <div class="produto-cadastro-form__valor-input">
+                      <span class="produto-cadastro-form__valor-input__prefix" aria-hidden="true"
+                        >R$</span
+                      >
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__valor-input__field"
+                        name="custoCompra"
+                        placeholder="0,00"
+                        aria-label="Custo de compra"
+                        appCursorFimValor
+                        [ngModel]="d.moedaSemPrefixo(d.custoCompra)"
+                        [ngModelOptions]="{ standalone: true }"
+                        (input)="d.onMoedaInput('custoCompra', $event)"
+                      />
+                    </div>
                   </label>
                 </div>
 
@@ -222,17 +238,20 @@
                       [(ngModel)]="d.registroSaida"
                       name="registroSaida"
                       [options]="d.opcoesRegistroSaidaSelect"
-                      [showFilter]="false"
+                      [showFilter]="true"
+                      [showSearchIconOnOpen]="true"
+                      triggerCursor="text"
                       placeholder="Selecione…"
                       aria-label="Registro de saída"
+                      (ngModelChange)="d.onRegistroSaidaChange()"
                     />
                   </div>
-                  <label
-                    class="produto-cadastro-form__field"
-                    [hidden]="d.registroSaida === 'em unidade'"
-                  >
+                  <label class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Uma unidade equivale a</span>
-                    <div class="produto-cadastro-form__suffix">
+                    <div
+                      class="produto-cadastro-form__suffix"
+                      [class.produto-cadastro-form__suffix--disabled]="d.bloqueiaEquivalenteUnidade()"
+                    >
                       <input
                         type="text"
                         inputmode="numeric"
@@ -240,27 +259,31 @@
                         class="produto-cadastro-form__input"
                         [(ngModel)]="d.unidadeEquivalente"
                         name="unidadeEquivalente"
+                        [disabled]="d.bloqueiaEquivalenteUnidade()"
+                        [attr.aria-disabled]="d.bloqueiaEquivalenteUnidade() ? 'true' : null"
                         (input)="d.onInteiroInput('unidadeEquivalente', $event)"
                       />
                       <span class="produto-cadastro-form__suffix-label">{{
                         rotuloUnidade()
                       }}</span>
-                      <span class="produto-cadastro-form__spin" aria-hidden="true">
-                        <button
-                          type="button"
-                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--up"
-                          (mousedown)="$event.preventDefault()"
-                          (click)="d.stepInteiro('unidadeEquivalente', 1); $event.stopPropagation()"
-                          aria-label="Aumentar unidade equivalente"
-                        ></button>
-                        <button
-                          type="button"
-                          class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--down"
-                          (mousedown)="$event.preventDefault()"
-                          (click)="d.stepInteiro('unidadeEquivalente', -1); $event.stopPropagation()"
-                          aria-label="Diminuir unidade equivalente"
-                        ></button>
-                      </span>
+                      @if (!d.bloqueiaEquivalenteUnidade()) {
+                        <span class="produto-cadastro-form__spin" aria-hidden="true">
+                          <button
+                            type="button"
+                            class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--up"
+                            (mousedown)="$event.preventDefault()"
+                            (click)="d.stepInteiro('unidadeEquivalente', 1); $event.stopPropagation()"
+                            aria-label="Aumentar unidade equivalente"
+                          ></button>
+                          <button
+                            type="button"
+                            class="produto-cadastro-form__spin-btn produto-cadastro-form__spin-btn--down"
+                            (mousedown)="$event.preventDefault()"
+                            (click)="d.stepInteiro('unidadeEquivalente', -1); $event.stopPropagation()"
+                            aria-label="Diminuir unidade equivalente"
+                          ></button>
+                        </span>
+                      }
                     </div>
                   </label>
                 </div>
@@ -376,48 +399,90 @@
                   </label>
                 </div>
 
-                <div class="produto-cadastro-form__row">
+                <label class="produto-cadastro-form__field produto-cadastro-form__field--full">
+                  <span class="produto-cadastro-form__label">Observações</span>
+                  <textarea
+                    class="produto-cadastro-form__textarea"
+                    rows="2"
+                    [(ngModel)]="d.observacoes"
+                    name="observacoes"
+                    placeholder="Anotações"
+                  ></textarea>
+                </label>
+              </div>
+            } @else if (d.abaAtiva === 'Configurações') {
+              <div class="produto-cadastro-form">
+                <p class="produto-cadastro-form__hint">
+                  Campos reservados para regras futuras (comissão na venda,
+                  preço interno, códigos e leitor). Já são gravados no cadastro
+                  para uso quando a funcionalidade estiver pronta.
+                </p>
+
+                <div class="produto-cadastro-form__row produto-cadastro-form__row--3">
                   <label class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Preço para profissional</span>
-                    <input
-                      type="text"
-                      inputmode="numeric"
-                      autocomplete="off"
-                      class="produto-cadastro-form__input"
-                      [(ngModel)]="d.precoProfissional"
-                      name="precoProfissional"
-                      placeholder="R$ 0,00"
-                      (input)="d.onMoedaInput('precoProfissional', $event)"
-                    />
+                    <div class="produto-cadastro-form__valor-input">
+                      <span class="produto-cadastro-form__valor-input__prefix" aria-hidden="true"
+                        >R$</span
+                      >
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__valor-input__field"
+                        name="precoProfissional"
+                        placeholder="0,00"
+                        aria-label="Preço para profissional"
+                        appCursorFimValor
+                        [ngModel]="d.moedaSemPrefixo(d.precoProfissional)"
+                        [ngModelOptions]="{ standalone: true }"
+                        (input)="d.onMoedaInput('precoProfissional', $event)"
+                      />
+                    </div>
                   </label>
                   <label class="produto-cadastro-form__field">
                     <span class="produto-cadastro-form__label">Custo adicional</span>
-                    <input
-                      type="text"
-                      inputmode="numeric"
-                      autocomplete="off"
-                      class="produto-cadastro-form__input"
-                      [(ngModel)]="d.custoAdicional"
-                      name="custoAdicional"
-                      placeholder="R$ 0,00"
-                      (input)="d.onMoedaInput('custoAdicional', $event)"
-                    />
+                    <div class="produto-cadastro-form__valor-input">
+                      <span class="produto-cadastro-form__valor-input__prefix" aria-hidden="true"
+                        >R$</span
+                      >
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__valor-input__field"
+                        name="custoAdicional"
+                        placeholder="0,00"
+                        aria-label="Custo adicional"
+                        appCursorFimValor
+                        [ngModel]="d.moedaSemPrefixo(d.custoAdicional)"
+                        [ngModelOptions]="{ standalone: true }"
+                        (input)="d.onMoedaInput('custoAdicional', $event)"
+                      />
+                    </div>
+                  </label>
+                  <label class="produto-cadastro-form__field">
+                    <span class="produto-cadastro-form__label">Comissão padrão</span>
+                    <div class="produto-cadastro-form__valor-input">
+                      <span class="produto-cadastro-form__valor-input__prefix" aria-hidden="true"
+                        >%</span
+                      >
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        class="produto-cadastro-form__valor-input__field"
+                        name="comissaoPadrao"
+                        placeholder="0"
+                        aria-label="Comissão padrão"
+                        appCursorFimValor
+                        [ngModel]="d.percentualSemSufixo(d.comissaoPadrao)"
+                        [ngModelOptions]="{ standalone: true }"
+                        (input)="d.onComissaoInput($event)"
+                      />
+                    </div>
                   </label>
                 </div>
-
-                <label class="produto-cadastro-form__field produto-cadastro-form__field--full">
-                  <span class="produto-cadastro-form__label">Comissão padrão</span>
-                  <input
-                    type="text"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    class="produto-cadastro-form__input"
-                    [(ngModel)]="d.comissaoPadrao"
-                    name="comissaoPadrao"
-                    placeholder="% 0,00"
-                    (input)="d.onComissaoInput($event)"
-                  />
-                </label>
 
                 <div class="produto-cadastro-form__row">
                   <label class="produto-cadastro-form__field">
@@ -443,17 +508,6 @@
                     />
                   </label>
                 </div>
-
-                <label class="produto-cadastro-form__field produto-cadastro-form__field--full">
-                  <span class="produto-cadastro-form__label">Observações</span>
-                  <textarea
-                    class="produto-cadastro-form__textarea"
-                    rows="2"
-                    [(ngModel)]="d.observacoes"
-                    name="observacoes"
-                    placeholder="Anotações"
-                  ></textarea>
-                </label>
               </div>
             } @else {
               <p class="cliente-tab-placeholder">
@@ -464,7 +518,7 @@
         </div>
       </div>
 
-      @if (d.abaAtiva === 'Cadastro') {
+      @if (d.abaAtiva === 'Cadastro' || d.abaAtiva === 'Configurações') {
         <footer class="cliente-drawer-footer">
           <button
             type="button"

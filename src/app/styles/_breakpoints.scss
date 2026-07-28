@@ -15,14 +15,20 @@ $breakpoints: (
   comanda-col-md: 1120px,
   comanda-col-sm: 540px,
   comanda-col-xs: 480px,
-  drawer-wide: 1648px,
+  /// Acima disso o drawer deixa de ser 100vw e afasta-se da esquerda.
+  drawer-wide: 1650px,
 ) !default;
 
-/// Largura máxima do conteúdo em drawers «wide» (comanda/agenda).
-$drawer-wide-content-max: 1400px !default;
-/// Espaço mínimo reservado à sidebar em ecrãs wide.
-$drawer-wide-sidebar-min: 320px !default;
-/// Largura máxima da ficha do cliente.
+/// Shell máximo dos drawers laterais (ancora contínua, sem “pulo”).
+/// ≤ 1650px → 100vw; > 1650px → `left` cresce e a largura fica em 1650px.
+$drawer-shell-max: 1650px !default;
+
+/// @deprecated — usar `$drawer-shell-max` (mantido para imports antigos).
+$drawer-wide-content-max: $drawer-shell-max !default;
+/// @deprecated — não forçar faixa mínima à esquerda (causava pulo).
+$drawer-wide-sidebar-min: 0px !default;
+
+/// Largura máxima “de conteúdo” da ficha do cliente (legado; shell = `$drawer-shell-max`).
 $cliente-drawer-max-width: 1200px !default;
 
 @function bp($name) {
@@ -46,23 +52,25 @@ $cliente-drawer-max-width: 1200px !default;
   }
 }
 
-/// Ficha / drawer com largura fixa encostado à direita (≥ drawer-wide).
-@mixin drawer-anchor-fixed-width($max-width: $cliente-drawer-max-width) {
-  @include bp-up(drawer-wide) {
-    left: auto;
-    right: 0;
-    width: min($max-width, 100vw);
-  }
+/// Ancoragem contínua à direita (sem media query / sem pulo).
+/// `left: max(0, 100vw - shell)` → cheio até `$shell-max`, depois afasta da esquerda.
+@mixin drawer-shell-anchor($shell-max: $drawer-shell-max) {
+  right: 0;
+  left: max(0px, calc(100vw - #{$shell-max}));
+  width: auto;
+  max-width: 100vw;
 }
 
-/// Drawer «wide» com `left` dinâmico (sidebar + painel ~1400px).
+/// Ficha / drawer: mesmo shell contínuo de `$drawer-shell-max`.
+/// `$max-width` ignorado na âncora (evita pulo 100vw → painel estreito).
+@mixin drawer-anchor-fixed-width($max-width: $cliente-drawer-max-width) {
+  @include drawer-shell-anchor($drawer-shell-max);
+}
+
+/// Drawer «wide» (comanda / agenda / edição): shell contínuo.
 @mixin drawer-anchor-fluid(
-  $content-max: $drawer-wide-content-max,
+  $content-max: $drawer-shell-max,
   $sidebar-min: $drawer-wide-sidebar-min,
 ) {
-  @include bp-up(drawer-wide) {
-    left: max($sidebar-min, calc(100vw - #{$content-max}));
-    width: auto;
-    right: 0;
-  }
+  @include drawer-shell-anchor($content-max);
 }

@@ -1,3 +1,159 @@
+@use '../../styles/drawer-stack';
+@use '../../styles/drawer-responsive' as dr;
+
+/**
+ * Sem @use do SCSS do cliente: hosts com Encapsulation.None
+ * reemitiam CSS global e bagunçavam listagens / painel.
+ */
+app-minha-conta-drawer-host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 1280;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  overflow: visible;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.cliente-drawer.cliente-drawer--minha-conta.app-drawer {
+  @include dr.drawer-responsive-shell(560px, minha-conta);
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 1281;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  margin: 0;
+  margin-left: auto;
+  padding: 0;
+  background: #ffffff;
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  > .cliente-shell {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    width: 100%;
+  }
+
+  .cliente-head {
+    position: relative;
+    flex: 0 0 auto;
+    min-height: 90px;
+    border-bottom: none;
+    padding: 30px 50px 20px 30px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  .cliente-head__title-wrap {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding-right: 60px;
+    box-sizing: border-box;
+  }
+
+  .cliente-head__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.85);
+  }
+
+  .cliente-head__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #00000073;
+    cursor: pointer;
+
+    &:hover {
+      border-radius: 6px;
+      background: #f4f4f5;
+      color: #000000a6;
+    }
+  }
+
+  .cliente-body-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .cliente-drawer-footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px 16px;
+    border-top: 1px solid hsl(220, 13%, 91%);
+    background: #fff;
+  }
+
+  .cliente-footer-btn {
+    box-sizing: border-box;
+    min-width: 96px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 15px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+
+    &--ghost {
+      border: 1px solid #f1f1f1;
+      background: #ffffff;
+      color: #000000bf;
+      font-weight: 400;
+    }
+
+    &--primary {
+      border: 1px solid var(--color-primary);
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@include dr.drawer-responsive-chrome('.cliente-drawer--minha-conta');
+
 .minha-conta-tab {
   padding-top: 0.5rem;
 }

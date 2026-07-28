@@ -1,4 +1,115 @@
 <div class="list-page produtos-page">
+  <div class="list-page__lead">
+    <header class="list-head">
+      <div class="list-head__title-row">
+        <div class="list-head__left">
+          <h1 class="list-head__title">Produtos</h1>
+        </div>
+        <div class="list-head__actions list-head__actions--produtos">
+          <div
+            class="list-head__busca-wrap"
+            [class.list-head__busca-wrap--open]="buscaAberta"
+            role="search"
+            (click)="onBuscaWrapClick()"
+          >
+            <span class="list-head__busca-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m21 21-4.34-4.34" />
+                <circle cx="11" cy="11" r="8" />
+              </svg>
+            </span>
+            <span
+              class="list-head__busca-label"
+              [class.list-head__busca-label--hidden]="buscaAberta"
+              aria-hidden="true"
+              >Buscar</span
+            >
+            <label class="sr-only" for="produtos-busca-input">Buscar produtos</label>
+            <input
+              id="produtos-busca-input"
+              type="text"
+              class="list-head__busca-input"
+              [(ngModel)]="busca"
+              name="buscaProdutos"
+              [placeholder]="buscaPlaceholder"
+              [class.list-head__busca-input--search-open]="buscaAberta"
+              [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+              (input)="onBuscaInput()"
+              (keydown.enter)="onBuscaEnter($event)"
+              [attr.aria-expanded]="buscaAberta"
+              aria-label="Buscar produtos"
+              title="Buscar"
+            />
+          </div>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos || filtroAlgumAtivo"
+            [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+            (click)="toggleFiltros($event)"
+            aria-label="Abrir filtros"
+            [attr.aria-expanded]="filtrosAbertos"
+            title="Filtrar"
+          >
+            <svg
+              class="list-icon-sm list-icon-sm--funnel"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+              />
+            </svg>
+            <span class="list-head__toolbar-label">Filtrar</span>
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+            (click)="onNovo()"
+          >
+            <svg
+              class="list-icon-sm"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span>Novo</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  </div>
+
   <div class="list-layout" [class.list-layout--filtros-abertos]="filtrosAbertos">
     <aside
       class="produtos-filtros-drawer"
@@ -7,163 +118,90 @@
       [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
     >
       <div class="produtos-filtros-drawer__inner">
-        <section>
-          <h3 class="produtos-filtros-card__title">Filtros</h3>
-          <p class="produtos-filtros-card__body">
-            Filtros por marca e categoria em breve.
-          </p>
+        <section class="produtos-filtros-card">
+          <h3 class="produtos-filtros-card__title">Marcas</h3>
+          <div class="produtos-filtros-card__body">
+            <label class="produtos-filtros-check">
+              <input
+                type="checkbox"
+                name="prod_filtro_marca_todas"
+                [checked]="todasMarcasSelecionadas()"
+                (change)="toggleTodasMarcas($event)"
+              />
+              Selecionar tudo
+            </label>
+            @for (m of marcasDisponiveis(); track m) {
+              <label class="produtos-filtros-check">
+                <input
+                  type="checkbox"
+                  [name]="'prod_filtro_marca_' + m"
+                  [checked]="marcaFiltroMarcada(m)"
+                  (change)="toggleFiltroMarca(m, $event)"
+                />
+                {{ m }}
+              </label>
+            }
+          </div>
         </section>
-        <footer class="produtos-filtros-drawer__footer">
-          <button type="button" class="btn btn--ghost" (click)="onLimparFiltros()">
-            Limpar filtros
-          </button>
-          <button type="button" class="btn" (click)="onAplicarFiltros()">
-            Aplicar
-          </button>
-        </footer>
+
+        <section class="produtos-filtros-card">
+          <h3 class="produtos-filtros-card__title">Categorias</h3>
+          <div class="produtos-filtros-card__body">
+            <label class="produtos-filtros-check">
+              <input
+                type="checkbox"
+                name="prod_filtro_cat_todas"
+                [checked]="todasCategoriasSelecionadas()"
+                (change)="toggleTodasCategorias($event)"
+              />
+              Selecionar tudo
+            </label>
+            @for (c of categoriasDisponiveis(); track c) {
+              <label class="produtos-filtros-check">
+                <input
+                  type="checkbox"
+                  [name]="'prod_filtro_cat_' + c"
+                  [checked]="categoriaFiltroMarcada(c)"
+                  (change)="toggleFiltroCategoria(c, $event)"
+                />
+                {{ c }}
+              </label>
+            }
+          </div>
+        </section>
       </div>
     </aside>
 
     <div class="list-layout__main">
-      <div class="produtos-page__lead">
-        <header class="list-head">
-          <div class="list-head__title-row">
-            <div class="list-head__left">
-              <h1 class="list-head__title">Produtos</h1>
-            </div>
-            <div class="list-head__actions list-head__actions--produtos">
-              <div
-                class="list-head__busca-wrap"
-                [class.list-head__busca-wrap--open]="buscaAberta"
-                role="search"
-                (click)="onBuscaWrapClick()"
-              >
-                <span class="list-head__busca-icon" aria-hidden="true">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="m21 21-4.34-4.34" />
-                    <circle cx="11" cy="11" r="8" />
-                  </svg>
-                </span>
-                <span
-                  class="list-head__busca-label"
-                  [class.list-head__busca-label--hidden]="buscaAberta"
-                  aria-hidden="true"
-                  >Buscar</span
-                >
-                <label class="sr-only" for="produtos-busca-input">Buscar produtos</label>
-                <input
-                  id="produtos-busca-input"
-                  type="text"
-                  class="list-head__busca-input"
-                  [(ngModel)]="busca"
-                  name="buscaProdutos"
-                  [placeholder]="buscaPlaceholder"
-                  [class.list-head__busca-input--search-open]="buscaAberta"
-                  [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
-                  autocomplete="off"
-                  (click)="$event.stopPropagation()"
-                  (input)="onBuscaInput()"
-                  (keydown.enter)="onBuscaEnter($event)"
-                  [attr.aria-expanded]="buscaAberta"
-                  aria-label="Buscar produtos"
-                  title="Buscar"
-                />
-              </div>
-              <button
-                type="button"
-                class="list-head__toolbar-btn"
-                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
-                [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
-                (click)="toggleFiltros($event)"
-                aria-label="Abrir filtros"
-                title="Filtrar"
-              >
-                <svg
-                  class="list-icon-sm list-icon-sm--funnel"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-                  />
-                </svg>
-                <span class="list-head__toolbar-label">Filtrar</span>
-              </button>
-              <button
-                type="button"
-                class="list-head__toolbar-btn list-head__toolbar-btn--link"
-                (click)="onNovo()"
-              >
-                <svg
-                  class="list-icon-sm"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
-                <span>Novo</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <nav
-          #tabsNav
-          class="list-page__tabs"
-          aria-label="Seções de produtos"
-          [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
-          [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
+      <nav
+        #tabsNav
+        class="list-page__tabs"
+        aria-label="Seções de produtos"
+        [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
+        [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
+      >
+        <span class="list-page__tabs-indicator" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="list-page__tab"
+          data-aba="produtos"
+          [class.list-page__tab--active]="aba === 'produtos'"
+          [attr.aria-current]="aba === 'produtos' ? 'page' : null"
+          (click)="definirAba('produtos')"
         >
-          <span class="list-page__tabs-indicator" aria-hidden="true"></span>
-          <button
-            type="button"
-            class="list-page__tab"
-            data-aba="produtos"
-            [class.list-page__tab--active]="aba === 'produtos'"
-            [attr.aria-current]="aba === 'produtos' ? 'page' : null"
-            (click)="definirAba('produtos')"
-          >
-            Produtos
-          </button>
-          <button
-            type="button"
-            class="list-page__tab"
-            data-aba="lotes"
-            [class.list-page__tab--active]="aba === 'lotes'"
-            [attr.aria-current]="aba === 'lotes' ? 'page' : null"
-            (click)="definirAba('lotes')"
-          >
-            Lotes e validades
-          </button>
-        </nav>
-      </div>
+          Produtos
+        </button>
+        <button
+          type="button"
+          class="list-page__tab"
+          data-aba="lotes"
+          [class.list-page__tab--active]="aba === 'lotes'"
+          [attr.aria-current]="aba === 'lotes' ? 'page' : null"
+          (click)="definirAba('lotes')"
+        >
+          Lotes e validades
+        </button>
+      </nav>
 
       @if (erro) {
         <p class="list-page__error" role="alert">{{ erro }}</p>
@@ -181,6 +219,7 @@
                 <col class="produtos-table__col-estoque" />
                 <col class="produtos-table__col-preco" />
                 <col class="produtos-table__col-comissao" />
+                <col class="produtos-table__col-acoes" />
               </colgroup>
               <thead>
                 <tr>
@@ -440,7 +479,48 @@
                       </td>
                       <td>{{ marcaProduto(p) }}</td>
                       <td>{{ exibirTexto(p.categoria) }}</td>
-                      <td class="col-num">{{ estoqueUnidades(p) | number: '1.0-0' }}</td>
+                      <td class="col-num col-estoque">
+                        <span
+                          class="produtos-estoque-valor"
+                          [class.produtos-estoque-valor--baixo]="
+                            nivelEstoque(p) === 'baixo'
+                          "
+                          [class.produtos-estoque-valor--atencao]="
+                            nivelEstoque(p) === 'atencao'
+                          "
+                          role="button"
+                          tabindex="0"
+                          (click)="abrirEntrada(p, $event)"
+                          (keydown.enter)="abrirEntrada(p, $event)"
+                          (keydown.space)="abrirEntrada(p, $event); $event.preventDefault()"
+                          [attr.aria-label]="
+                            'Movimentações de estoque de ' + (p.produto || '')
+                          "
+                        >
+                          {{ estoqueUnidades(p) | number: '1.0-3' }}
+                          {{ rotuloUnidadeEstoque(p) }}
+                          <svg
+                            class="produtos-estoque-valor__ico lucide lucide-square-pen"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                            />
+                            <path
+                              d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                            />
+                          </svg>
+                        </span>
+                      </td>
                       <td class="col-num">
                         @if (precoNum(p) !== null) {
                           {{ precoNum(p)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
@@ -450,13 +530,59 @@
                       </td>
                       <td class="col-num">{{ comissaoProduto(p) }}</td>
                       <td class="col-acoes">
-                        <button
-                          type="button"
-                          class="produtos-entrada-btn"
-                          (click)="abrirEntrada(p, $event)"
-                        >
-                          Entrada
-                        </button>
+                        <div class="list-row-acoes">
+                          <button
+                            type="button"
+                            class="list-row-acoes__btn list-row-acoes__btn--edit"
+                            (click)="abrirEditar(p)"
+                            aria-label="Editar produto"
+                            title="Editar"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="13.33"
+                              height="13.33"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path
+                                d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                              />
+                            </svg>
+                          </button>
+                          <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                          <button
+                            type="button"
+                            class="list-row-acoes__btn list-row-acoes__btn--delete"
+                            (click)="pedirExcluir(p, $event)"
+                            [disabled]="excluindo && excluirAlvo?.id === p.id"
+                            aria-label="Excluir produto"
+                            title="Excluir"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="13.33"
+                              height="13.33"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   }
@@ -572,53 +698,298 @@
   </div>
 </div>
 
-@if (entradaProduto; as ep) {
+@if (movimentosDrawerAberto && entradaProduto; as ep) {
   <div
-    class="produtos-entrada-overlay"
-    (click)="fecharEntrada()"
+    class="overlay overlay--estoque-mov"
+    [class.overlay--open]="movimentosPanelOpen"
     aria-hidden="true"
+    (click)="fecharEntrada()"
   ></div>
   <div
-    class="produtos-entrada-modal"
+    class="app-drawer cliente-drawer cliente-drawer--estoque-mov"
+    [class.app-drawer--open]="movimentosPanelOpen"
     role="dialog"
     aria-modal="true"
-    [attr.aria-label]="'Entrada de estoque — ' + (ep.produto || '')"
+    [attr.aria-label]="'Movimentações de estoque — ' + (ep.produto || '')"
     (click)="$event.stopPropagation()"
   >
-    <h2 class="produtos-entrada-modal__title">Entrada de estoque</h2>
-    <p class="produtos-entrada-modal__nome">{{ ep.produto }}</p>
-    <label class="produtos-entrada-modal__field">
-      <span
-        >Quantidade ({{ rotuloEntradaUnidade(ep) }})</span
-      >
-      <input
-        type="text"
-        inputmode="decimal"
-        [(ngModel)]="entradaQtd"
-        name="entradaQtd"
-        autocomplete="off"
-        [disabled]="entradaSalvando"
-      />
-    </label>
-    @if (entradaErro) {
-      <p class="produtos-entrada-modal__erro" role="alert">{{ entradaErro }}</p>
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">Movimentações de estoque</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="fecharEntrada()"
+          aria-label="Fechar"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-x"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="cliente-body-scroll">
+        <div class="cliente-body estoque-mov-drawer__body">
+          <div class="cliente-main estoque-mov-drawer__main">
+            @if (movimentosErro) {
+              <p class="estoque-mov-drawer__alert" role="alert">
+                {{ movimentosErro }}
+              </p>
+            }
+
+            @if (formEntradaAberto) {
+              <div class="estoque-mov-drawer__form">
+                <h3 class="estoque-mov-drawer__form-title">Nova entrada</h3>
+                <label class="estoque-mov-drawer__field">
+                  <span>Quantidade ({{ rotuloEntradaUnidade(ep) }})</span>
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    [(ngModel)]="entradaQtd"
+                    name="entradaQtdDrawer"
+                    autocomplete="off"
+                    [disabled]="entradaSalvando"
+                  />
+                </label>
+                @if (entradaErro) {
+                  <p class="estoque-mov-drawer__alert" role="alert">
+                    {{ entradaErro }}
+                  </p>
+                }
+              </div>
+            } @else {
+              <div class="estoque-mov-drawer__table-wrap">
+                <table class="estoque-mov-drawer__table">
+                  <colgroup>
+                    <col class="estoque-mov-col--origem" />
+                    <col class="estoque-mov-col--lote" />
+                    <col class="estoque-mov-col--data" />
+                    <col class="estoque-mov-col--anterior" />
+                    <col class="estoque-mov-col--tipo" />
+                    <col class="estoque-mov-col--quantidade" />
+                    <col class="estoque-mov-col--saldo" />
+                    <col class="estoque-mov-col--profissional" />
+                    <col class="estoque-mov-col--descricao" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th scope="col">Origem</th>
+                      <th scope="col">Lote</th>
+                      <th
+                        class="estoque-mov-th-sort-wrap"
+                        scope="col"
+                      >
+                        <app-ui-tip-trigger
+                          fill
+                          [tip]="tooltipOrdenacaoMovimentosData()"
+                        >
+                          <button
+                            type="button"
+                            class="estoque-mov-th-sort"
+                            (click)="onOrdenarMovimentosData($event)"
+                            [attr.aria-label]="
+                              'Ordenar por data — ' +
+                              tooltipOrdenacaoMovimentosData()
+                            "
+                          >
+                            <span class="estoque-mov-th-sort__label">Data</span>
+                            <span
+                              class="estoque-mov-th-sort__icons"
+                              aria-hidden="true"
+                            >
+                              <svg
+                                class="estoque-mov-th-sort__tri estoque-mov-th-sort__tri--up"
+                                [class.estoque-mov-th-sort__tri--on]="
+                                  movimentosOrdenacaoDir === 'asc'
+                                "
+                                width="10"
+                                height="6"
+                                viewBox="0 0 10 6"
+                              >
+                                <polygon
+                                  points="5,0 10,6 0,6"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                              <svg
+                                class="estoque-mov-th-sort__tri estoque-mov-th-sort__tri--down"
+                                [class.estoque-mov-th-sort__tri--on]="
+                                  movimentosOrdenacaoDir === 'desc'
+                                "
+                                width="10"
+                                height="6"
+                                viewBox="0 0 10 6"
+                              >
+                                <polygon
+                                  points="5,6 0,0 10,0"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                            </span>
+                          </button>
+                        </app-ui-tip-trigger>
+                      </th>
+                      <th scope="col">Anterior</th>
+                      <th scope="col">Tipo</th>
+                      <th scope="col">Quantidade</th>
+                      <th scope="col">Saldo</th>
+                      <th scope="col">Profissional</th>
+                      <th scope="col">Descrição</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @if (movimentosCarregando) {
+                      <tr>
+                        <td colspan="9">Carregando…</td>
+                      </tr>
+                    } @else if (movimentos.length === 0) {
+                      <tr>
+                        <td colspan="9" class="estoque-mov-drawer__empty">
+                          Nenhuma movimentação registrada.
+                        </td>
+                      </tr>
+                    } @else {
+                      @for (m of movimentos; track m.id) {
+                        <tr>
+                          <td>
+                            <span class="estoque-mov-tag estoque-mov-tag--origem">{{
+                              m.origem
+                            }}</span>
+                          </td>
+                          <td>{{ m.lote || '' }}</td>
+                          <td>{{ formatarDataMovimento(m.created_at) }}</td>
+                          <td>
+                            {{ m.saldo_anterior }}
+                            {{ rotuloUnidadeEstoque(ep, m.saldo_anterior) }}
+                          </td>
+                          <td>
+                            <span
+                              class="estoque-mov-tag"
+                              [class.estoque-mov-tag--entrada]="
+                                m.tipo_exibicao === 'Entrada'
+                              "
+                              [class.estoque-mov-tag--saida]="
+                                m.tipo_exibicao !== 'Entrada'
+                              "
+                              >{{ m.tipo_exibicao }}</span
+                            >
+                          </td>
+                          <td>
+                            {{ m.quantidade }}
+                            {{ rotuloUnidadeEstoque(ep, m.quantidade) }}
+                          </td>
+                          <td>
+                            {{ m.saldo_apos || '' }}
+                            {{ rotuloUnidadeEstoque(ep, m.saldo_apos) }}
+                          </td>
+                          <td>{{ m.profissional || '' }}</td>
+                          <td>{{ m.descricao || '' }}</td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <footer class="cliente-drawer-footer">
+        @if (formEntradaAberto) {
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--ghost"
+            (click)="cancelarFormEntrada()"
+            [disabled]="entradaSalvando"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--primary"
+            (click)="confirmarEntrada()"
+            [disabled]="entradaSalvando"
+          >
+            {{ entradaSalvando ? 'Salvando…' : 'Salvar' }}
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--ghost"
+            (click)="fecharEntrada()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="cliente-footer-btn cliente-footer-btn--primary"
+            (click)="abrirFormNovaEntrada()"
+          >
+            + Novo
+          </button>
+        }
+      </footer>
+    </div>
+  </div>
+}
+
+@if (excluirModalAberto && excluirAlvo) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharExcluir()"
+  ></div>
+  <div
+    class="comandas-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="produtos-excluir-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 id="produtos-excluir-title" class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir esse produto?
+    </p>
+    @if (excluirErro) {
+      <p class="comandas-modal__erro" role="alert">{{ excluirErro }}</p>
     }
-    <div class="produtos-entrada-modal__actions">
+    <div class="comandas-modal__actions">
       <button
         type="button"
-        class="btn btn--ghost"
-        (click)="fecharEntrada()"
-        [disabled]="entradaSalvando"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="excluindo"
+        (click)="fecharExcluir()"
       >
         Cancelar
       </button>
       <button
         type="button"
-        class="btn"
-        (click)="confirmarEntrada()"
-        [disabled]="entradaSalvando"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="excluindo"
+        (click)="confirmarExcluir()"
       >
-        {{ entradaSalvando ? 'Salvando…' : 'Confirmar' }}
+        {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
       </button>
     </div>
   </div>

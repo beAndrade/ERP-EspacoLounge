@@ -1179,4 +1179,51 @@ CREATE INDEX IF NOT EXISTS "estoque_movimentos_produto_idx"
 CREATE INDEX IF NOT EXISTS "estoque_movimentos_id_atendimento_idx"
   ON "estoque_movimentos" ("id_atendimento");
 `));
+
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'estoque_movimentos'
+      AND c.column_name = 'profissional_id'
+  ) THEN
+    ALTER TABLE "estoque_movimentos" ADD COLUMN "profissional_id" integer;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'estoque_movimentos'
+      AND c.column_name = 'usuario_id'
+  ) THEN
+    ALTER TABLE "estoque_movimentos" ADD COLUMN "usuario_id" integer;
+  END IF;
+END $$;
+`));
+
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'estoque_movimentos_profissional_id_fkey'
+  ) THEN
+    ALTER TABLE "estoque_movimentos"
+      ADD CONSTRAINT "estoque_movimentos_profissional_id_fkey"
+      FOREIGN KEY ("profissional_id") REFERENCES "profissionais"("id") ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'estoque_movimentos_usuario_id_fkey'
+  ) THEN
+    ALTER TABLE "estoque_movimentos"
+      ADD CONSTRAINT "estoque_movimentos_usuario_id_fkey"
+      FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE SET NULL;
+  END IF;
+END $$;
+`));
+
+  await db.execute(sql.raw(`
+CREATE INDEX IF NOT EXISTS "estoque_movimentos_profissional_id_idx"
+  ON "estoque_movimentos" ("profissional_id");
+`));
 }

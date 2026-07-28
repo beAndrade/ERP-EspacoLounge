@@ -67,7 +67,9 @@
   min-height: 60px;
   margin: 0;
   /** Mesmo valor que o padding horizontal do `.fat-body` (área do scroll + gutter). */
-  margin-right: calc(-1 * var(--fat-body-pad-x));
+  margin-right: calc(
+    -1 * (var(--fat-body-pad-x) + var(--drawer-inset-x, 0px))
+  );
   padding: 0;
   border: 0;
   border-radius: 6px;

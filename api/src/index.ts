@@ -231,8 +231,10 @@ import {
   incrementarEstoqueProduto,
   criarProdutoApi,
   atualizarProdutoApi,
+  excluirProdutoApi,
   listServicoProdutosConsumidos,
   replaceServicoProdutosConsumidos,
+  listEstoqueMovimentosProduto,
 } from './services/estoque-domain';
 import { isPublicApiPath, authenticateRequest } from './lib/auth-guard';
 import {
@@ -1445,8 +1447,16 @@ const app = new Elysia({ adapter: node() })
   })
   .post(
     '/api/produtos',
-    async ({ body }) => {
+    async ({ body, request }) => {
       try {
+        const auth = await authenticateRequest(request);
+        const actor =
+          auth.ok
+            ? {
+                usuario_id: auth.user.id,
+                profissional_id: auth.user.profissional_id,
+              }
+            : undefined;
         const b = body as Record<string, unknown>;
         const item = await criarProdutoApi(db, {
           produto: String(b.produto ?? b.nome ?? ''),
@@ -1510,6 +1520,7 @@ const app = new Elysia({ adapter: node() })
               : b.fotoUrl != null
                 ? String(b.fotoUrl)
                 : null,
+          actor,
         });
         return ok({ item });
       } catch (e) {
@@ -1606,14 +1617,35 @@ const app = new Elysia({ adapter: node() })
       body: produtoWriteBodySchema,
     },
   )
+  .delete('/api/produtos/:id', async ({ params }) => {
+    try {
+      const r = await excluirProdutoApi(db, params.id);
+      return ok(r);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+      if (/Não é possível excluir|inválido/i.test(msg)) {
+        return fail('VALIDATION', msg);
+      }
+      return fail('SERVER', msg);
+    }
+  })
   .patch(
     '/api/produtos/:id/estoque',
-    async ({ params, body }) => {
+    async ({ params, body, request }) => {
       try {
         const id = Number.parseInt(String(params.id ?? '').trim(), 10);
         if (!Number.isFinite(id) || id <= 0) {
           return fail('VALIDATION', 'id inválido');
         }
+        const auth = await authenticateRequest(request);
+        const actor =
+          auth.ok
+            ? {
+                usuario_id: auth.user.id,
+                profissional_id: auth.user.profissional_id,
+              }
+            : undefined;
         const b = body as {
           adicionar?: unknown;
           adicionar_unidades?: unknown;
@@ -1630,6 +1662,7 @@ const app = new Elysia({ adapter: node() })
             unidadesRaw != null && unidadesRaw !== ''
               ? Number(unidadesRaw)
               : undefined,
+          actor,
         });
         return ok({ item });
       } catch (e) {
@@ -1653,6 +1686,21 @@ const app = new Elysia({ adapter: node() })
       ),
     },
   )
+  .get('/api/produtos/:id/estoque/movimentos', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id ?? '').trim(), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const items = await listEstoqueMovimentosProduto(db, id);
+      return ok({ items });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+      if (/inválido/i.test(msg)) return fail('VALIDATION', msg);
+      return fail('SERVER', msg);
+    }
+  })
   .get('/api/cabelos', async () => ok({ items: await listCabelosApi(db) }))
   .group('/api', (api) =>
     api

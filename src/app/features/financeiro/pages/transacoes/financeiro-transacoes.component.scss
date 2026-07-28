@@ -4,6 +4,7 @@
 @use '../../../../styles/ui-tooltip';
 @use '../../../../styles/badge-atraso-icon' as badge-atraso;
 @use '../../../../styles/drawer-stack';
+@use '../../../../styles/drawer-responsive' as dr;
 @use './financeiro-transacoes-filtros-sidebar';
 
 :host {
@@ -238,7 +239,7 @@
   color: rgba(0, 0, 0, 0.75);
   font-weight: 600;
   font-size: 14px;
-  background: #fafafa;
+  background: #fbfbfb;
   border-bottom: 1px solid #efefef;
   vertical-align: middle;
 }
@@ -261,7 +262,7 @@
 }
 
 .fin-transacoes-table thead th.col-data {
-  background: #fafafa;
+  background: #f0f0f0;
   padding: 0;
 }
 
@@ -880,18 +881,20 @@
 }
 
 .fin-trans-drawer.app-drawer {
+  --drawer-preferred-w: 1650px;
   --drawer-inset-x: 15px;
   --drawer-pad-x: var(--drawer-inset-x);
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
+  left: max(0px, calc(100vw - var(--drawer-preferred-w)));
   bottom: 0;
   z-index: 1100;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: 100vw;
+  width: auto;
+  max-width: 100vw;
   height: 100vh;
   min-height: 0;
   background: #ffffff;
@@ -935,8 +938,12 @@
 
   &.app-drawer--editar {
     z-index: 1103;
-    max-width: min(520px, 100vw);
-    margin-left: auto;
+    --drawer-preferred-w: 520px;
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    padding: 0;
+    max-width: 100vw;
+    margin-left: 0;
   }
 
   &.app-drawer--editar > app-fin-transacao-editar-drawer {
@@ -949,6 +956,9 @@
 
   &.app-drawer--novo {
     z-index: 1103;
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    padding: 0;
     max-width: min(560px, 100vw);
     margin-left: auto;
   }
@@ -964,25 +974,14 @@
 
 @media (min-width: 1024px) {
   .fin-trans-drawer.app-drawer.app-drawer--faturar {
-    width: min(480px, 100vw);
-    left: auto;
-    right: 0;
-  }
-}
-
-@media (min-width: 1648px) {
-  .fin-trans-drawer.app-drawer.app-drawer--comanda:not(.app-drawer--faturar) {
-    left: max(320px, calc(100vw - 1400px));
+    --drawer-preferred-w: 480px;
     width: auto;
-    right: 0;
-  }
-
-  .fin-trans-drawer.app-drawer.app-drawer--faturar {
-    width: min(480px, 100vw);
-    left: auto;
+    left: max(0px, calc(100vw - var(--drawer-preferred-w)));
     right: 0;
   }
 }
+
+/* Shell contínuo 1650px em `.fin-trans-drawer` — sem media query de pulo. */
 
 .fin-transacoes-estorno-modal,
 .fin-transacoes-exclusao-modal {
@@ -1017,4 +1016,7 @@
   right: 0;
   max-width: calc(100vw - 1.5rem);
 }
+
+
+/* Chrome cliente-head não se aplica a este shell (sem .cliente-head). */
 

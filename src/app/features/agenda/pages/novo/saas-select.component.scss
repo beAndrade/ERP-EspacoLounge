@@ -113,7 +113,12 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  right: 0;
+  right: auto;
+  /* Por padrão = largura do trigger; o pai pode alargar via CSS vars. */
+  width: var(--saas-select-panel-width, 100%);
+  min-width: var(--saas-select-panel-min-width, 100%);
+  max-width: min(90vw, 36rem);
+  box-sizing: border-box;
   z-index: 40;
   border-radius: 10px;
   box-shadow: 4px 10px 24px rgba(0, 0, 0, 0.1);
@@ -338,9 +343,9 @@
 
   .saas-select__panel-elev {
     left: 0;
-    right: 0;
-    width: 100%;
-    min-width: 100%;
+    right: auto;
+    width: var(--saas-select-panel-width, 100%);
+    min-width: var(--saas-select-panel-min-width, 100%);
   }
 
   .saas-select__list {

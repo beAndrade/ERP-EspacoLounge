@@ -113,7 +113,7 @@
     font-weight: 600;
     color: rgba(0, 0, 0, 0.75);
     border-bottom: 1px solid #efefef;
-    background: #fafafa;
+    background: #fbfbfb;
   }
 
   tbody td {
@@ -127,6 +127,10 @@
 
 .orcamentos-th-sort-wrap {
   padding: 0 !important;
+}
+
+.orcamentos-table thead th.orcamentos-th-sort-wrap:first-child {
+  background: #f0f0f0;
 }
 
 .orcamentos-th-sort {

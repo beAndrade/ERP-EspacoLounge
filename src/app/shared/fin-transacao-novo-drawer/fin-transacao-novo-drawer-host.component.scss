@@ -1,3 +1,5 @@
+@use '../../styles/drawer-responsive' as dr;
+
 .overlay--fin-novo {
   position: fixed;
   inset: 0;
@@ -21,18 +23,16 @@
 }
 
 .fin-novo-global-drawer.app-drawer {
-  --drawer-inset-x: 15px;
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  @include dr.drawer-flush-right(560px);
   position: fixed;
   top: 0;
-  right: 0;
   bottom: 0;
-  left: auto;
   z-index: 1201;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  width: min(560px, 100vw);
-  max-width: 100vw;
   height: 100vh;
   min-height: 0;
   margin-left: auto;
@@ -58,6 +58,8 @@
     width: 100%;
   }
 }
+
+@include dr.drawer-responsive-chrome('.fin-novo-global-drawer');
 
 .fin-novo-transfer-stub {
   display: flex;

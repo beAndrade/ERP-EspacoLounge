@@ -10,6 +10,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { portalHostElementToBody } from '../drawer-body-portal';
 import { SaasSelectComponent } from '../../features/agenda/pages/novo/saas-select.component';
+import { CursorFimValorDirective } from '../../core/directives/cursor-fim-valor.directive';
 import {
   PRODUTO_ABAS,
   ProdutoCadastroDrawerService,
@@ -17,11 +18,15 @@ import {
 } from './produto-cadastro-drawer.service';
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
 import { MarcaCadastroDrawerService } from '../marca-cadastro-drawer/marca-cadastro-drawer.service';
+import {
+  codigoUnidadeAPartirDoLabelSelect,
+  nomeCompletoUnidadeProduto,
+} from '../../core/utils/produto-unidade';
 
 @Component({
   selector: 'app-produto-cadastro-drawer-host',
   standalone: true,
-  imports: [FormsModule, SaasSelectComponent],
+  imports: [FormsModule, SaasSelectComponent, CursorFimValorDirective],
   templateUrl: './produto-cadastro-drawer-host.component.html',
   styleUrl: './produto-cadastro-drawer-host.component.scss',
   encapsulation: ViewEncapsulation.None,
@@ -76,8 +81,8 @@ export class ProdutoCadastroDrawerHostComponent implements OnInit, OnDestroy {
   }
 
   rotuloUnidade(): string {
-    if (this.d.registroSaida === 'em ml') return 'ml';
-    if (this.d.registroSaida === 'em gramas') return 'g';
-    return 'unidade';
+    return nomeCompletoUnidadeProduto(
+      codigoUnidadeAPartirDoLabelSelect(this.d.registroSaida),
+    );
   }
 }

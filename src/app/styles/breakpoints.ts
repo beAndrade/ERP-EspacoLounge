@@ -14,8 +14,12 @@ export const BREAKPOINTS_PX = {
   comandaColMd: 1120,
   comandaColSm: 540,
   comandaColXs: 480,
-  drawerWide: 1648,
+  /** Acima disso o drawer deixa de ser 100vw e afasta-se da esquerda. */
+  drawerWide: 1650,
 } as const;
+
+/** Shell máximo contínuo dos drawers laterais (px). */
+export const DRAWER_SHELL_MAX_PX = 1650;
 
 export type BreakpointKey = keyof typeof BREAKPOINTS_PX;
 

@@ -37,6 +37,7 @@ import {
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
   ProdutoWritePayload,
+  EstoqueMovimentoItem,
   ProfissionalCadastroPayload,
   ProfissionalComissaoServicoItem,
   ProfissionalListaItem,
@@ -235,6 +236,14 @@ export class SheetsApiService {
       );
   }
 
+  deleteProduto(id: number): Observable<{ id: number }> {
+    return this.http
+      .delete<ApiResponse<{ id: number }>>(
+        this.url(`/api/produtos/${encodeURIComponent(String(id))}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
   /** Entrada manual no `produtos.estoque` (PATCH). */
   incrementarEstoqueProduto(
     id: number,
@@ -254,6 +263,21 @@ export class SheetsApiService {
       .pipe(
         map((r) => this.unwrap(r)),
         map((d) => d.item),
+      );
+  }
+
+  listEstoqueMovimentos(
+    produtoId: number,
+  ): Observable<EstoqueMovimentoItem[]> {
+    return this.http
+      .get<ApiResponse<{ items: EstoqueMovimentoItem[] }>>(
+        this.url(
+          `/api/produtos/${encodeURIComponent(String(produtoId))}/estoque/movimentos`,
+        ),
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items ?? []),
       );
   }
 

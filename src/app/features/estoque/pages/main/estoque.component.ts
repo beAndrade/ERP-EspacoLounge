@@ -10,13 +10,18 @@ import {
   ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ProdutoCatalogoItem } from '../../../../core/models/api.models';
+import { ProdutoCatalogoItem, EstoqueMovimentoItem } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { extractApiErrorMessage } from '../../../../core/utils/api-error-message';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { DRAWER_ANIM_MS } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ProdutoCadastroDrawerService } from '../../../../shared/produto-cadastro-drawer/produto-cadastro-drawer.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
+import {
+  sufixoUnidadeProduto,
+  unidadeProdutoUsaEquivalente,
+} from '../../../../core/utils/produto-unidade';
 
 export type ProdutosAba = 'produtos' | 'lotes';
 export type ProdutosOrdenacaoColuna =
@@ -49,6 +54,20 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
   entradaQtd = '1';
   entradaSalvando = false;
   entradaErro = '';
+  movimentosDrawerAberto = false;
+  movimentosPanelOpen = false;
+  movimentos: EstoqueMovimentoItem[] = [];
+  movimentosCarregando = false;
+  movimentosErro = '';
+  formEntradaAberto = false;
+  /** Ordenação da coluna Data no drawer de movimentações. */
+  movimentosOrdenacaoDir: 'asc' | 'desc' = 'desc';
+  private movimentosCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  excluirModalAberto = false;
+  excluirAlvo: ProdutoCatalogoItem | null = null;
+  excluirErro = '';
+  excluindo = false;
 
   aba: ProdutosAba = 'produtos';
   tabsIndicatorLeft = 0;
@@ -59,6 +78,9 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
   filtrosAbertos = false;
   pulsoToolbarBusca = false;
   pulsoToolbarFiltro = false;
+  /** `null` = todas selecionadas. */
+  private filtroMarcas: Set<string> | null = null;
+  private filtroCategorias: Set<string> | null = null;
   private readonly duracaoPulsoToolbarMs = 600;
   private tPulsoBusca = 0;
   private tPulsoFiltro = 0;
@@ -178,7 +200,96 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
     this.filtrosAbertos = !this.filtrosAbertos;
   }
 
+  marcasDisponiveis(): string[] {
+    return [
+      ...new Set(
+        this.itens
+          .map((p) => String(p.marca ?? '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  categoriasDisponiveis(): string[] {
+    return [
+      ...new Set(
+        this.itens
+          .map((p) => String(p.categoria ?? '').trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  todasMarcasSelecionadas(): boolean {
+    return this.filtroMarcas === null;
+  }
+
+  marcaFiltroMarcada(marca: string): boolean {
+    return this.filtroMarcas === null || this.filtroMarcas.has(marca);
+  }
+
+  toggleTodasMarcas(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    this.filtroMarcas = checked ? null : new Set();
+    this.pagina = 1;
+  }
+
+  toggleFiltroMarca(marca: string, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    const todas = this.marcasDisponiveis();
+    if (this.filtroMarcas === null) {
+      this.filtroMarcas = new Set(todas);
+    }
+    if (checked) this.filtroMarcas.add(marca);
+    else this.filtroMarcas.delete(marca);
+    if (
+      this.filtroMarcas.size === 0 ||
+      (todas.length > 0 && todas.every((m) => this.filtroMarcas!.has(m)))
+    ) {
+      this.filtroMarcas = this.filtroMarcas.size === 0 ? new Set() : null;
+    }
+    this.pagina = 1;
+  }
+
+  todasCategoriasSelecionadas(): boolean {
+    return this.filtroCategorias === null;
+  }
+
+  categoriaFiltroMarcada(cat: string): boolean {
+    return this.filtroCategorias === null || this.filtroCategorias.has(cat);
+  }
+
+  toggleTodasCategorias(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    this.filtroCategorias = checked ? null : new Set();
+    this.pagina = 1;
+  }
+
+  toggleFiltroCategoria(cat: string, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    const todas = this.categoriasDisponiveis();
+    if (this.filtroCategorias === null) {
+      this.filtroCategorias = new Set(todas);
+    }
+    if (checked) this.filtroCategorias.add(cat);
+    else this.filtroCategorias.delete(cat);
+    if (
+      this.filtroCategorias.size === 0 ||
+      (todas.length > 0 && todas.every((c) => this.filtroCategorias!.has(c)))
+    ) {
+      this.filtroCategorias =
+        this.filtroCategorias.size === 0 ? new Set() : null;
+    }
+    this.pagina = 1;
+  }
+
+  get filtroAlgumAtivo(): boolean {
+    return this.filtroMarcas !== null || this.filtroCategorias !== null;
+  }
+
   onLimparFiltros(): void {
+    this.filtroMarcas = null;
+    this.filtroCategorias = null;
     this.pagina = 1;
   }
 
@@ -261,24 +372,173 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
     });
   }
 
+  pedirExcluir(p: ProdutoCatalogoItem, ev?: Event): void {
+    ev?.stopPropagation();
+    this.excluirAlvo = p;
+    this.excluirErro = '';
+    this.excluirModalAberto = true;
+  }
+
+  fecharExcluir(): void {
+    if (this.excluindo) return;
+    this.excluirModalAberto = false;
+    this.excluirAlvo = null;
+    this.excluirErro = '';
+  }
+
+  confirmarExcluir(): void {
+    const p = this.excluirAlvo;
+    if (!p || this.excluindo) return;
+    this.excluindo = true;
+    this.excluirErro = '';
+    this.api.deleteProduto(p.id).subscribe({
+      next: () => {
+        this.excluindo = false;
+        this.selecionados.delete(p.id);
+        this.fecharExcluir();
+        this.toast.show('Produto excluído.');
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.excluindo = false;
+        this.excluirErro = extractApiErrorMessage(
+          e,
+          'Não foi possível excluir o produto.',
+        );
+      },
+    });
+  }
+
   abrirEntrada(p: ProdutoCatalogoItem, ev?: Event): void {
     ev?.stopPropagation();
     this.entradaProduto = p;
     this.entradaQtd = '1';
     this.entradaErro = '';
     this.entradaSalvando = false;
+    this.formEntradaAberto = false;
+    this.movimentosErro = '';
+    this.movimentos = [];
+    this.movimentosOrdenacaoDir = 'desc';
+    this.movimentosDrawerAberto = true;
+    this.movimentosPanelOpen = false;
+    if (this.movimentosCloseTimer != null) {
+      clearTimeout(this.movimentosCloseTimer);
+      this.movimentosCloseTimer = null;
+    }
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this.movimentosPanelOpen = true;
+        });
+      });
+    });
+    this.carregarMovimentos(p.id);
   }
 
   fecharEntrada(): void {
     if (this.entradaSalvando) return;
-    this.entradaProduto = null;
+    this.movimentosPanelOpen = false;
+    this.formEntradaAberto = false;
+    if (this.movimentosCloseTimer != null) clearTimeout(this.movimentosCloseTimer);
+    this.movimentosCloseTimer = setTimeout(() => {
+      this.movimentosCloseTimer = null;
+      this.movimentosDrawerAberto = false;
+      this.entradaProduto = null;
+      this.entradaErro = '';
+      this.movimentos = [];
+      this.movimentosErro = '';
+    }, DRAWER_ANIM_MS);
+  }
+
+  carregarMovimentos(produtoId: number): void {
+    this.movimentosCarregando = true;
+    this.movimentosErro = '';
+    this.api.listEstoqueMovimentos(produtoId).subscribe({
+      next: (items) => {
+        this.movimentos = this.ordenarMovimentosPorData(items ?? []);
+        this.movimentosCarregando = false;
+      },
+      error: (e: unknown) => {
+        this.movimentosCarregando = false;
+        this.movimentosErro =
+          extractApiErrorMessage(e) ||
+          'Não foi possível carregar as movimentações.';
+      },
+    });
+  }
+
+  onOrdenarMovimentosData(ev?: Event): void {
+    ev?.stopPropagation();
+    this.movimentosOrdenacaoDir =
+      this.movimentosOrdenacaoDir === 'asc' ? 'desc' : 'asc';
+    this.movimentos = this.ordenarMovimentosPorData(this.movimentos);
+  }
+
+  tooltipOrdenacaoMovimentosData(): string {
+    return tooltipOrdenacaoProximoClique(
+      'data',
+      this.movimentosOrdenacaoDir,
+      'data',
+    );
+  }
+
+  private ordenarMovimentosPorData(
+    items: EstoqueMovimentoItem[],
+  ): EstoqueMovimentoItem[] {
+    const dir = this.movimentosOrdenacaoDir === 'asc' ? 1 : -1;
+    return items.slice().sort((a, b) => {
+      const ta = Date.parse(String(a.created_at ?? '')) || 0;
+      const tb = Date.parse(String(b.created_at ?? '')) || 0;
+      if (ta !== tb) return (ta - tb) * dir;
+      return (a.id - b.id) * dir;
+    });
+  }
+
+  abrirFormNovaEntrada(): void {
+    this.entradaQtd = '1';
+    this.entradaErro = '';
+    this.formEntradaAberto = true;
+  }
+
+  cancelarFormEntrada(): void {
+    if (this.entradaSalvando) return;
+    this.formEntradaAberto = false;
     this.entradaErro = '';
   }
 
+  rotuloUnidadeEstoque(
+    p: ProdutoCatalogoItem,
+    quantidade?: number | string | null,
+  ): string {
+    const q =
+      quantidade != null && String(quantidade).trim() !== ''
+        ? Math.abs(this.parseQuantidadeTexto(quantidade))
+        : Math.abs(this.estoqueUnidades(p));
+    return sufixoUnidadeProduto(p.unidade, q);
+  }
+
+  private parseQuantidadeTexto(v: number | string | null | undefined): number {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    let t = String(v ?? '').replace(/\s/g, '').trim();
+    if (!t) return 0;
+    if (t.includes(',')) {
+      t = t.replace(/\./g, '').replace(',', '.');
+    }
+    const n = parseFloat(t.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  }
+
   rotuloEntradaUnidade(p: ProdutoCatalogoItem): string {
-    const u = String(p.unidade ?? 'unidade').trim().toLowerCase();
-    if (u === 'ml' || u === 'g') return 'frasco(s)';
-    return 'unidade(s)';
+    if (unidadeProdutoUsaEquivalente(p.unidade)) return 'frasco(s)';
+    return sufixoUnidadeProduto(p.unidade, 2);
+  }
+
+  formatarDataMovimento(iso: string): string {
+    const raw = String(iso ?? '').trim();
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return raw.slice(0, 10);
+    return d.toLocaleDateString('pt-BR');
   }
 
   confirmarEntrada(): void {
@@ -289,18 +549,17 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
       this.entradaErro = 'Informe uma quantidade maior que zero.';
       return;
     }
-    const u = String(p.unidade ?? 'unidade').trim().toLowerCase();
     this.entradaSalvando = true;
     this.entradaErro = '';
-    const opts =
-      u === 'ml' || u === 'g'
-        ? { adicionar_unidades: q }
-        : { adicionar: Math.trunc(q) };
+    const opts = unidadeProdutoUsaEquivalente(p.unidade)
+      ? { adicionar_unidades: q }
+      : { adicionar: Math.trunc(q) };
     this.api.incrementarEstoqueProduto(p.id, opts).subscribe({
       next: () => {
         this.entradaSalvando = false;
-        this.entradaProduto = null;
+        this.formEntradaAberto = false;
         this.toast.show('Estoque atualizado.');
+        this.carregarMovimentos(p.id);
         this.carregar();
       },
       error: (e: unknown) => {
@@ -350,6 +609,19 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
         return campos.some((c) =>
           this.normalizarBusca(String(c ?? '')).includes(q),
         );
+      });
+    }
+
+    if (this.filtroMarcas) {
+      list = list.filter((p) => {
+        const m = String(p.marca ?? '').trim();
+        return m.length > 0 && this.filtroMarcas!.has(m);
+      });
+    }
+    if (this.filtroCategorias) {
+      list = list.filter((p) => {
+        const c = String(p.categoria ?? '').trim();
+        return c.length > 0 && this.filtroCategorias!.has(c);
       });
     }
 
@@ -490,10 +762,41 @@ export class EstoqueComponent implements OnInit, AfterViewInit {
     return Number.isFinite(n) ? n : 0;
   }
 
+  /** Zerado/negativo = baixo; até o mínimo = atenção; acima = ok (cor padrão). */
+  nivelEstoque(p: ProdutoCatalogoItem): 'baixo' | 'atencao' | 'ok' {
+    const q = this.estoqueUnidades(p);
+    if (q <= 0) return 'baixo';
+    const min = this.estoqueMinimoNum(p);
+    if (min > 0 && q <= min) return 'atencao';
+    return 'ok';
+  }
+
+  private estoqueMinimoNum(p: ProdutoCatalogoItem): number {
+    const v = p.estoque_minimo;
+    if (v == null || v === '') return 0;
+    if (typeof v === 'number' && Number.isFinite(v)) return Math.max(0, v);
+    let t = String(v).replace(/\s/g, '').trim();
+    if (!t) return 0;
+    if (t.includes(',')) {
+      t = t.replace(/\./g, '').replace(',', '.');
+    }
+    const n = parseFloat(t.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
-    if (this.entradaProduto) {
+    if (this.excluirModalAberto) {
       ev.preventDefault();
+      this.fecharExcluir();
+      return;
+    }
+    if (this.movimentosDrawerAberto) {
+      ev.preventDefault();
+      if (this.formEntradaAberto) {
+        this.cancelarFormEntrada();
+        return;
+      }
       this.fecharEntrada();
       return;
     }

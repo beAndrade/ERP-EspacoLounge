@@ -1,9 +1,32 @@
 @use '../../../../styles/list-page-shell';
 @use '../../../../styles/drawer-stack';
+@use '../../../../styles/breakpoints' as bp;
 
 .marcas-page {
   padding: 0;
+  padding-right: 10px;
+  padding-bottom: 24px;
   box-sizing: border-box;
+
+  > .list-page__lead {
+    width: 100%;
+    flex: 0 0 auto;
+
+    .list-head,
+    .list-head__title-row {
+      width: 100%;
+    }
+  }
+
+  > .list-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
+
+    &.list-layout--filtros-abertos {
+      gap: 8px;
+    }
+  }
 
   .list-table-card {
     overflow: hidden;
@@ -397,6 +420,11 @@
   color: #57534e;
   font-size: 0.9rem;
   line-height: 1.3;
+  user-select: none;
+
+  input[type='checkbox'] {
+    flex-shrink: 0;
+  }
 }
 
 .list-layout--filtros-abertos .list-layout__main {
@@ -421,8 +449,6 @@
   --cliente-nav-item-w: 177px;
   position: fixed;
   top: 0;
-  left: auto;
-  right: 0;
   bottom: 0;
   z-index: 1100;
   display: flex;
@@ -434,8 +460,7 @@
   transform: translateX(100%);
   transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
-  width: min(600px, 100vw);
-  max-width: 100vw;
+  @include bp.drawer-shell-anchor;
 
   &.app-drawer--open {
     transform: translateX(0);
