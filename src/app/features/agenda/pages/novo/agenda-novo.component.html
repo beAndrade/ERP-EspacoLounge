@@ -440,6 +440,8 @@
                 <span>{{ modoModal ? 'Descrição' : 'Serviço' }}</span>
                 <app-saas-select
                   [showFilter]="!modoModal"
+                  [showSearchIconOnOpen]="true"
+                  triggerCursor="text"
                   formControlName="servico_id"
                   [options]="opcoesServicosCatalogo()"
                   [placeholder]="modoModal ? 'Selecionar serviço' : 'Selecione…'"
@@ -527,6 +529,8 @@
                 <span>Produto</span>
                 <app-saas-select
                   [showFilter]="!modoModal"
+                  [showSearchIconOnOpen]="true"
+                  triggerCursor="text"
                   formControlName="produto"
                   [options]="opcoesProdutosSelect()"
                   placeholder="Selecione…"

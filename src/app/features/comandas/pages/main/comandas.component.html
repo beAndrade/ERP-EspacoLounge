@@ -1,249 +1,265 @@
 <div class="list-page comandas-page">
+  <div class="comandas-page__lead">
+    <header class="list-head">
+      <div class="list-head__title-row">
+        <div class="list-head__left">
+          <h1 class="list-head__title">Comandas</h1>
+        </div>
+        <div class="list-head__actions">
+          <div
+            class="list-head__busca-wrap"
+            [class.list-head__busca-wrap--open]="buscaAberta"
+            role="search"
+            (click)="onBuscaWrapClick()"
+          >
+            <span class="list-head__busca-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-search"
+              >
+                <path d="m21 21-4.34-4.34" />
+                <circle cx="11" cy="11" r="8" />
+              </svg>
+            </span>
+            <span
+              class="list-head__busca-label"
+              [class.list-head__busca-label--hidden]="buscaAberta"
+              aria-hidden="true"
+              >Buscar</span
+            >
+            <label class="sr-only" for="comandas-busca-input">Buscar comandas</label>
+            <input
+              id="comandas-busca-input"
+              type="text"
+              class="list-head__busca-input"
+              [(ngModel)]="busca"
+              name="buscaComandas"
+              [placeholder]="buscaPlaceholder"
+              [class.list-head__busca-input--search-open]="buscaAberta"
+              [class.list-head__busca-input--pulse-once-busca]="
+                pulsoToolbarBusca
+              "
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+              (keydown.enter)="onBuscaEnter($event)"
+              [attr.aria-expanded]="buscaAberta"
+              aria-label="Buscar comandas"
+              title="Buscar"
+            />
+          </div>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+            [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+            (click)="toggleFiltros($event)"
+            aria-label="Filtrar"
+            [attr.aria-expanded]="filtrosAbertos"
+            title="Filtrar"
+          >
+            <svg
+              class="list-icon-sm list-icon-sm--funnel"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+              />
+            </svg>
+            <span class="list-head__toolbar-label">Filtrar</span>
+          </button>
+          @if (mostrarAcoesEmMassa) {
+            <button
+              type="button"
+              class="list-head__toolbar-btn list-head__toolbar-btn--bulk-delete"
+              (click)="onAcoesEmMassaClick()"
+              aria-label="Excluir selecionadas"
+              title="Excluir"
+            >
+              <svg
+                class="list-icon-sm"
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M3 6h18" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span class="list-head__toolbar-label">Excluir</span>
+            </button>
+          }
+          <button
+            type="button"
+            (click)="abrirNovoAgendamentoDrawer()"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+          >
+            <svg
+              class="list-icon-sm"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span>Novo</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  </div>
+
   <div
     class="comandas-layout"
     [class.comandas-layout--filtros-abertos]="filtrosAbertos"
   >
-    @if (filtrosAbertos) {
-      <aside class="comandas-filtros-drawer" aria-label="Painel de filtros">
-        <div class="comandas-filtros-drawer__inner">
-          <div class="comandas-filtros-block">
-            <h3 class="comandas-filtros-block__title">Status</h3>
-            <div class="comandas-filtros-block__body comandas-filtros-block__body--row">
+    <aside
+      class="comandas-filtros-drawer"
+      [class.comandas-filtros-drawer--open]="filtrosAbertos"
+      aria-label="Painel de filtros"
+      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
+    >
+      <div class="comandas-filtros-drawer__inner">
+        <section class="comandas-filtros-card">
+          <h3 class="comandas-filtros-card__title">Status</h3>
+          <div class="comandas-filtros-card__body">
+            <label class="comandas-filtros-check">
+              <input
+                type="checkbox"
+                name="st_excluidas"
+                [checked]="filtroExcluidas"
+                (change)="toggleFiltroExcluidas($event)"
+              />
+              <span class="comandas-filtros-check__label">Excluídas</span>
+            </label>
+            <label class="comandas-filtros-check">
+              <input
+                type="checkbox"
+                name="st_nao_excluidas"
+                [checked]="filtroNaoExcluidas"
+                (change)="toggleFiltroNaoExcluidas($event)"
+              />
+              <span class="comandas-filtros-check__label">Não excluídas</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="comandas-filtros-card comandas-filtros-card--periodo">
+          <h3 class="comandas-filtros-card__title">Período</h3>
+          <app-cliente-drawer-periodo-filtro
+            [(inicioYmd)]="periodoInicioYmd"
+            [(fimYmd)]="periodoFimYmd"
+            exibicaoFormato="belasis"
+            [painelFlutuante]="true"
+            (periodoAlterado)="onPeriodoFiltroAlterado()"
+          />
+        </section>
+
+        <section class="comandas-filtros-card">
+          <h3 class="comandas-filtros-card__title">Status da comanda</h3>
+          <div class="comandas-filtros-card__body">
+            @for (st of filtrosStatusComanda; track st.id) {
               <label class="comandas-filtros-check">
-                <input type="checkbox" name="st_excluidas" disabled />
-                Excluídas
+                <input
+                  type="checkbox"
+                  [name]="'st_comanda_' + st.id"
+                  [checked]="filtroStatusComandaAtivo(st.id)"
+                  (change)="toggleFiltroStatusComanda(st.id)"
+                />
+                <span [class]="'badge ' + st.badge">{{ st.label }}</span>
               </label>
+            }
+          </div>
+        </section>
+
+        <section class="comandas-filtros-card">
+          <h3 class="comandas-filtros-card__title">Pagamento</h3>
+          <div class="comandas-filtros-card__body">
+            <label class="comandas-filtros-check comandas-filtros-check--select-all">
+              <input
+                type="checkbox"
+                name="pg_col_todas"
+                [checked]="todasPagamentoSelecionadas()"
+                (change)="toggleTodasPagamento($event)"
+              />
+              <span class="comandas-filtros-check__label">Selecionar tudo</span>
+            </label>
+            @for (fp of filtrosPagamentoColuna; track fp.id) {
               <label class="comandas-filtros-check">
-                <input type="checkbox" name="st_nao_excluidas" checked disabled />
-                Não excluídas
-              </label>
-            </div>
-          </div>
-
-          <div class="comandas-filtros-block">
-            <h3 class="comandas-filtros-block__title">Período</h3>
-            <div class="comandas-filtros-block__body comandas-filtros-periodo">
-              <label>
-                <span>Data inicial (dd-mm-aaaa)</span>
                 <input
-                  type="text"
-                  [(ngModel)]="dataInicio"
-                  name="di"
-                  inputmode="numeric"
-                  maxlength="10"
-                  autocomplete="off"
-                  spellcheck="false"
+                  type="checkbox"
+                  [name]="'pg_col_' + fp.id"
+                  [checked]="filtroPagamentoColunaAtivo(fp.id)"
+                  (change)="toggleFiltroPagamentoColuna(fp.id)"
                 />
+                <span [class]="'badge ' + fp.badge">{{ fp.label }}</span>
               </label>
-              <label>
-                <span>Data final (dd-mm-aaaa)</span>
+            }
+          </div>
+        </section>
+
+        @if (formasPagamentoFiltro().length > 0) {
+          <section class="comandas-filtros-card">
+            <h3 class="comandas-filtros-card__title">Forma de pagamento</h3>
+            <div class="comandas-filtros-card__body">
+              <label class="comandas-filtros-check comandas-filtros-check--select-all">
                 <input
-                  type="text"
-                  [(ngModel)]="dataFim"
-                  name="df"
-                  inputmode="numeric"
-                  maxlength="10"
-                  autocomplete="off"
-                  spellcheck="false"
+                  type="checkbox"
+                  name="fp_todas"
+                  [checked]="todasFormasSelecionadas()"
+                  (change)="toggleTodasFormas($event)"
                 />
+                <span class="comandas-filtros-check__label">Selecionar tudo</span>
               </label>
-            </div>
-          </div>
-
-          <div class="comandas-filtros-block">
-            <h3 class="comandas-filtros-block__title">Status</h3>
-            <div class="comandas-filtros-block__body comandas-filtros-chips">
-              @for (st of filtrosStatusComanda; track st.id) {
-                <button
-                  type="button"
-                  class="comandas-filtros-chip comandas-filtros-chip--outline"
-                  [class.comandas-filtros-chip--accent]="filtroStatusComandaAtivo(st.id)"
-                  (click)="toggleFiltroStatusComanda(st.id)"
-                >
-                  {{ st.label }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <div class="comandas-filtros-block">
-            <h3 class="comandas-filtros-block__title">Pagamento</h3>
-            <div class="comandas-filtros-block__body comandas-filtros-chips">
-              @for (fp of filtrosPagamentoColuna; track fp.id) {
-                <button
-                  type="button"
-                  class="comandas-filtros-chip comandas-filtros-chip--outline"
-                  [class.comandas-filtros-chip--accent]="filtroPagamentoColunaAtivo(fp.id)"
-                  (click)="toggleFiltroPagamentoColuna(fp.id)"
-                >
-                  {{ fp.label }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <div class="comandas-filtros-block">
-            <h3 class="comandas-filtros-block__title">Forma de pagamento</h3>
-            <div class="comandas-filtros-block__body comandas-filtros-formas">
-              @for (f of formasPagamentoStub; track f) {
+              @for (f of formasPagamentoFiltro(); track f.value) {
                 <label class="comandas-filtros-check">
-                  <input type="checkbox" disabled [name]="'fp-' + f" /> {{ f }}
+                  <input
+                    type="checkbox"
+                    [name]="'fp-' + f.value"
+                    [checked]="formaPagamentoMarcada(f.value)"
+                    (change)="toggleFiltroFormaPagamento(f.value, $event)"
+                  />
+                  <span class="comandas-filtros-check__label">{{ f.rotulo }}</span>
                 </label>
               }
             </div>
-          </div>
-
-          <div class="comandas-filtros-drawer__footer">
-            <button type="button" class="btn btn--ghost" (click)="limparFiltrosStatusPagamento()">
-              Limpar filtros
-            </button>
-            <button type="button" class="btn" (click)="carregar()">Aplicar</button>
-          </div>
-        </div>
-      </aside>
-    }
+          </section>
+        }
+      </div>
+    </aside>
 
     <div class="comandas-layout__main">
-      <div class="comandas-page__lead">
-        <header class="list-head">
-          <div class="list-head__title-row">
-            <div class="list-head__left">
-              <h1 class="list-head__title">Comandas</h1>
-            </div>
-            <div class="list-head__actions">
-              <div
-                class="list-head__busca-wrap"
-                [class.list-head__busca-wrap--open]="buscaAberta"
-                role="search"
-                (click)="onBuscaWrapClick()"
-              >
-                <span class="list-head__busca-icon" aria-hidden="true">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="lucide lucide-search"
-                  >
-                    <path d="m21 21-4.34-4.34" />
-                    <circle cx="11" cy="11" r="8" />
-                  </svg>
-                </span>
-                <span
-                  class="list-head__busca-label"
-                  [class.list-head__busca-label--hidden]="buscaAberta"
-                  aria-hidden="true"
-                  >Buscar</span
-                >
-                <label class="sr-only" for="comandas-busca-input">Buscar comandas</label>
-                <input
-                  id="comandas-busca-input"
-                  type="text"
-                  class="list-head__busca-input"
-                  [(ngModel)]="busca"
-                  name="buscaComandas"
-                  [placeholder]="buscaPlaceholder"
-                  [class.list-head__busca-input--search-open]="buscaAberta"
-                  [class.list-head__busca-input--pulse-once-busca]="
-                    pulsoToolbarBusca
-                  "
-                  autocomplete="off"
-                  (click)="$event.stopPropagation()"
-                  (keydown.enter)="onBuscaEnter($event)"
-                  [attr.aria-expanded]="buscaAberta"
-                  aria-label="Buscar comandas"
-                  title="Buscar"
-                />
-              </div>
-              <button
-                type="button"
-                class="list-head__toolbar-btn"
-                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
-                [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
-                (click)="toggleFiltros()"
-                aria-label="Filtrar por período"
-                title="Filtrar"
-              >
-                <svg
-                  class="list-icon-sm list-icon-sm--funnel"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-                  />
-                </svg>
-                <span class="list-head__toolbar-label">Filtrar</span>
-              </button>
-              @if (mostrarAcoesEmMassa) {
-                <button
-                  type="button"
-                  class="list-head__toolbar-btn list-head__toolbar-btn--bulk-delete"
-                  (click)="onAcoesEmMassaClick()"
-                  aria-label="Excluir selecionadas"
-                  title="Excluir"
-                >
-                  <svg
-                    class="list-icon-sm"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                    <path d="M3 6h18" />
-                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                  <span class="list-head__toolbar-label">Excluir</span>
-                </button>
-              }
-              <button
-                type="button"
-                (click)="abrirNovoAgendamentoDrawer()"
-                class="list-head__toolbar-btn list-head__toolbar-btn--link"
-              >
-                <svg
-                  class="list-icon-sm"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
-                <span>Novo</span>
-              </button>
-            </div>
-          </div>
-        </header>
-      </div>
-
       @if (erro) {
         <p class="alert" role="alert">{{ erro }}</p>
       }

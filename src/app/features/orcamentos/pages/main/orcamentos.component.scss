@@ -87,7 +87,8 @@
 .orcamentos-table-card {
   margin: 0;
   box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  height: auto;
   width: 100%;
   border: 1px solid rgba(0 0 0 / 3%);
   align-self: stretch;
@@ -110,10 +111,22 @@
   }
 
   thead th {
+    height: 47.56px;
+    box-sizing: border-box;
     font-weight: 600;
+    font-size: 14px;
     color: rgba(0, 0, 0, 0.75);
-    border-bottom: 1px solid #efefef;
+    border-bottom: 1px solid #f0f0f0;
     background: #fbfbfb;
+    vertical-align: middle;
+  }
+
+  thead th,
+  .orcamentos-th-sort,
+  .orcamentos-th-sort__label {
+    color: rgba(0, 0, 0, 0.75);
+    font-weight: 600;
+    font-size: 14px;
   }
 
   tbody td {
@@ -139,14 +152,28 @@
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  min-height: 45px;
+  height: 47.56px;
+  min-height: 47.56px;
+  box-sizing: border-box;
   padding: 0 10px;
   border: none;
   background: transparent;
   font: inherit;
   font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
+  color: rgba(0, 0, 0, 0.75);
+  text-align: left;
+}
+
+.orcamentos-th-sort__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
   color: inherit;
+  line-height: 1.2;
 }
 
 .orcamentos-th-sort__icons {

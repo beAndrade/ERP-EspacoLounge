@@ -42,6 +42,16 @@ import {
 } from '../../../../core/utils/comanda-status.util';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
+import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
+import {
+  mapFormasParaMetodosComanda,
+  METODOS_COMANDA_FALLBACK,
+} from '../../../../core/utils/fin-formas-pagamento.util';
+import {
+  primeiroDiaMesYmdFiltro,
+  ultimoDiaMesYmdFiltro,
+  ymdToDdMmYyyyFiltro,
+} from '../../../financeiro/pages/transacoes/fin-transacoes-filtro.util';
 
 registerLocaleData(localePt);
 
@@ -93,6 +103,7 @@ function formataMoeda(n: number): string {
     FaturarDrawerComponent,
     AgendaNovoComponent,
     UiTipTriggerComponent,
+    ClienteDrawerPeriodoFiltroComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './comandas.component.html',
@@ -114,8 +125,10 @@ export class ComandasComponent implements OnInit, OnDestroy {
   erro = '';
   grupos: ComandaGrupo[] = [];
 
-  dataInicio = '';
-  dataFim = '';
+  dataInicio = ymdToDdMmYyyyFiltro(primeiroDiaMesYmdFiltro());
+  dataFim = ymdToDdMmYyyyFiltro(ultimoDiaMesYmdFiltro());
+  periodoInicioYmd = primeiroDiaMesYmdFiltro();
+  periodoFimYmd = ultimoDiaMesYmdFiltro();
   filtrosAbertos = false;
   buscaAberta = false;
   busca = '';
@@ -133,33 +146,40 @@ export class ComandasComponent implements OnInit, OnDestroy {
   /** Select nativo não estiliza o painel; menu custom igual ao layout de referência. */
   perPageMenuAberto = false;
 
+  /** Soft-delete ainda não listado na API — «Excluídas» deixa a lista vazia por enquanto. */
+  filtroExcluidas = false;
+  filtroNaoExcluidas = true;
+
   readonly filtrosStatusComanda: Array<{
     id: FiltroStatusComandaId;
     label: string;
+    badge: string;
   }> = [
-    { id: 'pendente', label: 'Pendente' },
-    { id: 'finalizado', label: 'Finalizado' },
+    { id: 'pendente', label: 'Pendente', badge: 'badge--warn' },
+    { id: 'finalizado', label: 'Finalizado', badge: 'badge--finalizado' },
   ];
   readonly filtrosPagamentoColuna: Array<{
     id: FiltroPagamentoColunaId;
     label: string;
+    badge: string;
   }> = [
-    { id: 'pago', label: 'Pago' },
-    { id: 'em_aberto', label: 'Em aberto' },
-    { id: 'atrasado', label: 'Atrasado' },
+    { id: 'pago', label: 'Pago', badge: 'badge--ok' },
+    { id: 'em_aberto', label: 'Em aberto', badge: 'badge--warn' },
+    { id: 'atrasado', label: 'Atrasado', badge: 'badge--atraso' },
   ];
   filtroStatusComandaSelecionados = new Set<FiltroStatusComandaId>();
   filtroPagamentoColunaSelecionados = new Set<FiltroPagamentoColunaId>();
 
-  readonly formasPagamentoStub = [
-    'Boleto',
-    'Cartão de Crédito',
-    'Cartão de Débito',
-    'Dinheiro',
-    'PIX',
-    'Transferência',
-  ];
-
+  private formasOpcoes: Array<{
+    value: string;
+    rotulo: string;
+  }> = METODOS_COMANDA_FALLBACK.map((o) => ({
+    value: o.value,
+    rotulo: o.rotulo,
+  }));
+  /** Vazio = nenhuma marcada (sem filtro). Itens = filtrar por esses códigos. */
+  private filtroFormas = new Set<string>();
+  private opcoesFormaCarregadas = false;
   selecionados = new Set<string>();
 
   /** Coluna activa e direcção (padrão Ticket descendente — mais recente primeiro). */
@@ -235,6 +255,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.carregando = true;
+    this.carregarOpcoesFormasPagamento();
     this.route.queryParamMap.subscribe((params) => {
       const id = (params.get('comanda') ?? '').trim();
       this.comandaQueryAbrir = id || null;
@@ -244,13 +265,16 @@ export class ComandasComponent implements OnInit, OnDestroy {
       }
     });
 
+    const di = parseFiltroDataDdMm(this.dataInicio.trim()) ?? undefined;
+    const df = parseFiltroDataDdMm(this.dataFim.trim()) ?? undefined;
     forkJoin({
-      ags: this.api.listAgendamentos(),
+      ags: this.api.listAgendamentos(di, df),
       clientes: this.api.listClientes(),
     }).subscribe({
       next: ({ ags, clientes }) => {
         this.grupos = this.agruparPorIdAtendimento(ags);
         this.clientesCatalogo = clientes ?? [];
+        this.sincronizarFormasComGrupos();
         this.selecionados.clear();
         this.pagina = 1;
         this.carregando = false;
@@ -443,6 +467,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
     this.api.listAgendamentos(di ?? undefined, df ?? undefined).subscribe({
       next: (items) => {
         this.grupos = this.agruparPorIdAtendimento(items);
+        this.sincronizarFormasComGrupos();
         this.selecionados.clear();
         this.pagina = 1;
         this.carregando = false;
@@ -457,9 +482,155 @@ export class ComandasComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleFiltros(): void {
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
     this.dispararPulsoToolbar('filtro');
     this.filtrosAbertos = !this.filtrosAbertos;
+    if (this.filtrosAbertos) this.carregarOpcoesFormasPagamento();
+  }
+
+  onPeriodoFiltroAlterado(): void {
+    this.syncDdMmFromPeriodoYmd();
+    this.carregar();
+  }
+
+  private syncDdMmFromPeriodoYmd(): void {
+    this.dataInicio = this.periodoInicioYmd
+      ? ymdToDdMmYyyyFiltro(this.periodoInicioYmd)
+      : '';
+    this.dataFim = this.periodoFimYmd
+      ? ymdToDdMmYyyyFiltro(this.periodoFimYmd)
+      : '';
+  }
+
+  private carregarOpcoesFormasPagamento(): void {
+    if (this.opcoesFormaCarregadas) {
+      this.sincronizarFormasComGrupos();
+      return;
+    }
+    this.api.listFinFormasPagamentoOpcoes().pipe(catchError(() => of([]))).subscribe({
+      next: (formas) => {
+        const mapped = mapFormasParaMetodosComanda(formas);
+        this.formasOpcoes =
+          mapped.length > 0
+            ? mapped.map((o) => ({ value: o.value, rotulo: o.rotulo }))
+            : METODOS_COMANDA_FALLBACK.map((o) => ({
+                value: o.value,
+                rotulo: o.rotulo,
+              }));
+        this.opcoesFormaCarregadas = true;
+        this.filtroFormas = new Set();
+        this.sincronizarFormasComGrupos();
+      },
+    });
+  }
+
+  private sincronizarFormasComGrupos(): void {
+    const byValue = new Map(this.formasOpcoes.map((o) => [o.value, o]));
+    for (const g of this.grupos) {
+      const codigo = this.codigoMetodoGrupo(g);
+      if (!codigo || byValue.has(codigo)) continue;
+      const raw = this.formaPagamentoRawGrupo(g);
+      byValue.set(codigo, {
+        value: codigo,
+        rotulo: raw || codigo,
+      });
+    }
+    this.formasOpcoes = [...byValue.values()].sort((a, b) =>
+      a.rotulo.localeCompare(b.rotulo, 'pt-BR'),
+    );
+  }
+
+  formasPagamentoFiltro(): Array<{ value: string; rotulo: string }> {
+    return this.formasOpcoes;
+  }
+
+  formaPagamentoMarcada(codigo: string): boolean {
+    return this.filtroFormas.has(codigo);
+  }
+
+  todasFormasSelecionadas(): boolean {
+    const todas = this.formasOpcoes;
+    return todas.length > 0 && this.filtroFormas.size >= todas.length;
+  }
+
+  toggleTodasFormas(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    this.filtroFormas = checked
+      ? new Set(this.formasOpcoes.map((o) => o.value))
+      : new Set();
+    this.pagina = 1;
+  }
+
+  toggleFiltroFormaPagamento(codigo: string, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (checked) this.filtroFormas.add(codigo);
+    else this.filtroFormas.delete(codigo);
+    this.pagina = 1;
+  }
+
+  todasPagamentoSelecionadas(): boolean {
+    return (
+      this.filtroPagamentoColunaSelecionados.size >=
+      this.filtrosPagamentoColuna.length
+    );
+  }
+
+  toggleTodasPagamento(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    this.filtroPagamentoColunaSelecionados = checked
+      ? new Set(this.filtrosPagamentoColuna.map((f) => f.id))
+      : new Set();
+    this.pagina = 1;
+  }
+
+  private formaPagamentoRawGrupo(g: ComandaGrupo): string {
+    return (
+      g.linhas.map((l) => (l.pagamentoMetodo ?? '').trim()).find(Boolean) ?? ''
+    );
+  }
+
+  /** Normaliza `pagamentoMetodo` (código ou rótulo) para o `codigo_interno`. */
+  private codigoMetodoGrupo(g: ComandaGrupo): string {
+    const raw = this.formaPagamentoRawGrupo(g);
+    if (!raw) return 'pendente';
+    const lower = raw.toLocaleLowerCase('pt-BR');
+    const byValue = this.formasOpcoes.find(
+      (o) => o.value === raw || o.value === lower,
+    );
+    if (byValue) return byValue.value;
+    const byRotulo = this.formasOpcoes.find(
+      (o) => o.rotulo.toLocaleLowerCase('pt-BR') === lower,
+    );
+    if (byRotulo) return byRotulo.value;
+    const slug = lower
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
+    const bySlug = this.formasOpcoes.find((o) => o.value === slug);
+    if (bySlug) return bySlug.value;
+    return slug || raw;
+  }
+
+  toggleFiltroExcluidas(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (!checked && !this.filtroNaoExcluidas) {
+      (ev.target as HTMLInputElement).checked = true;
+      return;
+    }
+    this.filtroExcluidas = checked;
+    this.pagina = 1;
+  }
+
+  toggleFiltroNaoExcluidas(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (!checked && !this.filtroExcluidas) {
+      (ev.target as HTMLInputElement).checked = true;
+      return;
+    }
+    this.filtroNaoExcluidas = checked;
+    this.pagina = 1;
   }
 
   onAcoesEmMassaClick(): void {
@@ -713,6 +884,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       next: ({ ags, clientes }) => {
         this.grupos = this.agruparPorIdAtendimento(ags);
         this.clientesCatalogo = clientes ?? [];
+        this.sincronizarFormasComGrupos();
       },
       error: () => {
         this.carregar();
@@ -788,8 +960,12 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   gruposFiltrados(): ComandaGrupo[] {
     const q = this.busca.trim().toLowerCase();
-    const qDigits = q.replace(/[^\\d]/g, '');
+    const qDigits = q.replace(/[^\d]/g, '');
     let list = this.grupos;
+    // Lista da API só traz ativas; «Excluídas» sozinha → vazio até haver soft-delete.
+    if (!this.filtroNaoExcluidas) {
+      list = [];
+    }
     if (q) {
       list = list.filter((g) => {
         const nome = (g.nomeCliente || '').toLowerCase();
@@ -803,7 +979,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
                 maximumFractionDigits: 2,
               })
             : '';
-        const valorDigits = valorBr.replace(/[^\\d]/g, '');
+        const valorDigits = valorBr.replace(/[^\d]/g, '');
         const valorRaw = valor != null ? String(valor) : '';
         return (
           nome.includes(q) ||
@@ -827,6 +1003,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.filtroPagamentoColunaSelecionados.has(
           this.pagamentoColunaGrupo(g),
         ),
+      );
+    }
+    if (this.filtroFormas.size > 0) {
+      list = list.filter((g) =>
+        this.filtroFormas.has(this.codigoMetodoGrupo(g)),
       );
     }
     return list.slice().sort((a, b) => this.compararGruposComanda(a, b));
@@ -1079,12 +1260,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   filtroPagamentoColunaAtivo(id: FiltroPagamentoColunaId): boolean {
     return this.filtroPagamentoColunaSelecionados.has(id);
-  }
-
-  limparFiltrosStatusPagamento(): void {
-    this.filtroStatusComandaSelecionados.clear();
-    this.filtroPagamentoColunaSelecionados.clear();
-    this.pagina = 1;
   }
 
   valorExibicao(g: ComandaGrupo): number | null {

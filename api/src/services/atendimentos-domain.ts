@@ -1523,11 +1523,30 @@ async function createAtendimentoServico(
     const qtd = it.quantidade;
     const vNum = toNumberPt(vc.valor);
     const cNum = toNumberPt(vc.comissao);
-    let valorLinha = vc.valor;
+    /**
+     * Override de V.Unit (comanda/edição) tem prioridade sobre o catálogo.
+     * `atendimentos.valor` deve espelhar qtd × unitário efetivo (como em Produto),
+     * senão o resumo da comanda (merge legado) fica desatualizado.
+     */
+    const unitEfetivo =
+      it.valorUnitario != null
+        ? it.valorUnitario
+        : vNum != null
+          ? vNum
+          : null;
+    let valorLinha =
+      unitEfetivo != null ? String(unitEfetivo * qtd) : vc.valor;
     let comissaoLinha = vc.comissao;
-    if (qtd > 1) {
-      if (vNum != null) valorLinha = String(vNum * qtd);
-      if (cNum != null) comissaoLinha = String(cNum * qtd);
+    if (
+      it.valorUnitario != null &&
+      vNum != null &&
+      vNum > 0 &&
+      cNum != null
+    ) {
+      const fator = it.valorUnitario / vNum;
+      comissaoLinha = String(cNum * fator * qtd);
+    } else if (qtd > 1 && cNum != null) {
+      comissaoLinha = String(cNum * qtd);
     }
 
     const durForLine = duracaoMinutosServicoCatalogo(
@@ -1567,12 +1586,7 @@ async function createAtendimentoServico(
      * catálogo para esta linha (preserva a fonte exibida na comanda quando o
      * catálogo muda mais tarde).
      */
-    const valorUnitarioParaPivot =
-      it.valorUnitario != null
-        ? it.valorUnitario
-        : vNum != null
-          ? vNum
-          : null;
+    const valorUnitarioParaPivot = unitEfetivo;
     const descontoPivotNum =
       it.desconto != null && it.desconto > 0
         ? it.desconto

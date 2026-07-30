@@ -43,6 +43,29 @@ function trimOrNull(v: unknown): string | null {
   return s.length > 0 ? s : null;
 }
 
+function keyNomeServico(raw: string): string {
+  return String(raw ?? '')
+    .trim()
+    .toLocaleLowerCase('pt-BR');
+}
+
+async function servicoNomeDuplicado(
+  db: Db,
+  nome: string,
+  exceptId?: number,
+): Promise<boolean> {
+  const key = keyNomeServico(nome);
+  if (!key) return false;
+  const rows = await db
+    .select({ id: servicos.id, servico: servicos.servico })
+    .from(servicos);
+  return rows.some(
+    (r) =>
+      keyNomeServico(String(r.servico ?? '')) === key &&
+      (exceptId == null || r.id !== exceptId),
+  );
+}
+
 function normalizarTipo(v: unknown): ServicoTipoCatalogo {
   const t = String(v ?? '')
     .trim()
@@ -166,6 +189,9 @@ async function allocNextServicoId(db: Db): Promise<number> {
 
 export async function createServico(db: Db, input: ServicoWriteInput) {
   const vals = valoresGravacao(input);
+  if (await servicoNomeDuplicado(db, vals.servico)) {
+    throw new Error('Já existe um serviço com este nome.');
+  }
   const id = await allocNextServicoId(db);
   const inserted = await db
     .insert(servicos)
@@ -200,6 +226,9 @@ export async function updateServico(
   if (!exist) throw new Error('Serviço não encontrado');
 
   const vals = valoresGravacao(input);
+  if (await servicoNomeDuplicado(db, vals.servico, id)) {
+    throw new Error('Já existe um serviço com este nome.');
+  }
   await db.update(servicos).set(vals).where(eq(servicos.id, id));
   const items = await listServicosForApi(db);
   const item = items.find((s) => String(s.id) === String(id));

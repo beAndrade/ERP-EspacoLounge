@@ -1,5 +1,5 @@
 import { asc, eq, sql } from 'drizzle-orm';
-import type { Db } from '../db';
+import { syncSerialIdSequence, type Db } from '../db';
 import { marcas, produtos } from '../db/schema';
 
 export type MarcaCatalogoApi = {
@@ -90,6 +90,7 @@ export async function criarMarcaCatalogoApi(
     throw new Error('Já existe uma marca com este nome.');
   }
   const ativo = body.ativo !== false;
+  await syncSerialIdSequence('marcas');
   const [ins] = await db
     .insert(marcas)
     .values({ nome, ativo })

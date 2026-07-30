@@ -270,12 +270,10 @@
   box-sizing: border-box;
   position: sticky;
   top: 0;
-  max-height: min(92vh, 900px);
   min-width: 230px;
   width: 230px;
   padding: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
   opacity: 0;
   transform: translateX(-10px);
   transition:

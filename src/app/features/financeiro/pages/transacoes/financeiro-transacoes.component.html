@@ -62,8 +62,9 @@
               class="list-head__toolbar-btn"
               [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
               [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
-              (click)="toggleFiltros()"
+              (click)="toggleFiltros($event)"
               aria-label="Filtrar"
+              [attr.aria-expanded]="filtrosAbertos"
               title="Filtrar"
             >
               <svg
@@ -255,10 +256,17 @@
       }
   </div>
 
-  <div class="fin-transacoes-layout">
-    @if (filtrosAbertos) {
-      <aside class="fin-transacoes-filtros" aria-label="Filtros de transações">
-        <div class="fin-transacoes-filtros__scroll">
+  <div
+    class="fin-transacoes-layout"
+    [class.fin-transacoes-layout--filtros-abertos]="filtrosAbertos"
+  >
+    <aside
+      class="fin-transacoes-filtros"
+      [class.fin-transacoes-filtros--open]="filtrosAbertos"
+      aria-label="Filtros de transações"
+      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
+    >
+      <div class="fin-transacoes-filtros__scroll">
           <section class="fin-filtros-card fin-filtros-card--periodo">
             <h3 class="fin-filtros-card__title">Período</h3>
             <app-cliente-drawer-periodo-filtro
@@ -497,9 +505,8 @@
               </ul>
             </section>
           }
-        </div>
-      </aside>
-    }
+      </div>
+    </aside>
 
     <div class="fin-transacoes-layout__main">
         <div class="list-table-card fin-transacoes__card">

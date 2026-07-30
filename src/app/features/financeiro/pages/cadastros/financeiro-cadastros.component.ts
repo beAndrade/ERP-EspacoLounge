@@ -85,7 +85,8 @@ export class FinanceiroCadastrosComponent {
     this.onBuscaSubmit();
   }
 
-  toggleFiltros(): void {
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
     this.filtrosAbertos = !this.filtrosAbertos;
   }
 

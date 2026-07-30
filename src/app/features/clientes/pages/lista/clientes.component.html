@@ -1,4 +1,116 @@
 <div class="list-page clientes-page">
+  <div class="list-page__lead">
+    <header class="list-head">
+      <div class="list-head__title-row">
+        <div class="list-head__left">
+          <h1 class="list-head__title">Clientes</h1>
+        </div>
+        <div class="list-head__actions">
+          <div
+            class="list-head__busca-wrap"
+            [class.list-head__busca-wrap--open]="buscaAberta"
+            role="search"
+            (click)="onBuscaWrapClick()"
+          >
+            <span class="list-head__busca-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-search"
+              >
+                <path d="m21 21-4.34-4.34" />
+                <circle cx="11" cy="11" r="8" />
+              </svg>
+            </span>
+            <span
+              class="list-head__busca-label"
+              [class.list-head__busca-label--hidden]="buscaAberta"
+              aria-hidden="true"
+              >Buscar</span
+            >
+            <label class="sr-only" for="clientes-busca-input">Buscar clientes</label>
+            <input
+              id="clientes-busca-input"
+              type="text"
+              class="list-head__busca-input"
+              [(ngModel)]="busca"
+              name="buscaClientes"
+              [placeholder]="buscaPlaceholder"
+              [class.list-head__busca-input--search-open]="buscaAberta"
+              [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
+              autocomplete="off"
+              (click)="$event.stopPropagation()"
+              (input)="onBuscaInput()"
+              (keydown.enter)="onBuscaEnter($event)"
+              [attr.aria-expanded]="buscaAberta"
+              aria-label="Buscar clientes"
+              title="Buscar"
+            />
+          </div>
+          <button
+            type="button"
+            class="list-head__toolbar-btn"
+            [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
+            [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
+            (click)="toggleFiltros($event)"
+            aria-label="Abrir filtros"
+            [attr.aria-expanded]="filtrosAbertos"
+            title="Filtrar"
+          >
+            <svg
+              class="list-icon-sm list-icon-sm--funnel"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+              />
+            </svg>
+            <span class="list-head__toolbar-label">Filtrar</span>
+          </button>
+          <button
+            type="button"
+            class="list-head__toolbar-btn list-head__toolbar-btn--link"
+            (click)="onNovoCliente()"
+          >
+            <svg
+              class="list-icon-sm"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span>Novo</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  </div>
+
   <div
     class="list-layout"
     [class.list-layout--filtros-abertos]="filtrosAbertos"
@@ -31,20 +143,6 @@
               />
               Inativos
             </label>
-          </div>
-        </section>
-
-        <section class="clientes-filtros-card">
-          <h3 class="clientes-filtros-card__title">Buscar tags</h3>
-          <div class="clientes-filtros-card__body">
-            <select
-              class="clientes-filtros-select"
-              name="cli_hashtags_stub"
-              disabled
-              aria-disabled="true"
-            >
-              <option>Selecionar Hashtags</option>
-            </select>
           </div>
         </section>
 
@@ -96,45 +194,20 @@
           </div>
         </section>
 
-        <section class="clientes-filtros-card">
+        <section class="clientes-filtros-card clientes-filtros-card--periodo">
           <h3 class="clientes-filtros-card__title">Aniversário</h3>
-          <div
-            class="clientes-filtros-card__body clientes-filtros-periodo"
-          >
-            <label>
-              <span>Data inicial</span>
-              <input
-                type="text"
-                name="cli_aniversario_ini"
-                [ngModel]="filtroAniversarioInicio"
-                (input)="onFiltroAniversarioInput('inicio', $event)"
-                inputmode="numeric"
-                maxlength="10"
-                placeholder="dd-mm-aaaa"
-                autocomplete="off"
-                spellcheck="false"
-              />
-            </label>
-            <label>
-              <span>Data final</span>
-              <input
-                type="text"
-                name="cli_aniversario_fim"
-                [ngModel]="filtroAniversarioFim"
-                (input)="onFiltroAniversarioInput('fim', $event)"
-                inputmode="numeric"
-                maxlength="10"
-                placeholder="dd-mm-aaaa"
-                autocomplete="off"
-                spellcheck="false"
-              />
-            </label>
-          </div>
+          <app-cliente-drawer-periodo-filtro
+            [(inicioYmd)]="filtroAniversarioInicioYmd"
+            [(fimYmd)]="filtroAniversarioFimYmd"
+            exibicaoFormato="belasis"
+            [painelFlutuante]="true"
+            (periodoAlterado)="onAniversarioPeriodoAlterado()"
+          />
         </section>
 
         <section class="clientes-filtros-card">
           <h3 class="clientes-filtros-card__title">Última avaliação</h3>
-          <div class="clientes-filtros-card__body clientes-filtros-stars">
+          <div class="clientes-filtros-stars">
             @for (n of estrelasAvaliacao; track n) {
               <button
                 type="button"
@@ -164,130 +237,10 @@
             }
           </div>
         </section>
-
-        <footer class="clientes-filtros-drawer__footer">
-          <button type="button" class="btn btn--ghost" (click)="onLimparFiltros()">
-            Limpar filtros
-          </button>
-          <button type="button" class="btn" (click)="onAplicarFiltros()">
-            Aplicar
-          </button>
-        </footer>
       </div>
     </aside>
 
     <div class="list-layout__main">
-      <div class="list-page__lead">
-        <header class="list-head">
-          <div class="list-head__title-row">
-            <div class="list-head__left">
-              <h1 class="list-head__title">Clientes</h1>
-            </div>
-            <div class="list-head__actions">
-              <div
-                class="list-head__busca-wrap"
-                [class.list-head__busca-wrap--open]="buscaAberta"
-                role="search"
-                (click)="onBuscaWrapClick()"
-              >
-                <span class="list-head__busca-icon" aria-hidden="true">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="lucide lucide-search"
-                  >
-                    <path d="m21 21-4.34-4.34" />
-                    <circle cx="11" cy="11" r="8" />
-                  </svg>
-                </span>
-                <span
-                  class="list-head__busca-label"
-                  [class.list-head__busca-label--hidden]="buscaAberta"
-                  aria-hidden="true"
-                  >Buscar</span
-                >
-                <label class="sr-only" for="clientes-busca-input">Buscar clientes</label>
-                <input
-                  id="clientes-busca-input"
-                  type="text"
-                  class="list-head__busca-input"
-                  [(ngModel)]="busca"
-                  name="buscaClientes"
-                  [placeholder]="buscaPlaceholder"
-                  [class.list-head__busca-input--search-open]="buscaAberta"
-                  [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
-                  autocomplete="off"
-                  (click)="$event.stopPropagation()"
-                  (input)="onBuscaInput()"
-                  (keydown.enter)="onBuscaEnter($event)"
-                  [attr.aria-expanded]="buscaAberta"
-                  aria-label="Buscar clientes"
-                  title="Buscar"
-                />
-              </div>
-              <button
-                type="button"
-                class="list-head__toolbar-btn"
-                [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
-                [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
-                (click)="toggleFiltros($event)"
-                aria-label="Abrir filtros"
-                title="Filtrar"
-              >
-                <svg
-                  class="list-icon-sm list-icon-sm--funnel"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-                  />
-                </svg>
-                <span class="list-head__toolbar-label">Filtrar</span>
-              </button>
-              <button
-                type="button"
-                class="list-head__toolbar-btn list-head__toolbar-btn--link"
-                (click)="onNovoCliente()"
-              >
-                <svg
-                  class="list-icon-sm"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14" />
-                  <path d="M12 5v14" />
-                </svg>
-                <span>Novo</span>
-              </button>
-            </div>
-          </div>
-        </header>
-      </div>
-
       @if (erro) {
         <p class="alert" role="alert">{{ erro }}</p>
       }

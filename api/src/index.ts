@@ -1171,7 +1171,7 @@ const app = new Elysia({ adapter: node() })
         return ok({ item });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        if (/obrigatório|inválido|Duração/i.test(msg)) {
+        if (/obrigatório|inválido|Duração|Já existe/i.test(msg)) {
           return fail('VALIDATION', msg);
         }
         return fail('SERVER', msg);
@@ -1194,7 +1194,7 @@ const app = new Elysia({ adapter: node() })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
-        if (/obrigatório|inválido|Duração/i.test(msg)) {
+        if (/obrigatório|inválido|Duração|Já existe/i.test(msg)) {
           return fail('VALIDATION', msg);
         }
         return fail('SERVER', msg);
@@ -1525,7 +1525,7 @@ const app = new Elysia({ adapter: node() })
         return ok({ item });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        if (/informe|categoria|nome/i.test(msg)) {
+        if (/informe|categoria|nome|Já existe/i.test(msg)) {
           return fail('VALIDATION', msg);
         }
         return fail('SERVER', msg);
@@ -1606,7 +1606,7 @@ const app = new Elysia({ adapter: node() })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes('não encontrado')) return fail('NOT_FOUND', msg);
-        if (/informe|categoria|nome|inválido/i.test(msg)) {
+        if (/informe|categoria|nome|Já existe|inválido/i.test(msg)) {
           return fail('VALIDATION', msg);
         }
         return fail('SERVER', msg);

@@ -1,12 +1,9 @@
 import {
-  AfterViewInit,
   Component,
-  ElementRef,
   HostListener,
   inject,
   OnDestroy,
   OnInit,
-  ViewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,8 +14,6 @@ import { ProfissionalCadastroDrawerService } from '../../../../shared/profission
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
 
-type AbaProfissionais = 'ativos' | 'inativos';
-
 @Component({
   selector: 'app-profissionais',
   standalone: true,
@@ -26,21 +21,21 @@ type AbaProfissionais = 'ativos' | 'inativos';
   templateUrl: './profissionais.component.html',
   styleUrl: './profissionais.component.scss',
 })
-export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ProfissionaisComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
 
-  @ViewChild('tabsNav', { read: ElementRef })
-  private tabsNav?: ElementRef<HTMLElement>;
-
-  aba: AbaProfissionais = 'ativos';
-  tabsIndicatorLeft = 0;
-  tabsIndicatorWidth = 0;
   busca = '';
   buscaAberta = false;
+  filtrosAbertos = false;
   pulsoToolbarBusca = false;
+  pulsoToolbarFiltro = false;
   private readonly duracaoPulsoToolbarMs = 600;
   private tPulsoBusca = 0;
+  private tPulsoFiltro = 0;
+
+  filtroStatusAtivos = true;
+  filtroStatusInativos = false;
 
   carregando = false;
   erro = '';
@@ -73,11 +68,9 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
     this.carregar();
   }
 
-  ngAfterViewInit(): void {
-    this.sincronizarIndicadorTabs();
-  }
-
   ngOnDestroy(): void {
+    window.clearTimeout(this.tPulsoBusca);
+    window.clearTimeout(this.tPulsoFiltro);
     this.cancelarArraste();
   }
 
@@ -98,28 +91,6 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
     });
   }
 
-  definirAba(aba: AbaProfissionais): void {
-    if (this.aba === aba) return;
-    this.aba = aba;
-    this.sincronizarIndicadorTabs();
-  }
-
-  private sincronizarIndicadorTabs(): void {
-    // Mede pela aba escolhida (não pela classe --active): o DOM ainda
-    // pode não ter atualizado a classe no mesmo tick do clique.
-    const medir = () => {
-      const nav = this.tabsNav?.nativeElement;
-      if (!nav) return;
-      const alvo = nav.querySelector(
-        `.list-page__tab[data-aba="${this.aba}"]`,
-      ) as HTMLElement | null;
-      if (!alvo) return;
-      this.tabsIndicatorLeft = alvo.offsetLeft;
-      this.tabsIndicatorWidth = alvo.offsetWidth;
-    };
-    requestAnimationFrame(medir);
-  }
-
   get buscaPlaceholder(): string {
     return this.buscaAberta ? 'Buscar por nome…' : '';
   }
@@ -132,13 +103,24 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
     return this.dragProfId != null;
   }
 
-  private dispararPulsoBusca(): void {
-    window.clearTimeout(this.tPulsoBusca);
-    this.pulsoToolbarBusca = false;
+  private dispararPulsoToolbar(kind: 'busca' | 'filtro'): void {
+    if (kind === 'busca') {
+      window.clearTimeout(this.tPulsoBusca);
+      this.pulsoToolbarBusca = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarBusca = true;
+        this.tPulsoBusca = window.setTimeout(() => {
+          this.pulsoToolbarBusca = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+      return;
+    }
+    window.clearTimeout(this.tPulsoFiltro);
+    this.pulsoToolbarFiltro = false;
     queueMicrotask(() => {
-      this.pulsoToolbarBusca = true;
-      this.tPulsoBusca = window.setTimeout(() => {
-        this.pulsoToolbarBusca = false;
+      this.pulsoToolbarFiltro = true;
+      this.tPulsoFiltro = window.setTimeout(() => {
+        this.pulsoToolbarFiltro = false;
       }, this.duracaoPulsoToolbarMs);
     });
   }
@@ -149,7 +131,7 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
 
   onBuscaWrapClick(): void {
     if (!this.buscaAberta) {
-      this.dispararPulsoBusca();
+      this.dispararPulsoToolbar('busca');
       this.buscaAberta = true;
       queueMicrotask(() => {
         document.getElementById('profissionais-busca-input')?.focus();
@@ -163,6 +145,18 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
     ev.preventDefault();
   }
 
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
+    this.dispararPulsoToolbar('filtro');
+    this.filtrosAbertos = !this.filtrosAbertos;
+  }
+
+  toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (which === 'ativos') this.filtroStatusAtivos = checked;
+    else this.filtroStatusInativos = checked;
+  }
+
   private compararProfissionais(
     a: ProfissionalListaItem,
     b: ProfissionalListaItem,
@@ -174,10 +168,16 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   filtrados(): ProfissionalListaItem[] {
-    const ativo = this.aba === 'ativos';
-    let list = this.itens.filter(
-      (p) => Boolean(p.nome?.trim()) && (p.ativo !== false) === ativo,
-    );
+    let list = this.itens.filter((p) => Boolean(p.nome?.trim()));
+    const querAtivos = this.filtroStatusAtivos;
+    const querInativos = this.filtroStatusInativos;
+    if (querAtivos !== querInativos) {
+      list = list.filter((p) =>
+        querAtivos ? p.ativo !== false : p.ativo === false,
+      );
+    } else if (!querAtivos && !querInativos) {
+      list = [];
+    }
     const q = this.busca.trim().toLowerCase();
     if (q) {
       list = list.filter((p) => p.nome.toLowerCase().includes(q));
@@ -470,6 +470,11 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
     if (this.dragProfId != null) {
       ev.preventDefault();
       this.cancelarArraste();
+      return;
+    }
+    if (this.filtrosAbertos) {
+      ev.preventDefault();
+      this.filtrosAbertos = false;
       return;
     }
     if (this.buscaAberta) {

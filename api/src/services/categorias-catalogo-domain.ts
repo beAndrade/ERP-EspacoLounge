@@ -1,5 +1,5 @@
 import { asc, eq, sql } from 'drizzle-orm';
-import type { Db } from '../db';
+import { syncSerialIdSequence, type Db } from '../db';
 import { categorias, produtos, servicos } from '../db/schema';
 
 export type CategoriaCatalogoApi = {
@@ -100,6 +100,7 @@ export async function criarCategoriaCatalogoApi(
     throw new Error('Já existe uma categoria com este nome.');
   }
   const ativo = body.ativo !== false;
+  await syncSerialIdSequence('categorias');
   const [ins] = await db
     .insert(categorias)
     .values({ nome, ativo })

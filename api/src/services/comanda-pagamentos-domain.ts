@@ -119,27 +119,30 @@ interface ItemLinhaResumo {
 }
 
 /**
- * Soma de itens da pivot `atendimento_itens`. Quando NENHUM item tem `valor_unitario`,
- * devolve `null` (sinal para o caller cair no cálculo legado por `atendimentos`).
+ * Soma de itens da pivot `atendimento_itens`.
+ * Devolve `null` (cair no legado por `atendimentos`) quando:
+ * - não há linhas, ou
+ * - alguma linha não tem `valor_unitario` (ex.: Mega/Pacote) — soma parcial
+ *   subestimaria o total da comanda.
  */
 function calcularTotaisDeItens(rows: ItemLinhaResumo[]): {
   total_bruto: number;
   desconto: number;
   total: number;
 } | null {
+  if (rows.length === 0) return null;
   let bruto = 0;
   let desc = 0;
-  let temValor = false;
   for (const r of rows) {
     const v =
       r.valorUnitario === null || r.valorUnitario === undefined
         ? null
         : Number(r.valorUnitario);
-    if (v !== null && Number.isFinite(v)) {
-      temValor = true;
-      const q = Number(r.quantidade ?? 0);
-      bruto += v * (Number.isFinite(q) ? q : 0);
+    if (v === null || !Number.isFinite(v)) {
+      return null;
     }
+    const q = Number(r.quantidade ?? 0);
+    bruto += v * (Number.isFinite(q) ? q : 0);
     const d =
       r.desconto === null || r.desconto === undefined
         ? null
@@ -148,7 +151,6 @@ function calcularTotaisDeItens(rows: ItemLinhaResumo[]): {
       desc += d;
     }
   }
-  if (!temValor) return null;
   const total = Math.max(0, bruto - desc);
   return {
     total_bruto: Math.round(bruto * 100) / 100,
@@ -240,10 +242,9 @@ async function idsComPagamentoFiado(
 }
 
 /**
- * A pivot `atendimento_itens` pode cobrir só parte do que está em `atendimentos`
- * (ex.: Mega/Pacote sem `valor_unitario`, linhas antigas, ajustes só na planilha).
- * Nesse caso o total pela pivot fica **abaixo** do somatório real das linhas — a UI
- * da comanda usa as linhas (`faixaPrecoBloc`); alinhamos ao legado quando for maior.
+ * Preferência: pivot completa (`valor_unitario` em todas as linhas) é a fonte
+ * de verdade (inclui overrides de V.Unit). Pivot incompleta ou ausente → legado
+ * (`atendimentos.valor`), que cobre Mega/Pacote e linhas antigas.
  *
  * Contrato do resumo:
  * - `desconto` = só `desconto_comanda` (campo da comanda / Faturar «Descontos»)
@@ -302,11 +303,12 @@ function mesclarTotaisPivotELegado(
     const descItens = descontoLegadoSoItens(legacy.desconto);
     return fechar(legacy.total_bruto - descItens, legacy.cobranca_status);
   }
-  if (legacy.total_bruto > totaisItens.total_bruto + 0.005) {
-    const descItens = descontoLegadoSoItens(legacy.desconto);
-    return fechar(legacy.total_bruto - descItens, legacy.cobranca_status);
-  }
-  /** Pivot: `total` já é bruto − desconto por item. */
+  /**
+   * Com pivot presente, ela é a fonte de verdade (inclui overrides de V.Unit).
+   * Antes preferíamos o legado quando maior — isso fazia a barra de resumo
+   * ignorar preço editado na comanda enquanto `atendimentos.valor` ainda
+   * tinha o valor de catálogo.
+   */
   return fechar(totaisItens.total, legacy.cobranca_status);
 }
 

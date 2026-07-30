@@ -1400,16 +1400,7 @@ export class NovaComandaDrawerComponent implements OnInit {
   /** Total antes de abater crédito (subtotal dos itens − desconto da comanda − cashback). */
   totalAntesAplicarCredito(): number {
     const cash = this.cashbackComandaReais();
-    const apiTotal = this.resumoPagamentos?.total;
-    if (
-      this.descontoResumoCtrl.pristine &&
-      this.creditoResumoCtrl.pristine &&
-      apiTotal != null &&
-      Number.isFinite(apiTotal)
-    ) {
-      return Math.max(0, Math.round((apiTotal - cash) * 100) / 100);
-    }
-    /** Totais das linhas já vêm líquidos do desconto por item. */
+    /** Totais das linhas já vêm líquidos do desconto por item (igual à lista de leitura). */
     const subtotalItens = this.somaTotaisItensComanda();
     const descComanda = this.descontoAtualReais();
     return Math.max(

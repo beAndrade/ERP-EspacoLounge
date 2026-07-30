@@ -1,8 +1,30 @@
 @use '../../../../styles/list-page-shell';
 
 .fornecedores-page {
+  padding: 0;
   padding-right: 10px;
+  padding-bottom: 24px;
   box-sizing: border-box;
+
+  > .list-page__lead {
+    width: 100%;
+    flex: 0 0 auto;
+
+    .list-head,
+    .list-head__title-row {
+      width: 100%;
+    }
+  }
+
+  > .list-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
+
+    &.list-layout--filtros-abertos {
+      gap: 8px;
+    }
+  }
 }
 
 .list-layout--filtros-abertos .list-layout__main {
@@ -17,63 +39,88 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  border-right: 0 solid transparent;
+  border: none;
   background: transparent;
   transition:
-    flex-basis 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.28s ease,
-    visibility 0.38s,
-    border-color 0.38s ease,
-    background-color 0.28s ease;
+    flex-basis 0.16s cubic-bezier(0.4, 0, 1, 1),
+    width 0.16s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.1s ease,
+    visibility 0s linear 0.12s,
+    background-color 0.1s ease;
 
   &--open {
-    flex: 0 0 262px;
-    width: 262px;
+    flex: 0 0 230px;
+    width: 230px;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    border-right: 1px solid #e7e5e4;
-    background: #f5f5f4;
+    border: none;
+    background: var(--color-bg);
+    transition:
+      flex-basis 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.28s ease,
+      visibility 0s,
+      background-color 0.28s ease;
   }
 }
 
 .fornecedores-filtros-drawer__inner {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 1rem 1rem 1.25rem;
+  align-items: flex-start;
+  box-sizing: border-box;
   position: sticky;
   top: 0;
-  max-height: min(92vh, 900px);
-  overflow-y: auto;
+  min-width: 230px;
+  width: 230px;
+  padding: 0;
+  overflow: visible;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    width 0.2s,
+    opacity 0.1s ease,
+    transform 0.14s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.fornecedores-filtros-drawer--open .fornecedores-filtros-drawer__inner {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.04s,
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.04s,
+    width 0.2s;
+}
+
+.fornecedores-filtros-card {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 4px 4px #f3f3f3;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
 }
 
 .fornecedores-filtros-card__title {
-  margin: 0 0 0.5rem;
-  font-size: 0.8rem;
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-muted);
+  color: #44403c;
+  line-height: 1.2;
 }
 
 .fornecedores-filtros-card__body {
-  font-size: 0.9rem;
-  color: var(--color-muted);
-}
-
-.fornecedores-filtros-drawer__footer {
-  padding-top: 0.75rem;
-  margin-top: 0.35rem;
-  border-top: 1px solid #f5f5f4;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-
-  .btn {
-    width: 100%;
-  }
+  font-size: 0.9rem;
 }
 
 .fornecedores-filtros-check {
@@ -84,13 +131,11 @@
   color: #57534e;
   font-size: 0.9rem;
   line-height: 1.3;
+  font-weight: 400;
+  user-select: none;
 
   input[type='checkbox'] {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: var(--color-primary);
-    cursor: pointer;
+    flex-shrink: 0;
   }
 }
 

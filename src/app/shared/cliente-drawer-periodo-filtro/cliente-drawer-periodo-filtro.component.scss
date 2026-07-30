@@ -189,6 +189,17 @@ $periodo-row-gap: 6px;
   text-align: center;
   cursor: pointer;
   outline: none;
+
+  &::placeholder {
+    color: #a8a29e;
+    font-weight: 400;
+    opacity: 1;
+  }
+
+  &--vazio {
+    color: #a8a29e;
+    font-weight: 400;
+  }
 }
 
 .periodo-filtro__sep {
@@ -210,9 +221,15 @@ $periodo-row-gap: 6px;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #6b7280;
+  color: #a8a29e;
   cursor: pointer;
   transition: background-color 0.2s $periodo-easing, color 0.2s $periodo-easing;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+  }
 
   &:hover {
     background: #f3f4f6;
@@ -227,15 +244,15 @@ $periodo-row-gap: 6px;
   flex: 0 0 auto;
   align-self: center;
   margin: 0 0 0 0.15rem;
-  color: #9ca3af;
+  color: #a8a29e;
   line-height: 0;
   pointer-events: none;
   user-select: none;
 
   svg {
     display: block;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 }
 
@@ -587,6 +604,17 @@ $periodo-row-gap: 6px;
     color: #374151;
     text-align: left;
     cursor: pointer;
+
+    &::placeholder {
+      color: #a8a29e;
+      font-weight: 400;
+      opacity: 1;
+    }
+
+    &--vazio {
+      color: #a8a29e;
+      font-weight: 400;
+    }
   }
 
   .periodo-filtro__sep {
@@ -599,7 +627,12 @@ $periodo-row-gap: 6px;
     align-self: center;
     margin: 0;
     padding: 0.15rem;
-    color: #9ca3af;
+    color: #a8a29e;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
 
     &:hover {
       background: transparent;

@@ -94,6 +94,11 @@
   margin: 0;
   flex: 1 1 auto;
   min-height: 0;
+  gap: 0;
+
+  &--filtros-abertos {
+    gap: 8px;
+  }
 }
 
 .fin-transacoes-page--filtros-abertos {
@@ -104,7 +109,7 @@
     min-height: calc(100dvh - var(--fin-transacoes-lead-offset));
   }
 
-  .fin-transacoes-filtros {
+  .fin-transacoes-filtros--open {
     align-self: stretch;
     max-height: none;
     height: calc(100dvh - var(--fin-transacoes-lead-offset));
@@ -112,7 +117,7 @@
     top: 0;
   }
 
-  .fin-transacoes-filtros__scroll {
+  .fin-transacoes-filtros--open .fin-transacoes-filtros__scroll {
     flex: 1 1 auto;
     height: 100%;
     min-height: 100%;

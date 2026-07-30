@@ -1,42 +1,28 @@
 @use '../../../../styles/list-page-shell';
 
 .profissionais-page {
+  padding: 0;
   padding-right: 10px;
+  padding-bottom: 24px;
   box-sizing: border-box;
 
-  .list-page__tabs {
-    position: relative;
-    margin-bottom: 0;
-    border-bottom: none;
+  > .list-page__lead {
+    width: 100%;
+    flex: 0 0 auto;
 
-    .list-page__tabs-indicator {
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      height: 2px;
-      width: var(--tabs-indicator-width, 0px);
-      transform: translateX(var(--tabs-indicator-left, 0px));
-      background: var(--color-primary);
-      border-radius: 2px 2px 0 0;
-      pointer-events: none;
-      z-index: 1;
-      transition:
-        transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-        width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    .list-head,
+    .list-head__title-row {
+      width: 100%;
     }
+  }
 
-    .list-page__tab {
-      &::after {
-        display: none;
-      }
+  > .list-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
 
-      &--active {
-        cursor: default;
-
-        &:hover {
-          color: var(--color-primary);
-        }
-      }
+    &.list-layout--filtros-abertos {
+      gap: 8px;
     }
   }
 
@@ -87,6 +73,118 @@
       box-sizing: border-box;
       background: #f8f8f8;
     }
+  }
+}
+
+.list-layout--filtros-abertos .list-layout__main {
+  min-width: 0;
+}
+
+.profissionais-filtros-drawer {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+  transition:
+    flex-basis 0.16s cubic-bezier(0.4, 0, 1, 1),
+    width 0.16s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.1s ease,
+    visibility 0s linear 0.12s,
+    background-color 0.1s ease;
+
+  &--open {
+    flex: 0 0 230px;
+    width: 230px;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    border: none;
+    background: var(--color-bg);
+    transition:
+      flex-basis 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.28s ease,
+      visibility 0s,
+      background-color 0.28s ease;
+  }
+}
+
+.profissionais-filtros-drawer__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  min-width: 230px;
+  width: 230px;
+  padding: 0;
+  overflow: visible;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    width 0.2s,
+    opacity 0.1s ease,
+    transform 0.14s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.profissionais-filtros-drawer--open .profissionais-filtros-drawer__inner {
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.04s,
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.04s,
+    width 0.2s;
+}
+
+.profissionais-filtros-card {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 4px 4px #f3f3f3;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.profissionais-filtros-card__title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #44403c;
+  line-height: 1.2;
+}
+
+.profissionais-filtros-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.profissionais-filtros-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  color: #57534e;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  font-weight: 400;
+  user-select: none;
+
+  input[type='checkbox'] {
+    flex-shrink: 0;
   }
 }
 
@@ -397,7 +495,7 @@
 }
 
 .list-head__actions--profissionais {
-  grid-template-columns: var(--list-search-open-width) auto;
+  grid-template-columns: var(--list-search-open-width) auto auto;
 }
 
 .prof-form-painel {

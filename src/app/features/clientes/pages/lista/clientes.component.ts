@@ -13,10 +13,7 @@ import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { Cliente } from '../../../../core/models/api.models';
 import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
-import {
-  formatarCpfBr,
-  formatarDataDdMmYyyy,
-} from '../../../../core/utils/br-document-masks';
+import { formatarCpfBr } from '../../../../core/utils/br-document-masks';
 import { parseFiltroDataDdMm } from '../../../../core/utils/atendimento-display';
 import {
   totaisDebitosPorClienteId,
@@ -24,6 +21,8 @@ import {
 } from '../../../../core/utils/comanda-status.util';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
+import { ymdValido } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-periodo-filtro.util';
 
 type OrdenacaoNome = 'asc' | 'desc';
 
@@ -93,6 +92,7 @@ const CLIENTES_COLUNAS_PADRAO: ClienteColunaId[] = [
     CurrencyPipe,
     ClienteAvatarComponent,
     UiTipTriggerComponent,
+    ClienteDrawerPeriodoFiltroComponent,
   ],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
@@ -123,8 +123,8 @@ export class ClientesComponent implements OnInit, OnDestroy {
   filtroSemCelular = false;
   filtroComDebito = false;
   filtroSemDebito = false;
-  filtroAniversarioInicio = '';
-  filtroAniversarioFim = '';
+  filtroAniversarioInicioYmd = '';
+  filtroAniversarioFimYmd = '';
   filtroAvaliacaoMin = 0;
 
   readonly estrelasAvaliacao = [1, 2, 3, 4, 5] as const;
@@ -263,23 +263,6 @@ export class ClientesComponent implements OnInit, OnDestroy {
     this.filtrosAbertos = !this.filtrosAbertos;
   }
 
-  onLimparFiltros(): void {
-    this.filtroStatusAtivos = true;
-    this.filtroStatusInativos = false;
-    this.filtroComCelular = false;
-    this.filtroSemCelular = false;
-    this.filtroComDebito = false;
-    this.filtroSemDebito = false;
-    this.filtroAniversarioInicio = '';
-    this.filtroAniversarioFim = '';
-    this.filtroAvaliacaoMin = 0;
-    this.pagina = 1;
-  }
-
-  onAplicarFiltros(): void {
-    this.pagina = 1;
-  }
-
   toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
     const checked = (ev.target as HTMLInputElement).checked;
     if (which === 'ativos') this.filtroStatusAtivos = checked;
@@ -301,10 +284,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
     this.pagina = 1;
   }
 
-  onFiltroAniversarioInput(which: 'inicio' | 'fim', ev: Event): void {
-    const v = formatarDataDdMmYyyy((ev.target as HTMLInputElement).value);
-    if (which === 'inicio') this.filtroAniversarioInicio = v;
-    else this.filtroAniversarioFim = v;
+  onAniversarioPeriodoAlterado(): void {
     this.pagina = 1;
   }
 
@@ -511,12 +491,14 @@ export class ClientesComponent implements OnInit, OnDestroy {
     if (this.filtroSemDebito && temDebito) return false;
 
     const ymd = this.aniversarioParaYmd(c.aniversario);
-    const ini = parseFiltroDataDdMm(this.filtroAniversarioInicio);
-    const fim = parseFiltroDataDdMm(this.filtroAniversarioFim);
-    if (ini || fim) {
+    const ini = this.filtroAniversarioInicioYmd.trim().slice(0, 10);
+    const fim = this.filtroAniversarioFimYmd.trim().slice(0, 10);
+    const temIni = ymdValido(ini);
+    const temFim = ymdValido(fim);
+    if (temIni || temFim) {
       if (!ymd) return false;
-      if (ini && ymd < ini) return false;
-      if (fim && ymd > fim) return false;
+      if (temIni && ymd < ini) return false;
+      if (temFim && ymd > fim) return false;
     }
 
     if (this.filtroAvaliacaoMin > 0) {

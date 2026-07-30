@@ -74,6 +74,9 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
   private tPulsoBusca = 0;
   private tPulsoFiltro = 0;
 
+  filtroStatusAtivos = true;
+  filtroStatusInativos = false;
+
   pagina = 1;
   itensPorPagina = 20;
   readonly opcoesItensPorPagina = [10, 20, 40, 50, 100];
@@ -173,13 +176,11 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
     this.filtrosAbertos = !this.filtrosAbertos;
   }
 
-  onLimparFiltros(): void {
+  toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (which === 'ativos') this.filtroStatusAtivos = checked;
+    else this.filtroStatusInativos = checked;
     this.pagina = 1;
-  }
-
-  onAplicarFiltros(): void {
-    this.pagina = 1;
-    this.filtrosAbertos = false;
   }
 
   onNovo(): void {

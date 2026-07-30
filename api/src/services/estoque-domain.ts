@@ -1,5 +1,5 @@
 import { desc, eq, inArray, sql } from 'drizzle-orm';
-import type { Db } from '../db';
+import { syncSerialIdSequence, type Db } from '../db';
 import {
   atendimentoItens,
   atendimentosPedido,
@@ -624,6 +624,29 @@ export type CriarProdutoInput = {
   actor?: EstoqueMovimentoActor;
 };
 
+function keyNomeCatalogo(raw: string): string {
+  return String(raw ?? '')
+    .trim()
+    .toLocaleLowerCase('pt-BR');
+}
+
+async function produtoNomeDuplicado(
+  db: Db,
+  nome: string,
+  exceptId?: number,
+): Promise<boolean> {
+  const key = keyNomeCatalogo(nome);
+  if (!key) return false;
+  const rows = await db
+    .select({ id: produtos.id, produto: produtos.produto })
+    .from(produtos);
+  return rows.some(
+    (r) =>
+      keyNomeCatalogo(r.produto) === key &&
+      (exceptId == null || r.id !== exceptId),
+  );
+}
+
 export async function criarProdutoApi(
   db: Db,
   input: CriarProdutoInput,
@@ -632,6 +655,9 @@ export async function criarProdutoApi(
   if (!nome) throw new Error('Informe o nome do produto.');
   const categoria = textoOpcional(input.categoria);
   if (!categoria) throw new Error('Informe a categoria.');
+  if (await produtoNomeDuplicado(db, nome)) {
+    throw new Error('Já existe um produto com este nome.');
+  }
 
   const unidade = textoOpcional(input.unidade) ?? 'unidade';
   const estoqueInicial = textoOpcional(input.estoque_inicial) ?? '0';
@@ -641,6 +667,10 @@ export async function criarProdutoApi(
     input.unidade_equivalente,
     unidade,
   );
+
+  // Sequência pode estar atrás do MAX(id) após import/restore.
+  await syncSerialIdSequence('produtos');
+  await syncSerialIdSequence('estoque_movimentos');
 
   const [row] = await db
     .insert(produtos)
@@ -710,6 +740,9 @@ export async function atualizarProdutoApi(
     .where(eq(produtos.id, produtoId))
     .limit(1);
   if (!existing) throw new Error('Produto não encontrado.');
+  if (await produtoNomeDuplicado(db, nome, produtoId)) {
+    throw new Error('Já existe um produto com este nome.');
+  }
 
   const estoqueMinimo =
     textoOpcional(input.estoque_minimo) ?? existing.estoqueMinimo ?? '0';

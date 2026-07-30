@@ -1226,4 +1226,65 @@ END $$;
 CREATE INDEX IF NOT EXISTS "estoque_movimentos_profissional_id_idx"
   ON "estoque_movimentos" ("profissional_id");
 `));
+
+  /**
+   * Import/restore com IDs explícitos deixa a serial atrás do MAX(id).
+   * Sem isto, INSERT sem id falha com duplicate key em `*_pkey` (ex.: produtos).
+   */
+  await syncSerialIdSequences([
+    'produtos',
+    'servicos',
+    'marcas',
+    'categorias',
+    'estoque_movimentos',
+  ]);
+}
+
+const SERIAL_ID_TABLES = new Set([
+  'produtos',
+  'servicos',
+  'marcas',
+  'categorias',
+  'estoque_movimentos',
+]);
+
+/**
+ * Alinha `*_id_seq` ao MAX(id) da tabela.
+ * Vazia → próximo nextval = 1; com MAX=N → próximo = N+1.
+ */
+export async function syncSerialIdSequence(table: string): Promise<void> {
+  if (!SERIAL_ID_TABLES.has(table)) {
+    throw new Error(`Tabela não permitida para sync de sequência: ${table}`);
+  }
+  await db.execute(sql.raw(`
+DO $$
+DECLARE
+  seq regclass;
+BEGIN
+  seq := pg_get_serial_sequence('${table}', 'id');
+  IF seq IS NULL THEN
+    RETURN;
+  END IF;
+  PERFORM setval(
+    seq,
+    GREATEST(
+      1,
+      COALESCE((SELECT MAX(id) FROM "${table}"), 0)
+    ),
+    (SELECT EXISTS (SELECT 1 FROM "${table}" LIMIT 1))
+  );
+END $$;
+`));
+}
+
+export async function syncSerialIdSequences(
+  tables: readonly string[],
+): Promise<void> {
+  for (const table of tables) {
+    try {
+      await syncSerialIdSequence(table);
+    } catch (e) {
+      console.error(`[syncSerialIdSequence] ${table}`, e);
+    }
+  }
 }

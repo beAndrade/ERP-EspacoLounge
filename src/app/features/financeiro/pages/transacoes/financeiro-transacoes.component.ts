@@ -1098,7 +1098,8 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     this.onBuscaSubmit();
   }
 
-  toggleFiltros(): void {
+  toggleFiltros(ev?: Event): void {
+    ev?.stopPropagation();
     this.dispararPulsoToolbar('filtro');
     const abrindo = !this.filtrosAbertos;
     this.filtrosAbertos = abrindo;

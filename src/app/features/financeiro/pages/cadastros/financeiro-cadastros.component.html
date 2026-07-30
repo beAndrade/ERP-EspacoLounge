@@ -59,7 +59,7 @@
               type="button"
               class="list-head__toolbar-btn"
               [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos || filtroStatusAtivo"
-              (click)="toggleFiltros()"
+              (click)="toggleFiltros($event)"
               aria-label="Filtrar"
               [attr.aria-expanded]="filtrosAbertos"
               title="Filtrar"
@@ -126,38 +126,44 @@
     </header>
   </div>
 
-  <div class="fin-cadastros-layout">
-    @if (filtrosAbertos && tabAtiva() === 'formas') {
-      <aside class="fin-transacoes-filtros" aria-label="Filtros de formas de pagamento">
-        <div class="fin-transacoes-filtros__scroll">
-          <section class="fin-filtros-card">
-            <h3 class="fin-filtros-card__title">Status</h3>
-            <ul class="fin-filtros-check-list">
-              <li>
-                <label class="fin-filtros-check">
-                  <input
-                    type="checkbox"
-                    [checked]="filtroAtivada"
-                    (change)="toggleFiltroAtivada($event)"
-                  />
-                  <span class="fin-filtros-check__label">Ativada</span>
-                </label>
-              </li>
-              <li>
-                <label class="fin-filtros-check">
-                  <input
-                    type="checkbox"
-                    [checked]="filtroDesativada"
-                    (change)="toggleFiltroDesativada($event)"
-                  />
-                  <span class="fin-filtros-check__label">Desativada</span>
-                </label>
-              </li>
-            </ul>
-          </section>
-        </div>
-      </aside>
-    }
+  <div
+    class="fin-cadastros-layout"
+    [class.fin-cadastros-layout--filtros-abertos]="filtrosAbertos && tabAtiva() === 'formas'"
+  >
+    <aside
+      class="fin-transacoes-filtros"
+      [class.fin-transacoes-filtros--open]="filtrosAbertos && tabAtiva() === 'formas'"
+      aria-label="Filtros de formas de pagamento"
+      [attr.aria-hidden]="filtrosAbertos && tabAtiva() === 'formas' ? null : 'true'"
+    >
+      <div class="fin-transacoes-filtros__scroll">
+        <section class="fin-filtros-card">
+          <h3 class="fin-filtros-card__title">Status</h3>
+          <ul class="fin-filtros-check-list">
+            <li>
+              <label class="fin-filtros-check">
+                <input
+                  type="checkbox"
+                  [checked]="filtroAtivada"
+                  (change)="toggleFiltroAtivada($event)"
+                />
+                <span class="fin-filtros-check__label">Ativada</span>
+              </label>
+            </li>
+            <li>
+              <label class="fin-filtros-check">
+                <input
+                  type="checkbox"
+                  [checked]="filtroDesativada"
+                  (change)="toggleFiltroDesativada($event)"
+                />
+                <span class="fin-filtros-check__label">Desativada</span>
+              </label>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </aside>
 
     <div class="fin-cadastros-layout__main">
       <div class="fin-cadastros__main">
