@@ -186,6 +186,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
     badge: string;
   }> = [
     { id: 'pago', label: 'Pago', badge: 'badge--ok' },
+    {
+      id: 'a_receber_cartao',
+      label: 'A receber (cartão)',
+      badge: 'badge--receber',
+    },
     { id: 'em_aberto', label: 'Em aberto', badge: 'badge--warn' },
     { id: 'atrasado', label: 'Atrasado', badge: 'badge--atraso' },
   ];
@@ -1250,6 +1255,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   rotuloPagamento(g: ComandaGrupo): string {
     const pc = this.pagamentoColunaGrupo(g);
     if (pc === 'pago') return 'Pago';
+    if (pc === 'a_receber_cartao') return 'A receber (cartão)';
     if (pc === 'em_aberto') return 'Em aberto';
     return 'Atrasado';
   }
@@ -1257,6 +1263,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   classeBadgePagamento(g: ComandaGrupo): string {
     const pc = this.pagamentoColunaGrupo(g);
     if (pc === 'pago') return 'badge--ok';
+    if (pc === 'a_receber_cartao') return 'badge--receber';
     if (pc === 'em_aberto') return 'badge--warn';
     return 'badge--atraso';
   }

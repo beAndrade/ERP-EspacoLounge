@@ -93,6 +93,8 @@ export interface ResumoComanda {
   total: number;
   /** Soma de valores já recebidos em caixa (exclui `pendente` e `a_receber_cartao`). */
   total_pago: number;
+  /** Soma de parcelas `a_receber_cartao` ainda não liquidadas. */
+  total_a_receber_cartao: number;
   /** total − total_pago − a_receber_cartao (dívida do cliente; mín. 0). */
   saldo: number;
   /** Estado para a UI: aberto / pendente / parcial / pago. */
@@ -425,6 +427,7 @@ export async function getResumoComanda(
     desconto,
     total,
     total_pago: totalPago,
+    total_a_receber_cartao: totalAReceberCartao,
     saldo,
     status,
     cobranca_status,
@@ -539,6 +542,7 @@ export async function getResumosPorAtendimento(
       desconto,
       total,
       total_pago: totalPago,
+      total_a_receber_cartao: totalAReceberCartao,
       saldo,
       status: statusCobrancaComanda(
         total,

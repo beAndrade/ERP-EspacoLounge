@@ -377,6 +377,21 @@ input[type='number'].fat-field__input {
   }
 }
 
+.fat-parcelas-nota {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #91caff;
+  background: #e6f4ff;
+  color: #0958d9;
+  font-size: 12px;
+  line-height: 1.4;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
 /* Métodos de pagamento — grelha 2×2 */
 @media (max-width: 640px) {
   .fat-metodos {
