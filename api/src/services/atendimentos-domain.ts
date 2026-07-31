@@ -2720,6 +2720,7 @@ export async function listAtendimentosRaw(
               total: r.total,
               desconto_num: r.desconto,
               total_pago: r.total_pago,
+              total_a_receber_cartao: r.total_a_receber_cartao,
               saldo: r.saldo,
               status_cobranca: r.status,
             };

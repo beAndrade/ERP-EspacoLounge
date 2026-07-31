@@ -196,6 +196,8 @@ export interface AtendimentoListaItem {
   desconto_num?: number;
   /** Soma de `comanda_pagamentos.valor` para este atendimento. */
   total_pago?: number;
+  /** Soma de parcelas `a_receber_cartao` ainda não liquidadas. */
+  total_a_receber_cartao?: number;
   /** total − total_pago (mín. 0). */
   saldo?: number;
   /**

@@ -338,7 +338,7 @@ col.comandas-table__col-data {
 }
 
 col.comandas-table__col-cliente {
-  width: 38.5%;
+  width: 36.5%;
 }
 
 col.comandas-table__col-status {
@@ -350,7 +350,7 @@ col.comandas-table__col-valor {
 }
 
 col.comandas-table__col-pagamento {
-  width: 11%;
+  width: 13%;
 }
 
 col.comandas-table__col-menu {
@@ -731,6 +731,13 @@ tbody td.col-ticket {
     border-color: var(--drawer-badge-ok-border, #b7eb8f);
   }
 
+  /** Parcelas de cartão ainda a receber da operadora. */
+  &--receber {
+    color: #0958d9;
+    background: #e6f4ff;
+    border-color: #91caff;
+  }
+
   &--warn {
     color: #c2410c;
     background: #fff7ed;
@@ -1061,7 +1068,7 @@ tbody tr.comandas-table__row--menu-open {
   }
 
   col.comandas-table__col-cliente {
-    width: 30%;
+    width: 28%;
   }
 
   col.comandas-table__col-status {
@@ -1073,7 +1080,7 @@ tbody tr.comandas-table__row--menu-open {
   }
 
   col.comandas-table__col-pagamento {
-    width: 11%;
+    width: 14%;
   }
 
   col.comandas-table__col-menu {

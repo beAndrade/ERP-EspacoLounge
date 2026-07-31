@@ -5,7 +5,11 @@ import {
 } from './atendimento-display';
 
 export type StatusComandaColuna = 'pendente' | 'finalizado';
-export type PagamentoColuna = 'pago' | 'em_aberto' | 'atrasado';
+export type PagamentoColuna =
+  | 'pago'
+  | 'em_aberto'
+  | 'atrasado'
+  | 'a_receber_cartao';
 
 /** Um pedido (`id_atendimento`) com linhas agregadas — espelho da lista de comandas. */
 export interface ComandaGrupoResumo {
@@ -16,6 +20,12 @@ export interface ComandaGrupoResumo {
 }
 
 const EPS_MOEDA = 0.005;
+
+/** Há parcelas de cartão ainda a receber da operadora. */
+export function itemTemAReceberCartao(l: AtendimentoListaItem): boolean {
+  const n = Number(l.total_a_receber_cartao ?? 0);
+  return Number.isFinite(n) && n > EPS_MOEDA;
+}
 
 /** Data civil de hoje no fuso local (AAAA-MM-DD). */
 export function ymdHojeCivil(): string {
@@ -191,11 +201,13 @@ export function pagamentoColunaFromItem(
   const quitada =
     opts?.jaQuitadaNasCifras ??
     comandaQuitadaNasCifrasItem(l, valorTotalGrupo);
-  if (quitada) return 'pago';
+  if (quitada) {
+    return itemTemAReceberCartao(l) ? 'a_receber_cartao' : 'pago';
+  }
   const dataRef = (opts?.dataComanda ?? l.data ?? '').trim().slice(0, 10);
   if (pagamentoEmAtrasoParaExibicao(l, dataRef)) return 'atrasado';
   if (itemTemDividaNaoQuitada(l)) return 'em_aberto';
-  return 'pago';
+  return itemTemAReceberCartao(l) ? 'a_receber_cartao' : 'pago';
 }
 
 /** Coluna Pagamento da lista (inclui comanda ainda não faturada). */
@@ -206,7 +218,9 @@ export function pagamentoColunaFromGrupo(
   const l0 = g.linhas[0];
   const quitada =
     opts?.jaQuitadaNasCifras ?? comandaQuitadaNasCifrasItem(l0, g.valorTotal);
-  if (quitada) return 'pago';
+  if (quitada) {
+    return itemTemAReceberCartao(l0) ? 'a_receber_cartao' : 'pago';
+  }
   const pc = pagamentoColunaFromItem(l0, g.valorTotal, {
     jaQuitadaNasCifras: quitada,
     dataComanda: g.data,
