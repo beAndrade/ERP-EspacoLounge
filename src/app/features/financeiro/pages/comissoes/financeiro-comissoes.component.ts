@@ -40,6 +40,8 @@ import {
 import { abrirCadastroClienteDesdeSidebarComanda } from '../../../../shared/cliente-cadastro-drawer/comanda-drawer-sidebar-cadastro.util';
 import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 import { FinFiltrosFloatingTipComponent } from '../transacoes/fin-filtros-floating-tip.component';
+import { FinanceiroBloquearBtnComponent } from '../../../../shared/financeiro-bloquear-btn/financeiro-bloquear-btn.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 
 const DRAWER_ANIM_MS = 430;
 
@@ -87,6 +89,7 @@ export interface FinComissaoLinhaUi {
   selector: 'app-financeiro-comissoes',
   standalone: true,
   imports: [
+    TableEmptyComponent,
     CurrencyPipe,
     DecimalPipe,
     FormsModule,
@@ -96,6 +99,7 @@ export interface FinComissaoLinhaUi {
     NovaComandaDrawerComponent,
     SaasSelectComponent,
     FinFiltrosFloatingTipComponent,
+    FinanceiroBloquearBtnComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro-comissoes.component.html',

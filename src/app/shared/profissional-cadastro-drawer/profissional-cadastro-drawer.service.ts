@@ -27,10 +27,13 @@ import {
 } from '../../core/utils/foto-data-url.util';
 import { profissionalFotoUrl } from '../../core/utils/profissional-foto.util';
 import { AppToastService } from '../app-toast/app-toast.service';
+import { CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
-  CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS,
   DRAWER_ANIM_MS,
-} from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+  type DrawerOpenAnimHandle,
+} from '../drawer-panel-anim';
 
 export const PROFISSIONAL_SALVO_TOAST_MSG = 'Profissional salvo com sucesso!';
 
@@ -165,6 +168,7 @@ export class ProfissionalCadastroDrawerService {
   private callbacks: ProfissionalCadastroDrawerCallbacks | null = null;
   private saveSub: Subscription | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openAnim: DrawerOpenAnimHandle | null = null;
   private salariosCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private valesCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private navLockTooltipTimer: ReturnType<typeof setTimeout> | null = null;
@@ -397,7 +401,14 @@ export class ProfissionalCadastroDrawerService {
     if (!this.aberto) return;
     this.fecharSalariosDrawer();
     this.fecharValesDrawer();
-    this.panelOpen = false;
+    this.openAnim?.cancel();
+    this.openAnim = null;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+    });
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;
@@ -913,12 +924,15 @@ export class ProfissionalCadastroDrawerService {
   }
 
   private abrirPainel(): void {
+    this.openAnim?.cancel();
     this.aberto = true;
     this.bloquearScrollPagina();
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        this.panelOpen = true;
-      });
+    this.openAnim = runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+      reflowSelector: '.cliente-drawer--profissional.app-drawer',
     });
   }
 

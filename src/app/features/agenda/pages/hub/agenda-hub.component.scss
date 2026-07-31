@@ -10,7 +10,7 @@
   overflow: visible;
   box-sizing: border-box;
   /** Igual a `DRAWER_ANIM_MS` em `agenda-hub.component.ts` (overlay + drawers). */
-  --drawer-slide-duration: 0.52s;
+  --drawer-slide-duration: 0.43s;
 
   &:has(.hub-page--compact) {
     display: block;
@@ -381,100 +381,7 @@
   padding: 0.25rem 0;
 }
 
-/* Checkbox — paridade list-table / fin-filtros */
-.hub-toolbar-menu__panel--filtros input[type='checkbox'] {
-  --list-check-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --list-check-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
-
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  box-sizing: border-box;
-  display: inline-block;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  border: 1px solid #efefef;
-  border-radius: 5px;
-  background-color: #fff;
-  cursor: pointer;
-  vertical-align: middle;
-  overflow: visible;
-  transform: scale(1);
-  transition:
-    background-color 0.22s var(--list-check-ease),
-    border-color 0.28s var(--list-check-ease) 0.18s,
-    transform 0.16s var(--list-check-spring);
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 47%;
-    width: 4px;
-    height: 8px;
-    border: solid #fff;
-    border-width: 0 2px 2px 0;
-    transform: translate(-50%, -50%) rotate(45deg) scale(0.35);
-    transform-origin: center center;
-    opacity: 0;
-    transition:
-      transform 0.32s var(--list-check-spring),
-      opacity 0.14s ease;
-  }
-
-  &:hover:not(:disabled):not(:checked) {
-    border-color: var(--color-link);
-    background-color: #fff;
-    transition:
-      background-color 0.18s var(--list-check-ease),
-      border-color 0.18s var(--list-check-ease),
-      transform 0.16s var(--list-check-spring);
-  }
-
-  &:hover:not(:disabled):checked {
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
-    transition:
-      background-color 0.18s var(--list-check-ease),
-      border-color 0.18s var(--list-check-ease),
-      transform 0.16s var(--list-check-spring);
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.9);
-  }
-
-  &:checked {
-    background-color: var(--color-primary);
-    border-color: var(--color-primary);
-    box-shadow: none;
-
-    &::after {
-      opacity: 1;
-      transform: translate(-50%, -50%) rotate(45deg) scale(1);
-      transition:
-        transform 0.36s var(--list-check-spring) 0.04s,
-        opacity 0.12s ease 0.02s;
-    }
-  }
-
-  &:checked:active:not(:disabled) {
-    transform: scale(0.94);
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
-    outline-offset: 2px;
-  }
-}
-
+/* Checkbox: `styles/system-checkbox.scss` (global). */
 .hub-filtros-check {
   display: flex;
   align-items: center;
@@ -485,15 +392,6 @@
   color: #374151;
   cursor: pointer;
   user-select: none;
-
-  &:hover input[type='checkbox']:not(:disabled):not(:checked) {
-    border-color: var(--color-link);
-    background-color: #fff;
-    transition:
-      background-color 0.18s var(--list-check-ease, cubic-bezier(0.22, 1, 0.36, 1)),
-      border-color 0.18s var(--list-check-ease, cubic-bezier(0.22, 1, 0.36, 1)),
-      transform 0.16s var(--list-check-spring, cubic-bezier(0.34, 1.45, 0.64, 1));
-  }
 }
 
 .hub-filtros-check__label {
@@ -1799,7 +1697,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   box-sizing: border-box;
   background: #00000073;
   opacity: 0;
-  transition: opacity var(--drawer-slide-duration, 0.52s)
+  transition: opacity var(--drawer-slide-duration, 0.43s)
     cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
 
@@ -1872,7 +1770,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   overflow-clip-margin: 20px 16px 24px 32px;
   padding: 0;
   transform: translateX(100%);
-  transition: transform var(--drawer-slide-duration, 0.52s)
+  transition: transform var(--drawer-slide-duration, 0.43s)
     cubic-bezier(0.22, 1, 0.36, 1);
 
   &--open {

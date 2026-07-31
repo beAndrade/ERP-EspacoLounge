@@ -26,13 +26,23 @@ import { ProfissionalCadastroDrawerService } from '../../shared/profissional-cad
 
 import { ServicoCadastroDrawerService } from '../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 
-import { AppToastService } from '../../shared/app-toast/app-toast.service';
+import { ProdutoCadastroDrawerService } from '../../shared/produto-cadastro-drawer/produto-cadastro-drawer.service';
+
+import { CategoriaCadastroDrawerService } from '../../shared/categoria-cadastro-drawer/categoria-cadastro-drawer.service';
+
+import { MarcaCadastroDrawerService } from '../../shared/marca-cadastro-drawer/marca-cadastro-drawer.service';
+
+import { FornecedorCadastroDrawerService } from '../../shared/fornecedor-cadastro-drawer/fornecedor-cadastro-drawer.service';
+
+import { AgendaNovoGlobalService } from '../../shared/agenda-novo-global/agenda-novo-global.service';
 
 import { FinTransacaoNovoDrawerService } from '../../shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer.service';
 
+import type { FinNovoAtalhoTipo } from '../../shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer.service';
+
+import { AdminPinService } from '../../core/services/admin-pin.service';
+
 import { SidebarFlyoutService } from '../sidebar-flyout.service';
-
-
 
 type ShortcutId =
 
@@ -43,8 +53,6 @@ type ShortcutId =
   | 'orcamento'
 
   | 'pacote'
-
-  | 'pacote-predef'
 
   | 'cliente'
 
@@ -70,8 +78,6 @@ type ShortcutId =
 
   | 'transferencia';
 
-
-
 interface ShortcutItem {
 
   id: ShortcutId;
@@ -81,8 +87,6 @@ interface ShortcutItem {
   adminOnly?: boolean;
 
 }
-
-
 
 interface ShortcutSection {
 
@@ -94,8 +98,6 @@ interface ShortcutSection {
 
 }
 
-
-
 @Component({
 
   selector: 'app-sidebar-novo-menu',
@@ -103,7 +105,7 @@ interface ShortcutSection {
   standalone: true,
 
   host: {
-    '[class.sidebar-novo-host--open]': 'menuAberto',
+    '[class.sidebar-novo-host--open]': 'menuMontado',
   },
 
   templateUrl: './sidebar-novo-menu.component.html',
@@ -124,19 +126,25 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
   private readonly servicoDrawer = inject(ServicoCadastroDrawerService);
 
-  private readonly toast = inject(AppToastService);
+  private readonly produtoDrawer = inject(ProdutoCadastroDrawerService);
+
+  private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
+
+  private readonly marcaDrawer = inject(MarcaCadastroDrawerService);
+
+  private readonly fornecedorDrawer = inject(FornecedorCadastroDrawerService);
+
+  private readonly agendaNovoGlobal = inject(AgendaNovoGlobalService);
 
   private readonly finNovoDrawer = inject(FinTransacaoNovoDrawerService);
+
+  private readonly adminPin = inject(AdminPinService);
 
   private readonly flyout = inject(SidebarFlyoutService);
 
   private readonly hostEl = inject(ElementRef<HTMLElement>);
 
-
-
   @Input() collapsed = false;
-
-
 
   @ViewChild('novoBtn') novoBtn?: ElementRef<HTMLButtonElement>;
 
@@ -144,13 +152,16 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
   private panelRestoreParent: (() => void) | null = null;
 
-  menuAberto = false;
+  /** Painel no DOM (inclui animação de saída). */
+  menuMontado = false;
+  /** Classe visual aberta (drop + fade). */
+  menuPanelOpen = false;
+  private menuCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly MENU_ANIM_MS = 420;
 
   panelTop = 0;
 
   panelLeft = 0;
-
-
 
   readonly sections: ShortcutSection[] = [
 
@@ -167,8 +178,6 @@ export class SidebarNovoMenuComponent implements OnDestroy {
         { id: 'orcamento', label: 'Orçamento' },
 
         { id: 'pacote', label: 'Pacote' },
-
-        { id: 'pacote-predef', label: 'Pacote Predefinido' },
 
       ],
 
@@ -222,8 +231,6 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
   ];
 
-
-
   sectionsVisiveis(): ShortcutSection[] {
 
     const admin = this.sessao.isAdmin();
@@ -244,58 +251,76 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
   }
 
-
-
   toggleMenu(ev: Event): void {
-
     ev.preventDefault();
-
     ev.stopPropagation();
-
-    if (this.menuAberto) {
-
+    if (this.menuMontado && this.menuPanelOpen) {
       this.fecharMenu();
-
       return;
-
     }
+    if (this.menuMontado && !this.menuPanelOpen) {
+      // Reabre no meio do fade-out
+      if (this.menuCloseTimer != null) {
+        clearTimeout(this.menuCloseTimer);
+        this.menuCloseTimer = null;
+      }
+      this.flyout.open(() => this.fecharMenu());
+      this.menuPanelOpen = true;
+      return;
+    }
+    this.abrirMenu();
+  }
 
+  private abrirMenu(): void {
     this.flyout.open(() => this.fecharMenu());
-
-    this.menuAberto = true;
-
-    requestAnimationFrame(() => {
+    this.menuMontado = true;
+    this.menuPanelOpen = false;
+    queueMicrotask(() => {
       requestAnimationFrame(() => {
         this.portalizarPanel();
         this.atualizarPosicaoPanel();
+        // Força reflow para a transição CSS rodar de fato (senão “pula”).
+        const el = this.novoPanel?.nativeElement;
+        if (el) void el.offsetHeight;
+        requestAnimationFrame(() => {
+          this.menuPanelOpen = true;
+        });
       });
     });
-
   }
-
-
 
   fecharMenu(): void {
-
-    if (!this.menuAberto) return;
-
-    this.menuAberto = false;
-
-    this.restaurarPanelPortal();
-
-    this.flyout.release(() => this.fecharMenu());
-
+    if (!this.menuMontado) return;
+    this.menuPanelOpen = false;
+    if (this.menuCloseTimer != null) clearTimeout(this.menuCloseTimer);
+    this.menuCloseTimer = setTimeout(() => {
+      this.menuCloseTimer = null;
+      this.menuMontado = false;
+      this.restaurarPanelPortal();
+      this.flyout.release(() => this.fecharMenu());
+    }, SidebarNovoMenuComponent.MENU_ANIM_MS);
   }
 
-
+  /**
+   * Fecha o painel sem animação — usado ao abrir um drawer/atalho.
+   * Evita blur+z-index 1650 competir com o slide do drawer (abre “travando”).
+   */
+  private fecharMenuImediato(): void {
+    if (!this.menuMontado && !this.menuPanelOpen) return;
+    if (this.menuCloseTimer != null) {
+      clearTimeout(this.menuCloseTimer);
+      this.menuCloseTimer = null;
+    }
+    this.menuPanelOpen = false;
+    this.menuMontado = false;
+    this.restaurarPanelPortal();
+    this.flyout.release(() => this.fecharMenu());
+  }
 
   ngOnDestroy(): void {
-
+    if (this.menuCloseTimer != null) clearTimeout(this.menuCloseTimer);
     this.restaurarPanelPortal();
-
   }
-
-
 
   /** Painel em `body` para não ficar atrás da sidebar / conteúdo principal. */
   private portalizarPanel(): void {
@@ -328,8 +353,6 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
   }
 
-
-
   private restaurarPanelPortal(): void {
 
     this.panelRestoreParent?.();
@@ -337,8 +360,6 @@ export class SidebarNovoMenuComponent implements OnDestroy {
     this.panelRestoreParent = null;
 
   }
-
-
 
   private atualizarPosicaoPanel(): void {
 
@@ -382,127 +403,89 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
   }
 
-
-
   executar(id: ShortcutId): void {
+    this.fecharMenuImediato();
+    // Um frame livre: o painel (blur) some do DOM antes de montar o drawer.
+    requestAnimationFrame(() => {
+      this.executarAtalho(id);
+    });
+  }
 
-    this.fecharMenu();
-
+  private executarAtalho(id: ShortcutId): void {
     switch (id) {
-
       case 'agendamento':
-
-        void this.router.navigate(['/agenda'], {
-
-          queryParams: { abrirNovoAgendamento: '1' },
-
-        });
-
+        this.agendaNovoGlobal.abrir('agendamento');
         break;
-
       case 'comanda':
-        void this.router.navigate(['/comandas'], {
-          queryParams: { abrirNovaComanda: '1' },
-        });
+        this.agendaNovoGlobal.abrir('comanda');
         break;
-
       case 'orcamento':
-        void this.router.navigate(['/orcamentos'], {
-          queryParams: { abrirNovoOrcamento: '1' },
-        });
+        this.agendaNovoGlobal.abrir('orcamento');
         break;
-
       case 'pacote':
         void this.router.navigate(['/pacotes']);
         break;
-
-      case 'pacote-predef':
-        this.toast.show('Pacote Predefinido — em breve.');
-        break;
-
       case 'cliente':
-
         this.clienteDrawer.abrirNovo('');
-
         break;
-
       case 'servico':
-
         this.servicoDrawer.abrirNovo();
-
         break;
-
       case 'produto':
-
-        void this.router.navigate(['/estoque']);
-
+        this.produtoDrawer.abrirNovo();
         break;
-
       case 'categoria':
-
-        void this.router.navigate(['/categorias']);
-
+        this.categoriaDrawer.abrirNovo();
         break;
-
       case 'profissional':
-
         this.profDrawer.abrirNovo();
-
         break;
-
       case 'fornecedor':
-
-        void this.router.navigate(['/fornecedores']);
-
+        this.fornecedorDrawer.abrirNovo();
         break;
-
       case 'compra':
-
         void this.router.navigate(['/compras']);
-
         break;
-
       case 'marca':
-
-        void this.router.navigate(['/marcas']);
-
+        this.marcaDrawer.abrirNovo();
         break;
-
       case 'recebimento':
-
-        this.finNovoDrawer.abrir('receita');
-
+        this.abrirAtalhoFinanceiro('receita');
         break;
-
       case 'despesa':
-
-        this.finNovoDrawer.abrir('despesa');
-
+        this.abrirAtalhoFinanceiro('despesa');
         break;
-
       case 'vale':
-
-        this.finNovoDrawer.abrir('vale');
-
+        this.abrirAtalhoFinanceiro('vale');
         break;
-
       case 'transferencia':
-
-        this.finNovoDrawer.abrir('transferencia');
-
+        this.abrirAtalhoFinanceiro('transferencia');
         break;
-
     }
-
   }
 
+  /** Atalhos financeiros exigem PIN desbloqueado; senão manda para o cadeado. */
+  private abrirAtalhoFinanceiro(tipo: FinNovoAtalhoTipo): void {
+    if (!this.adminPin.unlocked()) {
+      void this.router.navigate(['/financeiro']);
+      return;
+    }
+    this.finNovoDrawer.abrir(tipo);
+  }
 
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(ev: KeyboardEvent): void {
+    if (!this.menuMontado) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.fecharMenu();
+  }
 
   @HostListener('document:click', ['$event'])
 
   onDocumentClick(ev: MouseEvent): void {
 
-    if (!this.menuAberto) return;
+    if (!this.menuMontado) return;
 
     const t = ev.target as Node | null;
 
@@ -516,18 +499,15 @@ export class SidebarNovoMenuComponent implements OnDestroy {
 
   }
 
-
-
   @HostListener('window:resize')
 
   @HostListener('window:scroll')
 
   onViewportChange(): void {
 
-    if (this.menuAberto) this.atualizarPosicaoPanel();
+    if (this.menuMontado) this.atualizarPosicaoPanel();
 
   }
 
 }
-
 

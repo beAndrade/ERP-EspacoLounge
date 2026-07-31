@@ -13,6 +13,7 @@ import type { FinFormaPagamentoCadastroItem } from '../../../../core/models/api.
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { FinCadastroDrawerComponent } from './fin-cadastro-drawer.component';
 
 const FORMA_SALVA_TOAST_MSG = 'Forma de pagamento salva com sucesso!';
@@ -21,7 +22,7 @@ const FORMA_EXCLUIDA_TOAST_MSG = 'Forma de pagamento excluída com sucesso!';
 @Component({
   selector: 'app-fin-cadastros-formas-tab',
   standalone: true,
-  imports: [FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
+  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
   templateUrl: './fin-cadastros-formas-tab.component.html',
   styleUrl: './fin-cadastros-formas-tab.component.scss',
 })

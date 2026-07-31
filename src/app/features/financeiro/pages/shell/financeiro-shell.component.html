@@ -1,36 +1,50 @@
-@if (!desbloqueado) {
-  <div class="toolbar">
-    <h1>Financeiro</h1>
+@if (!adminPin.unlocked()) {
+  <div class="pin-page">
+    <div class="pin-card">
+      <div class="pin-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M16.5 10.5V7.5a4.5 4.5 0 10-9 0v3m-.75 11.25h10.5A2.25 2.25 0 0019.5 19.5v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+          />
+        </svg>
+      </div>
+      <h1 class="pin-card__title">Financeiro protegido</h1>
+      <p class="pin-card__subtitle">
+        Digite o PIN para ver painel, transações e comissões. Ao terminar, use
+        Bloquear.
+      </p>
+
+      <form class="pin-form" (ngSubmit)="entrar()">
+        <label class="pin-field">
+          <span class="pin-field__label">PIN</span>
+          <input
+            class="pin-field__input"
+            type="password"
+            name="adminPin"
+            [(ngModel)]="pinDraft"
+            autocomplete="off"
+            inputmode="numeric"
+            placeholder="••••"
+            [disabled]="verificando"
+          />
+        </label>
+
+        @if (erroPin) {
+          <p class="pin-form__erro" role="alert">{{ erroPin }}</p>
+        }
+
+        <button
+          type="submit"
+          class="pin-form__submit"
+          [disabled]="verificando"
+        >
+          {{ verificando ? 'Verificando…' : 'Desbloquear' }}
+        </button>
+      </form>
+    </div>
   </div>
-  <p class="hint">
-    Área protegida. Introduza o PIN de administrador (o mesmo definido em
-    <code>ADMIN_PIN</code> na API) para ver o resumo do dia, movimentações e
-    comissões.
-  </p>
-  <section class="painel-pin" aria-label="Acesso administrador">
-    <label class="field">
-      <span>PIN administrador</span>
-      <input
-        type="password"
-        name="adminPin"
-        [(ngModel)]="pinDraft"
-        autocomplete="off"
-        placeholder="PIN"
-        (keydown.enter)="entrar()"
-      />
-    </label>
-    <button
-      type="button"
-      class="btn primary"
-      (click)="entrar()"
-      [disabled]="verificando"
-    >
-      {{ verificando ? 'A verificar…' : 'Entrar' }}
-    </button>
-  </section>
-  @if (erroPin) {
-    <p class="alert" role="alert">{{ erroPin }}</p>
-  }
 } @else {
   <div
     class="financeiro-outlet"

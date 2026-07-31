@@ -14,6 +14,7 @@ import type { WhatsappEnviarContexto } from '../../core/models/whatsapp.model';
 import { AppToastService } from '../app-toast/app-toast.service';
 import { WhatsappEnviarModalComponent } from '../whatsapp/whatsapp-enviar-modal.component';
 import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service';
+import { TableEmptyComponent } from '../table-empty/table-empty.component';
 import {
   ClientePagarDebitosModalComponent,
   type ClientePagarDebitosModalSubmit,
@@ -23,6 +24,7 @@ import {
   selector: 'app-cliente-debitos-tab',
   standalone: true,
   imports: [
+    TableEmptyComponent,
     CurrencyPipe,
     ClientePagarDebitosModalComponent,
     WhatsappEnviarModalComponent,

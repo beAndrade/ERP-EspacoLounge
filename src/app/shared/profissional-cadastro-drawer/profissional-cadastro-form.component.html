@@ -1,8 +1,8 @@
 @if (d.carregando) {
   <p class="cliente-tab-placeholder">Carregando…</p>
 } @else {
-  <div class="cliente-cadastro-form__cols">
-    <main class="cliente-main">
+  <div class="cliente-cadastro-form__cols prof-cadastro-form">
+    <main class="cliente-main prof-cadastro-form__main">
       <div class="cliente-photo-block">
         <div
           class="cliente-photo"
@@ -80,45 +80,45 @@
       </div>
 
       <div class="cliente-form-grid">
-        <div
-          class="cliente-field cliente-field--full"
-          [class.cliente-field--error]="d.erroNome()"
-        >
-          <label class="cliente-field__inner">
-            <span class="cliente-field-label cliente-field-label--required"
-              >Nome</span
-            >
-            <input
-              type="text"
-              [(ngModel)]="d.cadastroNome"
-              name="prof_nome"
-              autocomplete="name"
-              placeholder="Nome"
-              [disabled]="d.salvando"
-            />
-            @if (d.erroNome(); as errNome) {
-              <span class="cliente-field__error-msg" role="alert">{{
-                errNome
-              }}</span>
-            }
-          </label>
-        </div>
+        <div class="cliente-form-row cliente-form-row--3">
+          <div
+            class="cliente-field"
+            [class.cliente-field--error]="d.erroNome()"
+          >
+            <label class="cliente-field__inner">
+              <span class="cliente-field-label cliente-field-label--required"
+                >Nome</span
+              >
+              <input
+                type="text"
+                [(ngModel)]="d.cadastroNome"
+                name="prof_nome"
+                autocomplete="name"
+                placeholder="Nome"
+                [disabled]="d.salvando"
+              />
+              @if (d.erroNome(); as errNome) {
+                <span class="cliente-field__error-msg" role="alert">{{
+                  errNome
+                }}</span>
+              }
+            </label>
+          </div>
 
-        <div class="cliente-field cliente-field--full">
-          <label class="cliente-field__inner">
-            <span class="cliente-field-label">Apelido</span>
-            <input
-              type="text"
-              [(ngModel)]="d.cadastroApelido"
-              name="prof_apelido"
-              autocomplete="nickname"
-              placeholder="Apelido"
-              [disabled]="d.salvando"
-            />
-          </label>
-        </div>
+          <div class="cliente-field">
+            <label class="cliente-field__inner">
+              <span class="cliente-field-label">Apelido</span>
+              <input
+                type="text"
+                [(ngModel)]="d.cadastroApelido"
+                name="prof_apelido"
+                autocomplete="nickname"
+                placeholder="Apelido"
+                [disabled]="d.salvando"
+              />
+            </label>
+          </div>
 
-        <div class="cliente-form-row cliente-form-row--pair">
           <div
             class="cliente-field"
             [class.cliente-field--error]="d.erroCelular()"
@@ -131,6 +131,10 @@
                 class="cliente-phone-input"
                 [class.cliente-field__control--error]="d.erroCelular()"
               >
+                <span class="cliente-phone-input__prefix" aria-hidden="true">
+                  <span class="prof-phone-input__flag" title="Brasil"></span>
+                  +55
+                </span>
                 <input
                   type="tel"
                   appCelularBrMask
@@ -151,6 +155,9 @@
               }
             </label>
           </div>
+        </div>
+
+        <div class="cliente-form-row cliente-form-row--4">
           <div class="cliente-field">
             <label class="cliente-field__inner">
               <span class="cliente-field-label">Profissão</span>
@@ -163,9 +170,7 @@
               />
             </label>
           </div>
-        </div>
 
-        <div class="cliente-form-row cliente-form-row--pair">
           <div
             class="cliente-field"
             [class.cliente-field--error]="d.erroAniversario()"
@@ -188,6 +193,7 @@
               }
             </label>
           </div>
+
           <div class="cliente-field">
             <label class="cliente-field__inner">
               <span class="cliente-field-label">CPF/CNPJ</span>
@@ -203,23 +209,23 @@
               />
             </label>
           </div>
-        </div>
 
-        <div class="cliente-field cliente-field--full">
-          <label class="cliente-field__inner">
-            <span class="cliente-field-label">RG</span>
-            <input
-              type="text"
-              [ngModel]="d.cadastroRg"
-              (ngModelChange)="d.onRgInput($event)"
-              name="prof_rg"
-              placeholder="00.000.000-0"
-              inputmode="numeric"
-              maxlength="12"
-              autocomplete="off"
-              [disabled]="d.salvando"
-            />
-          </label>
+          <div class="cliente-field">
+            <label class="cliente-field__inner">
+              <span class="cliente-field-label">RG</span>
+              <input
+                type="text"
+                [ngModel]="d.cadastroRg"
+                (ngModelChange)="d.onRgInput($event)"
+                name="prof_rg"
+                placeholder="00.000.000-0"
+                inputmode="numeric"
+                maxlength="12"
+                autocomplete="off"
+                [disabled]="d.salvando"
+              />
+            </label>
+          </div>
         </div>
 
         <div class="cliente-field cliente-field--full">
@@ -237,7 +243,7 @@
       </div>
     </main>
 
-    <aside class="cliente-side" aria-label="Configurações">
+    <section class="cliente-side prof-cadastro-form__config" aria-label="Configurações">
       <div class="cliente-side-block cliente-side-block--last">
         <div class="cliente-side-block__head">
           <button
@@ -259,6 +265,13 @@
           [attr.aria-hidden]="!d.secaoConfiguracoesAberta"
         >
           <div class="cliente-switch-block">
+            <div class="cliente-switch-block__labels">
+              <span class="cliente-switch-block__title">Ativo</span>
+              <p class="cliente-switch-block__hint">
+                Um profissional desativado não será listado para realizar
+                agendamentos, comandas etc.
+              </p>
+            </div>
             <div class="block-toggles block-toggles--inline" role="group">
               <div class="toggle-switch toggle-switch--inline">
                 <span
@@ -274,16 +287,18 @@
                 ></span>
               </div>
             </div>
-            <div class="cliente-switch-block__labels">
-              <span class="cliente-switch-block__title">Ativo</span>
-              <p class="cliente-switch-block__hint">
-                Um profissional desativado não será listado para realizar
-                agendamentos, comandas etc.
-              </p>
-            </div>
           </div>
 
           <div class="cliente-switch-block">
+            <div class="cliente-switch-block__labels">
+              <span class="cliente-switch-block__title"
+                >Disponível para agendamento online</span
+              >
+              <p class="cliente-switch-block__hint">
+                Clientes podem escolher esse profissional para fazer
+                agendamentos online.
+              </p>
+            </div>
             <div class="block-toggles block-toggles--inline" role="group">
               <div class="toggle-switch toggle-switch--inline">
                 <span
@@ -299,18 +314,16 @@
                 ></span>
               </div>
             </div>
-            <div class="cliente-switch-block__labels">
-              <span class="cliente-switch-block__title"
-                >Disponível para agendamento online</span
-              >
-              <p class="cliente-switch-block__hint">
-                Clientes poderão escolher este profissional no link público
-                de agendamento (/agendar).
-              </p>
-            </div>
           </div>
 
           <div class="cliente-switch-block">
+            <div class="cliente-switch-block__labels">
+              <span class="cliente-switch-block__title">Gerar agenda</span>
+              <p class="cliente-switch-block__hint">
+                Caso esteja desativado não será gerada agenda para este
+                profissional.
+              </p>
+            </div>
             <div class="block-toggles block-toggles--inline" role="group">
               <div class="toggle-switch toggle-switch--inline">
                 <span
@@ -326,16 +339,33 @@
                 ></span>
               </div>
             </div>
+          </div>
+
+          <div class="cliente-switch-block">
             <div class="cliente-switch-block__labels">
-              <span class="cliente-switch-block__title">Gerar agenda</span>
+              <span class="cliente-switch-block__title">Recebe comissão</span>
               <p class="cliente-switch-block__hint">
-                Caso esteja desativado não será gerada agenda para este
-                profissional.
+                Desmarque se o profissional não recebe comissão.
               </p>
+            </div>
+            <div class="block-toggles block-toggles--inline" role="group">
+              <div class="toggle-switch toggle-switch--inline">
+                <span
+                  class="toggle toggle--liquid"
+                  role="switch"
+                  tabindex="0"
+                  [class.active]="d.recebeComissao"
+                  [class.toggle--liq-armed]="d.recebeComissaoToggleLiqArmed"
+                  [attr.aria-checked]="d.recebeComissao"
+                  aria-label="Recebe comissão"
+                  (click)="d.onRecebeComissaoToggleClick($event)"
+                  (keydown)="d.onRecebeComissaoToggleKeydown($event)"
+                ></span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </aside>
+    </section>
   </div>
 }

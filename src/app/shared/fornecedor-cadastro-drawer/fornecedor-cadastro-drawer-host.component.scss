@@ -1,0 +1,324 @@
+@use '../../styles/drawer-stack';
+@use '../../styles/drawer-responsive' as dr;
+
+app-fornecedor-cadastro-drawer-host {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1620 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+.overlay--fornecedor-cadastro {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1620 !important;
+  box-sizing: border-box !important;
+  background: #00000073 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.43s;
+}
+
+.overlay--fornecedor-cadastro.overlay--open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition:
+    opacity 0.43s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
+}
+
+.fornecedor-cadastro-drawer.app-drawer,
+.cliente-drawer.cliente-drawer--fornecedor-cadastro.app-drawer {
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  @include dr.drawer-as-container(fornecedor-cadastro);
+  @include dr.drawer-flush-right(650px);
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  z-index: 1630 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12) !important;
+  overflow: hidden !important;
+  pointer-events: none;
+  transform: translateX(100%) !important;
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  will-change: transform;
+}
+
+.fornecedor-cadastro-drawer.app-drawer.app-drawer--open,
+.cliente-drawer.cliente-drawer--fornecedor-cadastro.app-drawer.app-drawer--open {
+  transform: translateX(0) !important;
+  pointer-events: auto !important;
+}
+
+.fornecedor-cadastro-drawer.app-drawer > .cliente-shell,
+.cliente-drawer.cliente-drawer--fornecedor-cadastro.app-drawer > .cliente-shell {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  width: 100% !important;
+}
+
+.fornecedor-cadastro-drawer .cliente-head {
+  padding: 30px 50px 20px 30px;
+}
+
+.fornecedor-cadastro-drawer .cliente-head__close {
+  top: 0;
+  right: 0;
+  z-index: 2;
+}
+
+.fornecedor-cadastro-drawer .cliente-head__title {
+  text-align: left;
+  font-size: 20px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.fornecedor-cadastro-drawer .cliente-drawer-footer {
+  padding: 8px 16px;
+  gap: 8px;
+  border-top: 1px solid rgba(5, 5, 5, 0.06);
+}
+
+.fornecedor-cadastro-drawer .cliente-footer-btn--ghost {
+  width: auto;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 15px;
+  border-radius: 12px;
+  border: 1px solid #f1f1f1;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+  background: #ffffff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+
+  &:hover:not(:disabled) {
+    color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    background: #ffffff;
+  }
+}
+
+.fornecedor-cadastro-drawer .cliente-footer-btn--primary {
+  width: auto;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 15px;
+  border-radius: 12px;
+  border: 1px solid var(--color-primary);
+  font-size: 14px;
+  color: #fff;
+  background: var(--color-primary);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--color-primary) 6%, transparent);
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    color: #fff;
+  }
+}
+
+.fornecedor-cadastro-scroll {
+  padding: 0 30px 16px;
+  box-sizing: border-box;
+}
+
+.fornecedor-cadastro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.fornecedor-cadastro-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.fornecedor-cadastro-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fornecedor-cadastro-form__label {
+  font-weight: 500;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.fornecedor-cadastro-form__req {
+  color: var(--color-error, #ef4444);
+  margin: 0 4px 0 0;
+}
+
+.fornecedor-cadastro-form__input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 11px;
+  border: 1px solid #f1f1f1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: rgba(0, 0, 0, 0.75);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &:hover:not(:disabled):not(:focus):not(.fornecedor-cadastro-form__input--error) {
+    border-color: var(--color-primary-hover);
+  }
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
+
+  &--error {
+    border-color: var(--color-error, #ef4444);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.fornecedor-cadastro-form__error {
+  font-size: 12px;
+  color: var(--color-error, #ef4444);
+}
+
+.fornecedor-cadastro-form__phone {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+
+  .fornecedor-cadastro-form__input {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+  }
+}
+
+.fornecedor-cadastro-form__ddi {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  border: 1px solid #f1f1f1;
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.fornecedor-cadastro-form__flag {
+  display: inline-block;
+  width: 16px;
+  height: 11px;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, #009c3b 0 33%, #ffdf00 33% 66%, #002776 66% 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.fornecedor-cadastro-form__ativo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.fornecedor-cadastro-form__ativo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fornecedor-cadastro-form__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.fornecedor-cadastro-form__endereco-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 10px 0;
+  border: none;
+  border-top: 1px solid #f1f1f1;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+  text-align: left;
+
+  svg {
+    transition: transform 0.2s ease;
+  }
+}
+
+.fornecedor-cadastro-form__chev--open {
+  transform: rotate(90deg);
+}
+
+.fornecedor-cadastro-form__endereco {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 560px) {
+  .fornecedor-cadastro-form__row {
+    grid-template-columns: 1fr;
+  }
+}

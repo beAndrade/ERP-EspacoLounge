@@ -1,8 +1,13 @@
-import { Injectable, inject } from '@angular/core';
+import { ApplicationRef, Injectable, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import { AppToastService } from '../app-toast/app-toast.service';
-import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+  type DrawerOpenAnimHandle,
+} from '../drawer-panel-anim';
 import type {
   FinTransacaoNovoSubmit,
   FinTransacaoNovoTipo,
@@ -18,6 +23,7 @@ export type FinNovoAtalhoTipo = FinTransacaoNovoTipo | 'transferencia';
 export class FinTransacaoNovoDrawerService {
   private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
+  private readonly appRef = inject(ApplicationRef);
 
   /** Emitido após lançamento guardado com sucesso (para refrescar listas). */
   readonly salvo$ = new Subject<void>();
@@ -28,6 +34,7 @@ export class FinTransacaoNovoDrawerService {
   salvando = false;
 
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openAnim: DrawerOpenAnimHandle | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
 
@@ -51,20 +58,30 @@ export class FinTransacaoNovoDrawerService {
       clearTimeout(this.closeTimer);
       this.closeTimer = null;
     }
+    this.openAnim?.cancel();
     this.tipo = tipo;
     this.salvando = false;
     this.aberto = true;
     this.bloquearScrollPagina();
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        this.panelOpen = true;
-      });
+    this.openAnim = runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+      reflowSelector: '.fin-novo-global-drawer.app-drawer',
     });
   }
 
   fechar(): void {
     if (!this.aberto || this.salvando) return;
-    this.panelOpen = false;
+    this.openAnim?.cancel();
+    this.openAnim = null;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+    });
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;
@@ -113,15 +130,23 @@ export class FinTransacaoNovoDrawerService {
     }
   }
 
+  private obterLarguraScrollbar(): number {
+    return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  }
+
   private bloquearScrollPagina(): void {
     if (this.pageScrollLockAtivo) return;
     this.bodyScrollPreDrawer = window.scrollY || 0;
+    const gutter = this.obterLarguraScrollbar();
     const body = document.body;
     body.style.position = 'fixed';
     body.style.top = `-${this.bodyScrollPreDrawer}px`;
     body.style.left = '0';
     body.style.right = '0';
     body.style.width = '100%';
+    if (gutter > 0) {
+      body.style.paddingRight = `${gutter}px`;
+    }
     this.pageScrollLockAtivo = true;
   }
 
@@ -133,6 +158,7 @@ export class FinTransacaoNovoDrawerService {
     body.style.left = '';
     body.style.right = '';
     body.style.width = '';
+    body.style.paddingRight = '';
     this.pageScrollLockAtivo = false;
     window.scrollTo(0, this.bodyScrollPreDrawer);
   }

@@ -10,11 +10,12 @@ app-profissional-cadastro-drawer-host {
   --z-prof-vales-drawer: 1295;
 }
 
-/* Drawer profissional — mesma base do cliente, dimensões pedidas. */
+/* Drawer profissional — mesma largura do drawer de clientes (1200px). */
 .cliente-drawer.cliente-drawer--profissional.app-drawer {
   --cliente-drawer-shell-w: 1200px;
+  --drawer-preferred-w: 1200px;
   @include dr.drawer-as-container(profissional-cadastro);
-  @include bp.drawer-shell-anchor;
+  @include bp.drawer-anchor-fixed-width(1200px);
 
   .cliente-head {
     flex: 0 0 80px;
@@ -97,6 +98,42 @@ app-profissional-cadastro-drawer-host {
   app-profissional-cadastro-form {
     display: block;
     background: #ffffff;
+    width: 100%;
+    min-width: 0;
+  }
+
+  app-profissional-cadastro-form .prof-cadastro-form.cliente-cadastro-form__cols {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+  }
+
+  app-profissional-cadastro-form .prof-cadastro-form__main.cliente-main {
+    width: 100%;
+    max-width: none;
+    border-right: none;
+    align-items: stretch;
+    padding: 16px 30px 8px;
+  }
+
+  app-profissional-cadastro-form .prof-cadastro-form .cliente-form-grid,
+  app-profissional-cadastro-form .prof-cadastro-form .cliente-photo-block {
+    width: 100%;
+    max-width: none;
+  }
+
+  app-profissional-cadastro-form .prof-cadastro-form__config.cliente-side {
+    width: 100%;
+    max-width: none;
+    padding: 8px 30px 28px;
+  }
+
+  app-profissional-cadastro-form .prof-cadastro-form__config .cliente-side-block__head,
+  app-profissional-cadastro-form .prof-cadastro-form__config .cliente-side-title,
+  app-profissional-cadastro-form .prof-cadastro-form__config .cliente-side-content {
+    width: 100%;
+    max-width: none;
   }
 
   .cliente-nav--desktop {
@@ -160,7 +197,7 @@ app-profissional-cadastro-drawer-host {
 }
 
 .cliente-drawer.cliente-drawer--profissional.app-drawer {
-  @include bp.drawer-shell-anchor;
+  @include bp.drawer-anchor-fixed-width(1200px);
 }
 
 /* Nav horizontal + menu overflow (mobile). */

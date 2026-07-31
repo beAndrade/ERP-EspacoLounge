@@ -9,12 +9,13 @@ import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
 import { lerServicoTexto } from '../../../../core/utils/servico-campos';
 import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 @Component({
   selector: 'app-servicos',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, UiTipTriggerComponent],
+  imports: [TableEmptyComponent, FormsModule, CurrencyPipe, UiTipTriggerComponent],
   templateUrl: './servicos.component.html',
   styleUrl: './servicos.component.scss',
 })

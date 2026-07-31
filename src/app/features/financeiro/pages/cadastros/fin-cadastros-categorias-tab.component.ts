@@ -13,6 +13,7 @@ import type { FinCategoriaCadastroItem } from '../../../../core/models/api.model
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { FinCadastroDrawerComponent } from './fin-cadastro-drawer.component';
 
 const CATEGORIA_SALVA_TOAST_MSG = 'Categoria salva com sucesso!';
@@ -21,7 +22,7 @@ const CATEGORIA_EXCLUIDA_TOAST_MSG = 'Categoria excluída com sucesso!';
 @Component({
   selector: 'app-fin-cadastros-categorias-tab',
   standalone: true,
-  imports: [FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
+  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
   templateUrl: './fin-cadastros-categorias-tab.component.html',
   styleUrl: './fin-cadastros-categorias-tab.component.scss',
 })

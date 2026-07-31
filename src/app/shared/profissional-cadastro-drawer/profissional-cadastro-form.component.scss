@@ -1,8 +1,75 @@
 @use '../cliente-cadastro-drawer/cliente-cadastro-form.component.scss' as *;
 
-.cliente-form-grid .cliente-field__inner > textarea {
+/**
+ * Cadastro do profissional: uma coluna — formulário em largura total,
+ * Configurações logo abaixo (padrão Belasis / print).
+ */
+.prof-cadastro-form.cliente-cadastro-form__cols {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
   width: 100%;
-  min-height: 72px;
+  max-width: none;
+  min-width: 0;
+}
+
+.prof-cadastro-form__main.cliente-main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding: 16px 30px 8px;
+  border-right: none;
+  box-sizing: border-box;
+}
+
+.prof-cadastro-form .cliente-photo-block {
+  width: 100%;
+  max-width: none;
+  align-self: center;
+}
+
+.prof-cadastro-form .cliente-form-grid {
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+}
+
+.prof-cadastro-form .cliente-form-row--3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cliente-form-col-gap, 16px);
+  width: 100%;
+  min-width: 0;
+
+  .cliente-field {
+    min-width: 0;
+  }
+}
+
+.prof-cadastro-form .cliente-form-row--4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--cliente-form-col-gap, 16px);
+  width: 100%;
+  min-width: 0;
+
+  .cliente-field {
+    min-width: 0;
+  }
+}
+
+.prof-cadastro-form .cliente-field--full .cliente-field__inner {
+  width: 100%;
+  max-width: none;
+}
+
+.prof-cadastro-form .cliente-form-grid .cliente-field__inner > textarea {
+  width: 100%;
+  min-height: 88px;
   box-sizing: border-box;
   border: 1px solid #f1f1f1;
   border-radius: 8px;
@@ -33,5 +100,73 @@
   &:disabled {
     opacity: 0.65;
     cursor: not-allowed;
+  }
+}
+
+.prof-phone-input__flag {
+  display: inline-block;
+  width: 16px;
+  height: 11px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #009c3b 0 33%, #ffdf00 33% 66%, #002776 66% 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.prof-cadastro-form__config.cliente-side {
+  width: 100%;
+  max-width: none;
+  padding: 8px 30px 28px;
+  box-sizing: border-box;
+}
+
+.prof-cadastro-form__config .cliente-side-block__head,
+.prof-cadastro-form__config .cliente-side-title,
+.prof-cadastro-form__config .cliente-side-content {
+  width: 100%;
+  max-width: none;
+}
+
+.prof-cadastro-form__config .cliente-side-content--open {
+  max-height: none;
+}
+
+.prof-cadastro-form__config .cliente-switch-block {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f1f1;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.prof-cadastro-form__config .cliente-switch-block__labels {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.prof-cadastro-form__config .block-toggles {
+  flex: 0 0 auto;
+  padding-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .prof-cadastro-form .cliente-form-row--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .prof-cadastro-form .cliente-form-row--3,
+  .prof-cadastro-form .cliente-form-row--4 {
+    grid-template-columns: 1fr;
+  }
+
+  .prof-cadastro-form__main.cliente-main,
+  .prof-cadastro-form__config.cliente-side {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }

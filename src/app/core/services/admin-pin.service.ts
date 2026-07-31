@@ -1,14 +1,18 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 const STORAGE_KEY = 'espaco_lounge_admin_pin';
 
 /**
- * PIN partilhado enviado no header `X-Admin-Pin` para `/api/folha*`.
- * Guardado em `sessionStorage` para sobreviver a refresh na sessão do browser.
+ * PIN de sessão do Financeiro (header `X-Admin-Pin`).
+ * Guardado em `sessionStorage` para sobreviver a refresh na mesma aba.
+ * `unlocked` só fica true após verificação bem-sucedida na API.
  */
 @Injectable({ providedIn: 'root' })
 export class AdminPinService {
   private mem = '';
+
+  /** Sessão financeira desbloqueada nesta aba (memória; some no refresh até revalidar). */
+  readonly unlocked = signal(false);
 
   constructor() {
     try {
@@ -39,8 +43,13 @@ export class AdminPinService {
     }
   }
 
+  markUnlocked(): void {
+    this.unlocked.set(true);
+  }
+
   clear(): void {
     this.mem = '';
+    this.unlocked.set(false);
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {

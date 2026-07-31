@@ -657,6 +657,11 @@
               <span class="nav-item__label">Cadastros</span>
             </a>
           </li>
+          @if (adminPin.unlocked()) {
+            <li>
+              <app-financeiro-bloquear-btn variant="sidebar" />
+            </li>
+          }
         </ul>
         </div>
       </div>
@@ -1257,7 +1262,9 @@
 <app-produto-cadastro-drawer-host />
 <app-categoria-cadastro-drawer-host />
 <app-marca-cadastro-drawer-host />
+<app-fornecedor-cadastro-drawer-host />
 <app-minha-conta-drawer-host />
 <app-fin-transacao-novo-drawer-host />
+<app-agenda-novo-global-host />
 <app-app-toast />
 }

@@ -2,6 +2,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  ApplicationRef,
   inject,
   LOCALE_ID,
   OnDestroy,
@@ -55,6 +56,10 @@ import {
   ClienteCadastroDrawerService,
   type AbrirCadastroClientePayload,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import {
+  AgendaNovoGlobalService,
+  type AgendaNovoGlobalModo,
+} from '../../../../shared/agenda-novo-global/agenda-novo-global.service';
 import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
@@ -76,6 +81,12 @@ import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsa
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
 import { lerServicoTexto } from '../../../../core/utils/servico-campos';
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+  type DrawerOpenAnimHandle,
+} from '../../../../shared/drawer-panel-anim';
 
 type CelulaCalendario = {
   dia: number;
@@ -120,9 +131,6 @@ const SEMANA_COLUNAS = 7;
 const MES_GRELHA_CELULAS = 42;
 /** Último slot de 30 min a começar na grelha (23:00). */
 const GRID_LAST_SLOT_START_MIN = GRID_END_MIN - 30;
-
-/** Duração da animação do drawer (ms); manter igual a `--drawer-slide-duration` no SCSS. */
-const DRAWER_ANIM_MS = 520;
 
 /** Distância mínima (px) para distinguir arraste de clique no cartão. */
 const ARRASTE_CARD_LIMIAR_PX = 8;
@@ -206,9 +214,11 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly title = inject(Title);
+  private readonly appRef = inject(ApplicationRef);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
   private readonly servicoDrawer = inject(ServicoCadastroDrawerService);
+  private readonly agendaNovoGlobal = inject(AgendaNovoGlobalService);
   readonly sessao = inject(SessaoUsuarioService);
   private readonly shellUi = inject(AppShellUiService);
   private readonly toast = inject(AppToastService);
@@ -428,6 +438,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private editComandaDrawerRef?: AgendaNovoComponent;
 
   private drawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private drawerOpenAnim: DrawerOpenAnimHandle | null = null;
   private comandaDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private comandaDrawerSettleTimer: ReturnType<typeof setTimeout> | null = null;
   private faturarDrawerCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -530,9 +541,24 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
   };
 
+  /** Menu Novo → Agendamento: mesmo drawer da grelha. */
+  private readonly onAgendaNovoAtalho = (
+    modo: AgendaNovoGlobalModo,
+  ): boolean => {
+    if (modo !== 'agendamento') return false;
+    this.limparComandaDrawerSemAnimacao();
+    this.abrirNovoAtendimentoModal();
+    return true;
+  };
+
   ngOnInit(): void {
     this.ativarLayoutAgendaNoMain();
     this.destroyRef.onDestroy(() => this.desativarLayoutAgendaNoMain());
+
+    this.agendaNovoGlobal.registerPageHandler(this.onAgendaNovoAtalho);
+    this.destroyRef.onDestroy(() => {
+      this.agendaNovoGlobal.unregisterPageHandler(this.onAgendaNovoAtalho);
+    });
 
     this.slotsHoras = this.gerarSlots();
     this.setupLayoutMobile();
@@ -2543,13 +2569,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    */
   private iniciarAberturaDrawer(): void {
     this.bloquearScrollPagina();
-    this.drawerPanelOpen = false;
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.drawerPanelOpen = true;
-        });
-      });
+    this.drawerOpenAnim?.cancel();
+    this.drawerOpenAnim = runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.drawerPanelOpen = open;
+      },
+      appRef: this.appRef,
+      reflowSelector: '.hub-page .app-drawer, app-agenda-hub .app-drawer',
     });
   }
 
@@ -2763,14 +2789,22 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.limparEfeitosDrawer();
       return;
     }
-    this.limparComandaDrawerSemAnimacao();
     if (!this.drawerPanelOpen) {
+      this.limparComandaDrawerSemAnimacao();
       this.modalAberto = false;
       this.modalContexto = null;
       this.limparEfeitosDrawer();
       return;
     }
-    this.drawerPanelOpen = false;
+    this.drawerOpenAnim?.cancel();
+    this.drawerOpenAnim = null;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => {
+        this.drawerPanelOpen = open;
+      },
+      appRef: this.appRef,
+    });
+    this.limparComandaDrawerSemAnimacao();
     if (this.drawerCloseTimer != null) {
       clearTimeout(this.drawerCloseTimer);
     }

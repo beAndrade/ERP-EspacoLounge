@@ -1,6 +1,7 @@
 import { DecimalPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import {
+  ApplicationRef,
   Component,
   HostListener,
   inject,
@@ -26,12 +27,26 @@ import {
   toYmd,
   valorMonetarioParaNumero,
 } from '../../../../core/utils/atendimento-display';
+import { formatarCelularBr } from '../../../../core/utils/telefone-br';
 import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import { AgendaNovoComponent } from '../../../agenda/pages/novo/agenda-novo.component';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import {
+  AgendaNovoGlobalService,
+  type AgendaNovoGlobalModo,
+} from '../../../../shared/agenda-novo-global/agenda-novo-global.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
+import { ymdToDdMmYyyyFiltro } from '../../../financeiro/pages/transacoes/fin-transacoes-filtro.util';
+
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+} from '../../../../shared/drawer-panel-anim';
 
 registerLocaleData(localePt);
 
@@ -49,8 +64,6 @@ interface OrcamentoGrupo {
   telefoneCliente: string | null;
 }
 
-const DRAWER_ANIM_MS = 430;
-
 function formataMoeda(n: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -64,11 +77,13 @@ function formataMoeda(n: number): string {
   selector: 'app-orcamentos',
   standalone: true,
   imports: [
+    TableEmptyComponent,
     FormsModule,
     DecimalPipe,
     AgendaNovoComponent,
     WhatsappEnviarModalComponent,
     UiTipTriggerComponent,
+    ClienteDrawerPeriodoFiltroComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './orcamentos.component.html',
@@ -80,6 +95,17 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(AppToastService);
+  private readonly agendaNovoGlobal = inject(AgendaNovoGlobalService);
+  private readonly appRef = inject(ApplicationRef);
+
+  /** Menu Novo → Orçamento: mesmo drawer do botão Novo da lista. */
+  private readonly onAgendaNovoAtalho = (
+    modo: AgendaNovoGlobalModo,
+  ): boolean => {
+    if (modo !== 'orcamento') return false;
+    this.abrirNovo();
+    return true;
+  };
 
   readonly dataDdMmBarraAaaa = dataDdMmBarraAaaa;
 
@@ -91,6 +117,8 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   dataInicio = '';
   dataFim = '';
+  periodoInicioYmd = '';
+  periodoFimYmd = '';
   busca = '';
   buscaAberta = false;
   filtrosAbertos = false;
@@ -99,6 +127,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   pagina = 1;
   itensPorPagina = 20;
   readonly opcoesItensPorPagina = [10, 20, 40, 50];
+  perPageMenuAberto = false;
 
   ordenacaoColuna: 'ticket' | 'data' | 'cliente' = 'ticket';
   ordenacaoDir: 'asc' | 'desc' = 'desc';
@@ -135,11 +164,13 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit(): void {
+    this.agendaNovoGlobal.registerPageHandler(this.onAgendaNovoAtalho);
     const hoje = new Date();
     const ini = new Date(hoje);
     ini.setDate(ini.getDate() - 30);
-    this.dataInicio = dataDdMmBarraAaaa(toYmd(ini));
-    this.dataFim = dataDdMmBarraAaaa(toYmd(hoje));
+    this.periodoInicioYmd = toYmd(ini);
+    this.periodoFimYmd = toYmd(hoje);
+    this.syncDdMmFromPeriodoYmd();
     this.carregar();
     this.route.queryParamMap.subscribe((params) => {
       if (params.get('abrirNovoOrcamento') === '1') {
@@ -149,12 +180,18 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.agendaNovoGlobal.unregisterPageHandler(this.onAgendaNovoAtalho);
     if (this.novoCloseTimer != null) clearTimeout(this.novoCloseTimer);
     document.body.classList.remove('drawer-open');
   }
 
   @HostListener('document:keydown.escape', ['$event'])
   onEsc(ev: KeyboardEvent): void {
+    if (this.perPageMenuAberto) {
+      ev.preventDefault();
+      this.perPageMenuAberto = false;
+      return;
+    }
     if (this.whatsappAberto) {
       ev.preventDefault();
       this.fecharWhatsapp();
@@ -183,6 +220,9 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.fecharPainelBusca();
     }
+    if (this.perPageMenuAberto && !t?.closest?.('.list-footer__per-page')) {
+      this.perPageMenuAberto = false;
+    }
   }
 
   get buscaPlaceholder(): string {
@@ -204,6 +244,20 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   toggleFiltros(): void {
     this.filtrosAbertos = !this.filtrosAbertos;
+  }
+
+  onPeriodoFiltroAlterado(): void {
+    this.syncDdMmFromPeriodoYmd();
+    this.carregar();
+  }
+
+  private syncDdMmFromPeriodoYmd(): void {
+    this.dataInicio = this.periodoInicioYmd
+      ? ymdToDdMmYyyyFiltro(this.periodoInicioYmd)
+      : '';
+    this.dataFim = this.periodoFimYmd
+      ? ymdToDdMmYyyyFiltro(this.periodoFimYmd)
+      : '';
   }
 
   carregar(): void {
@@ -294,11 +348,17 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     let list = this.grupos;
     const q = this.busca.trim().toLowerCase();
     if (q) {
-      list = list.filter(
-        (g) =>
+      list = list.filter((g) => {
+        const tel = this.exibirTelefone(g).toLowerCase();
+        const telDigitos = (g.telefoneCliente ?? '').replace(/\D/g, '');
+        const qDigitos = q.replace(/\D/g, '');
+        return (
           g.nomeCliente.toLowerCase().includes(q) ||
-          this.rotuloTicket(g).toLowerCase().includes(q),
-      );
+          this.rotuloTicket(g).toLowerCase().includes(q) ||
+          tel.includes(q) ||
+          (qDigitos.length > 0 && telDigitos.includes(qDigitos))
+        );
+      });
     }
     if (this.filtroStatus.size > 0) {
       list = list.filter((g) => this.filtroStatus.has(g.orcamentoStatus));
@@ -333,6 +393,31 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     return Math.max(1, Math.ceil(this.totalFiltrado() / this.itensPorPagina));
   }
 
+  aoMudarItensPorPagina(): void {
+    this.pagina = 1;
+  }
+
+  togglePerPageMenu(ev: Event): void {
+    ev.stopPropagation();
+    if (this.carregando) return;
+    this.perPageMenuAberto = !this.perPageMenuAberto;
+  }
+
+  selecionarItensPorPagina(n: number, ev: Event): void {
+    ev.stopPropagation();
+    this.itensPorPagina = n;
+    this.perPageMenuAberto = false;
+    this.aoMudarItensPorPagina();
+  }
+
+  paginaAnterior(): void {
+    if (this.pagina > 1) this.pagina--;
+  }
+
+  paginaSeguinte(): void {
+    if (this.pagina < this.totalPaginas()) this.pagina++;
+  }
+
   onOrdenarColuna(
     col: typeof this.ordenacaoColuna,
     event: MouseEvent,
@@ -353,6 +438,10 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
       this.ordenacaoDir,
       col,
     );
+  }
+
+  exibirTelefone(g: OrcamentoGrupo): string {
+    return formatarCelularBr(g.telefoneCliente) || '';
   }
 
   rotuloTicket(g: OrcamentoGrupo): string {
@@ -377,26 +466,25 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     return this.filtroStatus.has(id);
   }
 
-  aplicarFiltros(): void {
-    this.filtrosAbertos = false;
-    this.carregar();
-  }
-
   toggleMenu(ev: Event, id: string): void {
     ev.stopPropagation();
     this.menuAbertoParaId = this.menuAbertoParaId === id ? null : id;
   }
 
   abrirNovo(): void {
+    this.fecharPainelBusca();
     this.novoCtx = {
       data: toYmd(new Date()),
       profissional_id: 0,
       hora: '',
     };
-    document.body.classList.add('drawer-open');
     this.novoAberto = true;
-    requestAnimationFrame(() => {
-      this.novoPanelOpen = true;
+    document.body.classList.add('drawer-open');
+    runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.novoPanelOpen = open;
+      },
+      appRef: this.appRef,
     });
   }
 
@@ -415,7 +503,12 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   fecharNovo(): void {
     if (!this.novoAberto) return;
-    this.novoPanelOpen = false;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => {
+        this.novoPanelOpen = open;
+      },
+      appRef: this.appRef,
+    });
     if (this.novoCloseTimer != null) clearTimeout(this.novoCloseTimer);
     this.novoCloseTimer = setTimeout(() => {
       this.novoCloseTimer = null;

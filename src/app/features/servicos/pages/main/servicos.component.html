@@ -487,7 +487,9 @@
                   }
                 } @else if (paginaItens().length === 0) {
                   <tr>
-                    <td colspan="8" class="table-body__empty">Nenhum serviço encontrado.</td>
+                    <td colspan="8" class="table-body__empty">
+                      <app-table-empty label="Nenhum serviço encontrado" />
+                    </td>
                   </tr>
                 } @else {
                   @for (s of paginaItens(); track s.id) {

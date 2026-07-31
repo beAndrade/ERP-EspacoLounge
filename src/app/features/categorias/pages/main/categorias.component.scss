@@ -423,7 +423,39 @@
   min-width: 0;
 }
 
-.cliente-drawer.cliente-drawer--categoria-cadastro.app-drawer,
+.cliente-drawer.cliente-drawer--categoria-cadastro.app-drawer {
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+  overflow: hidden;
+  padding: 0;
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  @include bp.drawer-anchor-fixed-width(600px);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  > .cliente-shell {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    width: 100%;
+  }
+}
+
 .cliente-drawer.cliente-drawer--associacoes.app-drawer {
   --drawer-inset-x: 0;
   --drawer-pad-x: 0;

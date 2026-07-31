@@ -1,9 +1,12 @@
 @use 'breakpoints' as bp;
 
-/// Drawer lateral encostado à direita com shell contínuo (≤1650 = 100vw).
-/// `$max-width` legado: a âncora usa sempre `$drawer-shell-max` para não “pular”.
+/// Drawer lateral encostado à direita com largura máxima explícita (responsivo).
+/// Ex.: `@include drawer-flush-right(650px)` → `width: min(650px, 100vw)`.
 @mixin drawer-flush-right($max-width) {
-  @include bp.drawer-shell-anchor(bp.$drawer-shell-max);
+  right: 0;
+  left: auto;
+  width: min(#{$max-width}, 100vw);
+  max-width: 100vw;
 }
 
 /// Mantido por compatibilidade; NÃO usa container-type (quebra flex/altura

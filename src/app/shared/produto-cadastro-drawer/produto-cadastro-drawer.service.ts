@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { ApplicationRef, Injectable, inject, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import type { ProdutoCatalogoItem } from '../../core/models/api.models';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
@@ -12,7 +12,12 @@ import {
   percentualParaPayload,
 } from '../../core/utils/brl-digit-input';
 import { AppToastService } from '../app-toast/app-toast.service';
-import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+  type DrawerOpenAnimHandle,
+} from '../drawer-panel-anim';
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
 import { MarcaCadastroDrawerService } from '../marca-cadastro-drawer/marca-cadastro-drawer.service';
 import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
@@ -54,6 +59,7 @@ export type ProdutoDrawerCallbacks = {
 export class ProdutoCadastroDrawerService {
   private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
+  private readonly appRef = inject(ApplicationRef);
   private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
   private readonly marcaDrawer = inject(MarcaCadastroDrawerService);
 
@@ -106,6 +112,7 @@ export class ProdutoCadastroDrawerService {
 
   private callbacks: ProdutoDrawerCallbacks | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openAnim: DrawerOpenAnimHandle | null = null;
   private pageScrollLockAtivo = false;
   private bodyScrollPreDrawer = 0;
 
@@ -240,12 +247,17 @@ export class ProdutoCadastroDrawerService {
 
   fechar(): void {
     if (!this.aberto()) return;
-    this.panelOpen.set(false);
-    this.desbloquearScrollPagina();
+    this.openAnim?.cancel();
+    this.openAnim = null;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => this.panelOpen.set(open),
+      appRef: this.appRef,
+    });
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;
       this.aberto.set(false);
+      this.desbloquearScrollPagina();
       this.callbacks = null;
       this.erro = '';
       this.salvando = false;
@@ -387,20 +399,21 @@ export class ProdutoCadastroDrawerService {
   private abrirPainel(opts?: { focarNome?: boolean }): void {
     this.abaAtiva = 'Cadastro';
     this.erro = '';
-    this.panelOpen.set(false);
+    this.openAnim?.cancel();
     this.aberto.set(true);
     this.bloquearScrollPagina();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.panelOpen.set(true);
-          if (opts?.focarNome) {
-            queueMicrotask(() => {
-              document.getElementById('produto-cadastro-nome')?.focus();
-            });
-          }
-        });
-      });
+    this.openAnim = runDrawerOpenAnimation({
+      setPanelOpen: (open) => this.panelOpen.set(open),
+      appRef: this.appRef,
+      reflowSelector:
+        '.cliente-drawer--produto.app-drawer, .produto-cadastro-drawer.app-drawer',
+      onOpened: () => {
+        if (opts?.focarNome) {
+          queueMicrotask(() => {
+            document.getElementById('produto-cadastro-nome')?.focus();
+          });
+        }
+      },
     });
   }
 

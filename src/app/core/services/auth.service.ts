@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 import type { ApiResponse } from '../models/api.models';
 import type { AuthUser, LoginResponse } from '../models/auth.models';
 import { extractApiErrorMessage } from '../utils/api-error-message';
+import { AdminPinService } from './admin-pin.service';
 
 const TOKEN_KEY = 'espaco-lounge-auth-token';
 const USER_KEY = 'espaco-lounge-auth-user';
@@ -14,6 +15,7 @@ const USER_KEY = 'espaco-lounge-auth-user';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly adminPin = inject(AdminPinService);
   private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
 
   readonly user = signal<AuthUser | null>(this.readStoredUser());
@@ -213,6 +215,7 @@ export class AuthService {
 
   private clearSession(): void {
     this.user.set(null);
+    this.adminPin.clear();
     try {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);

@@ -40,6 +40,7 @@ import {
   type FinTransacaoEditarSubmit,
 } from './fin-transacao-editar-drawer.component';
 import { FinFiltrosFloatingTipComponent } from './fin-filtros-floating-tip.component';
+import { FinanceiroBloquearBtnComponent } from '../../../../shared/financeiro-bloquear-btn/financeiro-bloquear-btn.component';
 import {
   FinTransacaoNovoDrawerComponent,
   type FinTransacaoNovoSubmit,
@@ -53,6 +54,7 @@ import { AppToastService } from '../../../../shared/app-toast/app-toast.service'
 import { FinTransacaoNovoDrawerService } from '../../../../shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer.service';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { AgendaModalCalendarComponent } from '../../../agenda/pages/novo/agenda-modal-calendar.component';
 import {
   mapFinTransacaoItemToUi,
@@ -106,6 +108,7 @@ type FaturarDrawerCtx = {
   selector: 'app-financeiro-transacoes',
   standalone: true,
   imports: [
+    TableEmptyComponent,
     CurrencyPipe,
     FormsModule,
     ClienteDrawerPeriodoFiltroComponent,
@@ -117,6 +120,7 @@ type FaturarDrawerCtx = {
     FaturarDrawerComponent,
     UiTipTriggerComponent,
     AgendaModalCalendarComponent,
+    FinanceiroBloquearBtnComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro-transacoes.component.html',

@@ -819,63 +819,9 @@
     }
   }
 
-  input {
-    --list-check-ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --list-check-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
-    appearance: none;
-    -webkit-appearance: none;
-    position: relative;
-    box-sizing: border-box;
-    display: inline-block;
+  /* Checkbox: `styles/system-checkbox.scss` (global). */
+  input[type='checkbox'] {
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    border: 1px solid #efefef;
-    border-radius: 5px;
-    background-color: #fff;
-    cursor: pointer;
-    transition:
-      background-color 0.22s var(--list-check-ease),
-      border-color 0.16s ease 0s,
-      transform 0.16s var(--list-check-spring);
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 47%;
-      width: 4px;
-      height: 8px;
-      border: solid #fff;
-      border-width: 0 2px 2px 0;
-      transform: translate(-50%, -50%) rotate(45deg) scale(0.35);
-      opacity: 0;
-      transition:
-        transform 0.32s var(--list-check-spring),
-        opacity 0.14s ease;
-    }
-
-    &:hover:not(:disabled) {
-      border-color: var(--color-primary);
-      transition-delay: 0s, 0.16s, 0s;
-    }
-
-    &:checked {
-      background-color: var(--color-primary);
-      border-color: var(--color-primary);
-
-      &::after {
-        opacity: 1;
-        transform: translate(-50%, -50%) rotate(45deg) scale(1);
-      }
-    }
-
-    &:focus-visible {
-      outline: 2px solid
-        color-mix(in srgb, var(--color-primary) 45%, transparent);
-      outline-offset: 2px;
-    }
   }
 }
 

@@ -18,6 +18,7 @@ import { DRAWER_ANIM_MS } from '../../../../shared/cliente-cadastro-drawer/clien
 import { ProdutoCadastroDrawerService } from '../../../../shared/produto-cadastro-drawer/produto-cadastro-drawer.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import {
   sufixoUnidadeProduto,
   unidadeProdutoUsaEquivalente,
@@ -33,7 +34,13 @@ export type ProdutosOrdenacaoColuna =
 @Component({
   selector: 'app-estoque',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, DecimalPipe, UiTipTriggerComponent],
+  imports: [
+    TableEmptyComponent,
+    FormsModule,
+    CurrencyPipe,
+    DecimalPipe,
+    UiTipTriggerComponent,
+  ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './estoque.component.html',
   styleUrl: './estoque.component.scss',

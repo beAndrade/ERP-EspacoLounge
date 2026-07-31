@@ -25,7 +25,9 @@
             </tr>
           } @else if (linhasPagina().length === 0) {
             <tr>
-              <td colspan="3">Nenhuma categoria encontrada.</td>
+              <td colspan="3" class="table-body__empty">
+                <app-table-empty label="Nenhuma categoria encontrada" />
+              </td>
             </tr>
           } @else {
             @for (row of linhasPagina(); track row.id) {
@@ -217,7 +219,7 @@
 @if (drawerAbertoShell) {
   <div
     class="overlay overlay--fin-cad"
-    [class.overlay--open]="drawerAberto"
+    [class.overlay--open]="drawerPanelOpen"
     aria-hidden="true"
     (click)="fecharDrawer()"
   ></div>

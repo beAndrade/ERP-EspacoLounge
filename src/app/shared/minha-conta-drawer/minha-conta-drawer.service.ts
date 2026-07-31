@@ -1,9 +1,14 @@
-import { Injectable, inject } from '@angular/core';
+import { ApplicationRef, Injectable, inject } from '@angular/core';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error-message';
 import { AppToastService } from '../app-toast/app-toast.service';
-import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+  type DrawerOpenAnimHandle,
+} from '../drawer-panel-anim';
 
 export type MinhaContaAba = 'Alterar e-mail' | 'Alterar senha';
 
@@ -11,6 +16,7 @@ export type MinhaContaAba = 'Alterar e-mail' | 'Alterar senha';
 export class MinhaContaDrawerService {
   private readonly auth = inject(AuthService);
   private readonly toast = inject(AppToastService);
+  private readonly appRef = inject(ApplicationRef);
 
   aberto = false;
   panelOpen = false;
@@ -35,6 +41,7 @@ export class MinhaContaDrawerService {
   saveErro = '';
 
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openAnim: DrawerOpenAnimHandle | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
 
@@ -48,18 +55,29 @@ export class MinhaContaDrawerService {
     this.abaAtiva = 'Alterar e-mail';
     this.saveErro = '';
     this.salvando = false;
+    this.openAnim?.cancel();
     this.aberto = true;
     this.bloquearScrollPagina();
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        this.panelOpen = true;
-      });
+    this.openAnim = runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+      reflowSelector:
+        'app-minha-conta-drawer-host .app-drawer, .minha-conta-drawer',
     });
   }
 
   fechar(): void {
     if (!this.aberto) return;
-    this.panelOpen = false;
+    this.openAnim?.cancel();
+    this.openAnim = null;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+    });
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;

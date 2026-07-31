@@ -9,6 +9,7 @@ import type {
   Servico,
 } from '../../../../core/models/api.models';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 export interface CategoriaListaItem {
@@ -31,7 +32,7 @@ const CATEGORIA_EXCLUIDA_TOAST_MSG = 'Categoria excluída com sucesso!';
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [FormsModule, UiTipTriggerComponent],
+  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent],
   templateUrl: './categorias.component.html',
   styleUrl: './categorias.component.scss',
 })

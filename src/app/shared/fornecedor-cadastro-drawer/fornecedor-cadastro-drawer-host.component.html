@@ -1,0 +1,330 @@
+@if (d.aberto()) {
+  <div
+    class="overlay overlay--fornecedor-cadastro"
+    [class.overlay--open]="d.panelOpen()"
+    aria-hidden="true"
+    (click)="d.fechar()"
+  ></div>
+  <div
+    class="fornecedor-cadastro-drawer app-drawer cliente-drawer cliente-drawer--fornecedor-cadastro"
+    [class.app-drawer--open]="d.panelOpen()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Novo fornecedor"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">Novo fornecedor</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="d.fechar()"
+          aria-label="Fechar"
+          [disabled]="d.salvando"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="cliente-body-scroll fornecedor-cadastro-scroll">
+        <div class="fornecedor-cadastro-form">
+          <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-nome">
+            <span class="fornecedor-cadastro-form__label">
+              <span class="fornecedor-cadastro-form__req" aria-hidden="true">*</span>Nome
+            </span>
+            <input
+              id="fornecedor-cadastro-drawer-nome"
+              type="text"
+              class="fornecedor-cadastro-form__input"
+              [class.fornecedor-cadastro-form__input--error]="d.nomeErro"
+              [(ngModel)]="d.nome"
+              name="fornecedorCadastroNome"
+              placeholder="Nome"
+              autocomplete="off"
+              [disabled]="d.salvando"
+              [attr.aria-invalid]="d.nomeErro"
+              (input)="d.onNomeInput()"
+            />
+            @if (d.nomeErro) {
+              <span class="fornecedor-cadastro-form__error" role="alert">Campo obrigatório</span>
+            }
+          </label>
+
+          <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-email">
+            <span class="fornecedor-cadastro-form__label">E-mail</span>
+            <input
+              id="fornecedor-cadastro-drawer-email"
+              type="email"
+              class="fornecedor-cadastro-form__input"
+              [(ngModel)]="d.email"
+              name="fornecedorCadastroEmail"
+              placeholder="E-mail"
+              autocomplete="off"
+              [disabled]="d.salvando"
+            />
+          </label>
+
+          <div class="fornecedor-cadastro-form__row">
+            <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-celular">
+              <span class="fornecedor-cadastro-form__label">Celular</span>
+              <div class="fornecedor-cadastro-form__phone">
+                <span class="fornecedor-cadastro-form__ddi" aria-hidden="true">
+                  <span class="fornecedor-cadastro-form__flag" title="Brasil"></span>
+                  +55
+                </span>
+                <input
+                  id="fornecedor-cadastro-drawer-celular"
+                  type="text"
+                  class="fornecedor-cadastro-form__input"
+                  [ngModel]="d.celular"
+                  (ngModelChange)="d.onCelularChange($event)"
+                  name="fornecedorCadastroCelular"
+                  placeholder="Celular"
+                  autocomplete="off"
+                  inputmode="tel"
+                  [disabled]="d.salvando"
+                />
+              </div>
+            </label>
+            <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-telefone">
+              <span class="fornecedor-cadastro-form__label">Telefone</span>
+              <div class="fornecedor-cadastro-form__phone">
+                <span class="fornecedor-cadastro-form__ddi" aria-hidden="true">
+                  <span class="fornecedor-cadastro-form__flag" title="Brasil"></span>
+                  +55
+                </span>
+                <input
+                  id="fornecedor-cadastro-drawer-telefone"
+                  type="text"
+                  class="fornecedor-cadastro-form__input"
+                  [ngModel]="d.telefone"
+                  (ngModelChange)="d.onTelefoneChange($event)"
+                  name="fornecedorCadastroTelefone"
+                  placeholder="Telefone"
+                  autocomplete="off"
+                  inputmode="tel"
+                  [disabled]="d.salvando"
+                />
+              </div>
+            </label>
+          </div>
+
+          <div class="fornecedor-cadastro-form__row">
+            <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-ie">
+              <span class="fornecedor-cadastro-form__label">Inscrição estadual</span>
+              <input
+                id="fornecedor-cadastro-drawer-ie"
+                type="text"
+                class="fornecedor-cadastro-form__input"
+                [(ngModel)]="d.inscricaoEstadual"
+                name="fornecedorCadastroIe"
+                placeholder="Inscrição estadual"
+                autocomplete="off"
+                [disabled]="d.salvando"
+              />
+            </label>
+            <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-cnpj">
+              <span class="fornecedor-cadastro-form__label">CNPJ</span>
+              <input
+                id="fornecedor-cadastro-drawer-cnpj"
+                type="text"
+                class="fornecedor-cadastro-form__input"
+                [ngModel]="d.cnpj"
+                (ngModelChange)="d.onCnpjChange($event)"
+                name="fornecedorCadastroCnpj"
+                placeholder="CNPJ"
+                autocomplete="off"
+                inputmode="numeric"
+                [disabled]="d.salvando"
+              />
+            </label>
+          </div>
+
+          <div class="fornecedor-cadastro-form__ativo">
+            <div class="fornecedor-cadastro-form__ativo-row">
+              <span class="fornecedor-cadastro-form__label">Ativo</span>
+              <button
+                type="button"
+                class="drawer-switch"
+                [class.drawer-switch--on]="d.ativo"
+                [attr.aria-pressed]="d.ativo"
+                aria-label="Ativo"
+                (click)="d.toggleAtivo($event)"
+                [disabled]="d.salvando"
+              ></button>
+            </div>
+            <p class="fornecedor-cadastro-form__hint">
+              Se ativo, aparecerá na listagem do sistema para compras, movimentações financeiras etc
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="fornecedor-cadastro-form__endereco-toggle"
+            [attr.aria-expanded]="d.secaoEnderecoAberta"
+            (click)="d.secaoEnderecoAberta = !d.secaoEnderecoAberta"
+            [disabled]="d.salvando"
+          >
+            <span>Endereço</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              [class.fornecedor-cadastro-form__chev--open]="d.secaoEnderecoAberta"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+
+          @if (d.secaoEnderecoAberta) {
+            <div class="fornecedor-cadastro-form__endereco">
+              <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-cep">
+                <span class="fornecedor-cadastro-form__label">CEP</span>
+                <input
+                  id="fornecedor-cadastro-drawer-cep"
+                  type="text"
+                  class="fornecedor-cadastro-form__input"
+                  [ngModel]="d.cep"
+                  (ngModelChange)="d.onCepChange($event)"
+                  name="fornecedorCadastroCep"
+                  placeholder="CEP"
+                  autocomplete="off"
+                  inputmode="numeric"
+                  [disabled]="d.salvando"
+                />
+              </label>
+              <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-logradouro">
+                <span class="fornecedor-cadastro-form__label">Logradouro</span>
+                <input
+                  id="fornecedor-cadastro-drawer-logradouro"
+                  type="text"
+                  class="fornecedor-cadastro-form__input"
+                  [(ngModel)]="d.logradouro"
+                  name="fornecedorCadastroLogradouro"
+                  placeholder="Logradouro"
+                  autocomplete="off"
+                  [disabled]="d.salvando"
+                />
+              </label>
+              <div class="fornecedor-cadastro-form__row">
+                <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-numero">
+                  <span class="fornecedor-cadastro-form__label">Número</span>
+                  <input
+                    id="fornecedor-cadastro-drawer-numero"
+                    type="text"
+                    class="fornecedor-cadastro-form__input"
+                    [(ngModel)]="d.numero"
+                    name="fornecedorCadastroNumero"
+                    placeholder="Número"
+                    autocomplete="off"
+                    [disabled]="d.salvando"
+                  />
+                </label>
+                <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-complemento">
+                  <span class="fornecedor-cadastro-form__label">Complemento</span>
+                  <input
+                    id="fornecedor-cadastro-drawer-complemento"
+                    type="text"
+                    class="fornecedor-cadastro-form__input"
+                    [(ngModel)]="d.complemento"
+                    name="fornecedorCadastroComplemento"
+                    placeholder="Complemento"
+                    autocomplete="off"
+                    [disabled]="d.salvando"
+                  />
+                </label>
+              </div>
+              <div class="fornecedor-cadastro-form__row">
+                <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-bairro">
+                  <span class="fornecedor-cadastro-form__label">Bairro</span>
+                  <input
+                    id="fornecedor-cadastro-drawer-bairro"
+                    type="text"
+                    class="fornecedor-cadastro-form__input"
+                    [(ngModel)]="d.bairro"
+                    name="fornecedorCadastroBairro"
+                    placeholder="Bairro"
+                    autocomplete="off"
+                    [disabled]="d.salvando"
+                  />
+                </label>
+                <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-cidade">
+                  <span class="fornecedor-cadastro-form__label">Cidade</span>
+                  <input
+                    id="fornecedor-cadastro-drawer-cidade"
+                    type="text"
+                    class="fornecedor-cadastro-form__input"
+                    [(ngModel)]="d.cidade"
+                    name="fornecedorCadastroCidade"
+                    placeholder="Cidade"
+                    autocomplete="off"
+                    [disabled]="d.salvando"
+                  />
+                </label>
+                <label class="fornecedor-cadastro-form__field" for="fornecedor-cadastro-drawer-estado">
+                  <span class="fornecedor-cadastro-form__label">UF</span>
+                  <input
+                    id="fornecedor-cadastro-drawer-estado"
+                    type="text"
+                    class="fornecedor-cadastro-form__input"
+                    [(ngModel)]="d.estado"
+                    name="fornecedorCadastroEstado"
+                    placeholder="UF"
+                    maxlength="2"
+                    autocomplete="off"
+                    [disabled]="d.salvando"
+                  />
+                </label>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <footer class="cliente-drawer-footer">
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--ghost"
+          (click)="d.fechar()"
+          [disabled]="d.salvando"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--primary"
+          (click)="d.salvar()"
+          [disabled]="d.salvando"
+        >
+          {{ d.salvando ? 'Salvando…' : 'Salvar' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

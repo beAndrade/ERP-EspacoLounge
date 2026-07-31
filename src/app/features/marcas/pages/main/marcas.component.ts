@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 
 export interface MarcaListaItem {
@@ -19,7 +20,7 @@ const MARCA_EXCLUIDA_TOAST_MSG = 'Marca excluída com sucesso!';
 @Component({
   selector: 'app-marcas',
   standalone: true,
-  imports: [FormsModule, UiTipTriggerComponent],
+  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent],
   templateUrl: './marcas.component.html',
   styleUrl: './marcas.component.scss',
 })

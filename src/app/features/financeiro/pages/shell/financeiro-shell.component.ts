@@ -1,14 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { AdminPinService } from '../../../../core/services/admin-pin.service';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { FinanceiroResumoUiService } from './financeiro-resumo-ui.service';
-
-function periodoAtualYm(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
 
 @Component({
   selector: 'app-financeiro-shell',
@@ -53,12 +48,14 @@ export class FinanceiroShellComponent implements OnInit {
   }
 
   pinDraft = '';
-  desbloqueado = false;
   verificando = false;
   erroPin = '';
 
   ngOnInit(): void {
     this.pinDraft = this.adminPin.getPin();
+    if (this.adminPin.unlocked()) {
+      return;
+    }
     if (this.adminPin.hasPin()) {
       this.verificarPinGuardado();
     }
@@ -67,18 +64,17 @@ export class FinanceiroShellComponent implements OnInit {
   private verificarPinGuardado(): void {
     this.verificando = true;
     this.erroPin = '';
-    this.api.listFolha(periodoAtualYm()).subscribe({
+    this.api.verificarFinanceiroPin().subscribe({
       next: () => {
         this.verificando = false;
-        this.desbloqueado = true;
+        this.adminPin.markUnlocked();
       },
       error: (e: Error) => {
         this.verificando = false;
         this.adminPin.clear();
         this.pinDraft = '';
         this.erroPin =
-          e.message ||
-          'PIN inválido ou sessão expirada. Introduza o PIN de administrador.';
+          e.message || 'PIN inválido ou sessão expirada. Digite o PIN novamente.';
       },
     });
   }
@@ -86,18 +82,11 @@ export class FinanceiroShellComponent implements OnInit {
   entrar(): void {
     const t = String(this.pinDraft ?? '').trim();
     if (!t) {
-      this.erroPin = 'Introduza o PIN.';
+      this.erroPin = 'Digite o PIN.';
       return;
     }
     this.adminPin.setPin(t);
     this.verificarPinGuardado();
-  }
-
-  terminarSessaoPin(): void {
-    this.adminPin.clear();
-    this.pinDraft = '';
-    this.desbloqueado = false;
-    this.erroPin = '';
   }
 
   /** Recarrega o resumo do dia (legado — `FinanceiroCaixaDiaComponent`). */

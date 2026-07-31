@@ -13,11 +13,17 @@ import { formatarCelularBr } from '../../../../core/utils/telefone-br';
 import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 
 @Component({
   selector: 'app-profissionais',
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet, ProfissionalAvatarComponent],
+  imports: [
+    TableEmptyComponent,
+    FormsModule,
+    NgTemplateOutlet,
+    ProfissionalAvatarComponent,
+  ],
   templateUrl: './profissionais.component.html',
   styleUrl: './profissionais.component.scss',
 })

@@ -225,7 +225,9 @@
                   }
                 } @else if (paginaItens().length === 0) {
                   <tr>
-                    <td colspan="4" class="table-body__empty">Nenhuma marca encontrada.</td>
+                    <td colspan="4" class="table-body__empty">
+                      <app-table-empty label="Nenhuma marca encontrada" />
+                    </td>
                   </tr>
                 } @else {
                   @for (c of paginaItens(); track c.id) {

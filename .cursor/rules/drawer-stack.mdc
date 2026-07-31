@@ -64,7 +64,7 @@ Referência: `cliente-drawer-shell`, `profissional-cadastro-drawer-host`, `servi
 
 - Importar / reutilizar `src/app/styles/drawer-stack.scss` quando o drawer for da página.
 - Classe **`overlay`**, fundo `#00000073`.
-- **`[class.overlay--open]="…Aberto / panelOpen"`** — escurecimento acompanha abertura e fecho.
+- **`[class.overlay--open]="panelOpen"`** — **mesma flag** do `[class.app-drawer--open]`. Nunca ligar o overlay só à flag de montagem (`*Aberto` / `@if`); isso faz o fundo piscar no abrir/fechar.
 - **`(click)="fechar…()"`** no overlay.
 
 ## Tecla ESC

@@ -245,6 +245,7 @@
                   </li>
               </ul>
             </div>
+            <app-financeiro-bloquear-btn />
           </div>
         </div>
       </header>
@@ -591,8 +592,8 @@
                 <tbody>
                   @if (linhasPagina.length === 0) {
                     <tr>
-                      <td colspan="11" class="fin-transacoes__empty">
-                        Nenhuma transação no período selecionado.
+                      <td colspan="11" class="table-body__empty">
+                        <app-table-empty label="Nenhuma transação no período selecionado" />
                       </td>
                     </tr>
                   }
@@ -926,7 +927,7 @@
 @if (novoDrawerAberto) {
   <div
     class="overlay overlay--novo"
-    [class.overlay--open]="novoDrawerAberto"
+    [class.overlay--open]="novoDrawerPanelOpen"
     aria-hidden="true"
     (click)="fecharNovoDrawer()"
   ></div>
@@ -963,7 +964,7 @@
 @if (comandaPainelAberto && comandaDrawerContexto) {
   <div
     class="overlay overlay--comanda"
-    [class.overlay--open]="comandaPainelAberto"
+    [class.overlay--open]="comandaDrawerPanelOpen"
     aria-hidden="true"
     (click)="fecharComandaDrawer()"
   ></div>
@@ -989,7 +990,7 @@
 @if (editarDrawerAberto && editarLinha) {
   <div
     class="overlay overlay--editar"
-    [class.overlay--open]="editarDrawerAberto"
+    [class.overlay--open]="editarDrawerPanelOpen"
     aria-hidden="true"
     (click)="fecharEditarDrawer()"
   ></div>
@@ -1014,7 +1015,7 @@
 @if (faturarDrawerAberto && faturarCtx) {
   <div
     class="overlay overlay--faturar"
-    [class.overlay--open]="faturarDrawerAberto"
+    [class.overlay--open]="faturarDrawerPanelOpen"
     aria-hidden="true"
     (click)="fecharFaturarDrawer()"
   ></div>

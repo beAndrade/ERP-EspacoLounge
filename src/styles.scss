@@ -2,6 +2,7 @@
 @use './app/styles/confirm-exclusao-modal';
 @use './app/styles/ui-tooltip';
 @use './app/styles/form-req';
+@use './app/styles/system-checkbox';
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 /* Breakpoints oficiais: `app/styles/_breakpoints.scss` + `app/styles/breakpoints.ts` */
@@ -237,6 +238,16 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+/** Focus acessível padronizado (substitui o anel amarelo padrão do browser). */
+button:focus {
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 3px solid #ccd4ff !important;
+  outline-offset: 1px !important;
 }
 
 /**

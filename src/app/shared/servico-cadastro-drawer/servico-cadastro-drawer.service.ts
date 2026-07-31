@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { ApplicationRef, Injectable, inject, signal } from '@angular/core';
 import { Subject, switchMap, of } from 'rxjs';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
 import type {
@@ -8,7 +8,12 @@ import type {
   ServicoWritePayload,
 } from '../../core/models/api.models';
 import { AppToastService } from '../app-toast/app-toast.service';
-import { DRAWER_ANIM_MS } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+  type DrawerOpenAnimHandle,
+} from '../drawer-panel-anim';
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error-message';
 import {
@@ -61,6 +66,7 @@ export type ServicoDrawerCallbacks = {
 export class ServicoCadastroDrawerService {
   private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
+  private readonly appRef = inject(ApplicationRef);
   private readonly categoriaDrawer = inject(CategoriaCadastroDrawerService);
 
   readonly salvo$ = new Subject<Servico>();
@@ -135,6 +141,7 @@ export class ServicoCadastroDrawerService {
 
   private callbacks: ServicoDrawerCallbacks | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openAnim: DrawerOpenAnimHandle | null = null;
   private pageScrollLockAtivo = false;
   private bodyScrollPreDrawer = 0;
 
@@ -328,12 +335,17 @@ export class ServicoCadastroDrawerService {
 
   fechar(): void {
     if (!this.aberto()) return;
-    this.panelOpen.set(false);
-    this.desbloquearScrollPagina();
+    this.openAnim?.cancel();
+    this.openAnim = null;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => this.panelOpen.set(open),
+      appRef: this.appRef,
+    });
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;
       this.aberto.set(false);
+      this.desbloquearScrollPagina();
       this.callbacks = null;
       this.erro = '';
       this.salvando = false;
@@ -541,20 +553,20 @@ export class ServicoCadastroDrawerService {
   private abrirPainel(opts?: { focarNome?: boolean }): void {
     this.abaAtiva = 'Cadastro';
     this.erro = '';
-    this.panelOpen.set(false);
+    this.openAnim?.cancel();
     this.aberto.set(true);
     this.bloquearScrollPagina();
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.panelOpen.set(true);
-          if (opts?.focarNome) {
-            queueMicrotask(() => {
-              document.getElementById('servico-cadastro-nome')?.focus();
-            });
-          }
-        });
-      });
+    this.openAnim = runDrawerOpenAnimation({
+      setPanelOpen: (open) => this.panelOpen.set(open),
+      appRef: this.appRef,
+      reflowSelector: '.cliente-drawer--servico.app-drawer, .servico-cadastro-drawer.app-drawer',
+      onOpened: () => {
+        if (opts?.focarNome) {
+          queueMicrotask(() => {
+            document.getElementById('servico-cadastro-nome')?.focus();
+          });
+        }
+      },
     });
   }
 

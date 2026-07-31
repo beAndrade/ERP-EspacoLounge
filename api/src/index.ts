@@ -221,7 +221,11 @@ const profissionalCadastroBodySchema = t.Object({
   foto_url: t.Optional(t.Union([t.String(), t.Null()])),
   fotoUrl: t.Optional(t.Union([t.String(), t.Null()])),
 });
-import { requireAdminPin } from './lib/admin-pin';
+import {
+  pathRequiresFinanceiroPin,
+  requireAdminPin,
+  requireAdminWithPin,
+} from './lib/admin-pin';
 import {
   listFolhaPorPeriodoApi,
   listComissoesResumidasApi,
@@ -712,6 +716,13 @@ const app = new Elysia({ adapter: node() })
     if (!auth.ok) {
       set.status = 401;
       return auth.response;
+    }
+    if (pathRequiresFinanceiroPin(url.pathname)) {
+      const gate = await requireAdminWithPin(request);
+      if (!gate.ok) {
+        set.status = gate.status;
+        return gate.response;
+      }
     }
   })
   .onAfterHandle(({ request, set }) => {
@@ -1956,6 +1967,11 @@ const app = new Elysia({ adapter: node() })
   .get('/api/financeiro/formas-pagamento/opcoes', async () =>
     ok({ items: await listFormasPagamentoOpcoesApi(db) }),
   )
+  .post('/api/financeiro/verificar-pin', async ({ request }) => {
+    const gate = await requireAdminWithPin(request);
+    if (!gate.ok) return gate.response;
+    return ok({ ok: true });
+  })
   .get('/api/financeiro/categorias', async ({ query }) => {
     try {
       const q = query as Record<string, string | undefined>;

@@ -16,6 +16,7 @@ import { ServicoCadastroDrawerHostComponent } from './shared/servico-cadastro-dr
 import { ProdutoCadastroDrawerHostComponent } from './shared/produto-cadastro-drawer/produto-cadastro-drawer-host.component';
 import { CategoriaCadastroDrawerHostComponent } from './shared/categoria-cadastro-drawer/categoria-cadastro-drawer-host.component';
 import { MarcaCadastroDrawerHostComponent } from './shared/marca-cadastro-drawer/marca-cadastro-drawer-host.component';
+import { FornecedorCadastroDrawerHostComponent } from './shared/fornecedor-cadastro-drawer/fornecedor-cadastro-drawer-host.component';
 import { SessaoUsuarioService } from './core/services/sessao-usuario.service';
 import { SidebarProfileComponent } from './layout/sidebar-profile/sidebar-profile.component';
 import { mediaQueryMax } from './styles/breakpoints';
@@ -23,6 +24,9 @@ import { AppShellUiService } from './core/services/app-shell-ui.service';
 import { SidebarNovoMenuComponent } from './layout/sidebar-novo-menu/sidebar-novo-menu.component';
 import { MinhaContaDrawerHostComponent } from './shared/minha-conta-drawer/minha-conta-drawer-host.component';
 import { FinTransacaoNovoDrawerHostComponent } from './shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer-host.component';
+import { AgendaNovoGlobalHostComponent } from './shared/agenda-novo-global/agenda-novo-global-host.component';
+import { FinanceiroBloquearBtnComponent } from './shared/financeiro-bloquear-btn/financeiro-bloquear-btn.component';
+import { AdminPinService } from './core/services/admin-pin.service';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -47,11 +51,14 @@ export type NavSidebarDropdownId =
     ProdutoCadastroDrawerHostComponent,
     CategoriaCadastroDrawerHostComponent,
     MarcaCadastroDrawerHostComponent,
+    FornecedorCadastroDrawerHostComponent,
     MinhaContaDrawerHostComponent,
     FinTransacaoNovoDrawerHostComponent,
+    AgendaNovoGlobalHostComponent,
     SidebarProfileComponent,
     SidebarNovoMenuComponent,
     AppToastComponent,
+    FinanceiroBloquearBtnComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -60,6 +67,7 @@ export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   readonly sessao = inject(SessaoUsuarioService);
+  readonly adminPin = inject(AdminPinService);
   private readonly shellUi = inject(AppShellUiService);
 
   readonly title = 'Espaço Lounge';
@@ -72,6 +80,9 @@ export class AppComponent implements OnInit {
 
   /** Menu Principal accordion (só afeta sidebar expandida). */
   principalExpanded = true;
+
+  /** Rota «Principal» ativa no ciclo anterior (para só auto-abrir ao entrar). */
+  private lastPrincipalActive = false;
 
   sidebarCollapsed = false;
 
@@ -94,6 +105,15 @@ export class AppComponent implements OnInit {
     marketing: '/promocoes',
     relatorios: '/relatorios/painel',
   };
+
+  /** Prefixos de rota do grupo Principal (Painel, Agenda, Comandas, …). */
+  private readonly principalPrefixes: readonly string[] = [
+    '/painel',
+    '/agenda',
+    '/comandas',
+    '/orcamentos',
+    '/pacotes',
+  ];
 
   /** Prefixos de rota por secção do menu (manter aberto ao navegar dentro da mesma secção). */
   private readonly navDropdownPrefixes: Record<
@@ -201,6 +221,17 @@ export class AppComponent implements OnInit {
     return p === base || p.startsWith(base + '/');
   }
 
+  /** Secção Principal com rota ativa (exclui Pacotes Predefinidos em Controle). */
+  principalSectionActive(): boolean {
+    const path = (this.router.url.split('?')[0] ?? '').replace(/\/+$/, '') || '/';
+    if (path === '/pacotes/predefinidos' || path.startsWith('/pacotes/predefinidos/')) {
+      return false;
+    }
+    return this.principalPrefixes.some((prefix) =>
+      this.pathMatchesPrefix(path, prefix),
+    );
+  }
+
   /** Secção do menu (accordions) com rota ativa — alinhado a `navDropdownPrefixes`. */
   sectionActive(id: NavSidebarDropdownId): boolean {
     const path = this.router.url.split('?')[0] ?? '';
@@ -263,5 +294,11 @@ export class AppComponent implements OnInit {
       this.navExpandOpenIds = next;
     }
     this.lastActiveNavSections = currentlyActive;
+
+    const principalAtivo = this.principalSectionActive();
+    if (principalAtivo && !this.lastPrincipalActive) {
+      this.principalExpanded = true;
+    }
+    this.lastPrincipalActive = principalAtivo;
   }
 }

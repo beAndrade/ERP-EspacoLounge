@@ -59,6 +59,7 @@
             [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
             (click)="toggleFiltros()"
             aria-label="Filtrar orçamentos"
+            [attr.aria-expanded]="filtrosAbertos"
             title="Filtrar"
           >
             <svg
@@ -107,45 +108,56 @@
       </div>
     </header>
 
-    @if (filtrosAbertos) {
-      <div class="orcamentos-filtros" aria-label="Filtros">
-        <div class="orcamentos-filtros__periodo">
-          <label>
-            <span>Data inicial</span>
-            <input type="text" [(ngModel)]="dataInicio" name="di" maxlength="10" />
-          </label>
-          <label>
-            <span>Data final</span>
-            <input type="text" [(ngModel)]="dataFim" name="df" maxlength="10" />
-          </label>
-          <button
-            type="button"
-            class="list-head__toolbar-btn list-head__toolbar-btn--link"
-            (click)="aplicarFiltros()"
-          >
-            Aplicar
-          </button>
-        </div>
-        <div class="orcamentos-filtros__chips">
-          @for (st of filtrosStatus; track st.id) {
-            <button
-              type="button"
-              class="orcamentos-chip"
-              [class.orcamentos-chip--on]="filtroStatusAtivo(st.id)"
-              (click)="toggleFiltroStatus(st.id)"
-            >
-              {{ st.label }}
-            </button>
-          }
-        </div>
-      </div>
-    }
-
     @if (erro) {
       <p class="list-page__error" role="alert">{{ erro }}</p>
     }
   </div>
 
+  <div
+    class="orcamentos-layout"
+    [class.orcamentos-layout--filtros-abertos]="filtrosAbertos"
+  >
+    <aside
+      class="orcamentos-filtros-drawer"
+      [class.orcamentos-filtros-drawer--open]="filtrosAbertos"
+      aria-label="Painel de filtros"
+      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
+    >
+      <div class="orcamentos-filtros-drawer__inner">
+        <section class="orcamentos-filtros-card orcamentos-filtros-card--periodo">
+          <h3 class="orcamentos-filtros-card__title">Período</h3>
+          <app-cliente-drawer-periodo-filtro
+            [(inicioYmd)]="periodoInicioYmd"
+            [(fimYmd)]="periodoFimYmd"
+            exibicaoFormato="belasis"
+            [painelFlutuante]="true"
+            (periodoAlterado)="onPeriodoFiltroAlterado()"
+          />
+        </section>
+
+        <section class="orcamentos-filtros-card">
+          <h3 class="orcamentos-filtros-card__title">Status</h3>
+          <div class="orcamentos-filtros-card__body">
+            @for (st of filtrosStatus; track st.id) {
+              <label class="orcamentos-filtros-check">
+                <input
+                  type="checkbox"
+                  [name]="'st_orc_' + st.id"
+                  [checked]="filtroStatusAtivo(st.id)"
+                  (change)="toggleFiltroStatus(st.id)"
+                />
+                <span
+                  class="orcamentos-badge"
+                  [attr.data-status]="st.id"
+                >{{ st.label }}</span>
+              </label>
+            }
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <div class="orcamentos-layout__main">
   <div class="list-table-card orcamentos-table-card">
       <div class="table-wrap">
         <table class="orcamentos-table">
@@ -268,6 +280,7 @@
                 </button>
                 </app-ui-tip-trigger>
               </th>
+              <th scope="col">Telefone</th>
               <th scope="col">Status</th>
               <th scope="col">Valor</th>
               <th scope="col"><span class="sr-only">Ações</span></th>
@@ -276,12 +289,12 @@
           <tbody>
             @if (carregando) {
               <tr>
-                <td colspan="6" class="table-body__busy">Carregando…</td>
+                <td colspan="7" class="table-body__busy">Carregando…</td>
               </tr>
             } @else if (totalFiltrado() === 0) {
               <tr>
-                <td colspan="6" class="table-body__empty">
-                  Nenhum orçamento neste período.
+                <td colspan="7" class="table-body__empty">
+                  <app-table-empty label="Nenhum orçamento neste período" />
                 </td>
               </tr>
             } @else {
@@ -290,6 +303,7 @@
                   <td>{{ rotuloTicket(g) }}</td>
                   <td>{{ dataDdMmBarraAaaa(g.data) }}</td>
                   <td>{{ g.nomeCliente || '' }}</td>
+                  <td>{{ exibirTelefone(g) }}</td>
                   <td>
                     <span
                       class="orcamentos-badge"
@@ -347,37 +361,121 @@
         </table>
       </div>
 
-      @if (!carregando && totalFiltrado() > 0) {
-        <div class="orcamentos-pager">
-          <span>{{ totalFiltrado() }} orçamento(s)</span>
-          <label>
-            Por página
-            <select [(ngModel)]="itensPorPagina" name="pp" (ngModelChange)="pagina = 1">
-              @for (n of opcoesItensPorPagina; track n) {
-                <option [ngValue]="n">{{ n }}</option>
-              }
-            </select>
-          </label>
-          <button type="button" [disabled]="pagina <= 1" (click)="pagina = pagina - 1">
-            Anterior
-          </button>
-          <span>{{ pagina }} / {{ totalPaginas() }}</span>
+      <footer class="list-footer orcamentos-footer">
+        <span class="list-footer__total orcamentos-footer__total">
+          {{ carregando ? '…' : totalFiltrado() }} no total
+        </span>
+        <div class="list-footer__pager orcamentos-footer__pager">
           <button
             type="button"
-            [disabled]="pagina >= totalPaginas()"
-            (click)="pagina = pagina + 1"
+            class="list-footer__chev orcamentos-footer__chev"
+            (click)="paginaAnterior()"
+            [disabled]="carregando || pagina <= 1 || totalFiltrado() === 0"
+            aria-label="Página anterior"
           >
-            Próxima
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
           </button>
+          <span class="list-footer__page-num orcamentos-footer__page-num" aria-current="page">{{
+            pagina
+          }}</span>
+          <button
+            type="button"
+            class="list-footer__chev orcamentos-footer__chev"
+            (click)="paginaSeguinte()"
+            [disabled]="carregando || pagina >= totalPaginas() || totalFiltrado() === 0"
+            aria-label="Página seguinte"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+          <div class="list-footer__per-page">
+            <span id="orcamentos-per-page-label" class="sr-only">Itens por página</span>
+            <button
+              type="button"
+              class="list-footer__per-page-trigger"
+              [disabled]="carregando"
+              [attr.aria-expanded]="perPageMenuAberto"
+              aria-haspopup="listbox"
+              aria-labelledby="orcamentos-per-page-label"
+              aria-controls="orcamentos-per-page-listbox"
+              (click)="togglePerPageMenu($event)"
+            >
+              <span>{{ itensPorPagina }} / página</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            @if (perPageMenuAberto) {
+              <div
+                id="orcamentos-per-page-listbox"
+                class="list-footer__per-page-panel"
+                role="listbox"
+                aria-labelledby="orcamentos-per-page-label"
+                (click)="$event.stopPropagation()"
+              >
+                @for (n of opcoesItensPorPagina; track n) {
+                  <button
+                    type="button"
+                    class="list-footer__per-page-option"
+                    [class.list-footer__per-page-option--active]="n === itensPorPagina"
+                    role="option"
+                    [attr.aria-selected]="n === itensPorPagina"
+                    (click)="selecionarItensPorPagina(n, $event)"
+                  >
+                    {{ n }} / página
+                  </button>
+                }
+              </div>
+            }
+          </div>
         </div>
-      }
+      </footer>
     </div>
+    </div>
+  </div>
 </div>
 
 @if (novoAberto && novoCtx) {
   <div
     class="overlay"
     [class.overlay--open]="novoPanelOpen"
+    aria-hidden="true"
     (click)="fecharNovo()"
   ></div>
   <div
@@ -386,6 +484,7 @@
     role="dialog"
     aria-modal="true"
     aria-label="Novo orçamento"
+    (click)="$event.stopPropagation()"
   >
     <app-agenda-novo
       [modoModal]="true"

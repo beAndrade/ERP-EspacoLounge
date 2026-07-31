@@ -1,4 +1,5 @@
 import {
+  ApplicationRef,
   Component,
   HostListener,
   inject,
@@ -35,6 +36,10 @@ import {
   type AbrirCadastroClientePayload,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
+  AgendaNovoGlobalService,
+  type AgendaNovoGlobalModo,
+} from '../../../../shared/agenda-novo-global/agenda-novo-global.service';
+import {
   pagamentoColunaFromGrupo,
   statusComandaColunaFromItem,
   type PagamentoColuna,
@@ -47,6 +52,7 @@ import {
   mapFormasParaMetodosComanda,
   METODOS_COMANDA_FALLBACK,
 } from '../../../../core/utils/fin-formas-pagamento.util';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import {
   primeiroDiaMesYmdFiltro,
   ultimoDiaMesYmdFiltro,
@@ -72,7 +78,11 @@ type FiltroStatusComandaId = StatusComandaColuna;
 type FiltroPagamentoColunaId = PagamentoColuna;
 
 
-const DRAWER_ANIM_MS = 430;
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+} from '../../../../shared/drawer-panel-anim';
 
 const RESUMO_PAGAMENTOS_VAZIO: ComandaResumoPagamentos = {
   total_bruto: 0,
@@ -97,6 +107,7 @@ function formataMoeda(n: number): string {
   selector: 'app-comandas',
   standalone: true,
   imports: [
+    TableEmptyComponent,
     FormsModule,
     CurrencyPipe,
     NovaComandaDrawerComponent,
@@ -114,6 +125,17 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  private readonly agendaNovoGlobal = inject(AgendaNovoGlobalService);
+  private readonly appRef = inject(ApplicationRef);
+
+  /** Menu Novo → Comanda: mesmo drawer do botão Novo da lista. */
+  private readonly onAgendaNovoAtalho = (
+    modo: AgendaNovoGlobalModo,
+  ): boolean => {
+    if (modo !== 'comanda') return false;
+    this.abrirNovoAgendamentoDrawer();
+    return true;
+  };
 
   /** `?comanda=id_atendimento` — abre o drawer após carregar a lista. */
   private comandaQueryAbrir: string | null = null;
@@ -254,6 +276,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private clientesCatalogo: Cliente[] = [];
 
   ngOnInit(): void {
+    this.agendaNovoGlobal.registerPageHandler(this.onAgendaNovoAtalho);
     this.carregando = true;
     this.carregarOpcoesFormasPagamento();
     this.route.queryParamMap.subscribe((params) => {
@@ -287,6 +310,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.agendaNovoGlobal.unregisterPageHandler(this.onAgendaNovoAtalho);
     window.clearTimeout(this.tPulsoBusca);
     window.clearTimeout(this.tPulsoFiltro);
     if (this.comandaDrawerCloseTimer != null) {
@@ -732,7 +756,12 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   fecharNovoAgendamento(): void {
     if (!this.novoAgendamentoAberto) return;
-    this.novoAgendamentoPanelOpen = false;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => {
+        this.novoAgendamentoPanelOpen = open;
+      },
+      appRef: this.appRef,
+    });
     if (this.novoAgendamentoCloseTimer != null) {
       clearTimeout(this.novoAgendamentoCloseTimer);
     }
@@ -935,13 +964,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
   ): void {
     marcarDrawerAberto();
     this.bloquearScrollPagina();
-    setPanelOpen(false);
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setPanelOpen(true);
-        });
-      });
+    runDrawerOpenAnimation({
+      setPanelOpen,
+      appRef: this.appRef,
     });
   }
 

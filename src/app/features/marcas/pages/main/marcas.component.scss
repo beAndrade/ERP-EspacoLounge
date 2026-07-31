@@ -4,7 +4,6 @@
 
 .marcas-page {
   padding: 0;
-  padding-right: 10px;
   padding-bottom: 24px;
   box-sizing: border-box;
 
@@ -458,7 +457,7 @@
   transform: translateX(100%);
   transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
-  @include bp.drawer-shell-anchor;
+  @include bp.drawer-anchor-fixed-width(600px);
 
   &.app-drawer--open {
     transform: translateX(0);

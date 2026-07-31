@@ -7,6 +7,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { FinCadastrosCategoriasTabComponent } from './fin-cadastros-categorias-tab.component';
 import { FinCadastrosFormasTabComponent } from './fin-cadastros-formas-tab.component';
+import { FinanceiroBloquearBtnComponent } from '../../../../shared/financeiro-bloquear-btn/financeiro-bloquear-btn.component';
 
 type CadastroTab = 'categorias' | 'formas';
 
@@ -17,6 +18,7 @@ type CadastroTab = 'categorias' | 'formas';
     FormsModule,
     FinCadastrosCategoriasTabComponent,
     FinCadastrosFormasTabComponent,
+    FinanceiroBloquearBtnComponent,
   ],
   templateUrl: './financeiro-cadastros.component.html',
   styleUrl: './financeiro-cadastros.component.scss',

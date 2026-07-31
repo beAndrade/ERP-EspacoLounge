@@ -1,0 +1,139 @@
+/**
+ * Checkbox padrão do sistema — aplicado a todos os `input[type='checkbox']`.
+ * Hover de filtros (borda azul em fade) incluso para paridade visual.
+ */
+
+input[type='checkbox'] {
+  --list-check-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --list-check-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  box-sizing: border-box;
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid #efefef;
+  border-radius: 5px;
+  background-color: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+  overflow: visible;
+  transform: scale(1);
+  transition:
+    background-color 0.22s var(--list-check-ease),
+    border-color 0.22s var(--list-check-ease),
+    transform 0.16s var(--list-check-spring);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    box-sizing: border-box;
+    border-radius: inherit;
+    border: 1px solid var(--color-link, #3b82f6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease 0.1s;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 47%;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(0.35);
+    transform-origin: center center;
+    opacity: 0;
+    transition:
+      transform 0.32s var(--list-check-spring),
+      opacity 0.14s ease;
+  }
+
+  &:hover:not(:disabled):not(:checked) {
+    border-color: #efefef;
+    background-color: #fff;
+
+    &::before {
+      opacity: 1;
+      transition: opacity 0.15s ease;
+    }
+  }
+
+  &:hover:not(:disabled):checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.9);
+  }
+
+  &:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    box-shadow: none;
+
+    &::after {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(45deg) scale(1);
+      transition:
+        transform 0.36s var(--list-check-spring) 0.04s,
+        opacity 0.12s ease 0.02s;
+    }
+  }
+
+  &:checked::before,
+  &:disabled::before {
+    opacity: 0 !important;
+    transition: none;
+  }
+
+  &:checked:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+/* Hover no rótulo também acende a borda azul (não só no box). */
+label:hover input[type='checkbox']:not(:disabled):not(:checked) {
+  border-color: #efefef;
+  background-color: #fff;
+
+  &::before {
+    opacity: 1;
+    transition: opacity 0.15s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  input[type='checkbox'] {
+    transition-duration: 0.01ms;
+
+    &::before,
+    &::after {
+      transition-duration: 0.01ms;
+      transition-delay: 0s;
+    }
+
+    &:checked::after {
+      transition-delay: 0s;
+    }
+  }
+}

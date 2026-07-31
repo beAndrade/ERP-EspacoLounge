@@ -307,11 +307,9 @@ $wa-input-h: 42px;
   font-weight: 500;
   color: #44403c;
 
+  /* Visual do checkbox: `styles/system-checkbox.scss` (global). */
   input {
-    width: 1rem;
-    height: 1rem;
     margin: 0;
-    accent-color: var(--color-primary);
     cursor: pointer;
   }
 }

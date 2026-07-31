@@ -2,13 +2,17 @@ import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { Component, inject, LOCALE_ID } from '@angular/core';
 import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service';
+import { TableEmptyComponent } from '../table-empty/table-empty.component';
 
 registerLocaleData(localePt);
 
 @Component({
   selector: 'app-cliente-painel-tab',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [
+    TableEmptyComponent,
+    CurrencyPipe,
+  ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './cliente-painel-tab.component.html',
   styleUrl: './cliente-painel-tab.component.scss',

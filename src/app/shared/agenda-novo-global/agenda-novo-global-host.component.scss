@@ -1,0 +1,80 @@
+/* Mesmo shell/animação do drawer da grelha (agenda-hub). */
+app-agenda-novo-global-host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 1180;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.overlay--agenda-novo-global {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1180;
+  box-sizing: border-box;
+  background: #00000073;
+  opacity: 0;
+  transition: opacity var(--drawer-slide-duration, 0.43s)
+    cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+
+  &.overlay--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.agenda-novo-global-drawer.app-drawer {
+  --drawer-preferred-w: 1650px;
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  --drawer-slide-duration: 0.43s;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: max(0px, calc(100vw - var(--drawer-preferred-w)));
+  bottom: 0;
+  z-index: 1190;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-clip-margin: 20px 16px 24px 32px;
+  pointer-events: none;
+  transform: translateX(100%);
+  transition: transform var(--drawer-slide-duration, 0.43s)
+    cubic-bezier(0.22, 1, 0.36, 1);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  > app-agenda-novo {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+    width: 100%;
+  }
+}

@@ -7,8 +7,10 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { FornecedorCadastroDrawerService } from '../../../../shared/fornecedor-cadastro-drawer/fornecedor-cadastro-drawer.service';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
+import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 
 /** Item da lista de fornecedores (API futura). */
 export interface FornecedorListaItem {
@@ -54,12 +56,17 @@ const FORNECEDORES_COLUNAS_PADRAO: FornecedorColunaId[] = [
 @Component({
   selector: 'app-fornecedores',
   standalone: true,
-  imports: [FormsModule, UiTipTriggerComponent],
+  imports: [
+    TableEmptyComponent,
+    FormsModule,
+    UiTipTriggerComponent,
+  ],
   templateUrl: './fornecedores.component.html',
   styleUrl: './fornecedores.component.scss',
 })
 export class FornecedoresComponent implements OnInit, OnDestroy {
   private readonly toast = inject(AppToastService);
+  private readonly fornecedorDrawer = inject(FornecedorCadastroDrawerService);
 
   carregando = false;
   erro = '';
@@ -184,7 +191,7 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
   }
 
   onNovo(): void {
-    this.toast.show('Cadastro de fornecedores em breve.');
+    this.fornecedorDrawer.abrirNovo();
   }
 
   onAbrirFornecedor(f: FornecedorListaItem, ev?: Event): void {

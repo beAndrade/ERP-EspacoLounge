@@ -53,10 +53,17 @@ import {
 } from './cliente-painel.util';
 import { UI_TIP_SHOW_DELAY_MS } from '../ui-tip-trigger/ui-tip-delay';
 import { AppToastService } from '../app-toast/app-toast.service';
+import {
+  DRAWER_ANIM_MS,
+  beginDrawerCloseAnimation,
+  runDrawerOpenAnimation,
+  type DrawerOpenAnimHandle,
+} from '../drawer-panel-anim';
 
 export const CLIENTE_SALVO_TOAST_MSG = 'Cliente salvo com sucesso!';
 
-export const DRAWER_ANIM_MS = 430;
+/** Reexport — fonte: `drawer-panel-anim.ts`. */
+export { DRAWER_ANIM_MS } from '../drawer-panel-anim';
 
 /** @deprecated Use `UI_TIP_SHOW_DELAY_MS` — mantido para imports externos. */
 export const CLIENTE_NAV_LOCK_TOOLTIP_DELAY_MS = UI_TIP_SHOW_DELAY_MS;
@@ -233,6 +240,7 @@ export class ClienteCadastroDrawerService {
 
   private callbacks: ClienteCadastroDrawerCallbacks | null = null;
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openAnim: DrawerOpenAnimHandle | null = null;
   private navLockTooltipTimer: ReturnType<typeof setTimeout> | null = null;
   private bodyScrollPreDrawer = 0;
   private pageScrollLockAtivo = false;
@@ -479,7 +487,14 @@ export class ClienteCadastroDrawerService {
     this.saveSub?.unsubscribe();
     this.saveSub = null;
     this.ocultarClienteNavLockTooltip();
-    this.panelOpen = false;
+    this.openAnim?.cancel();
+    this.openAnim = null;
+    beginDrawerCloseAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+    });
     if (this.closeTimer != null) clearTimeout(this.closeTimer);
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;
@@ -1245,16 +1260,16 @@ export class ClienteCadastroDrawerService {
     this.secaoConfiguracoesAberta = true;
 
     this.cancelarPanelSettled();
+    this.openAnim?.cancel();
     this.aberto = true;
     this.bloquearScrollPagina();
-    this.panelOpen = false;
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          this.panelOpen = true;
-          this.agendarPanelSettled();
-        });
-      });
+    this.openAnim = runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.panelOpen = open;
+      },
+      appRef: this.appRef,
+      reflowSelector: '.cliente-drawer.app-drawer',
+      onOpened: () => this.agendarPanelSettled(),
     });
   }
 

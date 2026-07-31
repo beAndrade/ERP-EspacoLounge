@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, catchError, throwError } from 'rxjs';
 import type { HttpResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import type { AuthUser, ProfissionalUsuarioPayload } from '../models/auth.models';
@@ -974,6 +974,26 @@ export class SheetsApiService {
         params,
       })
       .pipe(map((r) => this.unwrap(r)));
+  }
+
+  /** Valida admin + PIN sem carregar dados financeiros. */
+  verificarFinanceiroPin(): Observable<{ ok: true }> {
+    return this.http
+      .post<ApiResponse<{ ok: true }>>(
+        this.url('/api/financeiro/verificar-pin'),
+        {},
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        catchError((err) =>
+          throwError(
+            () =>
+              new Error(
+                extractApiErrorMessage(err, 'PIN inválido. Tente novamente.'),
+              ),
+          ),
+        ),
+      );
   }
 
   /** Folha por competência; requer `ADMIN_PIN` no servidor e PIN em `AdminPinService`. */

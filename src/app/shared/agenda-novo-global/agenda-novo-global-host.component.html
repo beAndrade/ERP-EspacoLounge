@@ -1,0 +1,27 @@
+@if (d.aberto && d.contexto) {
+  <div
+    class="overlay overlay--agenda-novo-global"
+    [class.overlay--open]="d.panelOpen"
+    aria-hidden="true"
+    (click)="d.fechar()"
+  ></div>
+  <div
+    class="agenda-novo-global-drawer app-drawer"
+    [class.app-drawer--open]="d.panelOpen"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="d.ariaLabel"
+    (click)="$event.stopPropagation()"
+  >
+    <app-agenda-novo
+      [modoModal]="true"
+      [fluxoSomenteComanda]="d.fluxoSomenteComanda"
+      [fluxoOrcamento]="d.fluxoOrcamento"
+      [contextoSlot]="d.contexto"
+      (salvoComSucesso)="d.onSalvo()"
+      (cancelarModal)="d.fechar()"
+      (abrirCadastroCliente)="onAbrirCadastroCliente($event)"
+      (abrirNovoClienteDrawer)="abrirClienteNovo()"
+    />
+  </div>
+}

@@ -4,10 +4,15 @@
  * HTML (obrigatório em cada camada):
  *   <div
  *     class="overlay"
- *     [class.overlay--open]="drawerAberto"
+ *     [class.overlay--open]="panelOpen"
  *     aria-hidden="true"
  *     (click)="fecharDrawer()"
  *   ></div>
+ *   <div class="app-drawer" [class.app-drawer--open]="panelOpen">…</div>
+ *
+ * Montar com `@if (abertoShell)`; animar com a mesma flag `panelOpen`
+ * no overlay e no drawer (double-rAF ao abrir). Não ligar overlay à flag
+ * de montagem — isso faz o fundo “piscar” no abrir/fechar.
  *
  * TypeScript (no host da página):
  *   @HostListener('document:keydown.escape', ['$event'])

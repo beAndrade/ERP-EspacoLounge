@@ -39,6 +39,7 @@ import {
   totaisDeLinhas,
 } from './charts/fin-painel-charts.util';
 import { FinVendasDiaChartComponent } from './charts/fin-vendas-dia-chart.component';
+import { FinanceiroBloquearBtnComponent } from '../../../../shared/financeiro-bloquear-btn/financeiro-bloquear-btn.component';
 
 registerLocaleData(localePt);
 
@@ -73,6 +74,7 @@ export interface FinPainelContaCard {
     ClienteDrawerPeriodoFiltroComponent,
     FinFluxoCaixaChartComponent,
     FinVendasDiaChartComponent,
+    FinanceiroBloquearBtnComponent,
   ],
   providers: [{ provide: LOCALE_ID, useValue: 'pt-BR' }],
   templateUrl: './financeiro-painel.component.html',

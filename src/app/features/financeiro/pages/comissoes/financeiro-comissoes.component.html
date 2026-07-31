@@ -4,8 +4,8 @@
       <div class="list-head__left">
         <h1 class="list-head__title">Comissões</h1>
       </div>
-      @if (emLayoutLista()) {
-        <div class="list-head__actions">
+      <div class="list-head__actions">
+        @if (emLayoutLista()) {
           <button
             type="button"
             class="list-head__toolbar-btn"
@@ -88,8 +88,9 @@
             </svg>
             <span class="list-head__toolbar-label">Atualizar</span>
           </button>
-        </div>
-      }
+        }
+        <app-financeiro-bloquear-btn />
+      </div>
     </div>
     <nav class="fin-comissoes__tabs" aria-label="Secções de comissões">
       @for (tab of tabs; track tab.id) {
@@ -309,28 +310,7 @@
                 } @else if (linhasDetalhe().length === 0) {
                   <tr>
                     <td class="table-body__empty" colspan="6">
-                      <div class="table-empty" role="status">
-                        <span class="table-empty__icon-wrap" aria-hidden="true">
-                          <svg
-                            class="table-empty__icon lucide lucide-inbox"
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="0.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-                            <path
-                              d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
-                            />
-                          </svg>
-                        </span>
-                        <p class="table-empty__label">Nenhum item encontrado</p>
-                      </div>
+                      <app-table-empty label="Nenhum item encontrado" />
                     </td>
                   </tr>
                 } @else {
@@ -428,28 +408,7 @@
                 } @else if (linhasPagas().length === 0) {
                   <tr>
                     <td class="table-body__empty" colspan="9">
-                      <div class="table-empty" role="status">
-                        <span class="table-empty__icon-wrap" aria-hidden="true">
-                          <svg
-                            class="table-empty__icon lucide lucide-inbox"
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="0.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-                            <path
-                              d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
-                            />
-                          </svg>
-                        </span>
-                        <p class="table-empty__label">Nenhum item encontrado</p>
-                      </div>
+                      <app-table-empty label="Nenhum item encontrado" />
                     </td>
                   </tr>
                 } @else {
@@ -661,7 +620,7 @@
   @if (comandaPainelAberto && comandaDrawerContexto) {
     <div
       class="overlay overlay--comissoes-comanda"
-      [class.overlay--open]="comandaPainelAberto"
+      [class.overlay--open]="comandaDrawerPanelOpen"
       aria-hidden="true"
       (click)="fecharComandaDrawer()"
     ></div>
@@ -685,7 +644,7 @@
   @if (pagarDrawerAberto) {
     <div
       class="overlay overlay--comissoes-pagar"
-      [class.overlay--open]="pagarDrawerAberto"
+      [class.overlay--open]="pagarDrawerPanelOpen"
       aria-hidden="true"
       (click)="fecharPagarDrawer()"
     ></div>

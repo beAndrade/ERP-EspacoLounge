@@ -61,10 +61,12 @@ $cliente-drawer-max-width: 1200px !default;
   max-width: 100vw;
 }
 
-/// Ficha / drawer: mesmo shell contínuo de `$drawer-shell-max`.
-/// `$max-width` ignorado na âncora (evita pulo 100vw → painel estreito).
+/// Drawer com largura máxima fixa (responsivo): `min($max-width, 100vw)`.
 @mixin drawer-anchor-fixed-width($max-width: $cliente-drawer-max-width) {
-  @include drawer-shell-anchor($drawer-shell-max);
+  right: 0;
+  left: auto;
+  width: min(#{$max-width}, 100vw);
+  max-width: 100vw;
 }
 
 /// Drawer «wide» (comanda / agenda / edição): shell contínuo.

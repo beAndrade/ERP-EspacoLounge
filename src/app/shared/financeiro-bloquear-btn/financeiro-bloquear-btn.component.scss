@@ -1,0 +1,67 @@
+:host {
+  display: contents;
+}
+
+/* Estilo próprio (Painel não importa list-page-shell). Nas listas, herda/alinha com toolbar. */
+.fin-bloquear-btn:not(.fin-bloquear-btn--sidebar) {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 15px;
+  margin: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000000bf;
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid var(--color-border, #e7e5e4);
+  border-radius: 12px;
+  background: var(--color-card, #fff);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background: #ffffff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .list-icon-sm {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.fin-bloquear-btn--sidebar {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+
+  &:hover {
+    filter: brightness(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}

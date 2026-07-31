@@ -8,6 +8,10 @@
   <div
     class="fin-novo-global-drawer app-drawer"
     [class.app-drawer--open]="d.panelOpen"
+    [class.fin-novo-global-drawer--receita]="d.tipo === 'receita'"
+    [class.fin-novo-global-drawer--despesa]="d.tipo === 'despesa'"
+    [class.fin-novo-global-drawer--vale]="d.tipo === 'vale'"
+    [class.fin-novo-global-drawer--transferencia]="d.tipo === 'transferencia'"
     role="dialog"
     aria-modal="true"
     [attr.aria-label]="d.ariaLabel"
