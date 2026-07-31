@@ -235,6 +235,83 @@
   }
 }
 
+/* ── Checkbox "Lembrar de mim" ─────────────────────────────── */
+.login-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  margin-top: -0.2rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.login-remember__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.login-remember__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 5px;
+  background: var(--color-surface, #fff);
+  color: #fff;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  svg {
+    opacity: 0;
+    transform: scale(0.5);
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+}
+
+.login-remember:hover .login-remember__box {
+  border-color: #cbd5e1;
+}
+
+.login-remember__input:checked + .login-remember__box {
+  background: var(--color-primary, #3f769d);
+  border-color: var(--color-primary, #3f769d);
+
+  svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.login-remember__input:focus-visible + .login-remember__box {
+  border-color: var(--color-primary, #3f769d);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-primary, #3f769d) 22%, transparent);
+}
+
+.login-remember__input:disabled + .login-remember__box {
+  opacity: 0.65;
+}
+
+.login-remember__label {
+  font-size: 0.9rem;
+  color: #334155;
+}
+
 .login-form__erro {
   margin: 0;
   padding: 0.75rem 0.9rem;

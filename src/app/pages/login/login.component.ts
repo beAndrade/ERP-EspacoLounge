@@ -18,6 +18,7 @@ export class LoginComponent implements OnInit {
 
   email = '';
   senha = '';
+  lembrar = true;
   mostrarSenha = false;
   carregando = false;
   erro = '';
@@ -44,7 +45,7 @@ export class LoginComponent implements OnInit {
       return;
     }
     this.carregando = true;
-    this.auth.login(email, senha).subscribe({
+    this.auth.login(email, senha, this.lembrar).subscribe({
       next: () => {
         this.carregando = false;
         void this.router.navigate(['/painel']);

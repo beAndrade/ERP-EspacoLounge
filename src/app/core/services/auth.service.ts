@@ -25,10 +25,25 @@ export class AuthService {
 
   get token(): string | null {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return (
+        localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY)
+      );
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Storage da sessão atual: sessionStorage quando o usuário não marcou
+   * "Lembrar de mim"; localStorage caso contrário (padrão).
+   */
+  private activeStorage(): Storage {
+    try {
+      if (sessionStorage.getItem(TOKEN_KEY) != null) return sessionStorage;
+    } catch {
+      /* ignore */
+    }
+    return localStorage;
   }
 
   isLoggedIn(): boolean {
@@ -91,7 +106,11 @@ export class AuthService {
     return true;
   }
 
-  login(email: string, senha: string): Observable<AuthUser> {
+  login(
+    email: string,
+    senha: string,
+    lembrar = true,
+  ): Observable<AuthUser> {
     return this.http
       .post<ApiResponse<LoginResponse>>(`${this.baseUrl}/api/auth/login`, {
         email,
@@ -108,7 +127,11 @@ export class AuthService {
         }),
         tap((data) => {
           try {
-            localStorage.setItem(TOKEN_KEY, data.token);
+            const dest = lembrar ? localStorage : sessionStorage;
+            const outro = lembrar ? sessionStorage : localStorage;
+            dest.setItem(TOKEN_KEY, data.token);
+            outro.removeItem(TOKEN_KEY);
+            outro.removeItem(USER_KEY);
           } catch {
             /* ignore */
           }
@@ -146,7 +169,7 @@ export class AuthService {
         }),
         tap((data) => {
           try {
-            localStorage.setItem(TOKEN_KEY, data.token);
+            this.activeStorage().setItem(TOKEN_KEY, data.token);
           } catch {
             /* ignore */
           }
@@ -186,7 +209,7 @@ export class AuthService {
   private persistUser(user: AuthUser): void {
     this.user.set(user);
     try {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      this.activeStorage().setItem(USER_KEY, JSON.stringify(user));
     } catch {
       /* ignore */
     }
@@ -205,7 +228,8 @@ export class AuthService {
 
   private readStoredUser(): AuthUser | null {
     try {
-      const raw = localStorage.getItem(USER_KEY);
+      const raw =
+        localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
       if (!raw) return null;
       return JSON.parse(raw) as AuthUser;
     } catch {
@@ -219,6 +243,8 @@ export class AuthService {
     try {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(USER_KEY);
     } catch {
       /* ignore */
     }
