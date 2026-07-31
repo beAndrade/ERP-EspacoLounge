@@ -1,6 +1,7 @@
 .login-page {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  /** Painel de marca ~42% — formulário com mais respiro (padrão SaaS). */
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
   min-height: 100dvh;
   background: var(--color-bg, #f8fafc);
 }
