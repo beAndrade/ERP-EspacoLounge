@@ -1,8 +1,18 @@
-import { Component, OnInit, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error-message';
+
+/** E-mail lembrado entre logins (senha fica no gerenciador do navegador). */
+const EMAIL_LEMBRADO_KEY = 'espaco-lounge-login-email';
 
 @Component({
   selector: 'app-login',
@@ -11,10 +21,13 @@ import { extractApiErrorMessage } from '../../core/utils/api-error-message';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, AfterViewInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  @ViewChild('senhaInput')
+  private readonly senhaInput?: ElementRef<HTMLInputElement>;
 
   email = '';
   senha = '';
@@ -25,9 +38,17 @@ export class LoginComponent implements OnInit {
   modalSessaoExpirada = false;
 
   ngOnInit(): void {
+    this.preencherEmailLembrado();
     this.avaliarModalSessaoExpirada();
     if (this.auth.bootstrapped() && this.auth.isLoggedIn()) {
       void this.router.navigate(['/painel']);
+    }
+  }
+
+  ngAfterViewInit(): void {
+    /** E-mail lembrado: foco direto na senha. */
+    if (this.email) {
+      this.senhaInput?.nativeElement.focus();
     }
   }
 
@@ -48,6 +69,7 @@ export class LoginComponent implements OnInit {
     this.auth.login(email, senha, this.lembrar).subscribe({
       next: () => {
         this.carregando = false;
+        this.gravarEmailLembrado(email);
         void this.router.navigate(['/painel']);
       },
       error: (e: unknown) => {
@@ -57,6 +79,31 @@ export class LoginComponent implements OnInit {
           'Não foi possível entrar. Verifique e-mail e senha.';
       },
     });
+  }
+
+  private preencherEmailLembrado(): void {
+    try {
+      const salvo = localStorage.getItem(EMAIL_LEMBRADO_KEY)?.trim();
+      if (salvo) {
+        this.email = salvo;
+        this.lembrar = true;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Só grava após login bem-sucedido; desmarcado limpa o e-mail salvo. */
+  private gravarEmailLembrado(email: string): void {
+    try {
+      if (this.lembrar) {
+        localStorage.setItem(EMAIL_LEMBRADO_KEY, email);
+      } else {
+        localStorage.removeItem(EMAIL_LEMBRADO_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   private avaliarModalSessaoExpirada(): void {
