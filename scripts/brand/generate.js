@@ -73,50 +73,39 @@ function textPath(font, text, fontSize, trackingEm, leftX, baselineY, kernPairs)
   return { d: p.toPathData(2), bbox: inkBBox(p), glyphBoxes: boxes };
 }
 
-// ---------- Ícone: "n" geométrico desenhado à mão ----------
-// Haste esquerda levemente mais larga (31 un.) que a direita (27 un.),
-// terminais arredondados (r=10) e corte diagonal na perna direita.
+// ---------- Ícone: "n" geométrico (Direção 01 — construção por arcos) ----------
+// Domo externo e contra-forma são semicírculos perfeitos (comandos A),
+// corte da perna direita exatamente a 45 graus, terminais r=10.
+// Haste esquerda 31 un. e direita 27 un. (compensação óptica).
+// 13 âncoras no total — contagem mínima de nós.
 const ICON_GEO = {
   X0: 64, X1: 168, YT: 42, YB: 158,
-  SL: 31, SR: 27,          // larguras das hastes (esquerda / direita)
-  YS_OUT: 80,              // nascimento do contorno externo na haste
-  YS_IN: 94,               // nascimento do arco interno
-  YI_TOP: 69,              // ápice do arco interno (y)
-  IAPX: 114,               // ápice do arco interno (x)
-  APX: 126,                // ápice externo
-  CUT_O: { x: 168, y: 123 },
+  SL: 31, SR: 27,
+  YS: 94,                    // nascimento dos arcos (centro dos semicírculos)
+  CUT_O: { x: 168, y: 123 }, // corte externo; interno em (141,150) -> 45 graus
   R: 10,
 };
 
 function iconNPath() {
-  const { X0, X1, YT, YB, SL, SR, YS_OUT, YS_IN, YI_TOP, IAPX, APX, CUT_O, R } = ICON_GEO;
-  const XiL = X0 + SL, XiR = X1 - SR;
-  const CUT_I = { x: XiR, y: 150 };
-
-  const dx = CUT_I.x - CUT_O.x, dy = CUT_I.y - CUT_O.y;
-  const len = Math.hypot(dx, dy);
-  const ux = dx / len, uy = dy / len;
-
+  const { X0, X1, YB, SL, SR, YS, CUT_O, R } = ICON_GEO;
+  const XiL = X0 + SL, XiR = X1 - SR;           // 95 e 141
+  const RO = (X1 - X0) / 2;                     // raio externo: 52
+  const RI = (XiR - XiL) / 2;                   // raio interno: 23
+  const k = R / Math.SQRT2;                     // projeção do raio no corte a 45 graus
   const f = (v) => +v.toFixed(2);
   return [
-    `M ${X0} ${YS_OUT}`,
-    // ombro externo esquerdo -> ápice -> descida externa direita
-    `C ${X0} ${f(YT + 12)} ${f(X0 + 20)} ${YT} ${APX} ${YT}`,
-    `C ${f(APX + 26)} ${YT} ${X1} ${f(YT + 22)} ${X1} ${YS_IN}`,
-    // perna direita externa até o corte (cantos arredondados)
-    `L ${CUT_O.x} ${f(CUT_O.y - R)}`,
-    `Q ${CUT_O.x} ${CUT_O.y} ${f(CUT_O.x + ux * R)} ${f(CUT_O.y + uy * R)}`,
-    `L ${f(CUT_I.x - ux * R)} ${f(CUT_I.y - uy * R)}`,
-    `Q ${CUT_I.x} ${CUT_I.y} ${CUT_I.x} ${f(CUT_I.y - R)}`,
-    `L ${XiR} ${YS_IN}`,
-    // arco interno (contra-forma)
-    `C ${XiR} ${f(YS_IN - 14)} ${f(IAPX + 14)} ${YI_TOP} ${IAPX} ${YI_TOP}`,
-    `C ${f(IAPX - 14)} ${YI_TOP} ${XiL} ${f(YS_IN - 17)} ${XiL} ${YS_IN}`,
-    // face interna da haste esquerda; base com cantos arredondados
-    `L ${XiL} ${f(YB - R)}`,
-    `Q ${XiL} ${YB} ${f(XiL - R)} ${YB}`,
-    `L ${f(X0 + R)} ${YB}`,
-    `Q ${X0} ${YB} ${X0} ${f(YB - R)}`,
+    `M ${X0} ${YS}`,
+    `A ${RO} ${RO} 0 0 1 ${X1} ${YS}`,                       // domo externo
+    `L ${X1} ${CUT_O.y - R}`,
+    `Q ${X1} ${CUT_O.y} ${f(X1 - k)} ${f(CUT_O.y + k)}`,     // canto externo do corte
+    `L ${f(XiR + k)} ${f(150 - k)}`,                         // aresta do corte (45 graus)
+    `Q ${XiR} 150 ${XiR} ${150 - R}`,                        // canto interno do corte
+    `L ${XiR} ${YS}`,
+    `A ${RI} ${RI} 0 0 0 ${XiL} ${YS}`,                      // contra-forma
+    `L ${XiL} ${YB - R}`,
+    `Q ${XiL} ${YB} ${XiL - R} ${YB}`,                       // base da haste (r=10)
+    `L ${X0 + R} ${YB}`,
+    `Q ${X0} ${YB} ${X0} ${YB - R}`,
     'Z',
   ].join(' ');
 }
@@ -133,8 +122,9 @@ function petal(L, w, angleDeg, cx, cy) {
   const d = `M ${f(x1)} ${f(y1)} A ${f(R)} ${f(R)} 0 0 1 ${f(x2)} ${f(y2)} A ${f(R)} ${f(R)} 0 0 1 ${f(x1)} ${f(y1)} Z`;
   return { d, R, tip1: [x1, y1], tip2: [x2, y2] };
 }
-// comprimento, largura, ângulo, centro — pétala encaixada no corte da perna
-const PETAL_PARAMS = [76, 33, -45, 175, 146];
+// comprimento, largura, ângulo, centro — eixo paralelo ao corte (45 graus),
+// com folga perpendicular constante de ~6 un. (legibilidade em 16px)
+const PETAL_PARAMS = [76, 33, -45, 176, 147];
 
 // ---------- Montagem ----------
 const BRAND_DIR = path.join(__dirname, '..', '..', 'public', 'brand');
@@ -222,16 +212,17 @@ function buildAssets() {
     g += `<path d="${mesh}" stroke="#E5E9F0" stroke-width="0.5" fill="none"/>`;
     g += `<g transform="${off}">`;
     // guias estruturais
-    const { X0, X1, YT, YB, SL, SR, YS_IN, YI_TOP, APX } = ICON_GEO;
+    const { X0, X1, YT, YB, SL, SR, YS } = ICON_GEO;
     const guides = [
       `M ${X0} ${YT - 14} V ${YB + 14}`, `M ${X0 + SL} ${YT - 14} V ${YB + 14}`,
       `M ${X1 - SR} ${YT - 14} V ${YB + 14}`, `M ${X1} ${YT - 14} V ${YB + 14}`,
       `M ${X0 - 14} ${YT} H ${X1 + 40}`, `M ${X0 - 14} ${YB} H ${X1 + 40}`,
-      `M ${X0 - 14} ${YS_IN} H ${X1 + 40}`, `M ${X0 - 14} ${YI_TOP} H ${X1 + 40}`,
+      `M ${X0 - 14} ${YS} H ${X1 + 40}`, `M ${X0 - 14} ${YS - (X1 - X0 - SL - SR) / 2} H ${X1 + 40}`,
     ].join(' ');
     g += `<path d="${guides}" stroke="${PINK2}" stroke-width="0.75" stroke-dasharray="4 3" fill="none"/>`;
-    // círculos de raio (arco externo e pétala)
-    g += `<circle cx="${APX}" cy="${ICON_GEO.YS_IN}" r="${(X1 - X0) / 2}" stroke="#7C8DB0" stroke-width="0.75" stroke-dasharray="2 3" fill="none"/>`;
+    // círculos de construção (domo externo, contra-forma e pétala)
+    g += `<circle cx="${(X0 + X1) / 2}" cy="${YS}" r="${(X1 - X0) / 2}" stroke="#7C8DB0" stroke-width="0.75" stroke-dasharray="2 3" fill="none"/>`;
+    g += `<circle cx="${(X0 + SL + X1 - SR) / 2}" cy="${YS}" r="${(X1 - X0 - SL - SR) / 2}" stroke="#7C8DB0" stroke-width="0.75" stroke-dasharray="2 3" fill="none"/>`;
     g += `<circle cx="${PETAL_PARAMS[3]}" cy="${PETAL_PARAMS[4]}" r="${PETAL_PARAMS[0] / 2}" stroke="#7C8DB0" stroke-width="0.75" stroke-dasharray="2 3" fill="none"/>`;
     // formas em contorno
     g += `<path d="${iconD}" fill="none" stroke="${NAVY}" stroke-width="1.5"/>`;
@@ -258,22 +249,20 @@ function buildAssets() {
 
 const A = buildAssets();
 
-// 1-5) lockups: dark (branco p/ fundo escuro), light (navy p/ fundo claro), fundo, mono
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-beauty-lockup.svg'), A.lockupSvg(WHITE, PINK));
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-beauty-lockup-light.svg'), A.lockupSvg(NAVY, PINK));
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-beauty-lockup-bg.svg'), A.lockupBgSvg);
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-beauty-lockup-mono-white.svg'), A.lockupSvg(WHITE, WHITE));
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-beauty-lockup-mono-navy.svg'), A.lockupSvg(NAVY, NAVY));
-// ícone isolado
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-icon.svg'), A.iconSvg(WHITE, PINK));
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-icon-light.svg'), A.iconSvg(NAVY, PINK));
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-icon-mono-white.svg'), A.iconSvg(WHITE, WHITE));
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-icon-mono-navy.svg'), A.iconSvg(NAVY, NAVY));
-// 7-8) favicon e app icon; 9-10) grid e safe area
+// Lockups: logo (branco, p/ UI escura), dark (fundo baked), light (navy p/ fundo claro), mono
+fs.writeFileSync(path.join(BRAND_DIR, 'logo.svg'), A.lockupSvg(WHITE, PINK));
+fs.writeFileSync(path.join(BRAND_DIR, 'logo-dark.svg'), A.lockupBgSvg);
+fs.writeFileSync(path.join(BRAND_DIR, 'logo-light.svg'), A.lockupSvg(NAVY, PINK));
+fs.writeFileSync(path.join(BRAND_DIR, 'logo-mono-white.svg'), A.lockupSvg(WHITE, WHITE));
+fs.writeFileSync(path.join(BRAND_DIR, 'logo-mono-navy.svg'), A.lockupSvg(NAVY, NAVY));
+// Ícone isolado
+fs.writeFileSync(path.join(BRAND_DIR, 'logo-icon.svg'), A.iconSvg(WHITE, PINK));
+fs.writeFileSync(path.join(BRAND_DIR, 'logo-icon-light.svg'), A.iconSvg(NAVY, PINK));
+// Favicon, app icon, grid e safe area
 fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.svg'), A.faviconSvg);
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-app-icon.svg'), A.appIconSvg);
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-construction-grid.svg'), A.gridSvg);
-fs.writeFileSync(path.join(BRAND_DIR, 'nexa-safe-area.svg'), A.safeSvg);
+fs.writeFileSync(path.join(BRAND_DIR, 'app-icon.svg'), A.appIconSvg);
+fs.writeFileSync(path.join(BRAND_DIR, 'construction-grid.svg'), A.gridSvg);
+fs.writeFileSync(path.join(BRAND_DIR, 'safe-area.svg'), A.safeSvg);
 
 // preview para inspeção
 fs.writeFileSync(path.join(OUT, 'lockup-preview.svg'), A.lockupBgSvg.replace(HEADER, ''));
@@ -295,10 +284,13 @@ console.log('assets svg gravados');
     [16, 32, 48, 180, 192, 512].map((s) => png(favBuf, s)),
   );
   fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.ico'), await pngToIco([p16, p32, p48]));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon-16.png'), p16);
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon-32.png'), p32);
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon-48.png'), p48);
   fs.writeFileSync(path.join(PUBLIC_DIR, 'apple-touch-icon.png'), p180);
-  fs.writeFileSync(path.join(BRAND_DIR, 'nexa-icon-192.png'), p192);
-  fs.writeFileSync(path.join(BRAND_DIR, 'nexa-icon-512.png'), p512);
-  fs.writeFileSync(path.join(BRAND_DIR, 'nexa-app-icon-1024.png'), await png(Buffer.from(A.appIconSvg), 1024));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'android-chrome-192.png'), p192);
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'android-chrome-512.png'), p512);
+  fs.writeFileSync(path.join(BRAND_DIR, 'app-icon-1024.png'), await png(Buffer.from(A.appIconSvg), 1024));
 
   // previews de inspeção
   await sharp(p16).resize(128, 128, { kernel: 'nearest' }).png().toFile(path.join(OUT, 'favicon-16-preview.png'));
