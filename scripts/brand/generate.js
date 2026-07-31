@@ -149,10 +149,11 @@ function buildAssets() {
   const nexa = textPath(fontNexa, 'nexa', nexaSize, -0.012, nexaLeft, 123, { ex: -0.006, xa: -0.006 });
 
   // "BEAUTY": Inter Medium, caps 26 un., tracking 0.34em,
-  // começando opticamente sob o "e" de nexa, baseline 169.
-  const eStart = nexa.glyphBoxes[1].x0;
+  // alinhado à direita com o fim de "nexa" (tinta com tinta), baseline 169.
   const beautySize = 26 / capRatio(fontBeauty);
-  const beauty = textPath(fontBeauty, 'BEAUTY', beautySize, 0.34, eStart, 169);
+  const beautyProbe = textPath(fontBeauty, 'BEAUTY', beautySize, 0.34, 0, 169);
+  const beautyLeft = nexa.bbox.x1 - (beautyProbe.bbox.x1 - beautyProbe.bbox.x0);
+  const beauty = textPath(fontBeauty, 'BEAUTY', beautySize, 0.34, beautyLeft, 169);
 
   const lockupArt = (fg, petalFill) =>
     `<path d="${iconD}" fill="${fg}"/>` +
