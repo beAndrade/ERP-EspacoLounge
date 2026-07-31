@@ -30,6 +30,7 @@ import {
   slugCategoriaReceitaPredominante,
   toNumberPt,
 } from './finance-domain';
+import { mapaBaixaAutomaticaFormas } from './finance-cadastros-domain';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 import { registrarCreditoMovimentoClienteEmTx } from './clientes-credito-movimentos';
 
@@ -1145,6 +1146,46 @@ export async function liquidarPendenciaComandaPorId(
 
   await sincronizarPagamentoStatusAtendimento(db, idAt);
   await recalcularFolhaAposMudancaAtendimento(db, idAt).catch(() => {});
+}
+
+/**
+ * Baixa automática: liquida parcelas de cartão (`a_receber_cartao`) já vencidas
+ * (`data_pagamento` <= hoje) cuja forma de pagamento tem `baixa_automatica` ativa.
+ * O caixa entra na data de vencimento da parcela (dia em que a operadora deposita).
+ * Idempotente: linhas liquidadas deixam de ser `a_receber_cartao`; corrida com a
+ * liquidação manual só gera erro capturado («já está liquidada»).
+ */
+export async function baixarParcelasCartaoVencidas(db: Db): Promise<number> {
+  const vencidas = await db
+    .select({
+      id: comandaPagamentos.id,
+      metodoRotulo: comandaPagamentos.metodoRotulo,
+      dataPagamento: comandaPagamentos.dataPagamento,
+    })
+    .from(comandaPagamentos)
+    .where(
+      and(
+        eq(comandaPagamentos.metodo, 'a_receber_cartao'),
+        sql`${comandaPagamentos.dataPagamento} <= CURRENT_DATE`,
+      ),
+    );
+  if (vencidas.length === 0) return 0;
+
+  const baixaMap = await mapaBaixaAutomaticaFormas(db);
+  let liquidadas = 0;
+  for (const p of vencidas) {
+    const metodo = metodoComandaPeloRotulo(p.metodoRotulo);
+    if (baixaMap.get(metodo) !== true) continue;
+    const ymd = String(p.dataPagamento ?? '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) continue;
+    try {
+      await liquidarPendenciaComandaPorId(db, p.id, ymd);
+      liquidadas++;
+    } catch {
+      /* já liquidada por outro caminho (ex.: toggle manual em Transações) */
+    }
+  }
+  return liquidadas;
 }
 
 /**

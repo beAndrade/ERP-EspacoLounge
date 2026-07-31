@@ -30,6 +30,7 @@ import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas
 import { faturarComandaComRascunho } from './services/comanda-faturar-batch';
 import {
   atualizarDataPagamentoComanda,
+  baixarParcelasCartaoVencidas,
   criarPagamentoComanda,
   excluirPagamentoComanda,
   getResumoComanda,
@@ -3309,5 +3310,27 @@ const app = new Elysia({ adapter: node() })
       console.log(`API em http://${hostname}:${port}`);
     },
   );
+
+/**
+ * Baixa automática de parcelas de cartão vencidas: roda na subida e a cada hora.
+ * A parcela `a_receber_cartao` vira receita paga na data do vencimento sem ação
+ * da recepção (a operadora deposita sozinha).
+ */
+const BAIXA_CARTAO_INTERVALO_MS = 60 * 60 * 1000;
+function rodarBaixaAutomaticaCartao(): void {
+  baixarParcelasCartaoVencidas(db)
+    .then((n) => {
+      if (n > 0) {
+        console.log(
+          `Baixa automática: ${n} parcela(s) de cartão liquidada(s).`,
+        );
+      }
+    })
+    .catch((e) => {
+      console.error('Baixa automática de parcelas de cartão falhou:', e);
+    });
+}
+rodarBaixaAutomaticaCartao();
+setInterval(rodarBaixaAutomaticaCartao, BAIXA_CARTAO_INTERVALO_MS).unref();
 
 export type App = typeof app;

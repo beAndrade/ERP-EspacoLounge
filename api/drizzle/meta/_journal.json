@@ -428,6 +428,13 @@
       "when": 1775698900000,
       "tag": "0060_sync_serial_sequences_catalogo",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1775699000000,
+      "tag": "0061_baixa_automatica_cartao",
+      "breakpoints": true
     }
   ]
 }

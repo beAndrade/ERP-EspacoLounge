@@ -498,7 +498,9 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.grupos = this.agruparPorIdAtendimento(items);
         this.sincronizarFormasComGrupos();
         this.selecionados.clear();
-        this.pagina = 1;
+        // Mantém a página atual ao recarregar (ex.: fechar drawer de comanda);
+        // só ajusta se a lista encolher e a página deixar de existir.
+        this.pagina = Math.min(this.pagina, this.totalPaginas());
         this.carregando = false;
         this.tentarAbrirComandaPorQuery();
       },
