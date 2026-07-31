@@ -2,8 +2,25 @@
   display: contents;
 }
 
-/* Estilo próprio (Painel não importa list-page-shell). Nas listas, herda/alinha com toolbar. */
-.fin-bloquear-btn:not(.fin-bloquear-btn--sidebar) {
+.fin-bloquear-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  margin-left: 0.15rem;
+}
+
+.fin-bloquear-title__divider {
+  display: block;
+  width: 1px;
+  height: 1.25rem;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 1px;
+}
+
+/* Mesmo visual dos `.list-head__toolbar-btn` da página. */
+.fin-bloquear-title__btn {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -27,9 +44,10 @@
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 
-  &:hover:not(:disabled) {
+  &:hover {
     color: var(--color-primary);
     border-color: var(--color-primary);
     background: #ffffff;
@@ -40,28 +58,32 @@
     outline-offset: 2px;
   }
 
-  .list-icon-sm {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
+  &:hover .fin-bloquear-title__shackle-swing,
+  &:focus-visible .fin-bloquear-title__shackle-swing {
+    transform: rotate(0deg);
   }
 }
 
-.fin-bloquear-btn--sidebar {
-  width: 100%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  color: inherit;
+.fin-bloquear-title__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  overflow: visible;
+}
 
-  &:hover {
-    filter: brightness(0.97);
-  }
+.fin-bloquear-title__shackle-swing {
+  transform-box: view-box;
+  transform-origin: 7px 7px;
+  transform: rotate(-22deg);
+  transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
 
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+.fin-bloquear-title__label {
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fin-bloquear-title__shackle-swing {
+    transition: none;
   }
 }

@@ -1,13 +1,14 @@
-@if (variant === 'toolbar') {
+<span class="fin-bloquear-title">
+  <span class="fin-bloquear-title__divider" aria-hidden="true"></span>
   <button
     type="button"
-    class="list-head__toolbar-btn fin-bloquear-btn"
+    class="fin-bloquear-title__btn"
     (click)="bloquear($event)"
     aria-label="Bloquear acesso ao financeiro"
-    title="Bloquear acesso"
+    title="Bloquear acesso ao financeiro"
   >
     <svg
-      class="list-icon-sm"
+      class="fin-bloquear-title__icon"
       xmlns="http://www.w3.org/2000/svg"
       width="14"
       height="14"
@@ -15,39 +16,37 @@
       fill="none"
       stroke="currentColor"
       stroke-width="2"
-      stroke-linecap="round"
       stroke-linejoin="round"
       aria-hidden="true"
     >
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      <path
+        class="fin-bloquear-title__shackle-left"
+        d="M7 11V7"
+        stroke-linecap="butt"
+      />
+      <g class="fin-bloquear-title__shackle-swing">
+        <path
+          class="fin-bloquear-title__shackle-arch"
+          d="M7 7a5 5 0 0 1 10 0"
+          stroke-linecap="butt"
+        />
+        <path
+          class="fin-bloquear-title__shackle-right"
+          d="M17 7v4"
+          stroke-linecap="butt"
+        />
+      </g>
+      <rect
+        class="fin-bloquear-title__body"
+        width="18"
+        height="11"
+        x="3"
+        y="11"
+        rx="2"
+        ry="2"
+        stroke-linecap="round"
+      />
     </svg>
-    <span class="list-head__toolbar-label">Bloquear</span>
+    <span class="fin-bloquear-title__label">Bloquear</span>
   </button>
-} @else {
-  <button
-    type="button"
-    class="nav-item nav-item--sub fin-bloquear-btn fin-bloquear-btn--sidebar"
-    (click)="bloquear($event)"
-    aria-label="Bloquear acesso ao financeiro"
-    title="Bloquear acesso"
-  >
-    <svg
-      class="nav-item__icon"
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-    <span class="nav-item__label">Bloquear acesso</span>
-  </button>
-}
+</span>

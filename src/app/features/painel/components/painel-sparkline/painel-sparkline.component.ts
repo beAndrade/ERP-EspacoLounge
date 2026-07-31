@@ -20,24 +20,26 @@ type SparkPlotPoint = {
 type Pt = { x: number; y: number };
 
 /**
- * Catmull-Rom → cubics, com Y dos controles limitado ao plot
- * (evita a curva “furar” a baseline).
+ * Catmull-Rom → cubics. Y limitado a [yMin, yMax] só como rede de segurança;
+ * o plot já reserva folga acima do valor máximo para a curva arredondar
+ * sem “achatar” no teto (o que parecia corte).
  */
 function smoothLinePath(pts: Pt[], yMin: number, yMax: number): string {
   if (pts.length === 0) return '';
-  if (pts.length === 1) return `M ${pts[0]!.x} ${pts[0]!.y}`;
-  if (pts.length === 2) {
-    return `M ${pts[0]!.x} ${pts[0]!.y} L ${pts[1]!.x} ${pts[1]!.y}`;
+  const clampY = (y: number) => Math.min(yMax, Math.max(yMin, y));
+  const safe = pts.map((p) => ({ x: p.x, y: clampY(p.y) }));
+
+  if (safe.length === 1) return `M ${safe[0]!.x} ${safe[0]!.y}`;
+  if (safe.length === 2) {
+    return `M ${safe[0]!.x} ${safe[0]!.y} L ${safe[1]!.x} ${safe[1]!.y}`;
   }
 
-  const clampY = (y: number) => Math.min(yMax, Math.max(yMin, y));
-
-  let d = `M ${pts[0]!.x} ${pts[0]!.y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i]!;
-    const p1 = pts[i]!;
-    const p2 = pts[i + 1]!;
-    const p3 = pts[i + 2] ?? p2;
+  let d = `M ${safe[0]!.x} ${safe[0]!.y}`;
+  for (let i = 0; i < safe.length - 1; i++) {
+    const p0 = safe[i - 1] ?? safe[i]!;
+    const p1 = safe[i]!;
+    const p2 = safe[i + 1]!;
+    const p3 = safe[i + 2] ?? p2;
     const cp1x = p1.x + (p2.x - p0.x) / 6;
     const cp1y = clampY(p1.y + (p2.y - p0.y) / 6);
     const cp2x = p2.x - (p3.x - p1.x) / 6;
@@ -47,7 +49,6 @@ function smoothLinePath(pts: Pt[], yMin: number, yMax: number): string {
   return d;
 }
 
-/** Área: curva no topo + retorno reto pela baseline (sem ultrapassar). */
 function smoothAreaPath(pts: Pt[], baselineY: number, yMin: number): string {
   if (pts.length === 0) return '';
   const top = smoothLinePath(pts, yMin, baselineY);
@@ -71,7 +72,7 @@ export class PainelSparklineComponent {
   private readonly ctx = inject(PainelDashboardContextService);
 
   readonly points = input<PainelSparkPoint[]>([]);
-  readonly color = input<string>('#3f769d');
+  readonly color = input<string>('#06b6d4');
   /** Área preenchida + curva suave (estilo Belasis). */
   readonly filled = input(false);
   /** Âncora o eixo Y em zero (contagens diárias). */
@@ -82,16 +83,20 @@ export class PainelSparklineComponent {
    */
   readonly syncContext = input(true);
 
-  /** ViewBox com folga inferior para ticks abaixo da baseline. */
   readonly vbW = 560;
-  readonly vbH = 56;
-  readonly padX = 5;
-  readonly padY = 4;
-  readonly padBottom = 6;
+  readonly vbH = 80;
+  readonly padX = 6;
+  /** Teto absoluto da geometria (stroke + overshoot da curva). */
+  readonly hardTopY = 4;
+  readonly padBottom = 10;
+  /**
+   * Onde o valor máximo é plotado. Deve ficar bem abaixo de `hardTopY`
+   * para o Catmull-Rom arredondar o pico sem colidir com o teto.
+   */
+  readonly plotTopY = 22;
 
   readonly activeIndex = signal<number | null>(null);
-  /** Tamanho renderizado do SVG (para manter o ponto circular com preserveAspectRatio=none). */
-  private readonly svgCssSize = signal({ w: 560, h: 56 });
+  private readonly svgCssSize = signal({ w: 560, h: 80 });
 
   readonly hasSeries = computed(() => this.points().length > 0);
 
@@ -114,14 +119,15 @@ export class PainelSparklineComponent {
 
     const n = pts.length;
     const innerW = this.vbW - this.padX * 2;
-    const innerH = this.vbH - this.padY - this.padBottom;
-    const span = max - min || 1;
+    const topY = this.plotTopY;
     const baseY = this.baselineY();
+    const innerH = baseY - topY;
+    const span = max - min || 1;
 
     return pts.map((point, i) => {
       const x = n === 1 ? this.vbW / 2 : this.padX + (i / (n - 1)) * innerW;
       const t = (point.value - min) / span;
-      const y = Math.min(baseY, this.padY + (1 - t) * innerH);
+      const y = topY + (1 - t) * innerH;
       return { x, y, i, point };
     });
   });
@@ -134,7 +140,7 @@ export class PainelSparklineComponent {
   readonly linePath = computed(() =>
     smoothLinePath(
       this.plot().map((p) => ({ x: p.x, y: p.y })),
-      this.padY,
+      this.hardTopY,
       this.baselineY(),
     ),
   );
@@ -143,7 +149,7 @@ export class PainelSparklineComponent {
     smoothAreaPath(
       this.plot().map((p) => ({ x: p.x, y: p.y })),
       this.baselineY(),
-      this.padY,
+      this.hardTopY,
     ),
   );
 
@@ -153,10 +159,6 @@ export class PainelSparklineComponent {
     return this.plot()[i] ?? null;
   });
 
-  /**
-   * Raios em unidades do viewBox para o ponto parecer ~4px circular
-   * mesmo com o SVG esticado (preserveAspectRatio="none").
-   */
   readonly dotRadii = computed(() => {
     const { w, h } = this.svgCssSize();
     const targetPx = 4;

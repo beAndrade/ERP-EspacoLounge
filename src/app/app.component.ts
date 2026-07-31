@@ -25,8 +25,6 @@ import { SidebarNovoMenuComponent } from './layout/sidebar-novo-menu/sidebar-nov
 import { MinhaContaDrawerHostComponent } from './shared/minha-conta-drawer/minha-conta-drawer-host.component';
 import { FinTransacaoNovoDrawerHostComponent } from './shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer-host.component';
 import { AgendaNovoGlobalHostComponent } from './shared/agenda-novo-global/agenda-novo-global-host.component';
-import { FinanceiroBloquearBtnComponent } from './shared/financeiro-bloquear-btn/financeiro-bloquear-btn.component';
-import { AdminPinService } from './core/services/admin-pin.service';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
 
@@ -58,7 +56,6 @@ export type NavSidebarDropdownId =
     SidebarProfileComponent,
     SidebarNovoMenuComponent,
     AppToastComponent,
-    FinanceiroBloquearBtnComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -67,7 +64,6 @@ export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   readonly sessao = inject(SessaoUsuarioService);
-  readonly adminPin = inject(AdminPinService);
   private readonly shellUi = inject(AppShellUiService);
 
   readonly title = 'Espaço Lounge';

@@ -1559,7 +1559,22 @@
     [style.height.px]="cardArrasteGhostHeight"
     [style.background]="cardArrasteGhostCor"
   >
-    <span class="agenda-card-ghost__text">{{ cardArrasteGhostRotulo }}</span>
+    <span class="day-col__card-body">
+      <span class="day-col__card-time-range">{{
+        intervaloHHmmBloco(cardArrasteBloco, cardArrasteYmd)
+      }}</span>
+      <span class="day-col__card-nome">{{
+        nomeClienteBloco(cardArrasteBloco)
+      }}</span>
+      @let itensGhost = itensResumoBloco(cardArrasteBloco);
+      @if (itensGhost.length) {
+        <div class="day-col__card-itens-wrap">
+          @for (item of itensGhost; track item) {
+            <span class="day-col__card-item-line">{{ item }}</span>
+          }
+        </div>
+      }
+    </span>
   </div>
 }
 

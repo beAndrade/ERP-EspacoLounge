@@ -30,7 +30,7 @@ export function requireAdminPin(request: Request) {
   if (got !== expected) {
     return fail(
       'FORBIDDEN',
-      'PIN de administrador inválido ou em falta.',
+      'PIN de administrador inválido.',
     );
   }
   return undefined;

@@ -39,7 +39,8 @@
 
 .app-sidebar {
   --sidebar-fg: #f8fafc;
-  --sidebar-active: color-mix(in srgb, var(--color-primary) 28%, var(--color-sidebar-hover));
+  --sidebar-active: #3a4556;
+  --sidebar-sub-active: #586274;
   --sidebar-hover: var(--color-sidebar-hover);
   /** Cabeçalhos de dropdown e fila de secção */
   /** Itens de 1.º nível no nav (prints / DevTools) */
@@ -52,6 +53,7 @@
   --sidebar-nav-tier2-margin: 0 0 4px 4px;
   --sidebar-nav-tier2-padding: 0 16px 0 32px;
   --sidebar-nav-radius: 6px;
+  --sidebar-nav-sub-radius: 8px;
   --sidebar-dd-bg: var(--sidebar-nav-tier1-bg);
   /** Só cabeçalhos / link de 1.º nível — hover sobre fundo transparente */
   --sidebar-dd-hover: var(--color-sidebar-hover);
@@ -325,7 +327,7 @@
 }
 
 .nav-group:has(.nav-item.active) .nav-group__head:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--sidebar-dd-section);
 }
 
 .nav-group__head-icon {
@@ -461,6 +463,10 @@
   &.active {
     background: var(--sidebar-dd-section);
   }
+
+  &.active:hover {
+    background: var(--sidebar-dd-section);
+  }
 }
 
 /** Subitens: hover só altera a cor do fundo da própria área do link (sem deslocar layout). */
@@ -474,6 +480,7 @@
   margin-bottom: 4px;
   margin-left: 4px;
   padding: var(--sidebar-nav-tier2-padding);
+  border-radius: var(--sidebar-nav-sub-radius);
   background: transparent;
   font-size: 0.84rem;
   transition: background var(--sidebar-hover-ms) var(--sidebar-nav-ease);
@@ -483,12 +490,12 @@
   }
 
   &.active {
-    background: rgba(255, 255, 255, 0.24);
+    background: var(--sidebar-sub-active);
     font-weight: 600;
   }
 
   &.active:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--sidebar-sub-active);
   }
 }
 
@@ -627,7 +634,7 @@
 }
 
 .nav-expand--active .nav-expand__trigger:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--sidebar-dd-section);
 }
 
 .shell.shell--sidebar-collapsed .nav-expand__trigger {

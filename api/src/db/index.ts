@@ -1144,40 +1144,118 @@ END $$;
 `));
 
   await db.execute(sql.raw(`
-CREATE TABLE IF NOT EXISTS "servico_produtos_consumidos" (
-  "id" serial PRIMARY KEY NOT NULL,
-  "servico_id" integer NOT NULL,
-  "produto_id" integer NOT NULL,
-  "quantidade" numeric(14, 3) NOT NULL,
-  CONSTRAINT "servico_produtos_consumidos_servico_id_fkey"
-    FOREIGN KEY ("servico_id") REFERENCES "servicos"("id") ON DELETE CASCADE,
-  CONSTRAINT "servico_produtos_consumidos_produto_id_fkey"
-    FOREIGN KEY ("produto_id") REFERENCES "produtos"("id") ON DELETE RESTRICT
-);
-CREATE UNIQUE INDEX IF NOT EXISTS "servico_produtos_consumidos_servico_produto_uq"
-  ON "servico_produtos_consumidos" ("servico_id", "produto_id");
-CREATE INDEX IF NOT EXISTS "servico_produtos_consumidos_servico_idx"
-  ON "servico_produtos_consumidos" ("servico_id");
-CREATE INDEX IF NOT EXISTS "servico_produtos_consumidos_produto_idx"
-  ON "servico_produtos_consumidos" ("produto_id");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables t
+    WHERE t.table_schema = current_schema()
+      AND t.table_name = 'servico_produtos_consumidos'
+  ) THEN
+    CREATE TABLE "servico_produtos_consumidos" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "servico_id" integer NOT NULL,
+      "produto_id" integer NOT NULL,
+      "quantidade" numeric(14, 3) NOT NULL,
+      CONSTRAINT "servico_produtos_consumidos_servico_id_fkey"
+        FOREIGN KEY ("servico_id") REFERENCES "servicos"("id") ON DELETE CASCADE,
+      CONSTRAINT "servico_produtos_consumidos_produto_id_fkey"
+        FOREIGN KEY ("produto_id") REFERENCES "produtos"("id") ON DELETE RESTRICT
+    );
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'servico_produtos_consumidos'
+      AND i.indexname = 'servico_produtos_consumidos_servico_produto_uq'
+  ) THEN
+    CREATE UNIQUE INDEX "servico_produtos_consumidos_servico_produto_uq"
+      ON "servico_produtos_consumidos" ("servico_id", "produto_id");
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'servico_produtos_consumidos'
+      AND i.indexname = 'servico_produtos_consumidos_servico_idx'
+  ) THEN
+    CREATE INDEX "servico_produtos_consumidos_servico_idx"
+      ON "servico_produtos_consumidos" ("servico_id");
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'servico_produtos_consumidos'
+      AND i.indexname = 'servico_produtos_consumidos_produto_idx'
+  ) THEN
+    CREATE INDEX "servico_produtos_consumidos_produto_idx"
+      ON "servico_produtos_consumidos" ("produto_id");
+  END IF;
+END $$;
 `));
 
   await db.execute(sql.raw(`
-CREATE TABLE IF NOT EXISTS "estoque_movimentos" (
-  "id" serial PRIMARY KEY NOT NULL,
-  "produto_id" integer NOT NULL,
-  "id_atendimento" text,
-  "tipo" text NOT NULL,
-  "quantidade" numeric(14, 3) NOT NULL,
-  "saldo_apos" text,
-  "created_at" timestamptz DEFAULT now() NOT NULL,
-  CONSTRAINT "estoque_movimentos_produto_id_fkey"
-    FOREIGN KEY ("produto_id") REFERENCES "produtos"("id") ON DELETE RESTRICT
-);
-CREATE INDEX IF NOT EXISTS "estoque_movimentos_produto_idx"
-  ON "estoque_movimentos" ("produto_id");
-CREATE INDEX IF NOT EXISTS "estoque_movimentos_id_atendimento_idx"
-  ON "estoque_movimentos" ("id_atendimento");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables t
+    WHERE t.table_schema = current_schema()
+      AND t.table_name = 'estoque_movimentos'
+  ) THEN
+    CREATE TABLE "estoque_movimentos" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "produto_id" integer NOT NULL,
+      "id_atendimento" text,
+      "tipo" text NOT NULL,
+      "quantidade" numeric(14, 3) NOT NULL,
+      "saldo_apos" text,
+      "created_at" timestamptz DEFAULT now() NOT NULL,
+      CONSTRAINT "estoque_movimentos_produto_id_fkey"
+        FOREIGN KEY ("produto_id") REFERENCES "produtos"("id") ON DELETE RESTRICT
+    );
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'estoque_movimentos'
+      AND i.indexname = 'estoque_movimentos_produto_idx'
+  ) THEN
+    CREATE INDEX "estoque_movimentos_produto_idx"
+      ON "estoque_movimentos" ("produto_id");
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'estoque_movimentos'
+      AND i.indexname = 'estoque_movimentos_id_atendimento_idx'
+  ) THEN
+    CREATE INDEX "estoque_movimentos_id_atendimento_idx"
+      ON "estoque_movimentos" ("id_atendimento");
+  END IF;
+END $$;
 `));
 
   await db.execute(sql.raw(`
@@ -1223,8 +1301,18 @@ END $$;
 `));
 
   await db.execute(sql.raw(`
-CREATE INDEX IF NOT EXISTS "estoque_movimentos_profissional_id_idx"
-  ON "estoque_movimentos" ("profissional_id");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes i
+    WHERE i.schemaname = current_schema()
+      AND i.tablename = 'estoque_movimentos'
+      AND i.indexname = 'estoque_movimentos_profissional_id_idx'
+  ) THEN
+    CREATE INDEX "estoque_movimentos_profissional_id_idx"
+      ON "estoque_movimentos" ("profissional_id");
+  END IF;
+END $$;
 `));
 
   /**

@@ -324,7 +324,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   cardArrasteGhostWidth = 0;
   cardArrasteGhostHeight = 0;
   cardArrasteGhostCor = '';
-  cardArrasteGhostRotulo = '';
   private cardArrasteOffsetX = 0;
   private cardArrasteOffsetY = 0;
   private cardArrasteStartX = 0;
@@ -332,6 +331,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private cardArrasteSuprimirClick = false;
   private cardArrastePointerId: number | null = null;
   private cardArrasteCaptureEl: HTMLElement | null = null;
+  /** Último encaixe na grelha durante o arraste (snap por faixa de 30 min). */
+  private cardArrasteDropPreview: {
+    profId: number;
+    ymd: string;
+    horaInicio: string;
+  } | null = null;
   private readonly onDocPointerMove = (e: PointerEvent) =>
     this.onCardArrasteMove(e);
   private readonly onDocPointerUp = (e: PointerEvent) =>
@@ -1880,7 +1885,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.cardArrasteGhostWidth = rect.width;
     this.cardArrasteGhostHeight = rect.height;
     this.cardArrasteGhostCor = this.corFundoCartaoBloco(bloco);
-    this.cardArrasteGhostRotulo = this.rotuloBloco(bloco);
     this.cardArrasteAtivo = false;
     this.cardArrasteSuprimirClick = false;
     this.cardArrastePointerId = ev.pointerId;
@@ -1916,8 +1920,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       document.body.classList.add('agenda-card-dragging');
     }
 
-    this.cardArrasteGhostTop = ev.clientY - this.cardArrasteOffsetY;
-    this.cardArrasteGhostLeft = ev.clientX - this.cardArrasteOffsetX;
+    this.atualizarGhostArrasteSnap(ev.clientX, ev.clientY);
   }
 
   private onCardArrasteUp(ev: PointerEvent): void {
@@ -1933,6 +1936,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const profOrigemId = this.cardArrasteProfId;
     const ymdOrigem = this.cardArrasteYmd;
     const arrastou = this.cardArrasteAtivo;
+    const dropPreview = this.cardArrasteDropPreview;
 
     try {
       this.cardArrasteCaptureEl?.releasePointerCapture?.(ev.pointerId);
@@ -1944,7 +1948,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
     if (!arrastou) return;
 
-    const drop = this.resolverDropNaGrelha(ev.clientX, ev.clientY);
+    const drop =
+      dropPreview ?? this.resolverDropNaGrelha(ev.clientX, ev.clientY);
     if (!drop) return;
 
     const horaOrigem = this.horaBloco(bloco, ymdOrigem);
@@ -1977,15 +1982,69 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.cardArrasteAtivo = false;
     this.cardArrastePointerId = null;
     this.cardArrasteCaptureEl = null;
+    this.cardArrasteDropPreview = null;
+  }
+
+  /** Encaixa o ghost nas faixas de 30 min / coluna sob o ponteiro. */
+  private atualizarGhostArrasteSnap(clientX: number, clientY: number): void {
+    const bloco = this.cardArrasteBloco;
+    if (!bloco) return;
+
+    const col = this.encontrarColunaGrelha(clientX, clientY);
+    if (!col) {
+      /* Fora da grelha: mantém o último encaixe; se ainda não houve, segue o ponteiro. */
+      if (!this.cardArrasteDropPreview) {
+        this.cardArrasteGhostTop = clientY - this.cardArrasteOffsetY;
+        this.cardArrasteGhostLeft = clientX - this.cardArrasteOffsetX;
+      }
+      return;
+    }
+
+    const rect = col.getBoundingClientRect();
+    if (rect.height <= 0) return;
+
+    const profId = Number(col.dataset['profId']);
+    const ymd = String(col.dataset['ymd'] ?? '').trim().slice(0, 10);
+    if (!Number.isFinite(profId) || profId <= 0) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+
+    /* Topo do cartão (preserva o ponto de agarre), depois arredonda à faixa. */
+    const topoDesejadoY = clientY - this.cardArrasteOffsetY;
+    const pct = (topoDesejadoY - rect.top) / rect.height;
+    let mins = GRID_START_MIN + pct * GRID_RANGE;
+    mins = Math.round(mins / AGENDA_SLOT_MIN) * AGENDA_SLOT_MIN;
+    mins = Math.max(
+      GRID_START_MIN,
+      Math.min(GRID_LAST_SLOT_START_MIN, mins),
+    );
+
+    const topPct = ((mins - GRID_START_MIN) / GRID_RANGE) * 100;
+    const padX = 2;
+
+    /* Só encaixa posição; largura/altura ficam as do cartão original (texto não reflow). */
+    this.cardArrasteGhostTop = rect.top + (topPct / 100) * rect.height;
+    this.cardArrasteGhostLeft = rect.left + padX;
+
+    const hh = Math.floor(mins / 60);
+    const mm = mins % 60;
+    const horaInicio = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    this.cardArrasteDropPreview = { profId, ymd, horaInicio };
+  }
+
+  private encontrarColunaGrelha(
+    clientX: number,
+    clientY: number,
+  ): HTMLElement | null {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return null;
+    return el.closest('.day-col') as HTMLElement | null;
   }
 
   private resolverDropNaGrelha(
     clientX: number,
     clientY: number,
   ): { profId: number; ymd: string; horaInicio: string } | null {
-    const el = document.elementFromPoint(clientX, clientY);
-    if (!el) return null;
-    const col = el.closest('.day-col') as HTMLElement | null;
+    const col = this.encontrarColunaGrelha(clientX, clientY);
     if (!col) return null;
 
     const profId = Number(col.dataset['profId']);

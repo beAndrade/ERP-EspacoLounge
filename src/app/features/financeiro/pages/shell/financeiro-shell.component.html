@@ -12,8 +12,8 @@
       </div>
       <h1 class="pin-card__title">Financeiro protegido</h1>
       <p class="pin-card__subtitle">
-        Digite o PIN para ver painel, transações e comissões. Ao terminar, use
-        Bloquear.
+        Digite o PIN de 4 dígitos para ver painel, transações e comissões. Ao
+        terminar, use Bloquear.
       </p>
 
       <form class="pin-form" (ngSubmit)="entrar()">
@@ -23,25 +23,26 @@
             class="pin-field__input"
             type="password"
             name="adminPin"
-            [(ngModel)]="pinDraft"
-            autocomplete="off"
+            [ngModel]="pinDraft"
+            autocomplete="one-time-code"
             inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="4"
             placeholder="••••"
             [disabled]="verificando"
+            (keydown)="onPinKeydown($event)"
+            (input)="onPinInput($event)"
+            (click)="forcarCaretFim($event)"
+            (focus)="forcarCaretFim($event)"
+            (select)="forcarCaretFim($event)"
+            (mouseup)="forcarCaretFim($event)"
+            (paste)="onPinPaste($event)"
           />
         </label>
 
         @if (erroPin) {
           <p class="pin-form__erro" role="alert">{{ erroPin }}</p>
         }
-
-        <button
-          type="submit"
-          class="pin-form__submit"
-          [disabled]="verificando"
-        >
-          {{ verificando ? 'Verificando…' : 'Desbloquear' }}
-        </button>
       </form>
     </div>
   </div>

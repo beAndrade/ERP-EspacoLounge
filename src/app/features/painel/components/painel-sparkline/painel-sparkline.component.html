@@ -7,18 +7,17 @@
     <svg
       class="painel-sparkline__svg"
       [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
+      overflow="visible"
       preserveAspectRatio="none"
       role="img"
       aria-label="Tendência no período"
       (mousemove)="onChartMove($event)"
       (mouseleave)="onChartLeave()"
     >
-      <!-- Área suave (fill Belasis) -->
       @if (filled() && areaPath()) {
         <path class="painel-sparkline__area" [attr.d]="areaPath()" />
       }
 
-      <!-- Curva superior -->
       @if (linePath()) {
         <path
           class="painel-sparkline__curve"
@@ -28,7 +27,6 @@
       }
 
       @if (filled()) {
-        <!-- Baseline exatamente do 1º ao último ponto -->
         <line
           class="painel-sparkline__axis"
           [attr.x1]="plotFirstX()"
@@ -37,7 +35,6 @@
           [attr.y2]="baselineY()"
         />
         @for (p of plot(); track p.point.ymd + '-' + p.i) {
-          <!-- Ticks só abaixo da baseline — não atravessam a curva -->
           <line
             class="painel-sparkline__tick"
             [attr.x1]="p.x"
@@ -48,13 +45,12 @@
         }
       }
 
-      <!-- Hover: guia vertical + ponto -->
       @if (activePoint(); as ap) {
         <line
           class="painel-sparkline__guide"
           [attr.x1]="ap.x"
           [attr.x2]="ap.x"
-          [attr.y1]="padY"
+          [attr.y1]="hardTopY"
           [attr.y2]="baselineY()"
         />
         <ellipse
@@ -66,7 +62,6 @@
         />
       }
 
-      <!-- Hit full-bleed (eventos no svg) -->
       <rect
         class="painel-sparkline__hit-area"
         x="0"
@@ -81,6 +76,7 @@
       <svg
         class="painel-sparkline__svg"
         [attr.viewBox]="'0 0 ' + vbW + ' ' + vbH"
+        overflow="visible"
         preserveAspectRatio="none"
       >
         <line

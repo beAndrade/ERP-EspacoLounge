@@ -94,10 +94,42 @@ const SALAO_LOCAL = {
   longitude: -41.945,
 } as const;
 
+const CLIMA_CACHE_KEY = 'espaco_lounge_painel_clima';
+
 interface PainelClimaVm {
   tempC: number;
   emoji: string;
   descricao: string;
+}
+
+function lerClimaCache(): PainelClimaVm | null {
+  try {
+    const raw = sessionStorage.getItem(CLIMA_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PainelClimaVm>;
+    if (
+      typeof parsed.tempC !== 'number' ||
+      typeof parsed.emoji !== 'string' ||
+      typeof parsed.descricao !== 'string'
+    ) {
+      return null;
+    }
+    return {
+      tempC: parsed.tempC,
+      emoji: parsed.emoji,
+      descricao: parsed.descricao,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function gravarClimaCache(c: PainelClimaVm): void {
+  try {
+    sessionStorage.setItem(CLIMA_CACHE_KEY, JSON.stringify(c));
+  } catch {
+    /* ignore */
+  }
 }
 
 interface PainelSaudacaoVm {
@@ -212,7 +244,8 @@ export class PainelComponent implements OnInit {
 
   /** Relógio "ao vivo": atualizado só quando o minuto muda (evita CD por segundo). */
   readonly relogio = signal(new Date());
-  readonly clima = signal<PainelClimaVm | null>(null);
+  /** Hidrata do cache para o chip aparecer junto com hora/cidade no 1º paint. */
+  readonly clima = signal<PainelClimaVm | null>(lerClimaCache());
   readonly cidadeLocal = SALAO_LOCAL.cidade;
 
   private relogioTimer: ReturnType<typeof setInterval> | null = null;
@@ -334,11 +367,13 @@ export class PainelComponent implements OnInit {
       const code = data?.current?.weather_code;
       if (typeof temp !== 'number') return;
       const meta = descreverClimaWmo(Number(code));
-      this.clima.set({
+      const vm: PainelClimaVm = {
         tempC: Math.round(temp),
         emoji: meta.emoji,
         descricao: meta.descricao,
-      });
+      };
+      this.clima.set(vm);
+      gravarClimaCache(vm);
     } catch {
       /** Silencioso: clima é informativo e não deve quebrar o painel. */
     }

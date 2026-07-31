@@ -18,17 +18,24 @@
                 <span class="painel-welcome__chip-icon" aria-hidden="true">🕘</span>
                 {{ horaLabel() }}
               </span>
-              @if (clima(); as c) {
-                <span
-                  class="painel-welcome__chip"
-                  [title]="c.descricao"
-                >
+              <span
+                class="painel-welcome__chip"
+                [class.painel-welcome__chip--pending]="!clima()"
+                [attr.title]="clima()?.descricao ?? 'Carregando clima'"
+                [attr.aria-busy]="!clima()"
+              >
+                @if (clima(); as c) {
                   <span class="painel-welcome__chip-icon" aria-hidden="true">{{
                     c.emoji
                   }}</span>
                   {{ c.tempC }}°C
-                </span>
-              }
+                } @else {
+                  <span class="painel-welcome__chip-icon" aria-hidden="true"
+                    >🌡️</span
+                  >
+                  —°C
+                }
+              </span>
               <span class="painel-welcome__chip">
                 <span class="painel-welcome__chip-icon" aria-hidden="true">📍</span>
                 {{ cidadeLocal }}
