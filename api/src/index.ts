@@ -242,6 +242,12 @@ import {
 } from './services/estoque-domain';
 import { isPublicApiPath, authenticateRequest } from './lib/auth-guard';
 import {
+  checkLoginRateLimit,
+  clearLoginFailuresForEmail,
+  clientIpFromRequest,
+  recordLoginFailure,
+} from './lib/login-rate-limit';
+import {
   alterarEmailUsuario,
   alterarSenhaUsuario,
   ensureAdminBootstrap,
@@ -743,18 +749,31 @@ const app = new Elysia({ adapter: node() })
   )
   .post(
     '/api/auth/login',
-    async ({ body }) => {
+    async ({ body, request, set }) => {
       try {
         const b = body as { email?: string; senha?: string };
-        const result = await loginUsuario(
-          db,
-          String(b.email ?? ''),
-          String(b.senha ?? ''),
-        );
-        if (!result.ok) return fail('UNAUTHORIZED', result.message);
+        const email = String(b.email ?? '');
+        const senha = String(b.senha ?? '');
+        const ip = clientIpFromRequest(request);
+
+        const limited = checkLoginRateLimit(email, ip);
+        if (limited.limited) {
+          set.status = 429;
+          return fail('RATE_LIMITED', limited.message);
+        }
+
+        const result = await loginUsuario(db, email, senha);
+        if (!result.ok) {
+          recordLoginFailure(email, ip);
+          set.status = 401;
+          return fail('UNAUTHORIZED', result.message);
+        }
+
+        clearLoginFailuresForEmail(email);
         return ok({ token: result.token, user: result.user });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
+        set.status = 500;
         return fail('SERVER', msg);
       }
     },

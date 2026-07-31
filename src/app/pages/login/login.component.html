@@ -1,89 +1,188 @@
 <div class="login-page">
-  <div class="login-card">
-    <h1 class="login-card__title">Espaço Lounge</h1>
-    <p class="login-card__subtitle">
-      Entre com seu e-mail e senha para acessar o sistema.
-    </p>
+  <aside class="login-brand" aria-hidden="false">
+    <div class="login-brand__glow login-brand__glow--1" aria-hidden="true"></div>
+    <div class="login-brand__glow login-brand__glow--2" aria-hidden="true"></div>
+    <div class="login-brand__content">
+      <img
+        class="login-brand__logo"
+        src="/brand/full-3x.png"
+        alt="Espaço Lounge"
+        width="280"
+        height="80"
+      />
+      <p class="login-brand__tagline">
+        Gestão completa para o seu salão
+      </p>
+      <ul class="login-brand__points">
+        <li>Agenda e comandas em um só lugar</li>
+        <li>Financeiro e comissões sob controle</li>
+        <li>Painel com o dia a dia do negócio</li>
+      </ul>
+    </div>
+  </aside>
 
-    <form class="login-form" (ngSubmit)="entrar()">
-      <label class="login-field">
-        <span class="login-field__label">E-mail</span>
-        <input
-          class="login-field__input"
-          type="email"
-          name="email"
-          autocomplete="username"
-          [(ngModel)]="email"
-          [disabled]="carregando"
-          required
+  <section class="login-panel">
+    <div class="login-panel__inner">
+      <div class="login-panel__mobile-brand">
+        <img
+          class="login-panel__wordmark"
+          src="/brand/word-4x.png"
+          alt="Espaço Lounge"
+          width="180"
+          height="40"
         />
-      </label>
+      </div>
 
-      <label class="login-field">
-        <span class="login-field__label">Senha</span>
-        <div class="login-field__senha-wrap">
+      <header class="login-panel__header">
+        <h1 class="login-panel__title">Bem-vindo de volta</h1>
+        <p class="login-panel__subtitle">
+          Entre com seu e-mail e senha para acessar o sistema.
+        </p>
+      </header>
+
+      <form class="login-form" (ngSubmit)="entrar()">
+        <label class="login-field">
+          <span class="login-field__label">E-mail</span>
           <input
             class="login-field__input"
-            [type]="mostrarSenha ? 'text' : 'password'"
-            name="senha"
-            autocomplete="current-password"
-            [(ngModel)]="senha"
+            type="email"
+            name="email"
+            autocomplete="username"
+            [(ngModel)]="email"
             [disabled]="carregando"
             required
+            autofocus
           />
-          <button
-            type="button"
-            class="login-field__toggle"
-            (click)="mostrarSenha = !mostrarSenha"
-            [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
-          >
-            {{ mostrarSenha ? 'Ocultar' : 'Mostrar' }}
-          </button>
-        </div>
-      </label>
+        </label>
 
-      @if (erro) {
-        <p class="login-form__erro" role="alert">{{ erro }}</p>
-      }
+        <label class="login-field">
+          <span class="login-field__label">Senha</span>
+          <div class="login-field__senha-wrap">
+            <input
+              class="login-field__input"
+              [type]="mostrarSenha ? 'text' : 'password'"
+              name="senha"
+              autocomplete="current-password"
+              [(ngModel)]="senha"
+              [disabled]="carregando"
+              required
+            />
+            <button
+              type="button"
+              class="login-field__toggle"
+              (click)="mostrarSenha = !mostrarSenha"
+              [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+              [attr.aria-pressed]="mostrarSenha"
+            >
+              @if (mostrarSenha) {
+                <!-- eye-off (Lucide) -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"
+                  />
+                  <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
+                  <path
+                    d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"
+                  />
+                  <path d="m2 2 20 20" />
+                </svg>
+              } @else {
+                <!-- eye (Lucide) -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+                  />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              }
+            </button>
+          </div>
+        </label>
 
-      <button
-        type="submit"
-        class="login-form__submit"
-        [disabled]="carregando"
-      >
-        {{ carregando ? 'Entrando…' : 'Entrar' }}
-      </button>
-    </form>
-  </div>
+        @if (erro) {
+          <p class="login-form__erro" role="alert">{{ erro }}</p>
+        }
+
+        <button
+          type="submit"
+          class="login-form__submit"
+          [disabled]="carregando"
+        >
+          @if (carregando) {
+            <span class="login-form__spinner" aria-hidden="true"></span>
+            <span>Entrando…</span>
+          } @else {
+            <span>Entrar</span>
+          }
+        </button>
+      </form>
+    </div>
+  </section>
 </div>
 
 @if (modalSessaoExpirada) {
   <div
-    class="comandas-modal-overlay"
+    class="login-modal-overlay"
     aria-hidden="true"
     (click)="fecharModalSessaoExpirada()"
   ></div>
   <div
-    class="comandas-modal login-sessao-modal"
+    class="login-modal"
     role="dialog"
     aria-modal="true"
     aria-labelledby="login-sessao-modal-title"
     (click)="$event.stopPropagation()"
   >
-    <div class="comandas-modal__icon-wrap" aria-hidden="true">
-      <span class="comandas-modal__icon">!</span>
+    <div class="login-modal__icon" aria-hidden="true">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="28"
+        height="28"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" x2="12" y1="8" y2="12" />
+        <line x1="12" x2="12.01" y1="16" y2="16" />
+      </svg>
     </div>
-    <h2 id="login-sessao-modal-title" class="comandas-modal__title login-sessao-modal__title">
+    <h2 id="login-sessao-modal-title" class="login-modal__title">
       Acesso expirado
     </h2>
-    <p class="comandas-modal__text login-sessao-modal__text">
+    <p class="login-modal__text">
       Sua sessão expirou por segurança. Informe novamente seu e-mail e senha
       para continuar.
     </p>
-    <div class="login-sessao-modal__actions">
+    <div class="login-modal__actions">
       <button
         type="button"
-        class="login-sessao-modal__btn"
+        class="login-modal__btn"
         (click)="fecharModalSessaoExpirada()"
       >
         Entendi

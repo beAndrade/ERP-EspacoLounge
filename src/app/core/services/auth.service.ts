@@ -101,7 +101,7 @@ export class AuthService {
         map((r) => {
           if (!r.ok || !r.data) {
             throw new Error(
-              extractApiErrorMessage(r) ?? 'E-mail ou senha incorretos.',
+              r.error?.message?.trim() || 'E-mail ou senha incorretos.',
             );
           }
           return r.data;
