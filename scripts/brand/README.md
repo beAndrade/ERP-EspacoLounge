@@ -1,30 +1,45 @@
-# Gerador da identidade vetorial Nexa Beauty
+# Identidade vetorial Nexa
 
-Recria fielmente o logo aprovado (`reference.png`) como assets vetoriais de produção:
+Gera a marca **Nexa** (produto atual: Nexa Beauty) como assets vetoriais de produção.
+O símbolo é um "n" minúsculo custom (desenhado à mão com Béziers paramétricas) com uma
+pétala abstrata no pé direito — pensado para escalar a futuros produtos
+(Nexa Sports, Nexa Clinic, Nexa Pet, Nexa Finance) sem remeter diretamente à estética de beleza.
 
-- `public/brand/nexa-beauty-lockup.svg` — lockup horizontal, texto branco (fundos escuros)
-- `public/brand/nexa-beauty-lockup-navy.svg` — lockup, texto navy (fundos claros)
-- `public/brand/nexa-beauty-lockup-bg.svg` — lockup com fundo navy (enquadramento da arte original)
-- `public/brand/nexa-beauty-icon.svg` / `-icon-navy.svg` — símbolo isolado (n + pétala)
-- `public/brand/nexa-beauty-icon-192.png` / `-512.png` — rasters para PWA/manifest
-- `public/favicon.svg`, `public/favicon.ico` (16/32/48), `public/apple-touch-icon.png`
+## Entregáveis
 
-## Paleta (amostrada da arte aprovada)
+| Arquivo | Conteúdo |
+|---|---|
+| `public/brand/nexa-beauty-lockup.svg` | Lockup horizontal, branco (fundos escuros) |
+| `public/brand/nexa-beauty-lockup-light.svg` | Lockup, navy (fundos claros) |
+| `public/brand/nexa-beauty-lockup-bg.svg` | Lockup sobre fundo navy |
+| `public/brand/nexa-beauty-lockup-mono-white.svg` / `-mono-navy.svg` | Monocromático (1 cor) |
+| `public/brand/nexa-icon.svg` / `-light` / `-mono-white` / `-mono-navy` | Símbolo isolado |
+| `public/brand/nexa-icon-192.png` / `-512.png` | Rasters p/ PWA/manifest |
+| `public/brand/nexa-app-icon.svg` / `-1024.png` | App icon (rx 22%) |
+| `public/brand/nexa-construction-grid.svg` | Grid de construção (malha 8un + guias + raios) |
+| `public/brand/nexa-safe-area.svg` | Área de segurança (clear space = ½ altura do símbolo) |
+| `public/favicon.svg`, `public/favicon.ico` (16/32/48), `public/apple-touch-icon.png` | Favicons |
+
+## Paleta
 
 | Cor | Hex |
 |---|---|
-| Navy (fundo) | `#030E1B` |
-| Rosa (pétala) | `#F4497C` |
+| Navy (fundo / light) | `#101828` |
+| Rosa (pétala) | `#F43F7A` |
+| Rosa secundário (guias) | `#FF5C9D` |
 | Branco | `#FFFFFF` |
 
 ## Construção
 
-- **Símbolo "n"**: desenhado à mão com Béziers paramétricas (terminais arredondados r=10,
-  corte diagonal na perna direita), medidas extraídas pixel a pixel da referência (2x).
+- **Símbolo "n"**: Béziers paramétricas; haste esquerda 31 un. e direita 27 un.
+  (esquerda levemente mais larga, por peso óptico); terminais arredondados r=10;
+  corte diagonal na perna direita acomodando a pétala.
 - **Pétala**: lente de dois arcos circulares (76 x 33 un., eixo a -45°).
-- **"nexa"**: Poppins Bold (OFL) convertida em contornos, x-height 76 un., tracking ajustado
-  para casar com a largura da referência.
-- **"BEAUTY"**: Poppins Medium em contornos, cap height 26 un., tracking largo (~0.57 em).
+- **"nexa"**: Space Grotesk Bold (OFL) em contornos, x-height 76 un., tracking -0.012em
+  e kerning óptico em `ex`/`xa`.
+- **"BEAUTY"**: Inter Medium (OFL) em contornos, cap height 26 un., tracking 0.34em,
+  alinhado começando sob o "e" de nexa.
+- **Composição**: gap ícone-texto de 16 un. (8px no tamanho base).
 
 Nenhum asset final depende de fonte instalada — tudo é contorno (path).
 
@@ -33,11 +48,10 @@ Nenhum asset final depende de fonte instalada — tudo é contorno (path).
 ```powershell
 cd scripts/brand
 npm install
-curl.exe -sL -o Poppins-Bold.ttf   https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Bold.ttf
-curl.exe -sL -o Poppins-Medium.ttf https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Medium.ttf
+curl.exe -sL -o SpaceGrotesk-Bold.ttf https://github.com/floriankarsten/space-grotesk/raw/master/fonts/ttf/static/SpaceGrotesk-Bold.ttf
+# Inter-Medium.ttf: extrair de https://github.com/rsms/inter/releases (extras/ttf)
 node generate.js
 ```
 
-Scripts de apoio: `measure.js` (medidas da referência), `compare.js` (lado a lado com a
-referência), `overlay.js` (sobreposição vermelho/verde), `zoom.js` (zoom do símbolo).
-Saídas de inspeção ficam em `out/`.
+Scripts de apoio: `measure.js`, `compare.js`, `overlay.js`, `zoom.js` (validação contra
+`reference.png`, a arte aprovada original). Saídas de inspeção em `out/`.
