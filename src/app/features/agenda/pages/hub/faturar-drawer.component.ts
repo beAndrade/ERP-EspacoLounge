@@ -631,11 +631,6 @@ export class FaturarDrawerComponent implements OnInit {
     this.parcelasCtrl.setValue(Math.max(1, atual + delta), { emitEvent: true });
   }
 
-  /** Dica quando há mais de 1 parcela (cartão ≠ fiado). */
-  mostrarNotaParcelas(): boolean {
-    return Math.max(1, Math.floor(this.parcelasCtrl.value || 1)) > 1;
-  }
-
   /** Tudo que aloca na comanda (inclui parcelas futuras «Pendente»). */
   private somaRascunhoComanda(): number {
     return this.rascunho

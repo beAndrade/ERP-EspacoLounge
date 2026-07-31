@@ -77,22 +77,6 @@
       </div>
     </div>
 
-    @if (mostrarNotaParcelas()) {
-      <p class="fat-parcelas-nota" role="note">
-        @if (cartaoDropdownAberto) {
-          Parcelas futuras entram como
-          <strong>A receber (cartão)</strong>
-          — valor a receber da operadora, não é dívida do cliente.
-        } @else {
-          No cartão, parcelas futuras entram como
-          <strong>A receber (cartão)</strong>
-          (operadora). Em dinheiro/pix, ficam como
-          <strong>Pendente</strong>
-          — dívida do cliente até ele pagar.
-        }
-      </p>
-    }
-
     <div class="fat-field fat-field--data">
       <span class="fat-field__label">Pagamento</span>
       <span

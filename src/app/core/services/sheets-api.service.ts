@@ -1563,6 +1563,9 @@ export class SheetsApiService {
     const total = this.parseNumberOrUndef(raw['total']);
     const descontoNum = this.parseNumberOrUndef(raw['desconto_num']);
     const totalPago = this.parseNumberOrUndef(raw['total_pago']);
+    const totalAReceberCartao = this.parseNumberOrUndef(
+      raw['total_a_receber_cartao'],
+    );
     const saldo = this.parseNumberOrUndef(raw['saldo']);
     const statusCobrancaRaw = String(raw['status_cobranca'] ?? '')
       .trim()
@@ -1621,6 +1624,7 @@ export class SheetsApiService {
       total,
       desconto_num: descontoNum,
       total_pago: totalPago,
+      total_a_receber_cartao: totalAReceberCartao,
       saldo,
       status_cobranca: statusCobranca,
       modo: (() => {
