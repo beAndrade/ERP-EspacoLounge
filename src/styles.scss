@@ -102,11 +102,23 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
    * Identidade visual — Nexa Beauty
    * Fonte de verdade para cores do sistema.
    */
-  --color-sidebar: #101828;
-  --color-sidebar-hover: #1e293b;
   --color-primary: #3f769d;
   --color-primary-hover: #2f5e7e;
   --color-primary-contrast: #ffffff;
+  --color-sidebar: #101828;
+  --color-sidebar-mid: #152033;
+  --color-sidebar-accent: color-mix(in srgb, var(--color-primary) 55%, #0f172a);
+  /** Gradiente de marca (login + sidebar). */
+  --gradient-brand: linear-gradient(
+    180deg,
+    var(--color-sidebar) 0%,
+    var(--color-sidebar-mid) 55%,
+    var(--color-sidebar-accent) 130%
+  );
+  /** Estados do sidebar tingidos com o primary (substituem cinzas neutros). */
+  --color-sidebar-hover: color-mix(in srgb, var(--color-primary) 16%, #141e2c);
+  --color-sidebar-active: color-mix(in srgb, var(--color-primary) 30%, #232e3e);
+  --color-sidebar-sub-active: color-mix(in srgb, var(--color-primary) 42%, #364357);
   /** Links acompanham o primary (tom com mais contraste). */
   --color-link: var(--color-primary);
   --color-link-hover: var(--color-primary-hover);
