@@ -1,6 +1,8 @@
 import { ApplicationConfig, LOCALE_ID, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, TitleStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+
+import { NexaTitleStrategy } from './core/services/nexa-title.strategy';
 
 import { adminFolhaPinInterceptor } from './core/http/admin-folha-pin.interceptor';
 import { apiParseHintInterceptor } from './core/http/api-parse-hint.interceptor';
@@ -22,5 +24,6 @@ export const appConfig: ApplicationConfig = {
       ]),
     ),
     { provide: LOCALE_ID, useValue: 'pt-BR' },
+    { provide: TitleStrategy, useClass: NexaTitleStrategy },
   ],
 };

@@ -205,8 +205,8 @@ const CARD_HOVER_TIP_PIN_DEBUG = false;
 export class AgendaHubComponent implements OnInit, OnDestroy {
   private static readonly MAIN_AGENDA_CLASS = 'main--agenda-hub';
   private static readonly ROOT_SCROLL_LOCK_CLASS = 'agenda-hub-scroll-lock';
-  private static readonly TITULO_APP = 'Espaço Lounge';
-  private static readonly TITULO_APP_DEFAULT = 'Espaço Lounge — ERP';
+  private static readonly TITULO_APP = 'Nexa Beauty';
+  private static readonly TITULO_APP_DEFAULT = 'Nexa Beauty | Agenda';
 
   private readonly elRef = inject(ElementRef<HTMLElement>);
   private readonly api = inject(SheetsApiService);
@@ -772,12 +772,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return this.formatarDiaCabecalhoCompleto(this.diaYmd);
   }
 
-  /** Título da aba: «Hoje | Espaço Lounge» (segue o rótulo do header). */
+  /** Título da aba: «Nexa Beauty | Agenda — Hoje» (segue o rótulo do header). */
   private atualizarTituloAba(): void {
     const rotulo = this.rotuloNavegacaoDia().trim();
     this.title.setTitle(
       rotulo
-        ? `${rotulo} | ${AgendaHubComponent.TITULO_APP}`
+        ? `${AgendaHubComponent.TITULO_APP} | Agenda — ${rotulo}`
         : AgendaHubComponent.TITULO_APP_DEFAULT,
     );
   }
