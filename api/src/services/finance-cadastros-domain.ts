@@ -461,6 +461,9 @@ export function metodoTemBaixaAutomatica(
   if (m.includes('débito') || m.includes('debito')) {
     return map.get('cartao_debito') === true;
   }
+  if (m.includes('crédito') || m.includes('credito')) {
+    return map.get('cartao_credito') === true;
+  }
   return false;
 }
 

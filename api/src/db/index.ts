@@ -788,7 +788,7 @@ SELECT v.nome, v.codigo, v.baixa, v.ordem, true
 FROM (VALUES
   ('Pix', 'pix', true, 10),
   ('Dinheiro', 'dinheiro', true, 20),
-  ('Cartão de Crédito', 'cartao_credito', false, 30),
+  ('Cartão de Crédito', 'cartao_credito', true, 30),
   ('Cartão de Débito', 'cartao_debito', true, 40),
   ('Transferência', 'transferencia', false, 50),
   ('Boleto', 'boleto', false, 60),
@@ -803,17 +803,12 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "formas_pagamento_financeiras" LIMIT 1
 );
 `));
-  /** Alinha com `0036_formas_pagamento_cenario_salao`. */
-  await db.execute(sql.raw(`
-UPDATE "formas_pagamento_financeiras"
-SET "baixa_automatica" = true
-WHERE "codigo_interno" IN ('pix', 'dinheiro', 'cartao_debito');
-`));
-  await db.execute(sql.raw(`
-UPDATE "formas_pagamento_financeiras"
-SET "baixa_automatica" = false
-WHERE "codigo_interno" NOT IN ('pix', 'dinheiro', 'cartao_debito');
-`));
+  /**
+   * Nota: os UPDATEs incondicionais que alinhavam `baixa_automatica` com a
+   * migration 0036 a cada arranque foram removidos — sobrescreviam a
+   * configuração do usuário no cadastro (Financeiro > Formas de pagamento).
+   * Backfill formal: migrations 0036 e 0061.
+   */
   await db.execute(sql.raw(`
 UPDATE "formas_pagamento_financeiras"
 SET "ativo" = false

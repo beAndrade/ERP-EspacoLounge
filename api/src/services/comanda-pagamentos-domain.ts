@@ -364,6 +364,7 @@ export async function getResumoComanda(
       desconto: 0,
       total: 0,
       total_pago: 0,
+      total_a_receber_cartao: 0,
       saldo: 0,
       status: 'aberto',
       cobranca_status: null,

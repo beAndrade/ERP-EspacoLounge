@@ -186,6 +186,21 @@
       color: rgb(199, 61, 61);
     }
   }
+
+  &--cartao {
+    border-left: 4px solid var(--fin-blue);
+
+    .fin-painel__card-arrow,
+    .fin-painel__card-label,
+    .fin-painel__card-value {
+      color: var(--fin-blue-dark);
+    }
+  }
+}
+
+.fin-painel__card-sub {
+  font-size: 13px;
+  color: #6b7280;
 }
 
 .fin-painel__conta-card {

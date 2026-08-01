@@ -19,6 +19,7 @@ import {
   type FinTransacaoLinhaUi,
 } from '../transacoes/fin-transacoes.mapper';
 import {
+  filtroParaQueryParams,
   queryParamsCardPainel,
   valorCardVisao,
   valorCardVisaoPeriodo,
@@ -63,6 +64,21 @@ export interface FinPainelContaCard {
   id: string;
   titulo: string;
   valor: number;
+}
+
+/** Aviso de parcelas de cartão pendentes (baixa automática cobre o vencimento). */
+export interface FinPainelCartaoReceber {
+  valor: number;
+  qtd: number;
+  atrasadas: number;
+  proximaDdMm: string | null;
+  queryParams: Record<string, string>;
+}
+
+function ymdAddDias(ymd: string, dias: number): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + dias);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
 @Component({
@@ -147,6 +163,9 @@ export class FinanceiroPainelComponent implements OnInit {
     { id: 'caixa', titulo: 'Caixa', valor: 0 },
     { id: 'banco', titulo: 'Banco', valor: 0 },
   ]);
+
+  /** Parcelas de cartão ainda não depositadas pela operadora (null = nenhuma). */
+  readonly cartaoReceber = signal<FinPainelCartaoReceber | null>(null);
 
   readonly serieFluxo = signal<FluxoDiaPonto[]>([]);
   readonly serieVendas = signal<VendasDiaPonto[]>([]);
@@ -247,6 +266,9 @@ export class FinanceiroPainelComponent implements OnInit {
     const diVendas = this.periodoVendasInicioYmd;
     const dfVendas = this.periodoVendasFimYmd;
 
+    const diCartao = ymdAddDias(hoje, -90);
+    const dfCartao = ymdAddDias(hoje, 370);
+
     this.loadSub = forkJoin({
       hoje: this.api
         .listTransacoesFinanceiras({ dataInicio: hoje, dataFim: hoje })
@@ -267,9 +289,18 @@ export class FinanceiroPainelComponent implements OnInit {
       vendas: this.api
         .listAgendamentos(diVendas, dfVendas)
         .pipe(catchError(() => of([]))),
+      cartao: this.api
+        .listTransacoesFinanceiras({ dataInicio: diCartao, dataFim: dfCartao })
+        .pipe(catchError(() => of([]))),
     }).subscribe({
-      next: ({ hoje: itemsHoje, periodo, fluxo, vendas }) => {
+      next: ({ hoje: itemsHoje, periodo, fluxo, vendas, cartao }) => {
         this.aplicarResumoHoje(itemsHoje.map(mapFinTransacaoItemToUi));
+        this.aplicarCartaoReceber(
+          cartao.map(mapFinTransacaoItemToUi),
+          hoje,
+          diCartao,
+          dfCartao,
+        );
         this.aplicarTotais(
           periodo.map(mapFinTransacaoItemToUi),
           diTotais,
@@ -345,6 +376,43 @@ export class FinanceiroPainelComponent implements OnInit {
           this.erro.set(e.message || 'Erro ao carregar vendas.');
         },
       });
+  }
+
+  private aplicarCartaoReceber(
+    linhas: FinTransacaoLinhaUi[],
+    hojeYmd: string,
+    diYmd: string,
+    dfYmd: string,
+  ): void {
+    const parcelas = linhas.filter(
+      (l) => l.origemApi === 'comanda_a_receber_cartao' && l.status !== 'pago',
+    );
+    if (parcelas.length === 0) {
+      this.cartaoReceber.set(null);
+      return;
+    }
+    const valor = parcelas.reduce((acc, l) => acc + l.valorBruto, 0);
+    const atrasadas = parcelas.filter((l) => l.dataYmd < hojeYmd).length;
+    const proxima = parcelas
+      .map((l) => l.dataYmd)
+      .filter((d) => d >= hojeYmd)
+      .sort()[0];
+    const proximaDdMm = proxima
+      ? `${proxima.slice(8, 10)}/${proxima.slice(5, 7)}`
+      : null;
+    this.cartaoReceber.set({
+      valor,
+      qtd: parcelas.length,
+      atrasadas,
+      proximaDdMm,
+      queryParams: filtroParaQueryParams({
+        dataInicio: ymdToDdMmYyyyFiltro(diYmd),
+        dataFim: ymdToDdMmYyyyFiltro(dfYmd),
+        natureza: 'receita',
+        status: 'em_aberto',
+        visao: null,
+      }),
+    });
   }
 
   private aplicarResumoHoje(linhasHoje: FinTransacaoLinhaUi[]): void {
