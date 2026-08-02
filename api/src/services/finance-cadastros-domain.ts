@@ -1,8 +1,9 @@
-import { and, asc, eq, ilike, sql } from 'drizzle-orm';
+import { asc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import {
   categoriasFinanceiras,
   formasPagamentoFinanceiras,
+  formasPagamentoPrazosFaixas,
   movimentacoes,
 } from '../db/schema';
 
@@ -138,6 +139,28 @@ export type FormaPagamentoFinanceiraCadastroApi = {
   ordem: number;
   ativo: boolean;
   sistema: boolean;
+  prazos_faixas: FormaPrazoFaixaApi[];
+};
+
+export type FormaPrazoFaixaApi = {
+  id: number;
+  parcelas_de: number;
+  parcelas_ate: number;
+  dias_ate_primeira: number;
+  intervalo_dias: number;
+  /** null = usa taxa da forma. */
+  taxa_percentual: number | null;
+  juros_cliente: boolean;
+};
+
+export type FormaPrazoFaixaInput = {
+  id?: number;
+  parcelas_de: number;
+  parcelas_ate: number;
+  dias_ate_primeira: number;
+  intervalo_dias: number;
+  taxa_percentual?: number | null;
+  juros_cliente?: boolean;
 };
 
 export type FormaTaxaConfig = {
@@ -205,17 +228,20 @@ function mapCategoriaRow(r: {
   };
 }
 
-function mapFormaRow(r: {
-  id: number;
-  nome: string;
-  codigoInterno: string;
-  baixaAutomatica: boolean;
-  taxaPercentual: unknown;
-  taxaFixa: unknown;
-  prazoRecebimento: unknown;
-  ordem: number;
-  ativo: boolean;
-}): FormaPagamentoFinanceiraCadastroApi {
+function mapFormaRow(
+  r: {
+    id: number;
+    nome: string;
+    codigoInterno: string;
+    baixaAutomatica: boolean;
+    taxaPercentual: unknown;
+    taxaFixa: unknown;
+    prazoRecebimento: unknown;
+    ordem: number;
+    ativo: boolean;
+  },
+  faixas: FormaPrazoFaixaApi[] = [],
+): FormaPagamentoFinanceiraCadastroApi {
   return {
     id: r.id,
     nome: r.nome,
@@ -227,6 +253,30 @@ function mapFormaRow(r: {
     ordem: r.ordem,
     ativo: r.ativo,
     sistema: CODIGOS_FORMA_SISTEMA.has(r.codigoInterno),
+    prazos_faixas: faixas,
+  };
+}
+
+function mapFaixaRow(r: {
+  id: number;
+  parcelasDe: number;
+  parcelasAte: number;
+  diasAtePrimeira: number;
+  intervaloDias: number;
+  taxaPercentual: unknown;
+  jurosCliente: boolean;
+}): FormaPrazoFaixaApi {
+  return {
+    id: r.id,
+    parcelas_de: r.parcelasDe,
+    parcelas_ate: r.parcelasAte,
+    dias_ate_primeira: r.diasAtePrimeira,
+    intervalo_dias: r.intervaloDias,
+    taxa_percentual:
+      r.taxaPercentual == null || String(r.taxaPercentual).trim() === ''
+        ? null
+        : taxaNum(r.taxaPercentual),
+    juros_cliente: r.jurosCliente === true,
   };
 }
 
@@ -368,7 +418,32 @@ export async function listFormasPagamentoCadastroApi(
           asc(formasPagamentoFinanceiras.ordem),
           asc(formasPagamentoFinanceiras.id),
         );
-  return rows.map(mapFormaRow);
+
+  const ids = rows.map((r) => r.id);
+  const faixasPorForma = await carregarFaixasPorFormaIds(db, ids);
+  return rows.map((r) => mapFormaRow(r, faixasPorForma.get(r.id) ?? []));
+}
+
+async function carregarFaixasPorFormaIds(
+  db: Db,
+  formaIds: number[],
+): Promise<Map<number, FormaPrazoFaixaApi[]>> {
+  const out = new Map<number, FormaPrazoFaixaApi[]>();
+  if (formaIds.length === 0) return out;
+  const rows = await db
+    .select()
+    .from(formasPagamentoPrazosFaixas)
+    .where(inArray(formasPagamentoPrazosFaixas.formaId, formaIds))
+    .orderBy(
+      asc(formasPagamentoPrazosFaixas.parcelasDe),
+      asc(formasPagamentoPrazosFaixas.id),
+    );
+  for (const r of rows) {
+    const list = out.get(r.formaId) ?? [];
+    list.push(mapFaixaRow(r));
+    out.set(r.formaId, list);
+  }
+  return out;
 }
 
 /** Mapa nome/código → baixa automática (para transações e criação de movimentações). */
@@ -526,6 +601,7 @@ export async function atualizarFormaPagamentoCadastroApi(
     taxa_fixa?: number;
     prazo_recebimento?: number;
     ativo?: boolean;
+    prazos_faixas?: FormaPrazoFaixaInput[];
   },
 ): Promise<void> {
   const [row] = await db
@@ -575,11 +651,16 @@ export async function atualizarFormaPagamentoCadastroApi(
     patch.ativo = body.ativo !== false;
   }
 
-  if (Object.keys(patch).length === 0) return;
-  await db
-    .update(formasPagamentoFinanceiras)
-    .set(patch)
-    .where(eq(formasPagamentoFinanceiras.id, id));
+  if (Object.keys(patch).length > 0) {
+    await db
+      .update(formasPagamentoFinanceiras)
+      .set(patch)
+      .where(eq(formasPagamentoFinanceiras.id, id));
+  }
+
+  if (body.prazos_faixas !== undefined) {
+    await substituirPrazosFaixasForma(db, id, body.prazos_faixas);
+  }
 }
 
 export async function excluirFormaPagamentoCadastroApi(
@@ -599,7 +680,7 @@ export async function excluirFormaPagamentoCadastroApi(
   return 'removed';
 }
 
-/** Opções para dropdowns (nome visível + código interno). */
+/** Opções para dropdowns (nome visível + código interno + faixas de prazo). */
 export async function listFormasPagamentoOpcoesApi(db: Db): Promise<
   {
     id: number;
@@ -609,6 +690,7 @@ export async function listFormasPagamentoOpcoesApi(db: Db): Promise<
     taxa_percentual: number;
     taxa_fixa: number;
     prazo_recebimento: number;
+    prazos_faixas: FormaPrazoFaixaApi[];
   }[]
 > {
   const rows = await listFormasPagamentoCadastroApi(db);
@@ -620,5 +702,135 @@ export async function listFormasPagamentoOpcoesApi(db: Db): Promise<
     taxa_percentual: r.taxa_percentual,
     taxa_fixa: r.taxa_fixa,
     prazo_recebimento: r.prazo_recebimento,
+    prazos_faixas: r.prazos_faixas,
   }));
+}
+
+function parseFaixaInput(raw: FormaPrazoFaixaInput): {
+  parcelasDe: number;
+  parcelasAte: number;
+  diasAtePrimeira: number;
+  intervaloDias: number;
+  taxaPercentual: string | null;
+  jurosCliente: boolean;
+} {
+  const de = Math.floor(Number(raw.parcelas_de));
+  const ate = Math.floor(Number(raw.parcelas_ate));
+  if (!Number.isFinite(de) || de < 1) {
+    throw new Error('Parcelas (de) inválidas.');
+  }
+  if (!Number.isFinite(ate) || ate < de) {
+    throw new Error('Parcelas (até) devem ser ≥ parcelas (de).');
+  }
+  if (ate > 48) throw new Error('Parcelas (até) não podem passar de 48.');
+  const dias = Math.floor(Number(raw.dias_ate_primeira));
+  if (!Number.isFinite(dias) || dias < 0 || dias > 9999) {
+    throw new Error('Dias até a primeira parcela inválidos.');
+  }
+  const intervalo = Math.floor(Number(raw.intervalo_dias));
+  if (!Number.isFinite(intervalo) || intervalo < 0 || intervalo > 9999) {
+    throw new Error('Intervalo entre parcelas inválido.');
+  }
+  let taxaPercentual: string | null = null;
+  if (raw.taxa_percentual != null && String(raw.taxa_percentual).trim() !== '') {
+    taxaPercentual = parseTaxaPercentualInput(raw.taxa_percentual).toFixed(3);
+  }
+  return {
+    parcelasDe: de,
+    parcelasAte: ate,
+    diasAtePrimeira: dias,
+    intervaloDias: intervalo,
+    taxaPercentual,
+    jurosCliente: raw.juros_cliente === true,
+  };
+}
+
+/** Substitui todas as faixas da forma. */
+export async function substituirPrazosFaixasForma(
+  db: Db,
+  formaId: number,
+  faixas: FormaPrazoFaixaInput[],
+): Promise<void> {
+  const parsed = (faixas ?? []).map(parseFaixaInput);
+  for (let i = 0; i < parsed.length; i++) {
+    for (let j = i + 1; j < parsed.length; j++) {
+      const a = parsed[i]!;
+      const b = parsed[j]!;
+      if (a.parcelasDe <= b.parcelasAte && b.parcelasDe <= a.parcelasAte) {
+        throw new Error(
+          `Faixas de parcelas se sobrepõem (${a.parcelasDe}–${a.parcelasAte} e ${b.parcelasDe}–${b.parcelasAte}).`,
+        );
+      }
+    }
+  }
+
+  await db
+    .delete(formasPagamentoPrazosFaixas)
+    .where(eq(formasPagamentoPrazosFaixas.formaId, formaId));
+
+  if (parsed.length === 0) return;
+
+  await db.insert(formasPagamentoPrazosFaixas).values(
+    parsed.map((p) => ({
+      formaId,
+      parcelasDe: p.parcelasDe,
+      parcelasAte: p.parcelasAte,
+      diasAtePrimeira: p.diasAtePrimeira,
+      intervaloDias: p.intervaloDias,
+      taxaPercentual: p.taxaPercentual,
+      jurosCliente: p.jurosCliente,
+    })),
+  );
+}
+
+/** Resolve a faixa aplicável a N parcelas (ou null se não houver). */
+export function resolverFaixaParcelas(
+  faixas: FormaPrazoFaixaApi[],
+  nParcelas: number,
+): FormaPrazoFaixaApi | null {
+  const n = Math.max(1, Math.floor(nParcelas));
+  return (
+    faixas.find((f) => n >= f.parcelas_de && n <= f.parcelas_ate) ?? null
+  );
+}
+
+/** Soma dias a `YYYY-MM-DD` (calendário civil). */
+export function ymdAddDays(ymd: string, days: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd).trim().slice(0, 10));
+  if (!m) return ymd;
+  const dt = new Date(
+    Number(m[1]),
+    Number(m[2]) - 1,
+    Number(m[3]) + Math.floor(days),
+  );
+  const mm = dt.getMonth() + 1;
+  const dd = dt.getDate();
+  return `${dt.getFullYear()}-${mm < 10 ? `0${mm}` : mm}-${dd < 10 ? `0${dd}` : dd}`;
+}
+
+/**
+ * Datas de vencimento das parcelas de cartão.
+ * Com faixa: venda + dias_ate_primeira + (i-1)*intervalo_dias.
+ * Sem faixa: fallback ao prazo único da forma na 1ª + intervalo 30 dias.
+ */
+export function calcularDatasParcelasCartao(opts: {
+  dataVendaYmd: string;
+  nParcelas: number;
+  faixa: FormaPrazoFaixaApi | null;
+  prazoRecebimentoFallback?: number;
+}): string[] {
+  const n = Math.max(1, Math.floor(opts.nParcelas));
+  const base = String(opts.dataVendaYmd).trim().slice(0, 10);
+  if (opts.faixa) {
+    return Array.from({ length: n }, (_, i) => {
+      const offset =
+        opts.faixa!.dias_ate_primeira + i * opts.faixa!.intervalo_dias;
+      return ymdAddDays(base, offset);
+    });
+  }
+  const prazo = Math.max(0, Math.floor(opts.prazoRecebimentoFallback ?? 0));
+  const intervalo = n > 1 ? 30 : 0;
+  return Array.from({ length: n }, (_, i) =>
+    ymdAddDays(base, prazo + i * intervalo),
+  );
 }

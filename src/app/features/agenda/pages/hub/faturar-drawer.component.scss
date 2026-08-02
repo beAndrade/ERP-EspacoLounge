@@ -300,6 +300,17 @@ input[type='number'].fat-field__input {
   }
 }
 
+.fat-parcelas-nota {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-primary) 8%, #fff);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, #e5e7eb);
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(0, 0, 0, 0.72);
+}
+
 /* Data do pagamento — calendário reutilizado do agendamento */
 .fat-field--data {
   .fat-data-field__wrap {

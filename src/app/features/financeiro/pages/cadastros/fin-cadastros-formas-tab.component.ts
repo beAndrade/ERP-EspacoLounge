@@ -50,6 +50,8 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
   drawerPrazoRecebimento = 0;
   drawerBaixaAutomatica = false;
   drawerAtivo = true;
+  drawerUsarPrazosFaixas = false;
+  drawerPrazosFaixas: FinFormaPagamentoCadastroItem['prazos_faixas'] = [];
   editando: FinFormaPagamentoCadastroItem | null = null;
   readonly drawerSalvando = signal(false);
   exclusaoModalRow: FinFormaPagamentoCadastroItem | null = null;
@@ -158,6 +160,8 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
     this.drawerPrazoRecebimento = 0;
     this.drawerBaixaAutomatica = false;
     this.drawerAtivo = true;
+    this.drawerUsarPrazosFaixas = false;
+    this.drawerPrazosFaixas = [];
     this.abrirDrawerAnimado();
   }
 
@@ -170,6 +174,10 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
     this.drawerPrazoRecebimento = row.prazo_recebimento ?? 0;
     this.drawerBaixaAutomatica = row.baixa_automatica === true;
     this.drawerAtivo = row.ativo !== false;
+    this.drawerUsarPrazosFaixas =
+      row.codigo_interno === 'cartao_credito' ||
+      (row.prazos_faixas?.length ?? 0) > 0;
+    this.drawerPrazosFaixas = [...(row.prazos_faixas ?? [])];
     this.abrirDrawerAnimado();
   }
 
@@ -209,6 +217,14 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
     prazo_recebimento?: number;
     baixa_automatica?: boolean;
     ativo?: boolean;
+    prazos_faixas?: {
+      parcelas_de: number;
+      parcelas_ate: number;
+      dias_ate_primeira: number;
+      intervalo_dias: number;
+      taxa_percentual: number | null;
+      juros_cliente: boolean;
+    }[];
   }): void {
     this.drawerSalvando.set(true);
     const onOk = (): void => {
@@ -256,6 +272,22 @@ export class FinCadastrosFormasTabComponent implements OnInit, OnChanges {
   }
 
   rotuloPrazo(row: FinFormaPagamentoCadastroItem): string {
+    const faixas = row.prazos_faixas ?? [];
+    if (faixas.length > 0) {
+      return faixas
+        .map((f) => {
+          const range =
+            f.parcelas_de === f.parcelas_ate
+              ? `${f.parcelas_de}x`
+              : `${f.parcelas_de}–${f.parcelas_ate}x`;
+          const dias =
+            f.dias_ate_primeira === 0
+              ? 'imediato'
+              : `${f.dias_ate_primeira}d`;
+          return `${range} ${dias}`;
+        })
+        .join(' · ');
+    }
     const dias = row.prazo_recebimento ?? 0;
     if (dias === 0) return 'Imediato';
     if (dias === 1) return '1 dia';

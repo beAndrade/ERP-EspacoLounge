@@ -19,8 +19,11 @@ import { AgendaModalCalendarComponent } from '../novo/agenda-modal-calendar.comp
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   METODOS_COMANDA_FALLBACK,
+  calcularDatasParcelasCartaoUi,
   mapFormasParaMetodosComanda,
+  resolverFaixaParcelasUi,
   rotulosMetodoComandaFromFormas,
+  ymdHojeUi,
   type MetodoComandaOpcaoUi,
 } from '../../../../core/utils/fin-formas-pagamento.util';
 import type {
@@ -143,6 +146,8 @@ export interface RascunhoPagamento {
   metodoRotulo?: MetodoPagamentoComanda;
   parcelaNumero?: number;
   parcelasTotal?: number;
+  /** Faixa 3x+: cliente paga juros à operadora (só informativo). */
+  jurosClienteCartao?: boolean;
 }
 
 export type PagamentoLinhaUi =
@@ -631,6 +636,16 @@ export class FaturarDrawerComponent implements OnInit {
     this.parcelasCtrl.setValue(Math.max(1, atual + delta), { emitEvent: true });
   }
 
+  /** Nota: nestas condições o cliente paga juros à operadora (parcelado emissor). */
+  mostrarNotaJurosOperadora(): boolean {
+    if (this.rascunho.some((r) => r.jurosClienteCartao)) return true;
+    const n = Math.max(1, Math.floor(this.parcelasCtrl.value || 1));
+    const forma = this.formasMetodos.find((f) => f.value === 'cartao_credito');
+    return (
+      resolverFaixaParcelasUi(forma?.prazos_faixas, n)?.juros_cliente === true
+    );
+  }
+
   /** Tudo que aloca na comanda (inclui parcelas futuras «Pendente»). */
   private somaRascunhoComanda(): number {
     return this.rascunho
@@ -662,10 +677,31 @@ export class FaturarDrawerComponent implements OnInit {
     const grupo = `g-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const isCartao =
       metodo === 'cartao_credito' || metodo === 'cartao_debito';
+    const hoje = ymdHojeUi();
+
+    let datasCartao: string[] | null = null;
+    let jurosCliente = false;
+    if (isCartao && destino === 'comanda') {
+      const forma = this.formasMetodos.find((f) => f.value === metodo);
+      const faixa = resolverFaixaParcelasUi(forma?.prazos_faixas, n);
+      jurosCliente = faixa?.juros_cliente === true;
+      datasCartao = calcularDatasParcelasCartaoUi({
+        dataVendaYmd: dataYmd,
+        nParcelas: n,
+        faixa,
+        prazoRecebimentoFallback: forma?.prazo_recebimento ?? 0,
+      });
+    }
+
     return valores.map((valor, i) => {
       const parcelaNumero = i + 1;
+      const dataParcela = datasCartao
+        ? (datasCartao[i] ?? dataYmd)
+        : ymdAddMonths(dataYmd, i);
       const parcelaFuturaCartao =
-        destino === 'comanda' && n > 1 && isCartao && parcelaNumero > 1;
+        destino === 'comanda' &&
+        isCartao &&
+        dataParcela > hoje;
       const parcelaFuturaOutro =
         destino === 'comanda' &&
         n > 1 &&
@@ -680,7 +716,7 @@ export class FaturarDrawerComponent implements OnInit {
           : metodo;
       return {
         idLocal: `${grupo}-p${parcelaNumero}`,
-        data_pagamento: ymdAddMonths(dataYmd, i),
+        data_pagamento: dataParcela,
         metodo: metodoLinha,
         metodoRotulo: metodo,
         valor,
@@ -688,6 +724,7 @@ export class FaturarDrawerComponent implements OnInit {
         parcelaNumero,
         parcelasTotal: n,
         destino,
+        jurosClienteCartao: jurosCliente,
       };
     });
   }

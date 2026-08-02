@@ -734,6 +734,14 @@ export class SheetsApiService {
       taxa_fixa?: number;
       prazo_recebimento?: number;
       ativo?: boolean;
+      prazos_faixas?: {
+        parcelas_de: number;
+        parcelas_ate: number;
+        dias_ate_primeira: number;
+        intervalo_dias: number;
+        taxa_percentual?: number | null;
+        juros_cliente?: boolean;
+      }[];
     },
   ): Observable<{ ok: boolean }> {
     return this.http

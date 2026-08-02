@@ -11,6 +11,13 @@ import {
   type PagamentoComandaDTO,
   type ResumoComanda,
 } from './comanda-pagamentos-domain';
+import {
+  calcularDatasParcelasCartao,
+  listFormasPagamentoOpcoesApi,
+  resolverFaixaParcelas,
+  ymdAddDays,
+  type FormaPrazoFaixaApi,
+} from './finance-cadastros-domain';
 import { toNumberPt } from './finance-domain';
 import { recalcularFolhaAposMudancaAtendimento } from './folha-domain';
 import { eq } from 'drizzle-orm';
@@ -26,6 +33,123 @@ function somaValoresPagamentos(list: CriarPagamentoComandaInput[]): number {
     s += Math.round(v * 100) / 100;
   }
   return Math.round(s * 100) / 100;
+}
+
+function ymdHojeLocal(): string {
+  const n = new Date();
+  const m = n.getMonth() + 1;
+  const d = n.getDate();
+  return `${n.getFullYear()}-${m < 10 ? `0${m}` : m}-${d < 10 ? `0${d}` : d}`;
+}
+
+function isMetodoCartao(metodo: string): boolean {
+  const m = String(metodo ?? '')
+    .trim()
+    .toLowerCase();
+  return (
+    m === 'cartao_credito' ||
+    m === 'cartao_debito' ||
+    m === 'a_receber_cartao'
+  );
+}
+
+function codigoFormaCartao(p: CriarPagamentoComandaInput): 'cartao_credito' | 'cartao_debito' {
+  const rotulo = String(p.metodo_rotulo ?? '')
+    .trim()
+    .toLowerCase();
+  if (rotulo.includes('débito') || rotulo.includes('debito')) {
+    return 'cartao_debito';
+  }
+  const m = String(p.metodo ?? '')
+    .trim()
+    .toLowerCase();
+  if (m === 'cartao_debito') return 'cartao_debito';
+  return 'cartao_credito';
+}
+
+/**
+ * Recalcula datas de cartão pelas faixas da forma e marca vencimentos futuros
+ * como `a_receber_cartao` (baixa automática no vencimento).
+ */
+export async function normalizarPagamentosCartaoComFaixas(
+  db: Db,
+  pagamentos: CriarPagamentoComandaInput[],
+): Promise<CriarPagamentoComandaInput[]> {
+  if (pagamentos.length === 0) return pagamentos;
+  const opcoes = await listFormasPagamentoOpcoesApi(db);
+  const hoje = ymdHojeLocal();
+  const out = pagamentos.map((p) => ({ ...p }));
+
+  type Grupo = {
+    indices: number[];
+    codigo: 'cartao_credito' | 'cartao_debito';
+    n: number;
+    numeros: Set<number>;
+  };
+  const grupos: Grupo[] = [];
+
+  for (let i = 0; i < out.length; i++) {
+    const p = out[i]!;
+    if (!isMetodoCartao(String(p.metodo))) continue;
+    const codigo = codigoFormaCartao(p);
+    const n = Math.max(1, Math.floor(Number(p.parcelas_total) || 1));
+    const num = Math.max(1, Math.floor(Number(p.parcela_numero) || 1));
+    let g = grupos.find(
+      (x) => x.codigo === codigo && x.n === n && !x.numeros.has(num),
+    );
+    if (!g) {
+      g = { indices: [], codigo, n, numeros: new Set() };
+      grupos.push(g);
+    }
+    g.indices.push(i);
+    g.numeros.add(num);
+  }
+
+  for (const g of grupos) {
+    const forma = opcoes.find((o) => o.codigo_interno === g.codigo);
+    const faixas: FormaPrazoFaixaApi[] = forma?.prazos_faixas ?? [];
+    const faixa = resolverFaixaParcelas(faixas, g.n);
+    const prazoFallback = forma?.prazo_recebimento ?? 0;
+
+    const datasOriginais = g.indices.map((ix) =>
+      String(out[ix]!.data_pagamento ?? hoje).slice(0, 10),
+    );
+    const minData = [...datasOriginais].sort()[0] ?? hoje;
+    const diasPrimeira = faixa?.dias_ate_primeira ?? prazoFallback;
+    // Idempotente: se a 1ª já veio com offset, volta à data da venda.
+    const dataVenda = ymdAddDays(minData, -diasPrimeira);
+
+    const datas = calcularDatasParcelasCartao({
+      dataVendaYmd: dataVenda,
+      nParcelas: g.n,
+      faixa,
+      prazoRecebimentoFallback: prazoFallback,
+    });
+
+    for (const ix of g.indices) {
+      const p = out[ix]!;
+      const num = Math.max(1, Math.floor(Number(p.parcela_numero) || 1));
+      const data = datas[num - 1] ?? datas[0] ?? hoje;
+      const metodoBase = g.codigo;
+      const metodoRotulo =
+        String(p.metodo_rotulo ?? '').trim() ||
+        (metodoBase === 'cartao_debito'
+          ? 'Cartão de débito'
+          : 'Cartão de crédito');
+      const futuro = data > hoje;
+      out[ix] = {
+        ...p,
+        data_pagamento: data,
+        metodo: futuro ? 'a_receber_cartao' : metodoBase,
+        metodo_rotulo: metodoRotulo,
+        parcela_numero: num,
+        parcelas_total: g.n,
+        parcelas: 1,
+      };
+    }
+  }
+
+  return out;
 }
 
 export interface FaturarComandaComRascunhoInput {
@@ -51,7 +175,10 @@ export async function faturarComandaComRascunho(
 ): Promise<{ items: PagamentoComandaDTO[]; resumo: ResumoComanda }> {
   const id = String(idAtendimento || '').trim();
   if (!id) throw new Error('id_atendimento é obrigatório');
-  const list = input.pagamentos ?? [];
+  const list = await normalizarPagamentosCartaoComFaixas(
+    db,
+    input.pagamentos ?? [],
+  );
   const creditos = input.credito_excesso ?? [];
   const credUsado = toNumberPt(input.credito_cliente_usado);
   const valorCreditoUsado =

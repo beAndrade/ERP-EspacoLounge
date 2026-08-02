@@ -611,6 +611,32 @@ export const formasPagamentoFinanceiras = pgTable(
   ],
 );
 
+/**
+ * Prazos de recebimento por faixa de parcelas (ex.: crédito 1x / 2x / 3x+).
+ * Quando existem faixas, substituem o `prazo_recebimento` único no cálculo das
+ * datas ao faturar cartão.
+ */
+export const formasPagamentoPrazosFaixas = pgTable(
+  'formas_pagamento_prazos_faixas',
+  {
+    id: serial('id').primaryKey(),
+    formaId: integer('forma_id')
+      .notNull()
+      .references(() => formasPagamentoFinanceiras.id, { onDelete: 'cascade' }),
+    parcelasDe: integer('parcelas_de').notNull(),
+    parcelasAte: integer('parcelas_ate').notNull(),
+    diasAtePrimeira: integer('dias_ate_primeira').default(0).notNull(),
+    intervaloDias: integer('intervalo_dias').default(0).notNull(),
+    /** Override opcional; null = usa taxa_percentual da forma. */
+    taxaPercentual: numeric('taxa_percentual', { precision: 6, scale: 3 }),
+    /** Cliente paga juros à operadora (parcelado emissor). */
+    jurosCliente: boolean('juros_cliente').default(false).notNull(),
+  },
+  (t) => [
+    index('formas_pagamento_prazos_faixas_forma_idx').on(t.formaId),
+  ],
+);
+
 export const movimentacoes = pgTable(
   'movimentacoes',
   {

@@ -77,6 +77,13 @@
       </div>
     </div>
 
+    @if (mostrarNotaJurosOperadora()) {
+      <p class="fat-parcelas-nota" role="note">
+        Nestas condições o cliente paga os juros à operadora — o valor da
+        comanda não muda.
+      </p>
+    }
+
     <div class="fat-field fat-field--data">
       <span class="fat-field__label">Pagamento</span>
       <span

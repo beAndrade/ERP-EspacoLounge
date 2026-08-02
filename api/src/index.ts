@@ -2140,6 +2140,14 @@ const app = new Elysia({ adapter: node() })
           taxa_fixa?: number;
           prazo_recebimento?: number;
           ativo?: boolean;
+          prazos_faixas?: {
+            parcelas_de: number;
+            parcelas_ate: number;
+            dias_ate_primeira: number;
+            intervalo_dias: number;
+            taxa_percentual?: number | null;
+            juros_cliente?: boolean;
+          }[];
         };
         await atualizarFormaPagamentoCadastroApi(db, id, {
           nome: b.nome !== undefined ? String(b.nome) : undefined,
@@ -2148,6 +2156,7 @@ const app = new Elysia({ adapter: node() })
           taxa_fixa: b.taxa_fixa,
           prazo_recebimento: b.prazo_recebimento,
           ativo: b.ativo,
+          prazos_faixas: b.prazos_faixas,
         });
         return ok({ ok: true });
       } catch (e) {
@@ -2165,6 +2174,18 @@ const app = new Elysia({ adapter: node() })
         taxa_fixa: t.Optional(t.Number()),
         prazo_recebimento: t.Optional(t.Number()),
         ativo: t.Optional(t.Boolean()),
+        prazos_faixas: t.Optional(
+          t.Array(
+            t.Object({
+              parcelas_de: t.Number(),
+              parcelas_ate: t.Number(),
+              dias_ate_primeira: t.Number(),
+              intervalo_dias: t.Number(),
+              taxa_percentual: t.Optional(t.Union([t.Number(), t.Null()])),
+              juros_cliente: t.Optional(t.Boolean()),
+            }),
+          ),
+        ),
       }),
     },
   )

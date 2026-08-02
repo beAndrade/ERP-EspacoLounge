@@ -535,6 +535,17 @@ export interface MarcaCatalogoItem {
 }
 
 /** Forma de pagamento — cadastro admin (`GET /api/financeiro/formas-pagamento`). */
+export interface FinFormaPrazoFaixa {
+  id?: number;
+  parcelas_de: number;
+  parcelas_ate: number;
+  dias_ate_primeira: number;
+  intervalo_dias: number;
+  /** null = usa taxa da forma. */
+  taxa_percentual: number | null;
+  juros_cliente: boolean;
+}
+
 export interface FinFormaPagamentoCadastroItem {
   id: number;
   nome: string;
@@ -546,6 +557,7 @@ export interface FinFormaPagamentoCadastroItem {
   ordem: number;
   ativo: boolean;
   sistema: boolean;
+  prazos_faixas?: FinFormaPrazoFaixa[];
 }
 
 /** Opção de forma para dropdowns (`GET /api/financeiro/formas-pagamento/opcoes`). */
@@ -557,6 +569,7 @@ export interface FinFormaPagamentoOpcaoItem {
   taxa_percentual: number;
   taxa_fixa: number;
   prazo_recebimento: number;
+  prazos_faixas?: FinFormaPrazoFaixa[];
 }
 
 /** Linha de `movimentacoes` na API Node. */

@@ -128,22 +128,150 @@
         </label>
       </div>
 
-      <label class="fin-cad-edit__field fin-cad-edit__field--full">
-        <span class="fin-cad-edit__label fin-cad-edit__label--req"
-          >Prazo de recebimento</span
-        >
-        <input
-          type="text"
-          class="fin-cad-edit__input"
-          inputmode="numeric"
-          [value]="prazoRecebimentoTexto"
-          (input)="onPrazoInput($event)"
-          name="cadPrazoRecebimento"
-          autocomplete="off"
-          placeholder="0"
-          [disabled]="salvando"
-        />
-      </label>
+      @if (usarPrazosFaixas) {
+        <div class="fin-cad-edit__faixas">
+          <div class="fin-cad-edit__faixas-head">
+            <span class="fin-cad-edit__label fin-cad-edit__label--with-tip">
+              Prazos por parcelas
+              <app-ui-tip-trigger [tip]="tipFaixas" align="end">
+                <span class="fin-cad-edit__info-icon" aria-hidden="true">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4" />
+                    <path d="M12 8h.01" />
+                  </svg>
+                </span>
+              </app-ui-tip-trigger>
+            </span>
+            <button
+              type="button"
+              class="fin-cad-edit__faixas-add"
+              (click)="adicionarFaixa()"
+              [disabled]="salvando"
+            >
+              + Faixa
+            </button>
+          </div>
+          <ul class="fin-cad-edit__faixas-list">
+            @for (faixa of faixasDraft; track faixa.key) {
+              <li class="fin-cad-edit__faixa">
+                <div class="fin-cad-edit__faixa-grid">
+                  <label class="fin-cad-edit__field">
+                    <span class="fin-cad-edit__label">De</span>
+                    <input
+                      type="text"
+                      class="fin-cad-edit__input"
+                      inputmode="numeric"
+                      [value]="faixa.parcelas_de"
+                      (input)="onFaixaNumInput($event, faixa, 'parcelas_de')"
+                      [disabled]="salvando"
+                    />
+                  </label>
+                  <label class="fin-cad-edit__field">
+                    <span class="fin-cad-edit__label">Até</span>
+                    <input
+                      type="text"
+                      class="fin-cad-edit__input"
+                      inputmode="numeric"
+                      [value]="faixa.parcelas_ate"
+                      (input)="onFaixaNumInput($event, faixa, 'parcelas_ate')"
+                      [disabled]="salvando"
+                    />
+                  </label>
+                  <label class="fin-cad-edit__field">
+                    <span class="fin-cad-edit__label">1ª (dias)</span>
+                    <input
+                      type="text"
+                      class="fin-cad-edit__input"
+                      inputmode="numeric"
+                      [value]="faixa.dias_ate_primeira"
+                      (input)="
+                        onFaixaNumInput($event, faixa, 'dias_ate_primeira')
+                      "
+                      [disabled]="salvando"
+                    />
+                  </label>
+                  <label class="fin-cad-edit__field">
+                    <span class="fin-cad-edit__label">Intervalo</span>
+                    <input
+                      type="text"
+                      class="fin-cad-edit__input"
+                      inputmode="numeric"
+                      [value]="faixa.intervalo_dias"
+                      (input)="onFaixaNumInput($event, faixa, 'intervalo_dias')"
+                      [disabled]="salvando"
+                    />
+                  </label>
+                  <label class="fin-cad-edit__field">
+                    <span class="fin-cad-edit__label">Taxa %</span>
+                    <input
+                      type="text"
+                      class="fin-cad-edit__input"
+                      inputmode="decimal"
+                      [value]="faixa.taxa_percentual_texto"
+                      (input)="onFaixaTaxaInput($event, faixa)"
+                      placeholder="Forma"
+                      [disabled]="salvando"
+                    />
+                  </label>
+                </div>
+                <div class="fin-cad-edit__faixa-foot">
+                  <label class="fin-cad-edit__toggle-row fin-cad-edit__toggle-row--compact">
+                    <span class="fin-cad-edit__toggle-row__label"
+                      >Juros do cliente (operadora)</span
+                    >
+                    <button
+                      type="button"
+                      class="drawer-switch"
+                      [class.drawer-switch--on]="faixa.juros_cliente"
+                      [attr.aria-pressed]="faixa.juros_cliente"
+                      (click)="faixa.juros_cliente = !faixa.juros_cliente"
+                      [disabled]="salvando"
+                    ></button>
+                  </label>
+                  @if (faixasDraft.length > 1) {
+                    <button
+                      type="button"
+                      class="fin-cad-edit__faixas-remove"
+                      (click)="removerFaixa(faixa.key)"
+                      [disabled]="salvando"
+                    >
+                      Remover
+                    </button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      } @else {
+        <label class="fin-cad-edit__field fin-cad-edit__field--full">
+          <span class="fin-cad-edit__label fin-cad-edit__label--req"
+            >Prazo de recebimento</span
+          >
+          <input
+            type="text"
+            class="fin-cad-edit__input"
+            inputmode="numeric"
+            [value]="prazoRecebimentoTexto"
+            (input)="onPrazoInput($event)"
+            name="cadPrazoRecebimento"
+            autocomplete="off"
+            placeholder="0"
+            [disabled]="salvando"
+          />
+        </label>
+      }
 
       <label class="fin-cad-edit__toggle-row">
         <span class="fin-cad-edit__toggle-row__label">Baixa automática</span>
