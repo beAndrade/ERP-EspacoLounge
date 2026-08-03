@@ -165,20 +165,12 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
   --drawer-btn-primary-fg: var(--color-primary-contrast);
   --drawer-btn-primary-hover-bg: var(--color-primary-hover);
   --drawer-btn-primary-hover-border: var(--color-primary-hover);
-  /** Faturar / Ver pagamentos — mesmo verde do badge «Pago». */
-  --drawer-btn-faturar-bg: var(--drawer-badge-pago-fg);
-  --drawer-btn-faturar-border: var(--drawer-badge-pago-fg);
-  --drawer-btn-faturar-fg: #ffffff;
-  --drawer-btn-faturar-hover-bg: color-mix(
-    in srgb,
-    var(--drawer-badge-pago-fg) 82%,
-    #000
-  );
-  --drawer-btn-faturar-hover-border: color-mix(
-    in srgb,
-    var(--drawer-badge-pago-fg) 82%,
-    #000
-  );
+  /** Faturar / Ver pagamentos — verde claro do badge «Pago» (#b7eb8f). */
+  --drawer-btn-faturar-bg: #b7eb8f;
+  --drawer-btn-faturar-border: #b7eb8f;
+  --drawer-btn-faturar-fg: var(--drawer-badge-pago-fg);
+  --drawer-btn-faturar-hover-bg: color-mix(in srgb, #b7eb8f 78%, #000);
+  --drawer-btn-faturar-hover-border: color-mix(in srgb, #b7eb8f 78%, #000);
   /** Excluir — mesmo vermelho do badge «Atrasado». */
   --drawer-btn-danger-bg: var(--drawer-badge-atraso-fg);
   --drawer-btn-danger-border: var(--drawer-badge-atraso-fg);
