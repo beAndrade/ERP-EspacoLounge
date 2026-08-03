@@ -1223,9 +1223,11 @@
 .nc-excluir-opt-ico {
   flex: 0 0 auto;
   display: block;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   color: inherit;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .btn-footer {

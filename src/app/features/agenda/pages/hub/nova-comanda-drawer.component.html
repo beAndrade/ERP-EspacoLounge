@@ -19,7 +19,7 @@
 </button>
 
 <div class="nc-drawer" [class.nc-drawer--finalizada]="comandaFinalizada()">
-  <!-- Grelha: sidebar (altura total) | coluna principal (conteÃºdo + resumo + footer). -->
+  <!-- Grelha: sidebar (altura total) | coluna principal (conteúdo + resumo + footer). -->
   <div class="nc-drawer__client agenda-novo--drawer" aria-label="Cliente">
     <app-agenda-novo-client-sidebar
       class="form-shell__client"
@@ -65,9 +65,9 @@
               />
             </label>
             <label class="nc-field nc-field--numero">
-              <span class="nc-field__label">NÃºmero da comanda</span>
+              <span class="nc-field__label">Número da comanda</span>
               <div class="nc-field__fake nc-field__fake--locked" aria-readonly="true">
-                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'NÃºmero da comanda' }}
+                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'Número da comanda' }}
               </div>
             </label>
           </div>
@@ -106,7 +106,7 @@
                 <p class="nc-itens__alert" role="alert">{{ erroItens }}</p>
               } @else {
                 @if (carregandoItens && contextoPodeSincronizarItens()) {
-                  <p class="nc-itens__hint">A carregar itens do agendamentoâ¦</p>
+                  <p class="nc-itens__hint">A carregar itens do agendamento…</p>
                 }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
@@ -257,7 +257,7 @@
     </div>
   </div>
 
-  <footer class="nc-footer" aria-label="AÃ§Ãµes da comanda">
+  <footer class="nc-footer" aria-label="Ações da comanda">
     <div class="nc-footer__bar">
       <div class="nc-footer__actions">
         <button type="button" class="btn btn-footer btn-footer--ghost" (click)="fechar.emit()">
@@ -279,7 +279,7 @@
               [attr.aria-haspopup]="mostrarMenuExcluirComanda() ? 'menu' : null"
               aria-label="Excluir comanda"
             >
-              {{ excluindo ? 'Excluindoâ¦' : 'Excluir' }}
+              {{ excluindo ? 'Excluindo…' : 'Excluir' }}
               @if (mostrarMenuExcluirComanda()) {
                 <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
               }
@@ -296,8 +296,8 @@
                     <svg
                       class="nc-excluir-opt-ico"
                       xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -327,8 +327,8 @@
                     <svg
                       class="nc-excluir-opt-ico"
                       xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -394,7 +394,7 @@
     <div class="comandas-modal__icon-wrap" aria-hidden="true">
       <span class="comandas-modal__icon">!</span>
     </div>
-    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">AtenÃ§Ã£o</h3>
+    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">Atenção</h3>
     <p class="comandas-modal__text">
       {{ textoModalExcluir() }}
     </p>
@@ -426,7 +426,7 @@
           (click)="confirmarExcluirComanda()"
           [disabled]="excluindo"
         >
-          {{ excluindo ? 'Excluindoâ¦' : 'Sim, excluir' }}
+          {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
         </button>
       }
     </div>
