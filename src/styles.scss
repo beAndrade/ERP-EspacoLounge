@@ -116,7 +116,8 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
     var(--color-sidebar-accent) 130%
   );
   /** Estados do sidebar tingidos com o primary (substituem cinzas neutros). */
-  --color-sidebar-hover: color-mix(in srgb, var(--color-primary) 16%, #141e2c);
+  /** Hover em branco translúcido: permanece visível no topo escuro e na base do gradiente. */
+  --color-sidebar-hover: color-mix(in srgb, #ffffff 14%, transparent);
   --color-sidebar-active: color-mix(in srgb, var(--color-primary) 30%, #232e3e);
   --color-sidebar-sub-active: color-mix(in srgb, var(--color-primary) 42%, #364357);
   /** Links acompanham o primary (tom com mais contraste). */
@@ -136,23 +137,6 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
   --radius: 12px;
   --touch-min: 44px;
 
-  /** Rodapés de drawers/modais (ghost / primário / faturar). */
-  --drawer-btn-ghost-fg: color-mix(in srgb, var(--color-text) 75%, transparent);
-  --drawer-btn-ghost-border: var(--color-border);
-  --drawer-btn-ghost-hover-fg: var(--color-primary);
-  --drawer-btn-ghost-hover-border: var(--color-primary);
-  --drawer-btn-ghost-hover-bg: #ffffff;
-  --drawer-btn-primary-bg: var(--color-primary);
-  --drawer-btn-primary-border: var(--color-primary);
-  --drawer-btn-primary-fg: var(--color-primary-contrast);
-  --drawer-btn-primary-hover-bg: var(--color-primary-hover);
-  --drawer-btn-primary-hover-border: var(--color-primary-hover);
-  --drawer-btn-faturar-bg: var(--color-success);
-  --drawer-btn-faturar-border: var(--color-success);
-  --drawer-btn-faturar-fg: #ffffff;
-  --drawer-btn-faturar-hover-bg: var(--color-success-hover);
-  --drawer-btn-faturar-hover-border: var(--color-success-hover);
-
   /** Badges de status (drawers + listagens alinhadas). */
   --drawer-badge-pendente-fg: #b45309;
   --drawer-badge-pendente-bg: #fffbeb;
@@ -169,6 +153,46 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
   --drawer-badge-ok-fg: #15803d;
   --drawer-badge-ok-bg: #f0fdf4;
   --drawer-badge-ok-border: #bbf7d0;
+
+  /** Rodapés de drawers/modais (ghost / primário / faturar / excluir). */
+  --drawer-btn-ghost-fg: color-mix(in srgb, var(--color-text) 75%, transparent);
+  --drawer-btn-ghost-border: var(--color-border);
+  --drawer-btn-ghost-hover-fg: var(--color-primary);
+  --drawer-btn-ghost-hover-border: var(--color-primary);
+  --drawer-btn-ghost-hover-bg: #ffffff;
+  --drawer-btn-primary-bg: var(--color-primary);
+  --drawer-btn-primary-border: var(--color-primary);
+  --drawer-btn-primary-fg: var(--color-primary-contrast);
+  --drawer-btn-primary-hover-bg: var(--color-primary-hover);
+  --drawer-btn-primary-hover-border: var(--color-primary-hover);
+  /** Faturar / Ver pagamentos — mesmo verde do badge «Pago». */
+  --drawer-btn-faturar-bg: var(--drawer-badge-pago-fg);
+  --drawer-btn-faturar-border: var(--drawer-badge-pago-fg);
+  --drawer-btn-faturar-fg: #ffffff;
+  --drawer-btn-faturar-hover-bg: color-mix(
+    in srgb,
+    var(--drawer-badge-pago-fg) 82%,
+    #000
+  );
+  --drawer-btn-faturar-hover-border: color-mix(
+    in srgb,
+    var(--drawer-badge-pago-fg) 82%,
+    #000
+  );
+  /** Excluir — mesmo vermelho do badge «Atrasado». */
+  --drawer-btn-danger-bg: var(--drawer-badge-atraso-fg);
+  --drawer-btn-danger-border: var(--drawer-badge-atraso-fg);
+  --drawer-btn-danger-fg: #ffffff;
+  --drawer-btn-danger-hover-bg: color-mix(
+    in srgb,
+    var(--drawer-badge-atraso-fg) 82%,
+    #000
+  );
+  --drawer-btn-danger-hover-border: color-mix(
+    in srgb,
+    var(--drawer-badge-atraso-fg) 82%,
+    #000
+  );
   font-family: Inter, sans-serif;
 }
 

@@ -964,15 +964,15 @@
     z-index: 60;
   }
 
-  /** Igual a `.agenda-modal__footer .btn.btn-footer--danger` no agendamento. */
+  /** Excluir — vermelho do badge «Atrasado». */
   .btn.btn-footer--danger {
-    background: var(--color-error);
-    border-color: var(--color-error);
-    color: #fff;
+    background: var(--drawer-btn-danger-bg);
+    border-color: var(--drawer-btn-danger-border);
+    color: var(--drawer-btn-danger-fg, #fff);
 
     &:hover:not(:disabled) {
-      background: #ff7875;
-      border-color: #ff7875;
+      background: var(--drawer-btn-danger-hover-bg);
+      border-color: var(--drawer-btn-danger-hover-border);
     }
   }
 }
