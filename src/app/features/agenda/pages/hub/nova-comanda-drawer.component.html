@@ -19,7 +19,7 @@
 </button>
 
 <div class="nc-drawer" [class.nc-drawer--finalizada]="comandaFinalizada()">
-  <!-- Grelha: sidebar (altura total) | coluna principal (conte�do + resumo + footer). -->
+  <!-- Grelha: sidebar (altura total) | coluna principal (conteúdo + resumo + footer). -->
   <div class="nc-drawer__client agenda-novo--drawer" aria-label="Cliente">
     <app-agenda-novo-client-sidebar
       class="form-shell__client"
@@ -65,9 +65,9 @@
               />
             </label>
             <label class="nc-field nc-field--numero">
-              <span class="nc-field__label">N�mero da comanda</span>
+              <span class="nc-field__label">Número da comanda</span>
               <div class="nc-field__fake nc-field__fake--locked" aria-readonly="true">
-                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'N�mero da comanda' }}
+                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'Número da comanda' }}
               </div>
             </label>
           </div>
@@ -106,11 +106,11 @@
                 <p class="nc-itens__alert" role="alert">{{ erroItens }}</p>
               } @else {
                 @if (carregandoItens && contextoPodeSincronizarItens()) {
-                  <p class="nc-itens__hint">A carregar itens do agendamento?</p>
+                  <p class="nc-itens__hint">A carregar itens do agendamento…</p>
                 }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
-                    A comanda exibe os itens do agendamento. Use �Editar� para alterar itens e valores.
+                    A comanda exibe os itens do agendamento. Use «Editar» para alterar itens e valores.
                   </p>
                 }
 
@@ -153,7 +153,7 @@
                                   <div class="nc-leitura__etapa-text">
                                     @if (b.tipo === 'Mega' && e.valorEtapaBrl) {
                                       <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
-                                      <span class="nc-leitura__etapa-join" aria-hidden="true"> ? </span>
+                                      <span class="nc-leitura__etapa-join" aria-hidden="true"> — </span>
                                       <span class="nc-leitura__etapa-valor">{{ e.valorEtapaBrl }}</span>
                                       @if (e.subtitulo) {
                                         <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
@@ -209,7 +209,7 @@
                                 <div class="nc-leitura__etapa-text">
                                   @if (b.tipo === 'Mega' && e.valorEtapaBrl) {
                                     <span class="nc-leitura__etapa-titulo">{{ e.titulo }}</span>
-                                    <span class="nc-leitura__etapa-join" aria-hidden="true"> ? </span>
+                                    <span class="nc-leitura__etapa-join" aria-hidden="true"> — </span>
                                     <span class="nc-leitura__etapa-valor">{{ e.valorEtapaBrl }}</span>
                                     @if (e.subtitulo) {
                                       <span class="nc-leitura__etapa-sep" aria-hidden="true"></span>
@@ -257,132 +257,39 @@
     </div>
   </div>
 
-  <footer class="nc-footer" aria-label="A��es da comanda">
+  <footer class="nc-footer" aria-label="Ações da comanda">
     <div class="nc-footer__bar">
       <div class="nc-footer__actions">
-        <div
-          class="nc-outros-wrap"
-          [class.nc-outros-wrap--open]="outrosMenuAberto"
-        >
-          <button
-            type="button"
-            class="btn btn-footer nc-outros-trigger"
-            (click)="toggleOutrosMenu($event)"
-            [attr.aria-expanded]="outrosMenuAberto"
-            aria-haspopup="menu"
-          >
-            Outros
-            <span class="nc-outros-chev" aria-hidden="true"></span>
-          </button>
-          @if (outrosMenuAberto) {
-            <ul class="nc-outros-panel" role="menu">
-              <li role="none">
-                <button
-                  type="button"
-                  class="nc-outros-opt"
-                  role="menuitem"
-                  (click)="onOutrosImprimir()"
-                >
-                  <svg
-                    class="nc-outros-opt-ico"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M16 13H8" />
-                    <path d="M16 17H8" />
-                    <path d="M10 9H8" />
-                  </svg>
-                  Imprimir
-                </button>
-              </li>
-              <li role="none">
-                <button
-                  type="button"
-                  class="nc-outros-opt"
-                  role="menuitem"
-                  (click)="onOutrosWhatsapp()"
-                >
-                  <svg
-                    class="nc-outros-opt-ico"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    fill="currentColor"
-                    viewBox="0 0 16 16"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"
-                    />
-                  </svg>
-                  Enviar WhatsApp
-                </button>
-              </li>
-              <li role="none">
-                <button
-                  type="button"
-                  class="nc-outros-opt"
-                  role="menuitem"
-                  (click)="onOutrosHistorico()"
-                >
-                  <svg
-                    class="nc-outros-opt-ico"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                    <path d="M3 3v5h5" />
-                  </svg>
-                  Hist�rico
-                </button>
-              </li>
-            </ul>
-          }
-        </div>
         <button type="button" class="btn btn-footer btn-footer--ghost" (click)="fechar.emit()">
           Cancelar
         </button>
-        @if (podeExcluirComanda()) {
+        @if (podeMostrarBotaoExcluir()) {
           <div
-            class="nc-outros-wrap nc-excluir-wrap"
-            [class.nc-outros-wrap--open]="excluirMenuAberto"
+            class="nc-excluir-wrap"
+            [class.nc-excluir-wrap--open]="excluirMenuAberto && mostrarMenuExcluirComanda()"
           >
             <button
               type="button"
               class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
-              (click)="toggleExcluirMenu($event)"
+              (click)="onExcluirTriggerClick($event)"
               [disabled]="excluindo"
-              [attr.aria-expanded]="excluirMenuAberto"
-              aria-haspopup="menu"
+              [attr.aria-expanded]="
+                mostrarMenuExcluirComanda() ? excluirMenuAberto : null
+              "
+              [attr.aria-haspopup]="mostrarMenuExcluirComanda() ? 'menu' : null"
               aria-label="Excluir comanda"
             >
-              {{ excluindo ? 'Excluindo?' : 'Excluir' }}
-              <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
+              {{ excluindo ? 'Excluindo…' : 'Excluir' }}
+              @if (mostrarMenuExcluirComanda()) {
+                <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
+              }
             </button>
-            @if (excluirMenuAberto) {
-              <ul class="nc-outros-panel" role="menu">
+            @if (excluirMenuAberto && mostrarMenuExcluirComanda()) {
+              <ul class="nc-excluir-panel" role="menu">
                 <li role="none">
                   <button
                     type="button"
-                    class="nc-outros-opt"
+                    class="nc-excluir-opt"
                     role="menuitem"
                     (click)="abrirModalExcluir('somente_comanda')"
                   >
@@ -392,7 +299,7 @@
                 <li role="none">
                   <button
                     type="button"
-                    class="nc-outros-opt"
+                    class="nc-excluir-opt"
                     role="menuitem"
                     (click)="abrirModalExcluir('completo')"
                   >
@@ -402,16 +309,6 @@
               </ul>
             }
           </div>
-        } @else if (comandaTemPagamentosRegistados()) {
-          <button
-            type="button"
-            class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
-            disabled
-            [attr.title]="motivoExclusaoBloqueada()"
-            [attr.aria-label]="motivoExclusaoBloqueada()"
-          >
-            Excluir
-          </button>
         }
         @if (!comandaFinalizada()) {
           <button
@@ -452,7 +349,7 @@
     <div class="comandas-modal__icon-wrap" aria-hidden="true">
       <span class="comandas-modal__icon">!</span>
     </div>
-    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">Aten��o</h3>
+    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">Atenção</h3>
     <p class="comandas-modal__text">
       {{ textoModalExcluir() }}
     </p>
@@ -468,46 +365,25 @@
       >
         Cancelar
       </button>
-      <button
-        type="button"
-        class="comandas-modal__btn comandas-modal__btn--confirm"
-        (click)="confirmarExcluirComanda()"
-        [disabled]="excluindo"
-      >
-        {{ excluindo ? 'Excluindo?' : 'Sim, excluir' }}
-      </button>
-    </div>
-  </div>
-}
-
-@if (modalOutrosOpcao) {
-  <div
-    class="nc-comanda-diag"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="nc-comanda-outros-titulo"
-  >
-    <div class="nc-comanda-diag__backdrop" (click)="fecharModalOutrosOpcao()"></div>
-    <div class="nc-comanda-diag__panel">
-      <h2 id="nc-comanda-outros-titulo" class="nc-comanda-diag__title">
-        {{ modalOutrosOpcao === 'imprimir' ? 'Imprimir' : 'Hist�rico' }}
-      </h2>
-      <p class="nc-comanda-diag__text">Esta fun��o ser� implementada em breve.</p>
-      <div class="nc-comanda-diag__actions nc-comanda-diag__actions--end">
+      @if (exclusaoBloqueadaPorCaixa()) {
         <button
           type="button"
-          class="nc-comanda-diag__btn nc-comanda-diag__btn--primary"
-          (click)="fecharModalOutrosOpcao()"
+          class="comandas-modal__btn comandas-modal__btn--faturar"
+          (click)="irParaVerPagamentosAposBloqueio()"
+          [disabled]="excluindo"
         >
-          OK
+          Ver pagamentos
         </button>
-      </div>
+      } @else {
+        <button
+          type="button"
+          class="comandas-modal__btn comandas-modal__btn--confirm"
+          (click)="confirmarExcluirComanda()"
+          [disabled]="excluindo"
+        >
+          {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
+        </button>
+      }
     </div>
   </div>
 }
-
-<app-whatsapp-enviar-modal
-  [aberto]="whatsappModalAberto()"
-  [contexto]="whatsappContexto()"
-  (fechar)="fecharWhatsappModal()"
-/>
