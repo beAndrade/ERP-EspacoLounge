@@ -19,7 +19,7 @@
 </button>
 
 <div class="nc-drawer" [class.nc-drawer--finalizada]="comandaFinalizada()">
-  <!-- Grelha: sidebar (altura total) | coluna principal (conteúdo + resumo + footer). -->
+  <!-- Grelha: sidebar (altura total) | coluna principal (conteÃºdo + resumo + footer). -->
   <div class="nc-drawer__client agenda-novo--drawer" aria-label="Cliente">
     <app-agenda-novo-client-sidebar
       class="form-shell__client"
@@ -65,9 +65,9 @@
               />
             </label>
             <label class="nc-field nc-field--numero">
-              <span class="nc-field__label">Número da comanda</span>
+              <span class="nc-field__label">NÃºmero da comanda</span>
               <div class="nc-field__fake nc-field__fake--locked" aria-readonly="true">
-                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'Número da comanda' }}
+                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'NÃºmero da comanda' }}
               </div>
             </label>
           </div>
@@ -106,11 +106,11 @@
                 <p class="nc-itens__alert" role="alert">{{ erroItens }}</p>
               } @else {
                 @if (carregandoItens && contextoPodeSincronizarItens()) {
-                  <p class="nc-itens__hint">A carregar itens do agendamento…</p>
+                  <p class="nc-itens__hint">A carregar itens do agendamentoâ¦</p>
                 }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
-                    A comanda exibe os itens do agendamento. Use «Editar» para alterar itens e valores.
+                    A comanda exibe os itens do agendamento. Use Â«EditarÂ» para alterar itens e valores.
                   </p>
                 }
 
@@ -257,7 +257,7 @@
     </div>
   </div>
 
-  <footer class="nc-footer" aria-label="Ações da comanda">
+  <footer class="nc-footer" aria-label="AÃ§Ãµes da comanda">
     <div class="nc-footer__bar">
       <div class="nc-footer__actions">
         <button type="button" class="btn btn-footer btn-footer--ghost" (click)="fechar.emit()">
@@ -279,7 +279,7 @@
               [attr.aria-haspopup]="mostrarMenuExcluirComanda() ? 'menu' : null"
               aria-label="Excluir comanda"
             >
-              {{ excluindo ? 'Excluindo…' : 'Excluir' }}
+              {{ excluindo ? 'Excluindoâ¦' : 'Excluir' }}
               @if (mostrarMenuExcluirComanda()) {
                 <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
               }
@@ -293,6 +293,27 @@
                     role="menuitem"
                     (click)="abrirModalExcluir('somente_comanda')"
                   >
+                    <svg
+                      class="nc-excluir-opt-ico"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 2v4" />
+                      <path d="M12 2v4" />
+                      <path d="M16 2v4" />
+                      <rect width="16" height="18" x="4" y="4" rx="2" />
+                      <path d="M8 10h6" />
+                      <path d="M8 14h8" />
+                      <path d="M8 18h5" />
+                    </svg>
                     Excluir somente comanda
                   </button>
                 </li>
@@ -303,6 +324,30 @@
                     role="menuitem"
                     (click)="abrirModalExcluir('completo')"
                   >
+                    <svg
+                      class="nc-excluir-opt-ico"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 2v3" />
+                      <path d="M16 2v3" />
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <path d="M3 9h18" />
+                      <path d="M8 13h.01" />
+                      <path d="M12 13h.01" />
+                      <path d="M16 13h.01" />
+                      <path d="M8 17h.01" />
+                      <path d="M12 17h.01" />
+                      <path d="M16 17h.01" />
+                    </svg>
                     Excluir comanda e agendamentos
                   </button>
                 </li>
@@ -349,7 +394,7 @@
     <div class="comandas-modal__icon-wrap" aria-hidden="true">
       <span class="comandas-modal__icon">!</span>
     </div>
-    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">Atenção</h3>
+    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">AtenÃ§Ã£o</h3>
     <p class="comandas-modal__text">
       {{ textoModalExcluir() }}
     </p>
@@ -381,7 +426,7 @@
           (click)="confirmarExcluirComanda()"
           [disabled]="excluindo"
         >
-          {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
+          {{ excluindo ? 'Excluindoâ¦' : 'Sim, excluir' }}
         </button>
       }
     </div>
