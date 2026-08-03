@@ -19,7 +19,7 @@
 </button>
 
 <div class="nc-drawer" [class.nc-drawer--finalizada]="comandaFinalizada()">
-  <!-- Grelha: sidebar (altura total) | coluna principal (conteúdo + resumo + footer). -->
+  <!-- Grelha: sidebar (altura total) | coluna principal (conteï¿½do + resumo + footer). -->
   <div class="nc-drawer__client agenda-novo--drawer" aria-label="Cliente">
     <app-agenda-novo-client-sidebar
       class="form-shell__client"
@@ -65,9 +65,9 @@
               />
             </label>
             <label class="nc-field nc-field--numero">
-              <span class="nc-field__label">Número da comanda</span>
+              <span class="nc-field__label">Nï¿½mero da comanda</span>
               <div class="nc-field__fake nc-field__fake--locked" aria-readonly="true">
-                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'Número da comanda' }}
+                {{ contexto()?.idAtendimento?.trim() ? ('#' + numeroComandaExibicao()) : 'Nï¿½mero da comanda' }}
               </div>
             </label>
           </div>
@@ -110,7 +110,7 @@
                 }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
-                    A comanda exibe os itens do agendamento. Use «Editar» para alterar itens e valores.
+                    A comanda exibe os itens do agendamento. Use ï¿½Editarï¿½ para alterar itens e valores.
                   </p>
                 }
 
@@ -184,7 +184,7 @@
                               </div>
                             }
                             <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-unit">
-                              <span class="nc-leitura__money-lbl">Valor unitário</span>
+                              <span class="nc-leitura__money-lbl">Valor unitÃ¡rio</span>
                               <span class="nc-leitura__money-val">{{ blocStripe.unitario }}</span>
                             </div>
                             <div class="nc-leitura__money-cell nc-leitura__money-cell--compact nc-leitura__money-desc">
@@ -257,7 +257,7 @@
     </div>
   </div>
 
-  <footer class="nc-footer" aria-label="Ações da comanda">
+  <footer class="nc-footer" aria-label="Aï¿½ï¿½es da comanda">
     <div class="nc-footer__bar">
       <div class="nc-footer__actions">
         <div
@@ -351,7 +351,7 @@
                     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                     <path d="M3 3v5h5" />
                   </svg>
-                  Histórico
+                  Histï¿½rico
                 </button>
               </li>
             </ul>
@@ -452,7 +452,7 @@
     <div class="comandas-modal__icon-wrap" aria-hidden="true">
       <span class="comandas-modal__icon">!</span>
     </div>
-    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">Atenção</h3>
+    <h3 id="nc-comanda-excluir-titulo" class="comandas-modal__title">Atenï¿½ï¿½o</h3>
     <p class="comandas-modal__text">
       {{ textoModalExcluir() }}
     </p>
@@ -490,9 +490,9 @@
     <div class="nc-comanda-diag__backdrop" (click)="fecharModalOutrosOpcao()"></div>
     <div class="nc-comanda-diag__panel">
       <h2 id="nc-comanda-outros-titulo" class="nc-comanda-diag__title">
-        {{ modalOutrosOpcao === 'imprimir' ? 'Imprimir' : 'Histórico' }}
+        {{ modalOutrosOpcao === 'imprimir' ? 'Imprimir' : 'Histï¿½rico' }}
       </h2>
-      <p class="nc-comanda-diag__text">Esta função será implementada em breve.</p>
+      <p class="nc-comanda-diag__text">Esta funï¿½ï¿½o serï¿½ implementada em breve.</p>
       <div class="nc-comanda-diag__actions nc-comanda-diag__actions--end">
         <button
           type="button"
