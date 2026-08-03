@@ -24,10 +24,6 @@
   gap: 0.65rem;
   width: 100%;
   font-size: 14px;
-
-  &--total {
-    font-weight: 700;
-  }
 }
 
 .comanda-resumo-bar__label {
@@ -35,6 +31,7 @@
   text-align: right;
   color: #57534e;
   font-weight: 500;
+  font-size: 15px;
 }
 
 .comanda-resumo-bar__input {

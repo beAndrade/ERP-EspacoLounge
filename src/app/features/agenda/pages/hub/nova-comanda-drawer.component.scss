@@ -1778,8 +1778,12 @@
     flex-shrink: 1;
 
     .nc-leitura__money-lbl {
-      font-size: 0.62rem;
-      line-height: 1.15;
+      font-size: 0.72rem;
+      line-height: 1.2;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 500;
+      white-space: nowrap;
     }
 
     .nc-leitura__money-val {
@@ -1790,10 +1794,10 @@
 }
 
 .nc-leitura__money-lbl {
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
   color: #64748b;
 }
 
