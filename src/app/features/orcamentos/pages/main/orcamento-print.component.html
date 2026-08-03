@@ -1,0 +1,97 @@
+@if (dados; as d) {
+  <div
+    class="orcamento-print"
+    [class.orcamento-print--preview]="modo === 'preview'"
+    [attr.aria-hidden]="modo === 'print-only' ? 'true' : null"
+  >
+    <header class="orcamento-print__head">
+      @if (d.nomeEmpresa) {
+        <p class="orcamento-print__empresa">{{ d.nomeEmpresa }}</p>
+      }
+      <h1 class="orcamento-print__title">Orçamento</h1>
+      <p class="orcamento-print__meta-line">
+        <span>Data: {{ d.dataFmt || '—' }}</span>
+        @if (d.numeroComanda) {
+          <span> · Nº {{ d.numeroComanda }}</span>
+        }
+      </p>
+    </header>
+
+    <section class="orcamento-print__cliente" aria-label="Cliente">
+      <p class="orcamento-print__cliente-nome">
+        {{ d.clienteNome || '—' }}
+      </p>
+      @if (d.telefone) {
+        <p class="orcamento-print__cliente-tel">
+          {{ telefoneFmt(d.telefone) }}
+        </p>
+      }
+    </section>
+
+    <table class="orcamento-print__table">
+      <thead>
+        <tr>
+          <th class="orcamento-print__col-item">Item</th>
+          <th class="orcamento-print__col-qty">Qtd</th>
+          <th class="orcamento-print__col-money">Unitário</th>
+          <th class="orcamento-print__col-money">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of d.itens; track $index) {
+          <tr>
+            <td>{{ item.descricao }}</td>
+            <td class="orcamento-print__col-qty">{{ item.quantidade }}</td>
+            <td class="orcamento-print__col-money">
+              {{
+                item.valorUnitario
+                  | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR'
+              }}
+            </td>
+            <td class="orcamento-print__col-money">
+              {{ item.total | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="orcamento-print__empty">Nenhum item</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <section class="orcamento-print__totais">
+      <dl class="orcamento-print__totais-list">
+        <div class="orcamento-print__totais-row">
+          <dt>Subtotal</dt>
+          <dd>
+            {{ d.subtotal | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </dd>
+        </div>
+        @if (d.desconto > 0.005) {
+          <div class="orcamento-print__totais-row">
+            <dt>Desconto</dt>
+            <dd>
+              {{ d.desconto | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+            </dd>
+          </div>
+        }
+        <div
+          class="orcamento-print__totais-row orcamento-print__totais-row--total"
+        >
+          <dt>Total</dt>
+          <dd>
+            {{ d.total | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    @if (d.observacoes?.trim()) {
+      <section class="orcamento-print__obs" aria-label="Observações">
+        <h2 class="orcamento-print__obs-title">Observações</h2>
+        <p class="orcamento-print__obs-text">{{ d.observacoes }}</p>
+      </section>
+    }
+  </div>
+}

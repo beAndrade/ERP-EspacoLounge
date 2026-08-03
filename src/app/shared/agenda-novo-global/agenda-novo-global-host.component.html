@@ -22,6 +22,24 @@
       (cancelarModal)="d.fechar()"
       (abrirCadastroCliente)="onAbrirCadastroCliente($event)"
       (abrirNovoClienteDrawer)="abrirClienteNovo()"
+      (imprimirOrcamento)="onImprimirOrcamento($event)"
+      (enviarWhatsappOrcamento)="onWhatsappOrcamento($event)"
     />
   </div>
 }
+
+@if (previewDados) {
+  <app-orcamento-preview-overlay
+    [dados]="previewDados"
+    (fechar)="fecharPreviewOrcamento()"
+    (imprimir)="imprimirPreviewOrcamento()"
+    (whatsapp)="whatsappPreviewOrcamento()"
+  />
+}
+
+<app-whatsapp-enviar-modal
+  [aberto]="whatsappAberto"
+  [contexto]="whatsappCtx"
+  (fechar)="fecharWhatsapp()"
+  (enviado)="onWhatsappEnviado()"
+/>

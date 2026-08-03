@@ -31,7 +31,14 @@ import { formatarCelularBr } from '../../../../core/utils/telefone-br';
 import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import { AgendaNovoComponent } from '../../../agenda/pages/novo/agenda-novo.component';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
+import {
+  type OrcamentoPrintPayload,
+} from './orcamento-print.component';
+import { OrcamentoPreviewOverlayComponent } from './orcamento-preview-overlay.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import {
+  ClienteCadastroDrawerService,
+} from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
   AgendaNovoGlobalService,
   type AgendaNovoGlobalModo,
@@ -82,6 +89,7 @@ function formataMoeda(n: number): string {
     DecimalPipe,
     AgendaNovoComponent,
     WhatsappEnviarModalComponent,
+    OrcamentoPreviewOverlayComponent,
     UiTipTriggerComponent,
     ClienteDrawerPeriodoFiltroComponent,
   ],
@@ -96,6 +104,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly toast = inject(AppToastService);
   private readonly agendaNovoGlobal = inject(AgendaNovoGlobalService);
+  private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly appRef = inject(ApplicationRef);
 
   /** Menu Novo → Orçamento: mesmo drawer do botão Novo da lista. */
@@ -147,6 +156,8 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   whatsappAberto = false;
   whatsappCtx: WhatsappEnviarContexto | null = null;
   private whatsappGrupo: OrcamentoGrupo | null = null;
+  /** Preview comercial do orçamento (antes de Imprimir / PDF). */
+  previewDados: OrcamentoPrintPayload | null = null;
 
   converterAberto = false;
   converterGrupo: OrcamentoGrupo | null = null;
@@ -195,6 +206,11 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     if (this.whatsappAberto) {
       ev.preventDefault();
       this.fecharWhatsapp();
+      return;
+    }
+    if (this.previewDados) {
+      ev.preventDefault();
+      this.fecharPreviewOrcamento();
       return;
     }
     if (this.converterAberto) {
@@ -471,6 +487,65 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     this.menuAbertoParaId = this.menuAbertoParaId === id ? null : id;
   }
 
+  abrirOrcamento(g: OrcamentoGrupo, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.menuAbertoParaId = null;
+    this.abrirEdicao(g);
+  }
+
+  abrirOrcamentoDoMenu(g: OrcamentoGrupo, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.menuAbertoParaId = null;
+    this.abrirEdicao(g);
+  }
+
+  abrirDrawerCliente(g: OrcamentoGrupo, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.menuAbertoParaId = null;
+    const cid = g.idCliente?.trim();
+    if (!cid) return;
+    this.cadastroDrawer.abrirEdicao(cid, {
+      nomeLista: g.nomeCliente?.trim() ?? '',
+      callbacks: {
+        onSalvo: (salvo) => {
+          const nomeNovo = String(salvo?.nome ?? '').trim();
+          const cidSalvo = String(salvo?.id ?? cid).trim();
+          if (cidSalvo && nomeNovo) {
+            this.grupos = this.grupos.map((x) =>
+              x.idCliente === cidSalvo ? { ...x, nomeCliente: nomeNovo } : x,
+            );
+            const prev = this.clientesPorId.get(cidSalvo);
+            if (prev) {
+              this.clientesPorId.set(cidSalvo, { ...prev, nome: nomeNovo });
+            }
+          }
+        },
+      },
+    });
+  }
+
+  private abrirEdicao(g: OrcamentoGrupo): void {
+    this.fecharPainelBusca();
+    const dataYmd = (g.data || '').trim().slice(0, 10) || toYmd(new Date());
+    this.novoCtx = {
+      data: dataYmd,
+      profissional_id: 0,
+      hora: '',
+      id_atendimento: g.id,
+    };
+    this.novoAberto = true;
+    document.body.classList.add('drawer-open');
+    runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.novoPanelOpen = open;
+      },
+      appRef: this.appRef,
+    });
+  }
+
   abrirNovo(): void {
     this.fecharPainelBusca();
     this.novoCtx = {
@@ -521,6 +596,67 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   onSalvoNovo(): void {
     this.fecharNovo();
     this.carregar();
+  }
+
+  onImprimirOrcamentoDrawer(payload: OrcamentoPrintPayload): void {
+    this.previewDados = payload;
+  }
+
+  fecharPreviewOrcamento(): void {
+    this.previewDados = null;
+  }
+
+  imprimirPreviewOrcamento(): void {
+    if (!this.previewDados) return;
+    this.appRef.tick();
+    queueMicrotask(() => window.print());
+  }
+
+  whatsappPreviewOrcamento(): void {
+    if (!this.previewDados) return;
+    this.onWhatsappOrcamentoDrawer(this.previewDados);
+  }
+
+  onWhatsappOrcamentoDrawer(payload: OrcamentoPrintPayload): void {
+    const tel = String(payload.telefone ?? '').trim();
+    if (tel.length < 10) {
+      this.toast.show('Cliente sem telefone para WhatsApp.');
+      return;
+    }
+    const resumo = payload.itens
+      .map((it) =>
+        it.total > 0
+          ? `• ${it.descricao}: ${formataMoeda(it.total)}`
+          : `• ${it.descricao}`,
+      )
+      .join('\n');
+    this.whatsappGrupo = {
+      id: payload.idAtendimento,
+      data: payload.dataYmd,
+      nomeCliente: payload.clienteNome,
+      linhas: [],
+      numeroComanda: payload.numeroComanda
+        ? Number(payload.numeroComanda) || null
+        : null,
+      valorTotal: payload.total,
+      telefoneCliente: tel,
+      idCliente: payload.clienteId ?? null,
+      orcamentoStatus: 'rascunho',
+    };
+    this.whatsappCtx = {
+      telefone: tel,
+      clienteId: payload.clienteId,
+      clienteNome: payload.clienteNome,
+      idAtendimento: payload.idAtendimento,
+      templateCodigo: 'orcamento',
+      variaveis: {
+        cliente: payload.clienteNome,
+        numero_comanda: payload.numeroComanda || '',
+        resumo,
+        valor: formataMoeda(payload.total),
+      },
+    };
+    this.whatsappAberto = true;
   }
 
   enviarWhatsapp(g: OrcamentoGrupo): void {

@@ -29,6 +29,7 @@ import {
 import { postAtendimentoMutationBody } from './services/atendimentos-api-schemas';
 import { faturarComandaComRascunho } from './services/comanda-faturar-batch';
 import {
+  atualizarDataComandaAtendimento,
   atualizarDataPagamentoComanda,
   baixarParcelasCartaoVencidas,
   criarPagamentoComanda,
@@ -3002,7 +3003,7 @@ const app = new Elysia({ adapter: node() })
         if (!Number.isFinite(pagId) || pagId <= 0) {
           return fail('VALIDATION', 'pagamentoId inválido');
         }
-        const r = await excluirPagamentoComanda(db, pagId);
+        const r = await excluirPagamentoComanda(db, pagId, idAt);
         if (!r.idAtendimento) {
           return fail('NOT_FOUND', 'Pagamento não encontrado');
         }
@@ -3010,6 +3011,9 @@ const app = new Elysia({ adapter: node() })
         return ok({ resumo });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|inválid|não encontrad|não pertence/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
         return fail('SERVER', msg);
       }
     },
@@ -3017,6 +3021,48 @@ const app = new Elysia({ adapter: node() })
       params: t.Object({
         idAtendimento: t.String(),
         pagamentoId: t.String(),
+      }),
+    },
+  )
+  .patch(
+    '/api/comandas/:idAtendimento/data-comanda',
+    async ({ params, body }) => {
+      try {
+        const idAt = decodeURIComponent(
+          String(params.idAtendimento || '').trim(),
+        ).trim();
+        if (!idAt) return fail('VALIDATION', 'idAtendimento é obrigatório');
+        const data = String(
+          (body as { data?: string }).data ?? '',
+        ).trim();
+        const atualizarPagamentos = Boolean(
+          (body as { atualizar_pagamentos?: boolean }).atualizar_pagamentos,
+        );
+        const r = await atualizarDataComandaAtendimento(
+          db,
+          idAt,
+          data,
+          atualizarPagamentos,
+        );
+        return ok(r);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|inválid|não encontrad/i.test(msg)) {
+          return fail(
+            /não encontrad/i.test(msg) ? 'NOT_FOUND' : 'VALIDATION',
+            msg,
+          );
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({
+        idAtendimento: t.String(),
+      }),
+      body: t.Object({
+        data: t.String(),
+        atualizar_pagamentos: t.Optional(t.Boolean()),
       }),
     },
   )

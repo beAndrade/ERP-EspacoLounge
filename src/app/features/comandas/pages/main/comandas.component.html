@@ -271,11 +271,25 @@
               <colgroup>
                 <col class="comandas-table__col-check" />
                 <col class="comandas-table__col-ticket" />
-                <col class="comandas-table__col-data" />
+                @if (colunaVisivel('data')) {
+                  <col class="comandas-table__col-data" />
+                }
                 <col class="comandas-table__col-cliente" />
-                <col class="comandas-table__col-status" />
-                <col class="comandas-table__col-valor" />
-                <col class="comandas-table__col-pagamento" />
+                @if (colunaVisivel('status')) {
+                  <col class="comandas-table__col-status" />
+                }
+                @if (colunaVisivel('valor')) {
+                  <col class="comandas-table__col-valor" />
+                }
+                @if (colunaVisivel('pagamento')) {
+                  <col class="comandas-table__col-pagamento" />
+                }
+                @if (colunaVisivel('forma_pagamento')) {
+                  <col class="comandas-table__col-forma" />
+                }
+                @if (colunaVisivel('observacao')) {
+                  <col class="comandas-table__col-obs" />
+                }
                 <col class="comandas-table__col-menu" />
               </colgroup>
               <thead>
@@ -333,6 +347,7 @@
                     </button>
                     </app-ui-tip-trigger>
                   </th>
+                  @if (colunaVisivel('data')) {
                   <th class="col-data comandas-th-sort-wrap" scope="col">
                     <app-ui-tip-trigger
                       fill
@@ -376,6 +391,7 @@
                     </button>
                     </app-ui-tip-trigger>
                   </th>
+                  }
                   <th class="col-cliente comandas-th-sort-wrap" scope="col">
                     <app-ui-tip-trigger
                       fill
@@ -421,24 +437,108 @@
                     </button>
                     </app-ui-tip-trigger>
                   </th>
-                  <th class="col-status" scope="col">Status</th>
-                  <th class="col-valor" scope="col">Valor</th>
-                  <th class="col-pagamento" scope="col">Pagamento</th>
+                  @if (colunaVisivel('status')) {
+                    <th class="col-status" scope="col">Status</th>
+                  }
+                  @if (colunaVisivel('valor')) {
+                    <th class="col-valor" scope="col">Valor</th>
+                  }
+                  @if (colunaVisivel('pagamento')) {
+                    <th class="col-pagamento" scope="col">Pagamento</th>
+                  }
+                  @if (colunaVisivel('forma_pagamento')) {
+                    <th class="col-forma" scope="col">Forma de pagamento</th>
+                  }
+                  @if (colunaVisivel('observacao')) {
+                    <th class="col-obs" scope="col">Observação</th>
+                  }
                   <th class="col-menu" scope="col">
-                    <span class="sr-only">Ações</span>
+                    <span class="sr-only">Configurações da coluna</span>
+                    <div class="comandas-th-acoes-wrap">
+                      <app-ui-tip-trigger tip="Configurações da coluna" align="end">
+                        <button
+                          type="button"
+                          class="comandas-th-acoes-icon-wrap"
+                          [class.comandas-th-acoes-icon-wrap--open]="colunasMenuAberto"
+                          (click)="toggleColunasMenu($event)"
+                          [attr.aria-expanded]="colunasMenuAberto"
+                          aria-haspopup="true"
+                          aria-label="Configurações da coluna"
+                        >
+                          <svg
+                            class="comandas-th-acoes-icon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+                            />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </button>
+                      </app-ui-tip-trigger>
+                      @if (colunasMenuMontado) {
+                        <ul
+                          class="comandas-colunas-menu"
+                          [class.comandas-colunas-menu--open]="colunasMenuAberto"
+                          role="menu"
+                          aria-label="Colunas visíveis"
+                          (click)="$event.stopPropagation()"
+                        >
+                          <li>
+                            <div class="comandas-colunas-menu__head">
+                              <span class="comandas-colunas-menu__title">Colunas</span>
+                              <button
+                                type="button"
+                                class="comandas-colunas-menu__padrao"
+                                (click)="restaurarColunasPadrao()"
+                              >
+                                Padrão
+                              </button>
+                            </div>
+                          </li>
+                          <li class="comandas-colunas-menu__items-wrap">
+                            <ul class="comandas-colunas-menu__items">
+                              @for (col of colunasOpcoes; track col.id) {
+                                <li role="menuitem">
+                                  <label
+                                    class="comandas-filtros-check comandas-colunas-menu__check"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      [checked]="colunaVisivel(col.id)"
+                                      (change)="toggleColuna(col.id, $event)"
+                                    />
+                                    {{ col.label }}
+                                  </label>
+                                </li>
+                              }
+                            </ul>
+                          </li>
+                        </ul>
+                      }
+                    </div>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 @if (carregando) {
                   <tr>
-                    <td class="table-body__busy" colspan="8">
+                    <td class="table-body__busy" [attr.colspan]="totalColunasTabela()">
                       <span class="table-body__busy-text">Carregando…</span>
                     </td>
                   </tr>
                 } @else if (totalFiltrado() === 0) {
                   <tr>
-                    <td class="table-body__empty" colspan="8">
+                    <td class="table-body__empty" [attr.colspan]="totalColunasTabela()">
                       <app-table-empty label="Nenhum item encontrado" />
                     </td>
                   </tr>
@@ -468,7 +568,9 @@
                           <span>{{ rotuloTicket(g) }}</span>
                         }
                       </td>
-                      <td class="col-data">{{ dataDdMmBarraAaaa(g.data) }}</td>
+                      @if (colunaVisivel('data')) {
+                        <td class="col-data">{{ dataDdMmBarraAaaa(g.data) }}</td>
+                      }
                       <td class="col-cliente">
                         @if (idCliente(g); as cid) {
                           <a
@@ -481,7 +583,8 @@
                           {{ g.nomeCliente }}
                         }
                       </td>
-                      <td>
+                      @if (colunaVisivel('status')) {
+                      <td class="col-status">
                         <span
                           class="badge"
                           [class.badge--aviso]="classeBadgeStatus(g) === 'badge--aviso'"
@@ -492,6 +595,8 @@
                           >{{ rotuloStatus(g) }}</span
                         >
                       </td>
+                      }
+                      @if (colunaVisivel('valor')) {
                       <td class="col-valor">
                         <div class="col-valor__inner">
                           @if (mostrarIconeDescontoComanda(g)) {
@@ -533,6 +638,8 @@
                           }
                         </div>
                       </td>
+                      }
+                      @if (colunaVisivel('pagamento')) {
                       <td class="col-pagamento">
                         <span
                           class="badge"
@@ -545,6 +652,23 @@
                           >{{ rotuloPagamento(g) }}</span
                         >
                       </td>
+                      }
+                      @if (colunaVisivel('forma_pagamento')) {
+                        <td class="col-forma">
+                          <span class="col-forma__text">{{
+                            rotuloFormaPagamentoGrupo(g)
+                          }}</span>
+                        </td>
+                      }
+                      @if (colunaVisivel('observacao')) {
+                        <td class="col-obs">
+                          @if (observacaoGrupo(g); as obs) {
+                            <span class="col-obs__text" [title]="obs">{{ obs }}</span>
+                          } @else {
+                            <span class="col-obs__text">—</span>
+                          }
+                        </td>
+                      }
                       <td class="col-menu">
                         <div
                           class="comandas-row-menu"

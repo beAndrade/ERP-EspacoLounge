@@ -54,6 +54,7 @@ export class UiTipTriggerComponent implements OnDestroy {
   readonly fill = input(false, { transform: booleanAttribute });
   /**
    * `above` — sempre por cima do trigger (ex.: cabeçalhos de ordenação).
+   * Com `align="end"`: acima, borda direita do balão alinhada à do botão.
    * `auto` — preferir cima; se não couber, desce.
    */
   readonly placement = input<UiTipPlacement>('auto');
@@ -246,7 +247,22 @@ export class UiTipTriggerComponent implements OnDestroy {
     let left: number;
     let place: 'above' | 'below' | 'left' | 'right' = 'above';
 
-    if (align === 'end') {
+    if (align === 'end' && this.placement() === 'above') {
+      /**
+       * Acima do trigger, borda direita do balão alinhada à do botão
+       * (cresce para a esquerda / cima).
+       */
+      left = triggerRect.right - panelW;
+      top = triggerRect.top - panelH - gap;
+      place = 'above';
+      if (top < margin) {
+        top = margin;
+      }
+      left = Math.max(
+        margin,
+        Math.min(left, window.innerWidth - panelW - margin),
+      );
+    } else if (align === 'end') {
       /**
        * Balão cresce à esquerda do botão; seta no meio da borda direita,
        * apontando para o trigger.

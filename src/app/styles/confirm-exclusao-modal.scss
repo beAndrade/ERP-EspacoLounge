@@ -19,7 +19,7 @@
   align-items: center;
   width: 416px;
   max-width: calc(100vw - 32px);
-  min-height: 254px;
+  min-height: 0;
   border: 0;
   border-radius: 14px;
   background: #fff;
@@ -51,7 +51,7 @@
 }
 
 .comandas-modal__title {
-  margin: 0 0 15px;
+  margin: 0 0 24px;
   font-size: 18px;
   font-weight: 700;
   line-height: 1.5;
@@ -60,7 +60,7 @@
 }
 
 .comandas-modal__text {
-  margin: auto 0 0;
+  margin: 0;
   padding-bottom: 0;
   color: rgba(0, 0, 0, 0.75);
   font-size: 16px;
@@ -71,9 +71,11 @@
 
 .comandas-modal__actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 14px;
-  margin-top: 12px;
+  margin-top: 24px;
+  padding-top: 0;
 }
 
 .comandas-modal__btn {

@@ -26,6 +26,7 @@ import {
 } from 'rxjs';
 import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
 import { AgendaNovoClientSidebarComponent } from '../novo/agenda-novo-client-sidebar.component';
+import { AgendaModalCalendarComponent } from '../novo/agenda-modal-calendar.component';
 import type {
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
@@ -35,6 +36,7 @@ import type {
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
+import { extractApiErrorMessage } from '../../../../core/utils/api-error-message';
 import {
   isTipoPacoteQueratinaNorm,
   linhaResumoAtendimentoLista,
@@ -115,6 +117,7 @@ const RESUMO_VAZIO: ComandaResumoPagamentos = {
   standalone: true,
   imports: [
     AgendaNovoClientSidebarComponent,
+    AgendaModalCalendarComponent,
     ComandaResumoBarComponent,
     ReactiveFormsModule,
   ],
@@ -191,6 +194,16 @@ export class NovaComandaDrawerComponent implements OnInit {
   private readonly duracaoPulsoExcluirMs = 600;
   private readonly duracaoExcluirMenuFecharMs = 280;
   modalConfirmExcluirAberto = false;
+  /** Confirmação ao alterar a data da comanda (finalizada ou com pagamentos). */
+  modalConfirmDataAberto = false;
+  /** YMD pendente no modal de data. */
+  dataPendenteYmd: string | null = null;
+  persistindoDataComanda = false;
+  erroDataComanda = '';
+  /** Última data persistida (servidor / contexto). */
+  private dataYmdPersistida: string | null = null;
+  /** Calendário do campo Data (mesmo padrão do Faturar). */
+  dataComandaPickerOpen = false;
   /** Opção escolhida no menu antes do modal de confirmação. */
   modoExclusaoConfirmar: 'somente_comanda' | 'completo' = 'completo';
   excluindo = false;
@@ -235,7 +248,19 @@ export class NovaComandaDrawerComponent implements OnInit {
         this.clienteNomeCtrl.setValue(nomeCliente, { emitEvent: false });
       }
       const dataExibicao = this.dataComandaExibicao();
-      if (this.dataComandaCtrl.value !== dataExibicao) {
+      const ymdCtx = (ctx?.dataYmd ?? '').trim();
+      if (
+        !this.modalConfirmDataAberto &&
+        !this.persistindoDataComanda &&
+        /^\d{4}-\d{2}-\d{2}$/.test(ymdCtx)
+      ) {
+        this.dataYmdPersistida = ymdCtx;
+      }
+      if (
+        !this.modalConfirmDataAberto &&
+        !this.persistindoDataComanda &&
+        this.dataComandaCtrl.value !== dataExibicao
+      ) {
         this.dataComandaCtrl.setValue(dataExibicao, { emitEvent: false });
       }
     });
@@ -318,6 +343,8 @@ export class NovaComandaDrawerComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => {
+        // Só propaga ao pai após confirmação/persistência — evita “sujar” a data no Cancelar.
+        if (this.modalConfirmDataAberto || this.persistindoDataComanda) return;
         this.comandaDataYmd.emit(this.dataComandaYmdParaFaturar());
       });
     this.descontoResumoCtrl.valueChanges
@@ -821,12 +848,11 @@ export class NovaComandaDrawerComponent implements OnInit {
     return sub;
   }
 
-  /** Comanda finalizada: desabilita campos editáveis (só leitura + cursor bloqueado na UI). */
+  /** Comanda finalizada: desabilita campos editáveis (Data permanece editável). */
   private aplicarEstadoCamposComandaFinalizada(): void {
     const fin = this.comandaFinalizada();
     const ctrls = [
       this.clienteNomeCtrl,
-      this.dataComandaCtrl,
       this.descontoResumoCtrl,
       this.creditoResumoCtrl,
       this.clienteComandaCtrl,
@@ -837,6 +863,9 @@ export class NovaComandaDrawerComponent implements OnInit {
       } else if (c.disabled) {
         c.enable({ emitEvent: false });
       }
+    }
+    if (this.dataComandaCtrl.disabled) {
+      this.dataComandaCtrl.enable({ emitEvent: false });
     }
   }
 
@@ -1277,8 +1306,15 @@ export class NovaComandaDrawerComponent implements OnInit {
    */
   @HostListener('click', ['$event'])
   onHostClickFecharExcluirMenu(ev: MouseEvent): void {
-    if (!this.excluirMenuAberto || this.excluirMenuFechando) return;
     const el = ev.target as HTMLElement | null;
+    if (
+      this.dataComandaPickerOpen &&
+      el &&
+      !el.closest?.('.nc-data-field__wrap')
+    ) {
+      this.dataComandaPickerOpen = false;
+    }
+    if (!this.excluirMenuAberto || this.excluirMenuFechando) return;
     if (el?.closest?.('.nc-excluir-wrap')) return;
     this.fecharExcluirMenu();
   }
@@ -1513,6 +1549,183 @@ export class NovaComandaDrawerComponent implements OnInit {
     if (fromCtrl) return fromCtrl;
     const y = (this.contexto()?.dataYmd ?? '').trim();
     return /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null;
+  }
+
+  private dataYmdAtualPersistida(): string | null {
+    const p = (this.dataYmdPersistida ?? '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(p)) return p;
+    const y = (this.contexto()?.dataYmd ?? '').trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(y) ? y : null;
+  }
+
+  private formatarYmdDdMm(ymd: string): string {
+    const p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
+    return p ? `${p[3]}/${p[2]}/${p[1]}` : ymd;
+  }
+
+  private restaurarDataComandaNoCampo(): void {
+    const ymd = this.dataYmdAtualPersistida();
+    const txt = ymd ? this.formatarYmdDdMm(ymd) : this.dataComandaExibicao();
+    this.dataComandaCtrl.setValue(txt, { emitEvent: false });
+    this.dataComandaPickerOpen = false;
+    this.comandaDataYmd.emit(ymd);
+  }
+
+  temPagamentosComanda(): boolean {
+    return this.pagamentos.length > 0;
+  }
+
+  textoModalDataComanda(): string {
+    const ymd = (this.dataPendenteYmd ?? '').trim();
+    const fmt = ymd ? this.formatarYmdDdMm(ymd) : '—';
+    if (this.temPagamentosComanda()) {
+      return `Alterar a data da comanda para ${fmt}? Você pode atualizar só a comanda ou também as datas dos pagamentos (caixa).`;
+    }
+    return `Alterar a data da comanda para ${fmt}?`;
+  }
+
+  dataComandaYmdCalendario(): string {
+    const y =
+      this.dataComandaYmdParaFaturar() ?? this.dataYmdAtualPersistida() ?? '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(y)) return y;
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  dataComandaExibicaoCampo(): string {
+    const ymd = this.dataComandaYmdParaFaturar();
+    if (ymd) return this.formatarYmdDdMm(ymd);
+    const raw = this.dataComandaCtrl.value.trim();
+    return raw || 'DD/MM/AAAA';
+  }
+
+  onDataComandaFieldClick(ev: Event): void {
+    const t = ev.target as HTMLElement;
+    if (
+      t.closest('app-agenda-modal-calendar') ||
+      t.closest('.nc-data-field__calendar-pop')
+    ) {
+      return;
+    }
+    ev.preventDefault();
+    this.dataComandaPickerOpen = !this.dataComandaPickerOpen;
+  }
+
+  onDataComandaPicked(ymd: string): void {
+    const y = String(ymd ?? '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(y)) return;
+    this.dataComandaPickerOpen = false;
+    // Não emite ainda: o pai só atualiza depois de confirmar/persistir.
+    this.dataComandaCtrl.setValue(this.formatarYmdDdMm(y), {
+      emitEvent: false,
+    });
+    this.aplicarAlteracaoDataComanda(y);
+  }
+
+  onDataComandaBlur(): void {
+    if (this.persistindoDataComanda || this.modalConfirmDataAberto) return;
+    if (this.dataComandaPickerOpen) return;
+    const id = this.contexto()?.idAtendimento?.trim();
+    if (!id) return;
+
+    const ymd = parseFiltroDataDdMm(this.dataComandaCtrl.value);
+    if (!ymd) {
+      this.restaurarDataComandaNoCampo();
+      return;
+    }
+    this.dataComandaCtrl.setValue(this.formatarYmdDdMm(ymd), {
+      emitEvent: false,
+    });
+    this.aplicarAlteracaoDataComanda(ymd);
+  }
+
+  onDataComandaKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter') return;
+    ev.preventDefault();
+    (ev.target as HTMLElement | null)?.blur?.();
+  }
+
+  private aplicarAlteracaoDataComanda(ymd: string): void {
+    const id = this.contexto()?.idAtendimento?.trim();
+    if (!id) {
+      this.comandaDataYmd.emit(ymd);
+      return;
+    }
+    const atual = this.dataYmdAtualPersistida();
+    if (atual && ymd === atual) return;
+
+    if (this.comandaFinalizada() || this.temPagamentosComanda()) {
+      this.dataPendenteYmd = ymd;
+      this.erroDataComanda = '';
+      this.modalConfirmDataAberto = true;
+      return;
+    }
+    this.persistirDataComanda(ymd, false);
+  }
+
+  fecharModalDataComanda(): void {
+    if (this.persistindoDataComanda) return;
+    this.modalConfirmDataAberto = false;
+    this.dataPendenteYmd = null;
+    this.erroDataComanda = '';
+    // Volta para a data persistida da comanda (antes da escolha no calendário).
+    this.restaurarDataComandaNoCampo();
+  }
+
+  confirmarDataComandaSomente(): void {
+    const ymd = (this.dataPendenteYmd ?? '').trim();
+    if (!ymd) return;
+    this.persistirDataComanda(ymd, false);
+  }
+
+  confirmarDataComandaComPagamentos(): void {
+    const ymd = (this.dataPendenteYmd ?? '').trim();
+    if (!ymd) return;
+    this.persistirDataComanda(ymd, true);
+  }
+
+  private persistirDataComanda(
+    ymd: string,
+    atualizarPagamentos: boolean,
+  ): void {
+    const id = this.contexto()?.idAtendimento?.trim();
+    if (!id || this.persistindoDataComanda) return;
+    this.persistindoDataComanda = true;
+    this.erroDataComanda = '';
+    this.api
+      .atualizarDataComanda(id, ymd, atualizarPagamentos)
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.persistindoDataComanda = false;
+          this.dataYmdPersistida = r.data;
+          this.dataComandaCtrl.setValue(this.formatarYmdDdMm(r.data), {
+            emitEvent: false,
+          });
+          this.comandaDataYmd.emit(r.data);
+          this.modalConfirmDataAberto = false;
+          this.dataPendenteYmd = null;
+          this.dataComandaPickerOpen = false;
+          if (atualizarPagamentos) {
+            this.recarregarResumoPagamentos(id);
+          }
+          this.toast.show(
+            atualizarPagamentos
+              ? 'Data da comanda e dos pagamentos atualizada.'
+              : 'Data da comanda atualizada.',
+          );
+        },
+        error: (err: unknown) => {
+          this.persistindoDataComanda = false;
+          const msg =
+            extractApiErrorMessage(err) ||
+            'Não foi possível atualizar a data.';
+          this.erroDataComanda = msg;
+          if (!this.modalConfirmDataAberto) {
+            this.restaurarDataComandaNoCampo();
+            this.toast.showWarning(msg);
+          }
+        },
+      });
   }
 
   tituloComandaDrawer(): string {

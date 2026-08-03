@@ -329,32 +329,48 @@
   font-size: 14px;
 }
 
+/**
+ * Larguras em % (somam ~100%): Cliente cede espaço nos breakpoints.
+ * Sem min-width na tabela → sem scrollbar horizontal.
+ */
+col.comandas-table__col-check {
+  width: 3.5%;
+}
+
 col.comandas-table__col-ticket {
-  width: 8.5%;
+  width: 9%;
 }
 
 col.comandas-table__col-data {
-  width: 9.5%;
+  width: 10%;
 }
 
 col.comandas-table__col-cliente {
-  width: 36.5%;
+  width: 30%;
 }
 
 col.comandas-table__col-status {
-  width: 8%;
-}
-
-col.comandas-table__col-valor {
   width: 12%;
 }
 
+col.comandas-table__col-valor {
+  width: 11%;
+}
+
 col.comandas-table__col-pagamento {
-  width: 13%;
+  width: 16.5%;
+}
+
+col.comandas-table__col-forma {
+  width: 12%;
+}
+
+col.comandas-table__col-obs {
+  width: 14%;
 }
 
 col.comandas-table__col-menu {
-  width: 3rem;
+  width: 4.25rem;
 }
 
 thead th {
@@ -612,12 +628,12 @@ thead th.col-valor {
 
 .col-data {
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .col-cliente {
   text-align: left;
   vertical-align: middle;
-
   overflow: hidden;
 
   a,
@@ -632,6 +648,15 @@ thead th.col-valor {
   }
 }
 
+.col-status {
+  white-space: nowrap;
+  overflow: hidden;
+
+  .badge {
+    margin-right: 0;
+  }
+}
+
 .col-pagamento {
   overflow: hidden;
 
@@ -640,7 +665,23 @@ thead th.col-valor {
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: bottom;
+    margin-right: 0;
   }
+}
+
+.col-forma,
+.col-obs {
+  overflow: hidden;
+}
+
+.col-forma__text,
+.col-obs__text {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 thead th.col-cliente {
@@ -655,6 +696,177 @@ thead th.col-pagamento {
 
 thead th.col-menu {
   overflow: visible;
+  text-align: center;
+  padding-left: 2px;
+  padding-right: 6px;
+}
+
+.comandas-th-acoes-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.comandas-th-acoes-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 23.56px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-sizing: border-box;
+  cursor: pointer;
+  color: var(--color-primary);
+  border-radius: 6px;
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+    outline-offset: 1px;
+  }
+}
+
+.comandas-th-acoes-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  color: var(--color-primary);
+  transition: transform 0.2s ease;
+}
+
+.comandas-th-acoes-icon-wrap--open .comandas-th-acoes-icon {
+  transform: rotate(90deg);
+}
+
+.comandas-colunas-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  width: 204.42px;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  list-style-type: none;
+  background-color: #ffffff;
+  background-clip: padding-box;
+  border: none;
+  border-radius: 14px;
+  outline: none;
+  box-shadow:
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: hidden;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top right;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s;
+  will-change: transform, opacity;
+}
+
+.comandas-colunas-menu--open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.comandas-colunas-menu > li {
+  list-style: none;
+  list-style-type: none;
+}
+
+.comandas-colunas-menu > li::marker {
+  content: none;
+}
+
+.comandas-colunas-menu__items-wrap {
+  margin: 0;
+  padding: 0;
+}
+
+.comandas-colunas-menu__items {
+  margin: 0 8px;
+  padding: 0;
+  list-style: none;
+  list-style-type: none;
+}
+
+.comandas-colunas-menu__items > li {
+  list-style: none;
+  list-style-type: none;
+  width: 180px;
+  margin: 0;
+  padding: 5px 12px;
+  color: rgba(0, 0, 0, 0.75);
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 6px;
+  box-sizing: border-box;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  &::marker {
+    content: none;
+  }
+}
+
+.comandas-colunas-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 10px 12px;
+  flex-shrink: 0;
+}
+
+.comandas-colunas-menu__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.comandas-colunas-menu__padrao {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-primary-hover, #2f5e7e);
+    text-decoration: none;
+  }
+}
+
+.comandas-colunas-menu__items > li .comandas-colunas-menu__check {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  width: 100%;
 }
 
 .table-body__busy,
@@ -677,9 +889,28 @@ tbody td.col-ticket {
 }
 
 .col-menu {
-  width: 3rem;
-  min-width: 3rem;
-  text-align: right;
+  width: 4.25rem;
+  box-sizing: border-box;
+  text-align: center;
+  padding-left: 2px;
+  padding-right: 6px;
+
+  .row-menu__trigger {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+  }
+}
+
+.comandas-row-menu {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+
+  &--open {
+    z-index: 40;
+  }
 }
 
 .link-ticket,
@@ -776,16 +1007,6 @@ tbody td.col-ticket {
 tbody tr.comandas-table__row--menu-open {
   position: relative;
   z-index: 30;
-}
-
-.comandas-row-menu {
-  position: relative;
-  display: inline-flex;
-  justify-content: flex-end;
-
-  &--open {
-    z-index: 40;
-  }
 }
 
 .row-menu__trigger {
@@ -1046,6 +1267,140 @@ tbody tr.comandas-table__row--menu-open {
 
 /* Chrome cliente-head não se aplica a este shell. */
 
+/** Com filtros abertos a tabela fica ~230px mais estreita — Cliente cede. */
+.comandas-layout--filtros-abertos {
+  col.comandas-table__col-ticket {
+    width: 8.5%;
+  }
+
+  col.comandas-table__col-data {
+    width: 11%;
+  }
+
+  col.comandas-table__col-cliente {
+    width: 24%;
+  }
+
+  col.comandas-table__col-status {
+    width: 13%;
+  }
+
+  col.comandas-table__col-valor {
+    width: 11%;
+  }
+
+  col.comandas-table__col-pagamento {
+    width: 17%;
+  }
+}
+
+@media (max-width: 1280px) {
+  col.comandas-table__col-ticket {
+    width: 8.5%;
+  }
+
+  col.comandas-table__col-data {
+    width: 11%;
+  }
+
+  col.comandas-table__col-cliente {
+    width: 26%;
+  }
+
+  col.comandas-table__col-status {
+    width: 13%;
+  }
+
+  col.comandas-table__col-valor {
+    width: 11%;
+  }
+
+  col.comandas-table__col-pagamento {
+    width: 16.5%;
+  }
+
+  .comandas-layout--filtros-abertos {
+    col.comandas-table__col-cliente {
+      width: 20%;
+    }
+
+    col.comandas-table__col-data {
+      width: 11.5%;
+    }
+
+    col.comandas-table__col-status {
+      width: 14%;
+    }
+
+    col.comandas-table__col-pagamento {
+      width: 17.5%;
+    }
+  }
+}
+
+@media (max-width: 1100px) {
+  col.comandas-table__col-check {
+    width: 3%;
+  }
+
+  col.comandas-table__col-ticket {
+    width: 8%;
+  }
+
+  col.comandas-table__col-data {
+    width: 11.5%;
+  }
+
+  col.comandas-table__col-cliente {
+    width: 22%;
+  }
+
+  col.comandas-table__col-status {
+    width: 14%;
+  }
+
+  col.comandas-table__col-valor {
+    width: 11%;
+  }
+
+  col.comandas-table__col-pagamento {
+    width: 17%;
+  }
+
+  thead th,
+  tbody td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .comandas-th-sort {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .comandas-layout--filtros-abertos {
+    col.comandas-table__col-cliente {
+      width: 16%;
+    }
+
+    col.comandas-table__col-data {
+      width: 12%;
+    }
+
+    col.comandas-table__col-status {
+      width: 15%;
+    }
+
+    col.comandas-table__col-valor {
+      width: 12%;
+    }
+
+    col.comandas-table__col-pagamento {
+      width: 18%;
+    }
+  }
+}
+
 @media (max-width: 900px) {
   .list-head__actions {
     justify-content: center;
@@ -1059,32 +1414,32 @@ tbody tr.comandas-table__row--menu-open {
     font-size: 13px;
   }
 
+  col.comandas-table__col-check {
+    width: 3%;
+  }
+
   col.comandas-table__col-ticket {
-    width: 11%;
+    width: 9%;
   }
 
   col.comandas-table__col-data {
-    width: 14%;
+    width: 13%;
   }
 
   col.comandas-table__col-cliente {
-    width: 28%;
+    width: 18%;
   }
 
   col.comandas-table__col-status {
-    width: 10%;
+    width: 15%;
   }
 
   col.comandas-table__col-valor {
-    width: 11%;
+    width: 12%;
   }
 
   col.comandas-table__col-pagamento {
-    width: 14%;
-  }
-
-  col.comandas-table__col-menu {
-    width: 2.5rem;
+    width: 17%;
   }
 
   thead th,
@@ -1105,6 +1460,12 @@ tbody tr.comandas-table__row--menu-open {
     padding-left: 12px;
   }
 
+  .comandas-th-sort {
+    padding-left: 6px;
+    padding-right: 6px;
+    gap: 0.25rem;
+  }
+
   .col-check {
     text-align: center;
   }
@@ -1122,16 +1483,16 @@ tbody tr.comandas-table__row--menu-open {
     text-align: end;
   }
 
-  .col-menu,
-  thead th.col-menu,
-  tbody td.col-menu {
-    text-align: end;
-  }
-
   .col-cliente a,
   .col-cliente span,
   .col-pagamento .badge {
     max-width: 100%;
+  }
+
+  .badge {
+    padding-left: 5px;
+    padding-right: 5px;
+    font-size: 11px;
   }
 
   .list-head__toolbar-btn,
@@ -1140,10 +1501,22 @@ tbody tr.comandas-table__row--menu-open {
     justify-content: center;
   }
 
-  .comandas-row-menu {
-    display: flex;
-    justify-content: center;
-    width: 100%;
+  .comandas-layout--filtros-abertos {
+    col.comandas-table__col-cliente {
+      width: 14%;
+    }
+
+    col.comandas-table__col-data {
+      width: 13.5%;
+    }
+
+    col.comandas-table__col-status {
+      width: 16%;
+    }
+
+    col.comandas-table__col-pagamento {
+      width: 18%;
+    }
   }
 }
 
@@ -1152,32 +1525,32 @@ tbody tr.comandas-table__row--menu-open {
     font-size: 12px;
   }
 
+  col.comandas-table__col-check {
+    width: 4%;
+  }
+
   col.comandas-table__col-ticket {
-    width: 12%;
+    width: 10%;
   }
 
   col.comandas-table__col-data {
-    width: 16%;
+    width: 14%;
   }
 
   col.comandas-table__col-cliente {
-    width: 28%;
+    width: 16%;
   }
 
   col.comandas-table__col-status {
-    width: 10%;
+    width: 16%;
   }
 
   col.comandas-table__col-valor {
-    width: 10%;
+    width: 12%;
   }
 
   col.comandas-table__col-pagamento {
-    width: 10%;
-  }
-
-  col.comandas-table__col-menu {
-    width: 2.25rem;
+    width: 16%;
   }
 
   thead th,
@@ -1187,7 +1560,9 @@ tbody tr.comandas-table__row--menu-open {
   }
 
   .badge {
-    font-size: 12px;
+    font-size: 11px;
+    padding-left: 4px;
+    padding-right: 4px;
   }
 }
 

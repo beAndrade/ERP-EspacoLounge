@@ -299,12 +299,30 @@
               </tr>
             } @else {
               @for (g of paginaItens(); track g.id) {
-                <tr>
-                  <td>{{ rotuloTicket(g) }}</td>
-                  <td>{{ dataDdMmBarraAaaa(g.data) }}</td>
-                  <td>{{ g.nomeCliente || '' }}</td>
-                  <td>{{ exibirTelefone(g) }}</td>
-                  <td>
+                <tr [class.orcamentos-table__row--menu-open]="menuAbertoParaId === g.id">
+                  <td class="col-ticket">
+                    <a
+                      class="link-ticket"
+                      href="#"
+                      (click)="abrirOrcamento(g, $event)"
+                      >{{ rotuloTicket(g) }}</a
+                    >
+                  </td>
+                  <td class="col-data">{{ dataDdMmBarraAaaa(g.data) }}</td>
+                  <td class="col-cliente">
+                    @if (g.idCliente; as cid) {
+                      <a
+                        class="link-cliente"
+                        href="#"
+                        (click)="abrirDrawerCliente(g, $event)"
+                        >{{ g.nomeCliente }}</a
+                      >
+                    } @else {
+                      {{ g.nomeCliente || '' }}
+                    }
+                  </td>
+                  <td class="col-telefone">{{ exibirTelefone(g) }}</td>
+                  <td class="col-status">
                     <span
                       class="orcamentos-badge"
                       [attr.data-status]="g.orcamentoStatus"
@@ -318,41 +336,106 @@
                         g.valorTotal
                           | number: '1.2-2' : 'pt-BR'
                       }}
-                    } @else {
-
                     }
                   </td>
                   <td class="col-menu" (click)="$event.stopPropagation()">
-                    <button
-                      type="button"
-                      class="orcamentos-menu-btn"
-                      aria-label="Ações"
-                      (click)="toggleMenu($event, g.id)"
+                    <div
+                      class="orcamentos-row-menu"
+                      [class.orcamentos-row-menu--open]="menuAbertoParaId === g.id"
                     >
-                      ⋮
-                    </button>
-                    @if (menuAbertoParaId === g.id) {
-                      <div class="orcamentos-menu" role="menu">
-                        <button type="button" role="menuitem" (click)="enviarWhatsapp(g)">
-                          Enviar WhatsApp
-                        </button>
-                        @if (g.orcamentoStatus !== 'aceito' && g.orcamentoStatus !== 'arquivado') {
-                          <button type="button" role="menuitem" (click)="marcarAceito(g)">
-                            Marcar aceito
-                          </button>
-                        }
-                        @if (g.orcamentoStatus === 'aceito' || g.orcamentoStatus === 'enviado') {
-                          <button type="button" role="menuitem" (click)="abrirConverter(g)">
-                            Converter para agenda
-                          </button>
-                        }
-                        @if (g.orcamentoStatus !== 'arquivado') {
-                          <button type="button" role="menuitem" (click)="arquivar(g)">
-                            Arquivar
-                          </button>
-                        }
-                      </div>
-                    }
+                      <button
+                        type="button"
+                        class="icon-btn row-menu__trigger"
+                        (click)="toggleMenu($event, g.id)"
+                        [attr.aria-expanded]="menuAbertoParaId === g.id"
+                        [attr.aria-label]="'Ações do orçamento ' + rotuloTicket(g)"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <path d="M4 6h16" />
+                          <path d="M4 12h16" />
+                          <path d="M4 18h16" />
+                        </svg>
+                      </button>
+                      @if (menuAbertoParaId === g.id) {
+                        <ul
+                          class="row-menu__panel"
+                          role="menu"
+                          (click)="$event.stopPropagation()"
+                        >
+                          <li role="none">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              class="row-menu__item"
+                              (click)="abrirOrcamentoDoMenu(g, $event)"
+                            >
+                              Editar
+                            </button>
+                          </li>
+                          <li role="none">
+                            <button
+                              type="button"
+                              role="menuitem"
+                              class="row-menu__item"
+                              (click)="enviarWhatsapp(g)"
+                            >
+                              Enviar WhatsApp
+                            </button>
+                          </li>
+                          @if (
+                            g.orcamentoStatus !== 'aceito' &&
+                            g.orcamentoStatus !== 'arquivado'
+                          ) {
+                            <li role="none">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                class="row-menu__item"
+                                (click)="marcarAceito(g)"
+                              >
+                                Marcar aceito
+                              </button>
+                            </li>
+                          }
+                          @if (
+                            g.orcamentoStatus === 'aceito' ||
+                            g.orcamentoStatus === 'enviado'
+                          ) {
+                            <li role="none">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                class="row-menu__item"
+                                (click)="abrirConverter(g)"
+                              >
+                                Converter para agenda
+                              </button>
+                            </li>
+                          }
+                          @if (g.orcamentoStatus !== 'arquivado') {
+                            <li role="none" class="row-menu__li--muted">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                class="row-menu__item row-menu__item--muted"
+                                (click)="arquivar(g)"
+                              >
+                                Arquivar
+                              </button>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -493,8 +576,19 @@
       [contextoSlot]="novoCtx"
       (salvoComSucesso)="onSalvoNovo()"
       (cancelarModal)="fecharNovo()"
+      (imprimirOrcamento)="onImprimirOrcamentoDrawer($event)"
+      (enviarWhatsappOrcamento)="onWhatsappOrcamentoDrawer($event)"
     />
   </div>
+}
+
+@if (previewDados) {
+  <app-orcamento-preview-overlay
+    [dados]="previewDados"
+    (fechar)="fecharPreviewOrcamento()"
+    (imprimir)="imprimirPreviewOrcamento()"
+    (whatsapp)="whatsappPreviewOrcamento()"
+  />
 }
 
 <app-whatsapp-enviar-modal

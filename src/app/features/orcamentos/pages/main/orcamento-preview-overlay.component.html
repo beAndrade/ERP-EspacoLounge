@@ -1,0 +1,44 @@
+<div
+  class="orcamento-preview"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="orcamento-preview-title"
+>
+  <div class="orcamento-preview__chrome">
+    <div class="orcamento-preview__chrome-inner">
+      <h2 id="orcamento-preview-title" class="orcamento-preview__heading">
+        Visualizar orçamento
+      </h2>
+      <div class="orcamento-preview__actions">
+        <button
+          type="button"
+          class="orcamento-preview__btn orcamento-preview__btn--ghost"
+          (click)="fechar.emit()"
+        >
+          Voltar
+        </button>
+        <button
+          type="button"
+          class="orcamento-preview__btn orcamento-preview__btn--ghost"
+          (click)="whatsapp.emit()"
+          aria-label="Enviar pro WhatsApp"
+        >
+          WhatsApp
+        </button>
+        <button
+          type="button"
+          class="orcamento-preview__btn orcamento-preview__btn--primary"
+          (click)="imprimir.emit()"
+        >
+          Imprimir / PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="orcamento-preview__body">
+    <div class="orcamento-preview__sheet">
+      <app-orcamento-print [dados]="dados()" modo="preview" />
+    </div>
+  </div>
+</div>

@@ -380,6 +380,26 @@
   overflow: visible;
 }
 
+/** Calendário da Data acima do resumo sticky (e do restante da coluna). */
+.nc-drawer--data-picker-open {
+  .nc-drawer__flow {
+    position: relative;
+    z-index: 30;
+  }
+
+  .nc-field--data {
+    z-index: 32;
+  }
+
+  .nc-data-field__calendar-pop {
+    z-index: 40;
+  }
+
+  .nc-drawer__resumo-sticky {
+    z-index: 5;
+  }
+}
+
 /**
  * Coluna esquerda: `app-agenda-novo-client-sidebar` (mesmo visual que o agendamento).
  * `agenda-novo--drawer` activa `:host-context` no sidebar.
@@ -524,6 +544,101 @@
     border-color: var(--drawer-field-stroke-hover);
     box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
     background-color: #ffffff;
+  }
+}
+
+/** Data da comanda — calendário (mesmo padrão do Faturar). */
+.nc-field--data {
+  position: relative;
+  z-index: 4;
+
+  .nc-data-field__wrap {
+    position: relative;
+    display: block;
+    min-height: var(--drawer-field-h);
+    cursor: pointer;
+    outline: 0;
+  }
+
+  .nc-data-field__display {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    min-height: var(--drawer-field-h);
+    height: var(--drawer-field-h);
+    padding: 0 0.75rem;
+    padding-right: 2.5rem;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 400;
+    color: #292524;
+    background: #fff;
+    border: 1px solid var(--drawer-field-stroke);
+    border-radius: var(--radius);
+    transition:
+      border-color 0.2s linear,
+      box-shadow 0.2s linear,
+      background-color 0.2s linear;
+  }
+
+  .nc-data-field__display:hover {
+    border-color: var(--drawer-field-stroke-hover);
+    background-color: #fff;
+  }
+
+  .nc-data-field__wrap:focus-within .nc-data-field__display {
+    border-color: var(--drawer-field-stroke-hover);
+    box-shadow: 0 0 0 2px var(--drawer-field-focus-ring);
+  }
+
+  .nc-data-field__value-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nc-data-field__display--placeholder .nc-data-field__value-text {
+    color: rgba(0, 0, 0, 0.38);
+  }
+
+  .nc-data-field__cal {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    line-height: 0;
+    color: #9ca3af;
+    pointer-events: none;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.5;
+    }
+  }
+
+  .nc-data-field__calendar-pop {
+    position: absolute;
+    z-index: 50;
+    left: 0;
+    top: calc(100% + 6px);
+    max-width: calc(100vw - 1.5rem);
+  }
+}
+
+.nc-drawer--finalizada .nc-field--data {
+  .nc-data-field__display {
+    border: 1px solid var(--drawer-field-stroke);
+    background: #fff;
+    color: #292524;
+    cursor: pointer;
+  }
+
+  .nc-data-field__display:hover {
+    border-color: var(--drawer-field-stroke-hover);
   }
 }
 

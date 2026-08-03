@@ -670,6 +670,61 @@ function normalizarYmd(s: unknown): string | null {
   return t;
 }
 
+/**
+ * Soma meses a `YYYY-MM-DD`, limitando o dia ao último do mês destino
+ * (ex.: 31/01 + 1 mês → 28/02 ou 29/02).
+ */
+function ymdAddMonthsClamped(ymd: string, months: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!m) return ymd;
+  const y = Number(m[1]);
+  const mo = Number(m[2]) - 1;
+  const d = Number(m[3]);
+  const anchor = new Date(y, mo + Math.floor(months), 1);
+  const lastDay = new Date(
+    anchor.getFullYear(),
+    anchor.getMonth() + 1,
+    0,
+  ).getDate();
+  const day = Math.min(d, lastDay);
+  const dt = new Date(anchor.getFullYear(), anchor.getMonth(), day);
+  const mm = dt.getMonth() + 1;
+  const dd = dt.getDate();
+  return `${dt.getFullYear()}-${mm < 10 ? `0${mm}` : mm}-${dd < 10 ? `0${dd}` : dd}`;
+}
+
+/**
+ * Nova data de cada linha ao mudar a data da comanda.
+ * Parcelas (N>1): base + (parcela_numero - 1) meses; demais linhas: a própria base.
+ */
+function dataPagamentoAposMudancaComanda(
+  baseYmd: string,
+  parcelaNumero: number | null,
+  parcelasTotal: number | null,
+  observacao: string | null,
+): string {
+  let num = parcelaNumero;
+  let total = parcelasTotal;
+  if (
+    (num == null || total == null || total <= 1) &&
+    observacao
+  ) {
+    const legado = extrairParcelaLegadoDeObservacao(observacao);
+    if (num == null) num = legado.parcela_numero;
+    if (total == null || total <= 1) total = legado.parcelas_total;
+  }
+  if (
+    total != null &&
+    total > 1 &&
+    num != null &&
+    Number.isFinite(num) &&
+    num >= 1
+  ) {
+    return ymdAddMonthsClamped(baseYmd, Math.floor(num) - 1);
+  }
+  return baseYmd;
+}
+
 function prepararInputPagamentoComanda(
   input: CriarPagamentoComandaInput,
 ): {
@@ -1192,14 +1247,17 @@ export async function baixarParcelasCartaoVencidas(db: Db): Promise<number> {
 /**
  * Remove um pagamento e sua movimentação. O `ON DELETE SET NULL` da FK
  * preserva a integridade caso a movimentação tenha sido apagada por outro caminho.
+ * Se o pagamento for crédito do cliente (`outros` + obs.), devolve o saldo.
  */
 export async function excluirPagamentoComanda(
   db: Db,
   pagamentoId: number,
+  idAtendimentoEsperado?: string,
 ): Promise<{ idAtendimento: string | null }> {
   if (!Number.isFinite(pagamentoId) || pagamentoId <= 0) {
     throw new Error('id de pagamento inválido');
   }
+  const idEsperado = String(idAtendimentoEsperado ?? '').trim();
 
   const idAtendimento = await db.transaction(async (tx) => {
     const [row] = await tx
@@ -1209,6 +1267,43 @@ export async function excluirPagamentoComanda(
       .limit(1);
     if (!row) return null;
 
+    const idAt = String(row.idAtendimento || '').trim();
+    if (idEsperado && idAt !== idEsperado) {
+      throw new Error('Pagamento não pertence a esta comanda');
+    }
+
+    if (
+      String(row.metodo ?? '').trim() === 'outros' &&
+      pagamentoEhCreditoClienteObs(row.observacao)
+    ) {
+      const v =
+        Math.round((parseFloat(String(row.valor ?? '0')) || 0) * 100) / 100;
+      if (v > 0 && idAt) {
+        const [ped] = await tx
+          .select({ idCliente: atendimentosPedido.idCliente })
+          .from(atendimentosPedido)
+          .where(eq(atendimentosPedido.idAtendimento, idAt))
+          .limit(1);
+        const cid = String(ped?.idCliente ?? '').trim();
+        if (cid) {
+          await tx
+            .update(clientes)
+            .set({
+              creditoSaldo: sql`${clientes.creditoSaldo}::numeric + ${v.toFixed(2)}::numeric`,
+            })
+            .where(eq(clientes.idCliente, cid));
+          const dataMov = String(row.dataPagamento ?? '').trim().slice(0, 10);
+          await registrarCreditoMovimentoClienteEmTx(tx, cid, {
+            idAtendimento: idAt,
+            dataMov: /^\d{4}-\d{2}-\d{2}$/.test(dataMov) ? dataMov : ymdHoje(),
+            valor: v,
+            tipo: 'entrada',
+            motivo: 'Estorno — exclusão de pagamento (crédito)',
+          });
+        }
+      }
+    }
+
     if (row.movimentacaoId != null) {
       await tx
         .delete(movimentacoes)
@@ -1217,15 +1312,24 @@ export async function excluirPagamentoComanda(
     await tx
       .delete(comandaPagamentos)
       .where(eq(comandaPagamentos.id, pagamentoId));
-    return String(row.idAtendimento || '').trim() || null;
+    return idAt || null;
   });
 
   if (idAtendimento) {
     await sincronizarPagamentoStatusAtendimento(db, idAtendimento);
-    await recalcularFolhaAposMudancaAtendimento(db, idAtendimento).catch(() => {});
+    await recalcularFolhaAposMudancaAtendimento(db, idAtendimento).catch(
+      () => {},
+    );
   }
 
   return { idAtendimento };
+}
+
+function pagamentoEhCreditoClienteObs(
+  obs: string | null | undefined,
+): boolean {
+  const o = String(obs ?? '').toLowerCase();
+  return o.includes('crédito') || o.includes('credito');
 }
 
 /**
@@ -1285,5 +1389,87 @@ export async function atualizarDataPagamentoComanda(
   if (!pagamento) throw new Error('Pagamento não encontrado após actualizar');
   const resumo = await getResumoComanda(db, idAt);
   return { pagamento, resumo };
+}
+
+/**
+ * Actualiza `atendimentos.data` do bloco. Opcionalmente recalcula datas em
+ * `comanda_pagamentos` (+ movimentações): parcelas espaçadas mês a mês a
+ * partir da nova data; linhas avulsas ficam na própria data da comanda.
+ */
+export async function atualizarDataComandaAtendimento(
+  db: Db,
+  idAtendimento: string,
+  dataYmd: string,
+  atualizarPagamentos = false,
+): Promise<{
+  data: string;
+  pagamentosAtualizados: number;
+  resumo: ResumoComanda;
+}> {
+  const idAt = decodeURIComponent(String(idAtendimento ?? '').trim()).trim();
+  if (!idAt) throw new Error('idAtendimento é obrigatório');
+  const data = normalizarYmd(dataYmd);
+  if (!data) {
+    throw new Error('data inválida; use YYYY-MM-DD');
+  }
+
+  const pagamentosAtualizados = await db.transaction(async (tx) => {
+    const [pedido] = await tx
+      .select({ id: atendimentosPedido.idAtendimento })
+      .from(atendimentosPedido)
+      .where(eq(atendimentosPedido.idAtendimento, idAt))
+      .limit(1);
+    if (!pedido) {
+      throw new Error('Atendimento não encontrado');
+    }
+
+    await tx
+      .update(atendimentos)
+      .set({ data })
+      .where(eq(atendimentos.idAtendimento, idAt));
+
+    // Pedido existe; linhas de agenda podem estar vazias em edge cases —
+    // ainda assim seguimos para pagamentos quando pedido.
+
+    if (!atualizarPagamentos) return 0;
+
+    const pags = await tx
+      .select({
+        id: comandaPagamentos.id,
+        movimentacaoId: comandaPagamentos.movimentacaoId,
+        parcelaNumero: comandaPagamentos.parcelaNumero,
+        parcelasTotal: comandaPagamentos.parcelasTotal,
+        observacao: comandaPagamentos.observacao,
+      })
+      .from(comandaPagamentos)
+      .where(eq(comandaPagamentos.idAtendimento, idAt));
+
+    for (const p of pags) {
+      const dataLinha = dataPagamentoAposMudancaComanda(
+        data,
+        p.parcelaNumero,
+        p.parcelasTotal,
+        p.observacao,
+      );
+      await tx
+        .update(comandaPagamentos)
+        .set({ dataPagamento: dataLinha })
+        .where(eq(comandaPagamentos.id, p.id));
+      if (p.movimentacaoId != null) {
+        await tx
+          .update(movimentacoes)
+          .set({
+            dataMov: dataLinha,
+            pagoEm: dataLinha,
+          })
+          .where(eq(movimentacoes.id, p.movimentacaoId));
+      }
+    }
+    return pags.length;
+  });
+
+  await recalcularFolhaAposMudancaAtendimento(db, idAt).catch(() => {});
+  const resumo = await getResumoComanda(db, idAt);
+  return { data, pagamentosAtualizados, resumo };
 }
 

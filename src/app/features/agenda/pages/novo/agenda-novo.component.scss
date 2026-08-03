@@ -314,6 +314,8 @@
 
 /**
  * Só o fechar fica colado ao topo ao rolar o fluxo; o título acompanha o scroll.
+ * `margin-right: -15px` cancela o `padding-inline` do fluxo (drawer inset = 0).
+ * Hover completo via `overflow-clip-margin` nos pais.
  */
 :host.agenda-novo--drawer .agenda-modal__header .agenda-modal__close {
   position: sticky;
@@ -329,13 +331,7 @@
   height: 60px;
   min-width: 60px;
   min-height: 60px;
-  margin: 0;
-  /**
-   * Cola na borda direita do painel: cancela o `padding-inline: 15px` do flow
-   * e qualquer `--drawer-inset-x` herdado do `.app-drawer` (ex.: 15px em hosts
-   * que ainda não zeraram o inset).
-   */
-  margin-right: calc(-15px - var(--drawer-inset-x, 0px));
+  margin: 0 -15px 0 0;
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -709,7 +705,7 @@
   background: #fff;
 
   :host.agenda-novo--drawer & {
-    padding-inline: 0;
+    padding: 0 15px 0.35rem 0;
   }
 }
 
@@ -1238,6 +1234,29 @@ textarea {
     border-color: var(--drawer-btn-ghost-hover-border);
     background: var(--drawer-btn-ghost-hover-bg, #ffffff);
   }
+}
+
+.agenda-modal__footer .btn.agenda-modal__footer-wa {
+  min-width: 40px;
+  width: 40px;
+  padding: 0;
+  color: #25d366;
+
+  &:hover:not(:disabled) {
+    color: #1ebe57;
+    border-color: color-mix(in srgb, #25d366 35%, #f1f1f1);
+  }
+
+  svg {
+    display: block;
+    margin: 0 auto;
+  }
+}
+
+.agenda-modal__footer app-ui-tip-trigger {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .agenda-modal__footer .btn.btn-footer--comanda {
@@ -2456,7 +2475,7 @@ textarea {
   }
 
   /**
-   * Rodapé encostado ao fundo do drawer; padding-left = inset do `.app-drawer`; sem padding-right.
+   * Rodapé encostado ao fundo do drawer; padding 15px nas laterais (como nova-comanda).
    * Botões agrupados à direita: Cancelar fica imediatamente à esquerda de Salvar.
    */
   .agenda-modal__footer {

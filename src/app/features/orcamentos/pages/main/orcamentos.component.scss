@@ -228,7 +228,12 @@
   }
 
   tbody td {
+    height: 48px;
+    padding-top: 0;
+    padding-bottom: 0;
     border-bottom: 1px solid #efefef;
+    color: var(--list-body-text, #000000bf);
+    font-size: 14px;
   }
 
   tbody tr:hover > td:not(.table-body__busy):not(.table-body__empty) {
@@ -326,55 +331,145 @@
   font-variant-numeric: tabular-nums;
 }
 
-.orcamentos-row-menu {
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
+thead th.col-ticket,
+tbody td.col-ticket {
+  padding-left: 12px;
 }
 
-.orcamentos-row-menu__btn {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 0.35rem;
-  border-radius: 6px;
-  line-height: 1;
-  color: #71717a;
+.col-menu {
+  width: 3rem;
+  box-sizing: border-box;
+  text-align: center;
+  padding-left: 2px;
+  padding-right: 6px;
 
-  &:hover {
-    background: #f4f4f5;
-    color: #18181b;
+  .row-menu__trigger {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
   }
 }
 
-.orcamentos-menu {
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #f5f5f4;
+    color: var(--color-text);
+  }
+}
+
+.link-ticket,
+.link-cliente {
+  font-size: 13.3333px;
+  font-weight: 400;
+  color: var(--color-link);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-link-hover);
+    text-decoration: none;
+  }
+}
+
+tbody tr.orcamentos-table__row--menu-open {
+  position: relative;
+  z-index: 30;
+}
+
+.orcamentos-row-menu {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+
+  &--open {
+    z-index: 40;
+  }
+}
+
+.row-menu__trigger {
+  border-radius: var(--radius);
+}
+
+.row-menu__panel {
   position: absolute;
   right: 0;
-  top: 100%;
-  z-index: 20;
-  min-width: 11rem;
-  padding: 0.35rem;
-  background: #fff;
-  border: 1px solid #e4e4e7;
-  border-radius: 8px;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 0.35rem 0.25rem;
+  list-style: none;
+  width: max-content;
+  min-width: 12.75rem;
+  background: var(--color-surface, #fff);
+  border: 1px solid #e7e5e4;
+  border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 50;
 
-  button {
-    display: block;
+  li {
+    margin: 0;
+    padding: 0 0.2rem;
+  }
+
+  .row-menu__li--muted {
+    margin-top: 0.15rem;
+    padding-top: 0.15rem;
+    border-top: 1px solid #ebebeb;
+  }
+
+  .row-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     width: 100%;
-    text-align: left;
+    box-sizing: border-box;
+    padding: 0.5rem 0.65rem;
     border: none;
-    background: transparent;
-    padding: 0.55rem 0.65rem;
-    border-radius: 6px;
-    font: inherit;
-    font-size: 13px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    white-space: nowrap;
     cursor: pointer;
-    color: #27272a;
+    border-radius: 6px;
+    color: #000000bf;
+    background: #fff;
+    transition: all 0.2s;
 
-    &:hover {
-      background: #f4f4f5;
+    &:hover:not(:disabled) {
+      background: #f3f4f6;
     }
+
+    &:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+      outline-offset: 1px;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .row-menu__item--muted {
+    color: rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -475,6 +570,17 @@
     max-height: 100%;
     height: 100%;
     min-width: 0;
+    overflow: hidden;
+  }
+
+  /**
+   * Orçamento (mesmo padrão Comandas/hub): sem inset horizontal —
+   * o X cancela só o padding do fluxo e fica colado ao canto direito.
+   */
+  &:has(> app-agenda-novo) {
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    padding: 0;
     overflow: hidden;
   }
 

@@ -1410,6 +1410,35 @@ export class SheetsApiService {
       .pipe(map((raw) => this.unwrap(raw)));
   }
 
+  /** Actualiza `atendimentos.data` (e opcionalmente datas dos pagamentos). */
+  atualizarDataComanda(
+    idAtendimento: string,
+    dataYmd: string,
+    atualizarPagamentos = false,
+  ): Observable<{
+    data: string;
+    pagamentosAtualizados: number;
+    resumo: ComandaResumoPagamentos;
+  }> {
+    return this.http
+      .patch<
+        ApiResponse<{
+          data: string;
+          pagamentosAtualizados: number;
+          resumo: ComandaResumoPagamentos;
+        }>
+      >(
+        this.url(
+          `/api/comandas/${encodeURIComponent(idAtendimento)}/data-comanda`,
+        ),
+        {
+          data: dataYmd,
+          atualizar_pagamentos: atualizarPagamentos,
+        },
+      )
+      .pipe(map((raw) => this.unwrap(raw)));
+  }
+
   private normalizeAtendimento(raw: Record<string, unknown>): AtendimentoListaItem {
     const descricaoApi = String(raw['Descrição'] ?? raw['Descricao'] ?? '').trim();
     const descManual = String(

@@ -85,6 +85,7 @@ import {
   type FrequenciaRepetirAgendamento,
 } from './agenda-repetir-cascade.models';
 import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { formataMoedaBrlResumo } from '../../../../shared/comanda-resumo-bar/comanda-resumo.utils';
 import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
@@ -102,6 +103,7 @@ import {
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
+import type { OrcamentoPrintPayload } from '../../../orcamentos/pages/main/orcamento-print.component';
 import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
 import {
   AtendimentoCriadoResumo,
@@ -230,6 +232,7 @@ function parseQuantidadeFromDescricao(s: string): number {
     AgendaStatusSelectComponent,
     AgendaCorSelectComponent,
     ComandaResumoBarComponent,
+    UiTipTriggerComponent,
   ],
   templateUrl: './agenda-novo.component.html',
   styleUrl: './agenda-novo.component.scss',
@@ -361,6 +364,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     clienteId: string;
     cliente: Cliente | null;
   }>();
+  /** Orçamentos: gravar (se necessário) e imprimir / salvar PDF. */
+  readonly imprimirOrcamento = output<OrcamentoPrintPayload>();
+  /** Orçamentos: gravar (se necessário) e abrir modal WhatsApp (template orçamento). */
+  readonly enviarWhatsappOrcamento = output<OrcamentoPrintPayload>();
   /** Editor só-comanda: comanda removida na API — o hub fecha a pilha de drawers. */
   readonly comandaExcluidaDoEditor = output<void>();
 
@@ -468,6 +475,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
+  /** `numero_comanda` do pedido em edição (orçamento / comanda). */
+  private numeroComandaEdicao: number | null = null;
+  /** Nome da empresa (WhatsApp config) para o documento do orçamento. */
+  private nomeEmpresaOrcamento = '';
   /** Ignora GET de edição fora de ordem ao reabrir o mesmo id. */
   private edicaoLoadSeq = 0;
   /**
@@ -549,6 +560,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   ngOnInit(): void {
     if (this.modoModal) {
       this.lembreteToggleLiqArmed = true;
+    }
+    if (this.fluxoOrcamento) {
+      this.wa
+        .getConfig()
+        .pipe(take(1), takeUntil(this.destroy$))
+        .subscribe({
+          next: (cfg) => {
+            this.nomeEmpresaOrcamento = cfg.nome_empresa?.trim() ?? '';
+          },
+          error: () => {
+            this.nomeEmpresaOrcamento = '';
+          },
+        });
     }
     const hoje = new Date();
     this.form.patchValue({
@@ -1290,6 +1314,133 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  onImprimirOrcamentoClick(ev: MouseEvent): void {
+    ev.stopPropagation();
+    this.executarAcaoOrcamentoAposSalvar((payload) =>
+      this.imprimirOrcamento.emit(payload),
+    );
+  }
+
+  onWhatsappOrcamentoClick(ev: MouseEvent): void {
+    ev.stopPropagation();
+    this.executarAcaoOrcamentoAposSalvar((payload) =>
+      this.enviarWhatsappOrcamento.emit(payload),
+    );
+  }
+
+  private executarAcaoOrcamentoAposSalvar(
+    depois: (payload: OrcamentoPrintPayload) => void,
+  ): void {
+    if (this.salvando || this.excluindo || !this.fluxoOrcamento) return;
+
+    const editId = this.idAtendimentoEmEdicao?.trim();
+    const podeSemSalvar = Boolean(editId && !this.form.dirty);
+
+    if (podeSemSalvar) {
+      if (!this.podeUsarAcaoComanda()) {
+        this.registrarFalhaValidacao();
+        return;
+      }
+      const payload = this.montarPayloadOrcamentoPrint(editId!);
+      if (payload) depois(payload);
+      return;
+    }
+
+    const prep = this.prepararSalvamentoFormulario();
+    if (!prep) return;
+
+    this.salvando = true;
+    this.salvarParaComanda(prep).subscribe({
+      next: (id) => {
+        this.salvando = false;
+        this.idAtendimentoEmEdicao = id;
+        this.form.markAsPristine();
+        const payload = this.montarPayloadOrcamentoPrint(id);
+        if (payload) depois(payload);
+      },
+      error: (e: Error) => {
+        this.avisoItensDuplicados = '';
+        this.erro =
+          e.message ||
+          'Não foi possível salvar o orçamento antes desta ação.';
+        this.salvando = false;
+      },
+    });
+  }
+
+  private montarPayloadOrcamentoPrint(
+    idAtendimento: string,
+  ): OrcamentoPrintPayload | null {
+    const id = idAtendimento.trim();
+    const ymd =
+      normalizarDataIso(String(this.form.get('data')?.value ?? '')) ?? '';
+    const cliente = this.clienteSelecionado();
+    const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
+    if (!id || !ymd || !clienteId) return null;
+
+    const snap = this.montarLinhasSnapshotParaComanda();
+    const itens = snap.map((linha) => {
+      let descricao = '';
+      if (linha.itemTipo === 'Serviço') {
+        const svc = this.servicoPorIdQualquerComanda(linha.servico_id);
+        const nome = String(svc?.['nome'] ?? '').trim() || 'Serviço';
+        const tam = String(linha.tamanho ?? '').trim();
+        descricao = tam ? `${nome} (${tam})` : nome;
+      } else if (linha.itemTipo === 'Produto') {
+        descricao =
+          String(linha.resumoNaoServico ?? 'Produto').trim() || 'Produto';
+      } else {
+        descricao =
+          String(linha.resumoNaoServico ?? linha.itemTipo ?? 'Item').trim() ||
+          'Item';
+      }
+      const total = valorMonetarioParaNumero(linha.totalLinhaStr) ?? 0;
+      const valorUnitario = valorMonetarioParaNumero(linha.valorUnitStr) ?? 0;
+      const quantidade = Number(linha.quantidade) || 1;
+      return {
+        descricao,
+        quantidade,
+        valorUnitario,
+        total,
+      };
+    });
+
+    const subtotal = this.somaSubtotalLinhasWalkInReais();
+    const desconto = this.valorCampoResumoWalkIn(
+      this.descontoResumoWalkInCtrl.value,
+    );
+    const total = Math.max(
+      0,
+      Math.round((subtotal - desconto) * 100) / 100,
+    );
+
+    const tel = telefoneClienteWhatsappDigitos(cliente);
+    const nCmd = this.numeroComandaEdicao;
+    const numeroComanda =
+      typeof nCmd === 'number' && Number.isFinite(nCmd) && nCmd > 0
+        ? String(Math.trunc(nCmd))
+        : '';
+    const observacoes = String(this.form.get('observacao')?.value ?? '').trim();
+
+    return {
+      idAtendimento: id,
+      clienteNome: nomeClienteParaWhatsapp(cliente, cliente?.nome ?? ''),
+      telefone: tel.length >= 10 ? tel : undefined,
+      clienteId,
+      dataYmd: ymd,
+      dataFmt: dataDdMmBarraAaaa(ymd),
+      numeroComanda,
+      itens,
+      subtotal,
+      desconto,
+      total,
+      ...(observacoes ? { observacoes } : {}),
+      ...(this.nomeEmpresaOrcamento
+        ? { nomeEmpresa: this.nomeEmpresaOrcamento }
+        : {}),
+    };
+  }
+
   onAbrirComandaClick(ev: MouseEvent): void {
     ev.stopPropagation();
     if (this.salvando || this.excluindo || this.isFluxoSomenteComanda()) {
@@ -1720,6 +1871,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   tituloModal(): string {
+    if (this.fluxoOrcamento) {
+      return this.idAtendimentoEmEdicao?.trim()
+        ? 'Editando orçamento'
+        : 'Novo orçamento';
+    }
     if (this.isFluxoSomenteComanda()) {
       return this.idAtendimentoEmEdicao?.trim()
         ? 'Editando itens da comanda'
@@ -1732,6 +1888,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   tituloSecaoItensModal(): string {
+    if (this.fluxoOrcamento) return 'Itens do orçamento';
     return this.isFluxoSomenteComanda()
       ? 'Itens da comanda'
       : 'Itens do agendamento';
@@ -4032,6 +4189,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const sorted = [...items];
     ordenarLinhasAtendimentoInPlace(sorted);
     const l0 = sorted[0];
+    const nCmd = l0.numeroComanda;
+    this.numeroComandaEdicao =
+      typeof nCmd === 'number' && Number.isFinite(nCmd) && nCmd > 0
+        ? Math.trunc(nCmd)
+        : null;
     const dataYmd = this.resolverDataYmdParaEdicao(
       sorted,
       this.dataYmdValidaDoPedido(sorted) ||

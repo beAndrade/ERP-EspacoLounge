@@ -77,6 +77,34 @@ interface ComandaGrupo {
 type FiltroStatusComandaId = StatusComandaColuna;
 type FiltroPagamentoColunaId = PagamentoColuna;
 
+export type ComandaColunaId =
+  | 'data'
+  | 'status'
+  | 'valor'
+  | 'pagamento'
+  | 'forma_pagamento'
+  | 'observacao';
+
+type ComandaColunaOpcao = { id: ComandaColunaId; label: string };
+
+const COMANDAS_COLUNAS_STORAGE_KEY = 'espacolounge.comandas.colunas-visiveis';
+
+const COMANDAS_COLUNAS_IMPLEMENTADAS = new Set<ComandaColunaId>([
+  'data',
+  'status',
+  'valor',
+  'pagamento',
+  'forma_pagamento',
+  'observacao',
+]);
+
+/** Padrão: sem Forma de pagamento nem Observação (ficam no fim do menu, off). */
+const COMANDAS_COLUNAS_PADRAO: ComandaColunaId[] = [
+  'data',
+  'status',
+  'valor',
+  'pagamento',
+];
 
 import {
   DRAWER_ANIM_MS,
@@ -214,6 +242,21 @@ export class ComandasComponent implements OnInit, OnDestroy {
   ordenacaoDir: 'asc' | 'desc' = 'desc';
 
   menuAbertoParaId: string | null = null;
+
+  colunasMenuAberto = false;
+  colunasMenuMontado = false;
+  private colunasMenuAnimTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly colunasMenuAnimMs = 200;
+  readonly colunasOpcoes: ComandaColunaOpcao[] = [
+    { id: 'data', label: 'Data' },
+    { id: 'status', label: 'Status' },
+    { id: 'valor', label: 'Valor' },
+    { id: 'pagamento', label: 'Pagamento' },
+    { id: 'forma_pagamento', label: 'Forma de pagamento' },
+    { id: 'observacao', label: 'Observação' },
+  ];
+  colunasVisiveis = new Set<ComandaColunaId>(COMANDAS_COLUNAS_PADRAO);
+
   excluindoIdAt: string | null = null;
   excluirMassaModalAberto = false;
   excluindoEmMassa = false;
@@ -281,6 +324,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
   private clientesCatalogo: Cliente[] = [];
 
   ngOnInit(): void {
+    this.carregarColunasSalvas();
     this.agendaNovoGlobal.registerPageHandler(this.onAgendaNovoAtalho);
     this.carregando = true;
     this.carregarOpcoesFormasPagamento();
@@ -330,6 +374,7 @@ export class ComandasComponent implements OnInit, OnDestroy {
       clearTimeout(this.faturarDrawerCloseTimer);
       this.faturarDrawerCloseTimer = null;
     }
+    this.clearColunasMenuAnimTimer();
     this.desbloquearScrollPagina();
   }
 
@@ -361,6 +406,13 @@ export class ComandasComponent implements OnInit, OnDestroy {
     if (t?.closest?.('.comandas-row-menu')) return;
     this.menuAbertoParaId = null;
 
+    if (
+      (this.colunasMenuAberto || this.colunasMenuMontado) &&
+      !t?.closest?.('.comandas-th-acoes-wrap')
+    ) {
+      this.fecharColunasMenu();
+    }
+
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.fecharPainelBusca();
     }
@@ -377,6 +429,11 @@ export class ComandasComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape', ['$event'])
   fecharBuscaAoEscape(ev: KeyboardEvent): void {
     if (ev.defaultPrevented) return;
+    if (this.colunasMenuAberto || this.colunasMenuMontado) {
+      ev.preventDefault();
+      this.fecharColunasMenu();
+      return;
+    }
     if (this.excluirItemModalAberto) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -642,6 +699,114 @@ export class ComandasComponent implements OnInit, OnDestroy {
     const bySlug = this.formasOpcoes.find((o) => o.value === slug);
     if (bySlug) return bySlug.value;
     return slug || raw;
+  }
+
+  colunaVisivel(id: ComandaColunaId): boolean {
+    return this.colunasVisiveis.has(id);
+  }
+
+  totalColunasTabela(): number {
+    let n = 0;
+    for (const id of this.colunasVisiveis) {
+      if (COMANDAS_COLUNAS_IMPLEMENTADAS.has(id)) n += 1;
+    }
+    // checkbox + ticket + cliente + menu
+    return 4 + n;
+  }
+
+  toggleColunasMenu(ev: Event): void {
+    ev.stopPropagation();
+    if (this.colunasMenuAberto) this.fecharColunasMenu();
+    else this.abrirColunasMenu();
+  }
+
+  abrirColunasMenu(): void {
+    this.clearColunasMenuAnimTimer();
+    this.colunasMenuMontado = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.colunasMenuAberto = true;
+      });
+    });
+  }
+
+  fecharColunasMenu(): void {
+    if (!this.colunasMenuMontado) return;
+    this.colunasMenuAberto = false;
+    this.clearColunasMenuAnimTimer();
+    this.colunasMenuAnimTimer = setTimeout(() => {
+      this.colunasMenuMontado = false;
+      this.colunasMenuAnimTimer = null;
+    }, this.colunasMenuAnimMs);
+  }
+
+  private clearColunasMenuAnimTimer(): void {
+    if (this.colunasMenuAnimTimer != null) {
+      clearTimeout(this.colunasMenuAnimTimer);
+      this.colunasMenuAnimTimer = null;
+    }
+  }
+
+  toggleColuna(id: ComandaColunaId, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    if (checked) this.colunasVisiveis.add(id);
+    else this.colunasVisiveis.delete(id);
+    this.colunasVisiveis = new Set(this.colunasVisiveis);
+    this.salvarColunas();
+    this.fecharColunasMenu();
+  }
+
+  restaurarColunasPadrao(): void {
+    this.colunasVisiveis = new Set(COMANDAS_COLUNAS_PADRAO);
+    this.salvarColunas();
+  }
+
+  private carregarColunasSalvas(): void {
+    try {
+      const raw = localStorage.getItem(COMANDAS_COLUNAS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return;
+      const valid = new Set(this.colunasOpcoes.map((c) => c.id));
+      const next = parsed.filter(
+        (x): x is ComandaColunaId =>
+          typeof x === 'string' && valid.has(x as ComandaColunaId),
+      );
+      if (next.length > 0) this.colunasVisiveis = new Set(next);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private salvarColunas(): void {
+    try {
+      localStorage.setItem(
+        COMANDAS_COLUNAS_STORAGE_KEY,
+        JSON.stringify([...this.colunasVisiveis]),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Rótulo amigável da forma (Pix, Dinheiro…); vazio → «—». */
+  rotuloFormaPagamentoGrupo(g: ComandaGrupo): string {
+    const codigo = this.codigoMetodoGrupo(g);
+    if (!codigo || codigo === 'pendente') {
+      const raw = this.formaPagamentoRawGrupo(g);
+      return raw || '—';
+    }
+    const op = this.formasOpcoes.find((o) => o.value === codigo);
+    return (op?.rotulo ?? this.formaPagamentoRawGrupo(g)) || '—';
+  }
+
+  /** Observação da comanda (`descricaoManual` nas linhas). */
+  observacaoGrupo(g: ComandaGrupo): string {
+    return (
+      g.linhas
+        .map((l) => String(l.descricaoManual ?? '').trim())
+        .find(Boolean) ?? ''
+    );
   }
 
   toggleFiltroExcluidas(ev: Event): void {

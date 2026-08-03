@@ -1,0 +1,215 @@
+/**
+ * Documento comercial do orçamento — tela (preview) e impressão.
+ * Encapsulation None para `@media print` atingir `body *` e isolar o PDF.
+ */
+
+.orcamento-print {
+  display: none;
+  box-sizing: border-box;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.45;
+  font-family: inherit;
+}
+
+.orcamento-print--preview {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+  background: #fff;
+}
+
+.orcamento-print__head {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.orcamento-print__empresa {
+  margin: 0 0 0.35rem;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.orcamento-print__title {
+  margin: 0 0 0.4rem;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.orcamento-print__meta-line {
+  margin: 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.orcamento-print__cliente {
+  margin-bottom: 1.25rem;
+}
+
+.orcamento-print__cliente-nome {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.orcamento-print__cliente-tel {
+  margin: 0.2rem 0 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.orcamento-print__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.25rem;
+}
+
+.orcamento-print__table thead th {
+  text-align: left;
+  padding: 0.5rem 0.4rem;
+  border-bottom: 2px solid #d1d5db;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.orcamento-print__table tbody td {
+  padding: 0.55rem 0.4rem;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+  color: #111827;
+}
+
+.orcamento-print__col-qty {
+  text-align: center;
+  white-space: nowrap;
+  width: 3.5rem;
+}
+
+.orcamento-print__col-money {
+  text-align: right;
+  white-space: nowrap;
+  width: 6.5rem;
+}
+
+.orcamento-print__empty {
+  text-align: center;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.orcamento-print__totais {
+  margin-top: 0.25rem;
+}
+
+.orcamento-print__totais-list {
+  margin: 0 0 0 auto;
+  max-width: 16rem;
+}
+
+.orcamento-print__totais-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.3rem 0;
+  font-size: 13px;
+
+  dt {
+    margin: 0;
+    font-weight: 500;
+    color: #4b5563;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  &--total {
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid #d1d5db;
+    font-size: 15px;
+
+    dt,
+    dd {
+      font-weight: 700;
+      color: #111827;
+    }
+  }
+}
+
+.orcamento-print__obs {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.orcamento-print__obs-title {
+  margin: 0 0 0.35rem;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.orcamento-print__obs-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 13px;
+  color: #374151;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .orcamento-print,
+  .orcamento-print * {
+    visibility: visible !important;
+  }
+
+  .orcamento-preview__chrome,
+  .orcamento-preview__chrome * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .orcamento-print {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    background: #fff;
+  }
+
+  .orcamento-print__title {
+    font-size: 20px;
+  }
+
+  .orcamento-print__table thead th {
+    font-size: 10px;
+  }
+
+  .orcamento-print__table tbody td {
+    font-size: 12px;
+  }
+}
