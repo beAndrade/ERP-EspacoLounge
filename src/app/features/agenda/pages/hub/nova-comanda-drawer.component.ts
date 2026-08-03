@@ -7,7 +7,6 @@ import {
   input,
   OnInit,
   output,
-  signal,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -46,11 +45,7 @@ import {
 } from '../../../../core/utils/atendimento-display';
 import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
-import { telefoneBrDigitos } from '../../../../core/utils/telefone-br';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
-import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
-import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
-import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
 import {
   formataMoedaBrl,
   moedaAPartirDosDigitos,
@@ -122,7 +117,6 @@ const RESUMO_VAZIO: ComandaResumoPagamentos = {
     AgendaNovoClientSidebarComponent,
     ComandaResumoBarComponent,
     ReactiveFormsModule,
-    WhatsappEnviarModalComponent,
   ],
   templateUrl: './nova-comanda-drawer.component.html',
   styleUrl: './nova-comanda-drawer.component.scss',
@@ -187,14 +181,18 @@ export class NovaComandaDrawerComponent implements OnInit {
   /** Pivot correspondente por `linha_id` (ordem igual a `quantidadePorLinhaId`). */
   private pivotCatalogoPorLinhaId = new Map<number, AtendimentoItemCatalogo>();
 
-  outrosMenuAberto = false;
   excluirMenuAberto = false;
+  /** Em animação de fechamento do dropdown Excluir (fade para baixo). */
+  excluirMenuFechando = false;
+  /** Pulse no botão Excluir (mesmo padrão do menu Novo / toolbar). */
+  pulsoExcluir = false;
+  private tPulsoExcluir: ReturnType<typeof setTimeout> | null = null;
+  private tExcluirMenuFechar: ReturnType<typeof setTimeout> | null = null;
+  private readonly duracaoPulsoExcluirMs = 600;
+  private readonly duracaoExcluirMenuFecharMs = 280;
   modalConfirmExcluirAberto = false;
   /** Opção escolhida no menu antes do modal de confirmação. */
   modoExclusaoConfirmar: 'somente_comanda' | 'completo' = 'completo';
-  modalOutrosOpcao: 'imprimir' | 'historico' | null = null;
-  readonly whatsappModalAberto = signal(false);
-  readonly whatsappContexto = signal<WhatsappEnviarContexto | null>(null);
   excluindo = false;
   erroExcluir = '';
   /** Último GET `/api/clientes/:id` para `creditoSaldo` e sidebar. */
@@ -219,6 +217,13 @@ export class NovaComandaDrawerComponent implements OnInit {
   private pagamentosLoadSub: { unsubscribe(): void } | null = null;
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.tPulsoExcluir != null) window.clearTimeout(this.tPulsoExcluir);
+      if (this.tExcluirMenuFechar != null) {
+        window.clearTimeout(this.tExcluirMenuFechar);
+      }
+    });
+
     effect(() => {
       const ctx = this.contexto();
       const id = ctx?.clienteId?.trim() ?? '';
@@ -632,7 +637,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       mostrarQtd,
       textoQtd,
       unitario: formataMoedaBrl(Math.max(0, unitRaw ?? 0)),
-      desconto: desc > 0 ? formataMoedaBrl(desc) : '',
+      desconto: formataMoedaBrl(desc),
       total: formataMoedaBrl(total),
     };
   }
@@ -678,7 +683,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           mostrarQtd,
           textoQtd,
           unitario: formataMoedaBrl(unit),
-          desconto: '',
+          desconto: formataMoedaBrl(0),
           total: formataMoedaBrl(total),
         };
       }
@@ -710,12 +715,16 @@ export class NovaComandaDrawerComponent implements OnInit {
         }
         return null;
       }
-      /** Mega: total na coluna Total; V. unit. fica «—» (valor por etapa ao lado do nome). */
+      /**
+       * Mega: unitário = total do serviço (soma das etapas). O detalhe por etapa
+       * continua ao lado do nome; as colunas unitário/total ficam iguais (qtd 1).
+       */
+      const unit = qEff > 0 ? totalMega / qEff : totalMega;
       return {
         mostrarQtd,
         textoQtd,
-        unitario: '',
-        desconto: '',
+        unitario: formataMoedaBrl(unit),
+        desconto: formataMoedaBrl(0),
         total: formataMoedaBrl(totalMega),
       };
     }
@@ -1044,39 +1053,61 @@ export class NovaComandaDrawerComponent implements OnInit {
     return this.podeEditar();
   }
 
+  /** Mostra o botão Excluir sempre que há comanda aberta. */
+  podeMostrarBotaoExcluir(): boolean {
+    return Boolean(this.contexto()?.idAtendimento?.trim());
+  }
+
+  /** Pode confirmar exclusão na API (sem dinheiro em caixa). */
   podeExcluirComanda(): boolean {
-    return (
-      Boolean(this.contexto()?.idAtendimento?.trim()) &&
-      !this.comandaTemPagamentosRegistados()
-    );
+    return this.podeMostrarBotaoExcluir() && !this.exclusaoBloqueadaPorCaixa();
   }
 
   /**
-   * Opção A: com pagamentos (pago/parcial) só se exclui depois de remover
-   * os lançamentos em «Ver pagamentos» / Faturar.
+   * Só bloqueia exclusão quando já entrou dinheiro em caixa (`total_pago`).
+   * Status «pago» só por parcelas a receber (cartão) não impede excluir.
    */
   comandaTemPagamentosRegistados(): boolean {
+    return this.exclusaoBloqueadaPorCaixa();
+  }
+
+  exclusaoBloqueadaPorCaixa(): boolean {
     const r = this.resumoPagamentos;
     const pago = Number(r?.total_pago ?? 0);
     if (Number.isFinite(pago) && pago > 0.005) return true;
-    const st = String(r?.status ?? '').trim().toLowerCase();
-    return st === 'pago' || st === 'parcial';
+    return this.pagamentos.some((p) => {
+      const m = String(p.metodo ?? '')
+        .trim()
+        .toLowerCase();
+      return m !== '' && m !== 'a_receber_cartao' && m !== 'pendente';
+    });
+  }
+
+  /** Fiado ou parcelas de cartão ainda a receber — saem no cascade, mas avisamos. */
+  temPendenciasFinanceirasSemCaixa(): boolean {
+    if (this.exclusaoBloqueadaPorCaixa()) return false;
+    return this.pagamentos.some((p) => {
+      const m = String(p.metodo ?? '')
+        .trim()
+        .toLowerCase();
+      return m === 'a_receber_cartao' || m === 'pendente';
+    });
   }
 
   motivoExclusaoBloqueada(): string {
-    return 'Esta comanda tem pagamentos. Remova-os em «Ver pagamentos» antes de excluir.';
+    return 'Esta comanda tem pagamentos em caixa. Remova-os em «Ver pagamentos» antes de excluir, para não afetar o financeiro.';
   }
 
   abrirEditarAgendamento(): void {
     if (!this.podeEditar()) return;
-    this.fecharOutrosMenu();
+    this.fecharExcluirMenu();
     this.editarAgendamento.emit();
   }
 
   abrirFaturar(): void {
     const id = this.contexto()?.idAtendimento?.trim();
     if (!id || !this.podeFaturar()) return;
-    this.fecharOutrosMenu();
+    this.fecharExcluirMenu();
     const r = this.resumoPagamentos;
     /** Subtotal = soma dos totais de linha (já com desconto por item). */
     const bruto = this.somaTotaisItensComanda();
@@ -1127,7 +1158,7 @@ export class NovaComandaDrawerComponent implements OnInit {
 
   gravarRodape(): void {
     if (!this.podeSalvarComandaRodape()) return;
-    this.fecharOutrosMenu();
+    this.fecharExcluirMenu();
     const id = this.contexto()?.idAtendimento?.trim();
     if (!id) {
       this.salvarComanda.emit();
@@ -1223,63 +1254,128 @@ export class NovaComandaDrawerComponent implements OnInit {
     return this.descontoPersistInFlight$;
   }
 
-  // ----- Outros / excluir ---------------------------------------------------
+  // ----- Excluir ------------------------------------------------------------
 
+  /**
+   * Chevron + dropdown só quando há cartão na agenda (hora de início)
+   * e comanda criada — aí faz sentido escolher «só comanda» vs «tudo».
+   */
+  temAgendamentoVinculado(): boolean {
+    return this.linhasAtendimentoApi.some((l) =>
+      Boolean(String(l.inicio ?? '').trim()),
+    );
+  }
+
+  mostrarMenuExcluirComanda(): boolean {
+    return this.podeMostrarBotaoExcluir() && this.temAgendamentoVinculado();
+  }
+
+  /**
+   * Fecha o menu Excluir ao clicar fora do `.nc-excluir-wrap`.
+   * O painel `app-drawer` faz stopPropagation no click, então document:click
+   * sozinho não basta — mesmo padrão do faturar-drawer.
+   */
   @HostListener('click', ['$event'])
-  onHostClickFecharOutros(ev: MouseEvent): void {
-    if (!this.outrosMenuAberto) return;
+  onHostClickFecharExcluirMenu(ev: MouseEvent): void {
+    if (!this.excluirMenuAberto || this.excluirMenuFechando) return;
     const el = ev.target as HTMLElement | null;
-    if (el && !el.closest('.nc-outros-wrap')) {
-      this.fecharOutrosMenu();
-    }
-    if (el && !el.closest('.nc-excluir-wrap')) {
-      this.fecharExcluirMenu();
-    }
+    if (el?.closest?.('.nc-excluir-wrap')) return;
+    this.fecharExcluirMenu();
   }
 
+  /** Overlay / fora do drawer, quando o evento ainda chega ao document. */
   @HostListener('document:click', ['$event'])
-  onDocumentClick(ev: MouseEvent): void {
+  onDocumentClickFecharExcluirMenu(ev: MouseEvent): void {
+    if (!this.excluirMenuAberto || this.excluirMenuFechando) return;
     const el = ev.target as HTMLElement | null;
-    if (this.outrosMenuAberto && el && !el.closest('.nc-outros-wrap')) {
-      this.fecharOutrosMenu();
+    if (el?.closest?.('.nc-excluir-wrap')) return;
+    this.fecharExcluirMenu();
+  }
+
+  onExcluirTriggerClick(ev?: MouseEvent): void {
+    ev?.stopPropagation();
+    if (this.excluindo || !this.podeMostrarBotaoExcluir()) return;
+    this.dispararPulsoExcluir();
+    if (this.mostrarMenuExcluirComanda()) {
+      this.toggleExcluirMenu();
+      return;
     }
-    if (this.excluirMenuAberto && el && !el.closest('.nc-excluir-wrap')) {
+    // Walk-in / sem slot na agenda: exclui a comanda sem menu.
+    this.abrirModalExcluir('completo');
+  }
+
+  private dispararPulsoExcluir(): void {
+    if (this.tPulsoExcluir != null) window.clearTimeout(this.tPulsoExcluir);
+    this.pulsoExcluir = false;
+    queueMicrotask(() => {
+      this.pulsoExcluir = true;
+      this.tPulsoExcluir = window.setTimeout(() => {
+        this.pulsoExcluir = false;
+        this.tPulsoExcluir = null;
+      }, this.duracaoPulsoExcluirMs);
+    });
+  }
+
+  private cancelarFechamentoExcluirMenu(): void {
+    if (this.tExcluirMenuFechar != null) {
+      window.clearTimeout(this.tExcluirMenuFechar);
+      this.tExcluirMenuFechar = null;
+    }
+    this.excluirMenuFechando = false;
+  }
+
+  toggleExcluirMenu(): void {
+    if (this.excluirMenuAberto && !this.excluirMenuFechando) {
       this.fecharExcluirMenu();
+      return;
     }
-  }
-
-  toggleOutrosMenu(ev?: MouseEvent): void {
-    ev?.stopPropagation();
-    this.outrosMenuAberto = !this.outrosMenuAberto;
-  }
-
-  fecharOutrosMenu(): void {
-    this.outrosMenuAberto = false;
-  }
-
-  toggleExcluirMenu(ev?: MouseEvent): void {
-    ev?.stopPropagation();
-    this.fecharOutrosMenu();
-    this.excluirMenuAberto = !this.excluirMenuAberto;
+    this.cancelarFechamentoExcluirMenu();
+    // Abre no próximo tick para o click do mesmo gesto não fechar de imediato.
+    setTimeout(() => {
+      this.excluirMenuAberto = true;
+    }, 0);
   }
 
   fecharExcluirMenu(): void {
-    this.excluirMenuAberto = false;
+    if (!this.excluirMenuAberto || this.excluirMenuFechando) return;
+    this.excluirMenuFechando = true;
+    this.tExcluirMenuFechar = window.setTimeout(() => {
+      this.excluirMenuAberto = false;
+      this.excluirMenuFechando = false;
+      this.tExcluirMenuFechar = null;
+    }, this.duracaoExcluirMenuFecharMs);
   }
 
   abrirModalExcluir(modo: 'somente_comanda' | 'completo'): void {
-    if (!this.podeExcluirComanda() || this.excluindo) return;
-    this.fecharOutrosMenu();
-    this.fecharExcluirMenu();
+    if (!this.podeMostrarBotaoExcluir() || this.excluindo) return;
+    this.cancelarFechamentoExcluirMenu();
+    this.excluirMenuAberto = false;
     this.modoExclusaoConfirmar = modo;
     this.erroExcluir = '';
     this.modalConfirmExcluirAberto = true;
   }
 
   textoModalExcluir(): string {
-    return this.modoExclusaoConfirmar === 'somente_comanda'
-      ? 'A comanda e os pagamentos serão removidos. O agendamento permanece na agenda para criar uma nova comanda.'
-      : 'A comanda, os pagamentos e o cartão do agendamento na agenda serão removidos. Esta ação não pode ser anulada.';
+    if (this.exclusaoBloqueadaPorCaixa()) {
+      return this.motivoExclusaoBloqueada();
+    }
+    let base: string;
+    if (!this.temAgendamentoVinculado()) {
+      base = 'A comanda será removida. Esta ação não pode ser anulada.';
+    } else if (this.modoExclusaoConfirmar === 'somente_comanda') {
+      base =
+        'A comanda será removida. O agendamento permanece na agenda para criar uma nova comanda.';
+    } else {
+      base =
+        'A comanda e o cartão do agendamento na agenda serão removidos. Esta ação não pode ser anulada.';
+    }
+    if (this.temPendenciasFinanceirasSemCaixa()) {
+      return (
+        base +
+        ' Parcelas a receber (cartão) e valores pendentes (fiado) também saem do financeiro.'
+      );
+    }
+    return base;
   }
 
   fecharModalExcluir(): void {
@@ -1288,9 +1384,19 @@ export class NovaComandaDrawerComponent implements OnInit {
     this.erroExcluir = '';
   }
 
+  /** Bloqueio por caixa: fecha o modal e abre Ver pagamentos. */
+  irParaVerPagamentosAposBloqueio(): void {
+    this.fecharModalExcluir();
+    this.abrirFaturar();
+  }
+
   confirmarExcluirComanda(): void {
     const id = this.contexto()?.idAtendimento?.trim();
     if (!id || this.excluindo) return;
+    if (this.exclusaoBloqueadaPorCaixa()) {
+      this.erroExcluir = this.motivoExclusaoBloqueada();
+      return;
+    }
     this.erroExcluir = '';
     this.excluindo = true;
     this.api
@@ -1308,66 +1414,6 @@ export class NovaComandaDrawerComponent implements OnInit {
           'Não foi possível excluir. Verifique a internet e tente de novo.';
       },
     });
-  }
-
-  onOutrosImprimir(): void {
-    this.fecharOutrosMenu();
-    this.modalOutrosOpcao = 'imprimir';
-  }
-
-  onOutrosHistorico(): void {
-    this.fecharOutrosMenu();
-    this.modalOutrosOpcao = 'historico';
-  }
-
-  onOutrosWhatsapp(): void {
-    this.fecharOutrosMenu();
-    const ctx = this.contexto();
-    const cliente = this.clienteMergedBruto();
-    const tel =
-      cliente?.celular?.trim() ||
-      cliente?.telefone?.trim() ||
-      '';
-    const digitos = telefoneBrDigitos(tel);
-    if (digitos.length < 10) {
-      this.toast.showWarning(
-        'Cliente sem telemóvel válido para enviar WhatsApp.',
-      );
-      return;
-    }
-
-    const linha = this.linhasAtendimentoApi[0];
-    const dataYmd = (linha?.data ?? ctx?.dataYmd ?? '').slice(0, 10);
-    let dataFmt = dataYmd;
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dataYmd);
-    if (m) dataFmt = `${m[3]}/${m[2]}/${m[1]}`;
-
-    let hora = '';
-    const inicio = String(linha?.inicio ?? '').trim();
-    const hm = /(\d{2}):(\d{2})/.exec(inicio);
-    if (hm) hora = `${hm[1]}:${hm[2]}`;
-
-    this.whatsappContexto.set({
-      telefone: digitos,
-      clienteId: ctx?.clienteId,
-      clienteNome: nomeClienteParaWhatsapp(cliente ?? ctx?.cliente),
-      idAtendimento: ctx?.idAtendimento ?? undefined,
-      templateCodigo: 'confirmacao',
-      variaveis: {
-        cliente: nomeClienteParaWhatsapp(cliente ?? ctx?.cliente),
-        data: dataFmt,
-        hora,
-      },
-    });
-    this.whatsappModalAberto.set(true);
-  }
-
-  fecharWhatsappModal(): void {
-    this.whatsappModalAberto.set(false);
-  }
-
-  fecharModalOutrosOpcao(): void {
-    this.modalOutrosOpcao = null;
   }
 
   /** Cliente fundido (contexto + GET) com saldo bruto, sem descontar uso na comanda. */

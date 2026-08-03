@@ -847,6 +847,7 @@
       [class.grid-wrap--compact]="layoutMobile"
       [class.grid-wrap--loading]="carregandoVista()"
       [class.grid-wrap--sem-prof]="!temProfissionaisVisiveis()"
+      [style.--hub-prof-count]="profissionaisVisiveis().length"
       role="region"
       aria-label="Horários semanais por profissional"
     >
@@ -924,6 +925,7 @@
       </div>
       </div>
       } @else {
+      <div class="week-grid-sticky-chrome">
       <div
         class="grid-head week-grid-head week-grid-head--prof"
       >
@@ -960,8 +962,6 @@
           </div>
         </div>
       </div>
-      }
-      @if (!layoutMobile) {
       <div class="week-grid-head week-grid-head--days">
         <div class="grid-head__corner" aria-hidden="true"></div>
         <div
@@ -991,6 +991,7 @@
           </div>
         </div>
       </div>
+      </div>
       }
       <div class="week-grid-body">
         @if (
@@ -1019,7 +1020,6 @@
         </div>
         <div
           class="grid-x-pane"
-          [class.grid-x-pane--scrollbar]="!layoutMobile"
           [class.grid-x-pane--body]="layoutMobile"
           [class.grid-x-pane--body-sync]="layoutMobile"
           (scroll)="aoScrollHorizontalGrelha($event, 'semana')"
@@ -1125,6 +1125,26 @@
         }
       </div>
     </div>
+    @if (!layoutMobile) {
+      <div
+        class="hub-hscroll-dock"
+        [class.hub-hscroll-dock--visible]="semanaHScroll.visivel"
+        [style.left.px]="semanaHScroll.left"
+        [style.width.px]="semanaHScroll.width"
+        [style.bottom.px]="semanaHScroll.bottom"
+        aria-hidden="true"
+      >
+        <div
+          class="hub-hscroll-dock__viewport"
+          (scroll)="aoScrollProxySemana($event)"
+        >
+          <div
+            class="hub-hscroll-dock__spacer"
+            [style.width.px]="semanaHScroll.scrollWidth"
+          ></div>
+        </div>
+      </div>
+    }
     } @else {
     @if (layoutMobile) {
       <div class="hub-mobile-sticky-head hub-mobile-sticky-head--mensal">

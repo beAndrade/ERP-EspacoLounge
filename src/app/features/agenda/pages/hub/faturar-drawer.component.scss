@@ -1076,13 +1076,13 @@ input[type='number'].fat-field__input {
   }
 
   &.fat-btn--danger {
-    background: #dc2626;
-    color: #ffffff;
-    border-color: #dc2626;
+    background: var(--drawer-btn-danger-bg);
+    color: var(--drawer-btn-danger-fg, #fff);
+    border-color: var(--drawer-btn-danger-border);
 
     &:hover:not(:disabled) {
-      background: #b91c1c;
-      border-color: #b91c1c;
+      background: var(--drawer-btn-danger-hover-bg);
+      border-color: var(--drawer-btn-danger-hover-border);
     }
   }
 

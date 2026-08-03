@@ -165,26 +165,18 @@ app-servico-cadastro-drawer-host .cliente-drawer.cliente-drawer--servico.app-dra
   --drawer-btn-primary-fg: var(--color-primary-contrast);
   --drawer-btn-primary-hover-bg: var(--color-primary-hover);
   --drawer-btn-primary-hover-border: var(--color-primary-hover);
-  /** Faturar / Ver pagamentos — verde claro do badge «Pago» (#b7eb8f). */
-  --drawer-btn-faturar-bg: #b7eb8f;
-  --drawer-btn-faturar-border: #b7eb8f;
-  --drawer-btn-faturar-fg: var(--drawer-badge-pago-fg);
-  --drawer-btn-faturar-hover-bg: color-mix(in srgb, #b7eb8f 78%, #000);
-  --drawer-btn-faturar-hover-border: color-mix(in srgb, #b7eb8f 78%, #000);
-  /** Excluir — mesmo vermelho do badge «Atrasado». */
-  --drawer-btn-danger-bg: var(--drawer-badge-atraso-fg);
-  --drawer-btn-danger-border: var(--drawer-badge-atraso-fg);
-  --drawer-btn-danger-fg: #ffffff;
-  --drawer-btn-danger-hover-bg: color-mix(
-    in srgb,
-    var(--drawer-badge-atraso-fg) 82%,
-    #000
-  );
-  --drawer-btn-danger-hover-border: color-mix(
-    in srgb,
-    var(--drawer-badge-atraso-fg) 82%,
-    #000
-  );
+  /** Faturar / Ver pagamentos / Acessar comanda. */
+  --drawer-btn-faturar-bg: #70c040;
+  --drawer-btn-faturar-border: #70c040;
+  --drawer-btn-faturar-fg: #fff;
+  --drawer-btn-faturar-hover-bg: #88c761;
+  --drawer-btn-faturar-hover-border: #88c761;
+  /** Excluir. */
+  --drawer-btn-danger-bg: #ff4d4f;
+  --drawer-btn-danger-border: #ff4d4f;
+  --drawer-btn-danger-fg: #fff;
+  --drawer-btn-danger-hover-bg: #ff7875;
+  --drawer-btn-danger-hover-border: #ff7875;
   font-family: Inter, sans-serif;
 }
 

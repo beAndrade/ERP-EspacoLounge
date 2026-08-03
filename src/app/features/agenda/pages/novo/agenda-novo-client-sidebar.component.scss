@@ -17,7 +17,7 @@
 }
 
 :host-context(.agenda-novo--drawer) {
-  padding-inline: 25px;
+  padding-inline: 15px;
   border-right: 1px solid var(--drawer-stroke, #ececec);
   box-sizing: border-box;
 
@@ -41,7 +41,7 @@
 
   .client-sidebar-drawer__nome-destaque {
     font-size: 22px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.2;
     color: #000000;
   }
@@ -58,6 +58,7 @@
     font-weight: 400;
     line-height: 1;
     white-space: nowrap;
+    color: rgba(0, 0, 0, 0.75);
   }
 
   .sidebar-block__titulo:not(.sidebar-block__titulo--info) {
@@ -120,7 +121,7 @@
 }
 
 .client-sidebar-drawer__nome-destaque {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 22px;
   line-height: 1.2;
   color: #000000;
@@ -316,7 +317,7 @@
   flex-shrink: 0;
   font-size: 14px;
   font-weight: 400;
-  color: var(--color-muted);
+  color: rgba(0, 0, 0, 0.75);
   text-align: center;
   line-height: 1;
   white-space: nowrap;
@@ -448,7 +449,7 @@
  * O texto/ícone mantém o alinhamento do título «Informações».
  */
 :host-context(.agenda-novo--drawer) {
-  --sidebar-info-pad-x: 25px;
+  --sidebar-info-pad-x: 15px;
 
   .sidebar-block--informacoes .sidebar-block__linklike {
     width: calc(100% + 2 * var(--sidebar-info-pad-x));

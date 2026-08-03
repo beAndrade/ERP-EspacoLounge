@@ -122,6 +122,20 @@
   }
 }
 
+/** Ver pagamentos / mesma ação dos botões Faturar da comanda. */
+.comandas-modal__btn--faturar {
+  border-color: var(--drawer-btn-faturar-border);
+  background: var(--drawer-btn-faturar-bg);
+  color: var(--drawer-btn-faturar-fg, #fff);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--drawer-btn-faturar-bg) 35%, transparent);
+
+  &:hover:not(:disabled) {
+    background: var(--drawer-btn-faturar-hover-bg);
+    border-color: var(--drawer-btn-faturar-hover-border);
+    color: var(--drawer-btn-faturar-fg, #fff);
+  }
+}
+
 .comandas-modal__erro {
   margin: 8px 0 0;
   width: 100%;

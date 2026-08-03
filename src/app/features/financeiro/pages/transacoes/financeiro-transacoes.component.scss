@@ -443,6 +443,18 @@
   white-space: normal;
 }
 
+.fin-transacoes-table tbody td.col-forma {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.fin-transacoes__forma-linha {
+  display: block;
+}
+
 .fin-transacoes-table {
   thead th.col-bruto,
   thead th.col-liq,
@@ -924,6 +936,21 @@
     min-width: 0;
     max-height: 100%;
     width: 100%;
+  }
+
+  /**
+   * Comanda: sem inset horizontal (como hub / comandas).
+   * Padding do cliente fica só na sidebar (15px).
+   */
+  &:has(> app-nova-comanda-drawer),
+  &.app-drawer--comanda:not(.app-drawer--faturar) {
+    --drawer-inset-x: 0;
+    --drawer-pad-x: 0;
+    padding: 0;
+  }
+
+  &:has(> app-nova-comanda-drawer) {
+    overflow: hidden;
   }
 
   &.app-drawer--comanda:not(.app-drawer--faturar) {

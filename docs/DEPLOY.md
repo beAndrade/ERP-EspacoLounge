@@ -20,7 +20,7 @@ Copie `api/.env.example` e defina:
 | `JWT_SECRET` | Segredo longo e aleatório (obrigatório) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Primeiro login admin (criado só se `usuarios` estiver vazio) |
 | `CORS_ORIGINS` | JSON com URL do Angular, ex. `["https://app.seudominio.com.br"]` |
-| `ADMIN_PIN` | PIN da folha/comissões (opcional mas recomendado) |
+| `ADMIN_PIN` | PIN de 4 dígitos do Financeiro (`X-Admin-Pin`). Sem aspas no painel. |
 
 ## Passos
 

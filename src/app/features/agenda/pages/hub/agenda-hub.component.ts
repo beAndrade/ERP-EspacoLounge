@@ -5,6 +5,7 @@ import {
   ApplicationRef,
   inject,
   LOCALE_ID,
+  NgZone,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -125,7 +126,7 @@ const GRID_RANGE = GRID_END_MIN - GRID_START_MIN;
 const AGENDA_SLOT_MIN = 30;
 /** Nº de faixas de 30 min na coluna (31). */
 const AGENDA_SLOT_COUNT = GRID_RANGE / AGENDA_SLOT_MIN;
-/** Dias da semana por profissional na grelha semanal (7 colunas cada). */
+/** Faixa semanal: sempre 7 dias (âncora + 6 à frente), não semana calendário seg–dom. */
 const SEMANA_COLUNAS = 7;
 /** Grelha mensal: 6 semanas × 7 dias (sempre 42 células). */
 const MES_GRELHA_CELULAS = 42;
@@ -215,6 +216,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly title = inject(Title);
   private readonly appRef = inject(ApplicationRef);
+  private readonly ngZone = inject(NgZone);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
   private readonly servicoDrawer = inject(ServicoCadastroDrawerService);
@@ -233,7 +235,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   mesRef = this.inicioDoMes(new Date());
   diaYmd = toYmd(new Date());
-  /** 1.º dia da faixa semanal (7 dias por prof.); por defeito = hoje. */
+  /** Âncora da faixa semanal: esse dia + 6 à frente (não semana seg–dom). */
   semanaGridInicioYmd = toYmd(new Date());
   carregandoMes = false;
   carregandoDia = false;
@@ -255,6 +257,19 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   /** Deslocamento horizontal sincronizado (corpo da grelha usa transform, sem overflow). */
   grelhaScrollXDia = 0;
   grelhaScrollXSemana = 0;
+  /**
+   * Dock do scrollbar horizontal da vista semanal (fixed): gruda no bottom do
+   * `main` quando o fim da grelha sai da viewport.
+   */
+  semanaHScroll: {
+    visivel: boolean;
+    left: number;
+    width: number;
+    bottom: number;
+    scrollWidth: number;
+  } = { visivel: false, left: 0, width: 0, bottom: 0, scrollWidth: 0 };
+  private semanaHScrollRaf = 0;
+  private semanaHScrollRo: ResizeObserver | null = null;
 
   readonly statusFiltrosHub = HUB_STATUS_FILTROS;
   /** Status ocultos na grelha (vazio = todos visíveis). */
@@ -568,6 +583,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.slotsHoras = this.gerarSlots();
     this.setupLayoutMobile();
     this.setupRelogioGrelha();
+    this.setupSemanaHScrollDock();
     window.addEventListener('keydown', this.onDrawerKeydown);
     document.addEventListener('click', this.onHubToolbarDocClick);
     this.destroyRef.onDestroy(() => {
@@ -610,6 +626,157 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private desativarLayoutAgendaNoMain(): void {
     document.documentElement.classList.remove(AgendaHubComponent.ROOT_SCROLL_LOCK_CLASS);
     document.querySelector('main.main')?.classList.remove(AgendaHubComponent.MAIN_AGENDA_CLASS);
+  }
+
+  aoScrollProxySemana(ev: Event): void {
+    if (this.layoutMobile || this.modoVista !== 'semana') return;
+    const proxy = ev.target as HTMLElement | null;
+    if (!proxy) return;
+    const wrap = this.hostEl.querySelector('.week-grid-wrap');
+    if (!wrap) return;
+    this.aplicarScrollHorizontalGrelha(proxy.scrollLeft, wrap, 'semana');
+  }
+
+  private setupSemanaHScrollDock(): void {
+    if (typeof window === 'undefined') return;
+    const onScrollOrResize = (): void => this.agendarAtualizarSemanaHScrollDock();
+    this.ngZone.runOutsideAngular(() => {
+      window.addEventListener('resize', onScrollOrResize, { passive: true });
+      this.destroyRef.onDestroy(() => {
+        window.removeEventListener('resize', onScrollOrResize);
+        if (this.semanaHScrollRaf) {
+          cancelAnimationFrame(this.semanaHScrollRaf);
+          this.semanaHScrollRaf = 0;
+        }
+        this.semanaHScrollRo?.disconnect();
+        this.semanaHScrollRo = null;
+        const main = this.mainAgendaEl();
+        if (main) main.removeEventListener('scroll', onScrollOrResize);
+      });
+
+      queueMicrotask(() => {
+        const main = this.mainAgendaEl();
+        if (main) {
+          main.addEventListener('scroll', onScrollOrResize, { passive: true });
+        }
+        if (typeof ResizeObserver !== 'undefined') {
+          this.semanaHScrollRo = new ResizeObserver(() => onScrollOrResize());
+          this.semanaHScrollRo.observe(this.hostEl as Element);
+        }
+        onScrollOrResize();
+      });
+    });
+  }
+
+  private mainAgendaEl(): HTMLElement | null {
+    return this.hostEl.closest('main.main--agenda-hub');
+  }
+
+  private agendarAtualizarSemanaHScrollDock(): void {
+    if (this.semanaHScrollRaf) cancelAnimationFrame(this.semanaHScrollRaf);
+    this.semanaHScrollRaf = requestAnimationFrame(() => {
+      this.semanaHScrollRaf = 0;
+      this.ngZone.run(() => this.atualizarSemanaHScrollDock());
+    });
+  }
+
+  private atualizarSemanaHScrollDock(): void {
+    if (this.layoutMobile || this.modoVista !== 'semana') {
+      if (this.semanaHScroll.visivel) {
+        this.semanaHScroll = {
+          visivel: false,
+          left: 0,
+          width: 0,
+          bottom: 0,
+          scrollWidth: 0,
+        };
+      }
+      return;
+    }
+
+    const wrap = this.hostEl.querySelector('.week-grid-wrap');
+    const pane = wrap?.querySelector<HTMLElement>(
+      '.week-grid-body > .grid-x-pane',
+    );
+    const cols = pane?.querySelector<HTMLElement>('.week-grid-body__cols');
+    const main = this.mainAgendaEl();
+    if (!pane || !cols || !main) {
+      if (this.semanaHScroll.visivel) {
+        this.semanaHScroll = {
+          visivel: false,
+          left: 0,
+          width: 0,
+          bottom: 0,
+          scrollWidth: 0,
+        };
+      }
+      return;
+    }
+
+    if (this.semanaHScrollRo && wrap) {
+      try {
+        this.semanaHScrollRo.observe(wrap);
+        this.semanaHScrollRo.observe(pane);
+        this.semanaHScrollRo.observe(cols);
+      } catch {
+        /* já observado */
+      }
+    }
+
+    const scrollWidth = cols.scrollWidth;
+    const clientWidth = pane.clientWidth;
+    const needsScroll = scrollWidth > clientWidth + 1;
+    const mainRect = main.getBoundingClientRect();
+    const paneRect = pane.getBoundingClientRect();
+    const stillInView =
+      paneRect.top < mainRect.bottom - 4 && paneRect.bottom > mainRect.top + 4;
+
+    if (!needsScroll || !stillInView) {
+      if (this.semanaHScroll.visivel) {
+        this.semanaHScroll = {
+          visivel: false,
+          left: 0,
+          width: 0,
+          bottom: 0,
+          scrollWidth: 0,
+        };
+      }
+      return;
+    }
+
+    /** Fim natural da grelha; se passar do main, gruda no bottom do main. */
+    const bottom = Math.max(
+      Math.max(0, window.innerHeight - paneRect.bottom),
+      Math.max(0, window.innerHeight - mainRect.bottom),
+    );
+
+    this.semanaHScroll = {
+      visivel: true,
+      left: paneRect.left,
+      width: paneRect.width,
+      bottom,
+      scrollWidth,
+    };
+
+    const proxy = this.hostEl.querySelector<HTMLElement>(
+      '.hub-hscroll-dock__viewport',
+    );
+    if (proxy && !this.gridScrollSyncLock) {
+      const left = pane.scrollLeft;
+      if (Math.abs(proxy.scrollLeft - left) > 0.5) {
+        proxy.scrollLeft = left;
+      }
+    }
+  }
+
+  private sincronizarProxySemanaHScroll(left: number): void {
+    const proxy = this.hostEl.querySelector<HTMLElement>(
+      '.hub-hscroll-dock__viewport',
+    );
+    if (!proxy) return;
+    if (Math.abs(proxy.scrollLeft - left) > 0.5) {
+      proxy.scrollLeft = left;
+    }
   }
 
   ngOnDestroy(): void {
@@ -677,10 +844,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.mesRef = this.inicioDoMes(this.parseYmdLocal(this.diaYmd));
     }
     if (modo === 'semana') {
-      this.semanaGridInicioYmd = this.hojeYmd();
-      this.diaYmd = this.hojeYmd();
+      /** Sempre: hoje + 6 dias à frente. */
+      const hoje = this.hojeYmd();
+      this.semanaGridInicioYmd = hoje;
+      this.diaYmd = hoje;
     }
     this.recarregarVistaAtiva();
+    this.agendarAtualizarSemanaHScrollDock();
   }
 
   toggleHubMenu(menu: HubMenuToolbar, ev?: Event): void {
@@ -843,6 +1013,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /** 7 dias da semana (mesma faixa repetida em cada profissional). */
+  /**
+   * 7 dias da faixa semanal (âncora = `semanaGridInicioYmd`, tipicamente hoje).
+   * A mesma faixa repete-se em cada profissional.
+   */
   diasFaixaSemanal(): Array<{
     ymd: string;
     label: string;
@@ -854,20 +1028,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return this.diasFaixaSemanaInterno(
       SEMANA_COLUNAS,
       this.semanaGridInicioYmd,
-    );
-  }
-
-  diasFaixaSemana(): Array<{
-    ymd: string;
-    label: string;
-    diaNum: number;
-    selecionado: boolean;
-    hoje: boolean;
-    contagem: number;
-  }> {
-    return this.diasFaixaSemanaInterno(
-      7,
-      this.inicioSemanaYmd(this.diaYmd),
     );
   }
 
@@ -961,6 +1121,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const d = this.parseYmdLocal(this.semanaGridInicioYmd);
     d.setDate(d.getDate() + deltaDias);
     this.semanaGridInicioYmd = toYmd(d);
+    this.diaYmd = this.semanaGridInicioYmd;
     this.atualizarTituloAba();
     this.carregarSemana();
   }
@@ -991,21 +1152,6 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const d = this.parseYmdLocal(this.diaYmd);
     d.setDate(d.getDate() + 1);
     this.selecionarDia(toYmd(d));
-  }
-
-  private inicioSemanaYmd(ymd: string): string {
-    const anchor = this.parseYmdLocal(ymd);
-    const dow = anchor.getDay();
-    const mondayOffset = dow === 0 ? -6 : 1 - dow;
-    const monday = new Date(anchor);
-    monday.setDate(anchor.getDate() + mondayOffset);
-    return toYmd(monday);
-  }
-
-  private fimSemanaYmd(ymd: string): string {
-    const monday = this.parseYmdLocal(this.inicioSemanaYmd(ymd));
-    monday.setDate(monday.getDate() + 6);
-    return toYmd(monday);
   }
 
   limparBuscaCliente(): void {
@@ -1060,10 +1206,12 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     for (const p of this.profissionais) {
       this.profOcultos.add(p.id);
     }
+    this.agendarAtualizarSemanaHScrollDock();
   }
 
   selecionarTodosProfissionais(): void {
     this.profOcultos.clear();
+    this.agendarAtualizarSemanaHScrollDock();
   }
 
   /** Todos os profissionais ocultos no filtro (lista não vazia). */
@@ -1536,10 +1684,14 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         this.grelhaScrollXDia = left;
       } else {
         this.grelhaScrollXSemana = left;
+        this.sincronizarProxySemanaHScroll(left);
       }
     }
 
     this.gridScrollSyncLock = false;
+    if (grupo === 'semana') {
+      this.agendarAtualizarSemanaHScrollDock();
+    }
   }
 
   /** Sincroniza scroll horizontal entre cabeçalho e corpo da grelha. */
@@ -1565,6 +1717,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     } else {
       this.profOcultos.add(id);
     }
+    this.agendarAtualizarSemanaHScrollDock();
   }
 
   celulas(): CelulaCalendario[] {
@@ -1702,6 +1855,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       this.mesRef.getFullYear() !== parts.getFullYear()
     ) {
       this.mesRef = this.inicioDoMes(parts);
+    }
+    /** Na vista semanal a âncora é o dia escolhido (esse dia + 6 à frente). */
+    if (this.modoVista === 'semana') {
+      this.semanaGridInicioYmd = ymd;
     }
     this.recarregarVistaAtiva();
   }
@@ -3370,6 +3527,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         this.grelhaScrollXDia = 0;
         this.grelhaScrollXSemana = 0;
       }
+      this.agendarAtualizarSemanaHScrollDock();
     };
     apply();
     mq.addEventListener('change', apply);
@@ -4219,6 +4377,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         this.linhasSemana = items;
         this.carregandoSemana = false;
         this.sincronizarTipAposRecarregar();
+        this.agendarAtualizarSemanaHScrollDock();
       },
       error: (e: Error) => {
         this.erro =
@@ -4226,6 +4385,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
           'Não foi possível carregar a semana na grelha.';
         this.linhasSemana = [];
         this.carregandoSemana = false;
+        this.agendarAtualizarSemanaHScrollDock();
       },
     });
   }

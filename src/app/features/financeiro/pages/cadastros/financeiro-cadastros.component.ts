@@ -30,7 +30,7 @@ export class FinanceiroCadastrosComponent {
   @ViewChild(FinCadastrosFormasTabComponent)
   private formasTab?: FinCadastrosFormasTabComponent;
 
-  readonly tabAtiva = signal<CadastroTab>('categorias');
+  readonly tabAtiva = signal<CadastroTab>('formas');
 
   readonly tabs: { id: CadastroTab; label: string }[] = [
     { id: 'formas', label: 'Formas de pagamento' },

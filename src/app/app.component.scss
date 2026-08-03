@@ -40,8 +40,9 @@
 .app-sidebar {
   --sidebar-fg: #f8fafc;
   --sidebar-active: var(--color-sidebar-active);
-  --sidebar-sub-active: var(--color-sidebar-sub-active);
-  --sidebar-hover: var(--color-sidebar-hover);
+  /** Submenu ativo = mesma cor da aba ativa. */
+  --sidebar-sub-active: var(--sidebar-active);
+  --sidebar-hover: var(--sidebar-active);
   /** Cabeçalhos de dropdown e fila de secção */
   /** Itens de 1.º nível no nav (prints / DevTools) */
   --sidebar-nav-tier1-bg: transparent;
@@ -55,11 +56,11 @@
   --sidebar-nav-radius: 6px;
   --sidebar-nav-sub-radius: 8px;
   --sidebar-dd-bg: var(--sidebar-nav-tier1-bg);
-  /** Só cabeçalhos / link de 1.º nível — hover sobre fundo transparente */
-  --sidebar-dd-hover: var(--color-sidebar-hover);
+  /** Hover (todos os níveis) = cor da aba ativa. */
+  --sidebar-dd-hover: var(--sidebar-active);
   --sidebar-dd-section: var(--sidebar-active);
-  /** Só subitens dos dropdowns */
-  --sidebar-sub-hover: var(--color-sidebar-hover);
+  /** Subitens: mesmo hover/ativo do 1.º nível. */
+  --sidebar-sub-hover: var(--sidebar-active);
   --sidebar-nav-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --sidebar-nav-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --sidebar-hover-ms: 320ms;
@@ -302,7 +303,7 @@
   background: var(--sidebar-nav-tier1-bg);
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.9rem;
   text-align: left;
   cursor: pointer;
@@ -430,13 +431,13 @@
   border-radius: var(--sidebar-nav-radius);
   text-decoration: none;
   color: var(--sidebar-fg);
-  font-weight: 500;
+  font-weight: 400;
   font-size: 0.875rem;
   line-height: 1.2;
 
   &.active {
     color: var(--sidebar-fg);
-    font-weight: 600;
+    font-weight: 500;
 
     .nav-item__icon {
       color: #fff;
@@ -491,7 +492,7 @@
 
   &.active {
     background: var(--sidebar-sub-active);
-    font-weight: 600;
+    font-weight: 500;
   }
 
   &.active:hover {
@@ -609,7 +610,7 @@
   background: var(--sidebar-nav-tier1-bg);
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.9rem;
   text-align: left;
   cursor: pointer;

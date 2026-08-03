@@ -118,8 +118,10 @@
                   [options]="opcoesClientesNomes()"
                   placeholder="Busque por um cliente"
                   [showFilter]="false"
+                  [showSearchIconOnOpen]="true"
                   [showCriarCliente]="true"
                   triggerIcon="search"
+                  triggerCursor="text"
                   (criarCliente)="irCriarCliente()"
                   (painelAberto)="onClienteSelectPainelAbriu()"
                 />

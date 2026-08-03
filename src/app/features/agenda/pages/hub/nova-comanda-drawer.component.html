@@ -266,26 +266,41 @@
         @if (podeMostrarBotaoExcluir()) {
           <div
             class="nc-excluir-wrap"
-            [class.nc-excluir-wrap--open]="excluirMenuAberto && mostrarMenuExcluirComanda()"
+            [class.nc-excluir-wrap--open]="
+              (excluirMenuAberto || excluirMenuFechando) && mostrarMenuExcluirComanda()
+            "
           >
-            <button
-              type="button"
-              class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger"
-              (click)="onExcluirTriggerClick($event)"
-              [disabled]="excluindo"
-              [attr.aria-expanded]="
-                mostrarMenuExcluirComanda() ? excluirMenuAberto : null
-              "
-              [attr.aria-haspopup]="mostrarMenuExcluirComanda() ? 'menu' : null"
-              aria-label="Excluir comanda"
-            >
-              {{ excluindo ? 'Excluindo…' : 'Excluir' }}
-              @if (mostrarMenuExcluirComanda()) {
-                <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
-              }
-            </button>
-            @if (excluirMenuAberto && mostrarMenuExcluirComanda()) {
-              <ul class="nc-excluir-panel" role="menu">
+            <div class="nc-excluir-trigger-wrap">
+              <span
+                class="nc-excluir-pulse-ring"
+                [class.nc-excluir-pulse-ring--on]="pulsoExcluir"
+                aria-hidden="true"
+              ></span>
+              <button
+                type="button"
+                class="btn btn-footer btn-footer--danger agenda-modal__excluir-trigger nc-excluir-trigger"
+                (click)="onExcluirTriggerClick($event)"
+                [disabled]="excluindo"
+                [attr.aria-expanded]="
+                  mostrarMenuExcluirComanda() ? excluirMenuAberto && !excluirMenuFechando : null
+                "
+                [attr.aria-haspopup]="mostrarMenuExcluirComanda() ? 'menu' : null"
+                aria-label="Excluir comanda"
+              >
+                {{ excluindo ? 'Excluindo…' : 'Excluir' }}
+                @if (mostrarMenuExcluirComanda()) {
+                  <span class="agenda-modal__excluir-chev" aria-hidden="true"></span>
+                }
+              </button>
+            </div>
+            @if (mostrarMenuExcluirComanda()) {
+              <ul
+                class="nc-excluir-panel"
+                [class.nc-excluir-panel--open]="excluirMenuAberto"
+                [class.nc-excluir-panel--closing]="excluirMenuFechando"
+                role="menu"
+                [attr.aria-hidden]="!excluirMenuAberto || excluirMenuFechando"
+              >
                 <li role="none">
                   <button
                     type="button"

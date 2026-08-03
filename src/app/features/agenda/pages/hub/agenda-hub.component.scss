@@ -638,7 +638,8 @@
 $agenda-slot-rows: 31;
 $agenda-slot-row-h: 2.5em;
 $agenda-timeline-h: $agenda-slot-rows * $agenda-slot-row-h;
-$agenda-grid-stroke: rgba(221, 221, 221, 0.5);
+/** Linhas da grelha (dia / semana / mês) — mesma cor em todas as vistas. */
+$agenda-grid-stroke: #eeeeee;
 
 .grid-wrap {
   overflow: visible;
@@ -863,6 +864,14 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
   }
+
+  .week-grid-sticky-chrome .grid-head {
+    position: static;
+    top: auto;
+    z-index: auto;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .grid-head__prof-row {
@@ -923,7 +932,6 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
     background-color 0.15s ease,
     box-shadow 0.2s ease;
 
-  &:hover,
   &--ativo {
     background: var(--hub-prof-glass-bg-hover);
     color: rgb(88, 88, 88);
@@ -1497,6 +1505,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   touch-action: none;
   user-select: none;
   border: none;
+  outline: none;
   border-radius: 9px;
   overflow: hidden;
   z-index: 2;
@@ -1507,6 +1516,27 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
   justify-content: flex-start;
   gap: 0.2rem;
   min-width: 0;
+}
+
+/** Vista semanal: sem borda/sombra — só o card sobreposto (encaixe-top) tem borda. */
+.week-grid-wrap {
+  .day-col__card {
+    border: none;
+    box-shadow: none;
+  }
+
+  .day-col__card:hover:not(:disabled) {
+    box-shadow: none;
+  }
+
+  .day-col__card-slot--encaixe-top .day-col__card {
+    border: 1.5px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }
+
+  .day-col__card-slot--encaixe-top .day-col__card:hover:not(:disabled) {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }
 }
 
 .day-col__card:hover:not(:disabled) {
@@ -1880,7 +1910,7 @@ $agenda-grid-stroke: rgba(221, 221, 221, 0.5);
 }
 
 /* ---- Vista semanal (cada profissional × 7 dias da semana) ---- */
-$week-col-w: 86.06px;
+$week-col-w: 55.6px;
 $week-col-count: 7;
 $week-grid-stroke: $agenda-grid-stroke;
 $week-prof-head-h: 4.5rem;
@@ -1891,11 +1921,58 @@ $week-prof-strip-h: 16px;
   --week-col-count: #{$week-col-count};
   --week-grid-stroke: #{$week-grid-stroke};
   --hub-grid-stroke: #{$week-grid-stroke};
-  overflow: visible;
+  /** Largura mínima por profissional (7 × 55.6px). Cresce se couber; senão scroll. */
+  --week-prof-block-min: calc(var(--week-col-count) * var(--week-col-w));
+  /**
+   * Contém o overflow horizontal: o scroll fica nos `.grid-x-pane`,
+   * não no `main` (que tem `overflow-x: hidden` e cortava a grelha).
+   */
+  overflow-x: clip;
+  overflow-y: visible;
   background: transparent;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+
+  .week-grid-head,
+  .week-grid-body {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .week-grid-head .grid-head__scroll-zone,
+  .week-grid-head > .grid-x-pane,
+  .week-grid-body > .grid-x-pane {
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /** Cabeçalhos: scroll sincronizado, sem barra (a barra fica no corpo, embaixo). */
+  .week-grid-head .grid-x-pane {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+      height: 0;
+    }
+  }
+
+  /** Barra horizontal custom (sticky no bottom do main quando a grelha sobe). */
+  .week-grid-body > .grid-x-pane {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+      height: 0;
+    }
+  }
 
   &.grid-wrap--sem-prof {
     position: relative;
@@ -1965,6 +2042,7 @@ $week-prof-strip-h: 16px;
   position: static;
   top: auto;
   z-index: auto;
+  overflow: hidden;
 
   &--prof {
     z-index: auto;
@@ -1992,6 +2070,27 @@ $week-prof-strip-h: 16px;
 }
 
 @media (min-width: 769px) {
+  /**
+   * Profissionais + dias sobem/descem juntos — evita o sticky duplo
+   * sobrepor a faixa de dias no fim do scroll do `main`.
+   */
+  .week-grid-sticky-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 31;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+
+    .grid-head,
+    .week-grid-head {
+      position: static;
+      top: auto;
+      z-index: auto;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
   .week-grid-head:not(.grid-head--in-chrome) {
     position: sticky;
     z-index: 30;
@@ -2008,13 +2107,32 @@ $week-prof-strip-h: 16px;
     top: $week-prof-head-h;
     z-index: 30;
   }
+
+  /* Reafirma static após as regras sticky acima (mesma especificidade). */
+  .week-grid-sticky-chrome .grid-head,
+  .week-grid-sticky-chrome .week-grid-head {
+    position: static;
+    top: auto;
+    z-index: auto;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .week-grid-wrap .week-grid-head__prof-track .grid-head__prof {
-  flex: 0 0 calc(var(--week-col-count) * var(--week-col-w));
-  width: calc(var(--week-col-count) * var(--week-col-w));
-  min-width: calc(var(--week-col-count) * var(--week-col-w));
+  flex: 1 0 var(--week-prof-block-min);
+  width: auto;
+  min-width: var(--week-prof-block-min);
+  max-width: none;
   box-sizing: border-box;
+  /** Mesma transparência da faixa de dias (sem glass opaco). */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+
+  &--ativo {
+    background: transparent;
+  }
 }
 
 .week-grid-head__corner {
@@ -2027,9 +2145,10 @@ $week-prof-strip-h: 16px;
 }
 
 .week-grid-head__prof-days {
-  flex: 0 0 calc(var(--week-col-count) * var(--week-col-w));
-  width: calc(var(--week-col-count) * var(--week-col-w));
-  min-width: calc(var(--week-col-count) * var(--week-col-w));
+  flex: 1 0 var(--week-prof-block-min);
+  width: auto;
+  min-width: var(--week-prof-block-min);
+  max-width: none;
   display: flex;
   min-height: 0;
   box-sizing: border-box;
@@ -2042,10 +2161,10 @@ $week-prof-strip-h: 16px;
 }
 
 .week-grid-head__prof-days .week-grid-head__day {
-  flex: 0 0 var(--week-col-w);
-  width: var(--week-col-w);
+  flex: 1 0 var(--week-col-w);
+  width: auto;
   min-width: var(--week-col-w);
-  max-width: var(--week-col-w);
+  max-width: none;
   height: 44px;
   min-height: 44px;
   box-sizing: border-box;
@@ -2106,22 +2225,51 @@ $week-prof-strip-h: 16px;
   border-radius: 0 0 var(--radius) var(--radius);
   position: relative;
   z-index: 1;
+  overflow: hidden;
 
   .grid-x-pane {
-    flex: 1 1 auto;
+    flex: 1 1 0%;
     min-width: 0;
+    max-width: none;
     height: 100%;
   }
 }
 
 .week-grid-body__cols {
   height: 100%;
+  display: flex;
+  flex: 0 0 auto;
+  width: max(
+    100%,
+    calc(max(var(--hub-prof-count, 1), 1) * var(--week-prof-block-min))
+  );
+  min-width: max(
+    100%,
+    calc(max(var(--hub-prof-count, 1), 1) * var(--week-prof-block-min))
+  );
+  box-sizing: border-box;
+}
+
+.week-grid-head__days-track,
+.week-grid-wrap .week-grid-head__prof-track {
+  display: flex;
+  flex: 0 0 auto;
+  width: max(
+    100%,
+    calc(max(var(--hub-prof-count, 1), 1) * var(--week-prof-block-min))
+  );
+  min-width: max(
+    100%,
+    calc(max(var(--hub-prof-count, 1), 1) * var(--week-prof-block-min))
+  );
+  box-sizing: border-box;
 }
 
 .week-grid-body__prof-cols {
-  flex: 0 0 calc(var(--week-col-count) * var(--week-col-w));
-  width: calc(var(--week-col-count) * var(--week-col-w));
-  min-width: calc(var(--week-col-count) * var(--week-col-w));
+  flex: 1 0 var(--week-prof-block-min);
+  width: auto;
+  min-width: var(--week-prof-block-min);
+  max-width: none;
   display: flex;
   height: 100%;
   min-height: 0;
@@ -2129,14 +2277,24 @@ $week-prof-strip-h: 16px;
 }
 
 .week-grid-body__prof-cols .week-day-col {
-  flex: 0 0 var(--week-col-w);
-  width: var(--week-col-w);
+  flex: 1 0 var(--week-col-w);
+  width: auto;
   min-width: var(--week-col-w);
-  max-width: var(--week-col-w);
+  max-width: none;
   height: 100%;
   box-sizing: border-box;
   border: none;
-  border-right: 1px solid var(--week-grid-stroke);
+  border-right: 1px solid $agenda-grid-stroke;
+  /* Mesmas linhas horizontais da vista diária. */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(#{$agenda-slot-row-h} - 1px),
+    $agenda-grid-stroke calc(#{$agenda-slot-row-h} - 1px),
+    $agenda-grid-stroke $agenda-slot-row-h
+  );
+  background-size: 100% $agenda-slot-row-h;
+  background-repeat: repeat-y;
 
   &:first-child {
     border-left: none;
@@ -2151,10 +2309,60 @@ $week-prof-strip-h: 16px;
   }
 }
 
+/**
+ * Proxy do scrollbar horizontal da semana (fora de `.week-grid-wrap` para
+ * não ser recortado por `overflow-x: clip`).
+ * No fim da grelha fica no bottom natural; ao subir, gruda no bottom do `main`.
+ */
+.hub-hscroll-dock {
+  position: fixed;
+  z-index: 36;
+  height: 12px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+
+  &--visible {
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  &__viewport {
+    width: 100%;
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+
+    &::-webkit-scrollbar {
+      display: block;
+      height: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 999px;
+    }
+  }
+
+  &__spacer {
+    height: 1px;
+    pointer-events: none;
+  }
+}
+
 .week-grid-body__cols
   > .week-grid-body__prof-cols:not(:last-child)
   .week-day-col:last-child {
-  border-right: 1px solid var(--week-grid-stroke);
+  border-right: 1px solid $agenda-grid-stroke;
 }
 
 .week-grid-body__cols
@@ -2165,7 +2373,7 @@ $week-prof-strip-h: 16px;
 
 /* ---- Vista mensal ---- */
 $month-row-h: 73px;
-$month-grid-stroke: rgba(221, 221, 221, 0.5);
+$month-grid-stroke: $agenda-grid-stroke;
 $month-cell-bg: #f8f8f8;
 $month-num-fg: #000000a6;
 $month-num-fg-muted: #00000028;
@@ -2620,7 +2828,11 @@ $month-num-fg-muted: #00000028;
         pointer-events: none;
       }
 
-      &:hover,
+      &:hover {
+        background: transparent;
+        box-shadow: none;
+      }
+
       &--ativo {
         background: var(--hub-mobile-glass-bg-hover);
         box-shadow: none;

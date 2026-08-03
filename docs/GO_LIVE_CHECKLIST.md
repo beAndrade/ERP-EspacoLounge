@@ -15,8 +15,8 @@ Use este documento antes de operar no dia a dia (agenda + comissões).
 1. Definir `JWT_SECRET` no `.env` da API (obrigatório em produção).
 2. Definir `ADMIN_EMAIL` e `ADMIN_PASSWORD` para o primeiro login (criado automaticamente se `usuarios` estiver vazio).
 3. Testar login em `/login` e uso da agenda no celular (4G).
-4. Definir `ADMIN_PIN` no `.env` da API (área Financeiro no frontend).
-5. Testar acesso a `/financeiro/comissoes` com o PIN.
+4. Definir `ADMIN_PIN` no Environment do Dokploy / `.env` da API (4 dígitos, **sem aspas** — é o PIN da tela Financeiro).
+5. Testar acesso a `/financeiro` com esse PIN (mesmo valor de `ADMIN_PIN`).
 6. Link público de agendamento: `/agendar` (clientes não precisam de conta).
 
 Ver também [DEPLOY.md](./DEPLOY.md).

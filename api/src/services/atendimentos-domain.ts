@@ -2989,8 +2989,10 @@ export const MSG_EXCLUIR_COMANDA_COM_PAGAMENTOS =
   'Não é possível excluir uma comanda com pagamentos registados. Remova os pagamentos em «Ver pagamentos» / Faturar e tente de novo.';
 
 /**
- * Opção A: comanda com dinheiro recebido (pago ou parcial) não pode ser excluída
- * até o utilizador estornar/remover os pagamentos.
+ * Opção A: comanda com dinheiro já no caixa (`total_pago`) não pode ser excluída
+ * até o usuário estornar/remover esses pagamentos.
+ * Parcelas `a_receber_cartao` / fiado (`pendente`) não bloqueiam — saem no cascade
+ * ao apagar o pedido (status «pago» só por cartão a receber não conta como caixa).
  */
 export async function assertComandaSemPagamentosParaExclusao(
   db: Db,
@@ -3000,11 +3002,7 @@ export async function assertComandaSemPagamentosParaExclusao(
   if (!id) return;
   const resumo = await getResumoComanda(db, id);
   const pago = Number(resumo.total_pago ?? 0);
-  if (
-    (Number.isFinite(pago) && pago > 0.005) ||
-    resumo.status === 'pago' ||
-    resumo.status === 'parcial'
-  ) {
+  if (Number.isFinite(pago) && pago > 0.005) {
     throw new Error(MSG_EXCLUIR_COMANDA_COM_PAGAMENTOS);
   }
 }

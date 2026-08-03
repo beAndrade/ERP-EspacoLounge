@@ -742,6 +742,17 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
     return cat.includes('comiss');
   }
 
+  /** Quebra «A receber (cartão) · Cartão de Crédito» em duas linhas. */
+  partesFormaPagamento(forma: string): string[] {
+    const t = String(forma ?? '').trim();
+    if (!t) return ['—'];
+    const parts = t
+      .split(/\s*·\s*/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    return parts.length > 0 ? parts : [t];
+  }
+
   abrirPerfilTitular(row: FinTransacaoLinhaUi, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();

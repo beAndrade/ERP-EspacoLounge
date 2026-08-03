@@ -13,20 +13,40 @@ function requireAdminRole(
   return null;
 }
 
+/** Normaliza PIN da env (aspas do painel Dokploy, BOM, espaços). */
+export function normalizeAdminPin(raw: string | undefined | null): string {
+  let s = String(raw ?? '')
+    .replace(/^\uFEFF/, '')
+    .trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
 /**
  * Valida o header `X-Admin-Pin` contra `process.env.ADMIN_PIN`.
  * Devolve resposta de erro ou `undefined` se autorizado.
  * PIN inválido usa FORBIDDEN (403) — não confundir com JWT expirado (401).
  */
 export function requireAdminPin(request: Request) {
-  const expected = process.env.ADMIN_PIN?.trim();
+  const expected = normalizeAdminPin(process.env.ADMIN_PIN);
   if (!expected) {
     return fail(
       'SERVER',
       'ADMIN_PIN não está configurado no servidor. Defina a variável de ambiente.',
     );
   }
-  const got = request.headers.get('x-admin-pin')?.trim();
+  const got = normalizeAdminPin(request.headers.get('x-admin-pin'));
+  if (!got) {
+    return fail(
+      'FORBIDDEN',
+      'PIN de administrador em falta.',
+    );
+  }
   if (got !== expected) {
     return fail(
       'FORBIDDEN',
