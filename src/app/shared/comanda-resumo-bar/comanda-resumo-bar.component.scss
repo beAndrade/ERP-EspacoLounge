@@ -43,7 +43,8 @@
   width: 8.5rem;
   max-width: 100%;
   min-height: var(--drawer-field-h);
-  padding: 0.35rem 0.55rem;
+  height: var(--drawer-field-h);
+  padding: 0 0.55rem;
   border: 1px solid var(--drawer-field-stroke);
   border-radius: 10px;
   background: #fff;
@@ -94,9 +95,10 @@
   }
 
   &--readonly#{&}--total {
-    line-height: 1.45;
-    min-height: 2.5rem;
-    padding-block: 0.45rem;
+    line-height: 1.2;
+    min-height: var(--drawer-field-h);
+    height: var(--drawer-field-h);
+    padding-block: 0;
     box-sizing: border-box;
   }
 
