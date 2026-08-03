@@ -108,3 +108,32 @@
     font-weight: 400;
   }
 }
+
+/**
+ * Comanda finalizada: mesmo visual dos campos de valor da leitura
+ * (cinza, sem borda, texto suave, 16px).
+ */
+:host-context(.nc-drawer--finalizada) {
+  .comanda-resumo-bar__input,
+  .comanda-resumo-bar__input--readonly,
+  .comanda-resumo-bar__input--total {
+    border: none !important;
+    background: #f5f5f5;
+    color: rgba(0, 0, 0, 0.25);
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 10px;
+    box-shadow: none;
+    cursor: not-allowed;
+
+    &:hover,
+    &:focus,
+    &:focus-visible {
+      border: none !important;
+      background: #f5f5f5;
+      color: rgba(0, 0, 0, 0.25);
+      box-shadow: none;
+      outline: none;
+    }
+  }
+}
