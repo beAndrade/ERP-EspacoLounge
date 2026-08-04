@@ -85,7 +85,6 @@ import {
   type FrequenciaRepetirAgendamento,
 } from './agenda-repetir-cascade.models';
 import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
-import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { formataMoedaBrlResumo } from '../../../../shared/comanda-resumo-bar/comanda-resumo.utils';
 import { formataMoedaBrl } from '../../../../core/utils/brl-digit-input';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
@@ -232,7 +231,6 @@ function parseQuantidadeFromDescricao(s: string): number {
     AgendaStatusSelectComponent,
     AgendaCorSelectComponent,
     ComandaResumoBarComponent,
-    UiTipTriggerComponent,
   ],
   templateUrl: './agenda-novo.component.html',
   styleUrl: './agenda-novo.component.scss',
@@ -475,7 +473,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Se definido, ao salvar remove o atendimento antigo antes de recriar as linhas. */
   idAtendimentoEmEdicao: string | null = null;
-  /** `numero_comanda` do pedido em edição (orçamento / comanda). */
+  /** `numero_orcamento` do pedido em edição (fluxo orçamento). */
+  private numeroOrcamentoEdicao: number | null = null;
+  /** `numero_comanda` do pedido em edição (comanda / produção). */
   private numeroComandaEdicao: number | null = null;
   /** Nome da empresa (WhatsApp config) para o documento do orçamento. */
   private nomeEmpresaOrcamento = '';
@@ -1355,8 +1355,27 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         this.salvando = false;
         this.idAtendimentoEmEdicao = id;
         this.form.markAsPristine();
-        const payload = this.montarPayloadOrcamentoPrint(id);
-        if (payload) depois(payload);
+        const emitir = () => {
+          const payload = this.montarPayloadOrcamentoPrint(id);
+          if (payload) depois(payload);
+        };
+        if (this.numeroOrcamentoEdicao != null) {
+          emitir();
+          return;
+        }
+        this.api
+          .listAgendamentosPorIdParaEdicao(id)
+          .pipe(take(1), takeUntil(this.destroy$))
+          .subscribe({
+            next: (items) => {
+              const n = items[0]?.numeroOrcamento;
+              if (typeof n === 'number' && Number.isFinite(n) && n > 0) {
+                this.numeroOrcamentoEdicao = Math.trunc(n);
+              }
+              emitir();
+            },
+            error: () => emitir(),
+          });
       },
       error: (e: Error) => {
         this.avisoItensDuplicados = '';
@@ -1415,21 +1434,26 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
 
     const tel = telefoneClienteWhatsappDigitos(cliente);
-    const nCmd = this.numeroComandaEdicao;
-    const numeroComanda =
-      typeof nCmd === 'number' && Number.isFinite(nCmd) && nCmd > 0
-        ? String(Math.trunc(nCmd))
-        : '';
+    const nOrc = this.fluxoOrcamento
+      ? this.numeroOrcamentoEdicao
+      : null;
+    const nCmd = this.fluxoOrcamento ? null : this.numeroComandaEdicao;
+    const numeroTicket =
+      typeof nOrc === 'number' && Number.isFinite(nOrc) && nOrc > 0
+        ? String(Math.trunc(nOrc))
+        : typeof nCmd === 'number' && Number.isFinite(nCmd) && nCmd > 0
+          ? String(Math.trunc(nCmd))
+          : '';
     const observacoes = String(this.form.get('observacao')?.value ?? '').trim();
 
     return {
       idAtendimento: id,
-      clienteNome: nomeClienteParaWhatsapp(cliente, cliente?.nome ?? ''),
+      clienteNome: String(cliente?.nome ?? '').trim() || '—',
       telefone: tel.length >= 10 ? tel : undefined,
       clienteId,
       dataYmd: ymd,
       dataFmt: dataDdMmBarraAaaa(ymd),
-      numeroComanda,
+      numeroComanda: numeroTicket,
       itens,
       subtotal,
       desconto,
@@ -4189,6 +4213,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const sorted = [...items];
     ordenarLinhasAtendimentoInPlace(sorted);
     const l0 = sorted[0];
+    const nOrc = l0.numeroOrcamento;
+    this.numeroOrcamentoEdicao =
+      typeof nOrc === 'number' && Number.isFinite(nOrc) && nOrc > 0
+        ? Math.trunc(nOrc)
+        : null;
     const nCmd = l0.numeroComanda;
     this.numeroComandaEdicao =
       typeof nCmd === 'number' && Number.isFinite(nCmd) && nCmd > 0

@@ -442,6 +442,27 @@
       "when": 1775699100000,
       "tag": "0062_formas_pagamento_prazos_faixas",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1775699200000,
+      "tag": "0063_atendimentos_pedido_numero_orcamento",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1775699300000,
+      "tag": "0064_whatsapp_template_orcamento_curto",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1775699400000,
+      "tag": "0065_whatsapp_template_orcamento_pdf_sequencia",
+      "breakpoints": true
     }
   ]
 }

@@ -993,6 +993,69 @@ END $$;
   await db.execute(sql.raw(`
 DO $$
 BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'numero_orcamento'
+  ) THEN
+    ALTER TABLE "atendimentos_pedido" ADD COLUMN "numero_orcamento" integer;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = current_schema()
+      AND c.relkind = 'S'
+      AND c.relname = 'atendimentos_pedido_numero_orcamento_seq'
+  ) THEN
+    CREATE SEQUENCE "atendimentos_pedido_numero_orcamento_seq";
+  END IF;
+END $$;
+`));
+  /** Orçamentos sem ticket próprio: preenche sequência e libera numero_comanda. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimentos_pedido' AND c.column_name = 'numero_orcamento'
+  ) THEN
+    WITH faltantes AS (
+      SELECT p.id_atendimento
+      FROM atendimentos_pedido p
+      WHERE p.modo = 'orcamento' AND p.numero_orcamento IS NULL
+    ),
+    ordenados AS (
+      SELECT
+        f.id_atendimento,
+        COALESCE((SELECT MAX(numero_orcamento) FROM atendimentos_pedido), 0)
+          + ROW_NUMBER() OVER (ORDER BY f.id_atendimento) AS n
+      FROM faltantes f
+    )
+    UPDATE atendimentos_pedido p
+    SET numero_orcamento = o.n
+    FROM ordenados o
+    WHERE p.id_atendimento = o.id_atendimento;
+
+    BEGIN
+      ALTER TABLE atendimentos_pedido ALTER COLUMN numero_comanda DROP NOT NULL;
+    EXCEPTION WHEN others THEN NULL;
+    END;
+
+    UPDATE atendimentos_pedido
+    SET numero_comanda = NULL
+    WHERE modo = 'orcamento' AND numero_comanda IS NOT NULL;
+  END IF;
+END $$;
+`));
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_type t
     WHERE t.typname = 'whatsapp_message_tipo'
@@ -1012,12 +1075,19 @@ INSERT INTO "whatsapp_templates" ("codigo", "nome", "corpo", "ativo", "ordem")
 SELECT
   'orcamento',
   'Orçamento',
-  'Olá {{cliente}}! Segue o orçamento #{{numero_comanda}} da {{empresa}}:' || E'\n\n' || '{{resumo}}' || E'\n\n' || 'Total: {{valor}}' || E'\n\n' || 'Qualquer dúvida, estamos à disposição.',
+  'Olá {{cliente}}! Segue o orçamento #{{numero_comanda}} do {{empresa}}. Envio o PDF na sequência — qualquer dúvida, estamos à disposição.',
   true,
   50
 WHERE NOT EXISTS (
   SELECT 1 FROM "whatsapp_templates" WHERE "codigo" = 'orcamento'
 );
+`));
+  await db.execute(sql.raw(`
+UPDATE "whatsapp_templates"
+SET
+  "corpo" = 'Olá {{cliente}}! Segue o orçamento #{{numero_comanda}} do {{empresa}}. Envio o PDF na sequência — qualquer dúvida, estamos à disposição.'
+WHERE "codigo" = 'orcamento'
+  AND "corpo" IS DISTINCT FROM 'Olá {{cliente}}! Segue o orçamento #{{numero_comanda}} do {{empresa}}. Envio o PDF na sequência — qualquer dúvida, estamos à disposição.';
 `));
   /** Catálogo Pacote Adesivo+Queratina (PROD pode ter tabelas vazias se só correu migrate sem seed). */
   await db.execute(sql.raw(`

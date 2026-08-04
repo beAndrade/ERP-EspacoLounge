@@ -1,4 +1,4 @@
-import { DecimalPipe, registerLocaleData } from '@angular/common';
+import { CurrencyPipe, registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import {
   ApplicationRef,
@@ -20,6 +20,7 @@ import {
 } from '../../../../core/models/api.models';
 import type { WhatsappEnviarContexto } from '../../../../core/models/whatsapp.model';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { WhatsappService } from '../../../../core/services/whatsapp/whatsapp.service';
 import {
   dataDdMmBarraAaaa,
   ordenarLinhasAtendimentoInPlace,
@@ -27,6 +28,12 @@ import {
   toYmd,
   valorMonetarioParaNumero,
 } from '../../../../core/utils/atendimento-display';
+import {
+  baixarPdfOrcamentoDoDom,
+  elementoOrcamentoPrintNoDom,
+  nomeArquivoPdfOrcamento,
+  variaveisWhatsappOrcamento,
+} from '../../../../core/utils/orcamento-whatsapp-pdf.util';
 import { formatarCelularBr } from '../../../../core/utils/telefone-br';
 import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import { AgendaNovoComponent } from '../../../agenda/pages/novo/agenda-novo.component';
@@ -57,7 +64,7 @@ import {
 
 registerLocaleData(localePt);
 
-type OrcamentoStatus = 'rascunho' | 'enviado' | 'aceito' | 'arquivado';
+type OrcamentoStatus = 'rascunho' | 'enviado' | 'arquivado';
 
 interface OrcamentoGrupo {
   id: string;
@@ -65,6 +72,8 @@ interface OrcamentoGrupo {
   nomeCliente: string;
   linhas: AtendimentoListaItem[];
   numeroComanda: number | null;
+  /** Ticket do orçamento (sequência própria). */
+  numeroOrcamento: number | null;
   valorTotal: number | null;
   orcamentoStatus: OrcamentoStatus;
   idCliente: string | null;
@@ -86,7 +95,7 @@ function formataMoeda(n: number): string {
   imports: [
     TableEmptyComponent,
     FormsModule,
-    DecimalPipe,
+    CurrencyPipe,
     AgendaNovoComponent,
     WhatsappEnviarModalComponent,
     OrcamentoPreviewOverlayComponent,
@@ -100,6 +109,7 @@ function formataMoeda(n: number): string {
 /** Toolbar alinhada a Comandas (`list-head`). */
 export class OrcamentosComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
+  private readonly wa = inject(WhatsappService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(AppToastService);
@@ -131,7 +141,8 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   busca = '';
   buscaAberta = false;
   filtrosAbertos = false;
-  filtroStatus = new Set<OrcamentoStatus>();
+  /** Padrão: todos os status ativos; arquivados só aparecem se o filtro for marcado. */
+  filtroStatus = new Set<OrcamentoStatus>(['rascunho', 'enviado']);
 
   pagina = 1;
   itensPorPagina = 20;
@@ -140,8 +151,6 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   ordenacaoColuna: 'ticket' | 'data' | 'cliente' = 'ticket';
   ordenacaoDir: 'asc' | 'desc' = 'desc';
-
-  menuAbertoParaId: string | null = null;
 
   novoAberto = false;
   novoPanelOpen = false;
@@ -170,7 +179,6 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   readonly filtrosStatus: Array<{ id: OrcamentoStatus; label: string }> = [
     { id: 'rascunho', label: 'Rascunho' },
     { id: 'enviado', label: 'Enviado' },
-    { id: 'aceito', label: 'Aceito' },
     { id: 'arquivado', label: 'Arquivado' },
   ];
 
@@ -231,7 +239,6 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   onDocClick(ev: MouseEvent): void {
-    this.menuAbertoParaId = null;
     const t = ev.target as HTMLElement | null;
     if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
       this.fecharPainelBusca();
@@ -324,10 +331,13 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
       const cid = l0?.idCliente?.trim() || null;
       const cli = cid ? this.clientesPorId.get(cid) : null;
       const st = String(l0?.orcamento_status ?? 'rascunho').toLowerCase();
+      /** `aceito` legado vira `enviado` na UI (status removido do fluxo). */
       const status: OrcamentoStatus =
-        st === 'enviado' || st === 'aceito' || st === 'arquivado'
-          ? st
-          : 'rascunho';
+        st === 'arquivado'
+          ? 'arquivado'
+          : st === 'enviado' || st === 'aceito'
+            ? 'enviado'
+            : 'rascunho';
       const total =
         l0?.total != null && Number.isFinite(Number(l0.total))
           ? Number(l0.total)
@@ -338,6 +348,11 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
         nomeCliente: l0?.nomeCliente ?? '',
         linhas,
         numeroComanda: l0?.numeroComanda ?? null,
+        numeroOrcamento:
+          l0?.numeroOrcamento ??
+          (l0?.numeroComanda != null && l0.numeroComanda > 0
+            ? l0.numeroComanda
+            : null),
         valorTotal: total,
         orcamentoStatus: status,
         idCliente: cid,
@@ -383,7 +398,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     return list.slice().sort((a, b) => {
       let cmp = 0;
       if (this.ordenacaoColuna === 'ticket') {
-        cmp = (a.numeroComanda ?? 0) - (b.numeroComanda ?? 0);
+        cmp = (a.numeroOrcamento ?? 0) - (b.numeroOrcamento ?? 0);
       } else if (this.ordenacaoColuna === 'data') {
         cmp = a.data.localeCompare(b.data);
       } else {
@@ -461,7 +476,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   }
 
   rotuloTicket(g: OrcamentoGrupo): string {
-    const n = g.numeroComanda;
+    const n = g.numeroOrcamento ?? g.numeroComanda;
     if (typeof n === 'number' && n > 0) return `#${n}`;
     return '#—';
   }
@@ -482,29 +497,15 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     return this.filtroStatus.has(id);
   }
 
-  toggleMenu(ev: Event, id: string): void {
-    ev.stopPropagation();
-    this.menuAbertoParaId = this.menuAbertoParaId === id ? null : id;
-  }
-
   abrirOrcamento(g: OrcamentoGrupo, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
-    this.menuAbertoParaId = null;
-    this.abrirEdicao(g);
-  }
-
-  abrirOrcamentoDoMenu(g: OrcamentoGrupo, ev: Event): void {
-    ev.preventDefault();
-    ev.stopPropagation();
-    this.menuAbertoParaId = null;
     this.abrirEdicao(g);
   }
 
   abrirDrawerCliente(g: OrcamentoGrupo, ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
-    this.menuAbertoParaId = null;
     const cid = g.idCliente?.trim();
     if (!cid) return;
     this.cadastroDrawer.abrirEdicao(cid, {
@@ -614,7 +615,64 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   whatsappPreviewOrcamento(): void {
     if (!this.previewDados) return;
-    this.onWhatsappOrcamentoDrawer(this.previewDados);
+    const payload = this.previewDados;
+    const tel = String(payload.telefone ?? '').trim();
+    if (tel.length < 10) {
+      this.toast.show('Cliente sem telefone para WhatsApp.');
+      return;
+    }
+
+    /** Abrir no gesto do clique — senão o browser bloqueia ou deixa a aba em branco. */
+    const popup = window.open('about:blank', '_blank');
+    const variaveis = variaveisWhatsappOrcamento(payload);
+    const el = elementoOrcamentoPrintNoDom();
+    const nomePdf = nomeArquivoPdfOrcamento(payload);
+
+    const abrirWa = () => {
+      this.wa.abrirChatComTemplate(
+        tel,
+        'orcamento',
+        variaveis,
+        (err) => {
+          this.toast.show(
+            WhatsappService.errorMessage(err) ||
+              'Não foi possível abrir o WhatsApp.',
+          );
+        },
+        popup,
+      );
+      this.api.atualizarStatusOrcamento(payload.idAtendimento, 'enviado').subscribe({
+        next: () => {
+          const g = this.grupos.find((x) => x.id === payload.idAtendimento);
+          if (g) g.orcamentoStatus = 'enviado';
+        },
+        error: () => {
+          /* status opcional; WA já abriu */
+        },
+      });
+    };
+
+    if (!el) {
+      abrirWa();
+      this.toast.show(
+        'WhatsApp aberto. Use Imprimir se precisar do arquivo.',
+      );
+      return;
+    }
+
+    void baixarPdfOrcamentoDoDom(el, nomePdf)
+      .then(() => {
+        abrirWa();
+        this.toast.show(
+          'PDF baixado. Anexe o arquivo na conversa do WhatsApp.',
+        );
+      })
+      .catch(() => {
+        abrirWa();
+        this.toast.showWarning(
+          'WhatsApp aberto, mas não foi possível gerar o PDF automaticamente.',
+        );
+      });
   }
 
   onWhatsappOrcamentoDrawer(payload: OrcamentoPrintPayload): void {
@@ -636,6 +694,9 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
       nomeCliente: payload.clienteNome,
       linhas: [],
       numeroComanda: payload.numeroComanda
+        ? Number(payload.numeroComanda) || null
+        : null,
+      numeroOrcamento: payload.numeroComanda
         ? Number(payload.numeroComanda) || null
         : null,
       valorTotal: payload.total,
@@ -660,7 +721,6 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   }
 
   enviarWhatsapp(g: OrcamentoGrupo): void {
-    this.menuAbertoParaId = null;
     const tel = g.telefoneCliente?.trim();
     if (!tel) {
         this.toast.show('Cliente sem telefone para WhatsApp.');
@@ -688,7 +748,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
       templateCodigo: 'orcamento',
       variaveis: {
         cliente: nomeWa,
-        numero_comanda: String(g.numeroComanda ?? ''),
+        numero_comanda: String(g.numeroOrcamento ?? ''),
         resumo,
         valor: g.valorTotal != null ? formataMoeda(g.valorTotal) : '',
       },
@@ -715,20 +775,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     });
   }
 
-  marcarAceito(g: OrcamentoGrupo): void {
-    this.menuAbertoParaId = null;
-    this.api.atualizarStatusOrcamento(g.id, 'aceito').subscribe({
-      next: () => {
-        g.orcamentoStatus = 'aceito';
-        this.toast.show('Orçamento aceito. Pode converter para a agenda.');
-      },
-      error: (e: Error) =>
-        this.toast.showWarning(e.message || 'Falha ao atualizar status.'),
-    });
-  }
-
   arquivar(g: OrcamentoGrupo): void {
-    this.menuAbertoParaId = null;
     this.api.atualizarStatusOrcamento(g.id, 'arquivado').subscribe({
       next: () => {
         g.orcamentoStatus = 'arquivado';
@@ -740,7 +787,6 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   }
 
   abrirConverter(g: OrcamentoGrupo): void {
-    this.menuAbertoParaId = null;
     this.converterGrupo = g;
     this.converterData = g.data || toYmd(new Date());
     this.converterHora = '10:00';

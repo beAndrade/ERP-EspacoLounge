@@ -17,8 +17,9 @@
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: 0;
+  padding: 28px 32px;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .orcamento-print__head {
@@ -91,13 +92,15 @@
   color: #111827;
 }
 
-.orcamento-print__col-qty {
+.orcamento-print__table thead th.orcamento-print__col-qty,
+.orcamento-print__table tbody td.orcamento-print__col-qty {
   text-align: center;
   white-space: nowrap;
   width: 3.5rem;
 }
 
-.orcamento-print__col-money {
+.orcamento-print__table thead th.orcamento-print__col-money,
+.orcamento-print__table tbody td.orcamento-print__col-money {
   text-align: right;
   white-space: nowrap;
   width: 6.5rem;

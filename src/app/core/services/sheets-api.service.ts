@@ -1120,7 +1120,7 @@ export class SheetsApiService {
 
   atualizarStatusOrcamento(
     idAtendimento: string,
-    status: 'rascunho' | 'enviado' | 'aceito' | 'arquivado',
+    status: 'rascunho' | 'enviado' | 'arquivado',
   ): Observable<{ id_atendimento: string; orcamento_status: string }> {
     const id = encodeURIComponent(idAtendimento.trim());
     return this.http
@@ -1616,18 +1616,23 @@ export class SheetsApiService {
         : undefined;
     const numeroComandaRaw =
       raw['numero_comanda'] ?? raw['numeroComanda'] ?? raw['Numero Comanda'];
-    const numeroComandaParsed =
-      numeroComandaRaw != null && numeroComandaRaw !== ''
-        ? Number(numeroComandaRaw)
-        : NaN;
-    const numeroComanda =
-      Number.isFinite(numeroComandaParsed) && numeroComandaParsed > 0
-        ? Math.trunc(numeroComandaParsed)
-        : null;
+    const numeroOrcamentoRaw =
+      raw['numero_orcamento'] ?? raw['numeroOrcamento'] ?? raw['Numero Orcamento'];
+    const parseTicketNum = (v: unknown): number | null => {
+      if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
+        return Math.trunc(v);
+      }
+      if (v == null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+    };
+    const numeroComanda = parseTicketNum(numeroComandaRaw);
+    const numeroOrcamento = parseTicketNum(numeroOrcamentoRaw);
 
     return {
       id: String(raw['id'] ?? raw['ID Atendimento'] ?? ''),
       numeroComanda,
+      numeroOrcamento,
       linha_id:
         linha_id != null && Number.isFinite(linha_id) ? linha_id : undefined,
       data: this.formatDataCell(raw['Data'] ?? raw['data']),

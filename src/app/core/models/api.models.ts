@@ -134,9 +134,14 @@ export interface AtendimentoListaItem {
   id: string;
   /**
    * Número global da comanda (#1, #2, …) em `atendimentos_pedido.numero_comanda`;
-   * estável enquanto o pedido existir.
+   * estável enquanto o pedido existir (null em orçamentos).
    */
   numeroComanda?: number | null;
+  /**
+   * Número do orçamento (#1, #2, …) em `atendimentos_pedido.numero_orcamento`
+   * (sequência separada das comandas).
+   */
+  numeroOrcamento?: number | null;
   /** PK da linha em `atendimentos` (única por registo). */
   linha_id?: number;
   /** Sempre `AAAA-MM-DD` (para ordenar); na tela usa-se formato dia-mês-ano. */
@@ -213,7 +218,7 @@ export interface AtendimentoListaItem {
    */
   modo?: 'producao' | 'orcamento' | string | null;
   /** Ciclo do orçamento quando `modo = orcamento`. */
-  orcamento_status?: 'rascunho' | 'enviado' | 'aceito' | 'arquivado' | string | null;
+  orcamento_status?: 'rascunho' | 'enviado' | 'arquivado' | string | null;
   orcamento_enviado_em?: string | null;
   orcamento_convertido_em?: string | null;
   /**

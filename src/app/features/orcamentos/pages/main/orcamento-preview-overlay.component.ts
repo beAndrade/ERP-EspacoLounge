@@ -1,4 +1,5 @@
 import { Component, input, output } from '@angular/core';
+import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import {
   OrcamentoPrintComponent,
   type OrcamentoPrintPayload,
@@ -7,7 +8,7 @@ import {
 @Component({
   selector: 'app-orcamento-preview-overlay',
   standalone: true,
-  imports: [OrcamentoPrintComponent],
+  imports: [OrcamentoPrintComponent, UiTipTriggerComponent],
   templateUrl: './orcamento-preview-overlay.component.html',
   styleUrl: './orcamento-preview-overlay.component.scss',
 })

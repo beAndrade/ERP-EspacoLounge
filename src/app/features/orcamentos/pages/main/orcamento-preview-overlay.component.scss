@@ -16,6 +16,7 @@
 
 .orcamento-preview__chrome {
   flex: 0 0 auto;
+  position: relative;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
@@ -23,34 +24,55 @@
 
 .orcamento-preview__chrome-inner {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 12px 20px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 12px 15px;
   box-sizing: border-box;
+  min-height: 65px;
 }
 
 .orcamento-preview__heading {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text, #0f172a);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .orcamento-preview__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  margin-left: auto;
+
+  app-ui-tip-trigger {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
 }
 
 .orcamento-preview__btn {
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   height: 40px;
-  min-width: 112px;
+  min-width: 0;
+  width: auto;
   padding: 0 15px;
   border-radius: 14px;
   border: 1px solid transparent;
@@ -59,15 +81,41 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease;
 
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
   &:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+}
+
+.orcamento-preview__btn--wa {
+  min-width: 40px;
+  width: 40px;
+  padding: 0;
+  color: #25d366;
+  background: transparent;
+  border-color: var(--drawer-btn-ghost-border, #e7e5e4);
+
+  &:hover {
+    color: #1ebe57;
+    border-color: color-mix(in srgb, #25d366 35%, #f1f1f1);
+    background: var(--drawer-btn-ghost-hover-bg, #fff);
+  }
+
+  svg {
+    display: block;
+    margin: 0 auto;
   }
 }
 
@@ -110,13 +158,14 @@
 .orcamento-preview__sheet {
   max-width: 720px;
   margin: 0 auto;
-  padding: 28px 32px;
+  padding: 0;
   background: #fff;
   border-radius: 12px;
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.06),
     0 8px 24px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 @media print {

@@ -11,6 +11,7 @@ import { FormControl } from '@angular/forms';
 import { AtendimentoListaItem, Cliente } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { contagensSidebarParaCliente } from '../../../../core/utils/comanda-status.util';
+import { contarOrcamentosCliente } from '../../../../shared/cliente-cadastro-drawer/cliente-orcamentos.util';
 import {
   telefoneClienteWhatsappDigitos,
   telefoneClienteWhatsappExibicao,
@@ -130,6 +131,23 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
       shareReplay({ bufferSize: 1, refCount: false }),
     );
 
+  private readonly listaOrcamentosAtual$: Observable<AtendimentoListaItem[]> =
+    this.contagensRefresh$.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.api
+          .listAgendamentos(
+            undefined,
+            undefined,
+            undefined,
+            false,
+            'orcamento',
+          )
+          .pipe(catchError(() => of([]))),
+      ),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
   private readonly clientesComHistorico$: Observable<ReadonlySet<string>> =
     this.listaAgendamentosAtual$.pipe(
       map((rows) => {
@@ -145,6 +163,7 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
   mostrarBadgeClienteNovo = false;
   comandasPendenteCount = 0;
   pagamentosAtrasadosCount = 0;
+  orcamentosCount = 0;
 
   /**
    * Chamar após gravar/faturar comanda para actualizar «comandas / pagamentos em aberto».
@@ -191,6 +210,19 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
         this.comandasPendenteCount = comandasPendente;
         this.pagamentosAtrasadosCount = pagamentosAtrasados;
       });
+
+    clienteId$
+      .pipe(
+        switchMap((cid) =>
+          this.listaOrcamentosAtual$.pipe(
+            map((items) => contarOrcamentosCliente(cid, items)),
+          ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((n) => {
+        this.orcamentosCount = n;
+      });
   }
 
   textoComandasEmAberto(): string {
@@ -207,12 +239,21 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
       : `${n} pagamentos em aberto`;
   }
 
+  textoOrcamentos(): string {
+    const n = this.orcamentosCount;
+    return n === 1 ? '1 orçamento' : `${n} orçamentos`;
+  }
+
   destacarComandasEmAberto(): boolean {
     return this.comandasPendenteCount > 0;
   }
 
   destacarPagamentosEmAberto(): boolean {
     return this.pagamentosAtrasadosCount > 0;
+  }
+
+  destacarOrcamentos(): boolean {
+    return this.orcamentosCount > 0;
   }
 
   private clienteTemHistoricoAtendimentos$(clienteId: string): Observable<boolean> {

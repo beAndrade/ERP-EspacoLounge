@@ -95,6 +95,13 @@ async function truncateAll() {
       false
     )
   `));
+  await db.execute(sql.raw(`
+    SELECT setval(
+      'atendimentos_pedido_numero_orcamento_seq',
+      1,
+      false
+    )
+  `));
 }
 
 /** Catálogo fixo Pacote Adesivo+Queratina (não vem do XLSX). */

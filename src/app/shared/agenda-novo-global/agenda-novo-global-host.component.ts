@@ -23,6 +23,13 @@ import { OrcamentoPreviewOverlayComponent } from '../../features/orcamentos/page
 import { WhatsappEnviarModalComponent } from '../whatsapp/whatsapp-enviar-modal.component';
 import type { WhatsappEnviarContexto } from '../../core/models/whatsapp.model';
 import { SheetsApiService } from '../../core/services/sheets-api.service';
+import { WhatsappService } from '../../core/services/whatsapp/whatsapp.service';
+import {
+  baixarPdfOrcamentoDoDom,
+  elementoOrcamentoPrintNoDom,
+  nomeArquivoPdfOrcamento,
+  variaveisWhatsappOrcamento,
+} from '../../core/utils/orcamento-whatsapp-pdf.util';
 import { AppToastService } from '../app-toast/app-toast.service';
 
 function formataMoeda(n: number): string {
@@ -50,6 +57,7 @@ export class AgendaNovoGlobalHostComponent implements OnInit, OnDestroy {
   readonly d = inject(AgendaNovoGlobalService);
   private readonly clienteDrawer = inject(ClienteCadastroDrawerService);
   private readonly api = inject(SheetsApiService);
+  private readonly wa = inject(WhatsappService);
   private readonly toast = inject(AppToastService);
   private readonly appRef = inject(ApplicationRef);
 
@@ -110,7 +118,58 @@ export class AgendaNovoGlobalHostComponent implements OnInit, OnDestroy {
 
   whatsappPreviewOrcamento(): void {
     if (!this.previewDados) return;
-    this.onWhatsappOrcamento(this.previewDados);
+    const payload = this.previewDados;
+    const tel = String(payload.telefone ?? '').trim();
+    if (tel.length < 10) {
+      this.toast.show('Cliente sem telefone para WhatsApp.');
+      return;
+    }
+
+    /** Abrir no gesto do clique — senão o browser bloqueia ou deixa a aba em branco. */
+    const popup = window.open('about:blank', '_blank');
+    const variaveis = variaveisWhatsappOrcamento(payload);
+    const el = elementoOrcamentoPrintNoDom();
+    const nomePdf = nomeArquivoPdfOrcamento(payload);
+
+    const abrirWa = () => {
+      this.wa.abrirChatComTemplate(
+        tel,
+        'orcamento',
+        variaveis,
+        (err) => {
+          this.toast.show(
+            WhatsappService.errorMessage(err) ||
+              'Não foi possível abrir o WhatsApp.',
+          );
+        },
+        popup,
+      );
+      this.api.atualizarStatusOrcamento(payload.idAtendimento, 'enviado').subscribe({
+        next: () => this.toast.show('Orçamento marcado como enviado.'),
+        error: () => {
+          /* WA já abriu */
+        },
+      });
+    };
+
+    if (!el) {
+      abrirWa();
+      return;
+    }
+
+    void baixarPdfOrcamentoDoDom(el, nomePdf)
+      .then(() => {
+        abrirWa();
+        this.toast.show(
+          'PDF baixado. Anexe o arquivo na conversa do WhatsApp.',
+        );
+      })
+      .catch(() => {
+        abrirWa();
+        this.toast.showWarning(
+          'WhatsApp aberto, mas não foi possível gerar o PDF automaticamente.',
+        );
+      });
   }
 
   onWhatsappOrcamento(payload: OrcamentoPrintPayload): void {

@@ -48,6 +48,12 @@ import {
   type ClienteVendaHistoricoLinha,
 } from './cliente-vendas.util';
 import {
+  historicoOrcamentosClienteFromAtendimentos,
+  ymdFimFiltroOrcamentosPadrao,
+  ymdInicioFiltroOrcamentosPadrao,
+  type ClienteOrcamentoHistoricoLinha,
+} from './cliente-orcamentos.util';
+import {
   calcularPainelCliente,
   type ClientePainelResumo,
 } from './cliente-painel.util';
@@ -75,6 +81,7 @@ export const CLIENTE_CADASTRO_ABAS = [
   'Créditos',
   'Cashback',
   'Agendamentos',
+  'Orçamentos',
   'Vendas',
   'Pacotes',
   'Mensagens',
@@ -189,6 +196,10 @@ export class ClienteCadastroDrawerService {
   carregandoVendasHistorico = false;
   vendasFiltroInicio = ymdInicioFiltroVendasPadrao();
   vendasFiltroFim = ymdFimFiltroVendasPadrao();
+  orcamentosLinhas: ClienteOrcamentoHistoricoLinha[] = [];
+  carregandoOrcamentosHistorico = false;
+  orcamentosFiltroInicio = ymdInicioFiltroOrcamentosPadrao();
+  orcamentosFiltroFim = ymdFimFiltroOrcamentosPadrao();
   /** Drawer «Visualizando comanda» por cima da ficha (sem fechar nem mudar de rota). */
   comandaEmpilhadaAberta = false;
   comandaEmpilhadaPanelOpen = false;
@@ -523,6 +534,10 @@ export class ClienteCadastroDrawerService {
       this.carregandoVendasHistorico = false;
       this.vendasFiltroInicio = ymdInicioFiltroVendasPadrao();
       this.vendasFiltroFim = ymdFimFiltroVendasPadrao();
+      this.orcamentosLinhas = [];
+      this.carregandoOrcamentosHistorico = false;
+      this.orcamentosFiltroInicio = ymdInicioFiltroOrcamentosPadrao();
+      this.orcamentosFiltroFim = ymdFimFiltroOrcamentosPadrao();
       this.saveErro = '';
       this.salvando = false;
       this.notificacoesToggleLiqArmed = false;
@@ -571,6 +586,9 @@ export class ClienteCadastroDrawerService {
     if (aba === 'Agendamentos' && this.clienteId) {
       this.carregarAgendamentosHistorico(this.clienteId);
     }
+    if (aba === 'Orçamentos' && this.clienteId) {
+      this.carregarOrcamentosHistorico(this.clienteId);
+    }
     if (aba === 'Vendas' && this.clienteId) {
       this.carregarVendasHistorico(this.clienteId);
     }
@@ -586,6 +604,12 @@ export class ClienteCadastroDrawerService {
     const cid = this.clienteId?.trim();
     if (!cid) return;
     this.carregarAgendamentosHistorico(cid);
+  }
+
+  aplicarFiltroOrcamentosHistorico(): void {
+    const cid = this.clienteId?.trim();
+    if (!cid) return;
+    this.carregarOrcamentosHistorico(cid);
   }
 
   /**
@@ -1302,6 +1326,9 @@ export class ClienteCadastroDrawerService {
         if (this.abaAtiva === 'Agendamentos') {
           this.carregarAgendamentosHistorico(cid);
         }
+        if (this.abaAtiva === 'Orçamentos') {
+          this.carregarOrcamentosHistorico(cid);
+        }
         if (this.abaAtiva === 'Vendas') {
           this.carregarVendasHistorico(cid);
         }
@@ -1537,26 +1564,70 @@ export class ClienteCadastroDrawerService {
     this.api
       .listAgendamentos(ini || undefined, fim || undefined, undefined, true)
       .subscribe({
-      next: (items) => {
-        if (this.clienteId !== cid || this.abaAtiva !== 'Agendamentos') return;
-        this.agendamentosLinhas = historicoAgendamentosClienteFromAtendimentos(
-          cid,
-          items,
-          ini,
-          fim,
-        );
-        this.carregandoAgendamentosHistorico = false;
-        this.appRef.tick();
-      },
-      error: () => {
-        if (this.clienteId !== cid) return;
-        if (!soft) {
-          this.agendamentosLinhas = [];
-        }
-        this.carregandoAgendamentosHistorico = false;
-        this.appRef.tick();
-      },
-    });
+        next: (items) => {
+          if (this.clienteId !== cid || this.abaAtiva !== 'Agendamentos') return;
+          this.agendamentosLinhas = historicoAgendamentosClienteFromAtendimentos(
+            cid,
+            items,
+            ini,
+            fim,
+          );
+          this.carregandoAgendamentosHistorico = false;
+          this.appRef.tick();
+        },
+        error: () => {
+          if (this.clienteId !== cid) return;
+          if (!soft) {
+            this.agendamentosLinhas = [];
+          }
+          this.carregandoAgendamentosHistorico = false;
+          this.appRef.tick();
+        },
+      });
+  }
+
+  private carregarOrcamentosHistorico(
+    clienteId: string,
+    opts?: { soft?: boolean },
+  ): void {
+    const cid = clienteId.trim();
+    if (!cid || this.clienteId !== cid) return;
+    const soft = opts?.soft === true;
+    const ini = String(this.orcamentosFiltroInicio ?? '').trim().slice(0, 10);
+    const fim = String(this.orcamentosFiltroFim ?? '').trim().slice(0, 10);
+    this.carregandoOrcamentosHistorico = !soft;
+    if (!soft) {
+      this.orcamentosLinhas = [];
+    }
+    this.api
+      .listAgendamentos(
+        ini || undefined,
+        fim || undefined,
+        undefined,
+        false,
+        'orcamento',
+      )
+      .subscribe({
+        next: (items) => {
+          if (this.clienteId !== cid || this.abaAtiva !== 'Orçamentos') return;
+          this.orcamentosLinhas = historicoOrcamentosClienteFromAtendimentos(
+            cid,
+            items,
+            ini,
+            fim,
+          );
+          this.carregandoOrcamentosHistorico = false;
+          this.appRef.tick();
+        },
+        error: () => {
+          if (this.clienteId !== cid) return;
+          if (!soft) {
+            this.orcamentosLinhas = [];
+          }
+          this.carregandoOrcamentosHistorico = false;
+          this.appRef.tick();
+        },
+      });
   }
 
   private carregarVendasHistorico(

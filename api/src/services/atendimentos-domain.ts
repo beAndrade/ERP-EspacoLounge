@@ -1,7 +1,7 @@
 /**
  * Regras alinhadas a apps-script/Code.gs (createAtendimento_ e auxiliares).
  */
-import { and, asc, eq, inArray, max, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, max, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { descricaoParaListaLinha } from '../lib/descricao-lista';
 import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
@@ -749,37 +749,70 @@ async function assertProfissionalIdExists(
 }
 
 /**
- * Próximo `#comanda` = MAX(existentes) + 1 (tabela vazia → 1).
- * Evita a sequência Postgres continuar a crescer após exclusões.
+ * Próximo `#comanda` = MAX(existentes em produção) + 1 (tabela vazia → 1).
+ * Não conta orçamentos (`numero_comanda` NULL).
  */
 async function allocNextNumeroComanda(db: Db): Promise<number> {
   const [row] = await db
     .select({ m: max(atendimentosPedido.numeroComanda) })
-    .from(atendimentosPedido);
+    .from(atendimentosPedido)
+    .where(isNotNull(atendimentosPedido.numeroComanda));
   const m = Number(row?.m ?? 0);
   return (Number.isFinite(m) && m > 0 ? m : 0) + 1;
 }
 
-/** Alinha a sequência ao MAX actual (próximo `nextval` = max+1; tabela vazia → 1). */
+/** Próximo `#orçamento` = MAX(numero_orcamento) + 1. */
+async function allocNextNumeroOrcamento(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ m: max(atendimentosPedido.numeroOrcamento) })
+    .from(atendimentosPedido)
+    .where(isNotNull(atendimentosPedido.numeroOrcamento));
+  const m = Number(row?.m ?? 0);
+  return (Number.isFinite(m) && m > 0 ? m : 0) + 1;
+}
+
+/** Alinha a sequência de comandas ao MAX actual (só linhas com número). */
 async function syncNumeroComandaSequence(db: Db): Promise<void> {
-  /**
-   * Postgres rejeita `setval(..., 0)` (MINVALUE da sequência é 1).
-   * Vazia: setval(1, false) → próximo nextval = 1.
-   * Com MAX=N: setval(N, true) → próximo nextval = N+1.
-   */
   try {
     await db.execute(sql`
       SELECT setval(
         'atendimentos_pedido_numero_comanda_seq'::regclass,
         GREATEST(
           1,
-          COALESCE((SELECT MAX(numero_comanda) FROM atendimentos_pedido), 0)
+          COALESCE(
+            (SELECT MAX(numero_comanda) FROM atendimentos_pedido WHERE numero_comanda IS NOT NULL),
+            0
+          )
         ),
-        (SELECT EXISTS (SELECT 1 FROM atendimentos_pedido LIMIT 1))
+        (SELECT EXISTS (
+          SELECT 1 FROM atendimentos_pedido WHERE numero_comanda IS NOT NULL LIMIT 1
+        ))
       )
     `);
   } catch (e) {
     console.error('[syncNumeroComandaSequence]', e);
+  }
+}
+
+async function syncNumeroOrcamentoSequence(db: Db): Promise<void> {
+  try {
+    await db.execute(sql`
+      SELECT setval(
+        'atendimentos_pedido_numero_orcamento_seq'::regclass,
+        GREATEST(
+          1,
+          COALESCE(
+            (SELECT MAX(numero_orcamento) FROM atendimentos_pedido WHERE numero_orcamento IS NOT NULL),
+            0
+          )
+        ),
+        (SELECT EXISTS (
+          SELECT 1 FROM atendimentos_pedido WHERE numero_orcamento IS NOT NULL LIMIT 1
+        ))
+      )
+    `);
+  } catch (e) {
+    console.error('[syncNumeroOrcamentoSequence]', e);
   }
 }
 
@@ -801,6 +834,22 @@ async function ensurePedidoHeader(
   if (exist) return;
 
   const modo = meta?.modo === 'orcamento' ? 'orcamento' : 'producao';
+  if (modo === 'orcamento') {
+    const numeroOrcamento = await allocNextNumeroOrcamento(db);
+    await db.insert(atendimentosPedido).values({
+      idAtendimento,
+      idCliente: idCliente.trim(),
+      idRecorrencia: meta?.idRecorrencia ?? null,
+      ordemRecorrencia: meta?.ordemRecorrencia ?? null,
+      numeroComanda: null,
+      numeroOrcamento,
+      modo,
+      orcamentoStatus: 'rascunho',
+    });
+    await syncNumeroOrcamentoSequence(db);
+    return;
+  }
+
   const numeroComanda = await allocNextNumeroComanda(db);
   await db.insert(atendimentosPedido).values({
     idAtendimento,
@@ -808,10 +857,38 @@ async function ensurePedidoHeader(
     idRecorrencia: meta?.idRecorrencia ?? null,
     ordemRecorrencia: meta?.ordemRecorrencia ?? null,
     numeroComanda,
+    numeroOrcamento: null,
     modo,
-    orcamentoStatus: modo === 'orcamento' ? 'rascunho' : null,
+    orcamentoStatus: null,
   });
   await syncNumeroComandaSequence(db);
+}
+
+/** Aloca `numero_comanda` ao converter orçamento → produção (mantém `numero_orcamento`). */
+export async function alocarNumeroComandaEmPedido(
+  db: Db,
+  idAtendimento: string,
+): Promise<number> {
+  const id = String(idAtendimento || '').trim();
+  if (!id) throw new Error('id_atendimento inválido');
+  const [row] = await db
+    .select({
+      n: atendimentosPedido.numeroComanda,
+      nOrc: atendimentosPedido.numeroOrcamento,
+    })
+    .from(atendimentosPedido)
+    .where(eq(atendimentosPedido.idAtendimento, id))
+    .limit(1);
+  if (!row) throw new Error('Pedido não encontrado');
+  const atual = row.n != null ? Number(row.n) : NaN;
+  if (Number.isFinite(atual) && atual > 0) return Math.trunc(atual);
+  const numeroComanda = await allocNextNumeroComanda(db);
+  await db
+    .update(atendimentosPedido)
+    .set({ numeroComanda })
+    .where(eq(atendimentosPedido.idAtendimento, id));
+  await syncNumeroComandaSequence(db);
+  return numeroComanda;
 }
 
 async function insertPivotServico(
@@ -2581,6 +2658,7 @@ export async function listAtendimentosRaw(
   }
 
   const numerosPorIdAt = new Map<string, number>();
+  const numerosOrcamentoPorIdAt = new Map<string, number>();
   const modoPorIdAt = new Map<
     string,
     {
@@ -2595,6 +2673,7 @@ export async function listAtendimentosRaw(
       .select({
         id: atendimentosPedido.idAtendimento,
         n: atendimentosPedido.numeroComanda,
+        nOrc: atendimentosPedido.numeroOrcamento,
         modo: atendimentosPedido.modo,
         orcamentoStatus: atendimentosPedido.orcamentoStatus,
         orcamentoEnviadoEm: atendimentosPedido.orcamentoEnviadoEm,
@@ -2607,6 +2686,10 @@ export async function listAtendimentosRaw(
       const nv = r.n != null ? Number(r.n) : NaN;
       if (k && Number.isFinite(nv) && nv > 0) {
         numerosPorIdAt.set(k, nv);
+      }
+      const nOrc = r.nOrc != null ? Number(r.nOrc) : NaN;
+      if (k && Number.isFinite(nOrc) && nOrc > 0) {
+        numerosOrcamentoPorIdAt.set(k, nOrc);
       }
       if (k) {
         modoPorIdAt.set(k, {
@@ -2733,6 +2816,7 @@ export async function listAtendimentosRaw(
           }
         : {}),
       numero_comanda: numerosPorIdAt.get(idAtKey) ?? null,
+      numero_orcamento: numerosOrcamentoPorIdAt.get(idAtKey) ?? null,
       ...(idAtKey
         ? (() => {
             const mo = modoPorIdAt.get(idAtKey);
@@ -2977,6 +3061,7 @@ export async function excluirAtendimentoPorIdAtendimento(
   }).then(async (n) => {
     if (!manterPedido) {
       await syncNumeroComandaSequence(db);
+      await syncNumeroOrcamentoSequence(db);
     }
     return n;
   });
@@ -3099,6 +3184,7 @@ export async function excluirComandaPorIdAtendimento(
     return rows.length;
   }).then(async (n) => {
     await syncNumeroComandaSequence(db);
+    await syncNumeroOrcamentoSequence(db);
     return n;
   });
 }

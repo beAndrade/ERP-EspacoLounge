@@ -1,5 +1,6 @@
 import { Component, inject, input, output } from '@angular/core';
 import { ClienteAgendamentosTabComponent } from './cliente-agendamentos-tab.component';
+import { ClienteOrcamentosTabComponent } from './cliente-orcamentos-tab.component';
 import { ClienteVendasTabComponent } from './cliente-vendas-tab.component';
 import { ClienteAvatarComponent } from '../cliente-avatar/cliente-avatar.component';
 import { ClienteCadastroFormComponent } from './cliente-cadastro-form.component';
@@ -23,6 +24,7 @@ import { ClientePainelTabComponent } from './cliente-painel-tab.component';
     ClienteDebitosTabComponent,
     ClientePainelTabComponent,
     ClienteAgendamentosTabComponent,
+    ClienteOrcamentosTabComponent,
     ClienteVendasTabComponent,
     ClienteAvatarComponent,
   ],

@@ -180,12 +180,14 @@ export class WhatsappService {
 
   /**
    * Abre WhatsApp no browser/app com mensagem do template (link wa.me).
+   * `popupPreaberto`: aba já aberta no gesto do clique (ex.: antes de gerar PDF).
    */
   abrirChatComTemplate(
     telefone: string,
     templateCodigo: string,
     variaveis: Record<string, string> = {},
     onError?: (err: unknown) => void,
+    popupPreaberto?: Window | null,
   ): void {
     abrirWhatsappSendUrlAposPreparar(
       () =>
@@ -196,6 +198,7 @@ export class WhatsappService {
           });
         }),
       onError,
+      popupPreaberto,
     );
   }
 

@@ -438,14 +438,15 @@ export const atendimentosPedido = pgTable('atendimentos_pedido', {
   /** Posição da ocorrência dentro da série (1, 2, 3...). */
   ordemRecorrencia: integer('ordem_recorrencia'),
   /**
-   * Número de comanda global (#1, #2, …) atribuído na criação do pedido;
-   * não muda ao editar linhas do mesmo `id_atendimento`.
+   * Número de comanda (#1, #2, …) — só pedidos em produção.
+   * Orçamentos usam `numero_orcamento` (sequência separada).
    */
-  numeroComanda: integer('numero_comanda')
-    .notNull()
-    .default(
-      sql`nextval('atendimentos_pedido_numero_comanda_seq'::regclass)`,
-    ),
+  numeroComanda: integer('numero_comanda'),
+  /**
+   * Número de orçamento (#1, #2, …) — só `modo = orcamento`.
+   * Não consome nem partilha a sequência de comandas.
+   */
+  numeroOrcamento: integer('numero_orcamento'),
   /** `producao` = comanda/agenda normal; `orcamento` = fora de financeiro/agenda. */
   modo: pedidoModoEnum('modo').notNull().default('producao'),
   /**

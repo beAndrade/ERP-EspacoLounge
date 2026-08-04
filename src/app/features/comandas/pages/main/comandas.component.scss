@@ -747,7 +747,7 @@ thead th.col-menu {
   top: calc(100% + 6px);
   right: 0;
   z-index: 40;
-  width: 204.42px;
+  width: 248px;
   max-height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
@@ -810,7 +810,7 @@ thead th.col-menu {
 .comandas-colunas-menu__items > li {
   list-style: none;
   list-style-type: none;
-  width: 180px;
+  width: 224px;
   margin: 0;
   padding: 5px 12px;
   color: rgba(0, 0, 0, 0.75);
@@ -867,6 +867,7 @@ thead th.col-menu {
   font-weight: inherit;
   line-height: inherit;
   width: 100%;
+  white-space: nowrap;
 }
 
 .table-body__busy,

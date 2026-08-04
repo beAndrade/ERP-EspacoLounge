@@ -2537,12 +2537,15 @@ const app = new Elysia({ adapter: node() })
         if (
           status !== 'rascunho' &&
           status !== 'enviado' &&
-          status !== 'aceito' &&
           status !== 'arquivado'
         ) {
           return fail('VALIDATION', 'status inválido');
         }
-        const r = await atualizarStatusOrcamento(db, id, status);
+        const r = await atualizarStatusOrcamento(
+          db,
+          id,
+          status as 'rascunho' | 'enviado' | 'arquivado',
+        );
         return ok(r);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -2554,7 +2557,6 @@ const app = new Elysia({ adapter: node() })
         status: t.Union([
           t.Literal('rascunho'),
           t.Literal('enviado'),
-          t.Literal('aceito'),
           t.Literal('arquivado'),
         ]),
       }),

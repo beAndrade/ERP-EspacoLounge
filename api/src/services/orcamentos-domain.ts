@@ -4,13 +4,16 @@
 import { eq } from 'drizzle-orm';
 import type { Db } from '../db';
 import { atendimentos, atendimentosPedido } from '../db/schema';
+import { alocarNumeroComandaEmPedido } from './atendimentos-domain';
 
-export type OrcamentoStatus = 'rascunho' | 'enviado' | 'aceito' | 'arquivado';
+export type OrcamentoStatus = 'rascunho' | 'enviado' | 'arquivado';
+
+/** Valores ainda possíveis na BD (legado); novos writes não usam `aceito`. */
+type OrcamentoStatusDb = OrcamentoStatus | 'aceito';
 
 const STATUS_VALIDOS = new Set<OrcamentoStatus>([
   'rascunho',
   'enviado',
-  'aceito',
   'arquivado',
 ]);
 
@@ -51,7 +54,7 @@ export async function atualizarStatusOrcamento(
   const id = String(ped.idAtendimento);
 
   const patch: {
-    orcamentoStatus: OrcamentoStatus;
+    orcamentoStatus: OrcamentoStatusDb;
     orcamentoEnviadoEm?: string;
   } = { orcamentoStatus: status };
 
@@ -103,6 +106,8 @@ export async function converterOrcamentoParaProducao(
   }
   const agendaStatus = String(payload.agenda_status || 'confirmado').trim() ||
     'confirmado';
+
+  await alocarNumeroComandaEmPedido(db, id);
 
   await db
     .update(atendimentosPedido)

@@ -1214,6 +1214,10 @@ textarea {
 /** Footer do modal/drawer: alinhamento à direita já em `.agenda-modal__footer`; aqui cores e radius (especificidade > `.btn`). */
 .agenda-modal__footer .btn.btn-footer {
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 40px;
   height: 40px;
   padding: 0 15px;
@@ -1221,6 +1225,12 @@ textarea {
   font-size: 14px;
   font-weight: 500;
   margin-top: 0;
+  white-space: nowrap;
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
 }
 
 .agenda-modal__footer .btn.btn-footer--ghost {

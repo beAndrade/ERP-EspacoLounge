@@ -1,0 +1,89 @@
+<main class="cliente-orcamentos" aria-labelledby="cliente-orcamentos-titulo">
+  <header class="cliente-orcamentos__head">
+    <h3 class="cliente-orcamentos__titulo" id="cliente-orcamentos-titulo">
+      Orçamentos
+    </h3>
+    <app-cliente-drawer-periodo-filtro
+      [(inicioYmd)]="d.orcamentosFiltroInicio"
+      [(fimYmd)]="d.orcamentosFiltroFim"
+      (periodoAlterado)="aplicarFiltroDatas()"
+    />
+  </header>
+
+  @if (d.carregandoOrcamentosHistorico) {
+    <p class="cliente-orcamentos__hint">Carregando orçamentos…</p>
+  } @else if (d.orcamentosLinhas.length === 0) {
+    <p class="cliente-orcamentos__hint">Nenhum orçamento neste período.</p>
+  } @else {
+    <div class="drawer-table-card" role="region" aria-label="Histórico de orçamentos">
+      <div class="drawer-table-wrap">
+        <table class="drawer-table drawer-table--orcamentos">
+          <colgroup>
+            <col class="drawer-table__col-data" />
+            <col class="drawer-table__col-comanda" />
+            <col class="drawer-table__col-desc-wide" />
+            <col class="drawer-table__col-status" />
+            <col class="drawer-table__col-valor" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="col-data" scope="col">Data</th>
+              <th class="col-comanda" scope="col">Ticket</th>
+              <th class="col-desc" scope="col">Serviço</th>
+              <th class="col-status" scope="col">Status</th>
+              <th class="col-valor" scope="col">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of d.orcamentosLinhas; track row.idAtendimento) {
+              <tr>
+                <td class="col-data">{{ row.dataExibicao }}</td>
+                <td class="col-comanda">
+                  <button
+                    type="button"
+                    class="drawer-table__link-ticket"
+                    (click)="d.visualizarComandaAgendamento(row.idAtendimento)"
+                    [attr.aria-label]="
+                      'Visualizar orçamento ' + rotuloTicket(row.numeroOrcamento)
+                    "
+                  >
+                    {{ rotuloTicket(row.numeroOrcamento) }}
+                  </button>
+                </td>
+                <td class="col-desc">
+                  <span
+                    class="cliente-orcamentos__desc-cell"
+                    [attr.title]="row.servico"
+                    >{{ row.servico || '—' }}</span
+                  >
+                </td>
+                <td class="col-status">
+                  <span
+                    class="cliente-orcamentos__badge"
+                    [class.cliente-orcamentos__badge--rascunho]="
+                      row.statusId === 'rascunho'
+                    "
+                    [class.cliente-orcamentos__badge--enviado]="
+                      row.statusId === 'enviado'
+                    "
+                    [class.cliente-orcamentos__badge--arquivado]="
+                      row.statusId === 'arquivado'
+                    "
+                  >
+                    {{ row.statusLabel }}
+                  </span>
+                </td>
+                <td class="col-valor">
+                  {{
+                    row.valorTotal
+                      | currency: 'BRL' : 'symbol' : '1.2-2'
+                  }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</main>

@@ -25,22 +25,51 @@ export function abrirWhatsappSendUrl(url: string): void {
 }
 
 /**
- * Abre nova aba no gesto do utilizador e navega para o WhatsApp quando a URL estiver pronta
- * (evita bloqueio de pop-up após pedidos HTTP).
+ * Abre `about:blank` mantendo a referência da janela.
+ * Não usar `noopener` aqui: com noopener o browser devolve `null` e a aba fica em branco para sempre.
+ */
+export function abrirJanelaEmBrancoParaNavegar(): Window | null {
+  return window.open('about:blank', '_blank');
+}
+
+/** Navega a aba pré-aberta (ou abre uma nova se a referência se perdeu). */
+export function navegarJanelaOuAbrirWhatsapp(
+  popup: Window | null,
+  url: string,
+): void {
+  if (popup && !popup.closed) {
+    try {
+      popup.location.href = url;
+      try {
+        popup.opener = null;
+      } catch {
+        /* ignore */
+      }
+      return;
+    } catch {
+      popup.close();
+    }
+  }
+  abrirWhatsappSendUrl(url);
+}
+
+/**
+ * Abre nova aba no gesto do usuário e navega para o WhatsApp quando a URL estiver pronta
+ * (evita bloqueio de pop-up após pedidos HTTP / PDF).
+ *
+ * Passe `popupPreaberto` se a aba já foi aberta no clique (ex.: antes de gerar PDF).
  */
 export function abrirWhatsappSendUrlAposPreparar(
   prepararUrl: () => Promise<string>,
   onError?: (err: unknown) => void,
+  popupPreaberto?: Window | null,
 ): void {
-  const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
+  const popup =
+    popupPreaberto && !popupPreaberto.closed
+      ? popupPreaberto
+      : abrirJanelaEmBrancoParaNavegar();
   void prepararUrl()
-    .then((url) => {
-      if (popup && !popup.closed) {
-        popup.location.href = url;
-        return;
-      }
-      abrirWhatsappSendUrl(url);
-    })
+    .then((url) => navegarJanelaOuAbrirWhatsapp(popup, url))
     .catch((err) => {
       popup?.close();
       onError?.(err);

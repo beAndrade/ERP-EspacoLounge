@@ -79,7 +79,8 @@ import { AppToastService } from './app-toast.service';
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        max-width: min(92vw, 420px);
+        width: max-content;
+        max-width: min(96vw, 560px);
         margin: 0;
         padding: 10px 18px 10px 12px;
         border-radius: 999px;
@@ -127,8 +128,18 @@ import { AppToastService } from './app-toast.service';
       }
 
       .app-toast__text {
-        white-space: normal;
+        white-space: nowrap;
         text-align: left;
+      }
+
+      @media (max-width: 640px) {
+        .app-toast {
+          max-width: min(96vw, 560px);
+        }
+
+        .app-toast__text {
+          white-space: normal;
+        }
       }
     `,
   ],
