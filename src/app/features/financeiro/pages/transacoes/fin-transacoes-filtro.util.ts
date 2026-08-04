@@ -366,3 +366,64 @@ export function queryParamsCardPainel(
   const filtro = visaoParaFiltro(visao, periodo);
   return filtroParaQueryParams(filtro);
 }
+
+/** Normaliza texto para comparar formas de pagamento (casing / acentos). */
+export function chaveFormaPagamentoFiltro(forma: string): string {
+  const t = String(forma ?? '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!t || t === '—') return '';
+  /** «A receber (cartão) · Cartão de Crédito» → uma só opção no filtro. */
+  if (t.startsWith('a receber (cartao)')) return 'a receber (cartao)';
+  return t;
+}
+
+/** Rótulo canônico no filtro (colapsa sufixos de «A receber (cartão)»). */
+export function rotuloFormaPagamentoFiltro(forma: string): string {
+  const t = String(forma ?? '').trim();
+  if (!t || t === '—') return '';
+  const key = chaveFormaPagamentoFiltro(t);
+  if (key === 'a receber (cartao)') return 'A receber (cartão)';
+  return t;
+}
+
+/**
+ * Une nomes do cadastro + rótulos das linhas, sem duplicatas
+ * (ex.: «Cartão de crédito» vs «Cartão de Crédito»; «A receber (cartão) · …»).
+ * Preferência: ordem/nome do cadastro.
+ */
+export function unificarFormasPagamentoFiltro(
+  nomesCadastro: string[],
+  formasDasLinhas: Iterable<string>,
+): string[] {
+  const byKey = new Map<string, string>();
+  for (const nome of nomesCadastro) {
+    const rotulo = String(nome ?? '').trim();
+    const key = chaveFormaPagamentoFiltro(rotulo);
+    if (!key) continue;
+    if (!byKey.has(key)) byKey.set(key, rotulo);
+  }
+  for (const raw of formasDasLinhas) {
+    const rotulo = rotuloFormaPagamentoFiltro(raw);
+    const key = chaveFormaPagamentoFiltro(rotulo);
+    if (!key) continue;
+    if (!byKey.has(key)) byKey.set(key, rotulo);
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+/** A linha passa se alguma forma marcada partilha a mesma chave normalizada. */
+export function formaLinhaPassaFiltro(
+  formaLinha: string,
+  formasMarcadas: Iterable<string>,
+): boolean {
+  const keyLinha = chaveFormaPagamentoFiltro(formaLinha);
+  if (!keyLinha) return false;
+  for (const marcada of formasMarcadas) {
+    if (chaveFormaPagamentoFiltro(marcada) === keyLinha) return true;
+  }
+  return false;
+}

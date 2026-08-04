@@ -62,13 +62,16 @@ import {
 } from './fin-transacoes.mapper';
 import {
   calcularTotaisTransacoes,
+  chaveFormaPagamentoFiltro,
   filtroPadraoTransacoes,
   filtroParaQueryParams,
+  formaLinhaPassaFiltro,
   linhaNoPeriodoPorTipoData,
   linhaPassaFiltroNaturezaCheckboxes,
   linhaPassaFiltroStatusCheckboxes,
   primeiroDiaMesYmdFiltro,
   queryParamsParaFiltro,
+  unificarFormasPagamentoFiltro,
   ultimoDiaMesYmdFiltro,
   type FinTransacoesFiltroNatureza,
   type FinTransacoesFiltroStatus,
@@ -1239,12 +1242,12 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
       categorias: this.api.listCategoriasFinanceiras().pipe(catchError(() => of([]))),
     }).subscribe(({ formas, categorias }) => {
       const nomes = mapFormasParaNomes(formas);
-      const extras = new Set(nomes);
+      const dasLinhas: string[] = [];
       for (const row of this.linhasFonte) {
         const f = row.formaPagamento.trim();
-        if (f && f !== '—') extras.add(f);
+        if (f && f !== '—') dasLinhas.push(f);
       }
-      this.formasOpcoes.set([...extras].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+      this.formasOpcoes.set(unificarFormasPagamentoFiltro(nomes, dasLinhas));
       this.categoriasOpcoes.set(
         [...categorias].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
       );
@@ -1258,24 +1261,36 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
    * Formas vindas da API de linhas (ex.: «Pendente», «A receber (cartão) · …»)
    * podem não existir no cadastro. Se o filtro carregar antes das linhas, essas
    * comandas em aberto ficavam ocultas — inclui e marca automaticamente.
+   * Deduplica casing e colapsa «A receber (cartão) · …» num único item.
    */
   private sincronizarOpcoesFiltroComLinhas(): void {
     if (!this.opcoesFiltroCarregadas) return;
-    const formas = new Set(this.formasOpcoes());
-    let formasMudou = false;
+    const atuais = this.formasOpcoes();
+    const dasLinhas: string[] = [];
     for (const row of this.linhasFonte) {
       const f = row.formaPagamento.trim();
-      if (!f || f === '—') continue;
-      if (!formas.has(f)) {
-        formas.add(f);
-        this.formasMarcadas.add(f);
-        formasMudou = true;
-      }
+      if (f && f !== '—') dasLinhas.push(f);
     }
-    if (formasMudou) {
-      this.formasOpcoes.set(
-        [...formas].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    const unificadas = unificarFormasPagamentoFiltro(atuais, dasLinhas);
+    const iguais =
+      unificadas.length === atuais.length &&
+      unificadas.every((f, i) => f === atuais[i]);
+    if (!iguais) {
+      const keysMarcadas = new Set(
+        [...this.formasMarcadas]
+          .map((f) => chaveFormaPagamentoFiltro(f))
+          .filter(Boolean),
       );
+      for (const f of unificadas) {
+        const key = chaveFormaPagamentoFiltro(f);
+        if (!atuais.includes(f)) keysMarcadas.add(key);
+      }
+      this.formasMarcadas = new Set(
+        unificadas.filter((f) =>
+          keysMarcadas.has(chaveFormaPagamentoFiltro(f)),
+        ),
+      );
+      this.formasOpcoes.set(unificadas);
     }
 
     const cats = this.categoriasOpcoes();
@@ -1312,24 +1327,7 @@ export class FinanceiroTransacoesComponent implements OnInit, OnDestroy {
   private linhaPassaForma(row: FinTransacaoLinhaUi): boolean {
     if (!this.opcoesFiltroCarregadas) return true;
     if (this.formasMarcadas.size === 0) return false;
-    const forma = row.formaPagamento.trim();
-    if (this.formasMarcadas.has(forma)) return true;
-    /**
-     * Parcela «A receber (cartão) · Visa»: se o utilizador marcou o prefixo
-     * genérico no filtro, não esconder a linha.
-     */
-    if (forma.startsWith('A receber (cartão)')) {
-      for (const marcada of this.formasMarcadas) {
-        if (
-          marcada === 'A receber (cartão)' ||
-          forma.startsWith(marcada) ||
-          marcada.startsWith('A receber (cartão)')
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return formaLinhaPassaFiltro(row.formaPagamento, this.formasMarcadas);
   }
 
   private linhaPassaCategoria(row: FinTransacaoLinhaUi): boolean {

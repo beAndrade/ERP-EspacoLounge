@@ -395,9 +395,10 @@
 .fin-transacoes-table__col-origem {
   width: clamp(64px, 5.5vw, 92px);
 }
+/** Valores: cabem «R$ 9.999,99» — sem roubar espaço da Categoria. */
 .fin-transacoes-table__col-bruto,
 .fin-transacoes-table__col-liq {
-  width: clamp(112px, 9vw, 142px);
+  width: clamp(96px, 6.5vw, 108px);
 }
 .fin-transacoes-table__col-status {
   width: 100px;
@@ -409,15 +410,61 @@
   width: clamp(72px, 6vw, 88px);
 }
 
-/* Titular um pouco mais estreito; forma ganha o espaço (cabe «Forma de pagamento»). */
+/* Flexíveis: Categoria com mais peso; valores já têm piso fixo acima. */
 .fin-transacoes-table__col-titular {
-  width: 32%;
+  width: 28%;
 }
 .fin-transacoes-table__col-forma {
-  width: 23%;
+  width: 20%;
 }
 .fin-transacoes-table__col-cat {
-  width: 15%;
+  width: 24%;
+  min-width: 112px;
+}
+
+/** Com filtro aberto a tabela encolhe: aperta valores e reforça Categoria. */
+.fin-transacoes-page--filtros-abertos {
+  .fin-transacoes-table__col-bruto,
+  .fin-transacoes-table__col-liq {
+    width: 96px;
+  }
+
+  .fin-transacoes-table__col-titular {
+    width: 26%;
+  }
+
+  .fin-transacoes-table__col-forma {
+    width: 18%;
+  }
+
+  .fin-transacoes-table__col-cat {
+    width: 26%;
+    min-width: 120px;
+  }
+
+  .fin-transacoes-table__col-origem {
+    width: clamp(56px, 4.5vw, 80px);
+  }
+}
+
+@media (max-width: 1280px) {
+  .fin-transacoes-table__col-bruto,
+  .fin-transacoes-table__col-liq {
+    width: 92px;
+  }
+
+  .fin-transacoes-table__col-cat {
+    width: 26%;
+    min-width: 108px;
+  }
+
+  .fin-transacoes-table__col-titular {
+    width: 24%;
+  }
+
+  .fin-transacoes-table__col-forma {
+    width: 18%;
+  }
 }
 
 .fin-transacoes-table thead th.col-check,

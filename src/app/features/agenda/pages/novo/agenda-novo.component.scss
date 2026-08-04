@@ -2201,16 +2201,20 @@ textarea {
 :host.agenda-novo--drawer .form.form--modal {
   /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
   padding-inline: 0;
-  /** Coluna «Tipo de linha»: trigger estreito; painel abre ≥ padrão / rótulos longos. */
-  --drawer-tipo-linha-col: 124px;
-  --drawer-tipo-linha-col-padrao: 124px;
+  /** Coluna «Tipo de linha»: trigger 150px; painel abre ≥ padrão / rótulos longos. */
+  --drawer-tipo-linha-col: 150px;
+  --drawer-tipo-linha-col-padrao: 150px;
   --drawer-tipo-linha-panel-min: 240px;
-  /** Descrição (Serviço/Produto) ocupa a área livre da linha. */
+  /**
+   * Descrição (Serviço/Produto): cresce até este teto em telas largas;
+   * o restante fica à direita (Pro / valores / ações).
+   */
   --drawer-descricao-col: auto;
+  --drawer-descricao-col-max: 480px;
   /** Profissional em Serviço / Produto. */
-  --drawer-pro-col: 128px;
+  --drawer-pro-col: 150px;
   /** Largura padrão do Pro (não encolhe nos BPs) — piso do dropdown. */
-  --drawer-pro-col-padrao: 128px;
+  --drawer-pro-col-padrao: 150px;
   /** Tamanho (Serviço). */
   --drawer-tamanho-col: 150px;
   /**
@@ -2744,10 +2748,10 @@ textarea {
     }
 
     .servico-row__field--descricao {
-      flex: 1 1 0;
+      flex: 1 1 auto;
       width: auto;
       min-width: 0;
-      max-width: none;
+      max-width: var(--drawer-descricao-col-max);
       /** Não usar overflow:hidden aqui — corta o painel do `app-saas-select`. */
       overflow: visible;
       --saas-select-panel-width: 100%;
@@ -2783,6 +2787,7 @@ textarea {
       min-width: var(--drawer-pro-col);
       max-width: var(--drawer-pro-col);
       box-sizing: border-box;
+      margin-left: auto;
     }
 
     .servico-row__field--money,
@@ -2809,7 +2814,7 @@ textarea {
 
     .servico-row__actions--drawer {
       flex: 0 0 calc(40px * 2 + 0.4rem);
-      margin-left: auto;
+      margin-left: 0;
     }
   }
 
@@ -2823,8 +2828,6 @@ textarea {
     --drawer-money-col: 124px;
     --drawer-money-col-min: 124px;
     --drawer-tamanho-col: 104px;
-    --drawer-pro-col: 112px;
-    --drawer-tipo-linha-col: 124px;
   }
 
   /** Calculadora «Cabelo» no drawer: Cor, Tamanho, Método e Gramas numa única linha. */
@@ -2865,10 +2868,10 @@ textarea {
 
     .servico-row__field--produto-catalogo,
     .servico-row__field--descricao {
-      flex: 1 1 0;
+      flex: 1 1 auto;
       width: auto;
       min-width: 0;
-      max-width: none;
+      max-width: var(--drawer-descricao-col-max);
       overflow: visible;
       --saas-select-panel-width: 100%;
       --saas-select-panel-min-width: var(--drawer-descricao-panel-min);
@@ -2887,11 +2890,12 @@ textarea {
       width: var(--drawer-pro-col);
       min-width: var(--drawer-pro-col);
       max-width: var(--drawer-pro-col);
+      margin-left: auto;
     }
 
     .servico-row__actions--drawer {
       flex: 0 0 calc(40px * 2 + 0.4rem);
-      margin-left: auto;
+      margin-left: 0;
     }
   }
 
