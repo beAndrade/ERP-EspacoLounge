@@ -15,6 +15,7 @@ import { AppToastService } from '../../../../shared/app-toast/app-toast.service'
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { FinCadastroDrawerComponent } from './fin-cadastro-drawer.component';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 const CATEGORIA_SALVA_TOAST_MSG = 'Categoria salva com sucesso!';
 const CATEGORIA_EXCLUIDA_TOAST_MSG = 'Categoria excluída com sucesso!';
@@ -22,7 +23,8 @@ const CATEGORIA_EXCLUIDA_TOAST_MSG = 'Categoria excluída com sucesso!';
 @Component({
   selector: 'app-fin-cadastros-categorias-tab',
   standalone: true,
-  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
+  imports: [
+    FlipDropdownPanelDirective,TableEmptyComponent, FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
   templateUrl: './fin-cadastros-categorias-tab.component.html',
   styleUrl: './fin-cadastros-categorias-tab.component.scss',
 })

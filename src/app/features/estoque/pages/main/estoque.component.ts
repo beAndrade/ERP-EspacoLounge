@@ -23,6 +23,7 @@ import {
   sufixoUnidadeProduto,
   unidadeProdutoUsaEquivalente,
 } from '../../../../core/utils/produto-unidade';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 export type ProdutosAba = 'produtos' | 'lotes';
 export type ProdutosOrdenacaoColuna =
@@ -35,6 +36,7 @@ export type ProdutosOrdenacaoColuna =
   selector: 'app-estoque',
   standalone: true,
   imports: [
+    FlipDropdownPanelDirective,
     TableEmptyComponent,
     FormsModule,
     CurrencyPipe,

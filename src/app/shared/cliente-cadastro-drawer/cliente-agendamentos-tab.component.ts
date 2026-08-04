@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ClienteDrawerPeriodoFiltroComponent } from '../cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
+import { TableEmptyComponent } from '../table-empty/table-empty.component';
 import {
   AGENDA_STATUS_META,
   corHexAgendaPorStatus,
@@ -9,7 +10,7 @@ import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service'
 @Component({
   selector: 'app-cliente-agendamentos-tab',
   standalone: true,
-  imports: [ClienteDrawerPeriodoFiltroComponent],
+  imports: [ClienteDrawerPeriodoFiltroComponent, TableEmptyComponent],
   templateUrl: './cliente-agendamentos-tab.component.html',
   styleUrl: './cliente-agendamentos-tab.component.scss',
 })

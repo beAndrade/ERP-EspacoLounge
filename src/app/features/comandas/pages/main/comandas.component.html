@@ -700,6 +700,8 @@
                             <ul
                               class="row-menu__panel"
                               role="menu"
+                              appFlipDropdownPanel
+                              flipAnchor=".comandas-row-menu"
                               (click)="$event.stopPropagation()"
                             >
                               <li role="none">
@@ -899,6 +901,8 @@
                   <div
                     id="comandas-per-page-listbox"
                     class="list-footer__per-page-panel"
+                    appFlipDropdownPanel
+                    flipAnchor=".list-footer__per-page"
                     role="listbox"
                     aria-labelledby="comandas-per-page-label"
                     (click)="$event.stopPropagation()"

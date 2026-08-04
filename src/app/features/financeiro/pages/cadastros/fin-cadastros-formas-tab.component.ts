@@ -15,6 +15,7 @@ import { AppToastService } from '../../../../shared/app-toast/app-toast.service'
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { FinCadastroDrawerComponent } from './fin-cadastro-drawer.component';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 const FORMA_SALVA_TOAST_MSG = 'Forma de pagamento salva com sucesso!';
 const FORMA_EXCLUIDA_TOAST_MSG = 'Forma de pagamento excluída com sucesso!';
@@ -22,7 +23,8 @@ const FORMA_EXCLUIDA_TOAST_MSG = 'Forma de pagamento excluída com sucesso!';
 @Component({
   selector: 'app-fin-cadastros-formas-tab',
   standalone: true,
-  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
+  imports: [
+    FlipDropdownPanelDirective,TableEmptyComponent, FormsModule, UiTipTriggerComponent, FinCadastroDrawerComponent],
   templateUrl: './fin-cadastros-formas-tab.component.html',
   styleUrl: './fin-cadastros-formas-tab.component.scss',
 })

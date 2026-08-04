@@ -1003,11 +1003,10 @@ select.list-footer__per-page {
 }
 
 .list-footer__per-page-panel {
-  /* Rodapé no fundo da listagem: abre para cima para não sair do viewport. */
   position: absolute;
   right: 0;
-  bottom: calc(100% + 4px);
-  top: auto;
+  top: calc(100% + 4px);
+  bottom: auto;
   z-index: 30;
   min-width: 100%;
   padding: 0.25rem;
@@ -1017,6 +1016,11 @@ select.list-footer__per-page {
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
   list-style: none;
   margin: 0;
+
+  &.dropdown-flip--above {
+    top: auto;
+    bottom: calc(100% + 4px);
+  }
 }
 
 .list-footer__per-page-option {

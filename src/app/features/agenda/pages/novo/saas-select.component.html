@@ -163,6 +163,7 @@
     class="saas-select__panel-elev"
     [class.saas-select__panel-elev--open]="panelOpen"
     [class.saas-select__panel-elev--fixed]="panelFixedMode"
+    [class.saas-select__panel-elev--above]="panelOpenAbove && !panelFixedMode"
     [ngStyle]="panelFixedMode && panelOpen ? fixedPanelStyle : null"
     [attr.inert]="panelOpen ? null : ''"
   >

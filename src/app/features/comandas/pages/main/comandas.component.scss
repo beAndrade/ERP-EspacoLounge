@@ -1018,6 +1018,7 @@ tbody tr.comandas-table__row--menu-open {
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
+  bottom: auto;
   margin: 0;
   padding: 0.35rem 0.25rem;
   list-style: none;
@@ -1028,6 +1029,11 @@ tbody tr.comandas-table__row--menu-open {
   border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 50;
+
+  &.dropdown-flip--above {
+    top: auto;
+    bottom: calc(100% + 4px);
+  }
 
   li {
     margin: 0;

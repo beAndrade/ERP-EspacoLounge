@@ -75,6 +75,7 @@ import {
   type FinTransacoesFiltroTipoData,
   type FinTransacoesVisaoPreset,
 } from './fin-transacoes-filtro.util';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 export type { FinTransacaoLinhaUi };
 
@@ -108,6 +109,7 @@ type FaturarDrawerCtx = {
   selector: 'app-financeiro-transacoes',
   standalone: true,
   imports: [
+    FlipDropdownPanelDirective,
     TableEmptyComponent,
     CurrencyPipe,
     FormsModule,

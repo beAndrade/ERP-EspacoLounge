@@ -79,3 +79,21 @@
     display: block;
   }
 }
+
+.cliente-perfil-drawer .cliente-photo-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  line-height: 0;
+
+  app-cliente-avatar,
+  .cliente-avatar-host {
+    pointer-events: none;
+  }
+}

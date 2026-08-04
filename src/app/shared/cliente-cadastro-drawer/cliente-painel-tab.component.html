@@ -26,7 +26,13 @@
         <div class="painel-card__body">
           <span class="painel-card__valor">{{ r?.diasSemVir ?? '—' }}</span>
           <span class="painel-card__label">
-            {{ r?.diasSemVir != null ? diasLabel(r!.diasSemVir) + ' sem vir' : 'Nunca veio' }}
+            @if (r == null) {
+              Dias sem vir
+            } @else if (r.diasSemVir != null) {
+              {{ diasLabel(r.diasSemVir) + ' sem vir' }}
+            } @else {
+              Nunca veio
+            }
           </span>
         </div>
       </article>
@@ -86,7 +92,11 @@
         </span>
         <div class="painel-card__body">
           <span class="painel-card__valor painel-card__valor--texto">
-            {{ (r?.faturamento ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+            {{
+              r
+                ? (r.faturamento | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR')
+                : '—'
+            }}
           </span>
           <span class="painel-card__label">Faturamento</span>
         </div>
@@ -121,7 +131,11 @@
         </span>
         <div class="painel-card__body">
           <span class="painel-card__valor">
-            {{ (r?.debitosTotal ?? 0) | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+            {{
+              r
+                ? (r.debitosTotal | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR')
+                : '—'
+            }}
           </span>
           <span class="painel-card__label">Débitos</span>
         </div>
@@ -169,9 +183,44 @@
           </svg>
         </span>
         <div class="painel-card__body">
-          <span class="painel-card__valor">{{ r?.pacotesAberto ?? 0 }}</span>
+          <span class="painel-card__valor">{{ r?.pacotesAberto ?? '—' }}</span>
           <span class="painel-card__label">Pacotes em aberto</span>
         </div>
+        </button>
+      </div>
+
+      <div class="painel-cards__cell">
+        <button
+          type="button"
+          class="painel-card"
+          (click)="selecionarAba('Orçamentos')"
+          aria-label="Ver orçamentos na aba Orçamentos"
+        >
+          <span class="painel-card__ico" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-receipt-text"
+            >
+              <path d="M13 16H8" />
+              <path d="M14 8H8" />
+              <path d="M16 12H8" />
+              <path
+                d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"
+              />
+            </svg>
+          </span>
+          <div class="painel-card__body">
+            <span class="painel-card__valor">{{ r?.orcamentosCount ?? '—' }}</span>
+            <span class="painel-card__label">Orçamentos</span>
+          </div>
         </button>
       </div>
 
@@ -262,34 +311,6 @@
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="lucide lucide-trending-down"
-          >
-            <path d="M16 17h6v-6" />
-            <path d="m22 17-8.5-8.5-5 5L2 7" />
-          </svg>
-        </span>
-        <div class="painel-card__body">
-          <span class="painel-card__valor">
-            {{ percentualLabel(r?.taxaCancelamentoPct ?? 0) }}
-          </span>
-          <span class="painel-card__label">Taxa de cancelamento</span>
-        </div>
-      </article>
-      </div>
-
-      <div class="painel-cards__cell">
-        <article class="painel-card">
-        <span class="painel-card__ico" aria-hidden="true">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
             class="lucide lucide-clock-4"
           >
             <circle cx="12" cy="12" r="10" />
@@ -324,9 +345,47 @@
         </span>
         <div class="painel-card__body">
           <span class="painel-card__valor">
-            {{ r?.taxaRetornoDias != null ? diasLabel(r!.taxaRetornoDias) : 'Sem retorno' }}
+            {{
+              r == null
+                ? '—'
+                : r.taxaRetornoDias != null
+                  ? diasLabel(r.taxaRetornoDias)
+                  : 'Sem retorno'
+            }}
           </span>
           <span class="painel-card__label">Taxa de retorno</span>
+        </div>
+      </article>
+      </div>
+
+      <div class="painel-cards__cell">
+        <article class="painel-card">
+        <span class="painel-card__ico" aria-hidden="true">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-trending-down"
+          >
+            <path d="M16 17h6v-6" />
+            <path d="m22 17-8.5-8.5-5 5L2 7" />
+          </svg>
+        </span>
+        <div class="painel-card__body">
+          <span class="painel-card__valor">
+            {{
+              r != null
+                ? percentualLabel(r.taxaCancelamentoPct)
+                : '—'
+            }}
+          </span>
+          <span class="painel-card__label">Taxa de cancelamento</span>
         </div>
       </article>
       </div>
@@ -353,13 +412,7 @@
               </tr>
             </thead>
             <tbody>
-              @if (!r || r.ultimosServicos.length === 0) {
-                <tr class="drawer-table__row--empty">
-                  <td class="drawer-table__empty-cell" colspan="3">
-                    <app-table-empty variant="drawer" label="Nenhum item encontrado" />
-                  </td>
-                </tr>
-              } @else {
+              @if (r && r.ultimosServicos.length > 0) {
                 @for (row of r.ultimosServicos; track row.idAtendimento) {
                   <tr>
                     <td class="col-desc">{{ row.descricao }}</td>
@@ -367,6 +420,12 @@
                     <td class="col-data">{{ row.dataExibicao }}</td>
                   </tr>
                 }
+              } @else if (!d.carregandoPainel) {
+                <tr class="drawer-table__row--empty">
+                  <td class="drawer-table__empty-cell" colspan="3">
+                    <app-table-empty variant="drawer" label="Nenhum item encontrado" />
+                  </td>
+                </tr>
               }
             </tbody>
           </table>

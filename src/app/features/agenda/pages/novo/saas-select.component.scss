@@ -112,6 +112,7 @@
 .saas-select__panel-elev {
   position: absolute;
   top: calc(100% + 4px);
+  bottom: auto;
   left: 0;
   right: auto;
   /* Por padrão = largura do trigger; o pai pode alargar via CSS vars. */
@@ -131,6 +132,13 @@
     transform 0.2s ease,
     visibility 0.2s;
   will-change: transform, opacity;
+
+  &.dropdown-flip--above,
+  &.saas-select__panel-elev--above {
+    top: auto;
+    bottom: calc(100% + 4px);
+    transform: translateY(6px) scale(0.99);
+  }
 }
 
 .saas-select__panel-elev--open {

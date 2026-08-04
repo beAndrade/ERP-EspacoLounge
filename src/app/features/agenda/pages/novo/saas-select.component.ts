@@ -22,6 +22,7 @@ import {
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { resolveDropdownVerticalPlacement } from '../../../../core/utils/dropdown-flip.util';
 
 export type SaasSelectOption = { value: string; label: string; hint?: string };
 
@@ -101,6 +102,8 @@ export class SaasSelectComponent
   @Output() painelAberto = new EventEmitter<void>();
 
   panelOpen = false;
+  /** Painel absoluto abre para cima (espaço insuficiente abaixo). */
+  panelOpenAbove = false;
   filterText = '';
   private inner = '';
 
@@ -205,6 +208,7 @@ export class SaasSelectComponent
     this.onDisabled = isDisabled;
     if (isDisabled) {
       this.panelOpen = false;
+      this.panelOpenAbove = false;
       this.fixedPanelStyle = {};
       this.detachFixedPanelScrollListeners();
     }
@@ -279,11 +283,15 @@ export class SaasSelectComponent
       this.filterText = '';
     }
     this.painelAberto.emit();
+    afterNextRender(
+      () => {
+        if (!this.panelOpen) return;
+        this.syncPanelPlacement();
+        requestAnimationFrame(() => this.syncPanelPlacement());
+      },
+      { injector: this.injector },
+    );
     if (this.panelFixedMode) {
-      queueMicrotask(() => {
-        this.syncFixedPanelPosition();
-        requestAnimationFrame(() => this.syncFixedPanelPosition());
-      });
       this.attachFixedPanelScrollListeners();
     }
     this.focusSearchFieldAfterOpen();
@@ -314,6 +322,7 @@ export class SaasSelectComponent
 
   private closePanel(): void {
     this.panelOpen = false;
+    this.panelOpenAbove = false;
     this.filterText = '';
     this.fixedPanelStyle = {};
     this.detachFixedPanelScrollListeners();
@@ -329,6 +338,7 @@ export class SaasSelectComponent
         : String(opt.value);
     this.emitValue();
     this.panelOpen = false;
+    this.panelOpenAbove = false;
     this.filterText = '';
     this.fixedPanelStyle = {};
     this.detachFixedPanelScrollListeners();
@@ -341,6 +351,7 @@ export class SaasSelectComponent
     ev.stopPropagation();
     ev.preventDefault();
     this.panelOpen = false;
+    this.panelOpenAbove = false;
     this.fixedPanelStyle = {};
     this.detachFixedPanelScrollListeners();
     this.criarCliente.emit();
@@ -382,7 +393,7 @@ export class SaasSelectComponent
     if (!this.panelFixedMode) return;
     const fn = () => {
       if (this.panelOpen) {
-        requestAnimationFrame(() => this.syncFixedPanelPosition());
+        requestAnimationFrame(() => this.syncPanelPlacement());
       }
     };
     document.addEventListener('scroll', fn, true);
@@ -398,19 +409,31 @@ export class SaasSelectComponent
     this.scrollResizeUnsub = undefined;
   }
 
-  private syncFixedPanelPosition(): void {
-    if (!this.panelFixedMode || !this.panelOpen || !this.triggerBtn?.nativeElement) {
-      return;
-    }
+  private syncPanelPlacement(): void {
+    if (!this.panelOpen || !this.triggerBtn?.nativeElement) return;
     const el = this.triggerBtn.nativeElement;
     const r = el.getBoundingClientRect();
     const gap = 4;
-    const estPanelH = Math.min(320, window.innerHeight * 0.5);
-    const spaceBelow = window.innerHeight - r.bottom - gap;
-    let topPx = r.bottom + gap;
-    if (spaceBelow < Math.min(estPanelH, 200) && r.top > estPanelH + gap) {
-      topPx = Math.max(gap, r.top - estPanelH - gap);
-    }
+    const panelElev = this.host.nativeElement.querySelector(
+      '.saas-select__panel-elev',
+    ) as HTMLElement | null;
+    const measuredH = panelElev?.offsetHeight ?? 0;
+    const estPanelH = Math.max(
+      measuredH,
+      Math.min(320, window.innerHeight * 0.5),
+    );
+    const placement = resolveDropdownVerticalPlacement(r, estPanelH, { gap });
+    this.panelOpenAbove = placement === 'above';
+
+    if (!this.panelFixedMode) return;
+
+    let topPx =
+      placement === 'above' ? r.top - estPanelH - gap : r.bottom + gap;
+    topPx = Math.max(
+      gap,
+      Math.min(topPx, window.innerHeight - estPanelH - gap),
+    );
+
     /** Piso só quando o trigger encolhe abaixo do padrão (CSS var resolvida). */
     const minRaw = getComputedStyle(this.host.nativeElement)
       .getPropertyValue('--saas-select-panel-min-width')

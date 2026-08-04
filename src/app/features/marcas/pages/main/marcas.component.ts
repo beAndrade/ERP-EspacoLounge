@@ -5,6 +5,7 @@ import { AppToastService } from '../../../../shared/app-toast/app-toast.service'
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 export interface MarcaListaItem {
   id: number;
@@ -20,7 +21,8 @@ const MARCA_EXCLUIDA_TOAST_MSG = 'Marca excluída com sucesso!';
 @Component({
   selector: 'app-marcas',
   standalone: true,
-  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent],
+  imports: [
+    FlipDropdownPanelDirective,TableEmptyComponent, FormsModule, UiTipTriggerComponent],
   templateUrl: './marcas.component.html',
   styleUrl: './marcas.component.scss',
 })

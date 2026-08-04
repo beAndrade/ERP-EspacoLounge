@@ -557,7 +557,7 @@ app-produto-cadastro-drawer-host {
   display: flex;
   flex-direction: column;
   gap: var(--cliente-nav-gap);
-  border-right: 1px solid hsl(220, 13%, 91%);
+  border-right: 1px solid #f1f1f1;
   padding: 0 0 0 var(--cliente-nav-pad-start, 30px);
   min-height: 100%;
   box-sizing: border-box;
@@ -701,6 +701,29 @@ app-produto-cadastro-drawer-host {
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+}
+
+.cliente-photo-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  line-height: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--cliente-accent, var(--color-primary, #0f766e));
+    outline-offset: 3px;
+  }
+
+  app-cliente-avatar,
+  .cliente-avatar-host {
+    pointer-events: none;
   }
 }
 
@@ -1895,7 +1918,7 @@ app-produto-cadastro-drawer-host {
     gap: 0;
     padding: 8px 30px 12px;
     border-right: none;
-    border-bottom: 1px solid hsl(220, 13%, 91%);
+    border-bottom: 1px solid #f1f1f1;
 
     .cliente-nav__indicator {
       display: none;

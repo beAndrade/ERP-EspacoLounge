@@ -26,6 +26,11 @@
   --drawer-field-stroke: #f1f1f1;
   --drawer-field-stroke-hover: var(--color-primary-hover);
   --drawer-field-focus-ring: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  --drawer-field-border: var(--drawer-stroke);
+  /** Gap resumo/obs → footer (alinhado ao `agenda-novo`). */
+  --drawer-obs-footer-gap: 3rem;
+  /** Gap itens → resumo (= cabeçalho Mega ↔ etapas no agenda-novo). */
+  --drawer-itens-resumo-gap: 0.9rem;
   --comanda-col-tipo: 120px;
   --comanda-col-tipo-padrao: 120px;
   --comanda-col-pro: clamp(6.1rem, 9.2vw, 7.35rem);
@@ -671,15 +676,17 @@
   }
 }
 
-/** Resumo na coluna principal, acima do footer (largura = área de conteúdo, não da sidebar). */
+/** Resumo abaixo dos itens (gap pequeno); desce com o conteúdo e scrolla junto. */
 .nc-drawer__resumo-sticky {
   flex: 0 0 auto;
   z-index: 6;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0 15px 0.5rem 0;
-  margin-top: 1rem;
+  padding: 0 var(--drawer-pad-x, 15px) 0 0;
+  margin-top: var(--drawer-itens-resumo-gap, 0.9rem);
+  /** Gap padrão resumo → footer (= obs → footer no agenda-novo). */
+  margin-bottom: var(--drawer-obs-footer-gap, 2rem);
   border-top: none;
   background: #fff;
   box-shadow: none;
@@ -1085,39 +1092,34 @@
     align-items: center;
     justify-content: flex-start;
     background: #f5f5f4;
-    border-color: #e7e5e4;
+    border-color: var(--drawer-field-border, #e7e5e4);
     color: #0000008c;
     cursor: not-allowed;
 
     &:hover {
-      border-color: var(--drawer-field-stroke-hover);
-      background: #f5f5f5;
+      border-color: var(--drawer-field-border, #e7e5e4);
+      background: #f5f5f4;
     }
   }
 
-  /** Total só leitura (div): entrelinha e padding vertical evitam cortar vírgula / descendentes do «R$». */
+  /** Cashback e Total: sem borda (mesmo padrão do `app-comanda-resumo-bar`). */
+  &--readonly-cashback,
   &--readonly#{&}--total {
+    border: none;
     line-height: 1.45;
     min-height: 2.5rem;
     padding-block: 0.45rem;
     box-sizing: border-box;
 
     &:hover {
-      border-color: #e7e5e4;
+      border: none;
       background: #f5f5f4;
       box-shadow: none;
     }
   }
 
-  /** Cashback: sem alteração de borda ao hover (mantém `cursor: not-allowed`). */
-  &--readonly-cashback:hover {
-    border-color: #e7e5e4;
-    background: #f5f5f4;
-  }
-
   &--total {
     font-weight: 400;
-    border-bottom: none;
   }
 }
 

@@ -24,6 +24,7 @@ import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-
 import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
 import { ymdValido } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-periodo-filtro.util';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 type OrdenacaoNome = 'asc' | 'desc';
 
@@ -89,6 +90,7 @@ const CLIENTES_COLUNAS_PADRAO: ClienteColunaId[] = [
   selector: 'app-clientes',
   standalone: true,
   imports: [
+    FlipDropdownPanelDirective,
     TableEmptyComponent,
     FormsModule,
     CurrencyPipe,

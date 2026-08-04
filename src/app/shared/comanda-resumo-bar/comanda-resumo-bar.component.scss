@@ -4,6 +4,8 @@
   --drawer-field-stroke: #f1f1f1;
   --drawer-field-stroke-hover: var(--color-primary-hover);
   --drawer-field-focus-ring: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  /* Alinha com `saas-select__trigger` quando o pai do drawer não define a var. */
+  --drawer-field-border: #e7e5e4;
 }
 
 .comanda-resumo-bar {
@@ -13,7 +15,7 @@
   width: 100%;
   max-width: 22rem;
   margin-left: auto;
-  padding: 0.35rem 0;
+  padding: 0.35rem 0 0;
 }
 
 .comanda-resumo-bar__row {
@@ -80,28 +82,32 @@
     align-items: center;
     justify-content: flex-start;
     background: #f5f5f4;
-    border-color: #e7e5e4;
+    border-color: var(--drawer-field-border, #e7e5e4);
     color: #0000008c;
     cursor: not-allowed;
 
     &:hover {
-      border-color: #e7e5e4;
+      border-color: var(--drawer-field-border, #e7e5e4);
       background: #f5f5f4;
       box-shadow: none;
     }
   }
 
+  /** Cashback e Total: só leitura, sem borda (padrão em todos os drawers). */
+  &--readonly-cashback,
   &--readonly#{&}--total {
+    border: none;
     line-height: 1.2;
     min-height: var(--drawer-field-h);
     height: var(--drawer-field-h);
     padding-block: 0;
     box-sizing: border-box;
-  }
 
-  &--readonly-cashback:hover {
-    border-color: #e7e5e4;
-    background: #f5f5f4;
+    &:hover {
+      border: none;
+      background: #f5f5f4;
+      box-shadow: none;
+    }
   }
 
   &--total {

@@ -136,7 +136,9 @@
 
               <tbody>
 
-                @if (d.debitosLinhas.length === 0) {
+                @if (
+                  !d.carregandoDebitosPainel && d.debitosLinhas.length === 0
+                ) {
                   <tr class="drawer-table__row--empty">
                     <td class="drawer-table__empty-cell" colspan="7">
                       <app-table-empty variant="drawer" label="Nenhum item encontrado" />
@@ -397,7 +399,10 @@
 
               <tbody>
 
-                @if (d.comandasAbertoLinhas.length === 0) {
+                @if (
+                  !d.carregandoDebitosPainel &&
+                  d.comandasAbertoLinhas.length === 0
+                ) {
                   <tr class="drawer-table__row--empty">
                     <td class="drawer-table__empty-cell" colspan="5">
                       <app-table-empty variant="drawer" label="Nenhum item encontrado" />

@@ -34,7 +34,9 @@
           </tr>
         </thead>
         <tbody>
-          @if (d.orcamentosLinhas.length === 0) {
+          @if (
+            !d.carregandoOrcamentosHistorico && d.orcamentosLinhas.length === 0
+          ) {
             <tr class="drawer-table__row--empty">
               <td class="drawer-table__empty-cell" colspan="6">
                 <app-table-empty

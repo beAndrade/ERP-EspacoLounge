@@ -58,6 +58,7 @@ import {
   ultimoDiaMesYmdFiltro,
   ymdToDdMmYyyyFiltro,
 } from '../../../financeiro/pages/transacoes/fin-transacoes-filtro.util';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 registerLocaleData(localePt);
 
@@ -135,6 +136,7 @@ function formataMoeda(n: number): string {
   selector: 'app-comandas',
   standalone: true,
   imports: [
+    FlipDropdownPanelDirective,
     TableEmptyComponent,
     FormsModule,
     CurrencyPipe,

@@ -11,6 +11,7 @@ import type {
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 export interface CategoriaListaItem {
   id: number;
@@ -32,7 +33,8 @@ const CATEGORIA_EXCLUIDA_TOAST_MSG = 'Categoria excluída com sucesso!';
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [TableEmptyComponent, FormsModule, UiTipTriggerComponent],
+  imports: [
+    FlipDropdownPanelDirective,TableEmptyComponent, FormsModule, UiTipTriggerComponent],
   templateUrl: './categorias.component.html',
   styleUrl: './categorias.component.scss',
 })

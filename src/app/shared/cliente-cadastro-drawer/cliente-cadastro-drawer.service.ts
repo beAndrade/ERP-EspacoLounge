@@ -48,6 +48,7 @@ import {
   type ClienteVendaHistoricoLinha,
 } from './cliente-vendas.util';
 import {
+  contarOrcamentosCliente,
   historicoOrcamentosClienteFromAtendimentos,
   ymdFimFiltroOrcamentosPadrao,
   ymdInicioFiltroOrcamentosPadrao,
@@ -1402,6 +1403,36 @@ export class ClienteCadastroDrawerService {
     this.descontoPadraoTexto = '';
     this.notificacoesAtivo = true;
     this.resetValidacao();
+    this.limparDadosAbasHistorico();
+  }
+
+  /** Zera caches das abas (Painel, históricos) ao trocar/abrir cliente. */
+  private limparDadosAbasHistorico(): void {
+    this.painelResumo = null;
+    this.carregandoPainel = false;
+    this.cashbackSaldo = 0;
+    this.cashbackMovimentos = [];
+    this.carregandoCashbackHistorico = false;
+    this.creditoSaldo = 0;
+    this.creditoMovimentos = [];
+    this.carregandoCreditoHistorico = false;
+    this.debitosLinhas = [];
+    this.comandasAbertoLinhas = [];
+    this.debitosTotal = 0;
+    this.comandasAbertoTotal = 0;
+    this.carregandoDebitosPainel = false;
+    this.agendamentosLinhas = [];
+    this.carregandoAgendamentosHistorico = false;
+    this.agendamentosFiltroInicio = ymdInicioFiltroAgendamentosPadrao();
+    this.agendamentosFiltroFim = ymdFimFiltroAgendamentosPadrao();
+    this.vendasLinhas = [];
+    this.carregandoVendasHistorico = false;
+    this.vendasFiltroInicio = ymdInicioFiltroVendasPadrao();
+    this.vendasFiltroFim = ymdFimFiltroVendasPadrao();
+    this.orcamentosLinhas = [];
+    this.carregandoOrcamentosHistorico = false;
+    this.orcamentosFiltroInicio = ymdInicioFiltroOrcamentosPadrao();
+    this.orcamentosFiltroFim = ymdFimFiltroOrcamentosPadrao();
   }
 
   private hidratarForm(c: Cliente): void {
@@ -1479,8 +1510,6 @@ export class ClienteCadastroDrawerService {
   private carregarCashbackHistorico(clienteId: string): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
-    this.carregandoCashbackHistorico = true;
-    this.cashbackMovimentos = [];
     this.carregandoCashbackHistorico = false;
     this.appRef.tick();
   }
@@ -1495,19 +1524,23 @@ export class ClienteCadastroDrawerService {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
     this.carregandoPainel = true;
-    this.painelResumo = null;
-    this.api.listAgendamentos().subscribe({
-      next: (items) => {
+    forkJoin({
+      producao: this.api.listAgendamentos().pipe(catchError(() => of([]))),
+      orcamentos: this.api
+        .listAgendamentos(undefined, undefined, undefined, false, 'orcamento')
+        .pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: ({ producao, orcamentos }) => {
         if (this.clienteId !== cid || this.abaAtiva !== 'Painel') return;
-        this.painelResumo = calcularPainelCliente(cid, items, {
+        this.painelResumo = calcularPainelCliente(cid, producao, {
           nomeCliente: this.cadastroNome,
+          orcamentosCount: contarOrcamentosCliente(cid, orcamentos),
         });
         this.carregandoPainel = false;
         this.appRef.tick();
       },
       error: () => {
         if (this.clienteId !== cid) return;
-        this.painelResumo = null;
         this.carregandoPainel = false;
         this.appRef.tick();
       },
@@ -1537,8 +1570,8 @@ export class ClienteCadastroDrawerService {
   ): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
-    const soft = opts?.soft === true;
-    this.carregandoDebitosPainel = !soft;
+    const soft = opts?.soft !== false;
+    this.carregandoDebitosPainel = true;
     if (!soft) {
       this.debitosLinhas = [];
       this.comandasAbertoLinhas = [];
@@ -1580,10 +1613,10 @@ export class ClienteCadastroDrawerService {
   ): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
-    const soft = opts?.soft === true;
+    const soft = opts?.soft !== false;
     const ini = String(this.agendamentosFiltroInicio ?? '').trim().slice(0, 10);
     const fim = String(this.agendamentosFiltroFim ?? '').trim().slice(0, 10);
-    this.carregandoAgendamentosHistorico = !soft;
+    this.carregandoAgendamentosHistorico = true;
     if (!soft) {
       this.agendamentosLinhas = [];
     }
@@ -1618,10 +1651,10 @@ export class ClienteCadastroDrawerService {
   ): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
-    const soft = opts?.soft === true;
+    const soft = opts?.soft !== false;
     const ini = String(this.orcamentosFiltroInicio ?? '').trim().slice(0, 10);
     const fim = String(this.orcamentosFiltroFim ?? '').trim().slice(0, 10);
-    this.carregandoOrcamentosHistorico = !soft;
+    this.carregandoOrcamentosHistorico = true;
     if (!soft) {
       this.orcamentosLinhas = [];
     }
@@ -1662,10 +1695,10 @@ export class ClienteCadastroDrawerService {
   ): void {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
-    const soft = opts?.soft === true;
+    const soft = opts?.soft !== false;
     const ini = String(this.vendasFiltroInicio ?? '').trim().slice(0, 10);
     const fim = String(this.vendasFiltroFim ?? '').trim().slice(0, 10);
-    this.carregandoVendasHistorico = !soft;
+    this.carregandoVendasHistorico = true;
     if (!soft) {
       this.vendasLinhas = [];
     }
@@ -1696,7 +1729,6 @@ export class ClienteCadastroDrawerService {
     const cid = clienteId.trim();
     if (!cid || this.clienteId !== cid) return;
     this.carregandoCreditoHistorico = true;
-    this.creditoMovimentos = [];
     this.api.listClienteCreditoMovimentos(cid).subscribe({
       next: (items) => {
         if (this.clienteId !== cid || this.abaAtiva !== 'Créditos') return;
@@ -1706,7 +1738,6 @@ export class ClienteCadastroDrawerService {
       },
       error: () => {
         if (this.clienteId !== cid) return;
-        this.creditoMovimentos = [];
         this.carregandoCreditoHistorico = false;
         this.appRef.tick();
       },

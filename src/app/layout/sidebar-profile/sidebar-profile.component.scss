@@ -186,6 +186,14 @@
   color: #64748b;
 }
 
+.sidebar-profile__menu-item--sair {
+  color: #ff4d4f;
+
+  svg {
+    color: #ff4d4f;
+  }
+}
+
 .sidebar-profile__menu-item--sair:hover {
   color: #fff;
   background-color: var(--color-error);

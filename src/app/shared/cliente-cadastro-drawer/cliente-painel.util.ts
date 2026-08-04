@@ -34,6 +34,8 @@ export type ClientePainelResumo = {
   taxaRetornoDias: number | null;
   /** Pacotes em aberto (sem suporte no backend por agora). */
   pacotesAberto: number;
+  /** Quantidade de orçamentos do cliente. */
+  orcamentosCount: number;
   ultimosServicos: ClientePainelUltimoServico[];
 };
 
@@ -101,7 +103,11 @@ function valorGrupo(g: ComandaGrupoResumo): number {
 export function calcularPainelCliente(
   clienteId: string,
   items: AtendimentoListaItem[],
-  opts?: { nomeCliente?: string; maxUltimosServicos?: number },
+  opts?: {
+    nomeCliente?: string;
+    maxUltimosServicos?: number;
+    orcamentosCount?: number;
+  },
 ): ClientePainelResumo {
   const cid = String(clienteId ?? '').trim();
   const grupos = agruparAtendimentosEmComandas(items).filter(
@@ -192,6 +198,10 @@ export function calcularPainelCliente(
     taxaCancelamentoPct,
     taxaRetornoDias,
     pacotesAberto: 0,
+    orcamentosCount: Math.max(
+      0,
+      Math.floor(Number(opts?.orcamentosCount ?? 0) || 0),
+    ),
     ultimosServicos,
   };
 }

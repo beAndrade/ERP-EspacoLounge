@@ -11,6 +11,7 @@ import { FornecedorCadastroDrawerService } from '../../../../shared/fornecedor-c
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 /** Item da lista de fornecedores (API futura). */
 export interface FornecedorListaItem {
@@ -57,6 +58,7 @@ const FORNECEDORES_COLUNAS_PADRAO: FornecedorColunaId[] = [
   selector: 'app-fornecedores',
   standalone: true,
   imports: [
+    FlipDropdownPanelDirective,
     TableEmptyComponent,
     FormsModule,
     UiTipTriggerComponent,

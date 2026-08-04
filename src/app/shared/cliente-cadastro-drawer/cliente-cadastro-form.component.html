@@ -1,36 +1,22 @@
 <div class="cliente-cadastro-form__cols">
     <main class="cliente-main">
                 <div class="cliente-photo-block">
-                  <div
-                    class="cliente-photo"
-                    role="button"
-                    tabindex="0"
-                    [attr.aria-label]="d.cadastroFotoUrl ? 'Alterar foto do cliente' : 'Adicionar foto do cliente'"
+                  <button
+                    type="button"
+                    class="cliente-photo-trigger"
+                    [attr.aria-label]="
+                      d.cadastroFotoUrl
+                        ? 'Alterar foto do cliente'
+                        : 'Adicionar foto do cliente'
+                    "
                     (click)="fotoInput.click()"
-                    (keydown.enter)="fotoInput.click()"
-                    (keydown.space)="$event.preventDefault(); fotoInput.click()"
                   >
-                    @if (d.cadastroFotoUrl) {
-                      <img [src]="d.cadastroFotoUrl" alt="" aria-hidden="true" />
-                    } @else {
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide lucide-user-round-icon lucide-user-round"
-                        aria-hidden="true"
-                      >
-                        <circle cx="12" cy="8" r="5"/>
-                        <path d="M20 21a8 8 0 0 0-16 0"/>
-                      </svg>
-                    }
-                  </div>
+                    <app-cliente-avatar
+                      variant="sidebar"
+                      [fotoUrl]="d.cadastroFotoUrl"
+                      [placeholderVazio]="!d.cadastroFotoUrl"
+                    />
+                  </button>
                   <input
                     #fotoInput
                     type="file"

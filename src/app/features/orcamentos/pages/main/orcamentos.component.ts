@@ -57,6 +57,7 @@ import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 import { ymdToDdMmYyyyFiltro } from '../../../financeiro/pages/transacoes/fin-transacoes-filtro.util';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 import {
   DRAWER_ANIM_MS,
@@ -95,6 +96,7 @@ function formataMoeda(n: number): string {
   selector: 'app-orcamentos',
   standalone: true,
   imports: [
+    FlipDropdownPanelDirective,
     TableEmptyComponent,
     FormsModule,
     CurrencyPipe,

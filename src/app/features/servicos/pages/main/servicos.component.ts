@@ -11,11 +11,13 @@ import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastr
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
+import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
 @Component({
   selector: 'app-servicos',
   standalone: true,
-  imports: [TableEmptyComponent, FormsModule, CurrencyPipe, UiTipTriggerComponent],
+  imports: [
+    FlipDropdownPanelDirective,TableEmptyComponent, FormsModule, CurrencyPipe, UiTipTriggerComponent],
   templateUrl: './servicos.component.html',
   styleUrl: './servicos.component.scss',
 })
