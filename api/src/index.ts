@@ -2570,17 +2570,15 @@ const app = new Elysia({ adapter: node() })
         const b = (body ?? {}) as {
           data?: string;
           inicio?: string;
-          fim?: string;
-          profissional_id?: number;
           agenda_status?: string;
+          cliente_id?: string;
         };
         const r = await converterOrcamentoParaProducao(db, {
           id_atendimento: id,
           data: String(b.data ?? ''),
-          inicio: String(b.inicio ?? ''),
-          fim: String(b.fim ?? ''),
-          profissional_id: Number(b.profissional_id),
+          inicio: b.inicio != null ? String(b.inicio) : undefined,
           agenda_status: b.agenda_status,
+          cliente_id: b.cliente_id != null ? String(b.cliente_id) : undefined,
         });
         return ok(r);
       } catch (e) {
@@ -2591,10 +2589,9 @@ const app = new Elysia({ adapter: node() })
     {
       body: t.Object({
         data: t.String(),
-        inicio: t.String(),
-        fim: t.String(),
-        profissional_id: t.Number(),
+        inicio: t.Optional(t.String()),
         agenda_status: t.Optional(t.String()),
+        cliente_id: t.Optional(t.String()),
       }),
     },
   )

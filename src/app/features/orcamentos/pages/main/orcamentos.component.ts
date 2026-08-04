@@ -8,6 +8,7 @@ import {
   LOCALE_ID,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -44,6 +45,7 @@ import {
 import { OrcamentoPreviewOverlayComponent } from './orcamento-preview-overlay.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import {
+  type AbrirCadastroClientePayload,
   ClienteCadastroDrawerService,
 } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import {
@@ -117,6 +119,8 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
   private readonly appRef = inject(ApplicationRef);
 
+  @ViewChild(AgendaNovoComponent) private agendaNovoRef?: AgendaNovoComponent;
+
   /** Menu Novo → Orçamento: mesmo drawer do botão Novo da lista. */
   private readonly onAgendaNovoAtalho = (
     modo: AgendaNovoGlobalModo,
@@ -154,6 +158,8 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   novoAberto = false;
   novoPanelOpen = false;
+  /** Drawer em modo agendar (Converter), não edição de orçamento. */
+  novoConverterAgenda = false;
   novoCtx: {
     data: string;
     profissional_id: number;
@@ -167,14 +173,6 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   private whatsappGrupo: OrcamentoGrupo | null = null;
   /** Preview comercial do orçamento (antes de Imprimir / PDF). */
   previewDados: OrcamentoPrintPayload | null = null;
-
-  converterAberto = false;
-  converterGrupo: OrcamentoGrupo | null = null;
-  converterData = '';
-  converterHora = '';
-  converterFimHora = '';
-  converterProfissionalId: number | null = null;
-  convertendo = false;
 
   readonly filtrosStatus: Array<{ id: OrcamentoStatus; label: string }> = [
     { id: 'rascunho', label: 'Rascunho' },
@@ -219,11 +217,6 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     if (this.previewDados) {
       ev.preventDefault();
       this.fecharPreviewOrcamento();
-      return;
-    }
-    if (this.converterAberto) {
-      ev.preventDefault();
-      this.fecharConverter();
       return;
     }
     if (this.novoAberto) {
@@ -528,9 +521,46 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Links «Informações» da sidebar do drawer de orçamento → ficha do cliente. */
+  onAbrirCadastroClienteDaSidebar(
+    payload: AbrirCadastroClientePayload = {},
+  ): void {
+    const c = this.agendaNovoRef?.clienteSelecionado();
+    const cid = c?.id?.trim();
+    if (!cid) return;
+    this.cadastroDrawer.abrirEdicaoPorLinkSidebar(cid, payload, {
+      nomeLista: String(c?.nome ?? '').trim(),
+      callbacks: {
+        onSalvo: (salvo) => {
+          this.agendaNovoRef?.aplicarClienteAposCriacao(salvo);
+          const nomeNovo = String(salvo?.nome ?? '').trim();
+          const cidSalvo = String(salvo?.id ?? cid).trim();
+          if (cidSalvo && nomeNovo) {
+            this.grupos = this.grupos.map((x) =>
+              x.idCliente === cidSalvo ? { ...x, nomeCliente: nomeNovo } : x,
+            );
+            const prev = this.clientesPorId.get(cidSalvo);
+            if (prev) {
+              this.clientesPorId.set(cidSalvo, { ...prev, nome: nomeNovo });
+            }
+          }
+        },
+      },
+    });
+  }
+
+  abrirClienteDrawerNovo(): void {
+    this.cadastroDrawer.abrirNovo('', {
+      onSalvo: (salvo) => {
+        this.agendaNovoRef?.aplicarClienteAposCriacao(salvo);
+      },
+    });
+  }
+
   private abrirEdicao(g: OrcamentoGrupo): void {
     this.fecharPainelBusca();
     const dataYmd = (g.data || '').trim().slice(0, 10) || toYmd(new Date());
+    this.novoConverterAgenda = false;
     this.novoCtx = {
       data: dataYmd,
       profissional_id: 0,
@@ -549,6 +579,7 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
 
   abrirNovo(): void {
     this.fecharPainelBusca();
+    this.novoConverterAgenda = false;
     this.novoCtx = {
       data: toYmd(new Date()),
       profissional_id: 0,
@@ -590,11 +621,17 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
       this.novoCloseTimer = null;
       this.novoAberto = false;
       this.novoCtx = null;
+      this.novoConverterAgenda = false;
       document.body.classList.remove('drawer-open');
     }, DRAWER_ANIM_MS);
   }
 
   onSalvoNovo(): void {
+    this.fecharNovo();
+    this.carregar();
+  }
+
+  onConvertidoAgenda(): void {
     this.fecharNovo();
     this.carregar();
   }
@@ -787,70 +824,22 @@ export class OrcamentosComponent implements OnInit, OnDestroy {
   }
 
   abrirConverter(g: OrcamentoGrupo): void {
-    this.converterGrupo = g;
-    this.converterData = g.data || toYmd(new Date());
-    this.converterHora = '10:00';
-    this.converterFimHora = '11:00';
-    this.converterProfissionalId =
-      g.linhas[0]?.profissional_id && g.linhas[0].profissional_id! > 0
-        ? g.linhas[0].profissional_id!
-        : this.profissionais[0]?.id ?? null;
-    this.converterAberto = true;
-  }
-
-  fecharConverter(): void {
-    this.converterAberto = false;
-    this.converterGrupo = null;
-    this.convertendo = false;
-  }
-
-  confirmarConverter(): void {
-    const g = this.converterGrupo;
-    if (!g || this.convertendo) return;
-    const data = this.converterData.trim().slice(0, 10);
-    const hi = this.converterHora.trim();
-    const hf = this.converterFimHora.trim();
-    const prof = Number(this.converterProfissionalId);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
-      this.toast.showWarning('Informe a data (AAAA-MM-DD).');
-      return;
-    }
-    if (!/^\d{1,2}:\d{2}$/.test(hi) || !/^\d{1,2}:\d{2}$/.test(hf)) {
-      this.toast.showWarning('Informe horário de início e fim (HH:mm).');
-      return;
-    }
-    if (!Number.isFinite(prof) || prof <= 0) {
-      this.toast.showWarning('Selecione o profissional.');
-      return;
-    }
-    const pad = (h: string) => {
-      const [a, b] = h.split(':');
-      return `${String(a).padStart(2, '0')}:${String(b).padStart(2, '0')}:00`;
+    this.fecharPainelBusca();
+    const dataYmd = (g.data || '').trim().slice(0, 10) || toYmd(new Date());
+    this.novoConverterAgenda = true;
+    this.novoCtx = {
+      data: dataYmd,
+      profissional_id: 0,
+      hora: '10:00',
+      id_atendimento: g.id,
     };
-    const inicio = `${data} ${pad(hi)}`;
-    const fim = `${data} ${pad(hf)}`;
-    this.convertendo = true;
-    this.api
-      .converterOrcamento(g.id, {
-        data,
-        inicio,
-        fim,
-        profissional_id: prof,
-        agenda_status: 'confirmado',
-      })
-      .subscribe({
-        next: () => {
-          this.convertendo = false;
-          this.fecharConverter();
-          this.toast.show('Orçamento convertido para a agenda.');
-          void this.router.navigate(['/agenda'], {
-            queryParams: { dia: data },
-          });
-        },
-        error: (e: Error) => {
-          this.convertendo = false;
-          this.toast.showWarning(e.message || 'Falha ao converter.');
-        },
-      });
+    this.novoAberto = true;
+    document.body.classList.add('drawer-open');
+    runDrawerOpenAnimation({
+      setPanelOpen: (open) => {
+        this.novoPanelOpen = open;
+      },
+      appRef: this.appRef,
+    });
   }
 }

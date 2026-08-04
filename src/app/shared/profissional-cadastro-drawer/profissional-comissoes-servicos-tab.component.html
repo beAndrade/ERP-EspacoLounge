@@ -19,9 +19,7 @@
     </button>
   </div>
 
-  @if (d.comissaoServicosCarregando) {
-    <p class="cliente-tab-placeholder">Carregando serviços…</p>
-  } @else if (d.comissaoServicosItens.length === 0) {
+  @if (d.comissaoServicosItens.length === 0) {
     <p class="cliente-tab-placeholder">
       Nenhum serviço configurado. Use «Importar do catálogo» para copiar % ou
       valor fixo de cada serviço do cadastro global.

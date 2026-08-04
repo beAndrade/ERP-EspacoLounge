@@ -32,11 +32,16 @@
               [class.periodo-filtro__input--vazio]="!exibicaoInicio"
               [value]="exibicaoInicio"
               placeholder="Data inicial"
-              readonly
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="10"
               tabindex="0"
               aria-label="Data inicial do período"
               (click)="abrirCampo('inicio', $event)"
-              (focus)="abrirCampo('inicio', $event)"
+              (focus)="onFocusCampo('inicio', $event)"
+              (input)="onDigitandoCampo('inicio', $event)"
+              (blur)="onBlurCampo('inicio')"
+              (keydown.enter)="onEnterCampo('inicio', $event)"
             />
             <button
               type="button"
@@ -73,11 +78,16 @@
               [class.periodo-filtro__input--vazio]="!exibicaoFim"
               [value]="exibicaoFim"
               placeholder="Data final"
-              readonly
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="10"
               tabindex="0"
               aria-label="Data final do período"
               (click)="abrirCampo('fim', $event)"
-              (focus)="abrirCampo('fim', $event)"
+              (focus)="onFocusCampo('fim', $event)"
+              (input)="onDigitandoCampo('fim', $event)"
+              (blur)="onBlurCampo('fim')"
+              (keydown.enter)="onEnterCampo('fim', $event)"
             />
             <button
               type="button"
@@ -114,12 +124,17 @@
             type="text"
             class="periodo-filtro__input"
             [value]="exibicaoInicio"
-            readonly
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="10"
             tabindex="0"
             aria-label="Data inicial do período"
             (mousedown)="abrirCampo('inicio', $event)"
             (click)="abrirCampo('inicio', $event)"
-            (focus)="abrirCampo('inicio', $event)"
+            (focus)="onFocusCampo('inicio', $event)"
+            (input)="onDigitandoCampo('inicio', $event)"
+            (blur)="onBlurCampo('inicio')"
+            (keydown.enter)="onEnterCampo('inicio', $event)"
           />
           @if (!sublinhadoDeslizante()) {
             <span class="periodo-filtro__underline" aria-hidden="true"></span>
@@ -136,12 +151,17 @@
             type="text"
             class="periodo-filtro__input"
             [value]="exibicaoFim"
-            readonly
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="10"
             tabindex="0"
             aria-label="Data final do período"
             (mousedown)="abrirCampo('fim', $event)"
             (click)="abrirCampo('fim', $event)"
-            (focus)="abrirCampo('fim', $event)"
+            (focus)="onFocusCampo('fim', $event)"
+            (input)="onDigitandoCampo('fim', $event)"
+            (blur)="onBlurCampo('fim')"
+            (keydown.enter)="onEnterCampo('fim', $event)"
           />
           @if (!sublinhadoDeslizante()) {
             <span class="periodo-filtro__underline" aria-hidden="true"></span>

@@ -1,7 +1,4 @@
-@if (d.carregandoFormulario) {
-  <p class="cliente-tab-placeholder">Carregando…</p>
-} @else {
-  <div class="cliente-cadastro-form__cols">
+<div class="cliente-cadastro-form__cols">
     <main class="cliente-main">
                 <div class="cliente-photo-block">
                   <div
@@ -565,7 +562,6 @@
               </div>
             </aside>
   </div>
-}
 @if (mostrarRodape) {
   <footer class="cliente-drawer-footer">
     <button type="button" class="cliente-footer-btn cliente-footer-btn--ghost" [disabled]="d.salvando" (click)="onCancelar()">

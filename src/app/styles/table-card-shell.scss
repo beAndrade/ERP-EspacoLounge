@@ -58,11 +58,17 @@ $list-table-card-radius: 12px 12px 0 0;
 .list-table-card > .table-wrap,
 .comandas-table-card > .table-wrap,
 .orcamentos-table-card > .table-wrap,
-.produtos-table-card > .table-wrap,
-.drawer-table-card > .drawer-table-wrap {
+.produtos-table-card > .table-wrap {
   overflow-x: clip;
   overflow-y: visible;
   border-radius: $list-table-card-radius;
+}
+
+/** Drawer do cliente: sem radius no wrap (evita cortar a coluna Ações). */
+.drawer-table-card > .drawer-table-wrap {
+  overflow-x: clip;
+  overflow-y: visible;
+  border-radius: 0;
 }
 
 /**

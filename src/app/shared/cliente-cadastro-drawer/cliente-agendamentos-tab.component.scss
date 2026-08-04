@@ -77,33 +77,6 @@
   min-width: 0;
 }
 
-:host ::ng-deep .cliente-agendamentos__head .periodo-filtro__bar {
-  height: 32px;
-  min-height: 32px;
-  padding: 0 0.5rem 0 0.65rem;
-  border: 1px solid #f1f1f1;
-  border-radius: 12px;
-  background: #fff;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__inputs {
-  align-self: center;
-  padding-bottom: 0;
-}
-
-:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__field {
-  padding-bottom: 0;
-}
-
-:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__sep,
-:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__cal-btn,
-:host ::ng-deep .cliente-agendamentos__head .periodo-filtro--underline-bar .periodo-filtro__cal-icon {
-  margin-bottom: 0;
-  align-self: center;
-}
-
 
 
 .cliente-agendamentos__hint {
@@ -120,27 +93,28 @@
 
 .drawer-table--agendamentos {
   col.drawer-table__col-data {
-    width: 160px;
+    width: 9.5rem;
   }
 
+  /* Serviço cede espaço — evita somatório > 100% e corte de «Ações». */
   col.drawer-table__col-desc-wide {
-    width: 342px;
+    width: auto;
   }
 
   col.drawer-table__col-status {
-    width: 120px;
+    width: 7.5rem;
   }
 
   col.drawer-table__col-prof {
-    width: 140px;
+    width: 8rem;
   }
 
   col.drawer-table__col-comanda-link {
-    width: 120px;
+    width: 6.5rem;
   }
 
   col.drawer-table__col-acoes {
-    width: 72px;
+    width: 4.75rem;
   }
 }
 

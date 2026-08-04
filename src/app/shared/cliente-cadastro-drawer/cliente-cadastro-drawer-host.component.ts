@@ -57,11 +57,18 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.restoreBodyPortal = portalHostElementToBody(this.hostEl);
     this.d.editarAgendamentoHistoricoHandler = (idAt, ymd) =>
-      this.abrirEditAgendamentoEmpilhado(idAt, ymd);
+      this.abrirEditAgendamentoEmpilhado(idAt, ymd, 'itens-comanda');
+    this.d.editarOrcamentoHistoricoHandler = (idAt, ymd, modo) =>
+      this.abrirEditAgendamentoEmpilhado(
+        idAt,
+        ymd,
+        modo === 'converter' ? 'converter-orcamento' : 'orcamento',
+      );
   }
 
   ngOnDestroy(): void {
     this.d.editarAgendamentoHistoricoHandler = null;
+    this.d.editarOrcamentoHistoricoHandler = null;
     this.restoreBodyPortal?.();
     this.restoreBodyPortal = null;
   }
@@ -90,10 +97,15 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
 
   editAgendamentoEmpilhadoAberto = false;
   editAgendamentoEmpilhadoPanelOpen = false;
+  editAgendamentoEmpilhadoModo:
+    | 'itens-comanda'
+    | 'orcamento'
+    | 'converter-orcamento' = 'itens-comanda';
   editAgendamentoEmpilhadoCtx: {
     data: string;
     profissional_id: number;
     id_atendimento: string;
+    hora?: string;
   } | null = null;
   private editAgendamentoEmpilhadoCloseTimer: ReturnType<
     typeof setTimeout
@@ -107,6 +119,16 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
       typeof n === 'number' && n > 0 ? `comanda #${n}` : 'comanda';
     /** Pendente = edição; finalizada = só visualização (título no filho confirma). */
     return `Editando ${rotulo}`;
+  }
+
+  ariaLabelEditAgendamentoEmpilhado(): string {
+    if (this.editAgendamentoEmpilhadoModo === 'orcamento') {
+      return 'Editando orçamento';
+    }
+    if (this.editAgendamentoEmpilhadoModo === 'converter-orcamento') {
+      return 'Converter orçamento para agenda';
+    }
+    return 'Editando itens da comanda';
   }
 
   @HostListener('document:keydown.escape', ['$event'])
@@ -248,15 +270,24 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
       .trim()
       .slice(0, 10);
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
-    this.abrirEditAgendamentoEmpilhado(idAt, ymd);
+    this.abrirEditAgendamentoEmpilhado(idAt, ymd, 'itens-comanda');
   }
 
-  private abrirEditAgendamentoEmpilhado(idAt: string, ymd: string): void {
+  private abrirEditAgendamentoEmpilhado(
+    idAt: string,
+    ymd: string,
+    modo:
+      | 'itens-comanda'
+      | 'orcamento'
+      | 'converter-orcamento' = 'itens-comanda',
+  ): void {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
+    this.editAgendamentoEmpilhadoModo = modo;
     this.editAgendamentoEmpilhadoCtx = {
       data: ymd,
       profissional_id: 0,
       id_atendimento: idAt,
+      ...(modo === 'converter-orcamento' ? { hora: '10:00' } : {}),
     };
     this.abrirDrawerAnimado(
       () => {
@@ -278,11 +309,13 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
       this.editAgendamentoEmpilhadoCloseTimer = null;
       this.editAgendamentoEmpilhadoAberto = false;
       this.editAgendamentoEmpilhadoCtx = null;
+      this.editAgendamentoEmpilhadoModo = 'itens-comanda';
     }, DRAWER_ANIM_MS);
   }
 
   onSalvoEditAgendamentoEmpilhado(): void {
     const comandaAberta = this.d.comandaEmpilhadaAberta;
+    const modo = this.editAgendamentoEmpilhadoModo;
     this.fecharEditAgendamentoEmpilhado();
     if (comandaAberta) {
       setTimeout(() => this.comandaEmpilhadaRef?.recarregarDadosComanda(), 0);
@@ -292,6 +325,13 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
     }
     if (this.d.abaAtiva === 'Vendas') {
       this.d.aplicarFiltroVendasHistorico();
+    }
+    if (
+      this.d.abaAtiva === 'Orçamentos' ||
+      modo === 'orcamento' ||
+      modo === 'converter-orcamento'
+    ) {
+      this.d.aplicarFiltroOrcamentosHistorico();
     }
   }
 
@@ -435,6 +475,7 @@ export class ClienteCadastroDrawerHostComponent implements OnInit, OnDestroy {
     this.editAgendamentoEmpilhadoPanelOpen = false;
     this.editAgendamentoEmpilhadoAberto = false;
     this.editAgendamentoEmpilhadoCtx = null;
+    this.editAgendamentoEmpilhadoModo = 'itens-comanda';
   }
 
   private abrirDrawerAnimado(

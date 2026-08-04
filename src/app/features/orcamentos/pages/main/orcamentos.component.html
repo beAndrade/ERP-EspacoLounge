@@ -588,16 +588,20 @@
     [class.app-drawer--open]="novoPanelOpen"
     role="dialog"
     aria-modal="true"
-    aria-label="Novo orçamento"
+    aria-label="Orçamento"
     (click)="$event.stopPropagation()"
   >
     <app-agenda-novo
       [modoModal]="true"
       [fluxoSomenteComanda]="true"
-      [fluxoOrcamento]="true"
+      [fluxoOrcamento]="!novoConverterAgenda"
+      [fluxoConverterAgenda]="novoConverterAgenda"
       [contextoSlot]="novoCtx"
       (salvoComSucesso)="onSalvoNovo()"
+      (convertidoComSucesso)="onConvertidoAgenda()"
       (cancelarModal)="fecharNovo()"
+      (abrirCadastroCliente)="onAbrirCadastroClienteDaSidebar($event)"
+      (abrirNovoClienteDrawer)="abrirClienteDrawerNovo()"
       (imprimirOrcamento)="onImprimirOrcamentoDrawer($event)"
       (enviarWhatsappOrcamento)="onWhatsappOrcamentoDrawer($event)"
     />
@@ -619,98 +623,3 @@
   (fechar)="fecharWhatsapp()"
   (enviado)="onWhatsappEnviado()"
 />
-
-@if (converterAberto && converterGrupo) {
-  <div
-    class="orcamentos-modal-backdrop"
-    role="presentation"
-    (click)="fecharConverter()"
-  ></div>
-  <div
-    class="orcamentos-modal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="orcamentos-converter-title"
-    (click)="$event.stopPropagation()"
-  >
-    <header class="orcamentos-modal__head">
-      <h2 id="orcamentos-converter-title" class="orcamentos-modal__title">
-        Converter para agenda
-      </h2>
-      <button
-        type="button"
-        class="orcamentos-modal__close"
-        aria-label="Fechar"
-        (click)="fecharConverter()"
-        [disabled]="convertendo"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-          aria-hidden="true"
-        >
-          <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      </button>
-    </header>
-
-    <p class="orcamentos-modal__meta">
-      {{ rotuloTicket(converterGrupo) }}
-      ·
-      <strong>{{ converterGrupo.nomeCliente }}</strong>
-    </p>
-    <p class="orcamentos-modal__hint">
-      Defina data, horário e profissional para colocar o orçamento em produção.
-    </p>
-
-    <label class="orcamentos-modal__field">
-      <span>Data</span>
-      <input type="date" [(ngModel)]="converterData" name="cdata" />
-    </label>
-
-    <div class="orcamentos-modal__row">
-      <label class="orcamentos-modal__field">
-        <span>Início</span>
-        <input type="time" [(ngModel)]="converterHora" name="chini" />
-      </label>
-      <label class="orcamentos-modal__field">
-        <span>Fim</span>
-        <input type="time" [(ngModel)]="converterFimHora" name="chim" />
-      </label>
-    </div>
-
-    <label class="orcamentos-modal__field">
-      <span>Profissional</span>
-      <select [(ngModel)]="converterProfissionalId" name="cprof">
-        <option [ngValue]="null">Selecione…</option>
-        @for (p of profissionais; track p.id) {
-          <option [ngValue]="p.id">{{ p.nome }}</option>
-        }
-      </select>
-    </label>
-
-    <footer class="orcamentos-modal__foot">
-      <button
-        type="button"
-        class="orcamentos-modal__btn orcamentos-modal__btn--ghost"
-        (click)="fecharConverter()"
-        [disabled]="convertendo"
-      >
-        Cancelar
-      </button>
-      <button
-        type="button"
-        class="orcamentos-modal__btn orcamentos-modal__btn--primary"
-        (click)="confirmarConverter()"
-        [disabled]="convertendo"
-      >
-        {{ convertendo ? 'Convertendo…' : 'Converter' }}
-      </button>
-    </footer>
-  </div>
-}

@@ -283,7 +283,7 @@
     font-weight: 600;
     color: #374151;
     text-align: center;
-    cursor: pointer;
+    cursor: text;
   }
 
   ::ng-deep .periodo-filtro__sep {
@@ -300,6 +300,14 @@
     height: 26px;
     margin-bottom: 0.2rem;
     color: #6b7280;
+    cursor: default;
+
+    &:hover,
+    &:focus-visible {
+      background: transparent;
+      color: #6b7280;
+      cursor: default;
+    }
   }
 }
 

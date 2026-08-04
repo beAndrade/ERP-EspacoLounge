@@ -90,14 +90,19 @@
         [class.app-drawer--open]="editAgendamentoEmpilhadoPanelOpen"
         role="dialog"
         aria-modal="true"
-        aria-label="Editando itens da comanda"
+        [attr.aria-label]="ariaLabelEditAgendamentoEmpilhado()"
         (click)="$event.stopPropagation()"
       >
         <app-agenda-novo
           [modoModal]="true"
           [fluxoSomenteComanda]="true"
+          [fluxoOrcamento]="editAgendamentoEmpilhadoModo === 'orcamento'"
+          [fluxoConverterAgenda]="
+            editAgendamentoEmpilhadoModo === 'converter-orcamento'
+          "
           [contextoSlot]="editAgendamentoEmpilhadoCtx"
           (salvoComSucesso)="onSalvoEditAgendamentoEmpilhado()"
+          (convertidoComSucesso)="onSalvoEditAgendamentoEmpilhado()"
           (cancelarModal)="fecharEditAgendamentoEmpilhado()"
           (abrirCadastroCliente)="
             onAbrirCadastroClienteDesdeComandaEmpilhada($event)

@@ -80,11 +80,151 @@
   background: #e7e5e4;
 }
 
-col.drawer-table__col-desc-wide {
-  width: 34%;
+.drawer-table--orcamentos {
+  col.drawer-table__col-data {
+    width: 120px;
+  }
+
+  col.drawer-table__col-comanda {
+    width: 100px;
+  }
+
+  col.drawer-table__col-desc-wide {
+    width: 34%;
+  }
+
+  col.drawer-table__col-status {
+    width: 120px;
+  }
+
+  col.drawer-table__col-valor {
+    width: 120px;
+  }
+
+  col.drawer-table__col-acoes {
+    width: 148px;
+  }
 }
 
 .drawer-table--orcamentos .col-valor {
   text-align: right;
   white-space: nowrap;
+}
+
+.drawer-table--orcamentos thead th.col-acoes,
+.drawer-table--orcamentos tbody td.col-acoes {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cliente-orcamentos__acoes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.cliente-orcamentos__acoes .list-row-acoes__sep {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 14px;
+  margin: 0 0.15rem;
+  background: #ebebeb;
+}
+
+.cliente-orcamentos__acoes .list-row-acoes__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+
+  svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover:not(:disabled) {
+    background: #f4f4f5;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.cliente-orcamentos__acoes .list-row-acoes__btn--edit {
+  color: var(--color-primary, #0f766e);
+
+  svg {
+    color: var(--color-primary, #0f766e);
+  }
+}
+
+.cliente-orcamentos__acoes .list-row-acoes__btn--wa {
+  color: #25d366;
+
+  svg {
+    color: #25d366;
+  }
+
+  &:hover:not(:disabled) {
+    color: #1ebe57;
+
+    svg {
+      color: #1ebe57;
+    }
+  }
+}
+
+.cliente-orcamentos__acoes .list-row-acoes__btn--convert {
+  color: var(--color-primary, #0f766e);
+
+  svg {
+    color: var(--color-primary, #0f766e);
+  }
+}
+
+.cliente-orcamentos__acoes .list-row-acoes__btn--archive {
+  color: #78716c;
+
+  svg {
+    color: #78716c;
+  }
+
+  &:hover:not(:disabled) {
+    color: #57534e;
+
+    svg {
+      color: #57534e;
+    }
+  }
+}
+
+.cliente-orcamentos__acoes app-ui-tip-trigger {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

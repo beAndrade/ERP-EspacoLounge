@@ -1,11 +1,12 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, inject, output } from '@angular/core';
 import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service';
+import { TableEmptyComponent } from '../table-empty/table-empty.component';
 
 @Component({
   selector: 'app-cliente-creditos-tab',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, TableEmptyComponent],
   templateUrl: './cliente-creditos-tab.component.html',
   styleUrl: './cliente-creditos-tab.component.scss',
 })

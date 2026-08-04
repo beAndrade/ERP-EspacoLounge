@@ -224,6 +224,16 @@ export class ClienteCadastroDrawerService {
     | ((idAtendimento: string, dataYmd: string) => void)
     | null = null;
   /**
+   * Host empilha drawer de orçamento (`orcamento` = editar; `converter` = agenda).
+   */
+  editarOrcamentoHistoricoHandler:
+    | ((
+        idAtendimento: string,
+        dataYmd: string,
+        modo: 'orcamento' | 'converter',
+      ) => void)
+    | null = null;
+  /**
    * Aba Débitos: ESC no modal de exclusão de comanda em aberto.
    * Devolve `true` se consumiu o ESC.
    */
@@ -650,6 +660,22 @@ export class ClienteCadastroDrawerService {
     const ymd = String(dataYmd ?? '').trim().slice(0, 10);
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !this.isAberto) return;
     this.editarAgendamentoHistoricoHandler?.(idAt, ymd);
+  }
+
+  /** Abre drawer «Editando orçamento» empilhado sobre a ficha. */
+  editarOrcamentoHistorico(idAtendimento: string, dataYmd: string): void {
+    const idAt = String(idAtendimento ?? '').trim();
+    const ymd = String(dataYmd ?? '').trim().slice(0, 10);
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !this.isAberto) return;
+    this.editarOrcamentoHistoricoHandler?.(idAt, ymd, 'orcamento');
+  }
+
+  /** Abre drawer «Converter orçamento → agenda» empilhado. */
+  converterOrcamentoHistorico(idAtendimento: string, dataYmd: string): void {
+    const idAt = String(idAtendimento ?? '').trim();
+    const ymd = String(dataYmd ?? '').trim().slice(0, 10);
+    if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !this.isAberto) return;
+    this.editarOrcamentoHistoricoHandler?.(idAt, ymd, 'converter');
   }
 
   temComandaAgendamento(row: ClienteAgendamentoHistoricoLinha): boolean {

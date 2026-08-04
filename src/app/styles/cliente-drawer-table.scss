@@ -13,18 +13,34 @@
   align-self: stretch;
   box-shadow: none;
   flex: auto;
-  border: 1px solid rgba(0 0 0 / 3%);
+  /* Com itens: sem borda. Vazio: só linha inferior (ver :has abaixo). */
+  border: none;
   transition: box-shadow 0.1s;
-  border-radius: 12px 12px 0 0;
+  border-radius: 0;
   background: var(--color-surface, #fff);
   box-sizing: border-box;
   overflow: visible;
 
   > .drawer-table-wrap {
-    /* `clip` no eixo X não força o Y a `auto` (ao contrário de `hidden`). */
+    /* Sem radius no wrap: evita cortar o th «Ações» no canto direito. */
     overflow-x: clip;
     overflow-y: visible;
-    border-radius: 12px 12px 0 0;
+    border-radius: 0;
+  }
+
+  /* Sem itens: somente borda inferior do card. */
+  &:has(.drawer-table__row--empty) {
+    border-bottom: 1px solid #f0f0f0;
+
+    > .drawer-table-foot {
+      display: none;
+    }
+  }
+
+  /* Com itens: rodapé sem linha superior. */
+  &:not(:has(.drawer-table__row--empty)) > .drawer-table-foot {
+    border-top: none;
+    border-radius: 0;
   }
 
   /* Tooltip na última coluna não pode ficar preso no clip horizontal. */
@@ -91,13 +107,9 @@
   box-sizing: border-box;
 }
 
-.drawer-table thead tr th:first-child {
-  border-top-left-radius: 14px;
-  border-start-start-radius: 14px;
-}
-
+.drawer-table thead tr th:first-child,
 .drawer-table thead tr th:last-child {
-  border-top-right-radius: 14px;
+  border-radius: 0;
 }
 
 .drawer-table thead th,
@@ -186,6 +198,8 @@
 .drawer-table thead th.col-acoes,
 .drawer-table tbody td.col-acoes {
   white-space: nowrap;
+  padding-inline-end: 12px;
+  box-sizing: border-box;
 }
 
 .drawer-table:not(.drawer-table--debitos):not(.drawer-table--comandas-aberto)
@@ -202,9 +216,8 @@
   height: 56px;
   min-height: 56px;
   background: #fafafa;
-  border-top: 1px solid #efefef;
-  border-bottom-left-radius: 14px;
-  border-bottom-right-radius: 14px;
+  border-top: none;
+  border-radius: 0;
   box-sizing: border-box;
 }
 

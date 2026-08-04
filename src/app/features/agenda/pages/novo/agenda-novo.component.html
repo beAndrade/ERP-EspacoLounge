@@ -364,6 +364,29 @@
                     />
                   </div>
                 }
+                @if (exibirColunasValorLinha(ctrl.get('itemTipo')?.value)) {
+                  <div
+                    class="servico-row__field servico-row__field--produto-total-estimado servico-row__field--linha-cab--col"
+                  >
+                    <span>Total</span>
+                    <div
+                      class="servico-row__total-estimado"
+                      role="status"
+                      [attr.aria-label]="
+                        'Total da linha: ' +
+                        (ctrl.get('itemTipo')?.value === 'Mega'
+                          ? totalEstimadoMegaLinhaBrl(i)
+                          : totalEstimadoPacoteLinhaBrl(i))
+                      "
+                    >
+                      {{
+                        ctrl.get('itemTipo')?.value === 'Mega'
+                          ? totalEstimadoMegaLinhaBrl(i)
+                          : totalEstimadoPacoteLinhaBrl(i)
+                      }}
+                    </div>
+                  </div>
+                }
                 <div
                   class="servico-row__actions servico-row__actions--drawer servico-row__actions--linha-cab"
                 >
@@ -1031,13 +1054,15 @@
                         Total: <strong>{{ tot }}</strong>
                       </p>
                     }
-                    <button
-                      type="button"
-                      class="btn small"
-                      (click)="aplicarValorCalculadoraCabeloLinha(i)"
-                    >
-                      Aplicar valor calculado
-                    </button>
+                    @if (!modoModal) {
+                      <button
+                        type="button"
+                        class="btn small"
+                        (click)="aplicarValorCalculadoraCabeloLinha(i)"
+                      >
+                        Aplicar valor calculado
+                      </button>
+                    }
                   } @else {
                     <p class="hint cabelo-calc__hint">
                       O valor será calculado ao gravar e ajustado na <strong>comanda</strong>.
@@ -1047,7 +1072,11 @@
               } @else {
                 <p class="hint">
                   @if (exibirColunasValorLinha('Cabelo')) {
-                    Não há linhas na aba <strong>Cabelos</strong> — use apenas o valor manual abaixo.
+                    @if (modoModal) {
+                      Não há linhas na aba <strong>Cabelos</strong> — não é possível calcular o valor.
+                    } @else {
+                      Não há linhas na aba <strong>Cabelos</strong> — use apenas o valor manual abaixo.
+                    }
                   } @else {
                     Preencha os <strong>detalhes</strong> abaixo; valores na <strong>comanda</strong>.
                   }
@@ -1061,33 +1090,36 @@
                     class="servico-row__field servico-row__field--detalhes-cabelo-modal"
                   >
                     <span>Detalhes</span>
-                    <textarea
-                      formControlName="detalhes_cabelo"
-                      rows="2"
-                      placeholder="Cor, método, gramas…"
-                      aria-label="Detalhes (cabelo)"
-                    ></textarea>
+                    <div
+                      class="servico-row__total-estimado servico-row__total-estimado--detalhes-cabelo"
+                      [attr.aria-label]="
+                        'Detalhes (cabelo): ' + detalhesCabeloExibicaoLinha(i)
+                      "
+                      [attr.title]="detalhesCabeloExibicaoLinha(i)"
+                    >
+                      {{ detalhesCabeloExibicaoLinha(i) }}
+                    </div>
                   </div>
                   @if (exibirColunasValorLinha('Cabelo')) {
                     <div
                       class="servico-row__field servico-row__field--valor-cabelo-modal"
                     >
                       <span>Valor unitário</span>
-                      <input
-                        type="text"
-                        formControlName="valor_cabelo"
-                        inputmode="decimal"
-                        placeholder="R$ 0,00"
-                        autocomplete="off"
-                        aria-label="Valor unitário (cabelo)"
-                        (blur)="onValorCabeloMoedaBlur(i)"
-                      />
+                      <div
+                        class="servico-row__total-estimado"
+                        [attr.aria-label]="
+                          'Valor unitário (cabelo): ' +
+                          valorUnitarioCabeloExibicaoLinha(i)
+                        "
+                      >
+                        {{ valorUnitarioCabeloExibicaoLinha(i) }}
+                      </div>
                       @if (
                         ctrl.get('valor_cabelo')?.errors?.['valorCabeloInvalido'] &&
                         ctrl.get('valor_cabelo')?.touched
                       ) {
                         <span class="field-error"
-                          >Informe um valor numérico maior que zero.</span
+                          >Complete a calculadora para obter o valor.</span
                         >
                       }
                     </div>
@@ -1456,11 +1488,13 @@
             [attr.aria-label]="
               isEdicaoItensSobreComanda()
                 ? 'Ações da edição de itens'
-                : fluxoOrcamento
-                  ? 'Ações do orçamento'
-                  : fluxoSomenteComanda
-                    ? 'Ações da comanda'
-                    : 'Ações do agendamento'
+                : fluxoConverterAgenda
+                  ? 'Ações para agendar orçamento'
+                  : fluxoOrcamento
+                    ? 'Ações do orçamento'
+                    : fluxoSomenteComanda
+                      ? 'Ações da comanda'
+                      : 'Ações do agendamento'
             "
           >
             <button
@@ -1471,7 +1505,11 @@
             >
               Cancelar
             </button>
-            @if (idAtendimentoEmEdicao?.trim() && !isEdicaoItensSobreComanda()) {
+            @if (
+              idAtendimentoEmEdicao?.trim() &&
+              !isEdicaoItensSobreComanda() &&
+              !fluxoConverterAgenda
+            ) {
               <div
                 class="agenda-modal__excluir-wrap"
                 [class.agenda-modal__excluir-wrap--open]="excluirMenuAberto"
@@ -1567,6 +1605,22 @@
                 }
               </div>
             }
+            @if (fluxoConverterAgenda) {
+              <button
+                type="button"
+                class="btn btn-footer btn-footer--comanda"
+                (click)="onConverterAgendaClick($event)"
+                [disabled]="
+                  salvando ||
+                  excluindo ||
+                  clientes.length === 0 ||
+                  profissionaisObrigatoriosSemLista ||
+                  salvarBloqueadoPorCatalogo()
+                "
+              >
+                {{ salvando ? 'Agendando…' : 'Converter' }}
+              </button>
+            } @else {
             <button
               type="submit"
               class="btn btn-footer primary agenda-modal__footer-salvar"
@@ -1633,6 +1687,7 @@
                   }}
                 </button>
               }
+            }
             }
           </footer>
         }

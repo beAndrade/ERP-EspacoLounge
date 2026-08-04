@@ -150,12 +150,9 @@
               @if (erroItens) {
                 <p class="nc-itens__alert" role="alert">{{ erroItens }}</p>
               } @else {
-                @if (carregandoItens && contextoPodeSincronizarItens()) {
-                  <p class="nc-itens__hint">A carregar itens do agendamento…</p>
-                }
                 @if (!contextoPodeSincronizarItens()) {
                   <p class="nc-itens__hint">
-                    A comanda exibe os itens do agendamento. Use Â«EditarÂ» para alterar itens e valores.
+                    A comanda exibe os itens do agendamento. Use «Editar» para alterar itens e valores.
                   </p>
                 }
 

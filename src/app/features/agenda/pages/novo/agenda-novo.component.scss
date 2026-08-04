@@ -1145,7 +1145,7 @@ select::-ms-expand {
   .data-field__wrap:focus-within .data-field__display {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
   }
 }
 
@@ -1431,9 +1431,16 @@ textarea {
   &--modal-cabecalho {
     --servico-cabecalho-col-gap: 0.55rem;
     --servico-cabecalho-actions-w: calc(38px * 2 + 0.4rem);
-    /** Mesma largura que `.servico-row__field--mega-cabecalho` (Tipo de linha). */
+    /**
+     * Largura = coluna «Tipo de linha»: Tipo e Pacote dividem o espaço após
+     * Total (money) + ações.
+     */
     --mega-etapas-col-w: calc(
-      (100% - var(--servico-cabecalho-actions-w) - 2 * var(--servico-cabecalho-col-gap)) / 2
+      (
+          100% - var(--servico-cabecalho-actions-w) - var(--drawer-money-col, 112px) -
+            3 * var(--servico-cabecalho-col-gap)
+        ) /
+        2
     );
   }
 
@@ -1530,24 +1537,36 @@ textarea {
   .servico-row__field--mega-cabecalho,
 .servico-row--drawer
   .servico-row__linha-cabecalho-modal
-  .servico-row__field--linha-cab--col,
-.servico-row--drawer
-  .servico-row__linha-cabecalho-modal
   .servico-row__field--pacote-mega {
   margin: 0;
 }
 
 .servico-row--drawer
   .servico-row__linha-cabecalho-modal
-  .servico-row__field--mega-cabecalho,
+  .servico-row__field--produto-total-estimado {
+  margin: 0;
+}
+
+/** Tipo + Pacote dividem o espaço restante em partes iguais. */
 .servico-row--drawer
   .servico-row__linha-cabecalho-modal
-  .servico-row__field--linha-cab--col,
+  .servico-row__field--mega-cabecalho,
 .servico-row--drawer
   .servico-row__linha-cabecalho-modal
   .servico-row__field--pacote-mega {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/** Total: coluna estreita de moeda (não compete com Tipo/Pacote). */
+.servico-row--drawer
+  .servico-row__linha-cabecalho-modal
+  .servico-row__field--produto-total-estimado {
+  flex: 0 0 var(--drawer-money-col, 112px);
+  width: var(--drawer-money-col, 112px);
+  min-width: var(--drawer-money-col-min, 112px);
+  max-width: var(--drawer-money-col, 112px);
+  box-sizing: border-box;
 }
 
 .servico-row__field--pacote-mega {
@@ -1597,15 +1616,10 @@ textarea {
   margin: 0;
   min-width: 0;
 
-  textarea {
-    box-sizing: border-box;
-    min-height: var(--touch-min, 2.75rem);
-    height: var(--touch-min, 2.75rem);
-    padding: 0.5rem 0.75rem;
-    line-height: 1.35;
-    resize: none;
-    overflow-y: hidden;
-    overflow-x: hidden;
+  .servico-row__total-estimado--detalhes-cabelo {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 }
 
@@ -1879,7 +1893,8 @@ textarea {
   --nc-obs-resumo-gap: 1rem;
   /** Bordas de input e traços (divisórias) do hub: mesma família de cor. */
   --drawer-stroke: #ececec;
-  --el-drawer-field-border-hover: #a51851;
+  /** Hover/focus dos campos: primary do tema (não cor de marca antiga). */
+  --el-drawer-field-border-hover: var(--color-primary-hover);
   --drawer-field-border: var(--drawer-stroke);
   /** Cor do texto: vazio/placeholder = idle; com valor = filled. */
   --drawer-input-text-idle: rgba(0, 0, 0, 0.38);
@@ -2610,12 +2625,42 @@ textarea {
   }
 
   /**
-   * Linha “Serviço” / «Produto» no modal: uma linha, campos a crescer até preencher o drawer.
-   * Excluir linhas «Cabelo»: o total estimado fica dentro de `.servico-row__cabelo-rodape--drawer`
-   * e o `:has(.servico-row__total-estimado)` aplicava-se por engano, forçando `nowrap` e a
-   * calculadora a partilhar a linha com «Tipo de linha» (largura ~metade do drawer).
+   * Mega / Pacote: cabeçalho numa fila; etapas sempre na fila de baixo (largura total).
    */
-  .servico-row--drawer:has(.servico-row__total-estimado):not(:has(.cabelo-calc--nested)) {
+  .servico-row--drawer:has(.servico-row__etapas-wrap) {
+    flex-wrap: wrap;
+    align-items: flex-start;
+
+    > .servico-row__mega-topo,
+    > .servico-row__linha-cabecalho-modal {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+    }
+
+    > .hint {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+    }
+
+    > .servico-row__etapas-wrap {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+    }
+  }
+
+  /**
+   * Linha “Serviço” / «Produto» no modal: uma linha, campos a crescer até preencher o drawer.
+   * Excluir «Cabelo» (calculadora) e Mega/Pacote (etapas devem ficar abaixo do cabeçalho) —
+   * o `:has(.servico-row__total-estimado)` pegava essas linhas e forçava `nowrap`.
+   */
+  .servico-row--drawer:has(.servico-row__total-estimado):not(
+      :has(.cabelo-calc--nested)
+    ):not(:has(.servico-row__etapas-wrap)) {
     width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
@@ -2844,7 +2889,7 @@ textarea {
     }
   }
 
-  /** Drawer: hover com borda vinho nos campos de texto. */
+  /** Drawer: hover dos campos de texto com a primary do tema. */
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not(
       [type='file']
     ),
@@ -3275,9 +3320,6 @@ textarea {
     padding-block: 0;
   }
 
-  .servico-row__cabelo-rodape--drawer
-    .servico-row__field--valor-cabelo-modal
-    input,
   .servico-row__cabelo-rodape--drawer .servico-row__field--money input,
   .servico-row__cabelo-rodape--drawer .servico-row__total-estimado {
     width: 100%;

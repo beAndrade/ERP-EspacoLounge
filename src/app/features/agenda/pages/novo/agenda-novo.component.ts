@@ -272,7 +272,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Modal da página Comandas (sem cartão no calendário). */
   isFluxoSomenteComanda(): boolean {
-    return this.modoModal && (this.fluxoSomenteComanda || this.fluxoOrcamento);
+    return (
+      this.modoModal &&
+      (this.fluxoSomenteComanda ||
+        this.fluxoOrcamento ||
+        this.fluxoConverterAgenda)
+    );
   }
 
   /**
@@ -281,7 +286,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    */
   exibirColunasValorLinha(itemTipo?: string | null): boolean {
     if (!this.modoModal) return true;
-    if (this.fluxoSomenteComanda || this.fluxoOrcamento) return true;
+    if (this.fluxoSomenteComanda || this.fluxoOrcamento || this.fluxoConverterAgenda)
+      return true;
     return String(itemTipo ?? '').trim() === 'Cabelo';
   }
 
@@ -296,6 +302,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
    * Página Orçamentos: mesmo UX walk-in, grava `modo=orcamento` no pedido.
    */
   @Input() fluxoOrcamento = false;
+  /**
+   * Orçamentos → agendar: drawer com cliente + data; CTA Converter
+   * (preserva profissionais por etapa no backend).
+   */
+  @Input() fluxoConverterAgenda = false;
   /**
    * Drawer de edição de itens (Comandas): sem bloco Desconto/Crédito/Total
    * — o resumo fica só no drawer de comanda por baixo.
@@ -366,6 +377,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   readonly imprimirOrcamento = output<OrcamentoPrintPayload>();
   /** Orçamentos: gravar (se necessário) e abrir modal WhatsApp (template orçamento). */
   readonly enviarWhatsappOrcamento = output<OrcamentoPrintPayload>();
+  /** Orçamentos: conversão para agenda concluída. */
+  readonly convertidoComSucesso = output<void>();
   /** Editor só-comanda: comanda removida na API — o hub fecha a pilha de drawers. */
   readonly comandaExcluidaDoEditor = output<void>();
 
@@ -1213,14 +1226,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const resumo = pac ? `${tipo} — ${pac}` : tipo;
         /** Mega/Pacote: sem desconto por linha (só Serviço/Produto; desconto global na comanda). */
         const descontoStr = '0,00';
+        const totalNum =
+          (tipo === 'Mega'
+            ? this.totalEstimadoMegaLinhaNumero(i)
+            : this.totalEstimadoPacoteLinhaNumero(i)) ?? 0;
+        const unitSafe = Math.max(0, totalNum);
         out.push({
           itemTipo: tipo,
           profissional: prof,
           resumoNaoServico: resumo,
           quantidade: 1,
-          valorUnitStr: '0,00',
+          valorUnitStr: formatPt(unitSafe),
           descontoStr,
-          totalLinhaStr: totalComDesconto(1, 0, descontoStr),
+          totalLinhaStr: totalComDesconto(1, unitSafe, descontoStr),
         });
       } else if (tipo === 'Cabelo') {
         const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
@@ -1328,10 +1346,102 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  onConverterAgendaClick(ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (this.salvando || this.excluindo || !this.fluxoConverterAgenda) return;
+
+    const clienteId = String(this.form.get('cliente_id')?.value ?? '').trim();
+    const dataYmd =
+      normalizarDataIso(String(this.form.get('data')?.value ?? '')) ?? '';
+    if (!clienteId) {
+      this.erro = 'Selecione a cliente.';
+      this.toast.showWarning(this.erro);
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataYmd)) {
+      this.erro = 'Informe a data do agendamento.';
+      this.toast.showWarning(this.erro);
+      return;
+    }
+    if (!this.podeUsarAcaoComanda()) {
+      this.registrarFalhaValidacao();
+      return;
+    }
+
+    const editId = this.idAtendimentoEmEdicao?.trim();
+    const podeSemSalvar = Boolean(editId && !this.form.dirty);
+    const horaIni =
+      normalizarHoraHHmm(String(this.form.controls.hora_inicial.value ?? '')) ||
+      '10:00';
+
+    const chamarConverter = (id: string) => {
+      this.api
+        .converterOrcamento(id, {
+          data: dataYmd,
+          inicio: horaIni,
+          agenda_status: 'confirmado',
+          cliente_id: clienteId,
+        })
+        .subscribe({
+          next: () => {
+            this.salvando = false;
+            this.toast.show('Orçamento agendado na agenda.');
+            this.convertidoComSucesso.emit();
+          },
+          error: (e: Error) => {
+            this.salvando = false;
+            this.erro =
+              e.message ||
+              'Não foi possível converter o orçamento para a agenda.';
+            this.toast.showWarning(this.erro);
+          },
+        });
+    };
+
+    if (podeSemSalvar) {
+      this.salvando = true;
+      this.erro = '';
+      chamarConverter(editId!);
+      return;
+    }
+
+    const prep = this.prepararSalvamentoFormulario();
+    if (!prep) {
+      this.registrarFalhaValidacao();
+      return;
+    }
+
+    this.salvando = true;
+    this.erro = '';
+    this.salvarParaComanda(prep).subscribe({
+      next: (idAt) => {
+        const id = String(idAt || this.idAtendimentoEmEdicao || '').trim();
+        if (!id) {
+          this.salvando = false;
+          this.erro = 'Não foi possível identificar o orçamento.';
+          this.toast.showWarning(this.erro);
+          return;
+        }
+        this.idAtendimentoEmEdicao = id;
+        this.form.markAsPristine();
+        chamarConverter(id);
+      },
+      error: (e: Error) => {
+        this.salvando = false;
+        this.erro =
+          e.message ||
+          'Não foi possível salvar o orçamento antes de converter.';
+        this.toast.showWarning(this.erro);
+      },
+    });
+  }
+
   private executarAcaoOrcamentoAposSalvar(
     depois: (payload: OrcamentoPrintPayload) => void,
   ): void {
-    if (this.salvando || this.excluindo || !this.fluxoOrcamento) return;
+    if (this.salvando || this.excluindo || !(this.fluxoOrcamento || this.fluxoConverterAgenda))
+      return;
 
     const editId = this.idAtendimentoEmEdicao?.trim();
     const podeSemSalvar = Boolean(editId && !this.form.dirty);
@@ -1866,6 +1976,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (tipo === 'Serviço') return this.totalEstimadoServicoLinhaBrl(i);
     if (tipo === 'Produto') return this.totalEstimadoProdutoLinhaBrl(i);
     if (tipo === 'Cabelo') return this.totalEstimadoCabeloLinhaBrl(i);
+    if (tipo === 'Mega') return this.totalEstimadoMegaLinhaBrl(i);
+    if (isTipoPacoteFamilia(tipo)) return this.totalEstimadoPacoteLinhaBrl(i);
     return '';
   }
 
@@ -1895,6 +2007,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   tituloModal(): string {
+    if (this.fluxoConverterAgenda) {
+      return 'Agendar orçamento';
+    }
     if (this.fluxoOrcamento) {
       return this.idAtendimentoEmEdicao?.trim()
         ? 'Editando orçamento'
@@ -1912,7 +2027,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   tituloSecaoItensModal(): string {
-    if (this.fluxoOrcamento) return 'Itens do orçamento';
+    if (this.fluxoConverterAgenda || this.fluxoOrcamento) {
+      return 'Itens do orçamento';
+    }
     return this.isFluxoSomenteComanda()
       ? 'Itens da comanda'
       : 'Itens do agendamento';
@@ -2016,12 +2133,104 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const desc =
       this.parseValorPt(String(g.get('desconto')?.value ?? '').trim()) ?? 0;
     const t = Math.max(0, unit - desc);
+    return this.formatarBrlEstimadoLinha(t);
+  }
+
+  /** Detalhes da linha Cabelo (só leitura nos drawers — espelho da calculadora). */
+  detalhesCabeloExibicaoLinha(linhaIndex: number): string {
+    const t = String(
+      this.linhasItensArray.at(linhaIndex)?.get('detalhes_cabelo')?.value ?? '',
+    ).trim();
+    return t || '—';
+  }
+
+  /** Valor unitário Cabelo (só leitura nos drawers — espelho da calculadora). */
+  valorUnitarioCabeloExibicaoLinha(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Cabelo') return '';
+    const v = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? '').trim());
+    return this.formatarBrlEstimadoLinha(v != null && v > 0 ? v : 0);
+  }
+
+  /**
+   * Mega: soma dos `valor` em Regras Mega para cada etapa preenchida
+   * (mesmo critério da API / drawer de comanda).
+   */
+  totalEstimadoMegaLinhaBrl(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Mega') return '';
+    const t = this.totalEstimadoMegaLinhaNumero(linhaIndex);
+    if (t == null) return '';
+    return this.formatarBrlEstimadoLinha(t);
+  }
+
+  /**
+   * Pacote / Pacote Adesivo+Queratina: preço do catálogo na cabeça
+   * (etapas não somam — espelha a API).
+   */
+  totalEstimadoPacoteLinhaBrl(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    const tipo = String(g?.get('itemTipo')?.value ?? '');
+    if (!isTipoPacoteFamilia(tipo)) return '';
+    const t = this.totalEstimadoPacoteLinhaNumero(linhaIndex);
+    if (t == null) return '';
+    return this.formatarBrlEstimadoLinha(t);
+  }
+
+  private formatarBrlEstimadoLinha(t: number): string {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(t);
+    }).format(Math.max(0, t));
+  }
+
+  /** `null` se ainda não há pacote/etapas com preço resolvível. */
+  private totalEstimadoMegaLinhaNumero(linhaIndex: number): number | null {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Mega') return null;
+    const pacote = String(g.get('pacote')?.value ?? '').trim();
+    if (!pacote) return null;
+    const etapas = this.etapasArrayDaLinha(linhaIndex);
+    let sum = 0;
+    let algum = false;
+    for (let j = 0; j < etapas.length; j++) {
+      const eg = etapas.at(j);
+      const etapa = String(eg?.get('etapa')?.value ?? '').trim();
+      if (!etapa) continue;
+      const v = this.valorRegraMegaEtapa(pacote, etapa);
+      if (v == null) continue;
+      algum = true;
+      sum += Math.max(0, v);
+    }
+    return algum ? Math.round(sum * 100) / 100 : null;
+  }
+
+  private totalEstimadoPacoteLinhaNumero(linhaIndex: number): number | null {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g) return null;
+    const tipo = String(g.get('itemTipo')?.value ?? '');
+    if (!isTipoPacoteFamilia(tipo)) return null;
+    const pacote = String(g.get('pacote')?.value ?? '').trim();
+    if (!pacote) return null;
+    const preco =
+      tipo === 'Pacote Adesivo+Queratina'
+        ? this.precoCatalogoPacoteQueratina(pacote)
+        : this.precoCatalogoPacote(pacote);
+    if (preco == null) return null;
+    return Math.max(0, Math.round(preco * 100) / 100);
+  }
+
+  private valorRegraMegaEtapa(pacote: string, etapa: string): number | null {
+    const p = pacote.trim();
+    const e = etapa.trim();
+    if (!p || !e) return null;
+    const r = this.regrasMega.find(
+      (x) => x.pacote.trim() === p && x.etapa.trim() === e,
+    );
+    if (!r) return null;
+    return valorMonetarioParaNumero(r.valor);
   }
 
   /**
@@ -2658,8 +2867,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Alinha ao drawer de comanda: quando a calculadora está completa, preenche
-   * `valor_cabelo` para validação/gravação (sem obrigar «Aplicar valor calculado»).
+   * Quando a calculadora está completa, preenche `valor_cabelo` (e, nos drawers,
+   * também `detalhes_cabelo`) para validação/gravação — sem edição manual.
    */
   private tentarPreencherValorCabeloDaCalculadoraLinha(i: number): void {
     if (!this.exibirColunasValorLinha('Cabelo')) return;
@@ -2667,10 +2876,30 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!g || g.get('itemTipo')?.value !== 'Cabelo') return;
     const calc = this.valorTotalCabeloCalculadoLinha(i);
     if (calc == null || calc <= 0) return;
-    const cur = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
-    if (cur != null && cur > 0) return;
-    g.patchValue({ valor_cabelo: formataMoedaBrl(calc) }, { emitEvent: false });
+    const detalhes = this.montarDetalhesCabeloDaCalculadora(g);
+    if (this.modoModal) {
+      g.patchValue(
+        {
+          valor_cabelo: formataMoedaBrl(calc),
+          ...(detalhes ? { detalhes_cabelo: detalhes } : {}),
+        },
+        { emitEvent: false },
+      );
+    } else {
+      const cur = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
+      if (cur != null && cur > 0) return;
+      g.patchValue({ valor_cabelo: formataMoedaBrl(calc) }, { emitEvent: false });
+    }
     g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private montarDetalhesCabeloDaCalculadora(g: FormGroup): string {
+    const cor = String(g.get('calc_cor')?.value ?? '').trim();
+    const tam = String(g.get('calc_tam_cm')?.value ?? '').trim();
+    const met = String(g.get('calc_metodo')?.value ?? '').trim();
+    const gStr = String(g.get('calc_gramas')?.value ?? '').trim();
+    if (!cor || !tam || !met || !gStr) return '';
+    return `Cor: ${cor}; ${tam} cm; método: ${met}; ${gStr} g`;
   }
 
   private sincronizarValorCabeloCalculadoNasLinhas(): void {
@@ -2861,20 +3090,16 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.erro = '';
-    g.patchValue({ valor_cabelo: formataMoedaBrl(total) });
+    const detalhes = this.montarDetalhesCabeloDaCalculadora(g);
+    g.patchValue({
+      valor_cabelo: formataMoedaBrl(total),
+      ...(detalhes && !String(g.get('detalhes_cabelo')?.value ?? '').trim()
+        ? { detalhes_cabelo: detalhes }
+        : {}),
+    });
     g.get('valor_cabelo')?.markAsTouched();
     g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
     this.aplicarValidadoresLinhas();
-
-    const gStr = String(g.get('calc_gramas')?.value ?? '').trim();
-    const cor = String(g.get('calc_cor')?.value ?? '').trim();
-    const tam = String(g.get('calc_tam_cm')?.value ?? '').trim();
-    const met = String(g.get('calc_metodo')?.value ?? '').trim();
-    const linha = `Cor: ${cor}; ${tam} cm; método: ${met}; ${gStr} g`;
-    const atual = String(g.get('detalhes_cabelo')?.value ?? '').trim();
-    if (!atual) {
-      g.patchValue({ detalhes_cabelo: linha });
-    }
   }
 
   /** Valor gravado para Cabelo: campo manual ou total da calculadora (agendamento sem UI de valor). */
@@ -3210,7 +3435,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         let body: CreateAtendimentoPayload = idShared
           ? ({ ...p, id_atendimento: idShared } as CreateAtendimentoPayload)
           : p;
-        if (this.fluxoOrcamento) {
+        if (this.fluxoOrcamento || this.fluxoConverterAgenda) {
           body = { ...body, modo: 'orcamento' };
         }
         return this.api.createAgendamento(body).pipe(
@@ -3867,15 +4092,20 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   rotuloPacoteCatalogo(p: PacoteCatalogoItem): string {
-    const precoRaw =
-      p.preco != null && p.preco !== '' ? String(p.preco).trim() : '';
-    if (!precoRaw) return String(p.pacote || '').trim();
-    return `${p.pacote} — R$ ${precoRaw}`;
+    return this.rotuloPacoteSemPreco(String(p.pacote || ''));
   }
 
-  /** Mega: só o nome do pacote (quantidade de mechas), sem sufixo de moeda. */
+  /** Mega / Pacote: só o nome (ex.: «2 mechas»), sem sufixo de moeda. */
   rotuloPacoteMegaOpcao(nomePacote: string): string {
-    return String(nomePacote || '').trim();
+    return this.rotuloPacoteSemPreco(nomePacote);
+  }
+
+  /** Remove « — R$ …» se o preço veio colado no nome do pacote. */
+  private rotuloPacoteSemPreco(nomePacote: string): string {
+    const n = String(nomePacote || '').trim();
+    if (!n) return '';
+    const semPreco = n.replace(/\s*[—–-]\s*R\$\s*.*$/i, '').trim();
+    return semPreco || n;
   }
 
   /** ID Folha para o form a partir da linha da API (id gravado ou nome legado). */
@@ -4722,6 +4952,20 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const pr = this.produtos.find((x) => x.produto === nome);
     if (!pr) return null;
     return valorMonetarioParaNumero(pr.preco);
+  }
+
+  /** Preço na lista `/api/pacotes`; `null` se célula vazia ou não numérica. */
+  private precoCatalogoPacote(nome: string): number | null {
+    const p = this.pacotes.find((x) => x.pacote.trim() === nome.trim());
+    if (!p) return null;
+    return valorMonetarioParaNumero(p.preco);
+  }
+
+  /** Preço na lista `/api/pacotes-queratina`; `null` se célula vazia ou não numérica. */
+  private precoCatalogoPacoteQueratina(nome: string): number | null {
+    const p = this.pacotesQueratina.find((x) => x.pacote.trim() === nome.trim());
+    if (!p) return null;
+    return valorMonetarioParaNumero(p.preco);
   }
 
   /**

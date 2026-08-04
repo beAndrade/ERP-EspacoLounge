@@ -10,31 +10,40 @@
     />
   </header>
 
-  @if (d.carregandoOrcamentosHistorico) {
-    <p class="cliente-orcamentos__hint">Carregando orçamentos…</p>
-  } @else if (d.orcamentosLinhas.length === 0) {
-    <p class="cliente-orcamentos__hint">Nenhum orçamento neste período.</p>
-  } @else {
-    <div class="drawer-table-card" role="region" aria-label="Histórico de orçamentos">
-      <div class="drawer-table-wrap">
-        <table class="drawer-table drawer-table--orcamentos">
-          <colgroup>
-            <col class="drawer-table__col-data" />
-            <col class="drawer-table__col-comanda" />
-            <col class="drawer-table__col-desc-wide" />
-            <col class="drawer-table__col-status" />
-            <col class="drawer-table__col-valor" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th class="col-data" scope="col">Data</th>
-              <th class="col-comanda" scope="col">Ticket</th>
-              <th class="col-desc" scope="col">Serviço</th>
-              <th class="col-status" scope="col">Status</th>
-              <th class="col-valor" scope="col">Valor</th>
+  <div class="drawer-table-card" role="region" aria-label="Histórico de orçamentos">
+    <div class="drawer-table-wrap">
+      <table class="drawer-table drawer-table--orcamentos">
+        <colgroup>
+          <col class="drawer-table__col-data" />
+          <col class="drawer-table__col-comanda" />
+          <col class="drawer-table__col-desc-wide" />
+          <col class="drawer-table__col-status" />
+          <col class="drawer-table__col-valor" />
+          <col class="drawer-table__col-acoes" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="col-data" scope="col">Data</th>
+            <th class="col-comanda" scope="col">Ticket</th>
+            <th class="col-desc" scope="col">Serviço</th>
+            <th class="col-status" scope="col">Status</th>
+            <th class="col-valor" scope="col">Valor</th>
+            <th class="col-acoes" scope="col">
+              <span class="sr-only">Ações</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (d.orcamentosLinhas.length === 0) {
+            <tr class="drawer-table__row--empty">
+              <td class="drawer-table__empty-cell" colspan="6">
+                <app-table-empty
+                  variant="drawer"
+                  label="Nenhum orçamento neste período"
+                />
+              </td>
             </tr>
-          </thead>
-          <tbody>
+          } @else {
             @for (row of d.orcamentosLinhas; track row.idAtendimento) {
               <tr>
                 <td class="col-data">{{ row.dataExibicao }}</td>
@@ -42,9 +51,9 @@
                   <button
                     type="button"
                     class="drawer-table__link-ticket"
-                    (click)="d.visualizarComandaAgendamento(row.idAtendimento)"
+                    (click)="editarOrcamento(row)"
                     [attr.aria-label]="
-                      'Visualizar orçamento ' + rotuloTicket(row.numeroOrcamento)
+                      'Editar orçamento ' + rotuloTicket(row.numeroOrcamento)
                     "
                   >
                     {{ rotuloTicket(row.numeroOrcamento) }}
@@ -79,11 +88,149 @@
                       | currency: 'BRL' : 'symbol' : '1.2-2'
                   }}
                 </td>
+                <td class="col-acoes" (click)="$event.stopPropagation()">
+                  <div class="list-row-acoes cliente-orcamentos__acoes">
+                    <app-ui-tip-trigger tip="Editar" placement="above" align="end">
+                      <button
+                        type="button"
+                        class="list-row-acoes__btn list-row-acoes__btn--edit"
+                        (click)="editarOrcamento(row)"
+                        aria-label="Editar orçamento"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          />
+                          <path
+                            d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                          />
+                        </svg>
+                      </button>
+                    </app-ui-tip-trigger>
+
+                    <app-ui-tip-trigger
+                      tip="Enviar WhatsApp"
+                      placement="above"
+                      align="end"
+                    >
+                      <button
+                        type="button"
+                        class="list-row-acoes__btn list-row-acoes__btn--wa"
+                        (click)="enviarWhatsapp(row)"
+                        aria-label="Enviar WhatsApp"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"
+                          />
+                        </svg>
+                      </button>
+                    </app-ui-tip-trigger>
+
+                    <app-ui-tip-trigger
+                      [tip]="
+                        row.statusId === 'arquivado'
+                          ? 'Orçamento arquivado'
+                          : 'Converter para agenda'
+                      "
+                      placement="above"
+                      align="end"
+                    >
+                      <button
+                        type="button"
+                        class="list-row-acoes__btn list-row-acoes__btn--convert"
+                        [disabled]="row.statusId === 'arquivado'"
+                        (click)="converterOrcamento(row)"
+                        aria-label="Converter para agenda"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M8 2v4" />
+                          <path d="M16 2v4" />
+                          <rect width="18" height="18" x="3" y="4" rx="2" />
+                          <path d="M3 10h18" />
+                          <path d="m9 16 2 2 4-4" />
+                        </svg>
+                      </button>
+                    </app-ui-tip-trigger>
+
+                    <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                    <app-ui-tip-trigger
+                      [tip]="
+                        row.statusId === 'arquivado'
+                          ? 'Já arquivado'
+                          : 'Arquivar'
+                      "
+                      placement="above"
+                      align="end"
+                    >
+                      <button
+                        type="button"
+                        class="list-row-acoes__btn list-row-acoes__btn--archive"
+                        [disabled]="row.statusId === 'arquivado'"
+                        (click)="arquivarOrcamento(row)"
+                        aria-label="Arquivar orçamento"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <rect width="20" height="5" x="2" y="3" rx="1" />
+                          <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+                          <path d="M10 12h4" />
+                        </svg>
+                      </button>
+                    </app-ui-tip-trigger>
+                  </div>
+                </td>
               </tr>
             }
-          </tbody>
-        </table>
-      </div>
+          }
+        </tbody>
+      </table>
     </div>
-  }
+  </div>
 </main>
+
+<app-whatsapp-enviar-modal
+  [aberto]="whatsappModalAberto()"
+  [contexto]="whatsappContexto()"
+  (fechar)="fecharWhatsapp()"
+  (enviado)="onWhatsappEnviado()"
+/>

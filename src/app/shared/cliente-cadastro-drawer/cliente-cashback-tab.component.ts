@@ -1,11 +1,12 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { ClienteCadastroDrawerService } from './cliente-cadastro-drawer.service';
+import { TableEmptyComponent } from '../table-empty/table-empty.component';
 
 @Component({
   selector: 'app-cliente-cashback-tab',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, TableEmptyComponent],
   templateUrl: './cliente-cashback-tab.component.html',
   styleUrl: './cliente-cashback-tab.component.scss',
 })

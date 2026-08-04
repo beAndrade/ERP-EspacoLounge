@@ -16,13 +16,7 @@
 
   </header>
 
-
-
-  @if (d.carregandoVendasHistorico) {
-
-    <p class="cliente-vendas__hint">A carregar vendas…</p>
-
-  } @else if (d.vendasLinhas.length === 0) {
+  @if (d.vendasLinhas.length === 0) {
 
     <p class="cliente-vendas__hint">Nenhuma venda neste período.</p>
 
@@ -123,8 +117,6 @@
         </table>
 
       </div>
-
-      <div class="drawer-table-foot" aria-hidden="true"></div>
 
     </div>
 

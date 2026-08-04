@@ -1134,10 +1134,9 @@ export class SheetsApiService {
     idAtendimento: string,
     payload: {
       data: string;
-      inicio: string;
-      fim: string;
-      profissional_id: number;
+      inicio?: string;
       agenda_status?: string;
+      cliente_id?: string;
     },
   ): Observable<{
     id_atendimento: string;

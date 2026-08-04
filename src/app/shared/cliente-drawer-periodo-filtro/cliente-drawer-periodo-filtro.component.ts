@@ -10,7 +10,11 @@ import {
   model,
   output,
 } from '@angular/core';
-import { toYmd } from '../../core/utils/atendimento-display';
+import {
+  parseFiltroDataDdMm,
+  toYmd,
+} from '../../core/utils/atendimento-display';
+import { formatarDataDdMmYyyy } from '../../core/utils/br-document-masks';
 import {
   PERIODO_DIAS_SEMANA,
   PERIODO_PRESETS,
@@ -99,20 +103,30 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   sublinhadoLeft = 0;
   sublinhadoWidth = 0;
 
+  /** Texto enquanto digita (máscara DD/MM/AAAA). */
+  private rascunhoInicio = '';
+  private rascunhoFim = '';
+  private campoEditando: PeriodoFiltroCampoAtivo | null = null;
+
   get campoAtivoIndex(): number {
     return this.campoAtivo === 'fim' ? 1 : 0;
   }
 
   get exibicaoInicio(): string {
-    const y = this.inicioYmd().trim().slice(0, 10);
-    if (!ymdValido(y)) return '';
-    return this.exibicaoFormato() === 'belasis'
-      ? ymdExibicaoBelasis(y)
-      : ymdExibicaoDdMmAaaa(y);
+    return this.textoCampoExibido('inicio');
   }
 
   get exibicaoFim(): string {
-    const y = this.fimYmd().trim().slice(0, 10);
+    return this.textoCampoExibido('fim');
+  }
+
+  private textoCampoExibido(campo: PeriodoFiltroCampoAtivo): string {
+    if (this.campoEditando === campo) {
+      return campo === 'inicio' ? this.rascunhoInicio : this.rascunhoFim;
+    }
+    const y = (campo === 'inicio' ? this.inicioYmd() : this.fimYmd())
+      .trim()
+      .slice(0, 10);
     if (!ymdValido(y)) return '';
     return this.exibicaoFormato() === 'belasis'
       ? ymdExibicaoBelasis(y)
@@ -152,6 +166,96 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
       return;
     }
     this.abrirPainelAnimado();
+  }
+
+  onFocusCampo(campo: PeriodoFiltroCampoAtivo, ev: FocusEvent): void {
+    this.iniciarEdicaoTexto(campo);
+    this.abrirCampo(campo, ev);
+  }
+
+  onDigitandoCampo(campo: PeriodoFiltroCampoAtivo, ev: Event): void {
+    const el = ev.target as HTMLInputElement;
+    const masked = formatarDataDdMmYyyy(el.value);
+    if (campo === 'inicio') this.rascunhoInicio = masked;
+    else this.rascunhoFim = masked;
+    if (el.value !== masked) {
+      el.value = masked;
+    }
+    if (masked.length === 10) {
+      const ymd = parseFiltroDataDdMm(masked);
+      if (ymd) this.aplicarYmdDigitado(campo, ymd, false);
+    }
+  }
+
+  onBlurCampo(campo: PeriodoFiltroCampoAtivo): void {
+    const texto = (campo === 'inicio' ? this.rascunhoInicio : this.rascunhoFim).trim();
+    this.campoEditando = null;
+    if (!texto) {
+      return;
+    }
+    const ymd = parseFiltroDataDdMm(texto);
+    if (ymd) {
+      this.aplicarYmdDigitado(campo, ymd, true);
+      return;
+    }
+    // Data incompleta/inválida: volta ao valor confirmado.
+  }
+
+  onEnterCampo(campo: PeriodoFiltroCampoAtivo, ev: Event): void {
+    ev.preventDefault();
+    (ev.target as HTMLElement | null)?.blur?.();
+    void campo;
+  }
+
+  private iniciarEdicaoTexto(campo: PeriodoFiltroCampoAtivo): void {
+    this.campoEditando = campo;
+    const y = (campo === 'inicio' ? this.inicioYmd() : this.fimYmd())
+      .trim()
+      .slice(0, 10);
+    const ddMm = ymdValido(y) ? ymdExibicaoDdMmAaaa(y) : '';
+    if (campo === 'inicio') this.rascunhoInicio = ddMm;
+    else this.rascunhoFim = ddMm;
+  }
+
+  private aplicarYmdDigitado(
+    campo: PeriodoFiltroCampoAtivo,
+    ymd: string,
+    emitirEFecharSeFim: boolean,
+  ): void {
+    if (campo === 'inicio') {
+      const fimAtual = this.fimYmd().trim().slice(0, 10);
+      if (ymdValido(fimAtual)) {
+        const norm = normalizarIntervaloYmd(ymd, fimAtual);
+        this.inicioYmd.set(norm.inicioYmd);
+        this.fimYmd.set(norm.fimYmd);
+      } else {
+        this.inicioYmd.set(ymd);
+        this.fimYmd.set(ymd);
+      }
+      this.rascunhoInicio = ymdExibicaoDdMmAaaa(this.inicioYmd());
+      this.campoAtivo = 'fim';
+      this.agendarSublinhadoDeslizante();
+      this.ancorarMesesNoIntervalo();
+      if (emitirEFecharSeFim) {
+        this.emitPeriodoAlterado();
+      }
+      return;
+    }
+
+    let ini = this.inicioYmd().trim().slice(0, 10);
+    if (!ymdValido(ini)) {
+      ini = ymd;
+      this.inicioYmd.set(ini);
+    }
+    const norm = normalizarIntervaloYmd(ini, ymd);
+    this.inicioYmd.set(norm.inicioYmd);
+    this.fimYmd.set(norm.fimYmd);
+    this.rascunhoFim = ymdExibicaoDdMmAaaa(norm.fimYmd);
+    this.ancorarMesesNoIntervalo();
+    this.emitPeriodoAlterado();
+    if (emitirEFecharSeFim) {
+      this.fecharPainel();
+    }
   }
 
   /** Painel aberto ou em animação de abertura (evita reabrir/fechar ao trocar de campo). */
@@ -211,6 +315,9 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     const p = periodoPreset(id);
     this.inicioYmd.set(p.inicioYmd);
     this.fimYmd.set(p.fimYmd);
+    this.rascunhoInicio = ymdExibicaoDdMmAaaa(p.inicioYmd);
+    this.rascunhoFim = ymdExibicaoDdMmAaaa(p.fimYmd);
+    this.campoEditando = null;
     this.campoAtivo = 'fim';
     this.presetHoverId = null;
     this.hoverYmd = null;
@@ -260,6 +367,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
         this.inicioYmd.set(ymd);
         this.fimYmd.set(ymd);
       }
+      this.rascunhoInicio = ymdExibicaoDdMmAaaa(this.inicioYmd());
       this.campoAtivo = 'fim';
       this.agendarSublinhadoDeslizante();
       return;
@@ -274,6 +382,8 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     const norm = normalizarIntervaloYmd(ini, fim);
     this.inicioYmd.set(norm.inicioYmd);
     this.fimYmd.set(norm.fimYmd);
+    this.rascunhoFim = ymdExibicaoDdMmAaaa(norm.fimYmd);
+    this.campoEditando = null;
     this.emitPeriodoAlterado();
     this.fecharPainel();
   }

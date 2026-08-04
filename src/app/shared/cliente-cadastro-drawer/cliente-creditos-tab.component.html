@@ -53,12 +53,7 @@
     </div>
   </div>
 
-  @if (d.carregandoCreditoHistorico) {
-    <p class="cliente-creditos__hint">A carregar histórico…</p>
-  } @else if (d.creditoMovimentos.length === 0) {
-    <p class="cliente-creditos__hint">Nenhuma movimentação de crédito registada.</p>
-  } @else {
-    <div class="drawer-table-card" role="region" aria-label="Histórico de crédito">
+  <div class="drawer-table-card" role="region" aria-label="Histórico de crédito">
       <div class="drawer-table-wrap">
         <table class="drawer-table drawer-table--creditos">
           <colgroup>
@@ -76,28 +71,38 @@
             </tr>
           </thead>
           <tbody>
-            @for (m of d.creditoMovimentos; track m.id) {
-              <tr>
-                <td class="col-data">{{ formatarData(m.data) }}</td>
-                <td class="col-valor">
-                  {{ m.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}
+            @if (d.creditoMovimentos.length === 0) {
+              <tr class="drawer-table__row--empty">
+                <td class="drawer-table__empty-cell" colspan="4">
+                  <app-table-empty
+                    variant="drawer"
+                    label="Nenhuma movimentação de crédito registrada"
+                  />
                 </td>
-                <td class="col-mov">
-                  <span
-                    class="cliente-creditos__badge"
-                    [class.cliente-creditos__badge--entrada]="m.tipo === 'entrada'"
-                    [class.cliente-creditos__badge--saida]="m.tipo === 'saida'"
-                  >
-                    {{ m.tipo === 'entrada' ? 'Entrada' : 'Saída' }}
-                  </span>
-                </td>
-                <td class="col-motivo">{{ m.motivo.trim() || '' }}</td>
               </tr>
+            } @else {
+              @for (m of d.creditoMovimentos; track m.id) {
+                <tr>
+                  <td class="col-data">{{ formatarData(m.data) }}</td>
+                  <td class="col-valor">
+                    {{ m.valorReais | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                  </td>
+                  <td class="col-mov">
+                    <span
+                      class="cliente-creditos__badge"
+                      [class.cliente-creditos__badge--entrada]="m.tipo === 'entrada'"
+                      [class.cliente-creditos__badge--saida]="m.tipo === 'saida'"
+                    >
+                      {{ m.tipo === 'entrada' ? 'Entrada' : 'Saída' }}
+                    </span>
+                  </td>
+                  <td class="col-motivo">{{ m.motivo.trim() || '' }}</td>
+                </tr>
+              }
             }
           </tbody>
         </table>
       </div>
       <div class="drawer-table-foot" aria-hidden="true"></div>
     </div>
-  }
 </main>

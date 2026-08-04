@@ -252,10 +252,6 @@ export class AgendaNovoClientSidebarComponent implements OnInit {
     return this.pagamentosAtrasadosCount > 0;
   }
 
-  destacarOrcamentos(): boolean {
-    return this.orcamentosCount > 0;
-  }
-
   private clienteTemHistoricoAtendimentos$(clienteId: string): Observable<boolean> {
     const cid = String(clienteId ?? '').trim();
     if (!cid) return of(false);

@@ -1,8 +1,5 @@
 <main class="cliente-painel" aria-label="Painel do cliente">
-  @if (d.carregandoPainel) {
-    <p class="cliente-painel__hint">A carregar painel…</p>
-  } @else {
-    @let r = d.painelResumo;
+  @let r = d.painelResumo;
 
     <section class="painel-cards" aria-label="Indicadores do cliente">
       <div class="painel-cards__cell">
@@ -376,5 +373,4 @@
         </div>
       </div>
     </section>
-  }
 </main>
