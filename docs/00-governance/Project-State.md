@@ -78,7 +78,7 @@ Update after every major milestone.
 | Sprint 1D | ✅ Completed |               Lazy Routes                |
 | Sprint 2 | ✅ Completed | Beauty Module Foundation |
 | Sprint 2A | ✅ Completed | Beauty Application catalog lists |
-| Sprint 3 | ⏳ Planned | Core Foundation |
+| Sprint 3 | ✅ Completed | Core & Platform Foundation (auth) |
 | Sprint 4 | ⏳ Planned | Company Entity |
 | Sprint 5 | ⏳ Planned | Database Cleanup |
 | Sprint 6 | ⏳ Planned | Design System |
@@ -346,6 +346,65 @@ Complete the Beauty module foundation by migrating Beauty catalog/query function
 Sprint 3 — Core Foundation
 
 Continue platform core extraction per Migration-Plan. Beauty presentation/route extraction remains a later dedicated sprint.
+
+---
+
+# Sprint 3 Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Begin consolidating the platform foundation by migrating low-risk authentication capabilities into `platform/auth/` without changing runtime behavior.
+
+## Architecture classification (remaining `lib/`)
+
+| File | Destination | Sprint 3 action |
+|------|-------------|-----------------|
+| `jwt.ts` | Platform (`platform/auth`) | Migrated |
+| `auth-guard.ts` | Platform (`platform/auth`) | Migrated |
+| `admin-pin.ts` | Platform (`platform/auth`) | Migrated |
+| `login-rate-limit.ts` | Platform (`platform/auth`) | Migrated |
+| `periodo-mes.ts` | Shared (`shared/utils`) | Kept in `lib` |
+| `sql-local-datetime.ts` | Shared (`shared/utils`) | Kept in `lib` |
+| `normalize-money-text.ts` | Shared (blocked: imports `finance-domain`) | Kept in `lib` |
+| `pg-error-message.ts` | Infrastructure (`infrastructure/database`) | Kept in `lib` |
+| Core logger/config | Core | No dedicated files yet — Core stays scaffold |
+
+## Completed
+
+- Moved auth implementations to `api/src/platform/auth/`
+- Added `platform/auth/README.md`, auth barrel, and platform barrel
+- Updated imports in `api/src/index.ts` and `services/auth-domain.ts`
+- Left thin temporary reexports in `api/src/lib/` for the four auth modules
+- Preserved HTTP routes, API contracts, and database schema
+- No frontend changes
+
+## Validation
+
+- TypeScript typecheck: No new errors introduced (same 4 preexisting diagnostics)
+- Angular development build: Passed
+- Runtime changes: None
+- Routing changes: None
+- API contract changes: None
+
+## Known Technical Debt
+
+- Platform auth still type-imports `AuthUser` / `UsuarioRole` from `services/auth-domain`
+- Finance HTTP path prefixes hardcoded in `admin-pin`
+- Thin reexports in `lib/` for auth
+- Remaining `lib/` utils (`periodo-mes`, `sql-local-datetime`, `normalize-money-text`, `pg-error-message`)
+- Core still scaffold
+- Login/user persistence still in legacy `services/auth-domain`
+- Beauty presentation and remaining `queries.ts` still legacy
+
+## Next Sprint
+
+Sprint 4 — Company Entity
+
+Per Migration-Plan. Shared util moves (`periodo-mes`, etc.) and unblocking `normalize-money-text` from `finance-domain` remain later dedicated work.
 
 ---
 

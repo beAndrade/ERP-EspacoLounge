@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { profissionais, usuarios } from '../db/schema';
-import { signAccessToken } from '../lib/jwt';
+import { signAccessToken } from '../platform/auth/jwt';
 
 export type UsuarioRole = 'admin' | 'profissional';
 

@@ -6,7 +6,7 @@ Contains SaaS platform capabilities shared across every business module.
 
 ## Contains
 
-- Authentication
+- Authentication (`auth/` — Sprint 3 foundation)
 - Authorization
 - Users
 - Tenants
@@ -15,6 +15,12 @@ Contains SaaS platform capabilities shared across every business module.
 - Notifications
 - Audit
 - File Management
+
+## Auth (Sprint 3)
+
+Runtime auth primitives live under `platform/auth/` (JWT, guard, admin PIN, login rate limit).
+
+See [`auth/README.md`](auth/README.md) for temporary coupling to `services/auth-domain` and compatibility reexports in `lib/`.
 
 ## Must NOT contain
 

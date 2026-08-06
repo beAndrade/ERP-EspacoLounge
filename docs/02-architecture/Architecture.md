@@ -163,10 +163,10 @@ Each file has a predefined destination in the new architecture.
 
 | Legacy File | Destination |
 |-------------|-------------|
-| admin-pin.ts | platform/auth |
-| auth-guard.ts | platform/auth |
-| jwt.ts | platform/auth |
-| login-rate-limit.ts | platform/auth |
+| admin-pin.ts | platform/auth *(moved Sprint 3)* |
+| auth-guard.ts | platform/auth *(moved Sprint 3)* |
+| jwt.ts | platform/auth *(moved Sprint 3)* |
+| login-rate-limit.ts | platform/auth *(moved Sprint 3)* |
 | descricao-lista.ts | modules/beauty/domain *(moved Sprint 2)* |
 | envelope.ts | shared/utils |
 | foto-url.ts | shared/utils |
@@ -195,6 +195,7 @@ api/src/
 ├── core/
 ├── shared/
 ├── platform/
+│   └── auth/            (jwt, auth-guard, admin-pin, login-rate-limit)
 ├── features/
 ├── modules/
 │   └── beauty/
@@ -235,9 +236,9 @@ The new architecture has been created.
 
 Current implementation status:
 
-- Core: Partially migrated
+- Core: Scaffold (no dedicated lib modules migrated yet)
 - Shared: Partially migrated
-- Platform: Scaffold
+- Platform: Auth foundation (`platform/auth/`; thin reexports in `lib/`)
 - Features: Scaffold
 - Infrastructure: Partially migrated
 - Beauty Module: Foundation + application catalog lists (thin reexports in services/queries.ts)

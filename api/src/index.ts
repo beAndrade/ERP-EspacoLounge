@@ -227,7 +227,7 @@ import {
   pathRequiresFinanceiroPin,
   requireAdminPin,
   requireAdminWithPin,
-} from './lib/admin-pin';
+} from './platform/auth/admin-pin';
 import {
   listFolhaPorPeriodoApi,
   listComissoesResumidasApi,
@@ -242,13 +242,13 @@ import {
   replaceServicoProdutosConsumidos,
   listEstoqueMovimentosProduto,
 } from './services/estoque-domain';
-import { isPublicApiPath, authenticateRequest } from './lib/auth-guard';
+import { isPublicApiPath, authenticateRequest } from './platform/auth/auth-guard';
 import {
   checkLoginRateLimit,
   clearLoginFailuresForEmail,
   clientIpFromRequest,
   recordLoginFailure,
-} from './lib/login-rate-limit';
+} from './platform/auth/login-rate-limit';
 import {
   alterarEmailUsuario,
   alterarSenhaUsuario,
