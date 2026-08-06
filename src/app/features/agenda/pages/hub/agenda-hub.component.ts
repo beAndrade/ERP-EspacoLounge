@@ -49,7 +49,7 @@ import {
   comandaQuitadaNasCifrasItem,
 } from '../../../../core/utils/comanda-status.util';
 import { AgendaNovoComponent } from '../novo/agenda-novo.component';
-import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
+import type { ComandaDrawerContextoAgenda } from '../../../../shared/comanda-drawer/comanda-drawer.types';
 import { NovaComandaDrawerComponent } from './nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from './faturar-drawer.component';
 import type { ComandaResumoPagamentos } from '../../../../core/models/api.models';

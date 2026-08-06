@@ -73,7 +73,9 @@ Update after every major milestone.
 |   Sprint  |    Status    |               Description                |
 |-----------|--------------|------------------------------------------|
 | Sprint 1A | ✅ Completed | Created modular architecture scaffolding |
-| Sprint 1B |  ⏳ Planned  |   Begin migration of shared components   |
+| Sprint 1B | ✅ Completed |   Begin migration of shared components   |
+| Sprint 1C | ✅ Completed |       Frontend Architecture Cleanup      |
+| Sprint 1D | ⏳ Planned | Lazy Routes |
 | Sprint 2 | ⏳ Planned | Migrate Beauty module |
 | Sprint 3 | ⏳ Planned | Remove legacy services |
 | Sprint 4 | ⏳ Planned | Remove legacy lib |

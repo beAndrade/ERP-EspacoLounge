@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AgendaModalCalendarComponent } from '../../../agenda/pages/novo/agenda-modal-calendar.component';
+import { AgendaModalCalendarComponent } from '../../../../shared/components/agenda-modal-calendar/agenda-modal-calendar.component';
 
 export interface FinComissaoPagarResumo {
   comissoes: number;

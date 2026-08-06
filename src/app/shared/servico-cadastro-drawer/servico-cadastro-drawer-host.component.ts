@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { portalHostElementToBody } from '../drawer-body-portal';
-import { SaasSelectComponent } from '../../features/agenda/pages/novo/saas-select.component';
+import { SaasSelectComponent } from '../components/saas-select/saas-select.component';
 import { CursorFimValorDirective } from '../../core/directives/cursor-fim-valor.directive';
 import {
   SERVICO_ABAS,

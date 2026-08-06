@@ -28,7 +28,7 @@ import {
 } from '../../core/utils/brl-digit-input';
 import { lerServicoTexto } from '../../core/utils/servico-campos';
 import { valorMonetarioParaNumero } from '../../core/utils/atendimento-display';
-import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
+import type { SaasSelectOption } from '../components/saas-select/saas-select.component';
 
 export type ServicoMoedaCampo =
   | 'valorBase'

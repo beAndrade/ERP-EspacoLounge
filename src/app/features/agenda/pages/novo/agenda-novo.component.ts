@@ -64,7 +64,7 @@ import {
   tap,
   toArray,
 } from 'rxjs';
-import { AgendaModalCalendarComponent } from './agenda-modal-calendar.component';
+import { AgendaModalCalendarComponent } from '../../../../shared/components/agenda-modal-calendar/agenda-modal-calendar.component';
 import {
   AgendaHorarioSlotsComponent,
   type IntervaloMinutosDia,
@@ -98,11 +98,11 @@ import { AgendaNovoClientSidebarComponent } from './agenda-novo-client-sidebar.c
 import {
   SaasSelectComponent,
   type SaasSelectOption,
-} from './saas-select.component';
+} from '../../../../shared/components/saas-select/saas-select.component';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import type { ComandaLinhaInicial } from '../../../../core/models/comanda-linha-inicial';
-import type { OrcamentoPrintPayload } from '../../../orcamentos/pages/main/orcamento-print.component';
+import type { OrcamentoPrintPayload } from '../../../../core/models/orcamento-print.models';
 import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
 import {
   AtendimentoCriadoResumo,
@@ -400,7 +400,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     numeroComandaTitulo: number;
     clienteId: string;
     cliente: Cliente | null;
-    opcoesClientes: import('./saas-select.component').SaasSelectOption[];
+    opcoesClientes: import('../../../../shared/components/saas-select/saas-select.component').SaasSelectOption[];
     dataYmd: string | null;
     linhasSnapshot?: ComandaLinhaInicial[];
   }>();

@@ -26,7 +26,7 @@ import {
 } from 'rxjs';
 import { ComandaResumoBarComponent } from '../../../../shared/comanda-resumo-bar/comanda-resumo-bar.component';
 import { AgendaNovoClientSidebarComponent } from '../novo/agenda-novo-client-sidebar.component';
-import { AgendaModalCalendarComponent } from '../novo/agenda-modal-calendar.component';
+import { AgendaModalCalendarComponent } from '../../../../shared/components/agenda-modal-calendar/agenda-modal-calendar.component';
 import type {
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
@@ -45,7 +45,7 @@ import {
   totalLinhaPreferencialAtendimento,
   valorMonetarioParaNumero,
 } from '../../../../core/utils/atendimento-display';
-import type { ComandaDrawerContextoAgenda } from './comanda-drawer.types';
+import type { ComandaDrawerContextoAgenda } from '../../../../shared/comanda-drawer/comanda-drawer.types';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { resolverHoraWhatsappAgendamento } from '../../../../core/utils/whatsapp-agendamento-hora';
 import {

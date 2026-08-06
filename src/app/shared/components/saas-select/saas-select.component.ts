@@ -22,7 +22,7 @@ import {
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { resolveDropdownVerticalPlacement } from '../../../../core/utils/dropdown-flip.util';
+import { resolveDropdownVerticalPlacement } from '../../../core/utils/dropdown-flip.util';
 
 export type SaasSelectOption = { value: string; label: string; hint?: string };
 

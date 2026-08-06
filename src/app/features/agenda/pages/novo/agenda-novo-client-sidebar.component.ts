@@ -20,7 +20,7 @@ import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variave
 import {
   SaasSelectComponent,
   type SaasSelectOption,
-} from './saas-select.component';
+} from '../../../../shared/components/saas-select/saas-select.component';
 import type { AbrirCadastroClientePayload } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';

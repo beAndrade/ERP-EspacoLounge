@@ -20,7 +20,7 @@ import {
 } from '../drawer-panel-anim';
 import { CategoriaCadastroDrawerService } from '../categoria-cadastro-drawer/categoria-cadastro-drawer.service';
 import { MarcaCadastroDrawerService } from '../marca-cadastro-drawer/marca-cadastro-drawer.service';
-import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
+import type { SaasSelectOption } from '../components/saas-select/saas-select.component';
 import {
   codigoUnidadeAPartirDoLabelSelect,
   labelUnidadeProduto,

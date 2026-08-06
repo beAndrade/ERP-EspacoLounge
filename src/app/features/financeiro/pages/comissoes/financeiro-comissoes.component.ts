@@ -12,7 +12,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
-import { SaasSelectComponent } from '../../../agenda/pages/novo/saas-select.component';
+import { SaasSelectComponent } from '../../../../shared/components/saas-select/saas-select.component';
 import { FormsModule } from '@angular/forms';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
@@ -23,9 +23,9 @@ import type {
   FinComissaoPagaItem,
   FinComissaoResumidaItem,
 } from '../../../../core/models/api.models';
-import type { ComandaDrawerContextoAgenda } from '../../../agenda/pages/hub/comanda-drawer.types';
+import type { ComandaDrawerContextoAgenda } from '../../../../shared/comanda-drawer/comanda-drawer.types';
 import { NovaComandaDrawerComponent } from '../../../agenda/pages/hub/nova-comanda-drawer.component';
-import type { SaasSelectOption } from '../../../agenda/pages/novo/saas-select.component';
+import type { SaasSelectOption } from '../../../../shared/components/saas-select/saas-select.component';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { FinanceiroComissoesPrintComponent } from './financeiro-comissoes-print.component';
 import {
