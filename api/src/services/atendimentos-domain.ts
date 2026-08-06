@@ -3,8 +3,8 @@
  */
 import { and, asc, eq, inArray, isNotNull, max, sql } from 'drizzle-orm';
 import type { Db } from '../db';
-import { descricaoParaListaLinha } from '../lib/descricao-lista';
-import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
+import { descricaoParaListaLinha } from '../modules/beauty/domain/descricao-lista';
+import { normalizeComissaoParaBD } from '../modules/beauty/shared/normalize-comissao';
 import { aplicarComissaoProfissionalNoValorServico } from './profissional-comissao-domain.js';
 import { profissionalRecebeComissao } from './profissionais-domain';
 import {

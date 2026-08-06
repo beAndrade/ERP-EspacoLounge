@@ -76,10 +76,11 @@ Update after every major milestone.
 | Sprint 1B | ✅ Completed |   Begin migration of shared components   |
 | Sprint 1C | ✅ Completed |       Frontend Architecture Cleanup      |
 | Sprint 1D | ✅ Completed |               Lazy Routes                |
-| Sprint 2 | ⏳ Planned | Migrate Beauty module |
-| Sprint 3 | ⏳ Planned | Remove legacy services |
-| Sprint 4 | ⏳ Planned | Remove legacy lib |
-| Sprint 5 | ⏳ Planned | Finalize modular architecture |
+| Sprint 2 | ✅ Completed | Beauty Module Foundation |
+| Sprint 3 | ⏳ Planned | Core Foundation |
+| Sprint 4 | ⏳ Planned | Company Entity |
+| Sprint 5 | ⏳ Planned | Database Cleanup |
+| Sprint 6 | ⏳ Planned | Design System |
 
 ------
 
@@ -254,6 +255,49 @@ Introduce lazy-loaded Angular routes using `loadComponent` while preserving runt
 Sprint 2
 
 Begin migrating the Beauty business domain into `modules/beauty`.
+
+---
+
+# Sprint 2 Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Create the Beauty module foundation by introducing internal module layers and moving Beauty-specific helpers out of legacy `lib/`, without changing runtime behavior or extracting catalog queries yet.
+
+## Completed
+
+- Created Beauty internal structure: `domain/`, `application/`, `infrastructure/`, `presentation/`, `shared/`
+- Moved `descricao-lista.ts` → `modules/beauty/domain/`
+- Moved `normalize-comissao.ts` → `modules/beauty/shared/`
+- Updated imports in `atendimentos-domain`, `finance-domain`, and `seed/run`
+- Documented deferred catalog migration (`listRegrasMegaApi`, `listPacotesApi`, `listPacotesQueratinaApi`, `listRegrasMegaQueratinaApi`, `listCabelosApi` → future `modules/beauty/application/`)
+- Preserved HTTP routes, API contracts, and database schema
+
+## Validation
+
+- TypeScript typecheck: No new errors introduced (same 4 preexisting diagnostics)
+- Angular development build: Passed
+- Runtime changes: None
+- Routing changes: None
+- API contract changes: None
+
+## Known Technical Debt
+
+- Beauty catalog/query functions remain in `services/queries.ts` (deferred extraction)
+- `services/`, remaining `lib/`, `db/`, `seed/`, `etl/` still legacy
+- Shared hosts still depend on Feature components (frontend)
+- SheetsApiService remains monolithic
+- HTTP routes still concentrated in god `index.ts`
+
+## Next Sprint
+
+Sprint 3 — Core Foundation
+
+Continue platform core extraction per Migration-Plan (not Beauty catalog yet). Dedicated follow-up sprint should extract Beauty catalog lists into `modules/beauty/application/` after this foundation is stable.
 
 ---
 

@@ -23,3 +23,4 @@ The purpose is to preserve the reasoning behind important decisions so future co
 - ADR-003 — Brand Strategy
 - ADR-004 — Technology Stack
 - ADR-005 — Database Strategy
+- ADR-006 - Platform-Layer-Introduction

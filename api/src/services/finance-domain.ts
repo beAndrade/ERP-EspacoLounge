@@ -19,7 +19,7 @@ import {
   pagamentos,
   profissionais,
 } from '../db/schema';
-import { descricaoParaListaLinha } from '../lib/descricao-lista';
+import { descricaoParaListaLinha } from '../modules/beauty/domain/descricao-lista';
 import { instantEmDateParaSqlLocalBrasil } from '../lib/sql-local-datetime';
 
 export const ORIGEM_ATENDIMENTO_CONFIRMACAO = 'atendimento_confirmacao';

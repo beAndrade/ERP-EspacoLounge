@@ -31,3 +31,9 @@ Modules may depend on:
 - Infrastructure
 
 Modules must never depend directly on another Module.
+
+## Active modules
+
+### beauty
+
+Foundation started in Sprint 2 (`domain/`, `application/`, `infrastructure/`, `presentation/`, `shared/`). See `beauty/README.md` for deferred catalog migration notes.

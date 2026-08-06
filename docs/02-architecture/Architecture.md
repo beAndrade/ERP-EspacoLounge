@@ -167,10 +167,10 @@ Each file has a predefined destination in the new architecture.
 | auth-guard.ts | platform/auth |
 | jwt.ts | platform/auth |
 | login-rate-limit.ts | platform/auth |
-| descricao-lista.ts | shared/utils |
+| descricao-lista.ts | modules/beauty/domain *(moved Sprint 2)* |
 | envelope.ts | shared/utils |
 | foto-url.ts | shared/utils |
-| normalize-comissao.ts | shared/utils |
+| normalize-comissao.ts | modules/beauty/shared *(moved Sprint 2)* |
 | normalize-money-text.ts | shared/utils |
 | normalize-percent-text.ts | shared/utils |
 | periodo-mes.ts | shared/utils |
@@ -198,6 +198,11 @@ api/src/
 ├── features/
 ├── modules/
 │   └── beauty/
+│       ├── domain/           (descricao-lista)
+│       ├── application/      (catalog lists deferred)
+│       ├── infrastructure/
+│       ├── presentation/
+│       └── shared/           (normalize-comissao)
 ├── infrastructure/
 ├── services/        (legacy)
 ├── lib/             (legacy)
@@ -230,11 +235,11 @@ The new architecture has been created.
 
 Current implementation status:
 
-- Core: Scaffold
-- Shared: Scaffold
+- Core: Partially migrated
+- Shared: Partially migrated
 - Platform: Scaffold
 - Features: Scaffold
-- Infrastructure: Scaffold
-- Beauty Module: Scaffold
+- Infrastructure: Partially migrated
+- Beauty Module: Foundation (domain + shared helpers; catalog still in services/queries.ts)
 
 Business logic remains in the legacy folders until future migration sprints.
