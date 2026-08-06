@@ -125,3 +125,49 @@ Existing TypeScript errors were not introduced by Sprint 1A.
 Sprint 1B
 
 Begin gradual migration from the legacy architecture into the new modular structure.
+
+------
+
+# Sprint 1B Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Establish API architectural boundaries by migrating low-risk, business-independent files into the new modular structure without changing runtime behavior.
+
+## Completed
+
+- Migrated shared utility functions to `api/src/shared/utils`
+- Migrated WhatsApp integration adapters to `api/src/infrastructure/integrations/whatsapp`
+- Updated all affected imports
+- Preserved existing API routes, business logic and database schema
+- Validated architectural boundaries for Shared and Infrastructure
+- Documented Evolution provider as technical debt
+
+## Validation
+
+- TypeScript typecheck: No new errors introduced (same 4 preexisting diagnostics)
+- Legacy import paths: Clean
+- Runtime changes: None
+- Database schema changes: None
+- Business logic changes: None
+
+## Known Technical Debt
+
+- `services/` remains as legacy
+- `lib/` still contains authentication and domain-specific utilities
+- `db/` remains as legacy
+- `seed/` remains as legacy
+- `etl/` remains as legacy
+- WhatsApp interface is still coupled to `db/schema`
+- Evolution remains the only supported WhatsApp provider due to active dependencies
+
+## Next Sprint
+
+Sprint 1C
+
+Continue the frontend architecture cleanup by correcting Shared and Features boundaries without changing runtime behavior.
+
