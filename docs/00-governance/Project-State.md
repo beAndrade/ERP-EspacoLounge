@@ -75,7 +75,7 @@ Update after every major milestone.
 | Sprint 1A | ✅ Completed | Created modular architecture scaffolding |
 | Sprint 1B | ✅ Completed |   Begin migration of shared components   |
 | Sprint 1C | ✅ Completed |       Frontend Architecture Cleanup      |
-| Sprint 1D | ⏳ Planned | Lazy Routes |
+| Sprint 1D | ✅ Completed |               Lazy Routes                |
 | Sprint 2 | ⏳ Planned | Migrate Beauty module |
 | Sprint 3 | ⏳ Planned | Remove legacy services |
 | Sprint 4 | ⏳ Planned | Remove legacy lib |
@@ -128,7 +128,7 @@ Sprint 1B
 
 Begin gradual migration from the legacy architecture into the new modular structure.
 
-------
+---
 
 # Sprint 1B Completed
 
@@ -172,4 +172,88 @@ Establish API architectural boundaries by migrating low-risk, business-independe
 Sprint 1C
 
 Continue the frontend architecture cleanup by correcting Shared and Features boundaries without changing runtime behavior.
+
+---
+
+# Sprint 1C Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Establish frontend architectural boundaries by migrating reusable components and shared models without changing runtime behavior.
+
+## Completed
+
+- Migrated reusable Angular components to `shared/components`
+- Migrated shared drawer types
+- Extracted budget print models into `core/models`
+- Updated all affected imports
+- Removed Core → Feature dependency
+- Preserved application routing and runtime behavior
+
+## Validation
+
+- Angular development build: Passed
+- Lint: Passed
+- Runtime changes: None
+- Routing changes: None
+
+## Known Technical Debt
+
+- Shared hosts still depend on Feature components
+- Beauty domain remains mixed inside Features
+- Legacy drawers are not yet organized under `shared/components`
+- SheetsApiService remains monolithic
+
+## Next Sprint
+
+Sprint 1D
+
+Introduce lazy-loaded routes using `loadComponent` without changing business domains or application behavior.
+
+---
+
+# Sprint 1D Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Introduce lazy-loaded Angular routes using `loadComponent` while preserving runtime behavior and application routing.
+
+## Completed
+
+- Converted all page routes to `loadComponent`
+- Removed static page imports from `app.routes.ts`
+- Preserved guards, redirects, titles and routing structure
+- Introduced lazy loading without changing business logic
+- Reduced initial application bundle size
+
+## Validation
+
+- Angular development build: Passed
+- Lint: Passed
+- Runtime changes: None
+- Routing changes: None
+- 33 routes converted to `loadComponent`
+
+## Known Technical Debt
+
+- Global hosts remain eagerly loaded
+- Beauty domain is still mixed inside Features
+- Shared hosts still depend on Feature components
+- SheetsApiService remains monolithic
+
+## Next Sprint
+
+Sprint 2
+
+Begin migrating the Beauty business domain into `modules/beauty`.
+
+---
 

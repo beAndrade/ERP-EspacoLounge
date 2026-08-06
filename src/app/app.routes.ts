@@ -1,62 +1,64 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './pages/login/login.component';
-import { AgendaComponent } from './features/agenda/pages/main/agenda.component';
-import { AgendaHubComponent } from './features/agenda/pages/hub/agenda-hub.component';
-import { AgendaListaComponent } from './features/agenda/pages/lista/agenda-lista.component';
-import { AgendaNovoComponent } from './features/agenda/pages/novo/agenda-novo.component';
-import { AgendarPublicoComponent } from './features/agendamento-publico/pages/agendar/agendar-publico.component';
-import { ClientesComponent } from './features/clientes/pages/lista/clientes.component';
-import { ClientesNovoComponent } from './features/clientes/pages/novo/clientes-novo.component';
-import { ClientesEditarComponent } from './features/clientes/pages/editar/clientes-editar.component';
-import { ServicosComponent } from './features/servicos/pages/main/servicos.component';
-import { FinanceiroComissoesComponent } from './features/financeiro/pages/comissoes/financeiro-comissoes.component';
-import { FinanceiroShellComponent } from './features/financeiro/pages/shell/financeiro-shell.component';
-import { FinanceiroPainelComponent } from './features/financeiro/pages/painel/financeiro-painel.component';
-import { FinanceiroTransacoesComponent } from './features/financeiro/pages/transacoes/financeiro-transacoes.component';
-import { FinanceiroCadastrosComponent } from './features/financeiro/pages/cadastros/financeiro-cadastros.component';
-import { EmBreveComponent } from './pages/em-breve/em-breve.component';
-import { ConfiguracoesShellComponent } from './features/configuracoes/pages/shell/configuracoes-shell.component';
-import { ConfiguracoesWhatsappComponent } from './features/configuracoes/pages/whatsapp/configuracoes-whatsapp.component';
-import { EstoqueComponent } from './features/estoque/pages/main/estoque.component';
-import { CategoriasComponent } from './features/categorias/pages/main/categorias.component';
-import { MarcasComponent } from './features/marcas/pages/main/marcas.component';
-import { ProfissionaisComponent } from './features/profissionais/pages/main/profissionais.component';
-import { FornecedoresComponent } from './features/fornecedores/pages/main/fornecedores.component';
-import { ComandasComponent } from './features/comandas/pages/main/comandas.component';
-import { OrcamentosComponent } from './features/orcamentos/pages/main/orcamentos.component';
-import { PainelComponent } from './features/painel/pages/main/painel.component';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent, title: 'Entrar' },
-  { path: 'agendar', component: AgendarPublicoComponent, title: 'Agendamento Online' },
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/login/login.component').then((m) => m.LoginComponent),
+    title: 'Entrar',
+  },
+  {
+    path: 'agendar',
+    loadComponent: () =>
+      import('./features/agendamento-publico/pages/agendar/agendar-publico.component').then(
+        (m) => m.AgendarPublicoComponent,
+      ),
+    title: 'Agendamento Online',
+  },
   { path: '', pathMatch: 'full', redirectTo: 'painel' },
   {
     path: 'painel',
-    component: PainelComponent,
+    loadComponent: () =>
+      import('./features/painel/pages/main/painel.component').then(
+        (m) => m.PainelComponent,
+      ),
     canActivate: [authGuard],
     title: 'Painel',
     data: { titulo: 'Painel' },
   },
   {
     path: 'pacotes',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Pacotes',
     data: { titulo: 'Pacotes' },
   },
   {
     path: 'pacotes/predefinidos',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Pacotes Predefinidos',
     data: { titulo: 'Pacotes Predefinidos' },
   },
-  { path: 'comandas', component: ComandasComponent, canActivate: [authGuard], title: 'Comandas' },
+  {
+    path: 'comandas',
+    loadComponent: () =>
+      import('./features/comandas/pages/main/comandas.component').then(
+        (m) => m.ComandasComponent,
+      ),
+    canActivate: [authGuard],
+    title: 'Comandas',
+  },
   {
     path: 'orcamentos',
-    component: OrcamentosComponent,
+    loadComponent: () =>
+      import('./features/orcamentos/pages/main/orcamentos.component').then(
+        (m) => m.OrcamentosComponent,
+      ),
     canActivate: [authGuard],
     title: 'Orçamentos',
     data: { titulo: 'Orçamentos' },
@@ -64,94 +66,142 @@ export const routes: Routes = [
   { path: 'atendimentos', redirectTo: 'comandas', pathMatch: 'full' },
   {
     path: 'agenda/novo',
-    component: AgendaNovoComponent,
+    loadComponent: () =>
+      import('./features/agenda/pages/novo/agenda-novo.component').then(
+        (m) => m.AgendaNovoComponent,
+      ),
     canActivate: [authGuard],
     title: 'Novo Agendamento',
   },
   {
     path: 'agenda/lista',
-    component: AgendaListaComponent,
+    loadComponent: () =>
+      import('./features/agenda/pages/lista/agenda-lista.component').then(
+        (m) => m.AgendaListaComponent,
+      ),
     canActivate: [authGuard],
     title: 'Agenda — Lista',
   },
   {
     path: 'agenda/calendario',
-    component: AgendaComponent,
+    loadComponent: () =>
+      import('./features/agenda/pages/main/agenda.component').then(
+        (m) => m.AgendaComponent,
+      ),
     canActivate: [authGuard],
     title: 'Agenda — Calendário',
   },
-  { path: 'agenda', component: AgendaHubComponent, canActivate: [authGuard], title: 'Agenda' },
-  { path: 'clientes', component: ClientesComponent, canActivate: [authGuard], title: 'Clientes' },
+  {
+    path: 'agenda',
+    loadComponent: () =>
+      import('./features/agenda/pages/hub/agenda-hub.component').then(
+        (m) => m.AgendaHubComponent,
+      ),
+    canActivate: [authGuard],
+    title: 'Agenda',
+  },
+  {
+    path: 'clientes',
+    loadComponent: () =>
+      import('./features/clientes/pages/lista/clientes.component').then(
+        (m) => m.ClientesComponent,
+      ),
+    canActivate: [authGuard],
+    title: 'Clientes',
+  },
   {
     path: 'clientes/novo',
-    component: ClientesNovoComponent,
+    loadComponent: () =>
+      import('./features/clientes/pages/novo/clientes-novo.component').then(
+        (m) => m.ClientesNovoComponent,
+      ),
     canActivate: [authGuard],
     title: 'Novo Cliente',
   },
   {
     path: 'clientes/:id/editar',
-    component: ClientesEditarComponent,
+    loadComponent: () =>
+      import('./features/clientes/pages/editar/clientes-editar.component').then(
+        (m) => m.ClientesEditarComponent,
+      ),
     canActivate: [authGuard],
     title: 'Editar Cliente',
   },
   {
     path: 'servicos',
-    component: ServicosComponent,
+    loadComponent: () =>
+      import('./features/servicos/pages/main/servicos.component').then(
+        (m) => m.ServicosComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     title: 'Serviços',
   },
   {
     path: 'estoque',
-    component: EstoqueComponent,
+    loadComponent: () =>
+      import('./features/estoque/pages/main/estoque.component').then(
+        (m) => m.EstoqueComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     title: 'Produtos',
     data: { titulo: 'Produtos' },
   },
   {
     path: 'categorias',
-    component: CategoriasComponent,
+    loadComponent: () =>
+      import('./features/categorias/pages/main/categorias.component').then(
+        (m) => m.CategoriasComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     title: 'Categorias',
     data: { titulo: 'Categorias' },
   },
   {
     path: 'marcas',
-    component: MarcasComponent,
+    loadComponent: () =>
+      import('./features/marcas/pages/main/marcas.component').then(
+        (m) => m.MarcasComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     title: 'Marcas',
     data: { titulo: 'Marcas' },
   },
   {
     path: 'compras',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Compras',
     data: { titulo: 'Compras' },
   },
   {
     path: 'promocoes',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Promoções',
     data: { titulo: 'Promoções' },
   },
   {
     path: 'cashback',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Cashback',
     data: { titulo: 'Cashback' },
   },
   {
     path: 'avaliacoes',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Avaliações',
     data: { titulo: 'Avaliações' },
   },
   {
     path: 'relatorios/painel',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Relatórios — Painel',
     data: { titulo: 'Relatórios — Painel' },
@@ -164,58 +214,90 @@ export const routes: Routes = [
   { path: 'relatorios', redirectTo: '/relatorios/painel', pathMatch: 'full' },
   {
     path: 'consultoria',
-    component: EmBreveComponent,
+    loadComponent: () =>
+      import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
     canActivate: [authGuard, adminGuard],
     title: 'Consultoria',
     data: { titulo: 'Consultoria' },
   },
   {
     path: 'profissionais',
-    component: ProfissionaisComponent,
+    loadComponent: () =>
+      import('./features/profissionais/pages/main/profissionais.component').then(
+        (m) => m.ProfissionaisComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     title: 'Profissionais',
     data: { titulo: 'Profissionais' },
   },
   {
     path: 'fornecedores',
-    component: FornecedoresComponent,
+    loadComponent: () =>
+      import('./features/fornecedores/pages/main/fornecedores.component').then(
+        (m) => m.FornecedoresComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     title: 'Fornecedores',
     data: { titulo: 'Fornecedores' },
   },
   {
     path: 'configuracoes',
-    component: ConfiguracoesShellComponent,
+    loadComponent: () =>
+      import('./features/configuracoes/pages/shell/configuracoes-shell.component').then(
+        (m) => m.ConfiguracoesShellComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'whatsapp' },
       {
         path: 'whatsapp',
-        component: ConfiguracoesWhatsappComponent,
+        loadComponent: () =>
+          import(
+            './features/configuracoes/pages/whatsapp/configuracoes-whatsapp.component'
+          ).then((m) => m.ConfiguracoesWhatsappComponent),
         title: 'Configurações — WhatsApp',
       },
     ],
   },
   {
     path: 'financeiro',
-    component: FinanceiroShellComponent,
+    loadComponent: () =>
+      import('./features/financeiro/pages/shell/financeiro-shell.component').then(
+        (m) => m.FinanceiroShellComponent,
+      ),
     canActivate: [authGuard, adminGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'painel' },
-      { path: 'painel', component: FinanceiroPainelComponent, title: 'Financeiro — Painel' },
+      {
+        path: 'painel',
+        loadComponent: () =>
+          import('./features/financeiro/pages/painel/financeiro-painel.component').then(
+            (m) => m.FinanceiroPainelComponent,
+          ),
+        title: 'Financeiro — Painel',
+      },
       {
         path: 'transacoes',
-        component: FinanceiroTransacoesComponent,
+        loadComponent: () =>
+          import(
+            './features/financeiro/pages/transacoes/financeiro-transacoes.component'
+          ).then((m) => m.FinanceiroTransacoesComponent),
         title: 'Financeiro — Transações',
       },
       {
         path: 'comissoes',
-        component: FinanceiroComissoesComponent,
+        loadComponent: () =>
+          import(
+            './features/financeiro/pages/comissoes/financeiro-comissoes.component'
+          ).then((m) => m.FinanceiroComissoesComponent),
         title: 'Financeiro — Comissões',
       },
       {
         path: 'cadastros',
-        component: FinanceiroCadastrosComponent,
+        loadComponent: () =>
+          import(
+            './features/financeiro/pages/cadastros/financeiro-cadastros.component'
+          ).then((m) => m.FinanceiroCadastrosComponent),
         title: 'Financeiro — Cadastros',
       },
     ],
