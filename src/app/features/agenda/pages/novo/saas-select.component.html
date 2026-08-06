@@ -30,9 +30,6 @@
             autocomplete="off"
             [disabled]="isDisabled"
           />
-          @if (displayHint) {
-            <span class="saas-select__hint">{{ displayHint }}</span>
-          }
         </span>
       } @else {
         <span
@@ -42,9 +39,6 @@
           <span class="saas-select__value">
             {{ displayLabel || placeholder }}
           </span>
-          @if (displayHint) {
-            <span class="saas-select__hint">{{ displayHint }}</span>
-          }
         </span>
       }
       <span class="saas-select__icons" aria-hidden="true">
@@ -106,9 +100,6 @@
             autocomplete="off"
             [disabled]="isDisabled"
           />
-          @if (displayHint) {
-            <span class="saas-select__hint">{{ displayHint }}</span>
-          }
         </span>
       } @else {
         <span
@@ -119,9 +110,6 @@
           <span class="saas-select__value">
             {{ displayLabel || placeholder }}
           </span>
-          @if (displayHint) {
-            <span class="saas-select__hint">{{ displayHint }}</span>
-          }
         </span>
       }
       <span class="saas-select__icons" aria-hidden="true">

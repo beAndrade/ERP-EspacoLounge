@@ -155,13 +155,6 @@ export class SaasSelectComponent
     return hit?.label ?? '';
   }
 
-  get displayHint(): string {
-    const hit = this.options.find(
-      (o) => String(o.value) === String(this.inner),
-    );
-    return hit?.hint?.trim() ?? '';
-  }
-
   /** Compara valor da opção com o interno (evita falha número vs string). */
   optionIsSelected(opt: SaasSelectOption): boolean {
     return String(opt.value) === String(this.inner);

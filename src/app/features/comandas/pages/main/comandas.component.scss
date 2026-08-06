@@ -304,17 +304,21 @@
   border: 1px solid rgba(0 0 0 / 3%);
   align-self: stretch;
   transition: box-shadow 0.1s;
-  border-radius: 12px 12px 0 0;
+  /**
+   * Só o topo arredonda (alinha aos th). Fundo reto = footer.
+   * Sem isto a borda do card fica quadrada e o radius do th some visualmente.
+   */
+  border-radius: 14px 14px 0 0;
   background: #fff;
   box-sizing: border-box;
   padding: 0;
   isolation: isolate;
-  /* Menus de ação da linha — não clipar. Cantos via radius no thead/wrap. */
+  /* Menus de linha/coluna saem do card — não clipar. */
   overflow: visible;
 
   > .table-wrap {
     overflow: visible;
-    border-radius: 12px 12px 0 0;
+    border-radius: 14px 14px 0 0;
   }
 }
 
@@ -324,7 +328,9 @@
 
 .comandas-table {
   width: 100%;
-  border-collapse: collapse;
+  /** Obrigatório para border-radius em th/td funcionar. */
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
   font-size: 14px;
 }
@@ -388,14 +394,20 @@ thead th {
   vertical-align: middle;
   border-bottom: 1px solid #f0f0f0;
   transition: background 0.2s ease;
+}
 
-  &:first-child {
-    border-top-left-radius: 12px;
-  }
+/**
+ * Cantos superiores do thead (só estes th).
+ * Propriedades físicas + !important: vencem reset global / encapsulamento.
+ */
+.comandas-table thead tr th.col-check {
+  border-top-left-radius: 14px !important;
+  border-start-start-radius: 14px !important;
+}
 
-  &:last-child {
-    border-top-right-radius: 12px;
-  }
+.comandas-table thead tr th.col-menu {
+  border-top-right-radius: 14px !important;
+  border-start-end-radius: 14px !important;
 }
 
 thead th,
@@ -467,7 +479,8 @@ thead th.col-ticket {
   height: 47.56px;
   min-height: 47.56px;
   box-sizing: border-box;
-  padding: 0 10px;
+  /** Mesmo padding do padrão clientes/fornecedores. */
+  padding: 0 8px;
   margin: 0;
   border: none;
   background: transparent;
@@ -502,10 +515,13 @@ thead th.col-ticket {
   justify-content: center;
   gap: 3px;
   line-height: 0;
+  width: 10px;
 }
 
 .comandas-th-sort__tri {
   display: block;
+  width: 10px;
+  height: 6px;
   color: #d4d4d8;
   opacity: 0.4;
   transform: scale(0.92);
@@ -635,7 +651,10 @@ thead th.col-valor {
   text-align: left;
   vertical-align: middle;
   overflow: hidden;
+}
 
+/** Ellipsis só no corpo — não aplicar a spans do botão de ordenação no thead. */
+tbody td.col-cliente {
   a,
   span {
     display: inline-block;
@@ -890,27 +909,45 @@ tbody td.col-ticket {
 }
 
 .col-menu {
-  width: 4.25rem;
+  width: 4.75rem;
   box-sizing: border-box;
   text-align: center;
   padding-left: 2px;
   padding-right: 6px;
-
-  .row-menu__trigger {
-    min-width: 2.25rem;
-    min-height: 2.25rem;
-  }
 }
 
-.comandas-row-menu {
-  position: relative;
-  display: flex;
-  justify-content: center;
+/** Ações inline (editar/ver + excluir) — padrão clientes/list-row-acoes. */
+.comandas-table .comandas-row-acoes {
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
   width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
 
-  &--open {
-    z-index: 40;
+.comandas-table .comandas-row-acoes .list-row-acoes__sep {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 14px;
+  margin: 0 0.05rem;
+  background: #ebebeb;
+}
+
+.comandas-table .comandas-row-acoes .list-row-acoes__btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  border-radius: 6px;
+
+  svg {
+    width: 13.3333px;
+    height: 13.3333px;
+    display: block;
   }
 }
 
@@ -1005,118 +1042,6 @@ tbody td.col-ticket {
   }
 }
 
-tbody tr.comandas-table__row--menu-open {
-  position: relative;
-  z-index: 30;
-}
-
-.row-menu__trigger {
-  border-radius: var(--radius);
-}
-
-.row-menu__panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  bottom: auto;
-  margin: 0;
-  padding: 0.35rem 0.25rem;
-  list-style: none;
-  width: max-content;
-  min-width: 12.75rem;
-  background: var(--color-surface);
-  border: 1px solid #e7e5e4;
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 50;
-
-  &.dropdown-flip--above {
-    top: auto;
-    bottom: calc(100% + 4px);
-  }
-
-  li {
-    margin: 0;
-    padding: 0 0.2rem;
-  }
-
-  .row-menu__li--excluir {
-    margin-top: 0.15rem;
-    padding-top: 0.15rem;
-    border-top: 1px solid #ebebeb;
-  }
-
-  .row-menu__item {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0.5rem 0.65rem;
-    border: none;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.35;
-    text-align: left;
-    white-space: nowrap;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.2s;
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  }
-
-  .row-menu__item--editar-agendamento,
-  .row-menu__item--ver-comanda {
-    color: #000000bf;
-    background: #fff;
-
-    &:hover:not(:disabled) {
-      background: #f3f4f6;
-    }
-
-    &:focus-visible {
-      outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
-      outline-offset: 1px;
-    }
-  }
-
-  .row-menu__item--excluir {
-    color: var(--color-error);
-    background: #fff;
-
-    &:hover:not(:disabled) {
-      color: #fff;
-      background: var(--color-error);
-    }
-
-    &:focus-visible {
-      outline: 2px solid color-mix(in srgb, var(--color-error) 45%, transparent);
-      outline-offset: 1px;
-    }
-  }
-
-  .row-menu__item-ico {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 12px;
-    height: 12px;
-    color: currentColor;
-
-    svg {
-      display: block;
-      width: 12px;
-      height: 12px;
-    }
-  }
-}
-
 .comandas-footer {
   display: flex;
   flex-wrap: wrap;
@@ -1129,6 +1054,7 @@ tbody tr.comandas-table__row--menu-open {
   -webkit-backdrop-filter: blur(10px);
   border-top: none;
   border-bottom: none;
+  border-radius: 0;
   font-size: 0.9rem;
   color: var(--color-muted);
 }
@@ -1218,14 +1144,35 @@ tbody tr.comandas-table__row--menu-open {
   }
 
   &:has(> app-nova-comanda-drawer) {
-    overflow: hidden;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    height: auto;
+    max-height: none;
+    /* top/bottom já definem a caixa do `position: fixed`. */
+    inset-block: 0;
+
+    > app-nova-comanda-drawer {
+      flex: 1 1 auto;
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
   }
 
   &:has(> app-agenda-novo.agenda-novo--somente-comanda) {
-    overflow: hidden;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    height: auto;
+    max-height: none;
+    inset-block: 0;
 
     > app-agenda-novo {
+      flex: 1 1 auto;
+      height: 100%;
       max-height: 100%;
+      min-height: 0;
+      overflow: hidden;
     }
   }
 
@@ -1490,8 +1437,8 @@ tbody tr.comandas-table__row--menu-open {
     text-align: end;
   }
 
-  .col-cliente a,
-  .col-cliente span,
+  tbody td.col-cliente a,
+  tbody td.col-cliente span,
   .col-pagamento .badge {
     max-width: 100%;
   }

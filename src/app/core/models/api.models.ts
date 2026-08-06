@@ -465,6 +465,8 @@ export interface ProfissionalListaItem {
   cidade?: string | null;
   /** Conta de acesso ligada (`usuarios.role`), quando existir. */
   usuario_role?: 'admin' | 'profissional' | null;
+  /** E-mail de login da conta ligada (`usuarios.email`), quando existir. */
+  usuario_email?: string | null;
   /** Ordem de exibição na lista e na agenda. */
   ordem?: number;
 }

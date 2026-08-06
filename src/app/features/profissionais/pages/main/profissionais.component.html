@@ -74,26 +74,28 @@
       }
     </div>
   </td>
-  <td>{{ exibirCelular(p) }}</td>
-  <td>
-    <span class="col-email__cell">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <rect width="20" height="16" x="2" y="4" rx="2" />
-        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-      </svg>
-      <span class="col-email__text">{{ exibirEmail(p) }}</span>
-    </span>
+  <td class="col-celular">{{ exibirCelular(p) }}</td>
+  <td class="col-email">
+    @if (exibirEmail(p); as email) {
+      <span class="col-email__cell">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect width="20" height="16" x="2" y="4" rx="2" />
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+        </svg>
+        <span class="col-email__text">{{ email }}</span>
+      </span>
+    }
   </td>
   <td class="col-acoes">
     <div class="list-row-acoes profissionais-row-acoes">
@@ -121,31 +123,30 @@
             />
           </svg>
         </span>
-        @if (!ehProfissionalAdmin(p)) {
-          <span class="list-row-acoes__sep" aria-hidden="true"></span>
-          <span
-            class="list-row-acoes__btn list-row-acoes__btn--delete"
+        <span class="list-row-acoes__sep" aria-hidden="true"></span>
+        <span
+          class="list-row-acoes__btn list-row-acoes__btn--delete"
+          [class.list-row-acoes__btn--locked]="ehProfissionalAdmin(p)"
+          aria-hidden="true"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-trash-icon lucide-trash"
             aria-hidden="true"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide lucide-trash-icon lucide-trash"
-              aria-hidden="true"
-            >
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M3 6h18" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </span>
-        }
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </span>
       } @else {
         <button
           type="button"
@@ -173,33 +174,41 @@
             />
           </svg>
         </button>
-        @if (!ehProfissionalAdmin(p)) {
-          <span class="list-row-acoes__sep" aria-hidden="true"></span>
-          <button
-            type="button"
-            class="list-row-acoes__btn list-row-acoes__btn--delete"
-            aria-label="Excluir profissional"
-            title="Excluir"
+        <span class="list-row-acoes__sep" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="list-row-acoes__btn list-row-acoes__btn--delete"
+          [class.list-row-acoes__btn--locked]="ehProfissionalAdmin(p)"
+          [disabled]="ehProfissionalAdmin(p)"
+          [attr.aria-label]="
+            ehProfissionalAdmin(p)
+              ? 'Exclusão bloqueada — admin da página'
+              : 'Excluir profissional'
+          "
+          [attr.title]="
+            ehProfissionalAdmin(p)
+              ? 'Admin da página — exclusão bloqueada'
+              : 'Excluir'
+          "
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-trash-icon lucide-trash"
+            aria-hidden="true"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide lucide-trash-icon lucide-trash"
-              aria-hidden="true"
-            >
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M3 6h18" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
-        }
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </button>
       }
     </div>
   </td>
@@ -262,35 +271,6 @@
           </div>
           <button
             type="button"
-            class="list-head__toolbar-btn"
-            [class.list-head__toolbar-btn--filtro-on]="filtrosAbertos"
-            [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
-            (click)="toggleFiltros($event)"
-            aria-label="Abrir filtros"
-            [attr.aria-expanded]="filtrosAbertos"
-            title="Filtrar"
-          >
-            <svg
-              class="list-icon-sm list-icon-sm--funnel"
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path
-                d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
-              />
-            </svg>
-            <span class="list-head__toolbar-label">Filtrar</span>
-          </button>
-          <button
-            type="button"
             class="list-head__toolbar-btn list-head__toolbar-btn--link"
             (click)="abrirNovo()"
           >
@@ -317,43 +297,37 @@
     </header>
   </div>
 
-  <div
-    class="list-layout"
-    [class.list-layout--filtros-abertos]="filtrosAbertos"
+  <nav
+    #tabsNav
+    class="list-page__tabs profissionais-page__tabs"
+    aria-label="Status dos profissionais"
+    [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
+    [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
   >
-    <aside
-      class="profissionais-filtros-drawer"
-      [class.profissionais-filtros-drawer--open]="filtrosAbertos"
-      aria-label="Filtros de profissionais"
-      [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
+    <span class="list-page__tabs-indicator" aria-hidden="true"></span>
+    <button
+      type="button"
+      class="list-page__tab"
+      data-aba="ativos"
+      [class.list-page__tab--active]="abaStatus === 'ativos'"
+      [attr.aria-current]="abaStatus === 'ativos' ? 'page' : null"
+      (click)="definirAbaStatus('ativos')"
     >
-      <div class="profissionais-filtros-drawer__inner">
-        <section class="profissionais-filtros-card">
-          <h3 class="profissionais-filtros-card__title">Status</h3>
-          <div class="profissionais-filtros-card__body">
-            <label class="profissionais-filtros-check">
-              <input
-                type="checkbox"
-                name="prof_filtro_ativos"
-                [checked]="filtroStatusAtivos"
-                (change)="toggleFiltroStatus('ativos', $event)"
-              />
-              Ativos
-            </label>
-            <label class="profissionais-filtros-check">
-              <input
-                type="checkbox"
-                name="prof_filtro_inativos"
-                [checked]="filtroStatusInativos"
-                (change)="toggleFiltroStatus('inativos', $event)"
-              />
-              Inativos
-            </label>
-          </div>
-        </section>
-      </div>
-    </aside>
+      Ativos
+    </button>
+    <button
+      type="button"
+      class="list-page__tab"
+      data-aba="inativos"
+      [class.list-page__tab--active]="abaStatus === 'inativos'"
+      [attr.aria-current]="abaStatus === 'inativos' ? 'page' : null"
+      (click)="definirAbaStatus('inativos')"
+    >
+      Inativos
+    </button>
+  </nav>
 
+  <div class="list-layout">
     <div class="list-layout__main">
       @if (erro) {
         <p class="alert" role="alert">{{ erro }}</p>

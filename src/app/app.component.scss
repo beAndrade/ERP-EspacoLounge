@@ -13,8 +13,8 @@
 }
 
 .shell {
-  /** Largura mínima para o título da marca numa linha com o botão de recolher */
-  --sidebar-w: 252px;
+  /** Largura do menu lateral expandido */
+  --sidebar-w: 230px;
   --sidebar-w-collapsed: 4.5rem;
   position: relative;
   height: 100vh;
@@ -38,6 +38,7 @@
 }
 
 .app-sidebar {
+  --touch-min: 40px;
   --sidebar-fg: #f8fafc;
   --sidebar-active: var(--color-sidebar-active);
   /** Submenu ativo = mesma cor da aba ativa. */
@@ -70,7 +71,7 @@
   --sidebar-chevron-ms: 600ms;
   /** Só o chevron: curva mais suave e previsível (evita “tremor” com o painel). */
   --sidebar-chevron-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --sidebar-icon-size: 1.125rem;
+  --sidebar-icon-size: 14px;
   /** Ícone do botão recolher (ligeiramente < 24px para alinhar melhor ao header) */
   --sidebar-toggle-icon-size: 1.3125rem;
   /** Chevron dos dropdowns: alinha com hierarquia visual do menu (~15px @ 16px root) */
@@ -150,9 +151,10 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 1.25rem;
+  /** Gap curto: logo + toggle precisam caber em --sidebar-w (230px). */
+  gap: 0.35rem;
   flex-shrink: 0;
-  padding: 0 12px;
+  padding: 0 10px;
   border: none;
   box-sizing: border-box;
   min-height: 2.75rem;
@@ -169,8 +171,8 @@
 .app-sidebar .brand {
   text-decoration: none;
   color: var(--sidebar-fg);
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width: auto;
   /** Alinhamento vertical vem do flex do header (mesmo eixo que o botão). */
   padding: 0;
   margin: 0;
@@ -181,7 +183,7 @@
   align-self: center;
   line-height: 1;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
 
   &:hover {
     color: #fff;
@@ -194,14 +196,14 @@
   align-items: baseline;
   justify-content: flex-start;
   width: max-content;
-  max-width: 100%;
-  gap: 0.45rem;
+  max-width: none;
+  gap: 0.35rem;
 }
 
 .app-sidebar .brand__name {
   display: block;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 0.92;
@@ -211,13 +213,13 @@
 .app-sidebar .brand__tag {
   display: block;
   font-family: Inter, sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.35em;
+  letter-spacing: 0.28em;
   line-height: 1;
   text-transform: uppercase;
   /** Compensa o letter-spacing extra após a última letra. */
-  margin-right: -0.35em;
+  margin-right: -0.28em;
   align-self: flex-end;
   padding-bottom: 2px;
 }
@@ -292,6 +294,7 @@
   gap: 0.5rem;
   align-self: stretch;
   width: auto;
+  height: var(--touch-min);
   min-height: var(--touch-min);
   margin-top: 0;
   margin-right: 4px;
@@ -427,6 +430,7 @@
   align-items: center;
   justify-content: flex-start;
   gap: 0.55rem;
+  height: var(--touch-min);
   min-height: var(--touch-min);
   border-radius: var(--sidebar-nav-radius);
   text-decoration: none;
@@ -599,6 +603,7 @@
   gap: 0.5rem;
   align-self: stretch;
   width: auto;
+  height: var(--touch-min);
   min-height: var(--touch-min);
   margin-top: 0;
   margin-right: 4px;
@@ -767,7 +772,9 @@
   max-height: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 0 20px;
+  /** Direita fixa em 15px em todas as telas (sem gutter extra nas páginas). */
+  --main-pad-right: 15px;
+  padding: 0 var(--main-pad-right) 0 20px;
   box-sizing: border-box;
   overflow-x: clip;
   overflow-y: auto;
@@ -788,7 +795,8 @@
    */
   &.main--agenda-hub {
     --hub-main-pad-left: 12px;
-    --hub-main-pad-right: 12px;
+    --hub-main-pad-right: 15px;
+    --main-pad-right: var(--hub-main-pad-right);
     padding: 0 var(--hub-main-pad-right) 0 var(--hub-main-pad-left);
     flex: 1 1 0%;
     min-height: 0;
@@ -922,7 +930,8 @@
   /** Mesmo scroll do desktop (`main`) — necessário para `backdrop-filter` / glass. */
   .main.main--agenda-hub {
     --hub-main-pad-left: 12px;
-    --hub-main-pad-right: 12px;
+    --hub-main-pad-right: 15px;
+    --main-pad-right: var(--hub-main-pad-right);
     padding: 0 var(--hub-main-pad-right) 0 var(--hub-main-pad-left);
     flex: 1 1 0%;
     min-height: 0;
@@ -990,11 +999,12 @@
   }
 
   .main {
-    padding: 0 20px 0.5rem;
+    padding: 0 var(--main-pad-right, 15px) 0.5rem 20px;
 
     &.main--agenda-hub {
       --hub-main-pad-left: 12px;
-      --hub-main-pad-right: 12px;
+      --hub-main-pad-right: 15px;
+      --main-pad-right: var(--hub-main-pad-right);
       padding: 0 var(--hub-main-pad-right) 0 var(--hub-main-pad-left);
     }
   }

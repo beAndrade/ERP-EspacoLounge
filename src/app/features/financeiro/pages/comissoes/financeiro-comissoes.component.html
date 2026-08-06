@@ -92,11 +92,19 @@
         }
       </div>
     </div>
-    <nav class="fin-comissoes__tabs" aria-label="Secções de comissões">
+    <nav
+      #tabsNav
+      class="fin-comissoes__tabs"
+      aria-label="Secções de comissões"
+      [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
+      [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
+    >
+      <span class="fin-comissoes__tabs-indicator" aria-hidden="true"></span>
       @for (tab of tabs; track tab.id) {
         <button
           type="button"
           class="fin-comissoes__tab"
+          [attr.data-aba]="tab.id"
           [class.fin-comissoes__tab--active]="tabAtiva() === tab.id"
           (click)="selecionarTab(tab.id)"
         >

@@ -296,6 +296,8 @@
   justify-content: space-between;
   margin: 0;
   padding: 0;
+  /** Reserva a hit-area 60px do fechar absoluto no shell. */
+  padding-right: 60px;
   gap: 0.5rem;
   position: relative;
   overflow: visible;
@@ -313,15 +315,19 @@
 }
 
 /**
- * Só o fechar fica colado ao topo ao rolar o fluxo; o título acompanha o scroll.
- * `margin-right: -15px` cancela o `padding-inline` do fluxo (drawer inset = 0).
- * Hover completo via `overflow-clip-margin` nos pais.
+ * Fechar fora do scroller (`.form-shell__flow--modal`), no shell da coluna —
+ * mesmo padrão que corrigiu Nova comanda (`nc-modal-close--pin`).
+ * Sticky dentro do flow quebrava com `overflow: hidden` no `.app-drawer`
+ * (editando comanda / somente-comanda).
  */
-:host.agenda-novo--drawer .agenda-modal__header .agenda-modal__close {
-  position: sticky;
+:host.agenda-novo--drawer .form-shell__main--modal {
+  position: relative;
+}
+
+:host.agenda-novo--drawer .agenda-modal__close--pin {
+  position: absolute;
   top: 0;
-  align-self: flex-start;
-  flex-shrink: 0;
+  right: 0;
   z-index: 60;
   box-sizing: border-box;
   display: inline-flex;
@@ -331,11 +337,11 @@
   height: 60px;
   min-width: 60px;
   min-height: 60px;
-  margin: 0 -15px 0 0;
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 6px;
-  background: #fff;
+  background: transparent;
   color: rgba(0, 0, 0, 0.45);
   font: inherit;
   font-weight: 600;
@@ -349,7 +355,7 @@
 
   &:hover {
     z-index: 61;
-    background: #f5f5f4;
+    background: rgba(0, 0, 0, 0.06);
     color: var(--color-text);
   }
 
@@ -460,8 +466,9 @@
 /**
  * Grelha partilhada por todos os drawers do `app-agenda-novo` em `modoModal`
  * (Agenda hub novo/editar, Comandas, etc.):
- * Cliente | Data | Horário | Status | Cor
- * Data/Status/Cor um pouco mais estreitos; Horário mais largo.
+ * Cliente | Data | Status | Cor  (Horário vai para a linha Serviço, ao lado do Pro)
+ * Proporção alvo (~1176px): 495 | 193 | 244 | 244.
+ * Com Horário no cabeçalho (fallback sem linha Serviço): 5 colunas.
  */
 .block-context--modal {
   gap: 0.4rem 0.45rem;
@@ -471,15 +478,23 @@
   align-items: start;
   display: grid;
   grid-template-columns:
-    minmax(0, 1.35fr)
-    minmax(0, 0.82fr)
-    minmax(0, 0.72fr)
-    minmax(0, 0.78fr)
-    minmax(0, 0.78fr);
+    minmax(0, 4.95fr)
+    minmax(0, 1.93fr)
+    minmax(0, 2.44fr)
+    minmax(0, 2.44fr);
   min-width: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+
+  &:has(> .block-context__field--hora-modal) {
+    grid-template-columns:
+      minmax(0, 4.95fr)
+      minmax(0, 1.93fr)
+      minmax(0, 1.84fr)
+      minmax(0, 2.44fr)
+      minmax(0, 2.44fr);
+  }
 
   .block-context__field--cliente-modal,
   .data-field--modal-stretch,
@@ -550,11 +565,19 @@
 
   @media (min-width: 721px) and (max-width: 1100px) {
     grid-template-columns:
-      minmax(12.5rem, 1.3fr)
-      minmax(8.25rem, 0.78fr)
-      minmax(7.25rem, 0.68fr)
-      minmax(7.75rem, 0.72fr)
-      minmax(7.75rem, 0.72fr);
+      minmax(12.5rem, 4.95fr)
+      minmax(7.5rem, 1.93fr)
+      minmax(8.5rem, 2.44fr)
+      minmax(8.5rem, 2.44fr);
+
+    &:has(> .block-context__field--hora-modal) {
+      grid-template-columns:
+        minmax(11rem, 4.95fr)
+        minmax(7rem, 1.93fr)
+        minmax(6.5rem, 1.84fr)
+        minmax(7.5rem, 2.44fr)
+        minmax(7.5rem, 2.44fr);
+    }
   }
 
   @media (max-width: 960px) {
@@ -731,6 +754,7 @@
 
   :host.agenda-novo--drawer & {
     padding: 0;
+    box-sizing: border-box;
   }
 }
 
@@ -1697,7 +1721,8 @@ textarea {
   input {
     box-sizing: border-box;
     width: 100%;
-    min-height: var(--touch-min, 2.75rem);
+    min-height: var(--touch-min, 38px);
+    height: var(--touch-min, 38px);
     text-align: center;
   }
 }
@@ -2091,6 +2116,10 @@ textarea {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-filled);
     border-color: var(--drawer-field-border);
+    border-radius: var(--radius, 14px);
+    min-height: var(--touch-min, 38px);
+    height: var(--touch-min, 38px);
+    padding-block: 0;
     transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -2120,6 +2149,10 @@ textarea {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-filled);
     border-color: var(--drawer-field-border);
+    border-radius: var(--radius, 14px);
+    min-height: var(--touch-min, 38px);
+    height: var(--touch-min, 38px);
+    padding-block: 0;
     transition: border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -2165,6 +2198,10 @@ textarea {
     font-weight: var(--drawer-input-font-weight);
     color: var(--drawer-input-text-idle);
     border-color: var(--drawer-field-border);
+    border-radius: var(--radius, 14px);
+    min-height: var(--touch-min, 38px);
+    height: var(--touch-min, 38px);
+    padding-block: 0;
   }
 
   ::ng-deep .ahs__trigger:has(.ahs__value:not(.ahs__value--ph)) {
@@ -2201,22 +2238,21 @@ textarea {
 :host.agenda-novo--drawer .form.form--modal {
   /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
   padding-inline: 0;
-  /** Coluna «Tipo de linha»: trigger 150px; painel abre ≥ padrão / rótulos longos. */
-  --drawer-tipo-linha-col: 150px;
-  --drawer-tipo-linha-col-padrao: 150px;
+  /** Colunas Tipo / Profissional / Horário: mesma largura no drawer. */
+  --drawer-tipo-linha-col: 148px;
+  --drawer-tipo-linha-col-padrao: 148px;
   --drawer-tipo-linha-panel-min: 240px;
   /**
-   * Descrição (Serviço/Produto): cresce até este teto em telas largas;
-   * o restante fica à direita (Pro / valores / ações).
+   * Descrição (Serviço/Produto): teto 600px; o restante vai para Tipo/Pro/Horário.
    */
   --drawer-descricao-col: auto;
-  --drawer-descricao-col-max: 480px;
-  /** Profissional em Serviço / Produto. */
-  --drawer-pro-col: 150px;
+  --drawer-descricao-col-max: 600px;
+  /** Profissional — alinhado a Tipo e Horário. */
+  --drawer-pro-col: 148px;
   /** Largura padrão do Pro (não encolhe nos BPs) — piso do dropdown. */
-  --drawer-pro-col-padrao: 150px;
-  /** Tamanho (Serviço). */
-  --drawer-tamanho-col: 150px;
+  --drawer-pro-col-padrao: 148px;
+  /** Tamanho (Serviço): um pouco mais largo à custa de Tipo/Pro. */
+  --drawer-tamanho-col: 120px;
   /**
    * Campos monetários (V.Unit, Desconto, Total).
    * Largura alvo + piso: o valor («R$ 110,00») não pode desaparecer no input.
@@ -2231,6 +2267,8 @@ textarea {
    * fica menor que este valor (telas estreitas).
    */
   --drawer-descricao-panel-min: 420px;
+  /** Horário — mesma largura que Tipo e Profissional. */
+  --drawer-hora-linha-col: 148px;
   /** Padrão do drawer: inputs com 38px de altura. */
   --touch-min: 38px;
   --radius: 14px;
@@ -2756,6 +2794,7 @@ textarea {
       overflow: visible;
       --saas-select-panel-width: 100%;
       --saas-select-panel-min-width: var(--drawer-descricao-panel-min);
+      --saas-select-panel-max-width: none;
 
       app-saas-select,
       ::ng-deep .saas-select,
@@ -2774,9 +2813,9 @@ textarea {
     }
 
     .servico-row__field--tamanho {
-      flex: 0 1 var(--drawer-tamanho-col);
+      flex: 0 0 var(--drawer-tamanho-col);
       width: var(--drawer-tamanho-col);
-      min-width: 5.5rem;
+      min-width: var(--drawer-tamanho-col);
       max-width: var(--drawer-tamanho-col);
       box-sizing: border-box;
     }
@@ -2787,7 +2826,20 @@ textarea {
       min-width: var(--drawer-pro-col);
       max-width: var(--drawer-pro-col);
       box-sizing: border-box;
-      margin-left: auto;
+    }
+
+    .servico-row__field--hora-linha-modal {
+      flex: 0 0 var(--drawer-hora-linha-col);
+      width: var(--drawer-hora-linha-col);
+      min-width: var(--drawer-hora-linha-col);
+      max-width: var(--drawer-hora-linha-col);
+      box-sizing: border-box;
+
+      app-agenda-horario-slots {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
     }
 
     .servico-row__field--money,
@@ -2819,15 +2871,18 @@ textarea {
   }
 
   /**
-   * Com coluna Tamanho: aperta Tipo/Pro/Tamanho; dinheiro mantém piso legível.
-   * A Descrição absorve o espaço em falta (reticências).
+   * Com coluna Tamanho: aperta Tipo/Pro/Horário juntos; Tamanho ganha espaço;
+   * dinheiro mantém piso legível. A Descrição absorve o espaço em falta.
    */
   .servico-row--drawer:has(.servico-row__field--tamanho):has(
       .servico-row__total-estimado
     ):not(:has(.cabelo-calc--nested)) {
     --drawer-money-col: 124px;
     --drawer-money-col-min: 124px;
-    --drawer-tamanho-col: 104px;
+    --drawer-tamanho-col: 118px;
+    --drawer-tipo-linha-col: 140px;
+    --drawer-pro-col: 140px;
+    --drawer-hora-linha-col: 140px;
   }
 
   /** Calculadora «Cabelo» no drawer: Cor, Tamanho, Método e Gramas numa única linha. */
@@ -2875,6 +2930,7 @@ textarea {
       overflow: visible;
       --saas-select-panel-width: 100%;
       --saas-select-panel-min-width: var(--drawer-descricao-panel-min);
+      --saas-select-panel-max-width: none;
     }
 
     .servico-row__field--tamanho {
@@ -2890,7 +2946,20 @@ textarea {
       width: var(--drawer-pro-col);
       min-width: var(--drawer-pro-col);
       max-width: var(--drawer-pro-col);
-      margin-left: auto;
+    }
+
+    .servico-row__field--hora-linha-modal {
+      flex: 0 0 var(--drawer-hora-linha-col);
+      width: var(--drawer-hora-linha-col);
+      min-width: var(--drawer-hora-linha-col);
+      max-width: var(--drawer-hora-linha-col);
+      box-sizing: border-box;
+
+      app-agenda-horario-slots {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
     }
 
     .servico-row__actions--drawer {
@@ -2923,16 +2992,18 @@ textarea {
     --drawer-money-col: 124px;
     --drawer-money-col-min: 124px;
     --drawer-tamanho-col: 112px;
-    --drawer-pro-col: 100px;
-    --drawer-tipo-linha-col: 116px;
+    --drawer-tipo-linha-col: 120px;
+    --drawer-pro-col: 120px;
+    --drawer-hora-linha-col: 120px;
     --drawer-tipo-linha-panel-min: 220px;
     --drawer-descricao-panel-min: 400px;
   }
 
   @media (max-width: 1200px) {
-    --drawer-tipo-linha-col: 104px;
-    --drawer-pro-col: 88px;
-    --drawer-tamanho-col: 96px;
+    --drawer-tipo-linha-col: 110px;
+    --drawer-pro-col: 110px;
+    --drawer-hora-linha-col: 110px;
+    --drawer-tamanho-col: 104px;
     --drawer-money-col: 120px;
     --drawer-money-col-min: 120px;
     --drawer-tipo-linha-panel-min: 200px;
@@ -2945,9 +3016,10 @@ textarea {
       ):not(:has(.cabelo-calc--nested)) {
       --drawer-money-col: 120px;
       --drawer-money-col-min: 120px;
-      --drawer-tamanho-col: 96px;
-      --drawer-pro-col: 92px;
-      --drawer-tipo-linha-col: 108px;
+      --drawer-tamanho-col: 110px;
+      --drawer-tipo-linha-col: 112px;
+      --drawer-pro-col: 112px;
+      --drawer-hora-linha-col: 112px;
     }
   }
 
@@ -2957,9 +3029,10 @@ textarea {
       ):not(:has(.cabelo-calc--nested)) {
       --drawer-money-col: 116px;
       --drawer-money-col-min: 116px;
-      --drawer-tamanho-col: 88px;
-      --drawer-pro-col: 80px;
-      --drawer-tipo-linha-col: 96px;
+      --drawer-tamanho-col: 100px;
+      --drawer-tipo-linha-col: 100px;
+      --drawer-pro-col: 100px;
+      --drawer-hora-linha-col: 100px;
     }
   }
 

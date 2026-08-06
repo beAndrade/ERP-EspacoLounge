@@ -134,6 +134,9 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
   gap: 0.75rem;
   flex-wrap: wrap;
   min-height: 50px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -159,7 +162,11 @@ $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
   align-items: center;
   column-gap: 0.5rem;
   margin-left: auto;
+  margin-right: 0;
   flex-shrink: 0;
+  max-width: 100%;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 /** Busca: chip fechado; aberto expande à esquerda dentro de `actions`. */
@@ -502,7 +509,8 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
 
 .list-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
 }
 
@@ -531,11 +539,11 @@ col.drawer-table__col-check {
   border-bottom: 1px solid #f0f0f0;
 
   &:first-child {
-    border-top-left-radius: 12px;
+    border-start-start-radius: 14px;
   }
 
   &:last-child {
-    border-top-right-radius: 12px;
+    border-start-end-radius: 14px;
   }
 }
 
@@ -987,18 +995,13 @@ select.list-footer__per-page {
   line-height: 1.5714285714285714;
   cursor: text;
   position: relative;
-  transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
 
   svg {
     display: block;
     flex: 0 0 auto;
-    width: 20px;
-    height: 20px;
-    color: rgba(0, 0, 0, 0.45);
-  }
-
-  &:hover svg {
-    color: rgba(0, 0, 0, 0.75);
+    width: 16px;
+    height: 16px;
+    color: rgba(0, 0, 0, 0.28);
   }
 }
 
@@ -1010,7 +1013,7 @@ select.list-footer__per-page {
   z-index: 30;
   min-width: 100%;
   padding: 0.25rem;
-  border: 1px solid #e7e5e4;
+  border: none;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);

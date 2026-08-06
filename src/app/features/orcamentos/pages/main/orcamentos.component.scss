@@ -185,7 +185,7 @@
   border: 1px solid rgba(0 0 0 / 3%);
   align-self: stretch;
   transition: box-shadow 0.1s;
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px;
   background: #fff;
   overflow: visible;
   isolation: isolate;
@@ -217,6 +217,14 @@
     border-bottom: 1px solid #f0f0f0;
     background: #fbfbfb;
     vertical-align: middle;
+
+    &:first-child {
+      border-start-start-radius: 14px;
+    }
+
+    &:last-child {
+      border-start-end-radius: 14px;
+    }
   }
 
   thead th,

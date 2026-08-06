@@ -168,6 +168,8 @@ export class NovaComandaDrawerComponent implements OnInit {
   readonly creditoResumoCtrl = new FormControl(formataMoedaBrl(0), {
     nonNullable: true,
   });
+  /** Observações da comanda (`descricaoManual` nas linhas) — mesmo bloco do agenda-novo. */
+  readonly observacaoCtrl = new FormControl('', { nonNullable: true });
   readonly placeholderMoedaResumo = PLACEHOLDER_MOEDA_RESUMO;
 
   /** Linhas espelhadas do atendimento para exibição (modo leitura). */
@@ -275,6 +277,7 @@ export class NovaComandaDrawerComponent implements OnInit {
         this.pivotCatalogoPorLinhaId.clear();
         this.resumoPagamentos = RESUMO_VAZIO;
         this.pagamentos = [];
+        this.observacaoCtrl.setValue('', { emitEvent: false });
         if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
           this.linhasLoadSub?.unsubscribe();
           this.linhasLoadSub = null;
@@ -830,6 +833,7 @@ export class NovaComandaDrawerComponent implements OnInit {
           this.linhasAtendimentoApi.length = 0;
           this.linhasAtendimentoApi.push(...copy);
           this.reconstruirMapaQuantidade(copy);
+          this.sincronizarObservacaoDasLinhas(copy);
           this.carregandoItens = false;
           return copy;
         }),
@@ -856,6 +860,7 @@ export class NovaComandaDrawerComponent implements OnInit {
       this.descontoResumoCtrl,
       this.creditoResumoCtrl,
       this.clienteComandaCtrl,
+      this.observacaoCtrl,
     ];
     for (const c of ctrls) {
       if (fin) {
@@ -866,6 +871,16 @@ export class NovaComandaDrawerComponent implements OnInit {
     }
     if (this.dataComandaCtrl.disabled) {
       this.dataComandaCtrl.enable({ emitEvent: false });
+    }
+  }
+
+  /** Espelha `descricaoManual` das linhas no bloco Observações (lista de comandas). */
+  private sincronizarObservacaoDasLinhas(linhas: AtendimentoListaItem[]): void {
+    const obs =
+      linhas.map((l) => String(l.descricaoManual ?? '').trim()).find(Boolean) ??
+      '';
+    if (this.observacaoCtrl.value !== obs) {
+      this.observacaoCtrl.setValue(obs, { emitEvent: false });
     }
   }
 

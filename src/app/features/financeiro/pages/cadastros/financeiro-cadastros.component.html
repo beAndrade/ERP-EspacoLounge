@@ -112,11 +112,19 @@
           </button>
         </div>
       </div>
-      <nav class="fin-cadastros__tabs" aria-label="Secções de cadastros">
+      <nav
+        #tabsNav
+        class="fin-cadastros__tabs"
+        aria-label="Secções de cadastros"
+        [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
+        [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
+      >
+        <span class="fin-cadastros__tabs-indicator" aria-hidden="true"></span>
         @for (tab of tabs; track tab.id) {
           <button
             type="button"
             class="fin-cadastros__tab"
+            [attr.data-aba]="tab.id"
             [class.fin-cadastros__tab--active]="tabAtiva() === tab.id"
             (click)="selecionarTab(tab.id)"
           >

@@ -12,12 +12,15 @@
   min-height: 0;
   min-width: 0;
   width: 100%;
+  height: 100%;
+  max-height: 100%;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
   --modal-sidebar-w: 359px;
-  --modal-col-gap: 1.25rem;
-  /** Esquerda: só o gap (encontro com a sidebar). Direita: até a borda da viewport. */
-  --drawer-bleed-l: var(--modal-col-gap);
+  /** Igual `agenda-novo--drawer`: sem gap — a borda do footer encontra a do sidebar. */
+  --modal-col-gap: 0;
+  --drawer-bleed-l: 0px;
   --drawer-bleed-r: var(--drawer-pad-x, 15px);
   --drawer-stroke: #ececec;
   --touch-min: 40px;
@@ -47,10 +50,13 @@
   display: grid;
   grid-template-columns: minmax(0, 359fr) minmax(0, 1290fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 0 var(--modal-col-gap);
+  gap: 0;
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   align-items: stretch;
 }
 
@@ -267,7 +273,7 @@
   }
 }
 
-/** Coluna principal = `form-shell__main--modal` (não invade a sidebar). */
+/** Coluna principal = `form-shell__main--modal` (clip; scroll no flow). */
 .nc-drawer__main {
   grid-column: 2;
   grid-row: 1;
@@ -275,44 +281,44 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  overflow-x: clip;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /** Âncora do fechar absoluto — este nó não scrolla. */
+  position: relative;
+  /** Único inset direito do conteúdo scrollável (= footer). */
+  padding-right: 15px;
+  box-sizing: border-box;
+  /** Igual `form-shell__main--modal`: não scrolla; o flow scrolla. */
+  overflow: hidden;
   overflow-clip-margin: 16px 12px 20px calc(var(--drawer-bleed-l, 0px) + 28px);
-  /* Fecha drawer superior sem “puxar” o scroll desta coluna. */
-  overflow-anchor: none;
 }
 
 /** = `agenda-modal__header` (drawer). */
 .nc-modal-header {
-  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 0;
+  gap: 0.5rem;
   flex: 0 0 auto;
   margin: 0 0 0.65rem;
   padding: 0;
 }
 
 /**
- * Cabeçalho dentro do scroll: só o título (o fechar vive no `:host`, fora do overflow).
+ * Título no scroller; fechar fica no shell (`.nc-modal-close--pin`).
  */
 .nc-modal-header--drawer-scroll {
-  flex-shrink: 0;
-  z-index: 8;
+  position: relative;
+  overflow: visible;
+  z-index: 2;
   background: #fff;
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 0.5rem;
-  /** Reserva a área do fechar absoluto no canto do host (60px). */
+  margin-bottom: 0.65rem;
+  /** Reserva a hit-area 60px do fechar. */
   padding-right: 60px;
 }
 
 .nc-modal-header--drawer-scroll .nc-modal-title {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 30px 0.35rem 10px 0;
+  padding: 30px 0 10px;
 }
 
 /** = `agenda-modal__title` (drawer): alinhado ao agendamento / Faturar. */
@@ -325,7 +331,10 @@
   padding: 30px 0 10px;
 }
 
-/** Fechar — base (ícone + hit area 60×60). */
+/**
+ * Fechar — mesmas medidas do agenda-novo
+ * (`:host.agenda-novo--drawer .agenda-modal__header .agenda-modal__close`).
+ */
 .nc-modal-close {
   box-sizing: border-box;
   display: inline-flex;
@@ -336,27 +345,25 @@
   min-width: 60px;
   min-height: 60px;
   margin: 0;
-  margin-inline-end: 0;
   padding: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
   color: rgba(0, 0, 0, 0.45);
   font: inherit;
   font-weight: 600;
   font-size: 16px;
   line-height: 1;
+  text-align: center;
   cursor: pointer;
   transition:
     background-color 0.2s ease,
-    color 0.2s ease,
-    border-radius 0.2s ease;
+    color 0.2s ease;
 
   &:hover {
-    color: rgba(0, 0, 0, 0.75);
-    background-color: rgba(0, 0, 0, 0.06);
-    text-decoration: none;
-    border-radius: 6px;
+    z-index: 61;
+    background: #f5f5f4;
+    color: var(--color-text, #1c1917);
   }
 
   &:focus-visible {
@@ -366,23 +373,34 @@
 }
 
 /**
- * Fechar no canto do host (irmão do `.nc-drawer`), fora de qualquer overflow
- * da coluna — hover completo e encostado ao topo/direita da viewport.
+ * Colado no canto superior direito da coluna.
+ * Fora de `.nc-drawer__flow` (único scroller) — não acompanha o scroll.
+ * `right: 0` (não negativo): `overflow: hidden` na coluna cortava o botão.
  */
-.nc-modal-close--host {
+.nc-modal-close--pin {
   position: absolute;
   top: 0;
   right: 0;
-  z-index: 50;
+  z-index: 60;
+  background: transparent;
 }
 
-/** = `form-shell__flow--modal` (coluna direita; scroll em `.nc-drawer__main`). */
+/** = `form-shell__flow--modal` — scroller da coluna (como no agenda-novo). */
 .nc-drawer__flow {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  /**
+   * `clip` no eixo X (não `hidden`): evita criar scrollport bidirecional que
+   * quebra `position: sticky` do fechar — mesmo contrato do flow do agenda-novo.
+   */
+  overflow-x: clip;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-clip-margin: 20px 16px 24px 32px;
+  overflow-anchor: none;
 }
 
 /** Calendário da Data acima do resumo sticky (e do restante da coluna). */
@@ -448,7 +466,7 @@
     flex-direction: column;
     overflow: visible;
     padding-bottom: 0;
-    padding-right: 15px;
+    padding-right: 0;
     box-sizing: border-box;
   }
 }
@@ -456,7 +474,7 @@
 .nc-main__top {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.75rem 1rem;
+  gap: 8px;
 }
 
 @include bp.bp-down(agenda-mobile) {
@@ -676,21 +694,106 @@
   }
 }
 
-/** Resumo abaixo dos itens (gap pequeno); desce com o conteúdo e scrolla junto. */
+/** Resumo abaixo dos itens; fixo acima de Observações + footer (fora do scroller). */
 .nc-drawer__resumo-sticky {
   flex: 0 0 auto;
   z-index: 6;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0 var(--drawer-pad-x, 15px) 0 0;
+  padding: 0;
   margin-top: var(--drawer-itens-resumo-gap, 0.9rem);
-  /** Gap padrão resumo → footer (= obs → footer no agenda-novo). */
-  margin-bottom: var(--drawer-obs-footer-gap, 2rem);
+  margin-bottom: 0;
   border-top: none;
   background: #fff;
   box-shadow: none;
   position: relative;
+}
+
+/**
+ * Observações — mesmo bloco do agenda-novo (acima do footer).
+ */
+.block-obs {
+  flex: 0 0 auto;
+  align-self: stretch;
+  min-width: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0.75rem;
+  margin-bottom: var(--drawer-obs-footer-gap, 2rem);
+  background: #fff;
+  position: relative;
+  z-index: 1;
+
+  > div:first-child {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  > div:first-child > span:first-of-type {
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: #404040;
+  }
+}
+
+.block-obs__textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--drawer-field-stroke, #f1f1f1);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  color: #0000008c;
+  transition:
+    border-color 0.2s linear,
+    box-shadow 0.2s linear;
+
+  &::placeholder {
+    color: rgba(0, 0, 0, 0.38);
+    opacity: 1;
+  }
+
+  &:hover:not(:disabled):not([readonly]) {
+    border-color: var(--drawer-field-stroke-hover, var(--color-primary-hover));
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--drawer-field-stroke-hover, var(--color-primary-hover));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
+  }
+
+  &:disabled,
+  &[readonly] {
+    background: #f5f5f5;
+    color: rgba(0, 0, 0, 0.25);
+    cursor: not-allowed;
+    resize: none;
+  }
+
+  &--modal {
+    min-height: 66.28px;
+    height: 66.28px;
+    max-height: 66.28px;
+    resize: none;
+  }
+}
+
+.nc-drawer--finalizada .block-obs__textarea {
+  border: none;
+  background: var(--nc-readonly-bg, #f5f5f5);
+  color: var(--nc-readonly-fg, rgba(0, 0, 0, 0.25));
 }
 
 .nc-itens__title {
@@ -1123,20 +1226,20 @@
   }
 }
 
-/** Rodapé só na coluna principal (alinha com resumo). */
+/** Rodapé só na coluna principal — borda encontra o `border-right` do sidebar (gap 0). */
 .nc-footer {
   grid-column: 2;
   grid-row: 2;
   flex: 0 0 auto;
   margin-top: 0;
   margin-bottom: 0;
-  padding: 10px 15px 10px var(--drawer-pad-x, 15px);
+  padding: 10px 15px;
   background: #fff;
   position: relative;
   /** Acima de `.nc-drawer__resumo-sticky` (z-index: 6) para o menu Excluir/Outros não ficar por baixo. */
   z-index: 20;
   overflow: visible;
-  border-top: none;
+  border-top: 1px solid hsl(220, 13%, 91%);
   pointer-events: auto;
 
   /** Com dropdown aberto, sobe ainda mais (conteúdo da comanda / selects). */

@@ -4,8 +4,9 @@
  */
 $list-table-card-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
 $list-table-card-border: 1px solid rgba(0 0 0 / 3%);
-/** Só cantos superiores — base do card fica reta (footer / fundo). */
-$list-table-card-radius: 12px 12px 0 0;
+/** Card completo (footer incluso). Cantos 14px ficam só no thead (primeiro/último th). */
+$list-table-card-radius: 12px;
+$list-table-thead-corner-radius: 14px;
 
 @mixin list-table-card-surface {
   box-shadow: $list-table-card-shadow;
@@ -25,9 +26,11 @@ $list-table-card-radius: 12px 12px 0 0;
 }
 
 .list-table-card,
-.comandas-table-card,
 .orcamentos-table-card,
 .produtos-table-card,
+.fin-transacoes__card,
+.fin-comissoes__table-card,
+.fin-cad-tab__card,
 .prof-stack-table-wrap,
 .prof-comissoes-table-wrap,
 .wa-table-wrap,
@@ -56,12 +59,12 @@ $list-table-card-radius: 12px 12px 0 0;
 }
 
 .list-table-card > .table-wrap,
-.comandas-table-card > .table-wrap,
 .orcamentos-table-card > .table-wrap,
-.produtos-table-card > .table-wrap {
+.produtos-table-card > .table-wrap,
+.fin-transacoes__card > .table-wrap {
   overflow-x: clip;
   overflow-y: visible;
-  border-radius: $list-table-card-radius;
+  border-radius: 12px 12px 0 0;
 }
 
 /** Drawer do cliente: sem radius no wrap (evita cortar a coluna Ações). */
@@ -69,6 +72,40 @@ $list-table-card-radius: 12px 12px 0 0;
   overflow-x: clip;
   overflow-y: visible;
   border-radius: 0;
+}
+
+/**
+ * 14px só nos cantos superiores do thead (primeiro e último th).
+ * Cobre listagens, comandas, orçamentos, financeiro e drawers.
+ */
+.list-table-card > .table-wrap > table > thead > tr > th:first-child,
+.orcamentos-table-card > .table-wrap > table > thead > tr > th:first-child,
+.produtos-table-card > .table-wrap > table > thead > tr > th:first-child,
+.fin-transacoes__card > .table-wrap > table > thead > tr > th:first-child,
+.fin-comissoes__table-card > .table-wrap > table > thead > tr > th:first-child,
+.fin-cad-tab__card > .table-wrap > table > thead > tr > th:first-child,
+.list-table-card table.list-table > thead > tr > th:first-child,
+.drawer-table-card > .drawer-table-wrap > table > thead > tr > th:first-child,
+.wa-table-wrap > table > thead > tr > th:first-child,
+.prof-stack-table-wrap > table > thead > tr > th:first-child,
+.prof-comissoes-table-wrap > table > thead > tr > th:first-child,
+.cliente-painel-servicos__table-wrap > table > thead > tr > th:first-child {
+  border-start-start-radius: $list-table-thead-corner-radius;
+}
+
+.list-table-card > .table-wrap > table > thead > tr > th:last-child,
+.orcamentos-table-card > .table-wrap > table > thead > tr > th:last-child,
+.produtos-table-card > .table-wrap > table > thead > tr > th:last-child,
+.fin-transacoes__card > .table-wrap > table > thead > tr > th:last-child,
+.fin-comissoes__table-card > .table-wrap > table > thead > tr > th:last-child,
+.fin-cad-tab__card > .table-wrap > table > thead > tr > th:last-child,
+.list-table-card table.list-table > thead > tr > th:last-child,
+.drawer-table-card > .drawer-table-wrap > table > thead > tr > th:last-child,
+.wa-table-wrap > table > thead > tr > th:last-child,
+.prof-stack-table-wrap > table > thead > tr > th:last-child,
+.prof-comissoes-table-wrap > table > thead > tr > th:last-child,
+.cliente-painel-servicos__table-wrap > table > thead > tr > th:last-child {
+  border-start-end-radius: $list-table-thead-corner-radius;
 }
 
 /**

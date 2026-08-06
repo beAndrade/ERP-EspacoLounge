@@ -80,7 +80,6 @@
   position: relative;
   z-index: 40;
   margin: 0;
-  padding-right: 10px;
   background: var(--hub-chrome-bg);
 }
 
@@ -1841,7 +1840,8 @@ $agenda-grid-stroke: #eeeeee;
   &--comanda {
     z-index: 1003;
     /* Scroll só em `.nc-drawer__main` — evita salto de foco no painel exterior. */
-    overflow: hidden;
+    overflow: hidden !important;
+    overscroll-behavior: none;
 
     & > app-nova-comanda-drawer {
       display: flex;
@@ -1850,6 +1850,8 @@ $agenda-grid-stroke: #eeeeee;
       min-height: 0;
       min-width: 0;
       height: 100%;
+      max-height: 100%;
+      overflow: hidden;
     }
   }
 
@@ -1867,7 +1869,14 @@ $agenda-grid-stroke: #eeeeee;
     }
 
     &:has(> app-agenda-novo.agenda-novo--somente-comanda) {
-      overflow: hidden;
+      overflow: hidden !important;
+      overscroll-behavior: none;
+
+      & > app-agenda-novo {
+        height: 100%;
+        max-height: 100%;
+        overflow: hidden;
+      }
     }
   }
 

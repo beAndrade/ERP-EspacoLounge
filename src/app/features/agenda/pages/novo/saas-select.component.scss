@@ -80,9 +80,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-muted, #78716c);
+  font-size: var(--drawer-field-font-size, 0.95rem);
+  font-weight: 400;
+  color: inherit;
 }
 
 .saas-select__icons {
@@ -118,7 +118,7 @@
   /* Por padrão = largura do trigger; o pai pode alargar via CSS vars. */
   width: var(--saas-select-panel-width, 100%);
   min-width: var(--saas-select-panel-min-width, 100%);
-  max-width: min(90vw, 36rem);
+  max-width: var(--saas-select-panel-max-width, min(90vw, 36rem));
   box-sizing: border-box;
   z-index: 40;
   border-radius: 10px;
@@ -235,11 +235,11 @@
   }
 
   &--active {
-    font-weight: 600;
     background: #eef2ff;
     cursor: default;
 
-    .saas-select__option-label {
+    .saas-select__option-label,
+    .saas-select__option-hint {
       font-weight: 600;
     }
   }
@@ -260,7 +260,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .saas-select__option-hint {
@@ -269,9 +269,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-muted, #78716c);
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: inherit;
 }
 
 .saas-select__empty {
