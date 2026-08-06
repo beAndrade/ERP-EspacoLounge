@@ -291,6 +291,49 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return String(itemTipo ?? '').trim() === 'Cabelo';
   }
 
+  /**
+   * Desconto da linha Cabelo: editável na página / fluxo comanda;
+   * só leitura no drawer de agendamento puro (espelha Valor/Total).
+   */
+  podeEditarDescontoCabeloNoDrawer(): boolean {
+    if (!this.modoModal) return true;
+    return (
+      this.fluxoSomenteComanda ||
+      this.fluxoOrcamento ||
+      this.fluxoConverterAgenda
+    );
+  }
+
+  /** Exibição só leitura do desconto Cabelo no drawer. */
+  descontoCabeloExibicaoLinha(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Cabelo') return '';
+    const v = this.parseValorPt(String(g.get('desconto')?.value ?? '').trim());
+    return this.formatarBrlEstimadoLinha(v != null && v > 0 ? v : 0);
+  }
+
+  /**
+   * Horário ao lado do Profissional na 1.ª linha Serviço.
+   * Se não houver Serviço, permanece no cabeçalho (`exibirHorarioNoCabecalhoModal`).
+   */
+  exibirHorarioNaLinhaServico(linhaIndex: number): boolean {
+    if (!this.modoModal || this.fluxoSomenteComanda) return false;
+    for (let j = 0; j < this.linhasItensArray.length; j++) {
+      if (this.linhasItensArray.at(j)?.get('itemTipo')?.value === 'Serviço') {
+        return j === linhaIndex;
+      }
+    }
+    return false;
+  }
+
+  /** Fallback: Horário no cabeçalho quando não há linha Serviço. */
+  exibirHorarioNoCabecalhoModal(): boolean {
+    if (!this.modoModal || this.fluxoSomenteComanda) return false;
+    return !this.linhasItensArray.controls.some(
+      (c) => c.get('itemTipo')?.value === 'Serviço',
+    );
+  }
+
   /** Quando true, esconde navegação global do formulário (uso dentro de modal). */
   @Input() modoModal = false;
   /**
@@ -2361,11 +2404,24 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return this.tiposLinhaAtendimento.map((t) => ({ value: t, label: t }));
   }
 
-  opcoesServicosCatalogo(): SaasSelectOption[] {
-    return this.servicosTipoServico.map((s) => ({
-      value: s.id,
-      label: this.rotuloServico(s),
-    }));
+  opcoesServicosCatalogo(linhaIndex?: number): SaasSelectOption[] {
+    const tam =
+      linhaIndex != null
+        ? String(
+            this.linhasItensArray.at(linhaIndex)?.get('tamanho')?.value ??
+              'Curto',
+          ).trim() || 'Curto'
+        : 'Curto';
+    return this.servicosTipoServico.map((s) => {
+      const hint = this.hintPrecoCatalogo(
+        precoUnitarioServicoCatalogo(s, tam),
+      );
+      return {
+        value: s.id,
+        label: this.rotuloServico(s),
+        ...(hint ? { hint } : {}),
+      };
+    });
   }
 
   opcoesTamanhosSelect(): SaasSelectOption[] {
@@ -2380,37 +2436,71 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   opcoesProdutosSelect(): SaasSelectOption[] {
-    return this.produtos.map((pr) => ({
-      value: String(pr.produto),
-      label: pr.unidade
-        ? `${pr.produto} (${pr.unidade})`
-        : String(pr.produto),
-    }));
+    return this.produtos.map((pr) => {
+      const nome = String(pr.produto);
+      const hint = this.hintPrecoCatalogo(this.precoCatalogoProduto(nome));
+      return {
+        value: nome,
+        label: pr.unidade ? `${nome} (${pr.unidade})` : nome,
+        ...(hint ? { hint } : {}),
+      };
+    });
   }
 
   opcoesPacotesMegaSelect(): SaasSelectOption[] {
     return this.pacotesMegaUnicos.map((p) => ({
       value: p,
       label: this.rotuloPacoteMegaOpcao(p),
+      hint: 'Valor por etapa',
     }));
   }
 
   opcoesPacotesCatalogoSelect(): SaasSelectOption[] {
-    return this.pacotesOrdenados.map((item) => ({
-      value: String(item.pacote),
-      label: this.rotuloPacoteCatalogo(item),
-    }));
+    return this.pacotesOrdenados.map((item) => {
+      const nome = String(item.pacote);
+      const hint = this.hintPrecoCatalogo(this.precoCatalogoPacote(nome));
+      return {
+        value: nome,
+        label: this.rotuloPacoteCatalogo(item),
+        ...(hint ? { hint } : {}),
+      };
+    });
   }
 
   opcoesPacotesQueratinaSelect(): SaasSelectOption[] {
-    return this.pacotesQueratinaOrdenados.map((item) => ({
-      value: String(item.pacote),
-      label: this.rotuloPacoteCatalogo(item),
-    }));
+    return this.pacotesQueratinaOrdenados.map((item) => {
+      const nome = String(item.pacote);
+      const hint = this.hintPrecoCatalogo(
+        this.precoCatalogoPacoteQueratina(nome),
+      );
+      return {
+        value: nome,
+        label: this.rotuloPacoteCatalogo(item),
+        ...(hint ? { hint } : {}),
+      };
+    });
   }
 
   opcoesEtapasLinhaSelect(i: number): SaasSelectOption[] {
-    return this.etapasSelectOptionsLinha(i).map((e) => ({ value: e, label: e }));
+    const g = this.linhasItensArray.at(i);
+    const itemTipo = String(g?.get('itemTipo')?.value ?? '');
+    const pacote = String(g?.get('pacote')?.value ?? '').trim();
+    return this.etapasSelectOptionsLinha(i).map((e) => {
+      const opt: SaasSelectOption = { value: e, label: e };
+      if (itemTipo === 'Mega' && pacote) {
+        const hint = this.hintPrecoCatalogo(
+          this.valorRegraMegaEtapa(pacote, e),
+        );
+        if (hint) opt.hint = hint;
+      }
+      return opt;
+    });
+  }
+
+  /** Hint monetário para opções do `app-saas-select` (catálogo). */
+  private hintPrecoCatalogo(valor: number | null | undefined): string | undefined {
+    if (valor == null || !(valor > 0)) return undefined;
+    return this.formatarBrlEstimadoLinha(valor);
   }
 
   opcoesCabelosCorSelect(): SaasSelectOption[] {

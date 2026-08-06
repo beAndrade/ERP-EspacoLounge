@@ -209,7 +209,7 @@
   overflow: visible;
   box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
   border: 1px solid rgba(0 0 0 / 3%);
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px;
   background: #fff;
   box-sizing: border-box;
   transition: box-shadow 0.1s;
@@ -246,6 +246,14 @@
   background: #fbfbfb;
   border-bottom: 1px solid #efefef;
   vertical-align: middle;
+
+  &:first-child {
+    border-start-start-radius: 14px;
+  }
+
+  &:last-child {
+    border-start-end-radius: 14px;
+  }
 }
 
 .fin-transacoes-table thead th,
@@ -922,7 +930,7 @@
 
 .fin-transacoes__footer {
   border-top: none;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: none;
 }
 
 /**

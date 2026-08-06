@@ -107,9 +107,12 @@
   box-sizing: border-box;
 }
 
-.drawer-table thead tr th:first-child,
+.drawer-table thead tr th:first-child {
+  border-start-start-radius: 14px;
+}
+
 .drawer-table thead tr th:last-child {
-  border-radius: 0;
+  border-start-end-radius: 14px;
 }
 
 .drawer-table thead th,

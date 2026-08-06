@@ -46,11 +46,28 @@
 }
 
 .fin-cadastros__tabs {
+  position: relative;
   display: flex;
   justify-content: flex-start;
   gap: 0;
   margin-top: 0.5rem;
   border-bottom: 1px solid #efefef;
+}
+
+.fin-cadastros__tabs-indicator {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: var(--tabs-indicator-width, 0px);
+  transform: translateX(var(--tabs-indicator-left, 0px));
+  background: var(--color-primary);
+  border-radius: 2px 2px 0 0;
+  pointer-events: none;
+  z-index: 1;
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .fin-cadastros__tab {
@@ -64,19 +81,15 @@
   color: #78716c;
   cursor: pointer;
   position: relative;
+  transition: color 0.2s ease;
+
+  &:hover:not(&--active) {
+    color: var(--color-primary);
+  }
 
   &--active {
     color: var(--color-primary);
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -1px;
-      height: 2px;
-      background: var(--color-primary);
-    }
+    cursor: default;
   }
 }
 

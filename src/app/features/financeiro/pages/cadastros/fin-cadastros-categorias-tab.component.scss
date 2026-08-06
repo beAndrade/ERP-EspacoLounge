@@ -17,7 +17,7 @@
   margin-top: 0.25rem;
   box-shadow: 0 0 10px 3px rgba(197 197 197 / 12%);
   border: 1px solid rgba(0 0 0 / 3%);
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px;
   background: #fff;
   box-sizing: border-box;
   overflow: visible;
@@ -38,6 +38,14 @@
 
   col.fin-cad-tab__col-acoes {
     width: clamp(72px, 6vw, 88px);
+  }
+
+  thead th:first-child {
+    border-start-start-radius: 14px;
+  }
+
+  thead th:last-child {
+    border-start-end-radius: 14px;
   }
 
   thead th.col-acoes {

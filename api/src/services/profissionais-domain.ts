@@ -31,6 +31,8 @@ export type ProfissionalApiItem = {
   ordem: number;
   /** Papel da conta de acesso ligada ao profissional (`usuarios.role`), se existir. */
   usuario_role: 'admin' | 'profissional' | null;
+  /** E-mail de login da conta ligada (`usuarios.email`), se existir. */
+  usuario_email: string | null;
 };
 
 export type ProfissionalWriteInput = {
@@ -127,6 +129,7 @@ function mapRow(r: {
   fotoUrl: string | null;
   ordem: number;
   usuarioRole?: 'admin' | 'profissional' | null;
+  usuarioEmail?: string | null;
 }): ProfissionalApiItem {
   let aniversario: string | null = null;
   if (r.aniversario) {
@@ -161,6 +164,7 @@ function mapRow(r: {
     foto_url: r.fotoUrl ? String(r.fotoUrl).trim() : null,
     ordem: Number(r.ordem) || 0,
     usuario_role: r.usuarioRole ?? null,
+    usuario_email: r.usuarioEmail ? String(r.usuarioEmail).trim() || null : null,
   };
 }
 
@@ -210,21 +214,33 @@ function buildWhereList(opts?: {
   return and(...parts);
 }
 
-async function loadAdminProfissionalIds(db: Db): Promise<Set<number>> {
+async function loadUsuarioMetaByProfissionalId(
+  db: Db,
+): Promise<Map<number, { role: 'admin' | 'profissional'; email: string }>> {
   const rows = await db
-    .select({ profissionalId: usuarios.profissionalId })
+    .select({
+      profissionalId: usuarios.profissionalId,
+      role: usuarios.role,
+      email: usuarios.email,
+    })
     .from(usuarios)
-    .where(
-      and(
-        eq(usuarios.role, 'admin'),
-        sql`${usuarios.profissionalId} IS NOT NULL`,
-      ),
-    );
-  return new Set(
-    rows
-      .map((r) => r.profissionalId)
-      .filter((id): id is number => id != null && id > 0),
-  );
+    .where(sql`${usuarios.profissionalId} IS NOT NULL`);
+  const map = new Map<
+    number,
+    { role: 'admin' | 'profissional'; email: string }
+  >();
+  for (const r of rows) {
+    const id = r.profissionalId;
+    if (id == null || id <= 0) continue;
+    const email = String(r.email || '').trim();
+    const role = r.role === 'admin' ? 'admin' : 'profissional';
+    const prev = map.get(id);
+    /** Preferir conta admin se houver mais de uma ligada. */
+    if (!prev || (role === 'admin' && prev.role !== 'admin')) {
+      map.set(id, { role, email });
+    }
+  }
+  return map;
 }
 
 export async function listProfissionaisForApi(
@@ -232,19 +248,21 @@ export async function listProfissionaisForApi(
   opts?: { incluirInativos?: boolean; contexto?: 'agenda' | 'default' },
 ): Promise<ProfissionalApiItem[]> {
   const where = buildWhereList(opts);
-  const adminIds = await loadAdminProfissionalIds(db);
+  const usuarioMeta = await loadUsuarioMetaByProfissionalId(db);
   const rows = await db
     .select(profSelect)
     .from(profissionais)
     .where(where)
     .orderBy(asc(profissionais.ordem), asc(profissionais.nome));
   return rows
-    .map((r) =>
-      mapRow({
+    .map((r) => {
+      const meta = usuarioMeta.get(r.id);
+      return mapRow({
         ...r,
-        usuarioRole: adminIds.has(r.id) ? 'admin' : null,
-      }),
-    )
+        usuarioRole: meta?.role === 'admin' ? 'admin' : meta ? 'profissional' : null,
+        usuarioEmail: meta?.email ?? null,
+      });
+    })
     .filter((x) => x.nome);
 }
 
@@ -253,16 +271,18 @@ export async function getProfissionalById(
   id: number,
 ): Promise<ProfissionalApiItem | null> {
   if (!Number.isFinite(id) || id <= 0) return null;
-  const adminIds = await loadAdminProfissionalIds(db);
+  const usuarioMeta = await loadUsuarioMetaByProfissionalId(db);
   const [r] = await db
     .select(profSelect)
     .from(profissionais)
     .where(eq(profissionais.id, id))
     .limit(1);
   if (!r) return null;
+  const meta = usuarioMeta.get(r.id);
   const item = mapRow({
     ...r,
-    usuarioRole: adminIds.has(r.id) ? 'admin' : null,
+    usuarioRole: meta?.role === 'admin' ? 'admin' : meta ? 'profissional' : null,
+    usuarioEmail: meta?.email ?? null,
   });
   return item.nome ? item : null;
 }

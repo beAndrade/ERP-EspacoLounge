@@ -1,7 +1,9 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
   computed,
+  ElementRef,
   HostListener,
   inject,
   LOCALE_ID,
@@ -105,7 +107,7 @@ export interface FinComissaoLinhaUi {
   templateUrl: './financeiro-comissoes.component.html',
   styleUrl: './financeiro-comissoes.component.scss',
 })
-export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
+export class FinanceiroComissoesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly toast = inject(AppToastService);
   private readonly api = inject(SheetsApiService);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
@@ -113,6 +115,12 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
 
   @ViewChild(NovaComandaDrawerComponent)
   private comandaDrawerRef?: NovaComandaDrawerComponent;
+
+  @ViewChild('tabsNav', { read: ElementRef })
+  private tabsNav?: ElementRef<HTMLElement>;
+
+  tabsIndicatorLeft = 0;
+  tabsIndicatorWidth = 0;
 
   private readonly comandaContextoHolder = {
     get: () => this.comandaDrawerContexto,
@@ -211,6 +219,10 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     this.periodoInicio = inicio;
     this.periodoFim = fim;
     this.recarregarProfissionais();
+  }
+
+  ngAfterViewInit(): void {
+    this.sincronizarIndicadorTabs();
   }
 
   recarregarProfissionais(selecionarId?: number): void {
@@ -463,6 +475,7 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
     const anterior = this.tabAtiva();
     this.tabAtiva.set(id);
     this.menuAcoesPagasAberto.set(null);
+    this.sincronizarIndicadorTabs();
     if (id === 'pagas') {
       this.profissionalIdSidebar = null;
       this.sidebarAberto.set(true);
@@ -480,6 +493,20 @@ export class FinanceiroComissoesComponent implements OnInit, OnDestroy {
         this.carregarLinhasDetalhe();
       }
     }
+  }
+
+  private sincronizarIndicadorTabs(): void {
+    const medir = () => {
+      const nav = this.tabsNav?.nativeElement;
+      if (!nav) return;
+      const alvo = nav.querySelector(
+        `.fin-comissoes__tab[data-aba="${this.tabAtiva()}"]`,
+      ) as HTMLElement | null;
+      if (!alvo) return;
+      this.tabsIndicatorLeft = alvo.offsetLeft;
+      this.tabsIndicatorWidth = alvo.offsetWidth;
+    };
+    requestAnimationFrame(medir);
   }
 
   abrirProfissional(prof: FinComissaoProfissionalUi): void {

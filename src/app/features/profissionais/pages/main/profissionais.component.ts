@@ -1,9 +1,12 @@
 import {
+  AfterViewInit,
   Component,
+  ElementRef,
   HostListener,
   inject,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,21 +30,23 @@ import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.
   templateUrl: './profissionais.component.html',
   styleUrl: './profissionais.component.scss',
 })
-export class ProfissionaisComponent implements OnInit, OnDestroy {
+export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
 
+  @ViewChild('tabsNav', { read: ElementRef })
+  private tabsNav?: ElementRef<HTMLElement>;
+
   busca = '';
   buscaAberta = false;
-  filtrosAbertos = false;
   pulsoToolbarBusca = false;
-  pulsoToolbarFiltro = false;
   private readonly duracaoPulsoToolbarMs = 600;
   private tPulsoBusca = 0;
-  private tPulsoFiltro = 0;
 
-  filtroStatusAtivos = true;
-  filtroStatusInativos = false;
+  /** Aba de status (substitui o drawer Filtrar). */
+  abaStatus: 'ativos' | 'inativos' = 'ativos';
+  tabsIndicatorLeft = 0;
+  tabsIndicatorWidth = 0;
 
   carregando = false;
   erro = '';
@@ -74,9 +79,12 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
     this.carregar();
   }
 
+  ngAfterViewInit(): void {
+    this.sincronizarIndicadorTabs();
+  }
+
   ngOnDestroy(): void {
     window.clearTimeout(this.tPulsoBusca);
-    window.clearTimeout(this.tPulsoFiltro);
     this.cancelarArraste();
   }
 
@@ -109,24 +117,13 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
     return this.dragProfId != null;
   }
 
-  private dispararPulsoToolbar(kind: 'busca' | 'filtro'): void {
-    if (kind === 'busca') {
-      window.clearTimeout(this.tPulsoBusca);
-      this.pulsoToolbarBusca = false;
-      queueMicrotask(() => {
-        this.pulsoToolbarBusca = true;
-        this.tPulsoBusca = window.setTimeout(() => {
-          this.pulsoToolbarBusca = false;
-        }, this.duracaoPulsoToolbarMs);
-      });
-      return;
-    }
-    window.clearTimeout(this.tPulsoFiltro);
-    this.pulsoToolbarFiltro = false;
+  private dispararPulsoToolbarBusca(): void {
+    window.clearTimeout(this.tPulsoBusca);
+    this.pulsoToolbarBusca = false;
     queueMicrotask(() => {
-      this.pulsoToolbarFiltro = true;
-      this.tPulsoFiltro = window.setTimeout(() => {
-        this.pulsoToolbarFiltro = false;
+      this.pulsoToolbarBusca = true;
+      this.tPulsoBusca = window.setTimeout(() => {
+        this.pulsoToolbarBusca = false;
       }, this.duracaoPulsoToolbarMs);
     });
   }
@@ -137,7 +134,7 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
 
   onBuscaWrapClick(): void {
     if (!this.buscaAberta) {
-      this.dispararPulsoToolbar('busca');
+      this.dispararPulsoToolbarBusca();
       this.buscaAberta = true;
       queueMicrotask(() => {
         document.getElementById('profissionais-busca-input')?.focus();
@@ -151,16 +148,24 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
     ev.preventDefault();
   }
 
-  toggleFiltros(ev?: Event): void {
-    ev?.stopPropagation();
-    this.dispararPulsoToolbar('filtro');
-    this.filtrosAbertos = !this.filtrosAbertos;
+  definirAbaStatus(aba: 'ativos' | 'inativos'): void {
+    if (this.abaStatus === aba) return;
+    this.abaStatus = aba;
+    this.sincronizarIndicadorTabs();
   }
 
-  toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
-    const checked = (ev.target as HTMLInputElement).checked;
-    if (which === 'ativos') this.filtroStatusAtivos = checked;
-    else this.filtroStatusInativos = checked;
+  private sincronizarIndicadorTabs(): void {
+    const medir = () => {
+      const nav = this.tabsNav?.nativeElement;
+      if (!nav) return;
+      const alvo = nav.querySelector(
+        `.list-page__tab[data-aba="${this.abaStatus}"]`,
+      ) as HTMLElement | null;
+      if (!alvo) return;
+      this.tabsIndicatorLeft = alvo.offsetLeft;
+      this.tabsIndicatorWidth = alvo.offsetWidth;
+    };
+    requestAnimationFrame(medir);
   }
 
   private compararProfissionais(
@@ -175,15 +180,9 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
 
   filtrados(): ProfissionalListaItem[] {
     let list = this.itens.filter((p) => Boolean(p.nome?.trim()));
-    const querAtivos = this.filtroStatusAtivos;
-    const querInativos = this.filtroStatusInativos;
-    if (querAtivos !== querInativos) {
-      list = list.filter((p) =>
-        querAtivos ? p.ativo !== false : p.ativo === false,
-      );
-    } else if (!querAtivos && !querInativos) {
-      list = [];
-    }
+    list = list.filter((p) =>
+      this.abaStatus === 'ativos' ? p.ativo !== false : p.ativo === false,
+    );
     const q = this.busca.trim().toLowerCase();
     if (q) {
       list = list.filter((p) => p.nome.toLowerCase().includes(q));
@@ -240,8 +239,8 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
     return f || '';
   }
 
-  exibirEmail(_p: ProfissionalListaItem): string {
-    return '';
+  exibirEmail(p: ProfissionalListaItem): string {
+    return String(p.usuario_email ?? '').trim();
   }
 
   ehProfissionalAdmin(p: ProfissionalListaItem): boolean {
@@ -476,11 +475,6 @@ export class ProfissionaisComponent implements OnInit, OnDestroy {
     if (this.dragProfId != null) {
       ev.preventDefault();
       this.cancelarArraste();
-      return;
-    }
-    if (this.filtrosAbertos) {
-      ev.preventDefault();
-      this.filtrosAbertos = false;
       return;
     }
     if (this.buscaAberta) {

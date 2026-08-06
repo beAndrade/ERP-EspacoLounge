@@ -50,3 +50,37 @@ Documentation
 ↓
 
 Commit
+
+---
+
+## Categorias
+
+Architecture.md
+Architecture analysis
+
+Bugfix.md
+Non-critical bugs
+
+Code-Review.md
+Code review
+
+Documentation-Review.md
+Documentation review
+
+Feature-Development.md
+New functionality
+
+Hotfix.md
+Production issues
+
+Project-Advisor.md
+(CTO) of the Nexa Platform
+
+Refactoring.md
+Architecture refactoring
+
+Small-Task.md
+Small improvements
+
+Weekly-Health-Check.md
+Weekly project health check

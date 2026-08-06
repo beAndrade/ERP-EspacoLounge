@@ -1,5 +1,7 @@
 import {
+  AfterViewInit,
   Component,
+  ElementRef,
   HostListener,
   ViewChild,
   signal,
@@ -23,14 +25,19 @@ type CadastroTab = 'categorias' | 'formas';
   templateUrl: './financeiro-cadastros.component.html',
   styleUrl: './financeiro-cadastros.component.scss',
 })
-export class FinanceiroCadastrosComponent {
+export class FinanceiroCadastrosComponent implements AfterViewInit {
   @ViewChild(FinCadastrosCategoriasTabComponent)
   private categoriasTab?: FinCadastrosCategoriasTabComponent;
 
   @ViewChild(FinCadastrosFormasTabComponent)
   private formasTab?: FinCadastrosFormasTabComponent;
 
+  @ViewChild('tabsNav', { read: ElementRef })
+  private tabsNav?: ElementRef<HTMLElement>;
+
   readonly tabAtiva = signal<CadastroTab>('formas');
+  tabsIndicatorLeft = 0;
+  tabsIndicatorWidth = 0;
 
   readonly tabs: { id: CadastroTab; label: string }[] = [
     { id: 'formas', label: 'Formas de pagamento' },
@@ -43,11 +50,30 @@ export class FinanceiroCadastrosComponent {
   filtroAtivada = true;
   filtroDesativada = false;
 
+  ngAfterViewInit(): void {
+    this.sincronizarIndicadorTabs();
+  }
+
   selecionarTab(id: CadastroTab): void {
     if (id !== 'formas') {
       this.filtrosAbertos = false;
     }
     this.tabAtiva.set(id);
+    this.sincronizarIndicadorTabs();
+  }
+
+  private sincronizarIndicadorTabs(): void {
+    const medir = () => {
+      const nav = this.tabsNav?.nativeElement;
+      if (!nav) return;
+      const alvo = nav.querySelector(
+        `.fin-cadastros__tab[data-aba="${this.tabAtiva()}"]`,
+      ) as HTMLElement | null;
+      if (!alvo) return;
+      this.tabsIndicatorLeft = alvo.offsetLeft;
+      this.tabsIndicatorWidth = alvo.offsetWidth;
+    };
+    requestAnimationFrame(medir);
   }
 
   get filtroStatusAtivo(): boolean {

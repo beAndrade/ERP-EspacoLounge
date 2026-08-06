@@ -1,5 +1,7 @@
 :host {
   display: block;
+  box-sizing: border-box;
+  width: 100%;
   --drawer-field-h: 38px;
   --drawer-field-stroke: #f1f1f1;
   --drawer-field-stroke-hover: var(--color-primary-hover);
@@ -16,6 +18,7 @@
   max-width: 22rem;
   margin-left: auto;
   padding: 0.35rem 0 0;
+  box-sizing: border-box;
 }
 
 .comanda-resumo-bar__row {

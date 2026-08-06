@@ -243,8 +243,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
   ordenacaoColuna: 'ticket' | 'data' | 'cliente' = 'ticket';
   ordenacaoDir: 'asc' | 'desc' = 'desc';
 
-  menuAbertoParaId: string | null = null;
-
   colunasMenuAberto = false;
   colunasMenuMontado = false;
   private colunasMenuAnimTimer: ReturnType<typeof setTimeout> | null = null;
@@ -405,8 +403,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   fecharMenuPorClickFora(ev: MouseEvent): void {
     const t = ev.target as HTMLElement | null;
-    if (t?.closest?.('.comandas-row-menu')) return;
-    this.menuAbertoParaId = null;
 
     if (
       (this.colunasMenuAberto || this.colunasMenuMontado) &&
@@ -888,7 +884,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   /** Toolbar «Novo»: abre o drawer de novo agendamento (mesmo fluxo da agenda). */
   abrirNovoAgendamentoDrawer(): void {
-    this.menuAbertoParaId = null;
     this.fecharPainelBusca();
     if (this.cadastroDrawer.isAberto) {
       this.cadastroDrawer.fechar();
@@ -1546,7 +1541,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
   /** Abre o drawer de edição do agendamento desta comanda (ex.: a partir do drawer). */
   editarAgendamento(g: ComandaGrupo, ev: Event): void {
     ev.stopPropagation();
-    this.menuAbertoParaId = null;
     const idAt = this.idAtendimento(g);
     const ymd = (g.data || '').slice(0, 10);
     if (!idAt || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return;
@@ -1618,7 +1612,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   /** Abre o drawer «Visualizando comanda» para o grupo indicado. */
   private abrirDrawerComandaPorGrupo(g: ComandaGrupo): void {
-    this.menuAbertoParaId = null;
     this.fecharPainelBusca();
     const idAt = this.idAtendimento(g);
     const cid = this.idCliente(g) ?? '';
@@ -2022,7 +2015,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
 
   excluir(g: ComandaGrupo, ev: Event): void {
     ev.stopPropagation();
-    this.menuAbertoParaId = null;
     if (!this.idAtendimento(g) || this.excluindoItemModal) return;
     if (this.comandaBloqueadaParaExclusao(g)) {
       this.erro = this.motivoExclusaoBloqueadaComanda();
@@ -2067,12 +2059,6 @@ export class ComandasComponent implements OnInit, OnDestroy {
         this.carregar();
       },
     });
-  }
-
-  toggleMenu(g: ComandaGrupo, ev: Event): void {
-    ev.stopPropagation();
-    const id = g.id;
-    this.menuAbertoParaId = this.menuAbertoParaId === id ? null : id;
   }
 
   estaSelecionado(g: ComandaGrupo): boolean {

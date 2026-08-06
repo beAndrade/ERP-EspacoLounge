@@ -59,6 +59,30 @@
         class="form-shell__main"
         [class.form-shell__main--modal]="modoModal"
       >
+        @if (modoModal) {
+          <button
+            type="button"
+            class="agenda-modal__close agenda-modal__close--pin"
+            (click)="onCancelarModalClique()"
+            aria-label="Fechar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                d="M6 6l12 12M18 6L6 18"
+              />
+            </svg>
+          </button>
+        }
         <div
           class="form-shell__flow"
           [class.form-shell__flow--modal]="modoModal"
@@ -77,28 +101,6 @@
                 >
                   Cliente
                 </button>
-              <button
-                type="button"
-                class="agenda-modal__close"
-                (click)="onCancelarModalClique()"
-                aria-label="Fechar"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    d="M6 6l12 12M18 6L6 18"
-                  />
-                </svg>
-              </button>
               </div>
             </div>
             @if (erro) {
@@ -218,16 +220,18 @@
           </div>
 
           @if (modoModal && !fluxoSomenteComanda) {
-            <div class="block-context__field block-context__field--hora-modal block-context__field--hora-slots">
-              <span>Horário</span>
-              <app-agenda-horario-slots
-                #horarioSlots
-                [formControl]="form.controls.hora_inicial"
-                [intervalosOcupados]="intervalosOcupacaoDia"
-                aria-label="Horário inicial"
-                (painelAberto)="onHorarioPainelAbriu()"
-              />
-            </div>
+            @if (exibirHorarioNoCabecalhoModal()) {
+              <div class="block-context__field block-context__field--hora-modal block-context__field--hora-slots">
+                <span>Horário</span>
+                <app-agenda-horario-slots
+                  #horarioSlots
+                  [formControl]="form.controls.hora_inicial"
+                  [intervalosOcupados]="intervalosOcupacaoDia"
+                  aria-label="Horário inicial"
+                  (painelAberto)="onHorarioPainelAbriu()"
+                />
+              </div>
+            }
             <div class="block-context__field block-context__field--status-modal">
               <span class="block-context__label">Status</span>
               <app-agenda-status-select
@@ -482,7 +486,7 @@
                   [showSearchIconOnOpen]="true"
                   triggerCursor="text"
                   formControlName="servico_id"
-                  [options]="opcoesServicosCatalogo()"
+                  [options]="opcoesServicosCatalogo(i)"
                   [placeholder]="modoModal ? 'Selecionar serviço' : 'Selecione…'"
                   aria-label="Serviço"
                   (picked)="aoEscolherServicoOuTamanhoNaLinha(i)"
@@ -508,6 +512,8 @@
                 <span>Profissional</span>
                 <app-saas-select
                   [showFilter]="!modoModal"
+                  [showSearchIconOnOpen]="true"
+                  triggerCursor="text"
                   formControlName="profissional"
                   [options]="opcoesProfissionaisSelect()"
                   [useNumericOutput]="true"
@@ -515,6 +521,20 @@
                   aria-label="Profissional"
                 />
               </div>
+              @if (exibirHorarioNaLinhaServico(i)) {
+                <div
+                  class="servico-row__field servico-row__field--hora-linha-modal block-context__field--hora-slots"
+                >
+                  <span>Horário</span>
+                  <app-agenda-horario-slots
+                    #horarioSlots
+                    [formControl]="form.controls.hora_inicial"
+                    [intervalosOcupados]="intervalosOcupacaoDia"
+                    aria-label="Horário inicial"
+                    (painelAberto)="onHorarioPainelAbriu()"
+                  />
+                </div>
+              }
               @if (exibirColunasValorLinha(ctrl.get('itemTipo')?.value)) {
                 <div class="servico-row__field servico-row__field--money">
                   <span>Valor unitário</span>
@@ -640,6 +660,8 @@
                   <span>Profissional</span>
                   <app-saas-select
                     [showFilter]="!modoModal"
+                    [showSearchIconOnOpen]="true"
+                    triggerCursor="text"
                     formControlName="profissional"
                     [options]="opcoesProfissionaisSelect()"
                     [useNumericOutput]="true"
@@ -684,6 +706,8 @@
                           <span>Profissional</span>
                           <app-saas-select
                             [showFilter]="!modoModal"
+                            [showSearchIconOnOpen]="true"
+                            triggerCursor="text"
                             formControlName="profissional"
                             [options]="opcoesProfissionaisSelect()"
                             [useNumericOutput]="true"
@@ -783,6 +807,8 @@
                         <span>Profissional</span>
                         <app-saas-select
                           [showFilter]="!modoModal"
+                          [showSearchIconOnOpen]="true"
+                          triggerCursor="text"
                           formControlName="profissional"
                           [options]="opcoesProfissionaisSelect()"
                           [useNumericOutput]="true"
@@ -858,6 +884,8 @@
                           <span>Profissional</span>
                           <app-saas-select
                             [showFilter]="!modoModal"
+                            [showSearchIconOnOpen]="true"
+                            triggerCursor="text"
                             formControlName="profissional"
                             [options]="opcoesProfissionaisSelect()"
                             [useNumericOutput]="true"
@@ -982,6 +1010,8 @@
                         <span>Profissional</span>
                         <app-saas-select
                           [showFilter]="!modoModal"
+                          [showSearchIconOnOpen]="true"
+                          triggerCursor="text"
                           formControlName="profissional"
                           [options]="opcoesProfissionaisSelect()"
                           [useNumericOutput]="true"
@@ -1139,16 +1169,27 @@
                     </div>
                     <div class="servico-row__field servico-row__field--money servico-row__field--money-desconto">
                       <span>Desconto</span>
-                      <input
-                        type="text"
-                        formControlName="desconto"
-                        inputmode="decimal"
-                        placeholder="R$ 0,00"
-                        autocomplete="off"
-                        aria-label="Desconto (R$)"
-                        (input)="onMoedaInput(i, 'desconto')"
-                        (blur)="onDescontoLinhaMoedaBlur(i)"
-                      />
+                      @if (podeEditarDescontoCabeloNoDrawer()) {
+                        <input
+                          type="text"
+                          formControlName="desconto"
+                          inputmode="decimal"
+                          placeholder="R$ 0,00"
+                          autocomplete="off"
+                          aria-label="Desconto (R$)"
+                          (input)="onMoedaInput(i, 'desconto')"
+                          (blur)="onDescontoLinhaMoedaBlur(i)"
+                        />
+                      } @else {
+                        <div
+                          class="servico-row__total-estimado"
+                          [attr.aria-label]="
+                            'Desconto (cabelo): ' + descontoCabeloExibicaoLinha(i)
+                          "
+                        >
+                          {{ descontoCabeloExibicaoLinha(i) }}
+                        </div>
+                      }
                     </div>
                     <div
                       class="servico-row__field servico-row__field--produto-total-estimado"

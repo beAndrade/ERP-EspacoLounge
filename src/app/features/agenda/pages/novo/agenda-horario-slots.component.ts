@@ -1,12 +1,15 @@
 import {
+  afterNextRender,
   Component,
   ElementRef,
   EventEmitter,
   forwardRef,
   HostListener,
   inject,
+  Injector,
   Input,
   Output,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -56,10 +59,14 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
   @Output() conflitoHorario = new EventEmitter<string>();
   @Output() painelAberto = new EventEmitter<void>();
 
+  @ViewChild('triggerInput') triggerInput?: ElementRef<HTMLInputElement>;
+
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly injector = inject(Injector);
 
   private _intervalos: IntervaloMinutosDia[] = [];
   panelOpen = false;
+  filterText = '';
   private inner = '';
   private onChange: (v: string) => void = () => {};
   private onTouched: () => void = () => {};
@@ -76,6 +83,14 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
       });
     }
     return out;
+  }
+
+  get opcoesFiltradas(): { min: number; hhmm: string; indisponivel: boolean }[] {
+    const q = this.filterText.trim().toLowerCase().replace(/\s+/g, '');
+    if (!q) return this.opcoes;
+    return this.opcoes.filter((o) =>
+      o.hhmm.toLowerCase().replace(/\s+/g, '').includes(q),
+    );
   }
 
   /** Rótulo do trigger: inclui «(Indisponível)» se o horário escolhido estiver ocupado. */
@@ -118,6 +133,10 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
 
   setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;
+    if (isDisabled) {
+      this.panelOpen = false;
+      this.filterText = '';
+    }
   }
 
   get isDisabled(): boolean {
@@ -126,16 +145,49 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
 
   fecharPainel(): void {
     this.panelOpen = false;
+    this.filterText = '';
+  }
+
+  onTriggerMouseDown(ev: MouseEvent): void {
+    if (this.isDisabled || this.panelOpen) return;
+    if ((ev.target as HTMLElement).closest('.ahs__trigger-input')) return;
+    ev.preventDefault();
   }
 
   toggle(ev: Event): void {
     ev.preventDefault();
     ev.stopPropagation();
     if (this.isDisabled) return;
-    const willOpen = !this.panelOpen;
-    this.panelOpen = willOpen;
-    if (willOpen) {
-      this.painelAberto.emit();
+    if ((ev.target as HTMLElement).closest('.ahs__trigger-input')) return;
+    if (this.panelOpen) {
+      this.fecharPainel();
+      this.onTouched();
+      return;
+    }
+    this.panelOpen = true;
+    this.filterText = '';
+    this.painelAberto.emit();
+    this.focusSearchAfterOpen();
+  }
+
+  onTriggerFilterInput(ev: Event): void {
+    this.filterText = (ev.target as HTMLInputElement).value;
+  }
+
+  onTriggerFilterKeydown(ev: KeyboardEvent): void {
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      this.fecharPainel();
+      this.onTouched();
+      return;
+    }
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      const first = this.opcoesFiltradas[0];
+      if (first) {
+        this.escolher(first.hhmm, first.indisponivel, ev);
+      }
     }
   }
 
@@ -148,6 +200,19 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
     this.onChange(hhmm);
     this.onTouched();
     this.panelOpen = false;
+    this.filterText = '';
+  }
+
+  private focusSearchAfterOpen(): void {
+    afterNextRender(
+      () => {
+        if (!this.panelOpen || this.isDisabled) return;
+        const el = this.triggerInput?.nativeElement;
+        if (!el) return;
+        el.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
   }
 
   @HostListener('document:pointerdown', ['$event'])
@@ -156,6 +221,7 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
     const t = ev.target;
     if (!(t instanceof Node)) return;
     if (this.host.nativeElement.contains(t)) return;
-    this.panelOpen = false;
+    this.fecharPainel();
+    this.onTouched();
   }
 }

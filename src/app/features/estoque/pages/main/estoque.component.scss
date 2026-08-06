@@ -46,12 +46,12 @@
 .produtos-page .list-page__tabs {
   position: relative;
   margin: 0;
-  border-bottom: none;
+  border-bottom: 1px solid #efefef;
 
   .list-page__tabs-indicator {
     position: absolute;
     left: 0;
-    bottom: 0;
+    bottom: -1px;
     height: 2px;
     width: var(--tabs-indicator-width, 0px);
     transform: translateX(var(--tabs-indicator-left, 0px));
@@ -65,11 +65,19 @@
   }
 
   .list-page__tab {
+    margin: 0;
+    padding: 0.65rem 1rem 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    font-weight: 600;
+    color: #78716c;
+
     &::after {
       display: none;
     }
 
     &--active {
+      color: var(--color-primary);
       cursor: default;
 
       &:hover {
