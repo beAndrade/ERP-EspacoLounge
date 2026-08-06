@@ -5,7 +5,7 @@ import { asc, eq, max, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { atendimentoItens, categorias, servicos } from '../db/schema';
 import { normalizeMoneyTextForDb } from '../lib/normalize-money-text';
-import { normalizePercentTextForDb } from '../lib/normalize-percent-text';
+import { normalizePercentTextForDb } from '../shared/utils/normalize-percent-text';
 import { listServicosForApi } from './queries';
 
 export type ServicoTipoCatalogo = 'Fixo' | 'Tamanho';

@@ -68,6 +68,17 @@ This file should always reflect the current state of the project.
 
 Update after every major milestone.
 
+# Migration Progress
+
+|   Sprint  |    Status    |               Description                |
+|-----------|--------------|------------------------------------------|
+| Sprint 1A | ✅ Completed | Created modular architecture scaffolding |
+| Sprint 1B |  ⏳ Planned  |   Begin migration of shared components   |
+| Sprint 2 | ⏳ Planned | Migrate Beauty module |
+| Sprint 3 | ⏳ Planned | Remove legacy services |
+| Sprint 4 | ⏳ Planned | Remove legacy lib |
+| Sprint 5 | ⏳ Planned | Finalize modular architecture |
+
 ------
 
 # Sprint 1A Completed

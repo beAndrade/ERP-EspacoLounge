@@ -1,7 +1,7 @@
 import type {
   whatsappConnectionStatusEnum,
   whatsappProviderEnum,
-} from '../../db/schema';
+} from '../../../../db/schema';
 
 export type WhatsappProviderType =
   (typeof whatsappProviderEnum.enumValues)[number];

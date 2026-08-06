@@ -1,9 +1,9 @@
 import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { profissionais, usuarios } from '../db/schema';
-import { isCelularBr11Digitos, telefoneBrDigitos } from '../lib/telefone-br';
+import { isCelularBr11Digitos, telefoneBrDigitos } from '../shared/utils/telefone-br';
 import { parseComissaoListagemModoInput } from './profissional-comissao-domain.js';
-import { parseFotoUrlInput } from '../lib/foto-url.js';
+import { parseFotoUrlInput } from '../shared/utils/foto-url.js';
 
 export type ProfissionalApiItem = {
   id: number;

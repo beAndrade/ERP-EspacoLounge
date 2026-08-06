@@ -1,4 +1,4 @@
-import { fail } from './envelope';
+import { fail } from '../shared/utils/envelope';
 import { bearerTokenFromRequest, verifyAccessToken } from './jwt';
 import type { AuthUser } from '../services/auth-domain';
 

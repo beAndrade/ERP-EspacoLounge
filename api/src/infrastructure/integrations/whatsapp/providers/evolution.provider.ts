@@ -1,4 +1,4 @@
-import { telefoneBrDigitos } from '../../lib/telefone-br';
+import { telefoneBrDigitos } from '../../../../shared/utils/telefone-br';
 import type {
   ConnectionTestResult,
   SendMessageResult,

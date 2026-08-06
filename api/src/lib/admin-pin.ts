@@ -1,4 +1,4 @@
-import { fail } from './envelope';
+import { fail } from '../shared/utils/envelope';
 import {
   authenticateRequest,
 } from './auth-guard';

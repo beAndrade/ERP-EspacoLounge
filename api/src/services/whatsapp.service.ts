@@ -6,9 +6,9 @@ import {
   whatsappLogs,
   whatsappProviderEnum,
 } from '../db/schema';
-import { getWhatsAppProvider } from '../integrations/whatsapp/provider-registry';
-import type { WhatsappConfigRow } from '../integrations/whatsapp/whatsapp-provider.interface';
-import { telefoneParaWhatsappBr } from '../integrations/whatsapp/evolution.provider';
+import { getWhatsAppProvider } from '../infrastructure/integrations/whatsapp/providers/provider-registry';
+import type { WhatsappConfigRow } from '../infrastructure/integrations/whatsapp/providers/whatsapp-provider.interface';
+import { telefoneParaWhatsappBr } from '../infrastructure/integrations/whatsapp/providers/evolution.provider';
 import {
   getWhatsappTemplateByCodigoApi,
   renderWhatsappTemplate,

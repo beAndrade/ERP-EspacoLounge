@@ -5,7 +5,7 @@ import { Elysia, t } from 'elysia';
 import { eq } from 'drizzle-orm';
 import { db, ensureSchemaPatches } from './db';
 import { clientes } from './db/schema';
-import { fail, ok } from './lib/envelope';
+import { fail, ok } from './shared/utils/envelope';
 import { mapPostgresUniqueViolationToPtBr } from './lib/pg-error-message';
 import { instantEmDateParaSqlLocalBrasil } from './lib/sql-local-datetime';
 import {
