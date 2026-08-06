@@ -1,6 +1,6 @@
 # Espaço Lounge — ERP (Angular + API + PostgreSQL)
 
-Sistema interno para o salão: agenda, clientes, catálogo de serviços e atendimentos. O **front** é Angular 19; a **fonte de verdade** passou a ser **PostgreSQL**, servida por uma API em **Elysia** na pasta `api/`. A planilha **ERP Espaço Lounge** (export em `docs/ERP Espaço Lounge.xlsx`) continua sendo o modelo de colunas e o ponto de partida para **popular o banco** via seed.
+Sistema interno para o salão: agenda, clientes, catálogo de serviços e atendimentos. O **front** é Angular 19; a **fonte de verdade** passou a ser **PostgreSQL**, servida por uma API em **Elysia** na pasta `api/`. A planilha **ERP Espaço Lounge** (export em `resources/ERP Espaço Lounge.xlsx`) continua sendo o modelo de colunas e o ponto de partida para **popular o banco** via seed.
 
 O código antigo do **Google Apps Script** (`apps-script/Code.gs`) fica no repositório como referência e para quem ainda mantiver um fluxo paralelo na planilha — o caminho principal de desenvolvimento hoje é **API + Postgres**.
 
@@ -22,7 +22,7 @@ Na pasta `api/`:
 2. `docker compose up -d` — sobe o Postgres.
 3. `npm install`
 4. `npm run db:migrate` — cria as tabelas.
-5. `npm run db:seed` — lê o XLSX em `docs/` e enche o banco (**apaga dados anteriores** nessas tabelas).
+5. `npm run db:seed` — lê o XLSX em `resources/` e enche o banco (**apaga dados anteriores** nessas tabelas).
 6. `npm start` — API em `http://localhost:3000`.
 
 No PowerShell, se `npm` reclamar de política de execução, use `npm.cmd start`.
@@ -53,12 +53,12 @@ Sempre que fechar um bloco de trabalho (feature, correção, doc, ajuste de conf
 ## Planilha, XLSX e documentação
 
 - **`docs/CONTRATO_PLANILHA.md`** — abas, colunas e comportamento esperado (espelho do modelo da planilha).
-- **`docs/ERP Espaço Lounge.xlsx`** — referência estrutural; o seed da API usa esse ficheiro (ou outro caminho via `XLSX_PATH` no `.env` da API).
+- **`resources/ERP Espaço Lounge.xlsx`** — referência estrutural; o seed da API usa esse arquivo (ou outro caminho via `XLSX_PATH` no `.env` da API).
 - **`docs/xlsx-manifest.json`** — gerado com `python scripts/xlsx_manifest.py` (inventário de abas/colunas).
 - **`docs/column-mapping.json`** — mapeamento cabeçalho da planilha ↔ colunas SQL.
 - **`docs/FLUXOS_E_TELAS.md`**, **`docs/CRITERIOS_SQL.md`** — contexto de produto e decisões.
 
-Atualizou a planilha “oficial”? Troque o XLSX em `docs/`, rode de novo o seed na API (em ambiente de dev) e, se quiser, regenere o manifesto.
+Atualizou a planilha “oficial”? Troque o XLSX em `resources/`, rode de novo o seed na API (em ambiente de dev) e, se quiser, regenere o manifesto.
 
 ---
 
@@ -90,7 +90,8 @@ npm run build     # artefatos em dist/
 | `src/app/core/services/sheets-api.service.ts` | Cliente HTTP da API (nome histórico; fala com Elysia) |
 | `api/` | API Elysia, Drizzle, migrações, Docker, seed |
 | `apps-script/` | Script Google legado + README de deploy |
-| `docs/` | Contrato da planilha, fluxos, critérios, XLSX de referência |
+| `docs/` | Documentação de produto, deploy e contrato da planilha |
+| `resources/` | XLSX de referência usado pelo seed |
 | `scripts/` | Utilitários Python (dump/manifesto do XLSX) |
 
 ---

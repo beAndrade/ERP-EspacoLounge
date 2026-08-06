@@ -9,7 +9,7 @@ const repoRoot = path.resolve(seedDir, '../../..');
 export function defaultXlsxPath(): string {
   const env = process.env.XLSX_PATH?.trim();
   if (env) return path.resolve(env);
-  return path.join(repoRoot, 'docs', 'ERP Espaço Lounge.xlsx');
+  return path.join(repoRoot, 'resources', 'ERP Espaço Lounge.xlsx');
 }
 
 export function loadWorkbook(filePath: string): XLSX.WorkBook {

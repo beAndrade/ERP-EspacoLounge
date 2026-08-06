@@ -1,6 +1,7 @@
 """
 Gera docs/xlsx-manifest.json: abas, cabeçalhos (linha 1), inferência de tipo por amostra.
 Executar na raiz: python scripts/xlsx_manifest.py
+Lê resources/ERP Espaço Lounge.xlsx.
 """
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[1]
-XLSX = ROOT / "docs" / "ERP Espaço Lounge.xlsx"
+XLSX = ROOT / "resources" / "ERP Espaço Lounge.xlsx"
 OUT = ROOT / "docs" / "xlsx-manifest.json"
 SAMPLE_ROWS = 30
 
