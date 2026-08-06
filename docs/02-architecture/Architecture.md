@@ -152,3 +152,89 @@ Modules communicating directly with other modules
 Transform Nexa into a modular SaaS platform where every new business segment becomes only a new Module.
 
 The Core should remain stable regardless of business domain.
+
+---
+
+# Legacy Folder Mapping
+
+The `api/src/lib` folder is considered legacy and will be gradually removed during the migration.
+
+Each file has a predefined destination in the new architecture.
+
+| Legacy File | Destination |
+|-------------|-------------|
+| admin-pin.ts | platform/auth |
+| auth-guard.ts | platform/auth |
+| jwt.ts | platform/auth |
+| login-rate-limit.ts | platform/auth |
+| descricao-lista.ts | shared/utils |
+| envelope.ts | shared/utils |
+| foto-url.ts | shared/utils |
+| normalize-comissao.ts | shared/utils |
+| normalize-money-text.ts | shared/utils |
+| normalize-percent-text.ts | shared/utils |
+| periodo-mes.ts | shared/utils |
+| telefone-br.ts | shared/utils |
+| sql-local-datetime.ts | shared/utils |
+| pg-error-message.ts | infrastructure/database |
+
+No file should remain permanently inside `lib`.
+
+The folder exists only to support the migration process.
+
+---
+
+# Current API Structure
+
+The backend is being migrated from a service-oriented structure to a modular SaaS architecture.
+
+Current target structure:
+
+```text
+api/src/
+├── core/
+├── shared/
+├── platform/
+├── features/
+├── modules/
+│   └── beauty/
+├── infrastructure/
+├── services/        (legacy)
+├── lib/             (legacy)
+├── db/              (legacy)
+├── integrations/    (legacy)
+├── seed/            (legacy)
+└── etl/             (legacy)
+```
+
+---
+
+## Layer Responsibilities
+
+| Layer | Responsibility |
+|--------|----------------|
+| Core | Framework-independent platform capabilities |
+| Shared | Reusable business-independent building blocks |
+| Platform | SaaS platform capabilities shared across all business modules |
+| Features | Generic business capabilities reusable by multiple modules |
+| Modules | Business-specific domains (Beauty, Clinic, etc.) |
+| Infrastructure | Adapters to external systems |
+| Services | Legacy business services being migrated |
+| Lib | Legacy utilities being migrated |
+
+---
+
+## Migration Status
+
+The new architecture has been created.
+
+Current implementation status:
+
+- Core: Scaffold
+- Shared: Scaffold
+- Platform: Scaffold
+- Features: Scaffold
+- Infrastructure: Scaffold
+- Beauty Module: Scaffold
+
+Business logic remains in the legacy folders until future migration sprints.
