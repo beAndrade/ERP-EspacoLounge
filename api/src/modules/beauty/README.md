@@ -19,22 +19,22 @@ Moved into the module:
 - `domain/descricao-lista.ts` — line description for Mega / Pacote / Queratina / Cabelo / Serviço
 - `shared/normalize-comissao.ts` — commission text normalization for `atendimentos.comissao`
 
-Runtime behavior, HTTP routes, and DB schema are unchanged. Consumers still live under legacy `services/` and `seed/` and import these paths directly.
+## Sprint 2A (application catalog)
 
-## Deferred: catalog / query APIs
+Moved into `application/catalog-lists.ts`:
 
-These functions **belong to Beauty** but remain in `api/src/services/queries.ts` until a dedicated follow-up sprint (after this foundation is stable). Do **not** add reexports or compatibility shims in Sprint 2.
+- `listRegrasMegaApi`
+- `listPacotesApi`
+- `listPacotesQueratinaApi`
+- `listRegrasMegaQueratinaApi`
+- `listCabelosApi`
 
-| Function | Future destination |
-|----------|--------------------|
-| `listRegrasMegaApi` | `application/` |
-| `listPacotesApi` | `application/` |
-| `listPacotesQueratinaApi` | `application/` |
-| `listRegrasMegaQueratinaApi` | `application/` |
-| `listCabelosApi` | `application/` |
+Thin temporary reexports remain in `services/queries.ts` so existing imports (e.g. god `index.ts`) keep working. **New Beauty catalog functionality must be implemented in `application/`**, not in legacy `queries.ts`.
+
+Runtime behavior, HTTP routes, and DB schema are unchanged.
 
 ## Boundaries
 
-- Prefer importing from `modules/beauty/...` (or the module barrel) instead of legacy `lib/` for Beauty helpers.
+- Prefer importing from `modules/beauty/...` (or the module barrel) instead of legacy `lib/` / `services/` for Beauty helpers and catalog lists.
 - Do not put generic platform utilities here — use `shared/` or `platform/` at API root.
 - Angular Feature UI for Beauty remains under `src/app/features/` until a later frontend module sprint.

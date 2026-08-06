@@ -199,7 +199,7 @@ api/src/
 ├── modules/
 │   └── beauty/
 │       ├── domain/           (descricao-lista)
-│       ├── application/      (catalog lists deferred)
+│       ├── application/      (catalog-lists)
 │       ├── infrastructure/
 │       ├── presentation/
 │       └── shared/           (normalize-comissao)
@@ -240,6 +240,6 @@ Current implementation status:
 - Platform: Scaffold
 - Features: Scaffold
 - Infrastructure: Partially migrated
-- Beauty Module: Foundation (domain + shared helpers; catalog still in services/queries.ts)
+- Beauty Module: Foundation + application catalog lists (thin reexports in services/queries.ts)
 
 Business logic remains in the legacy folders until future migration sprints.

@@ -77,6 +77,7 @@ Update after every major milestone.
 | Sprint 1C | ✅ Completed |       Frontend Architecture Cleanup      |
 | Sprint 1D | ✅ Completed |               Lazy Routes                |
 | Sprint 2 | ✅ Completed | Beauty Module Foundation |
+| Sprint 2A | ✅ Completed | Beauty Application catalog lists |
 | Sprint 3 | ⏳ Planned | Core Foundation |
 | Sprint 4 | ⏳ Planned | Company Entity |
 | Sprint 5 | ⏳ Planned | Database Cleanup |
@@ -298,6 +299,53 @@ Create the Beauty module foundation by introducing internal module layers and mo
 Sprint 3 — Core Foundation
 
 Continue platform core extraction per Migration-Plan (not Beauty catalog yet). Dedicated follow-up sprint should extract Beauty catalog lists into `modules/beauty/application/` after this foundation is stable.
+
+---
+
+# Sprint 2A Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Complete the Beauty module foundation by migrating Beauty catalog/query functions into `modules/beauty/application/` without changing runtime behavior.
+
+## Completed
+
+- Moved catalog list implementations into `modules/beauty/application/catalog-lists.ts`:
+  - `listRegrasMegaApi`
+  - `listPacotesApi`
+  - `listPacotesQueratinaApi`
+  - `listRegrasMegaQueratinaApi`
+  - `listCabelosApi`
+- Exported via application and beauty barrels
+- Left thin temporary reexports in `services/queries.ts` (with compatibility comment) so `index.ts` imports stay unchanged
+- Preserved HTTP routes, API contracts, and database schema
+- No frontend changes
+
+## Validation
+
+- TypeScript typecheck: No new errors introduced (same 4 preexisting diagnostics)
+- Angular development build: Passed
+- Runtime changes: None
+- Routing changes: None
+- API contract changes: None
+
+## Known Technical Debt
+
+- Thin reexports still in `services/queries.ts` (temporary compatibility)
+- HTTP routes still concentrated in god `index.ts` (presentation empty)
+- Remaining `queries.ts` lists (`listProdutosApi`, `listServicosForApi`, etc.) still legacy
+- Shared hosts still depend on Feature components (frontend)
+- SheetsApiService remains monolithic
+
+## Next Sprint
+
+Sprint 3 — Core Foundation
+
+Continue platform core extraction per Migration-Plan. Beauty presentation/route extraction remains a later dedicated sprint.
 
 ---
 

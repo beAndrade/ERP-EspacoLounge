@@ -3,10 +3,11 @@
  *
  * Internal layout:
  * - domain/         — pure Beauty rules (no I/O)
- * - application/    — use-cases / orchestration (catalog lists deferred)
- * - infrastructure/ — Beauty-specific adapters (empty in Sprint 2)
- * - presentation/   — HTTP/controllers when routes move here (empty in Sprint 2)
+ * - application/    — use-cases / orchestration (catalog lists)
+ * - infrastructure/ — Beauty-specific adapters (empty)
+ * - presentation/   — HTTP/controllers when routes move here (empty)
  * - shared/         — helpers used across Beauty layers
  */
 export * from './domain';
+export * from './application';
 export * from './shared';
