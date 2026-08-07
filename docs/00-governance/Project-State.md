@@ -80,7 +80,7 @@ Update after every major milestone.
 | Sprint 2A | ✅ Completed | Beauty Application catalog lists |
 | Sprint 3 | ✅ Completed | Core & Platform Foundation (auth) |
 | Sprint 4 | ✅ Completed | Company Entity Foundation |
-| Sprint 5 | ⏳ Planned | Database Cleanup |
+| Sprint 5 | ✅ Completed | Database Responsibility Cleanup |
 | Sprint 6 | ⏳ Planned | Design System |
 
 ------
@@ -463,6 +463,59 @@ Confirmed: no `companies` table and no `company_id` / `tenant_id` in schema.
 Sprint 5 — Database Cleanup
 
 Per Migration-Plan. Do **not** introduce multi-tenant `company_id` in Sprint 5 unless explicitly rescoped; that remains a later dedicated multi-tenant migration after Company foundation is in place.
+
+---
+
+# Sprint 5 Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Improve database architecture by separating database infrastructure responsibilities from business responsibilities without changing runtime behavior or modifying the database schema.
+
+## Database architecture audit (summary)
+
+| Asset | Classification | Action |
+|-------|----------------|--------|
+| `db/schema.ts`, `db/index.ts`, `api/drizzle/`, drizzle.config | Database Infrastructure / Legacy bridge | Kept |
+| `seed/` | Legacy | Kept |
+| `services/queries.ts` | Legacy (+ Beauty reexports) | Kept |
+| `pg-error-message.ts` | Database Infrastructure | Migrated |
+| `sql-local-datetime`, `periodo-mes`, `normalize-money-text` | Shared (not DB infra) | Kept in `lib` |
+| `company_id` / multi-tenant | Future Multi-Tenant | Not introduced |
+
+## Completed
+
+- Moved `pg-error-message.ts` → `infrastructure/database/`
+- Added database barrels and `infrastructure/database/README.md` (architecture + Design Principles)
+- Updated `api/src/index.ts` import
+- Left thin temporary reexport in `lib/pg-error-message.ts`
+- No schema, route, auth, API contract, or frontend changes
+
+## Validation
+
+- TypeScript typecheck: No new errors introduced (same 4 preexisting diagnostics)
+- Angular development build: Passed
+- Runtime changes: None
+- Schema changes: None
+- Routing / API contract changes: None
+
+## Known Technical Debt
+
+- `ensureSchemaPatches()` still mixed into `db/index.ts`
+- Monolithic `schema.ts` (ADR-005 Core vs Module split deferred)
+- Beauty constraint names inside infra error mapper
+- Remaining `lib/` Shared helpers and legacy `queries.ts`
+- Multi-tenant `company_id` still deferred
+
+## Next Sprint
+
+Sprint 6 — Design System
+
+Per Migration-Plan (frontend). Database follow-ups (Shared datetime move, patch shrinkage, schema split, `company_id`) remain later dedicated work.
 
 ---
 

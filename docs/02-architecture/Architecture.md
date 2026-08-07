@@ -165,7 +165,7 @@ Each file has a predefined destination in the new architecture.
 | periodo-mes.ts | shared/utils |
 | telefone-br.ts | shared/utils |
 | sql-local-datetime.ts | shared/utils |
-| pg-error-message.ts | infrastructure/database |
+| pg-error-message.ts | infrastructure/database *(moved Sprint 5)* |
 
 No file should remain permanently inside `lib`.
 
@@ -195,6 +195,8 @@ api/src/
 │       ├── presentation/
 │       └── shared/           (normalize-comissao)
 ├── infrastructure/
+│   ├── database/        (pg-error-message)
+│   └── integrations/whatsapp/
 ├── services/        (legacy)
 ├── lib/             (legacy)
 ├── db/              (legacy)
@@ -230,7 +232,7 @@ Current implementation status:
 - Shared: Partially migrated
 - Platform: Auth foundation + Company type foundation (`platform/company/`; no multi-tenancy yet)
 - Features: Scaffold
-- Infrastructure: Partially migrated
+- Infrastructure: Partially migrated (WhatsApp providers + database `pg-error-message`)
 - Beauty Module: Foundation + application catalog lists (thin reexports in services/queries.ts)
 
 Business logic remains in the legacy folders until future migration sprints.
