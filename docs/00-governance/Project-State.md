@@ -76,12 +76,12 @@ Update after every major milestone.
 | Sprint 1B | ✅ Completed |   Begin migration of shared components   |
 | Sprint 1C | ✅ Completed |       Frontend Architecture Cleanup      |
 | Sprint 1D | ✅ Completed |               Lazy Routes                |
-| Sprint 2  | ✅ Completed | Beauty Module Foundation |
-| Sprint 2A | ✅ Completed | Beauty Application catalog lists |
-| Sprint 3 | ✅ Completed | Core & Platform Foundation (auth) |
-| Sprint 4 | ✅ Completed | Company Entity Foundation |
-| Sprint 5 | ✅ Completed | Database Responsibility Cleanup |
-| Sprint 6 | ✅ Completed | Nexa Design System Foundation |
+| Sprint 2  | ✅ Completed |         Beauty Module Foundation         |
+| Sprint 2A | ✅ Completed |     Beauty Application catalog lists     |
+| Sprint 3 |  ✅ Completed |     Core & Platform Foundation (auth)    |
+| Sprint 4 |  ✅ Completed |         Company Entity Foundation        |
+| Sprint 5 |  ✅ Completed |      Database Responsibility Cleanup     |
+| Sprint 6 |  ✅ Completed |       Nexa Design System Foundation      |
 
 ------
 
