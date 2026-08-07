@@ -234,5 +234,6 @@ Current implementation status:
 - Features: Scaffold
 - Infrastructure: Partially migrated (WhatsApp providers + database `pg-error-message`)
 - Beauty Module: Foundation + application catalog lists (thin reexports in services/queries.ts)
+- Design System: Foundation (`src/app/design-system/` — token mirrors + docs; not wired to runtime CSS)
 
 Business logic remains in the legacy folders until future migration sprints.

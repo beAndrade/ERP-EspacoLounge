@@ -76,12 +76,12 @@ Update after every major milestone.
 | Sprint 1B | ✅ Completed |   Begin migration of shared components   |
 | Sprint 1C | ✅ Completed |       Frontend Architecture Cleanup      |
 | Sprint 1D | ✅ Completed |               Lazy Routes                |
-| Sprint 2 | ✅ Completed | Beauty Module Foundation |
+| Sprint 2  | ✅ Completed | Beauty Module Foundation |
 | Sprint 2A | ✅ Completed | Beauty Application catalog lists |
 | Sprint 3 | ✅ Completed | Core & Platform Foundation (auth) |
 | Sprint 4 | ✅ Completed | Company Entity Foundation |
 | Sprint 5 | ✅ Completed | Database Responsibility Cleanup |
-| Sprint 6 | ⏳ Planned | Design System |
+| Sprint 6 | ✅ Completed | Nexa Design System Foundation |
 
 ------
 
@@ -516,6 +516,61 @@ Improve database architecture by separating database infrastructure responsibili
 Sprint 6 — Design System
 
 Per Migration-Plan (frontend). Database follow-ups (Shared datetime move, patch shrinkage, schema split, `company_id`) remain later dedicated work.
+
+---
+
+# Sprint 6 Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Establish the Nexa Design System foundation by documenting reusable UI patterns and mirroring current design tokens, without changing visual behavior.
+
+## UI architecture audit (summary)
+
+| Finding | Classification |
+|---------|----------------|
+| `:root` colors, radius, touch-min, drawer badge/btn vars | Design Token |
+| Breakpoints (`_breakpoints.scss` + `breakpoints.ts`) | Design Token |
+| List/table/drawer SCSS shells | Layout Pattern |
+| `saas-select`, empty, avatars, tip trigger | Base / Primitive |
+| Toast, agenda calendar | Base / Composite |
+| Cadastro drawers, WA modal, financeiro hosts | Feature |
+| Ad-hoc buttons/badges without Angular primitives | Legacy → Future Component |
+| No Angular Material / Tailwind / Bootstrap | Confirmed |
+
+## Completed
+
+- Created `src/app/design-system/` with tokens, reserved folders, and documentation
+- Token modules mirror runtime CSS/SCSS (not Brand.md ideals)
+- Breakpoints re-exported from `app/styles/breakpoints.ts`
+- Docs: README, PRINCIPLES, TOKENS, COMPONENTS, ROADMAP
+- No SCSS/HTML/feature rewrites; tokens not wired into templates
+
+## Validation
+
+- Angular development build: Passed
+- Visual / route / backend / runtime behavior: Unchanged
+
+## Known UI technical debt
+
+- Brand.md drift vs `--color-primary` / missing accent
+- Shared god-folder of Feature drawers
+- Hard-coded colors in features
+- Future primitives (`NexaButton`, etc.) not built
+- Token adoption not started
+
+## Next architectural phase
+
+Migration-Plan Sprint 1A–6 is complete. Prioritize a **post-migration backlog**:
+
+1. Shared → Feature host cleanup and gradual Primitive extraction
+2. Optional token use in **new** UI only
+3. Dedicated Brand visual alignment sprint (when product wants visual change)
+4. Backend multi-tenant / `company_id` remains a separate track
 
 ---
 
