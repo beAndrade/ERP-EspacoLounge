@@ -8,6 +8,6 @@
 |   2    | ✅ Completed | 06/08/2026 | 06/08/2026 |     Beauty Module Foundation     |
 |   2A   | ✅ Completed | 06/08/2026 | 06/08/2026 | Beauty Application catalog lists |
 |   3    | ✅ Completed | 06/08/2026 | 06/08/2026 | Core & Platform Foundation (auth → platform/auth) |
-|   4    | Planned | - | - | Company Entity |
+|   4    | ✅ Completed | 06/08/2026 | 06/08/2026 | Company Entity Foundation (types only) |
 |   5    | Planned | - | - | Database Cleanup |
 |   6    | Planned | - | - | Design System |

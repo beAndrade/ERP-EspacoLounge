@@ -79,7 +79,7 @@ Update after every major milestone.
 | Sprint 2 | ✅ Completed | Beauty Module Foundation |
 | Sprint 2A | ✅ Completed | Beauty Application catalog lists |
 | Sprint 3 | ✅ Completed | Core & Platform Foundation (auth) |
-| Sprint 4 | ⏳ Planned | Company Entity |
+| Sprint 4 | ✅ Completed | Company Entity Foundation |
 | Sprint 5 | ⏳ Planned | Database Cleanup |
 | Sprint 6 | ⏳ Planned | Design System |
 
@@ -405,6 +405,64 @@ Begin consolidating the platform foundation by migrating low-risk authentication
 Sprint 4 — Company Entity
 
 Per Migration-Plan. Shared util moves (`periodo-mes`, etc.) and unblocking `normalize-money-text` from `finance-domain` remain later dedicated work.
+
+---
+
+# Sprint 4 Completed
+
+## Date
+
+2026-08-06
+
+## Objective
+
+Establish the Company entity foundation as a Platform capability without implementing multi-tenancy or changing runtime behavior.
+
+## Architecture analysis (single-company assumptions)
+
+| Finding | Classification |
+|---------|----------------|
+| JWT / auth guard / admin PIN global | Platform |
+| Admin bootstrap when `usuarios` empty | Platform |
+| Global unique email; unscoped business tables | Future Company |
+| WhatsApp singleton + `nome_empresa` / `numero_salao` | Future Company |
+| Seed / DB name Espaço Lounge | Future Company |
+| `SALAO_TIMEZONE` and Beauty “salão” helpers | Business Domain |
+| God `index.ts` + domain services without tenant filter | Legacy |
+
+Confirmed: no `companies` table and no `company_id` / `tenant_id` in schema.
+
+## Completed
+
+- Created `api/src/platform/company/` with:
+  - `company.types.ts`, `company.constants.ts`, `company.context.ts` (stub)
+  - `index.ts`, `README.md`, `DECISIONS.md`
+- Exported Company from `platform/index.ts`
+- Documented Company vs multi-tenant roadmap (ADR-002)
+- No services, repositories, DB access, middleware, or runtime wiring
+- No schema, route, auth, API contract, or frontend changes
+
+## Validation
+
+- TypeScript typecheck: No new errors introduced (same 4 preexisting diagnostics)
+- Angular development build: Passed
+- Runtime changes: None
+- Routing changes: None
+- Schema changes: None
+- API contract changes: None
+
+## Known Technical Debt
+
+- Runtime remains single-tenant everywhere listed in the analysis
+- Company types are unused by call paths (intentional)
+- Multi-tenant `company_id` not introduced (deferred)
+- Remaining Sprint 3 debts (auth types in services, `lib/` utils, etc.)
+
+## Next Sprint
+
+Sprint 5 — Database Cleanup
+
+Per Migration-Plan. Do **not** introduce multi-tenant `company_id` in Sprint 5 unless explicitly rescoped; that remains a later dedicated multi-tenant migration after Company foundation is in place.
 
 ---
 

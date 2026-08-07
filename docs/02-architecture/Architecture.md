@@ -24,20 +24,9 @@ Nexa Platform
 
 # Core
 
-The Core contains business-independent functionality.
+The Core contains framework-independent platform capabilities (middleware base, config, logging abstractions, etc.).
 
-Examples
-
-- Authentication
-- Authorization
-- Companies
-- Users
-- Roles
-- Permissions
-- Notifications
-- Audit Logs
-- Settings
-- Dashboard Framework
+SaaS capabilities such as Authentication and **Companies** live under the **Platform** layer (ADR-006), not Core.
 
 Core must NEVER contain business-specific logic.
 
@@ -195,7 +184,8 @@ api/src/
 ├── core/
 ├── shared/
 ├── platform/
-│   └── auth/            (jwt, auth-guard, admin-pin, login-rate-limit)
+│   ├── auth/            (jwt, auth-guard, admin-pin, login-rate-limit)
+│   └── company/         (types foundation; no runtime tenancy)
 ├── features/
 ├── modules/
 │   └── beauty/
@@ -238,7 +228,7 @@ Current implementation status:
 
 - Core: Scaffold (no dedicated lib modules migrated yet)
 - Shared: Partially migrated
-- Platform: Auth foundation (`platform/auth/`; thin reexports in `lib/`)
+- Platform: Auth foundation + Company type foundation (`platform/company/`; no multi-tenancy yet)
 - Features: Scaffold
 - Infrastructure: Partially migrated
 - Beauty Module: Foundation + application catalog lists (thin reexports in services/queries.ts)
