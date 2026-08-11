@@ -79,18 +79,17 @@ The complete customer experience creates value.
 
 # Revenue Model
 
-Primary Revenue
+Primary revenue:
 
-Monthly SaaS Subscription
+Monthly SaaS subscription
 
-Future Opportunities
+Future revenue opportunities may expand beyond subscription (for example AI-related services, integrations, usage-based credits, and similar channels).
 
-- AI Services
-- Premium Integrations
-- WhatsApp Credits
-- Advanced Analytics
-- Marketplace
-- API Access
+The **canonical detailed list** of future revenue opportunities and revenue mechanisms lives in:
+
+[monetization-strategy.md](../pricing/monetization-strategy.md)
+
+This Business Model document keeps only the strategic summary above. Do not maintain a second detailed monetization list here.
 
 Recurring revenue supports continuous product evolution.
 
@@ -180,8 +179,9 @@ The business model should remain simple, scalable and customer-centric.
 
 This document works together with:
 
-- Pricing Strategy
-- Monetization Strategy
+- [Pricing Strategy](../pricing/pricing-strategy.md)
+- [Monetization Strategy](../pricing/monetization-strategy.md) (canonical revenue mechanisms)
+- [Packaging](../pricing/packaging.md)
 - Go-To-Market
 - Positioning
 - Customer Success

@@ -1,6 +1,6 @@
 # EPIC-05 — Growth Platform
 
-## Status
+## Planning Status
 
 Planned
 
@@ -49,5 +49,6 @@ After Beauty excellence and tenant isolation, growth comes from onboarding lever
 
 - `docs/01-product/Roadmap.md` (Phase 4–5)
 - `docs/01-product/Modules.md`
-- `docs/04-business/Monetization.md`
-- Product-Roadmap.md
+- `docs/04-business/pricing/monetization-strategy.md`
+- [Product roadmap](../roadmap/product-roadmap.md)
+- Lifecycle: not created yet under `docs/01-product/epics/`

@@ -4,7 +4,7 @@
 
 Sequence product themes after the modular architecture foundation is in place.
 
-This roadmap focuses on **platform and Beauty product value**. Business GTM sequencing lives in [Business-Roadmap.md](./Business-Roadmap.md).
+This roadmap focuses on **platform and Beauty product value**. Business GTM sequencing lives in [business-roadmap.md](./business-roadmap.md).
 
 ---
 

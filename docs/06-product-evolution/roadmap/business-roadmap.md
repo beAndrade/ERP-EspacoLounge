@@ -4,16 +4,16 @@
 
 Sequence go-to-market and customer lifecycle work so product epics convert into revenue and retention.
 
-Product delivery sequencing lives in [Product-Roadmap.md](./Product-Roadmap.md).
+Product delivery sequencing lives in [product-roadmap.md](./product-roadmap.md).
 
 ---
 
 ## Current baseline
 
-- Founder-led sales (see `docs/04-business/Sales.md`)
+- Founder-led sales (see `docs/04-business/sales/sales-strategy.md`)
 - Geographic focus starts with Região dos Lagos corridor (Rio das Ostras → Macaé → Cabo Frio)
-- Pricing and monetization drafts exist (`Pricing.md`, `Monetization.md`)
-- Sales Playbook scaffold exists (`Sales-Playbook.md`) — needs real interview evidence
+- Pricing and monetization drafts exist (`docs/04-business/pricing/`)
+- Sales playbook scaffold exists (`docs/07-operations/playbooks/sales-playbook.md`) — needs real interview evidence
 
 ---
 
@@ -49,7 +49,7 @@ Each loop feeds Product Roadmap priorities (especially Beauty Excellence and Sma
 
 ---
 
-## Geographic phases (from Sales.md)
+## Geographic phases (from sales strategy)
 
 1. Rio das Ostras / Macaé / Cabo Frio
 2. Região dos Lagos
@@ -68,7 +68,7 @@ Do not expand geography faster than onboarding and success capacity.
 - 30/90-day retention / active usage
 - Referral rate
 
-Detailed metrics: `docs/04-business/Success-Metrics.md`
+Detailed metrics: `docs/04-business/customer-success/success-metrics.md`
 
 ---
 

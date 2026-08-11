@@ -1,8 +1,8 @@
 # Documentation Review
 
-**Review:** Phase 2 Documentation Review  
-**Branch:** `review/documentation-phase2`  
-**Status:** In Progress  
+**Review:** Phase 2 Documentation Review
+**Branch:** `review/documentation-phase2`
+**Status:** In Progress
 **Review Type:** Documentation Architecture Review
 
 ---
@@ -182,7 +182,12 @@ The detailed EPIC documentation should remain under `01-product/epics/`.
 
 ### EPIC Release Files
 
-The EPIC-level `changelog.md` and `release-notes.md` were found to contain no content.
+The following EPIC-level files were found to contain no content:
+
+```text
+01-product/epics/epic-01-mobile-foundation/changelog.md
+01-product/epics/epic-01-mobile-foundation/release-notes.md
+```
 
 Official release documentation already exists under:
 
@@ -225,25 +230,20 @@ The following documents have different responsibilities:
 ```text
 commissions-rules.md
 commissions-payroll.md
+commission-lifecycle.md
 ```
 
 `commissions-rules.md` represents product/business rules.
 
 `commissions-payroll.md` represents operational/technical payroll behavior.
 
+`commission-lifecycle.md` represents the lifecycle of a commission.
+
 ### Decision
 
-**KEEP SEPARATE**
+**KEEP SEPARATE** — content rules completed under **D3.3 (KEEP WITH RULE)**.
 
-They should not be consolidated.
-
-### Open Question
-
-The current location of `commissions-payroll.md` may not be ideal because its content is more technical/operational than the other domain-model documents.
-
-This requires a broader documentation architecture decision.
-
-**Do not move it yet.**
+The exact future location of `commissions-payroll.md` remains under review (no move in D3.3).
 
 ---
 
@@ -383,15 +383,7 @@ Move:
 04-business/strategy/decision-framework.md
 ```
 
-### Responsibility Boundary
-
-`04-business/` documents business strategy, customer discovery, pricing, sales, onboarding and customer success.
-
-`07-operations/` documents recurring operational execution through playbooks.
-
-Therefore, business decisions should remain under `04-business/`, while repeatable execution procedures should remain under `07-operations/`.
-
-This distinction should be preserved during future documentation expansion.
+This move has now been executed.
 
 ---
 
@@ -402,6 +394,7 @@ Current documents include:
 ```text
 brand-philosophy.md
 business-model.md
+decision-framework.md
 go-to-market.md
 ideal-customer-profile.md
 positioning.md
@@ -460,6 +453,22 @@ Current structure includes:
 
 The Phase 2 prompt set mirrors the EPIC documentation workflow and is intentionally related to the product lifecycle.
 
+### Intentional Placeholders
+
+Some documentation files may intentionally remain empty during the current phase.
+
+This is acceptable when the document belongs to a future documentation system that has already been planned but not yet implemented.
+
+The main example is `05-prompts/`.
+
+The reusable prompt system will be developed in a dedicated future phase after the documentation architecture is stabilized.
+
+Therefore, empty prompt documents should not be classified as documentation defects during the current review.
+
+They should be evaluated again during the Prompt System Phase.
+
+An empty file is only considered a defect when its responsibility is expected to be active in the current phase and no valid reason exists for it to remain empty.
+
 ### Future Evolution
 
 A future AI Development Framework may expand the prompt system, especially for daily Cursor workflows.
@@ -481,7 +490,7 @@ This should be designed later rather than prematurely expanded during the curren
 
 Current responsibility:
 
-Ideas, discoveries, metrics, business EPICs, product EPICs and roadmaps.
+Ideas, metrics, business EPICs, product EPICs and roadmaps.
 
 Current structure:
 
@@ -489,7 +498,6 @@ Current structure:
 06-product-evolution/
 ├── backlog/
 ├── business-epics/
-├── discoveries/
 ├── ideas/
 ├── metrics/
 ├── product-epics/
@@ -497,11 +505,13 @@ Current structure:
 └── README.md
 ```
 
+Note: `discoveries/` was removed under **D3.2** (see below). It is no longer part of the structure.
+
 ### Decision
 
 **KEEP**
 
-This structure correctly separates product evolution stages.
+This structure correctly separates product evolution stages (without a separate `discoveries/` folder).
 
 ---
 
@@ -558,7 +568,7 @@ Discovery
 ↓
 Validated Learning
 ↓
-Product / Business Decision
+Business / Product Decision
 ↓
 PDR
 ↓
@@ -747,11 +757,966 @@ Future Product EPICs should follow the same pattern when a detailed lifecycle is
 
 ---
 
-# 16. Current Proposed Structural Changes
+# 16. D3 Findings
+
+## 16.1 Summary
+
+The Content & Responsibility Review identified multiple points of potential overlap.
+
+These findings do not mean that every overlapping concept represents a defect.
+
+The purpose of D3 is to distinguish:
+
+- intentional overlap;
+- ambiguity;
+- duplication;
+- contradiction;
+- incorrect responsibility.
+
+### Summary
+
+| Metric | Result |
+|---|---:|
+| Areas analyzed | 9 |
+| Problems reported | 18 |
+| Real duplications (D) | 4 |
+| Ambiguities (C) | 8 |
+| Contradictions (E) | 3 |
+| Incorrect responsibility (F) | 2 |
+| Acceptable overlap (B) | 1 |
+
+No repository files were altered during the initial D3 analysis.
+
+---
+
+# 17. D3 — Discovery Responsibility
+
+The Discovery architecture is intentionally distributed across layers.
+
+## Historical proposal (superseded by D3.2)
+
+An earlier draft proposed three Discovery-related folders, including:
+
+```text
+06-product-evolution/discoveries/
+```
+
+with the aspirational role of “product implications derived from discovery,” and a provisional decision of **KEEP ALL THREE**.
+
+That provisional decision is **superseded by D3.2** below.
+
+## Canonical Discovery flow (current)
+
+```text
+07-operations
+→ método de discovery / entrevista
+
+04-business/customer-discovery
+→ evidências, observações, assumptions e validated learnings
+
+01-product/pdr
+→ decisão formal de produto
+
+06-product-evolution/ideas
+ou
+06-product-evolution/product-epics
+→ oportunidade / evolução de produto
+```
+
+### `07-operations/customer-interview-playbook.md`
+
+Responsible for:
+
+- how to prepare;
+- how to conduct interviews;
+- practical interview procedure;
+- operational guidance.
+
+### `04-business/customer-discovery/`
+
+Responsible for:
+
+- field observations;
+- assumptions;
+- evidence;
+- validated learnings;
+- business discovery records.
+
+This is the canonical business evidence layer.
+
+### Product implications (no `06/.../discoveries/` folder)
+
+Validated learnings influence product through existing homes:
+
+- `01-product/pdr/` — formal product decisions;
+- `06-product-evolution/ideas/` — opportunities not yet committed;
+- `06-product-evolution/product-epics/` — portfolio evolution themes.
+
+---
+
+# 17.1 D3.2 — `06-product-evolution/discoveries/` (COMPLETED)
+
+### Human decision
+
+**REMOVE**
+
+### Finding
+
+`docs/06-product-evolution/discoveries/` had no content and no distinct operational responsibility in the repository.
+
+Keeping an empty third Discovery layer risked becoming a second evidence source without clear consumers.
+
+### Action taken
+
+- Removed the empty directory `docs/06-product-evolution/discoveries/`.
+- Updated this review so Discovery no longer treats that folder as canonical or future-required.
+
+### Decision status
+
+**COMPLETED**
+
+---
+
+# 18. D3 — Personas vs ICP
+
+The current architecture distinguishes:
+
+```text
+01-product/personas/
+```
+
+from:
+
+```text
+04-business/strategy/ideal-customer-profile.md
+```
+
+and from ICP references inside operational playbooks.
+
+### Decision
+
+**KEEP PERSONA AND ICP SEPARATE**
+
+### Persona
+
+Answers:
+
+> Who is the user and how do they behave within the product/business context?
+
+Example:
+
+```text
+Owner
+Receptionist
+Professional
+```
+
+### ICP
+
+Answers:
+
+> Which type of business is most likely to be a good customer for Nexa?
+
+The canonical ICP belongs in:
+
+```text
+04-business/strategy/ideal-customer-profile.md
+```
+
+### Playbook Rule
+
+Operational playbooks may reference the ICP for execution purposes, but should not create a competing ICP definition.
+
+If an ICP description inside a playbook conflicts with the canonical ICP, the playbook must be corrected to reference the canonical business document.
+
+---
+
+# 19. D3 — Brand Responsibility
+
+The review identified three related brand documents:
+
+```text
+01-product/overview/brand.md
+04-business/strategy/brand-philosophy.md
+adr/ADR-003-Brand-Architecture.md
+```
+
+### Decision
+
+**KEEP ALL THREE**
+
+Their intended responsibility is:
+
+```text
+01
+→ Brand expression within the product
+
+04
+→ Brand philosophy and company identity
+
+ADR
+→ Brand architecture decision
+```
+
+The hierarchy is:
+
+```text
+Brand Philosophy
+        ↓
+Brand Architecture Decision
+        ↓
+Brand Expression in Product
+```
+
+### Important Note
+
+`brand-philosophy.md` requires a dedicated future strategic brainstorming session.
+
+The Nexa identity must not be permanently defined by the current Beauty focus.
+
+The current product strategy may be Beauty-focused while the long-term Nexa identity remains multi-vertical.
+
+---
+
+# 20. D3 — Architecture vs Development
+
+The distinction between:
+
+```text
+02-architecture/
+```
+
+and:
+
+```text
+03-development/
+```
+
+is considered valid.
+
+### `02-architecture`
+
+Answers:
+
+> How is the platform structured and why?
+
+### `03-development`
+
+Answers:
+
+> How is software developed, maintained and released?
+
+### Decision
+
+**KEEP**
+
+No structural change is required.
+
+Future documentation should preserve this distinction.
+
+---
+
+# 21. D3 — Prompts vs Official Documentation
+
+The Phase 2 prompt structure intentionally mirrors the EPIC lifecycle.
+
+This is acceptable.
+
+The distinction is:
+
+```text
+01-product/
+        ↓
+Official project/product knowledge
+
+05-prompts/
+        ↓
+Instructions for AI-assisted execution
+```
+
+### Rule
+
+A prompt may reference an official rule, but should not become the only place where a permanent project rule exists.
+
+Permanent project knowledge belongs in the appropriate official documentation layer.
+
+Prompts explain:
+
+> How should AI execute a task?
+
+Official documentation explains:
+
+> What is true about the project?
+
+### Decision
+
+**KEEP**
+
+The prompt system will be expanded in a dedicated future phase.
+
+---
+
+# 22. D3.1 — Consolidated Documentation Decisions
+
+This section consolidates the structural decisions resulting from the documentation review.
+
+The purpose is not to eliminate every overlap between documents.
+
+The purpose is to establish clear responsibility boundaries so that intentional overlap does not become duplication or contradiction.
+
+---
+
+## 22.1 Product Roadmap
+
+### Decision
+
+**KEEP `06-product-evolution/roadmap/product-roadmap.md` as the canonical Product Roadmap.**
+
+The previous roadmap under:
+
+```text
+01-product/overview/product-roadmap.md
+```
+
+was an older roadmap representation and has been removed.
+
+The canonical roadmap is now:
+
+```text
+06-product-evolution/roadmap/product-roadmap.md
+```
+
+### Responsibility
+
+The Product Evolution roadmap represents:
+
+- product evolution;
+- future direction;
+- sequencing;
+- product initiatives;
+- relationship with Product EPICs.
+
+`01-product/overview/` should describe the current product rather than maintain a competing roadmap.
+
+### Rule
+
+There should be one canonical Product Roadmap.
+
+---
+
+## 22.2 Product EPIC Portfolio vs Detailed EPIC Lifecycle
+
+### Decision
+
+**KEEP WITH RULE** (D3.4 — completed).
+
+```text
+06-product-evolution/product-epics/
+```
+
+and:
+
+```text
+01-product/epics/
+```
+
+represent different levels of Product EPIC documentation. Neither layer is removed or merged.
+
+### Operational rule (final)
+
+`06-product-evolution/product-epics` is the canonical source for the **portfolio**, strategic intent and **planning status** of Product EPICs.
+
+`01-product/epics` is the canonical source for **detailed content**, execution scope and **execution / lifecycle status**.
+
+These layers may repeat high-level information, but the portfolio must summarize and point to the lifecycle when it exists.
+
+The portfolio must **not** redefine the lifecycle.
+
+### Status semantics
+
+Do not convert Planning Status values into Execution Status values (or vice versa).
+
+- Portfolio: use **Planning Status** (e.g. Planned).
+- Lifecycle: use **Execution Status** (e.g. Draft).
+
+They are different kinds of status. Do not invent new states; preserve supported current values.
+
+### Product Direction vs Current Delivery Scope
+
+When both are conceptually valid (e.g. EPIC-01):
+
+- **Product Direction / North Star** — strategic ambition (e.g. mobile as primary platform).
+- **Current Delivery Scope / first slice** — what the portfolio commits to deliver now (e.g. browser-usable first slice).
+
+Do not erase one to force the documents to look identical.
+
+### Related roadmaps and Business EPICs
+
+- **Product Roadmap** (`06-product-evolution/roadmap/product-roadmap.md`) = sequencing / planning of Product EPICs.
+- **Business Roadmap** (`06-product-evolution/roadmap/business-roadmap.md`) = sequencing / planning of Business EPICs.
+- **Business EPICs** (`06-product-evolution/business-epics/`) = GTM / business initiatives — not copies of Product EPICs.
+- `04-business` remains the canonical source for strategy, ICP, pricing, sales, discovery, onboarding and customer success.
+
+### `06-product-evolution/product-epics/`
+
+Represents the **strategic Product EPIC portfolio**.
+
+It should answer:
+
+> What EPICs exist, why they matter, what outcome they pursue and where they belong in the product evolution strategy?
+
+This layer is responsible for:
+
+- strategic scope;
+- priority;
+- **Planning Status**;
+- expected outcome;
+- relationship with product evolution;
+- link to lifecycle when present.
+
+### `01-product/epics/`
+
+Represents the **detailed lifecycle of an individual EPIC**.
+
+It should answer:
+
+> How do we define, design, build, validate and document this specific EPIC?
+
+This layer contains the detailed lifecycle:
+
+```text
+01-vision.md
+02-business-rules.md
+03-ux-flows.md
+04-technical-design.md
+05-sprint-planning.md
+06-architecture-review.md
+07-implementation.md
+08-validation.md
+09-documentation.md
+```
+
+### Synchronization Rule
+
+The two representations must not develop conflicting strategic scopes.
+
+If detailed EPIC work reveals a change in product scope or strategic intent:
+
+```text
+01-product/epics/
+        ↓
+Product decision
+        ↓
+06-product-evolution/product-epics/
+        ↓
+Updated portfolio definition
+```
+
+The detailed EPIC lifecycle remains responsible for execution.
+
+---
+
+# 22.2.1 D3.4 — EPIC Portfolio × Lifecycle (COMPLETED)
+
+### Human decision
+
+**KEEP WITH RULE**
+
+### Action taken
+
+- Clarified EPIC-01 portfolio vs lifecycle (Planning Status / Execution Status; North Star vs first slice).
+- Linked portfolio ↔ lifecycle with correct relative paths.
+- Fixed broken PascalCase / legacy paths under `06-product-evolution` README, product-epics, business-epics and roadmaps.
+- Did not create lifecycles for EPICs that lack them; did not merge layers; did not restore `01-product/overview/product-roadmap.md`.
+
+### Decision status
+
+**COMPLETED**
+
+---
+
+## 22.3 Sales Strategy vs Sales Process vs Sales Playbook
+
+### Decision
+
+**KEEP WITH RULE** (D3.5 — completed).
+
+Do not move, merge, or delete the sales documents. Keep process and funnel as separate files.
+
+The hierarchy is:
+
+```text
+04-business/sales/
+│
+├── sales-strategy.md
+├── sales-process.md
+├── sales-funnel.md
+├── objection-handling.md
+└── sales-conversation-library.md
+        ↓
+07-operations/playbooks/
+└── sales-playbook.md
+```
+
+Canonical ICP remains:
+
+```text
+04-business/strategy/ideal-customer-profile.md
+```
+
+### Final responsibility boundary
+
+| Document | Responsibility |
+|----------|----------------|
+| `sales-strategy.md` | Commercial strategy and positioning |
+| `sales-process.md` | Official sales process and exit criteria |
+| `sales-funnel.md` | Funnel measurement and bottlenecks |
+| `objection-handling.md` | Objections and response knowledge |
+| `sales-conversation-library.md` | Conversation learning |
+| `ideal-customer-profile.md` | Canonical ICP |
+| `sales-playbook.md` | Operational execution of the sales process only |
+
+### `04-business/sales/`
+
+Represents the business-level sales system.
+
+It should answer:
+
+> What is our commercial strategy and what rules govern the sales process?
+
+### `07-operations/playbooks/sales-playbook.md`
+
+Represents operational execution.
+
+It should answer:
+
+> How should someone execute the process in practice?
+
+The playbook may contain preparation, execution sequence, practical scripts, checklists, demo handoff, and follow-up procedures.
+
+### Rule
+
+`sales-playbook.md` must not redefine strategy, process, ICP, commercial positioning, or funnel metrics.
+
+When those concepts are needed operationally, the playbook must reference the corresponding business documents.
+
+Process and funnel remain separate:
+
+- **Process** = how the opportunity progresses.
+- **Funnel** = how conversion and bottlenecks are measured.
+
+The hierarchy is:
+
+```text
+Strategy
+    ↓
+Process
+    ↓
+Playbook
+```
+
+---
+
+# 22.3.1 D3.5 — Sales Strategy × Process × Playbook (COMPLETED)
+
+### Human decision
+
+**KEEP WITH RULE**
+
+### Action taken
+
+- Rewrote `sales-playbook.md` as operational execution only; removed competing ICP / strategy / “official process” / duplicated indicators.
+- Added explicit Process ↔ Funnel stage map and cross-references in `sales-process.md` and `sales-funnel.md`.
+- Added minimal operations pointer from `sales-strategy.md` to the playbook.
+- Left objection-handling and conversation library in `04-business/sales/` (referenced, not merged).
+
+### Decision status
+
+**COMPLETED**
+
+---
+
+## 22.4 Discovery Architecture
+
+### Decision
+
+**Updated by D3.2 — REMOVE `06-product-evolution/discoveries/`.**
+
+Canonical flow:
+
+```text
+07-operations/
+        ↓
+04-business/customer-discovery/
+        ↓
+01-product/pdr/
+   and/or
+06-product-evolution/ideas/
+   and/or
+06-product-evolution/product-epics/
+```
+
+### `07-operations/`
+
+Represents **how discovery is conducted**.
+
+Example:
+
+```text
+customer-interview-playbook.md
+```
+
+This layer contains:
+
+- interview procedure;
+- preparation;
+- execution;
+- practical guidance;
+- interview rituals.
+
+### `04-business/customer-discovery/`
+
+Represents **business evidence collected through discovery**.
+
+This includes:
+
+- assumptions;
+- field observations;
+- validated learnings;
+- interview templates;
+- evidence generated from customer interactions.
+
+This is the canonical evidence layer for business discovery.
+
+### Product evolution after evidence
+
+Product implications do **not** use a dedicated `06-product-evolution/discoveries/` folder.
+
+They land in:
+
+- `01-product/pdr/` — formal product decisions;
+- `06-product-evolution/ideas/` — early opportunities;
+- `06-product-evolution/product-epics/` — portfolio themes.
+
+### Rule
+
+```text
+07 = how we discover
+04 = what we learned
+01/06 = what it may mean for product (PDR / ideas / product-epics)
+```
+
+Do not recreate `06-product-evolution/discoveries/` as a second repository for raw customer evidence.
+
+---
+
+## 22.5 Brand Architecture
+
+### Decision
+
+**KEEP WITH RULE** (D3.7 — completed).
+
+Do not create, move, merge, or remove the Brand documents.
+
+```text
+01-product/overview/brand.md
+04-business/strategy/brand-philosophy.md
+04-business/strategy/positioning.md
+adr/ADR-003-Brand-Architecture.md
+```
+
+They represent different levels of responsibility.
+
+### Final responsibility boundary
+
+| Document | Responsibility |
+|----------|----------------|
+| `brand-philosophy.md` | Long-term brand identity / philosophy |
+| `positioning.md` | Current market positioning and perception |
+| `ADR-003-Brand-Architecture.md` | Brand architecture decision (master brand + modules) |
+| `01-product/overview/brand.md` | Product brand expression (visual, UI, experience principles) |
+
+### Rule
+
+- **Beauty current market focus ≠ permanent Nexa brand identity.**
+- Brand Philosophy content remains intentionally open for a dedicated human brainstorming phase.
+- Product `brand.md` must not redefine market positioning.
+- ADR-003 records architecture only; it is not Brand Strategy / Philosophy.
+
+### Hierarchy
+
+```text
+Brand Philosophy
+        ↓
+Brand Architecture Decision (ADR-003)
+        ↓
+Brand Expression in Product (brand.md)
+```
+
+Positioning sits beside Brand Philosophy as **current market** perception — not as a substitute for long-term identity.
+
+These documents should not become three versions of the same brand statement.
+
+---
+
+# 22.5.1 D3.7 — Brand Responsibility (COMPLETED)
+
+### Human decision
+
+**KEEP WITH RULE**
+
+### Action taken
+
+- Removed competing Positioning block from `01-product/overview/brand.md`; linked positioning + ADR-003.
+- Left `brand-philosophy.md` as canonical placeholder without inventing philosophy content.
+- Minimal related-docs pointer on ADR-003; renamed ADR-003 entry in `adr/README.md` to Brand Architecture.
+- Clarified Positioning vs Brand Philosophy in `positioning.md`.
+
+### Decision status
+
+**COMPLETED** (documentation boundaries). Brand Philosophy brainstorming remains open.
+
+---
+
+## 22.6 Commission Documentation
+
+### Decision (historical)
+
+**KEEP the commission documents separate for now.**
+
+Superseded in content discipline by **D3.3** below (still three files; responsibilities enforced).
+
+### Documents
+
+```text
+01-product/domain-models/
+├── commissions-rules.md
+├── commissions-payroll.md
+└── commission-lifecycle.md
+```
+
+### Responsibilities (D3.3 — KEEP WITH RULE)
+
+#### `commissions-rules.md`
+
+> Business rules, configuration, eligibility and commission policy.
+
+#### `commissions-payroll.md`
+
+> Liquidation, folha/payment, financial synchronization, pay/reverse and technical detail for that domain.
+
+#### `commission-lifecycle.md`
+
+> Real commission lifecycle states confirmed in the current system (no aspirational approval states).
+
+### Rule
+
+Do not let the three files become competing sources for the same facts.
+
+- Policy/listing mode definitions → rules
+- Sync formulas, pay/estorno APIs, table mechanics → payroll
+- State transitions on the attendance commission line → lifecycle
+
+### Location
+
+Files remain under `01-product/domain-models/`.
+
+The exact **future** location of `commissions-payroll.md` remains deliberately open for a later architecture review. **No move** was performed in D3.3.
+
+---
+
+# 22.6.1 D3.3 — Commission Documentation (COMPLETED)
+
+### Human decision
+
+**KEEP WITH RULE**
+
+### Action taken
+
+- Realigned `commissions-rules.md` to business rules / configuration / policy.
+- Realigned `commissions-payroll.md` to liquidation / folha / APIs; fixed link to `./commissions-rules.md`.
+- Rewrote `commission-lifecycle.md` to verified states (`comissao` snapshot, `finalizada`, listing eligibility, `comissao_paga_em`, estorno).
+
+### Decision status
+
+**COMPLETED** (content responsibilities). Location of payroll doc remains open (see Remaining Human Decisions).
+
+---
+
+## 22.7 Pricing vs Monetization vs Packaging
+
+### Decision
+
+**KEEP WITH RULE** (D3.6 — completed).
+
+Do not merge the three documents. Do not invent list prices in documentation until they are intentionally defined.
+
+The intended distinction is:
+
+```text
+pricing-strategy.md
+        ↓
+Pricing principles and (when they exist) amounts / pricing rules
+
+monetization-strategy.md
+        ↓
+How Nexa captures revenue (mechanisms)
+
+packaging.md
+        ↓
+What is included in each commercial offer
+```
+
+### Final responsibility boundary
+
+| Document | Responsibility |
+|----------|----------------|
+| `pricing-strategy.md` | Principles, criteria, discount/reajuste rules and price amounts when defined |
+| `monetization-strategy.md` | Revenue capture mechanisms; **canonical** future revenue opportunities |
+| `packaging.md` | Commercial composition of offers/plans |
+| `business-model.md` | High-level business vision — summarize revenue; do not duplicate monetization detail |
+| `sales/` + sales playbook | Consume pricing/packaging; never redefine them |
+
+### Rule
+
+- **Monetization** = mechanism of revenue capture
+- **Packaging** = composition of the offer
+- **Pricing** = principles and price amounts/rules
+- **Business Model** = high-level vision
+- **Sales** = consumer, not source of truth
+
+`packagin.md` was renamed to `packaging.md`. No price table was created. Future revenue opportunities have monetization as the canonical source.
+
+Setup / implementation:
+
+- mechanism → monetization
+- included vs separate in the offer → packaging
+- amount (when defined) → pricing
+
+At the current stage, future pricing tiers remain a hypothesis until validated by the market.
+
+---
+
+# 22.7.1 D3.6 — Pricing × Monetization × Packaging (COMPLETED)
+
+### Human decision
+
+**KEEP WITH RULE**
+
+### Action taken
+
+- Renamed `packagin.md` → `packaging.md`.
+- Clarified boundaries across pricing, monetization, packaging, and business-model.
+- Pointed Sales playbook at canonical pricing/packaging files without inventing prices.
+
+### Decision status
+
+**COMPLETED**
+
+---
+
+## 22.8 README Ownership / Navigation
+
+### Decision
+
+**KEEP WITH RULE** (D3.8 — completed). Approach: **HYBRID**.
+
+### Canonical README rule
+
+README files are **navigation and ownership maps**, not duplicate sources of truth.
+
+Each top-level `docs/` area should have a lean README covering map, ownership, canonical sources, boundaries, and navigation — without duplicating strategy, product specs, or implementation detail.
+
+### Action taken
+
+- Rewrote root `docs/README.md` as the documentation navigation entry point (canonical Q→location table).
+- Created lightweight `01-product/README.md` and `07-operations/README.md`.
+- Corrected `00-governance`, `03-development`, `04-business`, and `adr` README navigation.
+- Minimal updates to `02-architecture`, `05-prompts`, and `06-product-evolution` (portfolio/lifecycle rules retained).
+
+### Recorded ownership
+
+- Root README = documentation navigation entry point
+- `01-product` and `07-operations` have dedicated lightweight READMEs
+- `06-product-evolution` retains portfolio/lifecycle rules
+- `04-business` retains business ownership
+- `adr` README links to actual ADR files
+
+### Decision status
+
+**COMPLETED**
+
+---
+
+# 22.8.1 D3.8 — README Ownership / Navigation (COMPLETED)
+
+### Human decision
+
+**KEEP WITH RULE** (HYBRID)
+
+### Decision status
+
+**COMPLETED**
+
+---
+
+# 22.9 D3.9 — Final Consistency Audit / Fixes (COMPLETED)
+
+### Human decision
+
+Apply final fixes from D3.9 audit (no reopen of D3.2–D3.8).
+
+### Action taken
+
+- Fixed broken operational links in `03-development/engeneering/go-live-checklist.md` → commissions domain-models + `02-architecture/deployment/deployment.md`.
+- Normalized portfolio EPICs 02–06: `## Status` → `## Planning Status` (values unchanged).
+- Closed Remaining Human Decision on ICP cleanup in other playbooks (audit confirmed no competing ICP definitions under `07-operations`).
+
+### Decision status
+
+**COMPLETED**
+
+Open human decisions that remain: `commissions-payroll.md` location; Brand Philosophy **content**.
+
+---
+
+# 23. D3.1 Final Structural Principle
+
+The review should optimize for **clear responsibility**, not for the minimum possible number of documents.
+
+Intentional duplication of concepts across different abstraction levels is acceptable when each document has a distinct purpose.
+
+The governing rule is:
+
+```text
+One concept
+    ↓
+One canonical definition per responsibility layer
+    ↓
+Other documents reference or operationalize it
+    ↓
+No competing definitions
+```
+
+Therefore:
+
+- strategic documents define strategy;
+- operational documents define execution;
+- product documents define product behavior;
+- architecture documents define architectural decisions;
+- Product Evolution documents define future product direction;
+- evidence repositories preserve discovery evidence;
+- playbooks operationalize established processes.
+
+A document should be removed, merged or moved only when its responsibility is demonstrably redundant or incorrectly assigned.
+
+---
+
+# 24. Current Proposed Structural Changes
 
 ## Approved
 
-### Move
+### Completed
 
 ```text
 04-business/decision-framework.md
@@ -759,22 +1724,38 @@ Future Product EPICs should follow the same pattern when a detailed lifecycle is
 04-business/strategy/decision-framework.md
 ```
 
-### Remove
+This move has already been executed.
+
+### Removed
 
 ```text
 01-product/epics/epic-01-mobile-foundation/changelog.md
 01-product/epics/epic-01-mobile-foundation/release-notes.md
 ```
 
-These files are empty and duplicate the responsibility of centralized release management.
+These files were empty and duplicated the responsibility of centralized release management.
 
-### Remove
+### Removed
 
 ```text
 06-product-evolution/ideas/future-epics.md
 ```
 
-Its responsibility is already covered by the individual documents under `06-product-evolution/ideas/`.
+Its responsibility was already covered by the individual documents under `06-product-evolution/ideas/`.
+
+### Removed
+
+```text
+01-product/overview/product-roadmap.md
+```
+
+This was an outdated roadmap representation.
+
+The canonical roadmap is now:
+
+```text
+06-product-evolution/roadmap/product-roadmap.md
+```
 
 ---
 
@@ -785,13 +1766,10 @@ Its responsibility is already covered by the individual documents under `06-prod
 ```text
 01-product/domain-models/commissions-rules.md
 01-product/domain-models/commissions-payroll.md
+01-product/domain-models/commission-lifecycle.md
 ```
 
-These documents have different responsibilities and should not be consolidated.
-
-`commissions-rules.md` represents business/product rules.
-
-`commissions-payroll.md` represents operational/technical payroll behavior.
+These documents have distinct intended responsibilities.
 
 The exact future location of `commissions-payroll.md` remains under review.
 
@@ -804,12 +1782,6 @@ The exact future location of `commissions-payroll.md` remains under review.
 
 These documents have different responsibilities.
 
-`deployment.md` is the general deployment guide.
-
-`dokploy.md` documents the current Dokploy-specific implementation.
-
-Both should remain.
-
 ### Product EPIC Portfolio
 
 ```text
@@ -818,7 +1790,7 @@ Both should remain.
 
 Keep this structure.
 
-It represents the strategic Product EPIC portfolio and is intentionally different from detailed EPIC documentation.
+It represents the strategic Product EPIC portfolio.
 
 ### Detailed Product EPIC
 
@@ -829,6 +1801,16 @@ It represents the strategic Product EPIC portfolio and is intentionally differen
 Keep this structure.
 
 It represents the complete lifecycle of individual Product EPICs.
+
+### Prompt Placeholders
+
+The currently empty files under:
+
+```text
+05-prompts/
+```
+
+should remain empty until the dedicated Prompt System Phase.
 
 ---
 
@@ -844,68 +1826,112 @@ No move should be made until the appropriate destination is clearly defined.
 
 ---
 
-# 17. Concepts Already Identified for Future Work
+# 25. D3 Review Outcome
 
-The following concepts should not automatically become new documents during this review.
+The Content & Responsibility Review has now established the main responsibility boundaries.
 
-They should remain controlled backlog items unless evidence shows that they require formal documentation.
+The major findings are not all defects.
 
-## Operations
-
-`07-operations/` already exists and should be expanded only when necessary.
-
-## Ideas
-
-`06-product-evolution/ideas/` already exists.
-
-## Brand Philosophy
-
-Requires a dedicated strategic brainstorming session.
-
-## Notion Operating System
-
-Future operational system for:
-
-- CRM
-- Customer visits
-- ICP Score
-- Pipeline
-- Follow-ups
-- Customer Discovery
-- Post-visit learning capture
-
-## ICP Score
-
-Future Notion functionality for evaluating prospect fit.
-
-## TTFV
-
-Time to First Value should remain documented in onboarding as context but should become primarily owned by:
+Several represent intentional layering:
 
 ```text
-04-business/customer-success/success-metrics.md
+Strategy
+    ↓
+Process
+    ↓
+Operations
+
+Discovery Method
+    ↓
+Business Evidence
+    ↓
+Product Implication
+
+Product EPIC Portfolio
+    ↓
+Detailed EPIC Lifecycle
+
+Brand Philosophy
+    ↓
+Brand Architecture
+    ↓
+Product Expression
 ```
 
-## Reputation / Feedback
-
-The existing Marketing → Avaliações concept is a future product opportunity.
-
-It should remain an idea until validated.
-
-Potential future capabilities include:
-
-- Review collection
-- Reputation dashboard
-- Review analytics
-- Sentiment analysis
-- AI insights
-- Feedback journeys
-
-No implementation should begin without validation.
+The remaining work is therefore refinement rather than restructuring.
 
 ---
 
-# 18. Real-World Validation Case — Physiotherapy Clinic
+# 26. Remaining Human Decisions
+
+The following topics remain open for focused review:
+
+1. Final location of `commissions-payroll.md` (architecture placement only — content responsibilities closed in D3.3).
+2. Brand Philosophy **content** — dedicated human brainstorming (document location and boundaries closed in D3.7; do not invent content until that phase).
+
+Resolved elsewhere:
+
+- **D3.2** — `06-product-evolution/discoveries/` → **REMOVE** (completed).
+- **D3.3** — Commission documentation → **KEEP WITH RULE** (completed; no file move).
+- **D3.4** — EPIC Portfolio × Lifecycle → **KEEP WITH RULE** (completed).
+- **D3.5** — Sales Strategy × Process × Playbook → **KEEP WITH RULE** (completed).
+- **D3.6** — Pricing × Monetization × Packaging → **KEEP WITH RULE** (completed; `packagin.md` → `packaging.md`; no price table created).
+- **D3.7** — Brand Responsibility → **KEEP WITH RULE** (completed; Brand Philosophy brainstorming remains open).
+- **D3.8** — README Ownership / Navigation → **KEEP WITH RULE** (completed; HYBRID).
+- **D3.9** — Final Consistency Audit / Fixes → **COMPLETED** (broken go-live links fixed; portfolio Planning Status normalized; ICP playbook cleanup closed — no competing ICP in `07-operations`).
+
+These remaining items should be resolved before D3 is considered fully closed.
+
+---
+
+# 27. Intentional Future Work
+
+The following work is intentionally postponed.
+
+## Prompt System
+
+The `05-prompts/` system will receive a dedicated phase after documentation architecture stabilization.
+
+That phase will define:
+
+- prompt methodology;
+- Portuguese development prompts;
+- Cursor workflows;
+- context loading;
+- implementation prompts;
+- debugging prompts;
+- refactoring prompts;
+- code review prompts;
+- UI reuse prompts;
+- drawer/component reuse examples;
+- daily developer workflows.
+
+Empty prompt files are therefore not considered defects in the current review.
+
+## Brand Philosophy
+
+A dedicated brainstorming session will be performed later.
+
+The objective is to define Nexa's permanent identity without limiting the company to the current Beauty vertical.
+
+## Notion Operating System
+
+A future operational workspace should support:
+
+- CRM;
+- customer visits;
+- ICP scoring;
+- sales pipeline;
+- discovery notes;
+- follow-ups;
+- customer learning;
+- customer success.
+
+This should be designed after the documentation architecture is stable.
+
+---
+
+# 28. Real-World Validation Case — Physiotherapy Clinic
 
 A real physiotherapy / osteopathy clinic is being treated as a future validation case for Nexa's multi-vertical architecture.
 
@@ -913,12 +1939,12 @@ The case should NOT change the current Phase 2 focus on Beauty.
 
 Potential future discovery areas include:
 
-- Patient records
-- Anamnesis
-- Clinical assessments
-- Treatment evolution
-- Appointment management
-- Home appointments
+- patient records;
+- anamnesis;
+- clinical assessments;
+- treatment evolution;
+- appointment management;
+- home appointments.
 
 The case should follow the same methodology as any future vertical:
 
@@ -944,83 +1970,52 @@ No Clinic Module should be created based solely on this case.
 
 ---
 
-# 19. Review Status
+# 29. Review Status
 
 Current phase:
 
 ```text
 D1 — Structure Review
 D2 — Responsibility and Content Review
+D3 — Content & Responsibility Review
+D3.1 — Consolidated Documentation Decisions
 ```
 
 Status:
 
 **In Progress**
 
-The review has identified:
+Completed:
 
-- Structural areas that are already coherent.
-- Approved structural changes.
-- Documents with distinct responsibilities that should remain separate.
-- A small number of location questions requiring further review.
-- Redundant files that should be removed.
-- Future concepts that should not yet become new documentation.
+- Top-level structure review.
+- Responsibility boundaries for major documentation areas.
+- Structural cleanup.
+- Release documentation consolidation.
+- Roadmap canonicalization.
+- Product EPIC portfolio vs lifecycle distinction.
+- Sales strategy vs operational playbook distinction.
+- Discovery layer distinction.
+- Brand layer distinction.
+- Prompt placeholder rule.
+- Consistency Check.
 
 ---
 
-# 20. Next Step
+# 30. Next Review
 
-D1 — Structure Review is complete.
+Before proceeding to D4 — Terminology & Naming:
 
-D2 — Responsibility and Content Review has now resolved the primary structural ambiguities identified during D1.
-
-Resolved:
-
-1. EPIC-level empty release files
-2. `commissions-rules.md` vs `commissions-payroll.md`
-3. `deployment.md` vs `dokploy.md`
-4. `future-epics.md`
-5. Product EPIC portfolio vs detailed EPIC documentation
-
-The remaining open question is:
-
-```text
-01-product/domain-models/commissions-payroll.md
-```
-
-Its content is understood, but its final documentation location should be decided based on the broader documentation architecture.
-
-### Next Review
-
-Before proceeding to additional structural work:
-
-1. Apply the approved structural changes.
-2. Review the resulting folder structure.
-3. Perform a consistency pass across:
-   - document names
-   - internal references
-   - folder references
-   - terminology
-   - relative links
-   - README navigation
+1. Resolve the remaining human decisions listed in section 26.
+2. Apply only the structural/content changes explicitly approved.
+3. Run a new consistency check after those changes.
+4. Confirm that no new duplication or broken references were introduced.
+5. Then begin terminology and naming review.
 
 No new documentation should be created solely to resolve a perceived gap until the existing documentation has been fully reviewed.
 
 ---
 
-# 21. Review Outcome
-
-The current documentation architecture is considered structurally coherent.
-
-The review did not identify a need for a large-scale reorganization.
-
-Most documents have distinct responsibilities. The main issues identified were isolated empty files, one redundant aggregate document, and a small number of location questions that require further review.
-
-The objective is therefore refinement rather than restructuring.
-
----
-
-# 22. Final Review Principle
+# 31. Final Review Principle
 
 The objective of this review is not to maximize the amount of documentation.
 
@@ -1029,3 +2024,17 @@ The objective is to create the smallest documentation system that provides enoug
 Documentation should earn its place.
 
 If a document does not provide a unique and useful responsibility, it should be consolidated, moved or removed.
+
+The final architecture should optimize for:
+
+```text
+Clarity
++
+Traceability
++
+Evidence
++
+Decision Quality
+-
+Unnecessary Complexity
+```

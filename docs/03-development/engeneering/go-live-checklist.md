@@ -19,7 +19,7 @@ Use este documento antes de operar no dia a dia (agenda + comissões).
 5. Testar acesso a `/financeiro` com esse PIN (mesmo valor de `ADMIN_PIN`).
 6. Link público de agendamento: `/agendar` (clientes não precisam de conta).
 
-Ver também [DEPLOY.md](./DEPLOY.md).
+Ver também [deployment.md](../../02-architecture/deployment/deployment.md).
 
 ## Comissões por profissional
 
@@ -41,8 +41,8 @@ Ver também [DEPLOY.md](./DEPLOY.md).
 
 ## Documentação relacionada
 
-- [COMISSOES_FOLHA_PAGAMENTOS.md](./COMISSOES_FOLHA_PAGAMENTOS.md)
-- [COMISSOES_REGRAS_NEGOCIO.md](./COMISSOES_REGRAS_NEGOCIO.md)
+- [Commissions Payroll](../../01-product/domain-models/commissions-payroll.md)
+- [Commission Rules](../../01-product/domain-models/commissions-rules.md)
 
 ## Mobile (após deploy do sprint agenda)
 

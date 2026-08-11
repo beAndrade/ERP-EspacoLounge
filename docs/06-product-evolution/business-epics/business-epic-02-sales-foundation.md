@@ -21,7 +21,7 @@ Nexa sells transformation, not feature lists. Without a repeatable motion, growt
 
 ## In scope
 
-- Complete and maintain `Sales-Playbook.md`
+- Complete and maintain `docs/07-operations/playbooks/sales-playbook.md`
 - Demo environments and scripts aligned to Beauty excellence moments
 - Proposal template outline (commercial terms still under Pricing epic)
 - Pipeline tracking (lightweight: spreadsheet or simple CRM)
@@ -36,7 +36,7 @@ Nexa sells transformation, not feature lists. Without a repeatable motion, growt
 
 - BUSINESS-EPIC-01 evidence
 - Product demo stability (EPIC-01 / EPIC-03 slices help)
-- `docs/04-business/Sales.md`
+- `docs/04-business/sales/sales-strategy.md`
 
 ## Success metrics
 
@@ -47,6 +47,6 @@ Nexa sells transformation, not feature lists. Without a repeatable motion, growt
 
 ## Related docs
 
-- Business-Roadmap.md
-- `docs/04-business/Sales.md`
-- `docs/04-business/Sales-Playbook.md`
+- [Business roadmap](../roadmap/business-roadmap.md)
+- `docs/04-business/sales/sales-strategy.md`
+- `docs/07-operations/playbooks/sales-playbook.md`

@@ -239,14 +239,38 @@ Metrics should always lead to action.
 
 # Relationship with Other Documents
 
-This document works together with:
+| Document | Responsibility |
+|----------|----------------|
+| [Sales Strategy](./sales-strategy.md) | Commercial strategy and positioning |
+| [Sales Process](./sales-process.md) | How the opportunity progresses (stages, exit criteria) |
+| **This file (Sales Funnel)** | How conversion and bottlenecks are measured |
+| [Objection Handling](./objection-handling.md) | Objection knowledge |
+| [Pricing Strategy](../pricing/pricing-strategy.md) | Commercial terms / price context |
+| [Packaging](../pricing/packaging.md) | What the offer includes |
+| Customer Success | Post-activation outcomes |
+| [Sales Playbook](../../07-operations/playbooks/sales-playbook.md) | Day-to-day execution (does not redefine funnel metrics) |
 
-- Sales Strategy
-- Sales Process
-- Objection Handling
-- Pricing Strategy
-- Customer Success
+**Process vs Funnel**
 
-The funnel measures commercial execution.
+- **Sales Process** = how the opportunity progresses.
+- **Sales Funnel** = how conversion and bottlenecks are measured.
 
-The Sales Process defines how execution occurs.
+They remain separate documents. Do not merge them.
+
+## Stage map (Funnel ↔ Process)
+
+Where names differ, keep both and use this map:
+
+| Sales Funnel stage | Closest Sales Process stage | Notes |
+|--------------------|-----------------------------|--------|
+| Prospects | Prospect | Same idea |
+| First Contact | First Contact | Same idea |
+| Discovery | Discovery | Same idea |
+| Qualified | Qualified | Same idea |
+| Product Demonstration | Product Demonstration | Same idea |
+| Proposal | Proposal | Same idea |
+| Negotiation | *(inside Proposal → Customer)* | Funnel-only measurable stage for commercial discussion |
+| Won | Customer | Commercial acceptance |
+| Onboarding | Onboarding | Same idea |
+| Active Customer | Customer Success | Activated / successful usage outcome |
+| *(no funnel twin)* | Pilot (Optional) | Process-only optional trial; if used, still measure via related funnel rates (e.g. Proposal → Won) |

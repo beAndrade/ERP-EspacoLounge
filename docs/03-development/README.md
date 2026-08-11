@@ -33,6 +33,16 @@ This documentation should evolve as the engineering process matures.
 ```text
 03-development/
 
+ai/
+    cursor-guidelines.md
+
+engeneering/          # filesystem path (typo retained intentionally for now)
+    development.md
+    development-workflow.md
+    folder-conventions.md
+    git-workflow.md
+    go-live-checklist.md
+
 standards/
     coding-standards.md
     branch-strategy.md
@@ -41,14 +51,17 @@ release-management/
     changelog.md
     release-notes.md
     versioning.md
-
-cursor-guidelines.md
-development.md
-development-workflow.md
-folder-conventions.md
-git-workflow.md
-go-live-checklist.md
 ```
+
+Quick links:
+
+- [ai/cursor-guidelines.md](./ai/cursor-guidelines.md)
+- [engeneering/development.md](./engeneering/development.md)
+- [engeneering/git-workflow.md](./engeneering/git-workflow.md)
+- [engeneering/go-live-checklist.md](./engeneering/go-live-checklist.md)
+- [standards/coding-standards.md](./standards/coding-standards.md)
+- [standards/branch-strategy.md](./standards/branch-strategy.md)
+- [release-management/versioning.md](./release-management/versioning.md)
 
 ---
 
@@ -70,7 +83,7 @@ Code should be easy to understand before being clever.
 
 # Development Workflow
 
-Every feature should follow the official Product EPIC lifecycle:
+Every feature should follow the official Product EPIC lifecycle under `docs/01-product/epics/` (when a lifecycle exists for that EPIC):
 
 1. Product Decision (PDR)
 2. Vision
@@ -91,20 +104,13 @@ Development should never begin before product documentation is approved.
 
 This directory works together with:
 
-- `01-product/`
-  - Product definition
-  - Domain Models
-  - UX documentation
-
-- `02-architecture/`
-  - Architecture principles
-  - Platform design
-  - Infrastructure
-
-- `adr/`
-  - Architecture decisions
+- `01-product/` — product definition, domain models, UX / lifecycle docs
+- `02-architecture/` — architecture principles and platform design
+- `adr/` — architecture decisions
 
 Development transforms approved product documentation into production-ready software.
+
+Full navigation: [../README.md](../README.md).
 
 ---
 

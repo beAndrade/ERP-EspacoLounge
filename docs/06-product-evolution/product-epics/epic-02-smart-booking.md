@@ -1,6 +1,6 @@
 # EPIC-02 — Smart Booking
 
-## Status
+## Planning Status
 
 Planned
 
@@ -47,6 +47,6 @@ Agenda is the heartbeat of a salon. Smart booking is a differentiation theme alr
 
 ## Related docs
 
-- `docs/01-product/UI-Flows.md`
-- `docs/02-architecture/Integrations.md`
-- Product-Roadmap.md
+- [Product roadmap](../roadmap/product-roadmap.md)
+- `docs/02-architecture/integrations/integrations.md`
+- Lifecycle: not created yet under `docs/01-product/epics/`

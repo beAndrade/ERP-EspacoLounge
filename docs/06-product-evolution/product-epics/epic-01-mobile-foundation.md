@@ -1,12 +1,35 @@
 # EPIC-01 — Mobile Foundation
 
-## Status
+**Layer:** Product EPIC portfolio (one-pager)
+
+This file is the **portfolio** summary for planning. It does **not** replace the detailed lifecycle under `01-product/epics/`.
+
+## Planning Status
 
 Planned
 
+## Execution Status
+
+See lifecycle: **Draft**
+(`docs/01-product/epics/epic-01-mobile-foundation/`)
+
+## Product Direction (North Star)
+
+Mobile-first operations: mobile is the **primary platform** for day-to-day Beauty work; desktop complements administrative workflows.
+
+Authoritative product direction and principles live in the lifecycle vision:
+
+- [01-vision.md](../../01-product/epics/epic-01-mobile-foundation/01-vision.md)
+
+## Current Delivery Scope (first slice)
+
+Make the highest-frequency Beauty operations usable and trustworthy on **mobile browsers** (phone and tablet), **without** building a separate native app in this first slice.
+
+This slice advances the North Star; it does not redefine it.
+
 ## Goal
 
-Make the highest-frequency Beauty operations usable and trustworthy on mobile browsers (phone and tablet), without building a separate native app in the first slice.
+Deliver the current delivery scope above so agenda, comanda and payment paths remain trustworthy on small viewports.
 
 ## Why it matters
 
@@ -18,14 +41,14 @@ Salon owners and professionals live on WhatsApp and the phone floor. If agenda, 
 - No data loss or broken drawers on mobile shell widths already defined in breakpoints
 - Clear list of mobile-first vs desktop-only screens
 
-## In scope
+## In scope (first slice)
 
 - Audit of agenda, comanda, caixa/financeiro entry points on mobile
 - Fix layout/interaction blockers using existing Design System / breakpoint tokens
 - Touch targets aligned with `--touch-min` (44px)
 - Smoke checklist for mobile regression
 
-## Out of scope
+## Out of scope (first slice)
 
 - Native iOS/Android apps
 - Full UI redesign
@@ -44,8 +67,12 @@ Salon owners and professionals live on WhatsApp and the phone floor. If agenda, 
 - Support tickets related to “doesn’t work on phone” trend down
 - Demo confidence when showing phone usage
 
+## Detailed lifecycle (canonical execution)
+
+[docs/01-product/epics/epic-01-mobile-foundation/](../../01-product/epics/epic-01-mobile-foundation/)
+
 ## Related docs
 
-- `docs/01-product/UI-Flows.md`
-- `src/app/design-system/documentation/ROADMAP.md`
-- Product-Roadmap.md
+- [Product roadmap](../roadmap/product-roadmap.md)
+- [Design System ROADMAP](../../../src/app/design-system/documentation/ROADMAP.md)
+- [PDR-001 — Smart Booking Philosophy](../../01-product/pdr/PDR-001-smart-booking-philosophy.md)

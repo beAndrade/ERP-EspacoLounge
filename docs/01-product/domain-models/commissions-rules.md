@@ -1,76 +1,133 @@
-# Regras de comissão — Espaço Lounge vs Belasis
+# Domain Model — Commission Rules
 
-Documento de validação para o negócio: o que **já está no sistema**, o que **passou a ser configurável** e o que **fica para fases futuras** (Belasis completo).
+**Status:** Living Document
 
-## Implementado neste ciclo
+**Owner:** Product Team
 
-| Recurso | Onde | Comportamento |
-|---------|------|----------------|
-| % / valor fixo por serviço (catálogo global) | `servicos.comissao_pct`, `comissao_fixa` | Padrão quando não há override por profissional |
-| Override por profissional + serviço | `profissional_servico_comissao` + aba **Comissões e Auxiliares** | Só **novas** linhas em `atendimentos`; histórico não recalcula |
-| Profissional não recebe comissão | `profissionais.recebe_comissao` | Linha gravada com comissão vazia |
-| Modo de listagem (Detalhadas) | `profissionais.comissao_listagem_modo` + aba **Configurar comissões** | `pagamento_cliente` (padrão) ou `competencia` |
-| Snapshot por linha | `atendimentos.comissao` | Valor congelado na criação do atendimento |
-| Folha / pagar / estornar | `folha`, `pagamentos`, APIs existentes | Sem mudança de motor |
+**Domain:** Beauty
 
-## Modos de listagem (`comissao_listagem_modo`)
+**Related:**
 
-- **`pagamento_cliente`** (padrão, alinhado ao fluxo anterior): na aba Detalhadas, só entram comissões de comandas **pagas pelo cliente** (salvo checkbox «Mostrar comissões anteriores»).
-- **`competencia`**: na aba Detalhadas, entram comissões **finalizadas** no período pela `data` do atendimento, **sem** exigir pagamento do cliente (próximo da visão da folha).
+- [Commission Lifecycle](./commission-lifecycle.md)
+- [Commissions Payroll](./commissions-payroll.md)
 
-## Belasis — referência vs prioridade
+---
 
-| Opção Belasis | Prioridade Espaço Lounge | Estado |
-|---------------|-------------------------|--------|
-| Comissão % / fixo por serviço (por profissional) | Alta | Implementado (override + catálogo) |
-| Comissão como auxiliar / split | Baixa | Fase 3 — não implementado |
-| Importar serviços | Média | Botão na aba importa defaults do catálogo |
-| Filtro data competência vs disponibilidade | Média | `comissao_listagem_modo` |
-| Taxas (proporcional / estabelecimento / profissional) | Baixa | Taxas já existem em **formas de pagamento**; impacto na comissão = Fase 3 |
-| Descontos na base da comissão | Baixa | Fase 3 |
-| Produtos consumidos | Baixa | Fase 3 |
-| Tipo comanda (todas vs só finalizadas) | Coberto | API já exige `cobranca_status = finalizada` |
-| Texto recibo comissão | Baixa | Fase 3 |
-| Recálculo retroativo ao mudar regra | Evitar | Não implementado de propósito |
+# Purpose
 
-## Pergunta para o negócio (checklist)
+This document defines the **business rules** that govern how commission amounts are determined and when they may appear as payable to a professional.
 
-Confirmar com a recepção/gestão:
+It does **not** describe payroll synchronization, payment/reversal endpoints, or financial table mechanics. Those belong in [commissions-payroll.md](./commissions-payroll.md).
 
-1. Cada profissional pode ter **% diferente** do catálogo por serviço? (sim → usar aba Comissões e Auxiliares)
-2. Na tela de pagar comissões, o padrão deve ser **só após cliente pagar** ou **todas finalizadas do mês**? (define `comissao_listagem_modo` por profissional)
-3. Alguma profissional **não recebe comissão** em nenhum serviço? (`recebe_comissao` na aba **Configurar comissões**)
-4. Precisam de regras de **desconto/taxa de cartão** na comissão neste ano? (se não, manter Fase 3)
+---
 
-## Onde configurar o quê
+# Core Rules
 
-| O quê | Onde hoje | Notas |
-|-------|-----------|-------|
-| % ou valor fixo **padrão** por serviço | `servicos` (seed/planilha) | Sem UI de edição ainda; ver roadmap abaixo |
-| Profissional **não recebe** comissão | Drawer → **Configurar comissões** | `profissionais.recebe_comissao` |
-| **Quando listar** comissões a pagar | Drawer → **Configurar comissões** | `comissao_listagem_modo` |
-| **Override** %/fixo por profissional + serviço | API `profissional_servico_comissao` | UI removida do drawer; import via API |
-| **Pagar / estornar** comissões | **Financeiro → Comissões** | Não fica no drawer do profissional |
+## Catalog default
 
-## Drawer profissional — abas MVP
+Each service may define a default commission as:
 
-Abas visíveis: **Cadastro**, **Endereço**, **Usuário**, **Configurar comissões**, **Pagar salário/comissão** (drawer empilhado), **Vales e Bonificações** (drawer empilhado).
+- percentage (`servicos.comissao_pct`), and/or
+- fixed amount (`servicos.comissao_fixa`).
 
-Override por serviço (`Comissões e Auxiliares`) permanece na API; UI removida do drawer — usar import/API ou fase futura.
+This default applies when there is **no** professional-specific override for that service.
 
-Abas Belasis previstas: Assinatura digital, Expediente, Personalizar serviços, Permissões, Contas de banco.
+## Professional override
 
-## Roadmap (pós-entrega)
+A professional may have a different % or fixed commission **per service** (`profissional_servico_comissao`).
 
-1. **UI catálogo de serviços** — editar `comissao_pct` / `comissao_fixa` no app (Serviços ou Financeiro → Cadastros), para cada instalação configurar sem seed manual.
-2. **Multi-salão** — tenant + config por estabelecimento; as abas actuais do drawer mantêm-se; muda apenas a origem do catálogo default.
+Business rule:
 
-## APIs novas
+- Overrides apply only to **new** attendance lines.
+- Changing an override does **not** recalculate historical lines.
 
-| Método | Rota |
-|--------|------|
-| GET | `/api/profissionais/:id/comissoes-servicos` |
-| PUT | `/api/profissionais/:id/comissoes-servicos` |
-| POST | `/api/profissionais/:id/comissoes-servicos/importar-catalogo` |
+## Eligibility — professional does not receive commission
 
-Política de comissão: campos em `GET/PATCH /api/profissionais/:id` (`comissao_listagem_modo`, `recebe_comissao`).
+If `profissionais.recebe_comissao` is false:
+
+- new service lines are stored with an empty commission;
+- the professional is not owed commission for those lines.
+
+## Snapshot on the attendance line
+
+When a service line is created on an attendance (`atendimentos`):
+
+- the commission amount is **frozen** on `atendimentos.comissao`;
+- later catalog or override changes do not rewrite that snapshot.
+
+## Retroactive recalculation
+
+Changing commission rules must **not** recalculate past attendance lines.
+
+This is intentional product policy (not a temporary limitation).
+
+---
+
+# Listing policy (`comissao_listagem_modo`)
+
+This is a **business policy** per professional that controls which finalized commissions appear in the **Detalhadas** (to-pay) list.
+
+| Mode | Rule |
+|------|------|
+| `pagamento_cliente` (default) | Detalhadas lists commissions only when the client comanda is **paid** (unless the operator enables “Mostrar comissões anteriores”). |
+| `competencia` | Detalhadas lists commissions that are **finalized** in the period by attendance `data`, **without** requiring the client to have paid (closer to the payroll-period view). |
+
+Notes:
+
+- Listing policy does not change how the monthly **folha** totals are calculated (see payroll document).
+- Both modes only consider lines with `cobranca_status = finalizada` and unpaid to the professional (`comissao_paga_em` empty) for the Detalhadas “to pay” list.
+
+---
+
+# Where to configure (business)
+
+| What | Where today |
+|------|-------------|
+| Default % / fixed per service | Service catalog (`servicos`) — seed/spreadsheet; dedicated UI still on product roadmap |
+| Professional does not receive commission | Professional drawer → **Configurar comissões** (`recebe_comissao`) |
+| When to list commissions to pay | Professional drawer → **Configurar comissões** (`comissao_listagem_modo`) |
+| Override % / fixed per professional + service | `profissional_servico_comissao` (API / import; dedicated override UI may return later) |
+| Pay / reverse commissions to professionals | **Financeiro → Comissões** (operational flow documented in payroll) |
+
+---
+
+# Belasis reference vs current priority
+
+| Belasis-style option | Priority | Current product stance |
+|----------------------|----------|------------------------|
+| % / fixed per service (per professional) | High | Implemented (catalog + override) |
+| Assistant / split commission | Low | Not implemented (future phase) |
+| Import services into override set | Medium | Supported via catalog import |
+| Competency date vs client-paid availability | Medium | Covered by `comissao_listagem_modo` |
+| Card fees in commission base | Low | Payment fees exist elsewhere; commission impact = future phase |
+| Discounts in commission base | Low | Future phase |
+| Consumed products in commission | Low | Future phase |
+| Only finalized comandas | Covered | Listing/payroll require `cobranca_status = finalizada` |
+| Commission receipt text | Low | Future phase |
+| Retroactive recalc when rules change | Avoid | Not implemented on purpose |
+
+---
+
+# Business checklist
+
+Confirm with reception / management:
+
+1. May each professional have a **different %** than the catalog per service? (yes → overrides)
+2. On the pay-commissions screen, should the default be **only after the client pays** or **all finalized in the month**? (sets `comissao_listagem_modo`)
+3. Does any professional **never** receive commission? (`recebe_comissao`)
+4. Are **discount / card-fee** effects on commission required this year? (if not, keep as future phase)
+
+---
+
+# Product roadmap (rules-related)
+
+1. UI to edit catalog `comissao_pct` / `comissao_fixa` without manual seed.
+2. Multi-location / company-scoped defaults when SaaS tenancy lands (policy source changes; rule shapes stay).
+
+---
+
+# Ownership
+
+Owner: Product Team
+
+Review when commission configuration or listing policy changes.

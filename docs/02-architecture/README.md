@@ -76,17 +76,18 @@ Product requirements should never compromise these principles.
 
 This directory works together with:
 
-- `adr/`
-  - Architecture Decision Records
+- [../adr/](../adr/README.md) — Architecture Decision Records (canonical decisions and rationale)
+- `01-product/` — Product documentation, Domain Models, PDRs
+- `03-development/` — Development standards and engineering workflow
 
-- `01-product/`
-  - Product documentation
-  - Domain Models
-  - PDRs
+### Architecture vs ADRs
 
-- `03-development/`
-  - Development standards
-  - Engineering workflow
+| Area | Role |
+|------|------|
+| `02-architecture/` | System architecture — how the platform is built and structured |
+| `adr/` | Architectural decisions — why specific choices were made |
+
+Do not move ADRs into this folder. Browse ADRs: [../adr/README.md](../adr/README.md).
 
 Architecture defines the technical foundation used by every Product EPIC.
 
@@ -144,7 +145,7 @@ If uncertainty exists, document the decision before implementation.
 
 # Related ADRs
 
-See the `/adr` directory for all Architecture Decision Records.
+See [../adr/README.md](../adr/README.md) for all Architecture Decision Records with direct links.
 
 ADRs remain the official source of architectural decisions.
 

@@ -1,6 +1,6 @@
 # EPIC-03 — Beauty Excellence
 
-## Status
+## Planning Status
 
 Planned
 
@@ -50,4 +50,5 @@ Nexa wins by vertical depth, not by being “another spreadsheet replacement.”
 - `docs/04-business/Commissions-BusinessRules.md`
 - `docs/04-business/Commissions-Payroll.md`
 - `api/src/modules/beauty/README.md`
-- Product-Roadmap.md
+- [Product roadmap](../roadmap/product-roadmap.md)
+- Lifecycle: not created yet under `docs/01-product/epics/`

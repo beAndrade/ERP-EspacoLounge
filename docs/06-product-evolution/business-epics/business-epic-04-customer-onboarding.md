@@ -24,7 +24,7 @@ Take a signed customer from contract to first week of real use with minimal risk
 - Playbook for migration from Excel / previous system
 - Role-based training outline (owner, receptionist, professionals)
 - Configuration checklist (services, packages, commissions, stock)
-- Pairing with product import tools (`Spreadsheet-Import.md`, seed lessons)
+- Pairing with product import tools (`docs/01-product/overview/spreadsheet-import.md`, seed lessons)
 
 ## Out of scope
 
@@ -36,8 +36,8 @@ Take a signed customer from contract to first week of real use with minimal risk
 
 - BUSINESS-EPIC-02 / 03
 - Product import and Beauty catalog readiness (EPIC-03)
-- `docs/03-development/Go-Live-Checklist.md`
-- `docs/04-business/Spreadsheet-Import.md`
+- `docs/03-development/engeneering/go-live-checklist.md`
+- `docs/01-product/overview/spreadsheet-import.md`
 
 ## Success metrics
 
@@ -47,7 +47,8 @@ Take a signed customer from contract to first week of real use with minimal risk
 
 ## Related docs
 
-- Business-Roadmap.md
-- `docs/04-business/CustomerJourney.md`
-- `docs/03-development/Go-Live-Checklist.md`
-- `docs/04-business/Spreadsheet-Import.md`
+- [Business roadmap](../roadmap/business-roadmap.md)
+- `docs/04-business/customer-onboarding/customer-journey.md`
+- `docs/03-development/engeneering/go-live-checklist.md`
+- `docs/01-product/overview/spreadsheet-import.md`
+- `docs/07-operations/playbooks/customer-onboarding-playbook.md`

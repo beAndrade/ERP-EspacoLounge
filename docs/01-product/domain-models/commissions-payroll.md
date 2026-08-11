@@ -1,60 +1,112 @@
-# Comissões: `atendimentos`, `folha` e `pagamentos`
+# Domain Model — Commissions Payroll
 
-Regras de configuração (override por profissional/serviço, modos de listagem): ver [COMISSOES_REGRAS_NEGOCIO.md](./COMISSOES_REGRAS_NEGOCIO.md).
+**Status:** Living Document
 
-## Papéis
+**Owner:** Product Team
 
-| Tabela | Papel |
-|--------|--------|
-| **`atendimentos`** | Fonte de verdade **por linha de serviço**: `profissional_id`, `valor`, `comissao`, `data`, `cobranca_status`, `comissao_paga_em` (quando a profissional já recebeu). |
-| **`folha`** | **Resumo mensal por profissional** (competência `periodo_referencia` = `YYYY-MM` da `data` do atendimento). Sincronizado automaticamente: `total_comissao`, `total_pago`, `saldo`, `status`. |
-| **`pagamentos`** | Pagamento efetuado à profissional. No fluxo de Comissões: `folha_id`, `mes_ref`, observação `mov:{id};atend:{ids}`. |
-| **`movimentacoes`** | Despesa financeira (`origem = comissao_pagamento`) espelhando o pagamento. |
+**Domain:** Beauty
 
-## Fluxo operacional (uso diário)
+**Related:**
 
-1. **Comanda / agenda** — serviço finalizado → linha em `atendimentos` com `comissao` e `cobranca_status = finalizada`. Folha do mês é recalculada.
-2. **Cliente paga a comanda** — `comanda_pagamentos` atualizado. A aba **Detalhadas** (padrão) só lista comissões de comandas **pagas pelo cliente**.
-3. **Pagar comissão à profissional** — tela Comissões → selecionar linhas → `POST /api/financeiro/comissoes/pagar`:
-   - Preenche `atendimentos.comissao_paga_em`
-   - Cria `movimentacoes` + `pagamentos` (com `folha_id` do mês principal do lote)
-   - Recalcula `folha` nos meses de competência afetados
-4. **Histórico** — aba **Pagas** (`GET /api/financeiro/comissoes/pagas`).
-5. **Estorno** — menu Ações na aba Pagas → `POST /api/financeiro/comissoes/estornar` → limpa `comissao_paga_em` e recalcula folha.
+- [Commission Rules](./commissions-rules.md)
+- [Commission Lifecycle](./commission-lifecycle.md)
 
-## Sincronização da folha
+---
+
+# Purpose
+
+This document explains how commission amounts on attendance lines are **liquidated**: monthly payroll summary (`folha`), payments to professionals, reversals, synchronization, and the financial APIs involved.
+
+Configuration and eligibility rules live in [commissions-rules.md](./commissions-rules.md).
+
+Lifecycle states live in [commission-lifecycle.md](./commission-lifecycle.md).
+
+---
+
+# Table roles
+
+| Table | Role |
+|-------|------|
+| **`atendimentos`** | Source of truth **per service line**: `profissional_id`, `valor`, `comissao` (snapshot), `data`, `cobranca_status`, `comissao_paga_em` (when the professional was paid). |
+| **`folha`** | **Monthly summary per professional** (competence `periodo_referencia` = `YYYY-MM` from attendance `data`). Synced fields: `total_comissao`, `total_pago`, `saldo`, `status`. |
+| **`pagamentos`** | Payment made to the professional. Commission flow stores `folha_id`, `mes_ref`, and observation `mov:{id};atend:{ids}`. |
+| **`movimentacoes`** | Financial expense (`origem = comissao_pagamento`) mirroring the payment. |
+| **`comanda_pagamentos`** | Client comanda payment status used when listing policy is `pagamento_cliente`. |
+
+---
+
+# Operational flow (daily use)
+
+1. **Comanda / agenda** — service finalized → attendance line with `comissao` snapshot and `cobranca_status = finalizada`. Folha for that month is recalculated.
+2. **Client pays the comanda** — `comanda_pagamentos` updated. Under default listing policy, **Detalhadas** only shows commissions whose comanda is **paid by the client**.
+3. **Pay commission to the professional** — Financeiro → Comissões → select lines → `POST /api/financeiro/comissoes/pagar`:
+   - sets `atendimentos.comissao_paga_em`
+   - creates `movimentacoes` + `pagamentos` (with `folha_id` for the main month of the batch)
+   - recalculates `folha` for affected competence months
+4. **History** — **Pagas** tab (`GET /api/financeiro/comissoes/pagas`).
+5. **Reversal (estorno)** — Actions on Pagas → `POST /api/financeiro/comissoes/estornar` → clears `comissao_paga_em` and recalculates folha.
+
+---
+
+# Folha synchronization
 
 `recalcularTotaisComissaoFolhaPorPeriodo(periodo YYYY-MM)`:
 
-| Campo | Origem |
+| Field | Source |
 |-------|--------|
-| `total_comissao` | Soma `atendimentos.comissao` (finalizadas, comissão > 0) no mês |
-| `total_pago` | Soma das mesmas linhas com `comissao_paga_em` preenchido |
-| `saldo` | `total_comissao − total_pago` (mín. 0) |
+| `total_comissao` | Sum of `atendimentos.comissao` for **finalized** lines with commission &gt; 0 in the month |
+| `total_pago` | Sum of the same lines that have `comissao_paga_em` set |
+| `saldo` | `total_comissao − total_pago` (min 0) |
 | `status` | `pendente` · `parcial` · `quitado` · `sem_comissao` |
 
-Chamado automaticamente após pagar/estornar comissões, finalizar comanda e via `POST /api/folha/recalcular-comissoes`.
+Triggered automatically after pay/reverse commissions, when a comanda is finalized, and via `POST /api/folha/recalcular-comissoes`.
 
-## APIs de Comissões
+**Business note:** Folha totals include **all** finalized commissions in the month, **independent** of whether the client has paid. That differs from Detalhadas under `pagamento_cliente` policy (see rules document).
 
-| Método | Rota | Uso |
-|--------|------|-----|
-| GET | `/api/financeiro/comissoes/detalhadas` | Linhas a pagar (aba Detalhadas) |
-| GET | `/api/financeiro/comissoes/pagas` | Lotes pagos (aba Pagas) |
-| GET | `/api/financeiro/comissoes/resumidas` | Resumo folha no período (sidebar) |
-| POST | `/api/financeiro/comissoes/pagar` | Registrar pagamento |
-| POST | `/api/financeiro/comissoes/estornar` | Estornar lote |
-| POST | `/api/folha/recalcular-comissoes` | Forçar recálculo de um mês |
+---
 
-## Diferença folha vs Detalhadas
+# Detalhadas vs Folha (operational effect)
 
-- **Folha** inclui **todas** as comissões de serviços finalizados no mês (independente do cliente ter pago).
-- **Detalhadas** (padrão) exige comanda **paga pelo cliente** e `comissao_paga_em` vazio.
-- Checkbox **Mostrar comissões anteriores** inclui comissões de comandas ainda não pagas pelo cliente.
+| View | Behavior |
+|------|----------|
+| **Folha** | All finalized commissions in the month (client payment not required). |
+| **Detalhadas** (default policy) | Requires client-paid comanda and empty `comissao_paga_em`. |
+| **Detalhadas** + “Mostrar comissões anteriores” | Can include finalized commissions whose client comanda is not yet paid (when policy would otherwise hide them). |
+| **Detalhadas** (`competencia` policy) | Finalized in period by attendance date; client payment not required. |
 
-## Primeira utilização / dados existentes
+Policy definition: [commissions-rules.md](./commissions-rules.md) (`comissao_listagem_modo`).
 
-Para alinhar linhas de `folha` já existentes:
+---
+
+# Financial APIs (liquidation)
+
+| Method | Route | Use |
+|--------|-------|-----|
+| GET | `/api/financeiro/comissoes/detalhadas` | Lines to pay (Detalhadas) |
+| GET | `/api/financeiro/comissoes/pagas` | Paid batches (Pagas) |
+| GET | `/api/financeiro/comissoes/resumidas` | Folha summary for period |
+| POST | `/api/financeiro/comissoes/pagar` | Register payment to professional |
+| POST | `/api/financeiro/comissoes/estornar` | Reverse a paid batch |
+| POST | `/api/folha/recalcular-comissoes` | Force month recalculation |
+
+---
+
+# Configuration APIs (used by liquidation screens)
+
+Override and listing policy are business configuration (see rules). Technical routes:
+
+| Method | Route |
+|--------|-------|
+| GET / PUT | `/api/profissionais/:id/comissoes-servicos` |
+| POST | `/api/profissionais/:id/comissoes-servicos/importar-catalogo` |
+
+Listing/eligibility flags also appear on `GET/PATCH /api/profissionais/:id` (`comissao_listagem_modo`, `recebe_comissao`).
+
+---
+
+# First use / existing data
+
+To align existing `folha` rows after import or migration:
 
 ```http
 POST /api/folha/recalcular-comissoes
@@ -63,4 +115,12 @@ Content-Type: application/json
 { "periodo": "2026-05" }
 ```
 
-Repita para cada mês em uso ou chame após importação de planilha.
+Repeat for each month in use.
+
+---
+
+# Ownership
+
+Owner: Product Team
+
+Review when liquidation APIs or folha sync behavior change.

@@ -16,6 +16,36 @@ Every opportunity should follow the same structured journey.
 
 ---
 
+# Relationship with Funnel and Playbook
+
+| Document | Responsibility |
+|----------|----------------|
+| **This file (Sales Process)** | How the opportunity progresses: stages, goals, activities, exit criteria |
+| [Sales Funnel](./sales-funnel.md) | How conversion and bottlenecks are measured |
+| [Sales Playbook](../../07-operations/playbooks/sales-playbook.md) | How someone executes the process day to day |
+
+Do not merge process and funnel. Day-to-day checklists live in the playbook; the playbook must not redefine this process.
+
+## Stage map (Process ↔ Funnel)
+
+Stage names are not always identical. Use this map rather than silently renaming either document:
+
+| Sales Process stage | Closest Sales Funnel stage | Notes |
+|---------------------|----------------------------|--------|
+| Prospect | Prospects | Same idea |
+| First Contact | First Contact | Same idea |
+| Discovery | Discovery | Same idea |
+| Qualified | Qualified | Same idea |
+| Product Demonstration | Product Demonstration | Same idea |
+| Proposal | Proposal | Same idea |
+| *(commercial discussion during/after proposal)* | Negotiation | Funnel tracks negotiation as its own measurable stage; process folds commercial discussion into Proposal → Pilot/Customer |
+| Pilot (Optional) | *(no direct funnel twin)* | Process-only: optional product-fit validation in a real environment |
+| Customer | Won | Process “Customer” ≈ funnel “Won” (commercial acceptance) |
+| Onboarding | Onboarding | Same idea |
+| Customer Success | Active Customer | Process names the CS phase; funnel names the activated customer outcome |
+
+---
+
 # Sales Philosophy
 
 The sales process should prioritize:

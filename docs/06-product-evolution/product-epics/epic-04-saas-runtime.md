@@ -1,6 +1,6 @@
 # EPIC-04 — SaaS Runtime
 
-## Status
+## Planning Status
 
 Planned
 
@@ -53,7 +53,8 @@ ADR-002 and Tenant-Strategy define shared DB + `company_id`. Sprint 4 only added
 - `docs/02-architecture/Tenant-Strategy.md`
 - `api/src/platform/company/README.md`
 - `api/src/platform/company/DECISIONS.md`
-- Product-Roadmap.md
+- [Product roadmap](../roadmap/product-roadmap.md)
+- Lifecycle: not created yet under `docs/01-product/epics/`
 
 ## Risk notes
 

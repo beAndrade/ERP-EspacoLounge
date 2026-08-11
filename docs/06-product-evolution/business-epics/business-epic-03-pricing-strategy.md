@@ -10,7 +10,7 @@ Validate willingness to pay for Nexa Beauty outcomes (organization, productivity
 
 ## Why it matters
 
-Pricing drafts exist (`Pricing.md`, `Monetization.md`). They must be pressure-tested with real buyers before SaaS scale.
+Pricing drafts exist (`docs/04-business/pricing/`). They must be pressure-tested with real buyers before SaaS scale.
 
 ## Outcomes
 
@@ -35,8 +35,8 @@ Pricing drafts exist (`Pricing.md`, `Monetization.md`). They must be pressure-te
 ## Dependencies
 
 - BUSINESS-EPIC-01 / 02
-- `docs/04-business/Pricing.md`
-- `docs/04-business/Monetization.md`
+- `docs/04-business/pricing/pricing-strategy.md`
+- `docs/04-business/pricing/monetization-strategy.md`
 - Clarity on onboarding cost (BUSINESS-EPIC-04)
 
 ## Success metrics
@@ -47,7 +47,8 @@ Pricing drafts exist (`Pricing.md`, `Monetization.md`). They must be pressure-te
 
 ## Related docs
 
-- Business-Roadmap.md
-- `docs/04-business/Pricing.md`
-- `docs/04-business/Monetization.md`
-- `docs/04-business/Success-Metrics.md`
+- [Business roadmap](../roadmap/business-roadmap.md)
+- `docs/04-business/pricing/pricing-strategy.md`
+- `docs/04-business/pricing/monetization-strategy.md`
+- `docs/04-business/pricing/packaging.md`
+- `docs/04-business/customer-success/success-metrics.md`

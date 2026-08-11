@@ -1,6 +1,6 @@
 # EPIC-06 — AI Assistant
 
-## Status
+## Planning Status
 
 Planned (later)
 
@@ -48,8 +48,9 @@ AI is a multiplier, not a foundation. It becomes valuable after booking, Beauty 
 
 ## Related docs
 
-- Product-Roadmap.md
-- `docs/02-architecture/Integrations.md`
+- [Product roadmap](../roadmap/product-roadmap.md)
+- `docs/02-architecture/integrations/integrations.md`
+- Lifecycle: not created yet under `docs/01-product/epics/`
 - Platform / Company docs
 
 ## Principle

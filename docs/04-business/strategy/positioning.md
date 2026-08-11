@@ -138,7 +138,12 @@ This document works together with:
 - Pricing Strategy
 - Sales Strategy
 - Customer Discovery
+- [Brand Philosophy](./brand-philosophy.md) — long-term brand identity (content pending dedicated brainstorming)
+
+**Positioning** = how Nexa should be perceived in the market at the **current stage**.
+
+**Brand Philosophy** = durable brand identity and beliefs (independent of the current vertical focus).
 
 Positioning defines how Nexa is presented to the market during its current stage of evolution.
 
-The long-term brand philosophy will be documented separately.
+The long-term brand philosophy will be documented in `brand-philosophy.md` when that dedicated phase is complete.

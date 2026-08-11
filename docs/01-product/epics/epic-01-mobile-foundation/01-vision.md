@@ -1,8 +1,11 @@
 # Product EPIC 01 — Mobile Foundation
 
-**Status:** Draft
+**Execution Status:** Draft
 
 **Owner:** Product Team
+
+**Portfolio (planning):** [EPIC-01 Mobile Foundation](../../../06-product-evolution/product-epics/epic-01-mobile-foundation.md)
+Planning Status there: **Planned**
 
 **Related PDRs:**
 - PDR-001 — Smart Booking Philosophy
@@ -23,6 +26,13 @@ Mobile is not a secondary interface.
 Mobile is the primary platform.
 
 Desktop exists to complement administrative workflows.
+
+## Product Direction vs current delivery scope
+
+- **Product Direction (North Star):** mobile-first / mobile as the primary operational platform (this document).
+- **Current Delivery Scope (first slice):** browser-usable critical flows on phone/tablet without a native app — summarized in the [portfolio one-pager](../../../06-product-evolution/product-epics/epic-01-mobile-foundation.md).
+
+The first slice advances the North Star; it does not replace it.
 
 ---
 

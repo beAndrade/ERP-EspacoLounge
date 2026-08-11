@@ -22,7 +22,7 @@ Sales Playbook and competitive matrix must be based on customer feedback, not as
 
 - Founder-led interviews in target geography
 - Capture system-in-use, likes, pains, shadow Excel/WhatsApp processes
-- Feed `Sales-Playbook.md` Lessons Learned and Competitive Matrix with evidence
+- Feed sales playbook / competitive analysis with evidence
 - Share insights with product epic owners
 
 ## Out of scope
@@ -33,7 +33,10 @@ Sales Playbook and competitive matrix must be based on customer feedback, not as
 
 ## Dependencies
 
-- `docs/04-business/Sales.md`, `Sales-Playbook.md`, `Personas.md`, `CustomerJourney.md`
+- `docs/04-business/sales/sales-strategy.md`
+- `docs/07-operations/playbooks/sales-playbook.md`
+- `docs/01-product/personas/beauty-personas.md`
+- `docs/04-business/customer-onboarding/customer-journey.md`
 - Access to local salon network
 
 ## Success metrics
@@ -44,7 +47,8 @@ Sales Playbook and competitive matrix must be based on customer feedback, not as
 
 ## Related docs
 
-- Business-Roadmap.md
-- `docs/04-business/Sales-Playbook.md`
-- `docs/04-business/Competitors.md`
-- `docs/01-product/Customer-Persona.md`
+- [Business roadmap](../roadmap/business-roadmap.md)
+- `docs/07-operations/playbooks/sales-playbook.md`
+- `docs/04-business/customer-discovery/competitor-analysis.md`
+- `docs/01-product/personas/beauty-personas.md`
+- `docs/04-business/customer-discovery/`

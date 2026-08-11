@@ -212,6 +212,16 @@ Sales should never dictate product direction based on isolated requests.
 
 ---
 
+# Relationship with Operations
+
+Day-to-day execution of sales conversations lives in the operational playbook:
+
+[sales-playbook.md](../../07-operations/playbooks/sales-playbook.md)
+
+That playbook must follow this strategy and must not redefine ICP, positioning, or commercial principles.
+
+---
+
 # Review Frequency
 
 Review after:

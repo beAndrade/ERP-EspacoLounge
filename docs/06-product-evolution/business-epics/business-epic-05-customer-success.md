@@ -25,7 +25,7 @@ Founder-led growth in a local corridor depends on reputation. Success is the ret
 - Cadence of check-ins for early customers
 - Escalation path when churn risk appears
 - Feed product backlog with recurring friction (links to product epics)
-- Align with `Success-Metrics.md`
+- Align with `docs/04-business/customer-success/success-metrics.md`
 
 ## Out of scope
 
@@ -37,7 +37,7 @@ Founder-led growth in a local corridor depends on reputation. Success is the ret
 
 - BUSINESS-EPIC-04 completed onboardings
 - Product stability on critical paths (EPIC-01–03)
-- Metrics definition in `docs/04-business/Success-Metrics.md`
+- Metrics definition in `docs/04-business/customer-success/success-metrics.md`
 
 ## Success metrics
 
@@ -48,7 +48,8 @@ Founder-led growth in a local corridor depends on reputation. Success is the ret
 
 ## Related docs
 
-- Business-Roadmap.md
-- `docs/04-business/Success-Metrics.md`
-- `docs/04-business/CustomerJourney.md`
-- `docs/04-business/Sales.md`
+- [Business roadmap](../roadmap/business-roadmap.md)
+- `docs/04-business/customer-success/success-metrics.md`
+- `docs/04-business/customer-onboarding/customer-journey.md`
+- `docs/04-business/sales/sales-strategy.md`
+- `docs/07-operations/playbooks/customer-success-playbook.md`

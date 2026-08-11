@@ -8,11 +8,14 @@
 
 # Purpose
 
-This document defines the pricing philosophy and commercial positioning of the Nexa platform.
+This document is the canonical source for **pricing principles, criteria, and (when they exist) price amounts and pricing rules**.
 
 Pricing should reflect customer value rather than software features.
 
-The objective is to create a sustainable pricing model that supports long-term customer relationships and business growth.
+It does **not** define:
+
+- how revenue is captured → [monetization-strategy.md](./monetization-strategy.md)
+- what each offer/plan includes → [packaging.md](./packaging.md)
 
 ---
 
@@ -45,6 +48,8 @@ Secondary market:
 - Beauty Salons
 
 Pricing strategy will initially prioritize simplicity over optimization.
+
+No list prices are published in this document yet. Do not invent prices in Sales or elsewhere.
 
 ---
 
@@ -91,6 +96,43 @@ Never copy competitor pricing.
 
 ---
 
+# Discount rules
+
+*(Not defined yet.)*
+
+When discount rules exist, they belong in this document. Sales must follow them and must not invent ad-hoc discount policy.
+
+---
+
+# Adjustment / reajuste rules
+
+*(Not defined yet.)*
+
+When price adjustment rules exist, they belong in this document.
+
+---
+
+# Setup / implementation price
+
+*(Amount not defined yet.)*
+
+When a setup/implementation fee amount is defined, it belongs here.
+
+Related ownership:
+
+- Setup as a **revenue mechanism** → [monetization-strategy.md](./monetization-strategy.md)
+- Whether setup is **included or separate in the offer** → [packaging.md](./packaging.md)
+
+---
+
+# Price amounts (list prices)
+
+*(Not defined yet. No price table in this documentation set.)*
+
+When list prices exist, they belong in this document (or an annex referenced only from here). Until then, Sales must not invent prices.
+
+---
+
 # Pricing Validation
 
 Every pricing decision should be validated through:
@@ -131,12 +173,12 @@ Pricing changes should be deliberate and evidence-based.
 
 # Relationship with Other Documents
 
-This strategy works together with:
-
-- Monetization Strategy
-- Packaging
-- Sales Strategy
-- Customer Discovery
-- Competitor Analysis
+| Document | Role |
+|----------|------|
+| [monetization-strategy.md](./monetization-strategy.md) | How Nexa captures revenue |
+| [packaging.md](./packaging.md) | What each commercial offer includes |
+| Sales Strategy / Sales Playbook | Consume pricing; do not redefine it |
+| Customer Discovery | Evidence for willingness to pay |
+| Competitor Analysis | Context — never copy competitor prices blindly |
 
 Pricing should always support Nexa's long-term positioning rather than short-term sales.

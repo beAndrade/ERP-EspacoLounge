@@ -2,280 +2,263 @@
 
 **Status:** Living Document
 
-**Owner:** Business Team
+**Owner:** Business Team (execution)
 
 ---
 
 # Purpose
 
-This document provides practical guidance for conducting Nexa sales conversations.
+This playbook tells someone **how to execute** a Nexa sales opportunity in practice.
 
-The objective is to create a consistent, consultative and customer-centric sales experience.
+It does **not** define commercial strategy, the official sales process, funnel metrics, or the Ideal Customer Profile.
 
-This playbook should evolve continuously as new customer interactions generate better approaches and learnings.
+Canonical sources:
 
----
+| Topic | Canonical document |
+|-------|--------------------|
+| Who to sell to (ICP) | [ideal-customer-profile.md](../../04-business/strategy/ideal-customer-profile.md) |
+| Commercial strategy & positioning | [sales-strategy.md](../../04-business/sales/sales-strategy.md) |
+| Official process & exit criteria | [sales-process.md](../../04-business/sales/sales-process.md) |
+| Funnel measurement & bottlenecks | [sales-funnel.md](../../04-business/sales/sales-funnel.md) |
+| Objections & responses | [objection-handling.md](../../04-business/sales/objection-handling.md) |
+| Conversation learning log | [sales-conversation-library.md](../../04-business/sales/sales-conversation-library.md) |
+| Pricing | [pricing-strategy.md](../../04-business/pricing/pricing-strategy.md) · [packaging.md](../../04-business/pricing/packaging.md) · [monetization-strategy.md](../../04-business/pricing/monetization-strategy.md) |
+| Product demo execution | [product-demo-playbook.md](./product-demo-playbook.md) |
+| Discovery interview execution | [customer-interview-playbook.md](./customer-interview-playbook.md) |
+| Post-sale onboarding | [customer-onboarding-playbook.md](./customer-onboarding-playbook.md) |
 
-# Sales Philosophy
-
-Nexa does not sell software.
-
-Nexa helps beauty businesses operate more efficiently.
-
-Every meeting should focus on understanding the customer's business before presenting the product.
-
----
-
-# Positioning During Sales Conversations
-
-Avoid presenting Nexa as software with multiple plans.
-
-Instead, explain that Nexa is designed to accompany the customer's growth.
-
-Example:
-
-"Hoje talvez você não precise de tudo o que a plataforma será capaz de fazer.
-
-Mas nosso objetivo é que, conforme seu salão cresça, você não precise trocar de sistema.
-
-A Nexa cresce junto com você."
-
-This message reinforces long-term partnership rather than software licensing.
+Follow stage goals and exit criteria from `sales-process.md`. Use this playbook for checklists, what to say/do, and what to register.
 
 ---
 
-# Sales Meeting Structure
+# Before you start (preparation)
 
-Every meeting should follow the same high-level structure.
+1. Confirm the prospect fits the [ICP](../../04-business/strategy/ideal-customer-profile.md). If unsure, treat as discovery — do not force a sale.
+2. Skim [sales-strategy.md](../../04-business/sales/sales-strategy.md) approach (problem-first, not feature-first).
+3. Research the business: Instagram, Google Maps, public reviews, rough team size, current software if visible.
+4. Prepare: contact name, city, how you got the lead (referral / visit / WhatsApp / etc.).
+5. Have links ready: demo environment (if any), pricing outline from `04-business/pricing/`, this playbook’s sibling demo/interview playbooks.
 
-```text
-Preparation
-        │
-        ▼
-Introduction
-        │
-        ▼
-Business Discovery
-        │
-        ▼
-Pain Identification
-        │
-        ▼
-Product Demonstration
-        │
-        ▼
-Questions
-        │
-        ▼
-Next Steps
-```
+Checklist — ready to contact?
+
+- [ ] ICP checked (or flagged “needs discovery”)
+- [ ] Business name, city, channel recorded
+- [ ] Opening purpose clear (schedule discovery — not sell on first message)
 
 ---
 
-# Phase 01 — Preparation
+# 1. Prospecting (execute)
 
-Before the meeting:
+**Process stage:** Prospect — see [sales-process.md](../../04-business/sales/sales-process.md)
 
-Research the business.
+Sources (execution):
 
-Identify:
+- In-person visits, referrals, Instagram, Google Maps, WhatsApp, networking
 
-- Number of professionals
-- Main services
-- Social media
-- Current software (if known)
-- Business profile
+Register for every prospect:
 
-Prepare relevant examples.
+- Business name
+- City
+- Contact person / role
+- Phone / WhatsApp
+- Instagram (if any)
+- Source of lead
+- Contact status (not contacted / contacted / waiting)
+
+Do not redefine who is in scope — use the ICP.
 
 ---
 
-# Phase 02 — Introduction
+# 2. First contact (execute)
 
-Objective:
+**Process stage:** First Contact
 
-Build rapport.
+Goal in practice: schedule a discovery conversation. Do not demo or pitch pricing here.
 
-Suggested topics:
+Suggested flow:
 
-- Business history
+1. Introduce yourself briefly.
+2. State purpose: understand how they run the salon day-to-day.
+3. Ask for a short meeting (in person or call).
+4. Confirm date/time and channel.
+
+Starter questions (keep short — full discovery later):
+
+- How do you control appointments today?
+- Do you use any system (or Excel / paper / WhatsApp only)?
+- What takes the most time in the weekly routine?
+
+Register:
+
+- Date of first contact
+- Outcome (meeting scheduled / declined / follow-up date)
+- Notes (one paragraph max)
+
+Exit when discovery is scheduled (per process).
+
+---
+
+# 3. Discovery (execute)
+
+**Process stage:** Discovery
+
+Prefer the interview flow in [customer-interview-playbook.md](./customer-interview-playbook.md) and the template under `docs/04-business/customer-discovery/`.
+
+Map and note:
+
+- Agenda / scheduling
+- Finance / payments
+- Stock
 - Team
-- Services
-- Daily routine
+- Commissions
+- Front-desk / attendance flow
+- Reports / what owners check weekly
 
-Avoid discussing software immediately.
+Rules:
 
----
+- Listen more than you speak.
+- Do not sell features yet.
+- Capture pains in the customer’s words.
 
-# Phase 03 — Business Discovery
+Register:
 
-Understand the operation before presenting Nexa.
+- Pain list (ranked if possible)
+- Current software / workarounds
+- Update [sales-conversation-library.md](../../04-business/sales/sales-conversation-library.md) when the conversation taught something reusable
+- Field observations / assumptions via Customer Discovery docs when relevant
 
-Suggested questions:
-
-- How do you manage appointments?
-- How do you manage customer history?
-- How do you calculate commissions?
-- How do you control inventory?
-- What consumes the most time every day?
-- What frustrates you most?
-
-Listen more than you speak.
+Exit when problems are clearly understood (per process).
 
 ---
 
-# Phase 04 — Pain Identification
+# 4. Qualification (execute)
 
-Summarize the customer's operational challenges.
+**Process stage:** Qualification
 
-Example:
+Use the qualification criteria in [sales-process.md](../../04-business/sales/sales-process.md) and the [ICP](../../04-business/strategy/ideal-customer-profile.md).
 
-"So today your biggest challenge is..."
+Checklist:
 
-Confirm understanding before continuing.
+- [ ] Beauty business in current focus
+- [ ] Enough operational complexity for Nexa to help
+- [ ] Interest in improving processes
+- [ ] Willingness to adopt software
 
----
+Decision:
 
-# Phase 05 — Product Demonstration
+- **Qualified** → schedule demo
+- **Disqualified** → record reason; keep polite door open if timing only
 
-Present only the workflows related to the customer's problems.
-
-Examples:
-
-If scheduling is the pain:
-
-Show Scheduling.
-
-If commissions are the pain:
-
-Show Commission Management.
-
-If customer history is the pain:
-
-Show Customer Profile.
-
-Avoid demonstrating unnecessary features.
+Register: qualified / disqualified + reason. Do not invent new ICP rules here.
 
 ---
 
-# Phase 06 — Questions
+# 5. Product demonstration (execute)
 
-Allow the customer to ask questions freely.
+**Process stage:** Product Demonstration
 
-Clarify:
+Execute the demo using [product-demo-playbook.md](./product-demo-playbook.md).
 
-- Pricing
-- Onboarding
-- Daily usage
-- Support
+Playbook reminders:
 
-Never guess.
+- Start from the customer’s top pain, not the dashboard.
+- Show workflows, not feature tours.
+- Tie each screen to a pain captured in discovery.
 
-If you do not know an answer, commit to following up.
+Register:
 
----
+- Pains demonstrated against
+- Strong positive reactions
+- Objections (handle with [objection-handling.md](../../04-business/sales/objection-handling.md); log patterns there)
+- Agreed next step
 
-# Phase 07 — Next Steps
-
-Define the next action.
-
-Examples:
-
-- Schedule another meeting.
-- Prepare proposal.
-- Start pilot.
-- Follow-up call.
-
-Every meeting should finish with a clear next step.
+Exit when the customer understands value (per process).
 
 ---
 
-# Sales Conversation Principles
+# 6. Proposal (execute)
 
-Always:
+**Process stage:** Proposal
 
-- Ask questions.
-- Listen carefully.
-- Take notes.
-- Observe workflows.
-- Understand before presenting.
+Pricing and packaging: use [pricing-strategy.md](../../04-business/pricing/pricing-strategy.md) and [packaging.md](../../04-business/pricing/packaging.md) — do not invent prices in this playbook.
 
-Never:
+Proposal should include:
 
-- Rush demonstrations.
-- Overpromise.
-- Criticize competitors.
-- Argue with customers.
+- Monthly value (from pricing docs)
+- What is included
+- Implementation / onboarding outline
+- Support expectations
+- Payment terms
+- Next steps / validity
 
----
+Keep proposals simple.
 
-# Customer Signals
-
-Positive signals:
-
-- Operational questions.
-- Questions about onboarding.
-- Questions about pricing.
-- Interest in workflow improvements.
-
-Neutral signals:
-
-- General curiosity.
-- Feature questions.
-
-Warning signals:
-
-- No perceived operational problem.
-- Comparing only by price.
-- No willingness to change.
+Register: proposal date, version/summary, send channel. Exit when proposal is delivered (per process).
 
 ---
 
-# Meeting Checklist
+# 7. Negotiation & follow-up (execute)
 
-Before leaving the meeting, confirm:
+**Process alignment:**
 
-☐ Main pain identified.
+- Commercial discussion ↔ funnel stage **Negotiation** in [sales-funnel.md](../../04-business/sales/sales-funnel.md)
+- Optional real-environment trial ↔ process stage **Pilot (Optional)** in [sales-process.md](../../04-business/sales/sales-process.md)
 
-☐ Current software understood.
+These are related but not identical: negotiation is commercial; pilot is product-fit validation. See the stage map in those documents.
 
-☐ Customer profile documented.
+Execution tips:
 
-☐ Questions answered.
+- Return to operational impact; avoid immediate discounting ([objection-handling.md](../../04-business/sales/objection-handling.md)).
+- Set a clear follow-up date; ask what is still unclear.
+- If pilot: agree scope, duration, and success signals before configuring anything heavy.
 
-☐ Next step agreed.
-
-☐ Notes recorded.
-
----
-
-# After the Meeting
-
-Immediately:
-
-1. Update Field Observations.
-2. Review Assumptions.
-3. Record new objections.
-4. Update Competitor Analysis (if applicable).
-5. Identify Product Opportunities.
-6. Schedule follow-up.
-
-Sales conversations should continuously improve Nexa.
+Register: objections, competitor mentions, follow-up date, pilot yes/no.
 
 ---
 
-# Continuous Improvement
+# 8. Close & onboarding handoff (execute)
 
-After every meeting ask:
+**Process stages:** Customer → Onboarding
+**Funnel stages:** Won → Onboarding → Active Customer
 
-What worked well?
+When the customer accepts:
 
-What could be improved?
+1. Confirm contract / commercial terms.
+2. Hand off to [customer-onboarding-playbook.md](./customer-onboarding-playbook.md) — do not run full onboarding from this sales playbook.
+3. Pass context: pains, users, current software, proposal version, go-live expectations.
 
-Which questions generated the best discussion?
+Handoff checklist:
 
-Which objections appeared?
+- [ ] Commercial acceptance recorded
+- [ ] Onboarding owner notified
+- [ ] Discovery notes + proposal linked or attached
+- [ ] Conversation library updated if there was a durable learning
 
-Which customer problems repeated?
+Sales follow-up after handoff is light coordination only; day-to-day activation belongs to onboarding / customer success docs.
 
-Update this Playbook whenever better approaches are discovered.
+---
+
+# What to register (summary)
+
+| Moment | Where |
+|--------|--------|
+| Prospect / contact / stage | Your lightweight pipeline tracker + notes |
+| Meaningful conversation learning | [sales-conversation-library.md](../../04-business/sales/sales-conversation-library.md) |
+| Recurring objection | [objection-handling.md](../../04-business/sales/objection-handling.md) |
+| Discovery evidence | Customer Discovery docs + interview playbook |
+| Conversion / bottlenecks | Track against [sales-funnel.md](../../04-business/sales/sales-funnel.md) — do not redefine metrics here |
+| Product feedback | Follow the validation loop in [sales-process.md](../../04-business/sales/sales-process.md) (Assumption → learning → PDR). Do not turn one request into a feature. |
+
+---
+
+# Quick execution checklist (end-to-end)
+
+- [ ] Prospect fits ICP (or discovery-only)
+- [ ] First contact → discovery scheduled
+- [ ] Discovery done; pains written
+- [ ] Qualification decision recorded
+- [ ] Demo via product-demo playbook
+- [ ] Proposal from pricing docs
+- [ ] Negotiation / follow-up / optional pilot clear
+- [ ] Won → onboarding playbook handoff
+- [ ] Learnings logged (conversation library / objections as needed)
