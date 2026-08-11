@@ -2,11 +2,16 @@
 
 /// Breakpoints oficiais (fonte única SCSS).
 /// TypeScript: `src/app/styles/breakpoints.ts` (manter valores iguais).
+///
+/// `shell-mobile` e `agenda-mobile` = 768px (overlay da sidebar + grelha Agenda).
+/// Não reintroduzir 640px como limiar de shell — causava mismatch JS/CSS.
 $breakpoints: (
-  shell-mobile: 640px,
+  /// Sidebar overlay + viewport “mobile” do shell (JS usa o mesmo valor).
+  shell-mobile: 768px,
   form-narrow: 560px,
   ficha-stack: 860px,
   drawer-form: 720px,
+  /// Compactação Agenda — mesmo limiar que shell-mobile.
   agenda-mobile: 768px,
   drawer-sidebar-hide: 1336px,
   drawer-tablet: 1024px,

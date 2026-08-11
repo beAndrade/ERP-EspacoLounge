@@ -18,6 +18,9 @@
 /// Chrome responsivo — escopo opcional via $scope (seletor do drawer).
 /// Sem $scope, NÃO emite regras (evita media query global quebrando headers).
 /// Ex.: @include drawer-responsive-chrome('.cliente-drawer--produto')
+///
+/// Em `shell-mobile` (≤768px) também reforça coluna flex + scroll do body
+/// para drawers full-bleed (âncora 1650 → 100vw).
 @mixin drawer-responsive-chrome($scope: null) {
   @if $scope == null or $scope == '' {
     @warn 'drawer-responsive-chrome: passe o seletor do drawer (ex.: ".cliente-drawer--produto").';
@@ -73,6 +76,30 @@
       #{$scope} .cliente-drawer-footer {
         flex-wrap: wrap;
         padding: 8px 10px 10px;
+      }
+    }
+
+    /// Full-bleed em viewports ≤ shell-mobile: cabeçalho/rodapé fixos na
+    /// coluna do drawer; corpo com scroll (evita “drawer quebrado”).
+    @include bp.bp-down(shell-mobile) {
+      #{$scope} {
+        display: flex;
+        flex-direction: column;
+        max-height: 100dvh;
+        box-sizing: border-box;
+      }
+
+      #{$scope} .cliente-head,
+      #{$scope} .cliente-drawer-footer {
+        flex-shrink: 0;
+      }
+
+      #{$scope} .cliente-body-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
     }
   }

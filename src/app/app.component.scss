@@ -1,3 +1,5 @@
+@use './styles/breakpoints' as bp;
+
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
 
 :host {
@@ -922,7 +924,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@include bp.bp-down(shell-mobile) {
   .app-main-column:has(.main--agenda-hub) .mobile-nav-toggle {
     display: none !important;
   }
@@ -967,7 +969,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@include bp.bp-down(shell-mobile) {
   .app-sidebar {
     position: fixed;
     left: 0;

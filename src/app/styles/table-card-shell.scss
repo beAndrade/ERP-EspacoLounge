@@ -62,16 +62,23 @@ $list-table-thead-corner-radius: 14px;
 .orcamentos-table-card > .table-wrap,
 .produtos-table-card > .table-wrap,
 .fin-transacoes__card > .table-wrap {
-  overflow-x: clip;
+  /**
+   * Scroll horizontal em viewports estreitas (antes: `clip` cortava colunas/
+   * ações sem forma de alcançar). O card pai mantém `overflow: hidden` só
+   * para o raio do thead — o scroll fica neste wrap.
+   */
+  overflow-x: auto;
   overflow-y: visible;
   border-radius: 12px 12px 0 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 /** Drawer do cliente: sem radius no wrap (evita cortar a coluna Ações). */
 .drawer-table-card > .drawer-table-wrap {
-  overflow-x: clip;
+  overflow-x: auto;
   overflow-y: visible;
   border-radius: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 /**
