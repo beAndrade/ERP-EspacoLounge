@@ -420,7 +420,7 @@ export class SidebarNovoMenuComponent implements OnDestroy {
         this.agendaNovoGlobal.abrir('comanda');
         break;
       case 'orcamento':
-        this.agendaNovoGlobal.abrir('orcamento');
+        void this.router.navigate(['/orcamentos']);
         break;
       case 'pacote':
         void this.router.navigate(['/pacotes']);

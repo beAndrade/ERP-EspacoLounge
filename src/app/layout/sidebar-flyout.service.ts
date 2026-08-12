@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-/** Garante que só um flyout da sidebar (perfil / Novo +) fica aberto. */
+/** Garante que só um flyout da sidebar (perfil / Novo + / nav colapsada) fica aberto. */
 @Injectable({ providedIn: 'root' })
 export class SidebarFlyoutService {
   private activeClose: (() => void) | null = null;

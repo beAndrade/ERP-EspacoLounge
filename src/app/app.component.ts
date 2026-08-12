@@ -1,5 +1,12 @@
 import { NgClass } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  OnInit,
+  inject,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   NavigationEnd,
@@ -19,7 +26,8 @@ import { MarcaCadastroDrawerHostComponent } from './shared/marca-cadastro-drawer
 import { FornecedorCadastroDrawerHostComponent } from './shared/fornecedor-cadastro-drawer/fornecedor-cadastro-drawer-host.component';
 import { SessaoUsuarioService } from './core/services/sessao-usuario.service';
 import { SidebarProfileComponent } from './layout/sidebar-profile/sidebar-profile.component';
-import { mediaQueryMax } from './styles/breakpoints';
+import { SidebarFlyoutService } from './layout/sidebar-flyout.service';
+import { mediaQueryMin } from './styles/breakpoints';
 import { AppShellUiService } from './core/services/app-shell-ui.service';
 import { SidebarNovoMenuComponent } from './layout/sidebar-novo-menu/sidebar-novo-menu.component';
 import { MinhaContaDrawerHostComponent } from './shared/minha-conta-drawer/minha-conta-drawer-host.component';
@@ -34,6 +42,9 @@ export type NavSidebarDropdownId =
   | 'cadastros'
   | 'marketing'
   | 'relatorios';
+
+/** Flyout do rail desktop: secções nav-expand + Principal. */
+export type NavCollapsedFlyoutId = NavSidebarDropdownId | 'principal';
 
 @Component({
   selector: 'app-root',
@@ -63,24 +74,34 @@ export type NavSidebarDropdownId =
 export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly hostEl = inject(ElementRef<HTMLElement>);
   readonly sessao = inject(SessaoUsuarioService);
   private readonly shellUi = inject(AppShellUiService);
+  private readonly sidebarFlyout = inject(SidebarFlyoutService);
 
   readonly title = 'Espaço Lounge';
   isPublicRoute = false;
 
-  /** Viewport estreito: menu lateral em overlay. */
+  /** Viewport estreito: menu lateral em overlay (< shellMobile / ≤767px). */
   isMobileViewport = false;
   mobileNavOpen = false;
-  private mobileMq: MediaQueryList | null = null;
+  private desktopMq: MediaQueryList | null = null;
 
-  /** Menu Principal accordion (só afeta sidebar expandida). */
+  /** Menu Principal accordion (sidebar expandida / overlay mobile). */
   principalExpanded = true;
 
   /** Rota «Principal» ativa no ciclo anterior (para só auto-abrir ao entrar). */
   private lastPrincipalActive = false;
 
   sidebarCollapsed = false;
+
+  /**
+   * Rail de ícones + flyout: só desktop com sidebar recolhida.
+   * No mobile o overlay usa sempre o chrome expandido (acordeão).
+   */
+  get sidebarIconRail(): boolean {
+    return this.sidebarCollapsed && !this.isMobileViewport;
+  }
 
   /**
    * Secções Financeiro, Controle, etc. abertas em simultâneo.
@@ -91,14 +112,28 @@ export class AppComponent implements OnInit {
   /** Secções com rota ativa no ciclo anterior (para só auto-abrir ao entrar). */
   private lastActiveNavSections = new Set<NavSidebarDropdownId>();
 
-  private readonly collapsedNavFirstRoute: Record<
-    NavSidebarDropdownId,
-    string
+  /**
+   * Flyout da sidebar colapsada (grupos com vários filhos).
+   * Separado de `navExpandOpenIds` para o auto-open por rota não abrir flyout.
+   */
+  collapsedNavFlyoutId: NavCollapsedFlyoutId | null = null;
+
+  private flyoutTrigger: HTMLElement | null = null;
+  private flyoutPortal: {
+    el: HTMLElement;
+    parent: HTMLElement;
+    next: ChildNode | null;
+  } | null = null;
+  private readonly closeCollapsedNavFlyoutBound = () =>
+    this.closeCollapsedNavFlyout();
+
+  /**
+   * Grupos com um único filho no HTML: no colapsado navegam direto.
+   * Multi-filho → flyout (sem listar rotas aqui).
+   */
+  private readonly collapsedNavDirectRoute: Partial<
+    Record<NavSidebarDropdownId, string>
   > = {
-    financeiro: '/financeiro/painel',
-    controle: '/estoque',
-    cadastros: '/clientes',
-    marketing: '/promocoes',
     relatorios: '/relatorios/painel',
   };
 
@@ -146,9 +181,11 @@ export class AppComponent implements OnInit {
       .subscribe((ev) => {
         this.syncPublicRoute(ev.urlAfterRedirects);
         this.syncNavExpandForActiveRoutes();
+        this.closeCollapsedNavFlyout();
         this.closeMobileNav();
       });
     this.syncPublicRoute(this.router.url);
+    this.destroyRef.onDestroy(() => this.closeCollapsedNavFlyout());
   }
 
   private syncPublicRoute(url: string): void {
@@ -157,7 +194,15 @@ export class AppComponent implements OnInit {
   }
 
   toggleMobileNav(): void {
-    this.mobileNavOpen = !this.mobileNavOpen;
+    const opening = !this.mobileNavOpen;
+    this.closeCollapsedNavFlyout();
+    if (opening) {
+      // Estado limpo ANTES de mostrar o overlay (evita animação residual).
+      this.resetMobileNavGroupsClosed();
+      this.mobileNavOpen = true;
+    } else {
+      this.closeMobileNav();
+    }
   }
 
   private setupShellUiRequests(): void {
@@ -170,31 +215,76 @@ export class AppComponent implements OnInit {
   }
 
   closeMobileNav(): void {
+    const wasOpen = this.mobileNavOpen;
     this.mobileNavOpen = false;
+    this.closeCollapsedNavFlyout();
+    // Reset ao fechar (NavigationEnd / backdrop): painéis já em 0fr antes de reabrir.
+    if (wasOpen && this.isMobileViewport) {
+      this.resetMobileNavGroupsClosed();
+    }
+  }
+
+  /**
+   * Ao abrir o overlay mobile: todos os grupos começam fechados.
+   * Atualiza `lastActive*` para o sync por rota não reabrir na hora.
+   */
+  private resetMobileNavGroupsClosed(): void {
+    this.navExpandOpenIds = [];
+    this.principalExpanded = false;
+    const secaoIds: NavSidebarDropdownId[] = [
+      'financeiro',
+      'controle',
+      'cadastros',
+      'marketing',
+      'relatorios',
+    ];
+    this.lastActiveNavSections = new Set(
+      secaoIds.filter((id) => this.sectionActive(id)),
+    );
+    this.lastPrincipalActive = this.principalSectionActive();
   }
 
   private setupMobileViewport(): void {
     if (typeof window === 'undefined' || !window.matchMedia) return;
-    this.mobileMq = window.matchMedia(mediaQueryMax('shellMobile'));
+    // ≥ shellMobile (768) = desktop; abaixo = mobile (≤767).
+    this.desktopMq = window.matchMedia(mediaQueryMin('shellMobile'));
     const apply = (): void => {
-      this.isMobileViewport = this.mobileMq?.matches ?? false;
+      const wasMobile = this.isMobileViewport;
+      this.isMobileViewport = !(this.desktopMq?.matches ?? true);
       if (this.isMobileViewport) {
-        this.sidebarCollapsed = true;
         this.mobileNavOpen = false;
+        this.closeCollapsedNavFlyout();
+        this.resetMobileNavGroupsClosed();
+      } else {
+        this.closeCollapsedNavFlyout();
+        if (wasMobile) {
+          this.syncNavExpandForActiveRoutes();
+        }
       }
     };
     apply();
     const onChange = (): void => apply();
-    this.mobileMq.addEventListener('change', onChange);
+    this.desktopMq.addEventListener('change', onChange);
     this.destroyRef.onDestroy(() => {
-      this.mobileMq?.removeEventListener('change', onChange);
+      this.desktopMq?.removeEventListener('change', onChange);
     });
   }
 
   onNavExpandTrigger(ev: MouseEvent, id: NavSidebarDropdownId): void {
     ev.preventDefault();
-    if (this.sidebarCollapsed) {
-      void this.router.navigateByUrl(this.collapsedNavFirstRoute[id]);
+    ev.stopPropagation();
+    if (this.sidebarIconRail) {
+      const direct = this.collapsedNavDirectRoute[id];
+      if (direct) {
+        this.closeCollapsedNavFlyout();
+        void this.router.navigateByUrl(direct);
+        return;
+      }
+      if (this.collapsedNavFlyoutId === id) {
+        this.closeCollapsedNavFlyout();
+        return;
+      }
+      this.openCollapsedNavFlyout(id, ev.currentTarget as HTMLElement);
       return;
     }
     const idx = this.navExpandOpenIds.indexOf(id);
@@ -207,6 +297,153 @@ export class AppComponent implements OnInit {
 
   navExpandIsOpen(id: NavSidebarDropdownId): boolean {
     return this.navExpandOpenIds.includes(id);
+  }
+
+  collapsedNavFlyoutIsOpen(id: NavCollapsedFlyoutId): boolean {
+    return this.collapsedNavFlyoutId === id;
+  }
+
+  /** `aria-expanded`: acordeão (desktop expandido / mobile) ou flyout (rail). */
+  navExpandAriaExpanded(id: NavSidebarDropdownId): boolean {
+    if (this.sidebarIconRail) {
+      return this.collapsedNavFlyoutId === id;
+    }
+    return this.navExpandOpenIds.includes(id);
+  }
+
+  principalAriaExpanded(): boolean {
+    if (this.sidebarIconRail) {
+      return this.collapsedNavFlyoutId === 'principal';
+    }
+    return this.principalExpanded;
+  }
+
+  onPrincipalTrigger(ev: MouseEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (this.sidebarIconRail) {
+      if (this.collapsedNavFlyoutId === 'principal') {
+        this.closeCollapsedNavFlyout();
+        return;
+      }
+      this.openCollapsedNavFlyout('principal', ev.currentTarget as HTMLElement);
+      return;
+    }
+    this.principalExpanded = !this.principalExpanded;
+  }
+
+  closeCollapsedNavFlyout(): void {
+    if (!this.collapsedNavFlyoutId && !this.flyoutPortal) return;
+    this.restoreFlyoutPortal();
+    this.collapsedNavFlyoutId = null;
+    this.flyoutTrigger = null;
+    this.sidebarFlyout.release(this.closeCollapsedNavFlyoutBound);
+  }
+
+  private openCollapsedNavFlyout(
+    id: NavCollapsedFlyoutId,
+    trigger: HTMLElement,
+  ): void {
+    if (!this.sidebarIconRail) return;
+    this.sidebarFlyout.open(this.closeCollapsedNavFlyoutBound);
+    this.collapsedNavFlyoutId = id;
+    this.flyoutTrigger = trigger;
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        if (this.collapsedNavFlyoutId !== id) return;
+        this.portalizeFlyoutPanel(id);
+        this.positionFlyoutPanel(trigger);
+      });
+    });
+  }
+
+  private portalizeFlyoutPanel(id: NavCollapsedFlyoutId): void {
+    this.restoreFlyoutPortal();
+    const expand = this.hostEl.nativeElement.querySelector(
+      `[data-nav-expand="${id}"]`,
+    ) as HTMLElement | null;
+    const panel = expand?.querySelector(
+      '.nav-sidebar__panel',
+    ) as HTMLElement | null;
+    if (!panel || !panel.parentElement) return;
+    const parent = panel.parentElement;
+    const next = panel.nextSibling;
+    panel.classList.add('nav-expand-flyout-panel');
+    document.body.appendChild(panel);
+    this.flyoutPortal = { el: panel, parent, next };
+  }
+
+  private restoreFlyoutPortal(): void {
+    const p = this.flyoutPortal;
+    if (!p) return;
+    p.el.classList.remove('nav-expand-flyout-panel');
+    p.el.style.top = '';
+    p.el.style.left = '';
+    p.el.style.maxHeight = '';
+    if (p.next && p.next.parentNode === p.parent) {
+      p.parent.insertBefore(p.el, p.next);
+    } else {
+      p.parent.appendChild(p.el);
+    }
+    this.flyoutPortal = null;
+  }
+
+  private positionFlyoutPanel(trigger: HTMLElement): void {
+    const panel = this.flyoutPortal?.el;
+    if (!panel) return;
+    const r = trigger.getBoundingClientRect();
+    const gap = 8;
+    const margin = 8;
+    const maxH = Math.max(120, window.innerHeight - margin * 2);
+    panel.style.maxHeight = `${maxH}px`;
+
+    const panelW = Math.max(panel.offsetWidth || 0, 200);
+    let left = r.right + gap;
+    if (left + panelW > window.innerWidth - margin) {
+      left = Math.max(margin, r.left - panelW - gap);
+    }
+    left = Math.max(
+      margin,
+      Math.min(left, window.innerWidth - panelW - margin),
+    );
+
+    const panelH = panel.offsetHeight || 0;
+    let top = r.top;
+    if (top + panelH > window.innerHeight - margin) {
+      top = Math.max(margin, window.innerHeight - margin - panelH);
+    }
+    top = Math.max(margin, top);
+
+    panel.style.top = `${top}px`;
+    panel.style.left = `${left}px`;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onCollapsedNavFlyoutDocumentClick(ev: MouseEvent): void {
+    if (!this.collapsedNavFlyoutId) return;
+    const t = ev.target as Node | null;
+    if (!t) return;
+    if (this.flyoutTrigger?.contains(t)) return;
+    if (this.flyoutPortal?.el.contains(t)) return;
+    this.closeCollapsedNavFlyout();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onCollapsedNavFlyoutKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Escape') return;
+    if (this.collapsedNavFlyoutId) {
+      this.closeCollapsedNavFlyout();
+      return;
+    }
+    if (this.isMobileViewport && this.mobileNavOpen) {
+      this.closeMobileNav();
+    }
+  }
+
+  @HostListener('window:resize')
+  onCollapsedNavFlyoutResize(): void {
+    if (!this.collapsedNavFlyoutId || !this.flyoutTrigger) return;
+    this.positionFlyoutPanel(this.flyoutTrigger);
   }
 
   /** Rota ativa sob um prefixo (ex.: `/financeiro`, `/relatorios`). */
@@ -241,6 +478,7 @@ export class AppComponent implements OnInit {
       this.toggleMobileNav();
       return;
     }
+    this.closeCollapsedNavFlyout();
     this.sidebarCollapsed = !this.sidebarCollapsed;
     try {
       localStorage.setItem(
@@ -252,10 +490,6 @@ export class AppComponent implements OnInit {
     }
   }
 
-  togglePrincipal(): void {
-    this.principalExpanded = !this.principalExpanded;
-  }
-
   private pathMatchesPrefix(path: string, prefix: string): boolean {
     const base = prefix.replace(/\/+$/, '') || '/';
     const p = path.replace(/\/+$/, '') || '/';
@@ -265,6 +499,7 @@ export class AppComponent implements OnInit {
   /**
    * Ao entrar numa secção (rota passa a pertencer-lhe), expande o acordeão.
    * Não reabre se o utilizador a tiver fechado enquanto permanece na mesma secção.
+   * No mobile não auto-abre (overlay sempre começa com grupos fechados).
    */
   private syncNavExpandForActiveRoutes(): void {
     const secaoIds: NavSidebarDropdownId[] = [
@@ -277,6 +512,12 @@ export class AppComponent implements OnInit {
     const currentlyActive = new Set(
       secaoIds.filter((id) => this.sectionActive(id)),
     );
+
+    if (this.isMobileViewport) {
+      this.lastActiveNavSections = currentlyActive;
+      this.lastPrincipalActive = this.principalSectionActive();
+      return;
+    }
 
     const next = [...this.navExpandOpenIds];
     let mudou = false;

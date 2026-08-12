@@ -15,7 +15,7 @@
 <div
   class="shell"
   [ngClass]="{
-    'shell--sidebar-collapsed': sidebarCollapsed,
+    'shell--sidebar-collapsed': sidebarIconRail,
     'shell--mobile-nav-open': isMobileViewport && mobileNavOpen
   }"
 >
@@ -35,13 +35,21 @@
         type="button"
         class="sidebar-toggle"
         (click)="toggleSidebar()"
-        [attr.aria-expanded]="!sidebarCollapsed"
+        [attr.aria-expanded]="
+          isMobileViewport ? mobileNavOpen : !sidebarCollapsed
+        "
         aria-controls="app-sidebar-nav"
         [attr.aria-label]="
-          sidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'
+          isMobileViewport
+            ? mobileNavOpen
+              ? 'Fechar menu'
+              : 'Abrir menu'
+            : sidebarCollapsed
+              ? 'Expandir menu lateral'
+              : 'Recolher menu lateral'
         "
       >
-        @if (sidebarCollapsed) {
+        @if (isMobileViewport ? !mobileNavOpen : sidebarCollapsed) {
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -83,8 +91,8 @@
       </button>
     </div>
     <div class="app-sidebar__divider" role="presentation" aria-hidden="true"></div>
-    <app-sidebar-profile [collapsed]="sidebarCollapsed" />
-    <app-sidebar-novo-menu [collapsed]="sidebarCollapsed" />
+    <app-sidebar-profile [collapsed]="sidebarIconRail" />
+    <app-sidebar-novo-menu [collapsed]="sidebarIconRail" />
     <nav
       id="app-sidebar-nav"
       class="nav nav--sidebar"
@@ -92,13 +100,18 @@
     >
       <div
         class="nav-group"
+        data-nav-expand="principal"
         [class.nav-group--open]="principalExpanded"
+        [class.nav-group--flyout-open]="collapsedNavFlyoutIsOpen('principal')"
+        [class.nav-group--active]="principalSectionActive()"
       >
         <button
           type="button"
           class="nav-group__head"
-          [attr.aria-expanded]="principalExpanded"
-          (click)="togglePrincipal()"
+          [attr.aria-expanded]="principalAriaExpanded()"
+          aria-controls="nav-expand-principal"
+          aria-label="Principal — abrir subitens"
+          (click)="onPrincipalTrigger($event)"
         >
           <svg
             class="nav-group__head-icon"
@@ -151,7 +164,7 @@
         </button>
 
         <div class="nav-sidebar__panel">
-        <ul class="nav-group__sub" role="list">
+        <ul id="nav-expand-principal" class="nav-group__sub" role="list">
           <li>
             <a
               routerLink="/painel"
@@ -325,14 +338,16 @@
 
       <div
         class="nav-expand"
+        data-nav-expand="cadastros"
         [class.nav-expand--open]="navExpandIsOpen('cadastros')"
+        [class.nav-expand--flyout-open]="collapsedNavFlyoutIsOpen('cadastros')"
         [class.nav-expand--active]="sectionActive('cadastros')"
       >
         <button
           type="button"
           class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'cadastros')"
-          [attr.aria-expanded]="navExpandIsOpen('cadastros')"
+          [attr.aria-expanded]="navExpandAriaExpanded('cadastros')"
           aria-controls="nav-expand-cadastros"
           aria-label="Cadastros — abrir subitens"
         >
@@ -479,14 +494,16 @@
       @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
+        data-nav-expand="financeiro"
         [class.nav-expand--open]="navExpandIsOpen('financeiro')"
+        [class.nav-expand--flyout-open]="collapsedNavFlyoutIsOpen('financeiro')"
         [class.nav-expand--active]="sectionActive('financeiro')"
       >
         <button
           type="button"
           class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'financeiro')"
-          [attr.aria-expanded]="navExpandIsOpen('financeiro')"
+          [attr.aria-expanded]="navExpandAriaExpanded('financeiro')"
           aria-controls="nav-expand-financeiro"
           aria-label="Financeiro — abrir subitens"
         >
@@ -666,14 +683,16 @@
       @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
+        data-nav-expand="controle"
         [class.nav-expand--open]="navExpandIsOpen('controle')"
+        [class.nav-expand--flyout-open]="collapsedNavFlyoutIsOpen('controle')"
         [class.nav-expand--active]="sectionActive('controle')"
       >
         <button
           type="button"
           class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'controle')"
-          [attr.aria-expanded]="navExpandIsOpen('controle')"
+          [attr.aria-expanded]="navExpandAriaExpanded('controle')"
           aria-controls="nav-expand-controle"
           aria-label="Controle — abrir subitens"
         >
@@ -931,14 +950,16 @@
       @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
+        data-nav-expand="marketing"
         [class.nav-expand--open]="navExpandIsOpen('marketing')"
+        [class.nav-expand--flyout-open]="collapsedNavFlyoutIsOpen('marketing')"
         [class.nav-expand--active]="sectionActive('marketing')"
       >
         <button
           type="button"
           class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'marketing')"
-          [attr.aria-expanded]="navExpandIsOpen('marketing')"
+          [attr.aria-expanded]="navExpandAriaExpanded('marketing')"
           aria-controls="nav-expand-marketing"
           aria-label="Marketing — abrir subitens"
         >
@@ -1092,14 +1113,16 @@
       @if (sessao.isAdmin()) {
       <div
         class="nav-expand"
+        data-nav-expand="relatorios"
         [class.nav-expand--open]="navExpandIsOpen('relatorios')"
+        [class.nav-expand--flyout-open]="collapsedNavFlyoutIsOpen('relatorios')"
         [class.nav-expand--active]="sectionActive('relatorios')"
       >
         <button
           type="button"
           class="nav-expand__trigger"
           (click)="onNavExpandTrigger($event, 'relatorios')"
-          [attr.aria-expanded]="navExpandIsOpen('relatorios')"
+          [attr.aria-expanded]="navExpandAriaExpanded('relatorios')"
           aria-controls="nav-expand-relatorios"
           aria-label="Relatórios — abrir subitens"
         >

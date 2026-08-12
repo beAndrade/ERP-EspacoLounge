@@ -7,10 +7,10 @@ export class AppShellUiService {
   private readonly toggleMobileNav$ = new Subject<void>();
   private readonly toggleSidebar$ = new Subject<void>();
 
-  /** ≤ shellMobile (768px): abre/fecha sidebar overlay. */
+  /** < shellMobile (768px), i.e. ≤767px: abre/fecha sidebar overlay. */
   onToggleMobileNav = this.toggleMobileNav$.asObservable();
 
-  /** > shellMobile (768px): recolhe/expande sidebar fixa. */
+  /** ≥ shellMobile (768px): recolhe/expande sidebar fixa. */
   onToggleSidebar = this.toggleSidebar$.asObservable();
 
   requestToggleMobileNav(): void {
