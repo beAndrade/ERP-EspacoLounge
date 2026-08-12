@@ -44,10 +44,15 @@
           type="checkbox"
           [(ngModel)]="d.usuarioAtivo"
           name="usuarioAtivo"
-          [disabled]="d.usuarioSalvando"
+          [disabled]="d.usuarioSalvando || d.ehAdminDoSistema()"
         />
         <span>Usuário ativo</span>
       </label>
+      @if (d.ehAdminDoSistema()) {
+        <p class="prof-usuario__hint">
+          A conta do admin do sistema não pode ser desativada.
+        </p>
+      }
     }
 
     @if (d.usuarioErro) {

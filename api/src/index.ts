@@ -2032,7 +2032,11 @@ const app = new Elysia({ adapter: node() })
             return ok({ item });
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
-            if (/obrigatório|inválido|não encontrado/i.test(msg)) {
+            if (
+              /obrigatório|inválido|não encontrado|admin do sistema|não pode ser/i.test(
+                msg,
+              )
+            ) {
               return fail('VALIDATION', msg);
             }
             return fail('SERVER', msg);
@@ -2133,7 +2137,11 @@ const app = new Elysia({ adapter: node() })
             if (/não encontrado/i.test(msg)) {
               return fail('NOT_FOUND', msg);
             }
-            if (/obrigatório|Já existe|inválido/i.test(msg)) {
+            if (
+              /obrigatório|Já existe|inválido|admin do sistema|não pode ser/i.test(
+                msg,
+              )
+            ) {
               return fail('VALIDATION', msg);
             }
             return fail('SERVER', msg);

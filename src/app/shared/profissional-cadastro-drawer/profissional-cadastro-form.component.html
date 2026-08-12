@@ -278,7 +278,17 @@
                   [class.active]="d.ativo"
                   [class.toggle--liq-armed]="d.ativoToggleLiqArmed"
                   [attr.aria-checked]="d.ativo"
-                  aria-label="Ativar ou desativar profissional"
+                  [attr.aria-disabled]="d.ehAdminDoSistema() && d.ativo"
+                  [attr.aria-label]="
+                    d.ehAdminDoSistema()
+                      ? 'Admin do sistema — inativação bloqueada'
+                      : 'Ativar ou desativar profissional'
+                  "
+                  [attr.title]="
+                    d.ehAdminDoSistema()
+                      ? 'Admin do sistema — inativação bloqueada'
+                      : null
+                  "
                   (click)="d.onAtivoToggleClick($event)"
                   (keydown)="d.onAtivoToggleKeydown($event)"
                 ></span>

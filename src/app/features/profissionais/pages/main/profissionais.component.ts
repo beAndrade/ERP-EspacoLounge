@@ -12,11 +12,15 @@ import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { ProfissionalListaItem } from '../../../../core/models/api.models';
+import { extractApiErrorMessage } from '../../../../core/utils/api-error-message';
 import { formatarCelularBr } from '../../../../core/utils/telefone-br';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { ProfissionalCadastroDrawerService } from '../../../../shared/profissional-cadastro-drawer/profissional-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
+
+const PROFISSIONAL_INATIVADO_TOAST_MSG = 'Profissional inativado com sucesso!';
 
 @Component({
   selector: 'app-profissionais',
@@ -32,6 +36,7 @@ import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.
 })
 export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
+  private readonly toast = inject(AppToastService);
   private readonly profissionalDrawer = inject(ProfissionalCadastroDrawerService);
 
   @ViewChild('tabsNav', { read: ElementRef })
@@ -47,6 +52,9 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
   abaStatus: 'ativos' | 'inativos' = 'ativos';
   tabsIndicatorLeft = 0;
   tabsIndicatorWidth = 0;
+
+  inativacaoModalItem: ProfissionalListaItem | null = null;
+  inativacaoModalSalvando = false;
 
   carregando = false;
   erro = '';
@@ -245,6 +253,46 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
 
   ehProfissionalAdmin(p: ProfissionalListaItem): boolean {
     return p.usuario_role === 'admin';
+  }
+
+  onInativarProfissional(p: ProfissionalListaItem, ev?: Event): void {
+    ev?.stopPropagation();
+    if (this.ehProfissionalAdmin(p)) return;
+    this.inativacaoModalItem = p;
+  }
+
+  fecharModalInativacao(): void {
+    if (this.inativacaoModalSalvando) return;
+    this.inativacaoModalItem = null;
+  }
+
+  confirmarModalInativacao(): void {
+    const item = this.inativacaoModalItem;
+    if (!item || this.inativacaoModalSalvando) return;
+    if (this.ehProfissionalAdmin(item)) {
+      this.inativacaoModalItem = null;
+      return;
+    }
+    this.inativacaoModalSalvando = true;
+    this.api.updateProfissional({ id: item.id, ativo: false }).subscribe({
+      next: () => {
+        this.inativacaoModalSalvando = false;
+        this.inativacaoModalItem = null;
+        this.toast.show(PROFISSIONAL_INATIVADO_TOAST_MSG);
+        if (this.abaStatus === 'ativos') {
+          this.abaStatus = 'inativos';
+          queueMicrotask(() => this.sincronizarIndicadorTabs());
+        }
+        this.carregar();
+      },
+      error: (e: unknown) => {
+        this.inativacaoModalSalvando = false;
+        this.toast.show(
+          extractApiErrorMessage(e) ||
+            'Não foi possível inativar o profissional.',
+        );
+      },
+    });
   }
 
   onInfoMouseEnter(): void {
@@ -469,6 +517,11 @@ export class ProfissionaisComponent implements OnInit, AfterViewInit, OnDestroy 
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (this.inativacaoModalItem) {
+      ev.preventDefault();
+      this.fecharModalInativacao();
+      return;
+    }
     if (this.profissionalDrawer.aberto) {
       return;
     }

@@ -179,17 +179,18 @@
           type="button"
           class="list-row-acoes__btn list-row-acoes__btn--delete"
           [class.list-row-acoes__btn--locked]="ehProfissionalAdmin(p)"
-          [disabled]="ehProfissionalAdmin(p)"
+          [disabled]="ehProfissionalAdmin(p) || inativacaoModalSalvando"
           [attr.aria-label]="
             ehProfissionalAdmin(p)
               ? 'Exclusão bloqueada — admin da página'
-              : 'Excluir profissional'
+              : 'Inativar profissional'
           "
           [attr.title]="
             ehProfissionalAdmin(p)
               ? 'Admin da página — exclusão bloqueada'
-              : 'Excluir'
+              : 'Inativar'
           "
+          (click)="onInativarProfissional(p, $event)"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -480,3 +481,46 @@
     </div>
   }
 </div>
+
+@if (inativacaoModalItem) {
+  <div
+    class="comandas-modal-overlay"
+    aria-hidden="true"
+    (click)="fecharModalInativacao()"
+  ></div>
+  <div
+    class="comandas-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Confirmar inativação"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja inativar
+      «{{ inativacaoModalItem.nome }}»? O profissional sairá da lista de
+      ativos e poderá ser reativado depois.
+    </p>
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="inativacaoModalSalvando"
+        (click)="fecharModalInativacao()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="inativacaoModalSalvando"
+        (click)="confirmarModalInativacao()"
+      >
+        {{ inativacaoModalSalvando ? 'Inativando…' : 'Sim, inativar' }}
+      </button>
+    </div>
+  </div>
+}

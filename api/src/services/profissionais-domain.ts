@@ -243,6 +243,15 @@ async function loadUsuarioMetaByProfissionalId(
   return map;
 }
 
+/** Profissional ligado a uma conta `usuarios.role = 'admin'`. */
+async function profissionalEhAdminDoSistema(
+  db: Db,
+  profissionalId: number,
+): Promise<boolean> {
+  const meta = await loadUsuarioMetaByProfissionalId(db);
+  return meta.get(profissionalId)?.role === 'admin';
+}
+
 export async function listProfissionaisForApi(
   db: Db,
   opts?: { incluirInativos?: boolean; contexto?: 'agenda' | 'default' },
@@ -466,6 +475,9 @@ export async function atualizarProfissional(
     throw new Error('Profissional não encontrado');
   }
   const patch = patchFromInput(input);
+  if (patch.ativo === false && (await profissionalEhAdminDoSistema(db, id))) {
+    throw new Error('O admin do sistema não pode ser inativado.');
+  }
   if (patch.nome !== undefined) {
     if (!patch.nome) {
       throw new Error('Nome é obrigatório');
@@ -475,7 +487,12 @@ export async function atualizarProfissional(
     }
   }
   if (Object.keys(patch).length === 0) {
-    return mapRow(atual);
+    const meta = (await loadUsuarioMetaByProfissionalId(db)).get(id);
+    return mapRow({
+      ...atual,
+      usuarioRole: meta?.role === 'admin' ? 'admin' : meta ? 'profissional' : null,
+      usuarioEmail: meta?.email ?? null,
+    });
   }
   const [upd] = await db
     .update(profissionais)
@@ -483,7 +500,12 @@ export async function atualizarProfissional(
     .where(eq(profissionais.id, id))
     .returning(profSelect);
   if (!upd) throw new Error('Profissional não encontrado');
-  return mapRow(upd);
+  const meta = (await loadUsuarioMetaByProfissionalId(db)).get(id);
+  return mapRow({
+    ...upd,
+    usuarioRole: meta?.role === 'admin' ? 'admin' : meta ? 'profissional' : null,
+    usuarioEmail: meta?.email ?? null,
+  });
 }
 
 /** Atualiza `ordem` na sequência recebida (10, 20, 30…). */
