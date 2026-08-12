@@ -867,7 +867,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.syncShellBottomNavActions();
   }
 
-  acaoAbrirConfiguracoesAgenda(): void {
+  acaoAbrirProfissionais(): void {
     this.fecharMenusToolbar();
     void this.router.navigate(['/profissionais']);
   }
