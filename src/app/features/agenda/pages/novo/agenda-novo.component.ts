@@ -124,7 +124,6 @@ import {
   dataDdMmAaaa,
   dataDdMmBarraAaaa,
   horaInicialMenorDasLinhasAtendimento,
-  ordenarLinhasAtendimentoInPlace,
   ordenarNomesEtapasMegaPacote,
   valorMonetarioParaNumero,
 } from '../../../../core/utils/atendimento-display';
@@ -3283,11 +3282,24 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         { profissional: null, servico_id: '' },
         { emitEvent: false },
       );
-      const fb = this.profissionalFallbackParaProdutoNoModal(i);
+      const fb = this.profissionalFallbackAgendaNoModal(i);
       if (fb != null) {
         g.patchValue({ profissional: fb }, { emitEvent: false });
       }
       this.atualizarValorUnitarioProdutoSeVazio(i);
+    }
+    if (t === 'Cabelo') {
+      const pidAtual = Number(g.get('profissional_cabelo')?.value);
+      if (!(Number.isFinite(pidAtual) && pidAtual > 0)) {
+        const doServico = Number(g.get('profissional')?.value);
+        const fb =
+          Number.isFinite(doServico) && doServico > 0
+            ? doServico
+            : this.profissionalFallbackAgendaNoModal(i);
+        if (fb != null && fb > 0) {
+          g.patchValue({ profissional_cabelo: fb }, { emitEvent: false });
+        }
+      }
     }
     if (t === 'Serviço') {
       this.atualizarValorUnitarioServicoSeIntacto(i);
@@ -4395,7 +4407,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Cortes do pedido na ordem da API (após `ordenarLinhasAtendimentoInPlace`):
+   * Cortes do pedido na ordem de gravação (`linha_id`):
    * cada Serviço/Produto/Cabelo é um segmento; Mega/Pacote agrupa linhas contíguas
    * com o mesmo nome de pacote para não colapsar vários blocos num só.
    */
@@ -4530,8 +4542,23 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   private aplicarEdicaoNoForm(items: AtendimentoListaItem[]): void {
     if (!items.length) return;
-    const sorted = [...items];
-    ordenarLinhasAtendimentoInPlace(sorted);
+    /**
+     * Preserva a ordem de criação/gravação (`linha_id`), sem reordenar por tipo.
+     * Assim Serviço/Produto/Cabelo adicionados no fim do drawer voltam na mesma posição.
+     */
+    const sorted = [...items].sort((a, b) => {
+      const la = a.linha_id;
+      const lb = b.linha_id;
+      if (
+        la != null &&
+        lb != null &&
+        Number.isFinite(la) &&
+        Number.isFinite(lb)
+      ) {
+        return la - lb;
+      }
+      return 0;
+    });
     const l0 = sorted[0];
     const nOrc = l0.numeroOrcamento;
     this.numeroOrcamentoEdicao =
@@ -4923,6 +4950,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       } else if (isTipoMegaOuPacoteFamilia(tipo)) {
         pac?.setValidators([Validators.required]);
       } else if (tipo === 'Cabelo') {
+        /** Calculadora: profissional vem do slot/fallback no payload — sem input na UI. */
         profC?.clearValidators();
         if (this.exibirColunasValorLinha('Cabelo')) {
           valC?.setValidators([Validators.required, valorCabeloPtValidator]);
@@ -5059,28 +5087,57 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * No drawer, linha «Produto» não mostra profissional: usa o da 1.ª linha Serviço
-   * (ou `contextoSlot`) para gravar na API.
+   * No drawer, linha «Produto»/«Cabelo» pode herdar profissional da 1.ª linha
+   * Serviço (ou `contextoSlot`) para gravar na API e aparecer na grelha.
    */
-  private profissionalFallbackParaProdutoNoModal(linhaIndex: number): number | null {
+  private profissionalFallbackAgendaNoModal(linhaIndex: number): number | null {
     if (!this.modoModal) return null;
     for (let j = 0; j < linhaIndex; j++) {
       const gg = this.linhasItensArray.at(j);
-      if (gg?.get('itemTipo')?.value === 'Serviço') {
+      if (!gg) continue;
+      const tipo = String(gg.get('itemTipo')?.value ?? '');
+      if (tipo === 'Serviço') {
         const p = Number(gg.get('profissional')?.value);
+        if (p > 0) return p;
+      }
+      if (tipo === 'Cabelo') {
+        const p = Number(
+          gg.get('profissional_cabelo')?.value ?? gg.get('profissional')?.value,
+        );
         if (p > 0) return p;
       }
     }
     for (let j = 0; j < this.linhasItensArray.length; j++) {
       const gg = this.linhasItensArray.at(j);
-      if (gg?.get('itemTipo')?.value === 'Serviço') {
+      if (!gg) continue;
+      const tipo = String(gg.get('itemTipo')?.value ?? '');
+      if (tipo === 'Serviço') {
         const p = Number(gg.get('profissional')?.value);
+        if (p > 0) return p;
+      }
+      if (tipo === 'Cabelo') {
+        const p = Number(
+          gg.get('profissional_cabelo')?.value ?? gg.get('profissional')?.value,
+        );
         if (p > 0) return p;
       }
     }
     const c = this.contextoSlot;
     if (c && c.profissional_id > 0) return c.profissional_id;
     return null;
+  }
+
+  /** Resolve profissional da linha Cabelo (campo próprio, legado ou fallback do slot). */
+  private resolverProfissionalIdCabelo(
+    g: FormGroup,
+    linhaIndex: number,
+  ): number | null {
+    const pidC = Number(g.get('profissional_cabelo')?.value);
+    if (Number.isFinite(pidC) && pidC > 0) return pidC;
+    const pidF = Number(g.get('profissional')?.value);
+    if (Number.isFinite(pidF) && pidF > 0) return pidF;
+    const fb = this.profissionalFallbackAgendaNoModal(linhaIndex);
+    return fb != null && fb > 0 ? fb : null;
   }
 
   private linhaValida(
@@ -5103,7 +5160,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const p = g.get('profissional')?.value;
         const direct = p != null && Number(p) > 0;
         const fb =
-          (this.profissionalFallbackParaProdutoNoModal(linhaIndex) ?? 0) > 0;
+          (this.profissionalFallbackAgendaNoModal(linhaIndex) ?? 0) > 0;
         if (!direct && !fb) return false;
       }
       const nome = String(g.get('produto')?.value ?? '').trim();
@@ -5163,7 +5220,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.aplicarValidadoresLinhas();
     const g0 = this.linhasItensArray.at(0);
     if (g0 && c.profissional_id > 0) {
-      g0.patchValue({ profissional: c.profissional_id }, { emitEvent: false });
+      g0.patchValue(
+        {
+          profissional: c.profissional_id,
+          profissional_cabelo: c.profissional_id,
+        },
+        { emitEvent: false },
+      );
     }
     if (!this.isFluxoSomenteComanda()) {
       const horaBruta = String(c.hora ?? '').trim();
@@ -5881,7 +5944,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (Number.isNaN(q) || q <= 0) continue;
         let pidProd = Number(g.get('profissional')?.value);
         if (!(Number.isFinite(pidProd) && pidProd > 0)) {
-          const fb = this.profissionalFallbackParaProdutoNoModal(i);
+          const fb = this.profissionalFallbackAgendaNoModal(i);
           if (fb != null && fb > 0) pidProd = fb;
         }
         const manualPreco = this.parseValorPt(
@@ -6072,16 +6135,10 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         const v = this.valorCabeloEfetivoLinha(i);
         if (v == null || v <= 0) continue;
         const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
-        const pidC = g.get('profissional_cabelo')?.value;
-        const pidF = g.get('profissional')?.value;
-        const pidRaw = pidC ?? pidF;
-        const pid =
-          pidRaw != null &&
-          pidRaw !== '' &&
-          Number.isFinite(Number(pidRaw)) &&
-          Number(pidRaw) > 0
-            ? Number(pidRaw)
-            : null;
+        const pid = this.resolverProfissionalIdCabelo(g, i);
+        if (pid != null && pid > 0) {
+          g.patchValue({ profissional_cabelo: pid }, { emitEvent: false });
+        }
         const desconto = this.normalizarDescontoLinhaStr(
           String(g.get('desconto')?.value ?? ''),
         );
