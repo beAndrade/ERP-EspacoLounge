@@ -33,6 +33,8 @@ import {
   FinFormaPagamentoOpcaoItem,
   FinTransacaoItem,
   MarcaCatalogoItem,
+  FornecedorItem,
+  FornecedorWritePayload,
   MovimentacaoListaItem,
   PacoteCatalogoItem,
   ProdutoCatalogoItem,
@@ -634,6 +636,50 @@ export class SheetsApiService {
     return this.http
       .delete<ApiResponse<{ ok: boolean; result?: string }>>(
         this.url(`/api/marcas/${id}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listFornecedores(incluirInativas = false): Observable<FornecedorItem[]> {
+    let params = new HttpParams();
+    if (incluirInativas) params = params.set('incluir_inativas', '1');
+    return this.http
+      .get<ApiResponse<{ items: FornecedorItem[] }>>(
+        this.url('/api/fornecedores'),
+        { params },
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.items),
+      );
+  }
+
+  criarFornecedor(
+    body: FornecedorWritePayload,
+  ): Observable<{ id: number }> {
+    return this.http
+      .post<ApiResponse<{ id: number }>>(this.url('/api/fornecedores'), body)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  atualizarFornecedor(
+    id: number,
+    body: Partial<FornecedorWritePayload>,
+  ): Observable<{ ok: boolean }> {
+    return this.http
+      .patch<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/fornecedores/${id}`),
+        body,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  excluirFornecedor(
+    id: number,
+  ): Observable<{ ok: boolean; result?: string }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean; result?: string }>>(
+        this.url(`/api/fornecedores/${id}`),
       )
       .pipe(map((r) => this.unwrap(r)));
   }

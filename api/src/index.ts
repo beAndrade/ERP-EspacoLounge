@@ -112,6 +112,46 @@ import {
   excluirMarcaCatalogoApi,
   listMarcasCatalogoApi,
 } from './services/marcas-catalogo-domain';
+import {
+  atualizarFornecedorApi,
+  criarFornecedorApi,
+  excluirFornecedorApi,
+  listFornecedoresApi,
+} from './services/fornecedores-domain';
+
+const fornecedorWriteBodySchema = t.Object({
+  nome: t.String(),
+  email: t.Optional(t.Union([t.String(), t.Null()])),
+  celular: t.Optional(t.Union([t.String(), t.Null()])),
+  telefone: t.Optional(t.Union([t.String(), t.Null()])),
+  inscricaoEstadual: t.Optional(t.Union([t.String(), t.Null()])),
+  cnpj: t.Optional(t.Union([t.String(), t.Null()])),
+  ativo: t.Optional(t.Boolean()),
+  cep: t.Optional(t.Union([t.String(), t.Null()])),
+  logradouro: t.Optional(t.Union([t.String(), t.Null()])),
+  numero: t.Optional(t.Union([t.String(), t.Null()])),
+  complemento: t.Optional(t.Union([t.String(), t.Null()])),
+  bairro: t.Optional(t.Union([t.String(), t.Null()])),
+  estado: t.Optional(t.Union([t.String(), t.Null()])),
+  cidade: t.Optional(t.Union([t.String(), t.Null()])),
+});
+
+const fornecedorPatchBodySchema = t.Object({
+  nome: t.Optional(t.String()),
+  email: t.Optional(t.Union([t.String(), t.Null()])),
+  celular: t.Optional(t.Union([t.String(), t.Null()])),
+  telefone: t.Optional(t.Union([t.String(), t.Null()])),
+  inscricaoEstadual: t.Optional(t.Union([t.String(), t.Null()])),
+  cnpj: t.Optional(t.Union([t.String(), t.Null()])),
+  ativo: t.Optional(t.Boolean()),
+  cep: t.Optional(t.Union([t.String(), t.Null()])),
+  logradouro: t.Optional(t.Union([t.String(), t.Null()])),
+  numero: t.Optional(t.Union([t.String(), t.Null()])),
+  complemento: t.Optional(t.Union([t.String(), t.Null()])),
+  bairro: t.Optional(t.Union([t.String(), t.Null()])),
+  estado: t.Optional(t.Union([t.String(), t.Null()])),
+  cidade: t.Optional(t.Union([t.String(), t.Null()])),
+});
 
 const clienteCadastroBodySchema = t.Object({
   nome: t.String(),
@@ -1474,6 +1514,129 @@ const app = new Elysia({ adapter: node() })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes('não encontrada')) return fail('NOT_FOUND', msg);
+      return fail('VALIDATION', msg);
+    }
+  })
+  .get('/api/fornecedores', async ({ query }) => {
+    try {
+      const q = query as Record<string, string | undefined>;
+      const incluirInativas =
+        q.incluir_inativas === '1' || q.incluirInativas === '1';
+      return ok({
+        items: await listFornecedoresApi(db, { incluirInativas }),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return fail('SERVER', msg);
+    }
+  })
+  .post(
+    '/api/fornecedores',
+    async ({ body }) => {
+      try {
+        const b = body as {
+          nome?: string;
+          email?: string | null;
+          celular?: string | null;
+          telefone?: string | null;
+          inscricaoEstadual?: string | null;
+          cnpj?: string | null;
+          ativo?: boolean;
+          cep?: string | null;
+          logradouro?: string | null;
+          numero?: string | null;
+          complemento?: string | null;
+          bairro?: string | null;
+          estado?: string | null;
+          cidade?: string | null;
+        };
+        const id = await criarFornecedorApi(db, {
+          nome: String(b.nome ?? ''),
+          email: b.email,
+          celular: b.celular,
+          telefone: b.telefone,
+          inscricaoEstadual: b.inscricaoEstadual,
+          cnpj: b.cnpj,
+          ativo: b.ativo,
+          cep: b.cep,
+          logradouro: b.logradouro,
+          numero: b.numero,
+          complemento: b.complemento,
+          bairro: b.bairro,
+          estado: b.estado,
+          cidade: b.cidade,
+        });
+        return ok({ id });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return fail('VALIDATION', msg);
+      }
+    },
+    { body: fornecedorWriteBodySchema },
+  )
+  .patch(
+    '/api/fornecedores/:id',
+    async ({ params, body }) => {
+      try {
+        const id = Number.parseInt(String(params.id), 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return fail('VALIDATION', 'id inválido');
+        }
+        const b = body as {
+          nome?: string;
+          email?: string | null;
+          celular?: string | null;
+          telefone?: string | null;
+          inscricaoEstadual?: string | null;
+          cnpj?: string | null;
+          ativo?: boolean;
+          cep?: string | null;
+          logradouro?: string | null;
+          numero?: string | null;
+          complemento?: string | null;
+          bairro?: string | null;
+          estado?: string | null;
+          cidade?: string | null;
+        };
+        await atualizarFornecedorApi(db, id, {
+          nome: b.nome !== undefined ? String(b.nome) : undefined,
+          email: b.email,
+          celular: b.celular,
+          telefone: b.telefone,
+          inscricaoEstadual: b.inscricaoEstadual,
+          cnpj: b.cnpj,
+          ativo: b.ativo,
+          cep: b.cep,
+          logradouro: b.logradouro,
+          numero: b.numero,
+          complemento: b.complemento,
+          bairro: b.bairro,
+          estado: b.estado,
+          cidade: b.cidade,
+        });
+        return ok({ ok: true });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes('não encontrado')) return fail('NOT_FOUND', msg);
+        return fail('VALIDATION', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: fornecedorPatchBodySchema,
+    },
+  )
+  .delete('/api/fornecedores/:id', async ({ params }) => {
+    try {
+      const id = Number.parseInt(String(params.id), 10);
+      if (!Number.isFinite(id) || id <= 0) {
+        return fail('VALIDATION', 'id inválido');
+      }
+      const result = await excluirFornecedorApi(db, id);
+      return ok({ ok: true, result });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('não encontrado')) return fail('NOT_FOUND', msg);
       return fail('VALIDATION', msg);
     }
   })

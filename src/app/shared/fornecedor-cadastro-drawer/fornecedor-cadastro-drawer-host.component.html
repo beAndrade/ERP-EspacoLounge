@@ -10,14 +10,14 @@
     [class.app-drawer--open]="d.panelOpen()"
     role="dialog"
     aria-modal="true"
-    aria-label="Novo fornecedor"
+    [attr.aria-label]="d.titulo"
     (click)="$event.stopPropagation()"
   >
     <div class="cliente-shell">
       <header class="cliente-head">
         <div class="cliente-head__title-wrap">
           <div class="cliente-head__title-row">
-            <h2 class="cliente-head__title">Novo fornecedor</h2>
+            <h2 class="cliente-head__title">{{ d.titulo }}</h2>
           </div>
         </div>
         <button

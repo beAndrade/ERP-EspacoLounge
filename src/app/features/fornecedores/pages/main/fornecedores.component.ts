@@ -1,11 +1,15 @@
 import {
   Component,
+  DestroyRef,
   HostListener,
   inject,
   OnDestroy,
   OnInit,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import type { FornecedorItem } from '../../../../core/models/api.models';
+import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { FornecedorCadastroDrawerService } from '../../../../shared/fornecedor-cadastro-drawer/fornecedor-cadastro-drawer.service';
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
@@ -13,15 +17,10 @@ import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
 
-/** Item da lista de fornecedores (API futura). */
-export interface FornecedorListaItem {
-  id: number;
-  nome: string;
-  email?: string | null;
-  telefone?: string | null;
-  celular?: string | null;
-  cnpj?: string | null;
-}
+/** Item da lista de fornecedores. */
+export type FornecedorListaItem = FornecedorItem;
+
+const FORNECEDOR_EXCLUIDO_TOAST_MSG = 'Fornecedor excluído com sucesso!';
 
 type OrdenacaoNome = 'asc' | 'desc';
 
@@ -67,8 +66,10 @@ const FORNECEDORES_COLUNAS_PADRAO: FornecedorColunaId[] = [
   styleUrl: './fornecedores.component.scss',
 })
 export class FornecedoresComponent implements OnInit, OnDestroy {
+  private readonly api = inject(SheetsApiService);
   private readonly toast = inject(AppToastService);
   private readonly fornecedorDrawer = inject(FornecedorCadastroDrawerService);
+  private readonly destroyRef = inject(DestroyRef);
 
   carregando = false;
   erro = '';
@@ -85,6 +86,9 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
 
   filtroStatusAtivos = true;
   filtroStatusInativos = false;
+
+  exclusaoModalItem: FornecedorListaItem | null = null;
+  exclusaoModalSalvando = false;
 
   pagina = 1;
   itensPorPagina = 20;
@@ -112,6 +116,14 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.carregarColunasSalvas();
     this.carregar();
+    this.fornecedorDrawer.salvo$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((item) => {
+        if (!item.ativo && !this.filtroStatusInativos) {
+          this.filtroStatusInativos = true;
+        }
+        this.carregar();
+      });
   }
 
   ngOnDestroy(): void {
@@ -122,10 +134,23 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
   carregar(): void {
     this.carregando = true;
     this.erro = '';
-    this.itens = [];
-    this.carregando = false;
-    this.pagina = 1;
-    this.selecionados.clear();
+    this.api.listFornecedores(true).subscribe({
+      next: (items) => {
+        this.itens = (items ?? []).map((f) => ({
+          ...f,
+          ativo: f.ativo !== false,
+        }));
+        this.carregando = false;
+        this.pagina = 1;
+        this.selecionados.clear();
+      },
+      error: (e: Error) => {
+        this.erro =
+          e.message ||
+          'Não foi possível carregar fornecedores. Tente novamente.';
+        this.carregando = false;
+      },
+    });
   }
 
   get buscaPlaceholder(): string {
@@ -189,6 +214,10 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
     const checked = (ev.target as HTMLInputElement).checked;
     if (which === 'ativos') this.filtroStatusAtivos = checked;
     else this.filtroStatusInativos = checked;
+    if (!this.filtroStatusAtivos && !this.filtroStatusInativos) {
+      if (which === 'ativos') this.filtroStatusInativos = true;
+      else this.filtroStatusAtivos = true;
+    }
     this.pagina = 1;
   }
 
@@ -198,15 +227,47 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
 
   onAbrirFornecedor(f: FornecedorListaItem, ev?: Event): void {
     ev?.stopPropagation();
-    this.toast.show(`Ficha de «${f.nome}» em breve.`);
+    this.fornecedorDrawer.abrirEditar(f);
   }
 
   onEditarFornecedor(f: FornecedorListaItem): void {
-    this.toast.show(`Editar «${f.nome}» em breve.`);
+    this.fornecedorDrawer.abrirEditar(f);
   }
 
-  onExcluirFornecedor(f: FornecedorListaItem): void {
-    this.toast.show(`Excluir «${f.nome}» em breve.`);
+  onExcluirFornecedor(f: FornecedorListaItem, ev?: Event): void {
+    ev?.stopPropagation();
+    this.exclusaoModalItem = f;
+  }
+
+  fecharModalExclusao(): void {
+    if (this.exclusaoModalSalvando) return;
+    this.exclusaoModalItem = null;
+  }
+
+  confirmarModalExclusao(): void {
+    const item = this.exclusaoModalItem;
+    if (!item || this.exclusaoModalSalvando) return;
+    this.exclusaoModalSalvando = true;
+    this.api.excluirFornecedor(item.id).subscribe({
+      next: (res) => {
+        this.exclusaoModalSalvando = false;
+        this.exclusaoModalItem = null;
+        this.selecionados.delete(item.id);
+        this.toast.show(
+          res.result === 'deactivated'
+            ? 'Fornecedor desativado (já vinculado a outros registros).'
+            : FORNECEDOR_EXCLUIDO_TOAST_MSG,
+        );
+        if (res.result === 'deactivated' && !this.filtroStatusInativos) {
+          this.filtroStatusInativos = true;
+        }
+        this.carregar();
+      },
+      error: (e: Error) => {
+        this.exclusaoModalSalvando = false;
+        this.toast.show(e.message || 'Não foi possível excluir o fornecedor.');
+      },
+    });
   }
 
   onSortNomeMouseEnter(): void {
@@ -248,7 +309,10 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
 
   filtrados(): FornecedorListaItem[] {
     const q = this.busca.trim().toLowerCase();
-    let list = this.itens.slice();
+    let list = this.itens.filter((f) => {
+      if (f.ativo) return this.filtroStatusAtivos;
+      return this.filtroStatusInativos;
+    });
     if (q) {
       list = list.filter((f) => {
         const campos = [f.nome, f.email, f.telefone, f.celular, f.cnpj].map(
@@ -433,6 +497,11 @@ export class FornecedoresComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscape(ev: KeyboardEvent): void {
+    if (this.exclusaoModalItem) {
+      ev.preventDefault();
+      this.fecharModalExclusao();
+      return;
+    }
     if (this.colunasMenuAberto || this.colunasMenuMontado) {
       ev.preventDefault();
       this.fecharColunasMenu();

@@ -541,6 +541,43 @@ export interface MarcaCatalogoItem {
   qtd_itens: number;
 }
 
+/** Fornecedor (`GET /api/fornecedores`). */
+export interface FornecedorItem {
+  id: number;
+  nome: string;
+  email?: string | null;
+  celular?: string | null;
+  telefone?: string | null;
+  inscricaoEstadual?: string | null;
+  cnpj?: string | null;
+  ativo: boolean;
+  cep?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  estado?: string | null;
+  cidade?: string | null;
+}
+
+/** Body de `POST/PATCH /api/fornecedores`. */
+export type FornecedorWritePayload = {
+  nome: string;
+  email?: string | null;
+  celular?: string | null;
+  telefone?: string | null;
+  inscricaoEstadual?: string | null;
+  cnpj?: string | null;
+  ativo?: boolean;
+  cep?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  estado?: string | null;
+  cidade?: string | null;
+};
+
 /** Forma de pagamento — cadastro admin (`GET /api/financeiro/formas-pagamento`). */
 export interface FinFormaPrazoFaixa {
   id?: number;
