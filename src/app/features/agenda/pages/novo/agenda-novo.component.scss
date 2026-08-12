@@ -2243,10 +2243,10 @@ textarea {
   --drawer-tipo-linha-col-padrao: 148px;
   --drawer-tipo-linha-panel-min: 240px;
   /**
-   * Descrição (Serviço/Produto): teto 600px; o restante vai para Tipo/Pro/Horário.
+   * Descrição (Serviço/Produto): ocupa o espaço restante da linha.
    */
   --drawer-descricao-col: auto;
-  --drawer-descricao-col-max: 600px;
+  --drawer-descricao-col-max: none;
   /** Profissional — alinhado a Tipo e Horário. */
   --drawer-pro-col: 148px;
   /** Largura padrão do Pro (não encolhe nos BPs) — piso do dropdown. */
@@ -2786,7 +2786,7 @@ textarea {
     }
 
     .servico-row__field--descricao {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       width: auto;
       min-width: 0;
       max-width: var(--drawer-descricao-col-max);
@@ -2923,10 +2923,10 @@ textarea {
 
     .servico-row__field--produto-catalogo,
     .servico-row__field--descricao {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       width: auto;
       min-width: 0;
-      max-width: var(--drawer-descricao-col-max);
+      max-width: none;
       overflow: visible;
       --saas-select-panel-width: 100%;
       --saas-select-panel-min-width: var(--drawer-descricao-panel-min);
@@ -3155,6 +3155,9 @@ textarea {
 
   .servico-row--drawer.servico-row--layout-produto-drawer
     > .servico-row__field--produto-catalogo
+    app-saas-select,
+  .servico-row--drawer.servico-row--layout-produto-drawer
+    > .servico-row__field--descricao
     app-saas-select {
     display: block;
     width: 100%;

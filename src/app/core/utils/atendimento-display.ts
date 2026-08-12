@@ -200,6 +200,22 @@ export function ordenarLinhasAtendimentoInPlace(
   });
 }
 
+/**
+ * Rótulo de Mega/Pacote/Queratina no card: `Pacote (2 mechas) -- Retirada`.
+ * Linha cabeça (sem etapa) fica vazia — as etapas cobrem o resumo.
+ */
+function resumoMegaPacoteComEtapa(
+  rotulo: string,
+  pac: string,
+  et: string,
+): string {
+  const pacT = pac.trim();
+  const etT = et.trim();
+  if (!etT) return '';
+  if (pacT) return `${rotulo} (${pacT}) -- ${etT}`;
+  return `${rotulo} -- ${etT}`;
+}
+
 /** Uma linha de atendimento para listas (cards, modal da agenda, etc.). */
 export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
   const t = (l.tipo || '').trim().toLowerCase();
@@ -212,29 +228,33 @@ export function linhaResumoAtendimentoLista(l: AtendimentoListaItem): string {
     return nome || desc || '';
   }
   if (t === 'pacote' || isTipoPacoteQueratinaNorm(t)) {
-    const pac = (l.pacote || '').trim();
-    const et = (l.etapa || '').trim();
     const rotulo =
       t === 'pacote' ? 'Pacote' : 'Pacote Adesivo+Queratina';
-    if (!et) {
-      return pac ? `${rotulo} • ${pac}` : '';
-    }
-    /* Com etapa: sempre incluir o pacote (antes só aparecia a etapa). */
-    if (pac && et) {
-      return `${pac} — ${et}`;
-    }
-    return et || pac || '';
+    return resumoMegaPacoteComEtapa(
+      rotulo,
+      (l.pacote || '').trim(),
+      (l.etapa || '').trim(),
+    );
   }
   if (t === 'mega') {
-    const pac = (l.pacote || '').trim();
-    const et = (l.etapa || '').trim();
-    if (!et) {
-      return pac ? `Mega • ${pac}` : '';
-    }
-    if (pac && et) {
-      return `${pac} — ${et}`;
-    }
-    return et || pac || '';
+    return resumoMegaPacoteComEtapa(
+      'Mega',
+      (l.pacote || '').trim(),
+      (l.etapa || '').trim(),
+    );
+  }
+  if (t === 'cabelo') {
+    const d = (l.descricao || '').trim();
+    if (d) return d;
+    const cats = [...(l.itens_catalogo ?? []), ...(l.itens ?? [])];
+    const detCat = cats.find(
+      (it) =>
+        String(it.tipo || '')
+          .trim()
+          .toLowerCase() === 'cabelo' &&
+        String(it.detalhes || '').trim(),
+    );
+    return String(detCat?.detalhes ?? '').trim();
   }
   if (t === 'serviço') {
     const nome = (l.servicosRef || '').trim();

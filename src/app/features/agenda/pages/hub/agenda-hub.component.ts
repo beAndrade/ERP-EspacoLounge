@@ -4000,52 +4000,13 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   /**
    * Uma entrada por linha de atendimento (sem duplicar texto igual).
-   * Mega/Pacote com etapas: primeiro o título (`Mega •` / `Pacote •`), depois só os nomes das etapas.
+   * Mega/Pacote/Queratina: `Pacote (N mechas) -- etapa` (uma linha por etapa).
+   * Cabelo: detalhes (`Cor: …; cm; método: …; g`).
    */
   itensResumoBloco(b: AgendaHubBloco): string[] {
-    const linhas = b.linhas;
-    const soMegaOuPacote = linhas.every((l) => {
-      const t = (l.tipo || '').trim().toLowerCase();
-      return t === 'mega' || t === 'pacote' || isTipoPacoteQueratinaNorm(t);
-    });
-    const comEtapaMegaPac = linhas.filter((l) => {
-      const t = (l.tipo || '').trim().toLowerCase();
-      return (
-        (t === 'pacote' || t === 'mega' || isTipoPacoteQueratinaNorm(t)) &&
-        (l.etapa || '').trim().length > 0
-      );
-    });
-    if (soMegaOuPacote && comEtapaMegaPac.length > 0) {
-      const t0 = (comEtapaMegaPac[0].tipo || '').trim().toLowerCase();
-      let pacNome = (comEtapaMegaPac[0].pacote || '').trim();
-      if (!pacNome) {
-        pacNome = (
-          linhas.find((x) => (x.pacote || '').trim())?.pacote || ''
-        ).trim();
-      }
-      const out: string[] = [];
-      const seen = new Set<string>();
-      if (pacNome) {
-        const titulo =
-          t0 === 'mega'
-            ? `Mega • ${pacNome}`
-            : isTipoPacoteQueratinaNorm(t0)
-              ? `Pacote Adesivo+Queratina • ${pacNome}`
-              : `Pacote • ${pacNome}`;
-        out.push(titulo);
-        seen.add(titulo);
-      }
-      for (const l of comEtapaMegaPac) {
-        const et = (l.etapa || '').trim();
-        if (!et || seen.has(et)) continue;
-        seen.add(et);
-        out.push(et);
-      }
-      if (out.length) return out;
-    }
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const l of linhas) {
+    for (const l of b.linhas) {
       const txt = linhaResumoAtendimentoLista(l).trim();
       if (!txt || seen.has(txt)) continue;
       seen.add(txt);
