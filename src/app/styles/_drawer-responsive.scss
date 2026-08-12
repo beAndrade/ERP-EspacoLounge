@@ -15,12 +15,57 @@
   /* no-op: container-type removido por regressão de layout */
 }
 
+/// Coluna mobile agnóstica (≤ shell-mobile): painel em flex column + 100dvh;
+/// head/footer fixos; body com scroll. Seletores configuráveis.
+/// Passe `$head` / `$body` / `$footer` vazios (`''`) para omitir a regra.
+@mixin drawer-mobile-column(
+  $scope,
+  $head: '.cliente-head',
+  $body: '.cliente-body-scroll',
+  $footer: '.cliente-drawer-footer'
+) {
+  @if $scope == null or $scope == '' {
+    @warn 'drawer-mobile-column: passe o seletor do drawer (ex.: ".cliente-drawer--produto").';
+  } @else {
+    @include bp.bp-down(shell-mobile) {
+      #{$scope} {
+        display: flex;
+        flex-direction: column;
+        max-height: 100dvh;
+        box-sizing: border-box;
+      }
+
+      @if $head != null and $head != '' {
+        #{$scope} #{$head} {
+          flex-shrink: 0;
+        }
+      }
+
+      @if $footer != null and $footer != '' {
+        #{$scope} #{$footer} {
+          flex-shrink: 0;
+        }
+      }
+
+      @if $body != null and $body != '' {
+        #{$scope} #{$body} {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-x: hidden;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+      }
+    }
+  }
+}
+
 /// Chrome responsivo — escopo opcional via $scope (seletor do drawer).
 /// Sem $scope, NÃO emite regras (evita media query global quebrando headers).
 /// Ex.: @include drawer-responsive-chrome('.cliente-drawer--produto')
 ///
-/// Em `shell-mobile` (≤768px) também reforça coluna flex + scroll do body
-/// para drawers full-bleed (âncora 1650 → 100vw).
+/// Compactação de chrome usa classes `cliente-*`. A coluna mobile delega para
+/// `drawer-mobile-column` (defaults compatíveis com o comportamento anterior).
 @mixin drawer-responsive-chrome($scope: null) {
   @if $scope == null or $scope == '' {
     @warn 'drawer-responsive-chrome: passe o seletor do drawer (ex.: ".cliente-drawer--produto").';
@@ -79,29 +124,7 @@
       }
     }
 
-    /// Full-bleed em viewports ≤ shell-mobile: cabeçalho/rodapé fixos na
-    /// coluna do drawer; corpo com scroll (evita “drawer quebrado”).
-    @include bp.bp-down(shell-mobile) {
-      #{$scope} {
-        display: flex;
-        flex-direction: column;
-        max-height: 100dvh;
-        box-sizing: border-box;
-      }
-
-      #{$scope} .cliente-head,
-      #{$scope} .cliente-drawer-footer {
-        flex-shrink: 0;
-      }
-
-      #{$scope} .cliente-body-scroll {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-x: hidden;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-    }
+    @include drawer-mobile-column($scope);
   }
 }
 

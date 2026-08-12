@@ -1,6 +1,8 @@
 @use '../../../../styles/list-page-shell';
 @use '../../../../styles/cliente-drawer-table';
 @use '../../../../styles/drawer-stack';
+@use '../../../../styles/drawer-responsive' as dr;
+@use '../../../../styles/breakpoints' as bp;
 
 :host {
   display: block;
@@ -1143,6 +1145,20 @@
 
 /* Shell contínuo 1650px em `.fin-comissoes-drawer` — sem media query de pulo. */
 
+@include dr.drawer-mobile-column(
+  '.fin-comissoes-drawer.app-drawer--comanda',
+  '.nc-modal-header',
+  '.nc-drawer__flow',
+  '.nc-footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.fin-comissoes-drawer.app-drawer--pagar',
+  '.fat-head',
+  '.fat-body',
+  '.fat-footer'
+);
+
 .fin-comissoes-col--placeholder {
   display: none;
 }
@@ -1151,7 +1167,7 @@
   display: none;
 }
 
-@media (max-width: 640px) {
+@include bp.bp-down(shell-mobile) {
   .fin-comissoes__table-card .table-wrap {
     display: none;
   }

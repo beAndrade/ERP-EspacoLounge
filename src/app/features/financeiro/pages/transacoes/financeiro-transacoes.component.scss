@@ -1069,6 +1069,34 @@
 
 /* Shell contínuo 1650px em `.fin-trans-drawer` — sem media query de pulo. */
 
+@include dr.drawer-mobile-column(
+  '.fin-trans-drawer.app-drawer--novo',
+  '.fin-edit-head',
+  '.fin-edit-body',
+  '.fin-edit-footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.fin-trans-drawer.app-drawer--editar',
+  '.fin-edit-head',
+  '.fin-edit-body',
+  '.fin-edit-footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.fin-trans-drawer.app-drawer--comanda:not(.app-drawer--faturar)',
+  '.nc-modal-header',
+  '.nc-drawer__flow',
+  '.nc-footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.fin-trans-drawer.app-drawer--faturar',
+  '.fat-head',
+  '.fat-body',
+  '.fat-footer'
+);
+
 .fin-transacoes-estorno-modal,
 .fin-transacoes-exclusao-modal {
   .fin-transacoes-estorno-modal__text {

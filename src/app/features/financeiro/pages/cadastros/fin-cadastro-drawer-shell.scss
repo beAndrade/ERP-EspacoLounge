@@ -32,4 +32,9 @@
   }
 }
 
-@include dr.drawer-responsive-chrome('.fin-cad-drawer-shell');
+@include dr.drawer-mobile-column(
+  '.fin-cad-drawer-shell',
+  '.fin-cad-edit__head',
+  '.fin-cad-edit__body',
+  '.fin-cad-edit__foot'
+);

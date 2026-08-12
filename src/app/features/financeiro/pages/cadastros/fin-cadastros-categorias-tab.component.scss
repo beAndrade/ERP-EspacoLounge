@@ -24,7 +24,7 @@
   transition: box-shadow 0.1s;
 
   > .table-wrap {
-    overflow-x: clip;
+    overflow-x: auto;
     overflow-y: visible;
     border-radius: 12px 12px 0 0;
   }

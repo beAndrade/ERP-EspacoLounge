@@ -1908,6 +1908,33 @@ $agenda-grid-stroke: #eeeeee;
 }
 
 /* Chrome cliente-head não se aplica ao shell da agenda. */
+@include dr.drawer-mobile-column(
+  '.app-drawer:not(.app-drawer--comanda):not(.app-drawer--faturar)',
+  '.agenda-modal__header',
+  '.form-shell__flow',
+  '.agenda-modal__footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.app-drawer--comanda',
+  '.nc-modal-header',
+  '.nc-drawer__flow',
+  '.nc-footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.app-drawer--faturar',
+  '.fat-head',
+  '.fat-body',
+  '.fat-footer'
+);
+
+@include bp.bp-down(shell-mobile) {
+  .app-drawer:not(.app-drawer--comanda) {
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+}
 
 /* Camadas extra: edição de itens acima da comanda (alinhar com /comandas). */
 .app-drawer--edit-agendamento {
