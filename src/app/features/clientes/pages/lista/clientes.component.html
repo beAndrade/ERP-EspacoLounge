@@ -247,7 +247,11 @@
 
       @if (!erro) {
         <div class="list-table-card">
-          <div class="table-wrap" role="region" aria-label="Lista de clientes">
+          <div
+            class="table-wrap clientes-desktop-table"
+            role="region"
+            aria-label="Lista de clientes"
+          >
             <table class="list-table clientes-table">
               <colgroup>
                 <col class="clientes-table__col-check" />
@@ -605,6 +609,56 @@
                 }
               </tbody>
             </table>
+          </div>
+
+          <div
+            class="clientes-mobile-list"
+            role="list"
+            aria-label="Lista de clientes"
+          >
+            @if (carregando) {
+              <p class="clientes-mobile-list__busy">Carregando…</p>
+            } @else if (totalFiltrado() === 0) {
+              <div class="clientes-mobile-list__empty">
+                <app-table-empty label="Nenhum cliente encontrado" />
+              </div>
+            } @else {
+              @for (c of itensPagina(); track c.id) {
+                <button
+                  type="button"
+                  class="clientes-mobile-item"
+                  role="listitem"
+                  (click)="abrirPerfilCliente(c, $event)"
+                  [attr.aria-label]="'Abrir cliente ' + (c.nome || '')"
+                >
+                  <app-cliente-avatar
+                    variant="lista"
+                    [fotoUrl]="c.fotoUrl"
+                  />
+                  <span class="clientes-mobile-item__text">
+                    <span class="clientes-mobile-item__title">{{ c.nome }}</span>
+                    @if (exibirCelular(c); as fone) {
+                      <span class="clientes-mobile-item__sub">{{ fone }}</span>
+                    }
+                  </span>
+                  <span class="clientes-mobile-item__chevron" aria-hidden="true">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </span>
+                </button>
+              }
+            }
           </div>
 
           <span
