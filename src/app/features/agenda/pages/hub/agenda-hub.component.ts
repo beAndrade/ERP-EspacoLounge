@@ -65,7 +65,7 @@ import { ProfissionalCadastroDrawerService } from '../../../../shared/profission
 import { ServicoCadastroDrawerService } from '../../../../shared/servico-cadastro-drawer/servico-cadastro-drawer.service';
 import { ProfissionalAvatarComponent } from '../../../../shared/profissional-avatar/profissional-avatar.component';
 import { profissionalFotoUrl } from '../../../../core/utils/profissional-foto.util';
-import { mediaQueryMax } from '../../../../styles/breakpoints';
+import { mediaQueryMax, mediaQueryMin } from '../../../../styles/breakpoints';
 import { AppShellUiService } from '../../../../core/services/app-shell-ui.service';
 import { telefoneBrDigitos, telefoneClienteWhatsappExibicao } from '../../../../core/utils/telefone-br';
 import {
@@ -470,6 +470,9 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     const t = ev.target;
     if (!(t instanceof Element)) return;
     if (t.closest('.hub-toolbar-menu')) return;
+    // Triggers das ações contextuais vivem no Bottom Nav do shell (fora do hub).
+    // Sem isto, o mesmo click que abre menu/calendário fecha-os no document listener.
+    if (t.closest('.shell-bottom-nav')) return;
     if (
       this.painelCalendarioAberto &&
       !t.closest('.hub-cal-anchor') &&
@@ -780,6 +783,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.shellUi.clearMobileBottomNavActions();
     this.cancelarArrasteCard();
     this.cancelarPanGrelha();
     this.desativarLayoutAgendaNoMain();
@@ -860,6 +864,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     }
     this.hubMenuAberto = this.hubMenuAberto === menu ? null : menu;
     this.dispararPulsoToolbar(menu);
+    this.syncShellBottomNavActions();
   }
 
   acaoAbrirConfiguracoesAgenda(): void {
@@ -919,6 +924,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   fecharMenusToolbar(): void {
     this.hubMenuAberto = null;
+    this.syncShellBottomNavActions();
   }
 
   /**
@@ -1172,6 +1178,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     this.painelCalendarioModo = modo;
     this.mesRef = this.inicioDoMes(this.parseYmdLocal(this.diaYmd));
     this.painelCalendarioAberto = true;
+    this.syncShellBottomNavActions();
   }
 
   togglePainelCalendario(modo: 'centered' | 'fullscreen' = 'centered'): void {
@@ -3521,6 +3528,8 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   private setupLayoutMobile(): void {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mq = window.matchMedia(mediaQueryMax('agendaMobile'));
+    /** Alinha register do Bottom Nav ao shell (≤767 = !min-width 768). */
+    const shellDesktopMq = window.matchMedia(mediaQueryMin('shellMobile'));
     const apply = (): void => {
       this.layoutMobile = mq.matches;
       if (!mq.matches) {
@@ -3528,10 +3537,66 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         this.grelhaScrollXSemana = 0;
       }
       this.agendarAtualizarSemanaHScrollDock();
+      this.shellBottomNavEligible = !shellDesktopMq.matches;
+      this.syncShellBottomNavActions();
     };
     apply();
     mq.addEventListener('change', apply);
-    this.destroyRef.onDestroy(() => mq.removeEventListener('change', apply));
+    shellDesktopMq.addEventListener('change', apply);
+    this.destroyRef.onDestroy(() => {
+      mq.removeEventListener('change', apply);
+      shellDesktopMq.removeEventListener('change', apply);
+    });
+  }
+
+  /** Viewport do shell ≤767px — quando o Bottom Nav do App Shell está visível. */
+  private shellBottomNavEligible = false;
+
+  /**
+   * Regista ações contextuais da Agenda no shell (sem if(route) no Bottom Nav).
+   * Menu global fica no componente do shell.
+   */
+  private syncShellBottomNavActions(): void {
+    if (!this.shellBottomNavEligible) {
+      this.shellUi.clearMobileBottomNavActions();
+      return;
+    }
+    this.shellUi.setMobileBottomNavActions([
+      {
+        id: 'calendario',
+        label: 'Calendário',
+        ariaLabel: 'Calendário',
+        icon: 'calendar',
+        active:
+          this.painelCalendarioAberto &&
+          this.painelCalendarioModo === 'fullscreen',
+        onClick: () => this.togglePainelCalendario('fullscreen'),
+      },
+      {
+        id: 'filtros',
+        label: 'Filtros',
+        ariaLabel: 'Filtros',
+        icon: 'filter',
+        active: this.hubMenuAberto === 'filtrar',
+        onClick: () => this.toggleHubMenu('filtrar'),
+      },
+      {
+        id: 'acoes',
+        label: 'Ações',
+        ariaLabel: 'Ações',
+        icon: 'bolt',
+        active: this.hubMenuAberto === 'acoes',
+        onClick: () => this.toggleHubMenu('acoes'),
+      },
+      {
+        id: 'criar',
+        label: 'Criar',
+        ariaLabel: 'Criar agendamento',
+        icon: 'plus',
+        accent: true,
+        onClick: () => this.abrirNovoAtendimentoModal(),
+      },
+    ]);
   }
 
   private parseYmdLocal(ymd: string): Date {

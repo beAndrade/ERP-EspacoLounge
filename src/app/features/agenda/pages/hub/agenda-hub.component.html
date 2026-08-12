@@ -69,63 +69,8 @@
 
         <div
           class="hub-header__actions list-head__actions"
-          [class.hub-header__actions--footer]="layoutMobile"
+          [class.hub-header__actions--mobile-panels]="layoutMobile"
         >
-          @if (layoutMobile) {
-            <button
-              type="button"
-              class="hub-footer-btn"
-              (click)="abrirMenuAgenda()"
-              aria-label="Menu"
-            >
-              <svg
-                class="hub-footer-btn__icon"
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                aria-hidden="true"
-              >
-                <path d="M4 5h16" />
-                <path d="M4 12h16" />
-                <path d="M4 19h16" />
-              </svg>
-              <span class="hub-footer-btn__label">Menu</span>
-            </button>
-            <button
-              type="button"
-              class="hub-footer-btn"
-              (click)="togglePainelCalendario('fullscreen')"
-              [attr.aria-expanded]="painelCalendarioAberto && painelCalendarioModo === 'fullscreen'"
-              aria-haspopup="dialog"
-              aria-label="Calendário"
-            >
-              <svg
-                class="hub-footer-btn__icon"
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M8 2v4" />
-                <path d="M16 2v4" />
-                <rect width="18" height="18" x="3" y="4" rx="2" />
-                <path d="M3 10h18" />
-              </svg>
-              <span class="hub-footer-btn__label">Calendário</span>
-            </button>
-          }
-
           @if (!layoutMobile) {
           <div
             class="hub-toolbar-menu"
@@ -208,12 +153,12 @@
           <div
             class="hub-toolbar-menu hub-toolbar-menu--wide"
             [class.hub-toolbar-menu--open]="hubMenuAberto === 'filtrar'"
-            [class.hub-toolbar-menu--footer-item]="layoutMobile"
+            [class.hub-toolbar-menu--shell-anchor]="layoutMobile"
           >
+            @if (!layoutMobile) {
             <button
               type="button"
               class="list-head__toolbar-btn hub-toolbar-menu__trigger"
-              [class.hub-footer-btn]="layoutMobile"
               [class.list-head__toolbar-btn--filtro-on]="filtroHubAtivo()"
               [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarFiltro"
               (click)="toggleHubMenu('filtrar', $event)"
@@ -224,7 +169,6 @@
             >
               <svg
                 class="list-icon-sm list-icon-sm--funnel"
-                [class.hub-footer-btn__icon]="layoutMobile"
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
                 height="14"
@@ -240,8 +184,9 @@
                   d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
                 />
               </svg>
-              <span class="list-head__toolbar-label hub-footer-btn__label">{{ layoutMobile ? 'Filtros' : 'Filtrar' }}</span>
+              <span class="list-head__toolbar-label">Filtrar</span>
             </button>
+            }
             <div
               class="hub-toolbar-menu__panel hub-toolbar-menu__panel--filtros"
               [class.hub-toolbar-menu__panel--open]="hubMenuAberto === 'filtrar'"
@@ -360,13 +305,13 @@
           <div
             class="hub-toolbar-menu"
             [class.hub-toolbar-menu--open]="hubMenuAberto === 'acoes'"
-            [class.hub-toolbar-menu--footer-item]="layoutMobile"
+            [class.hub-toolbar-menu--shell-anchor]="layoutMobile"
             [class.hub-toolbar-menu--acoes]="layoutMobile"
           >
+            @if (!layoutMobile) {
             <button
               type="button"
               class="list-head__toolbar-btn hub-toolbar-menu__trigger"
-              [class.hub-footer-btn]="layoutMobile"
               [class.list-head__toolbar-btn--pulse-once-filtro]="pulsoToolbarAcoes"
               (click)="toggleHubMenu('acoes', $event)"
               [attr.aria-expanded]="hubMenuAberto === 'acoes'"
@@ -376,7 +321,6 @@
             >
               <svg
                 class="list-icon-sm"
-                [class.hub-footer-btn__icon]="layoutMobile"
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
                 height="14"
@@ -390,8 +334,9 @@
               >
                 <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
               </svg>
-              <span class="list-head__toolbar-label hub-footer-btn__label">Ações</span>
+              <span class="list-head__toolbar-label">Ações</span>
             </button>
+            }
             <div
               class="hub-toolbar-menu__panel"
               [class.hub-toolbar-menu__panel--open]="hubMenuAberto === 'acoes'"
@@ -587,31 +532,7 @@
               }
             </div>
           </div>
-          @if (layoutMobile) {
-            <button
-              type="button"
-              class="hub-footer-btn hub-footer-btn--criar"
-              (click)="abrirNovoAtendimentoModal()"
-              aria-label="Criar agendamento"
-            >
-              <svg
-                class="hub-footer-btn__icon"
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                aria-hidden="true"
-              >
-                <path d="M5 12h14" />
-                <path d="M12 5v14" />
-              </svg>
-              <span class="hub-footer-btn__label">Criar</span>
-            </button>
-          } @else {
+          @if (!layoutMobile) {
           <button
             type="button"
             class="list-head__toolbar-btn list-head__toolbar-btn--link"

@@ -1,0 +1,78 @@
+:host {
+  display: block;
+  pointer-events: none;
+}
+
+.shell-bottom-nav {
+  --shell-bottom-nav-h: 3.25rem;
+  --shell-bottom-nav-inset: 15px;
+  --shell-bottom-nav-bg: rgba(255, 255, 255, 0.065);
+  --shell-bottom-nav-filter: blur(2px) saturate(1.04);
+  --shell-bottom-nav-border: rgba(255, 255, 255, 0.18);
+  --shell-bottom-nav-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.09),
+    0 1px 4px rgba(0, 0, 0, 0.055);
+
+  pointer-events: auto;
+  position: fixed;
+  bottom: calc(var(--shell-bottom-nav-inset) + env(safe-area-inset-bottom, 0px));
+  left: var(--shell-bottom-nav-inset);
+  right: var(--shell-bottom-nav-inset);
+  z-index: 901;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--shell-bottom-nav-border);
+  border-radius: 28px;
+  background: var(--shell-bottom-nav-bg);
+  backdrop-filter: var(--shell-bottom-nav-filter);
+  -webkit-backdrop-filter: var(--shell-bottom-nav-filter);
+  box-shadow: var(--shell-bottom-nav-shadow);
+  overflow: visible;
+}
+
+.shell-bottom-nav__btn {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  min-height: var(--shell-bottom-nav-h);
+  margin: 0;
+  padding: 10px 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #595959;
+  box-shadow: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.shell-bottom-nav__btn--accent,
+.shell-bottom-nav__btn--active {
+  color: var(--color-primary);
+}
+
+.shell-bottom-nav__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.shell-bottom-nav__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.1;
+}

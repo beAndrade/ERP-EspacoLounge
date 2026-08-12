@@ -30,6 +30,7 @@ import { SidebarFlyoutService } from './layout/sidebar-flyout.service';
 import { mediaQueryMin } from './styles/breakpoints';
 import { AppShellUiService } from './core/services/app-shell-ui.service';
 import { SidebarNovoMenuComponent } from './layout/sidebar-novo-menu/sidebar-novo-menu.component';
+import { MobileBottomNavComponent } from './layout/mobile-bottom-nav/mobile-bottom-nav.component';
 import { MinhaContaDrawerHostComponent } from './shared/minha-conta-drawer/minha-conta-drawer-host.component';
 import { FinTransacaoNovoDrawerHostComponent } from './shared/fin-transacao-novo-drawer/fin-transacao-novo-drawer-host.component';
 import { AgendaNovoGlobalHostComponent } from './shared/agenda-novo-global/agenda-novo-global-host.component';
@@ -66,6 +67,7 @@ export type NavCollapsedFlyoutId = NavSidebarDropdownId | 'principal';
     AgendaNovoGlobalHostComponent,
     SidebarProfileComponent,
     SidebarNovoMenuComponent,
+    MobileBottomNavComponent,
     AppToastComponent,
   ],
   templateUrl: './app.component.html',

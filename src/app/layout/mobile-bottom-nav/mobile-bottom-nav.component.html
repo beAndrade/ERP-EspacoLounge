@@ -1,0 +1,117 @@
+<nav class="shell-bottom-nav" aria-label="Navegação inferior">
+  <button
+    type="button"
+    class="shell-bottom-nav__btn"
+    (click)="abrirMenu($event)"
+    aria-label="Menu"
+  >
+    <svg
+      class="shell-bottom-nav__icon"
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <path d="M4 5h16" />
+      <path d="M4 12h16" />
+      <path d="M4 19h16" />
+    </svg>
+    <span class="shell-bottom-nav__label">Menu</span>
+  </button>
+
+  @for (action of actions(); track action.id) {
+    <button
+      type="button"
+      class="shell-bottom-nav__btn"
+      [class.shell-bottom-nav__btn--accent]="action.accent"
+      [class.shell-bottom-nav__btn--active]="action.active"
+      (click)="executar(action, $event)"
+      [attr.aria-label]="action.ariaLabel ?? action.label"
+      [attr.aria-expanded]="action.active ?? null"
+    >
+      @switch (action.icon) {
+        @case ('calendar') {
+          <svg
+            class="shell-bottom-nav__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M8 2v4" />
+            <path d="M16 2v4" />
+            <rect width="18" height="18" x="3" y="4" rx="2" />
+            <path d="M3 10h18" />
+          </svg>
+        }
+        @case ('filter') {
+          <svg
+            class="shell-bottom-nav__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"
+            />
+          </svg>
+        }
+        @case ('bolt') {
+          <svg
+            class="shell-bottom-nav__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+            />
+          </svg>
+        }
+        @case ('plus') {
+          <svg
+            class="shell-bottom-nav__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+            <path d="M12 5v14" />
+          </svg>
+        }
+      }
+      <span class="shell-bottom-nav__label">{{ action.label }}</span>
+    </button>
+  }
+</nav>

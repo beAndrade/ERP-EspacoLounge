@@ -1008,26 +1008,6 @@
   cursor: pointer;
 }
 
-.mobile-nav-toggle {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--touch-min, 44px);
-  height: var(--touch-min, 44px);
-  margin: 0.35rem 0 0.25rem 0.35rem;
-  padding: 0;
-  border: 1px solid #e7e5e4;
-  border-radius: var(--radius, 8px);
-  background: var(--color-surface, #fff);
-  color: var(--color-primary);
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
 @media (max-width: 1024px) {
   .main {
     -webkit-overflow-scrolling: touch;
@@ -1056,8 +1036,18 @@
 }
 
 @include shell-mobile-viewport {
-  .app-main-column:has(.main--agenda-hub) .mobile-nav-toggle {
-    display: none !important;
+  .shell {
+    --shell-mobile-bottom-nav-h: 3.25rem;
+    --shell-mobile-bottom-nav-inset: 15px;
+    --shell-mobile-bottom-nav-space: calc(
+      var(--shell-mobile-bottom-nav-inset) + var(--shell-mobile-bottom-nav-h) +
+        var(--shell-mobile-bottom-nav-inset) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  /** Espaço para a barra inferior (Menu + ações contextuais). */
+  .main {
+    padding-bottom: var(--shell-mobile-bottom-nav-space) !important;
   }
 
   /** Mesmo scroll do desktop (`main`) — necessário para `backdrop-filter` / glass. */
@@ -1066,6 +1056,7 @@
     --hub-main-pad-right: 15px;
     --main-pad-right: var(--hub-main-pad-right);
     padding: 0 var(--hub-main-pad-right) 0 var(--hub-main-pad-left);
+    padding-bottom: var(--shell-mobile-bottom-nav-space) !important;
     flex: 1 1 0%;
     min-height: 0;
     max-height: 100%;

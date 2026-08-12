@@ -1246,34 +1246,14 @@
   </aside>
 
   <div class="app-main-column">
-    @if (isMobileViewport) {
-      <button
-        type="button"
-        class="mobile-nav-toggle"
-        (click)="toggleMobileNav()"
-        [attr.aria-expanded]="mobileNavOpen"
-        aria-controls="app-sidebar-nav"
-        aria-label="Abrir menu"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <path d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-    }
     <main class="main">
       <router-outlet />
     </main>
   </div>
+
+  @if (isMobileViewport) {
+    <app-mobile-bottom-nav />
+  }
 </div>
 <app-cliente-cadastro-drawer-host />
 <app-profissional-cadastro-drawer-host />
