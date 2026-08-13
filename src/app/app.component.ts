@@ -36,6 +36,9 @@ import { FinTransacaoNovoDrawerHostComponent } from './shared/fin-transacao-novo
 import { AgendaNovoGlobalHostComponent } from './shared/agenda-novo-global/agenda-novo-global-host.component';
 
 const SIDEBAR_COLLAPSED_KEY = 'espaco-lounge-sidebar-collapsed';
+/** v2 = default de produto em rail; invalida `'0'` legado da era “sempre expandida”. */
+const SIDEBAR_PREF_VERSION_KEY = 'espaco-lounge-sidebar-pref-v';
+const SIDEBAR_PREF_VERSION = '2';
 
 export type NavSidebarDropdownId =
   | 'financeiro'
@@ -95,7 +98,8 @@ export class AppComponent implements OnInit {
   /** Rota «Principal» ativa no ciclo anterior (para só auto-abrir ao entrar). */
   private lastPrincipalActive = false;
 
-  sidebarCollapsed = false;
+  /** Desktop: inicia recolhido (icon rail). Mobile não usa este flag no chrome. */
+  sidebarCollapsed = true;
 
   /**
    * Rail de ícones + flyout: só desktop com sidebar recolhida.
@@ -169,8 +173,21 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     try {
-      if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1') {
+      const prefVersion = localStorage.getItem(SIDEBAR_PREF_VERSION_KEY);
+      if (prefVersion !== SIDEBAR_PREF_VERSION) {
+        // Migração única: default passou a ser icon rail (768–1999).
+        // `'0'` antigo vinha da era em que o default era expandido e mascarava o QA.
+        localStorage.setItem(SIDEBAR_PREF_VERSION_KEY, SIDEBAR_PREF_VERSION);
+        localStorage.removeItem(SIDEBAR_COLLAPSED_KEY);
         this.sidebarCollapsed = true;
+      } else {
+        const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+        if (stored === '0') {
+          this.sidebarCollapsed = false;
+        } else {
+          // ausente ou '1' → recolhido
+          this.sidebarCollapsed = true;
+        }
       }
     } catch {
       /* ignore */
