@@ -825,6 +825,26 @@ col.clientes-table__col-check {
   .clientes-page .list-table-card {
     overflow: hidden;
   }
+
+  /**
+   * Ações migradas para a Bottom Nav: Novo / Filtrar / chip Buscar.
+   * Input de busca permanece no lead quando aberto pela nav.
+   */
+  .list-head__actions--bottom-nav {
+    .list-head__toolbar-btn {
+      display: none;
+    }
+
+    .list-head__busca-wrap:not(.list-head__busca-wrap--open) {
+      display: none;
+    }
+
+    .list-head__busca-wrap--open {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
 }
 
 @media (min-width: 768px) {

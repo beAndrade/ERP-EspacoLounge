@@ -1,12 +1,16 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, isDevMode, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 
-/** Ícones suportados pelo Bottom Navigation do shell (sem importar features). */
+/**
+ * Ícones suportados pelo Bottom Navigation do shell (sem importar features).
+ * Extensões futuras (quando uma tela real justificar): `more`, e `disabled` na ação.
+ */
 export type MobileBottomNavIconId =
   | 'calendar'
   | 'filter'
   | 'bolt'
-  | 'plus';
+  | 'plus'
+  | 'search';
 
 /** Ação contextual registada pela página ativa. */
 export interface MobileBottomNavAction {
@@ -14,12 +18,15 @@ export interface MobileBottomNavAction {
   label: string;
   ariaLabel?: string;
   icon: MobileBottomNavIconId;
-  /** Destaque visual (ex.: Criar). */
+  /** Destaque visual (ex.: Criar / Novo). */
   accent?: boolean;
   /** Estado expandido / ativo (aria + estilo). */
   active?: boolean;
   onClick: () => void;
 }
+
+/** Limite recomendado de ações contextuais (+ Menu = 5 slots). */
+const MOBILE_BOTTOM_NAV_MAX_ACTIONS = 4;
 
 /** Comunicação páginas ↔ shell (`app.component`). */
 @Injectable({ providedIn: 'root' })
@@ -29,6 +36,8 @@ export class AppShellUiService {
   private readonly mobileBottomNavActionsSig = signal<MobileBottomNavAction[]>(
     [],
   );
+  /** Dono atual das ações — `clear` só limpa se o owner coincidir. */
+  private mobileBottomNavOwnerId: string | null = null;
 
   /** < shellMobile (768px), i.e. ≤767px: abre/fecha sidebar overlay. */
   onToggleMobileNav = this.toggleMobileNav$.asObservable();
@@ -47,11 +56,27 @@ export class AppShellUiService {
     this.toggleSidebar$.next();
   }
 
-  setMobileBottomNavActions(actions: MobileBottomNavAction[]): void {
+  /**
+   * Regista ações da página ativa.
+   * `ownerId` evita que o destroy de uma rota apague as ações da seguinte.
+   */
+  setMobileBottomNavActions(
+    ownerId: string,
+    actions: MobileBottomNavAction[],
+  ): void {
+    if (isDevMode() && actions.length > MOBILE_BOTTOM_NAV_MAX_ACTIONS) {
+      console.warn(
+        `[AppShellUi] Bottom Nav: ${actions.length} ações (máx. recomendado: ${MOBILE_BOTTOM_NAV_MAX_ACTIONS}). owner=${ownerId}`,
+      );
+    }
+    this.mobileBottomNavOwnerId = ownerId;
     this.mobileBottomNavActionsSig.set([...actions]);
   }
 
-  clearMobileBottomNavActions(): void {
+  /** Limpa só se `ownerId` for o dono atual (no-op caso contrário). */
+  clearMobileBottomNavActions(ownerId: string): void {
+    if (this.mobileBottomNavOwnerId !== ownerId) return;
+    this.mobileBottomNavOwnerId = null;
     this.mobileBottomNavActionsSig.set([]);
   }
 }

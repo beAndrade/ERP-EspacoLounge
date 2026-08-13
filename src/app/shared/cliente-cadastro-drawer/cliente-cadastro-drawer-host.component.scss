@@ -203,8 +203,8 @@ app-produto-cadastro-drawer-host {
 @include dr.drawer-responsive-chrome('.cliente-drawer.app-drawer');
 
 /**
- * Mobile Entity Pattern: drawer de Cliente em fullscreen em ≤767px
- * (fronteira alinhada à lista mobile; não altera tokens globais).
+ * Mobile Entity Pattern (Cliente) — somente ≤767px.
+ * ≥768px mantém experiência desktop (nav lateral), inclusive 768–860.
  */
 @media (max-width: 767px) {
   app-cliente-cadastro-drawer-host .cliente-drawer.app-drawer {
@@ -214,6 +214,178 @@ app-produto-cadastro-drawer-host {
     max-width: 100%;
     height: 100dvh;
     max-height: 100dvh;
+  }
+
+  app-cliente-cadastro-drawer-host {
+    .cliente-head {
+      min-height: 56px;
+      padding: 12px 48px 10px 16px;
+    }
+
+    .cliente-head__title {
+      font-size: 1.125rem;
+    }
+
+    .cliente-head__close {
+      width: 44px;
+      height: 44px;
+    }
+
+    .cliente-body-scroll {
+      overflow-x: hidden;
+    }
+
+    .cliente-body {
+      display: flex;
+      flex-direction: column;
+      grid-template-columns: none;
+      min-height: 0;
+      width: 100%;
+    }
+
+    /* Corrige trilha implícita (grid-column: 2/-1 nas abas) só no stack mobile. */
+    .cliente-body > * {
+      grid-column: auto;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    .cliente-nav {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 0;
+      width: 100%;
+      max-width: 100%;
+      min-height: 44px;
+      margin: 0;
+      padding: 0 8px;
+      border-right: none;
+      border-bottom: 1px solid #f1f1f1;
+      background: #fff;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      scrollbar-width: thin;
+
+      .cliente-nav__indicator {
+        display: none;
+      }
+
+      .cliente-nav__item {
+        flex: 0 0 auto;
+        width: auto;
+        height: auto;
+        min-height: 44px;
+        max-height: none;
+        margin: 0;
+        padding: 10px 14px;
+        text-align: center;
+        border-radius: 0;
+        background: transparent;
+        white-space: nowrap;
+
+        &:hover {
+          background: transparent;
+        }
+
+        &--active {
+          color: var(--cliente-accent, #3788d8);
+          box-shadow: inset 0 -2px 0 0 var(--cliente-accent, #3788d8);
+        }
+
+        &--active:hover {
+          color: var(--cliente-accent, #3788d8);
+        }
+      }
+    }
+
+    .cliente-main {
+      align-items: stretch;
+      width: 100%;
+      max-width: none;
+      padding: 16px 16px 20px;
+      border-right: none;
+      border-bottom: none;
+    }
+
+    .cliente-side {
+      width: 100%;
+      max-width: none;
+      border-left: none;
+      padding: 0 16px 20px;
+    }
+
+    .cliente-field--full .cliente-field__inner,
+    .cliente-form-grid,
+    .cliente-photo-block {
+      width: 100%;
+      max-width: none;
+    }
+
+    .cliente-photo-block {
+      min-height: 124px;
+      margin-bottom: 18px;
+    }
+
+    .cliente-form-row--pair {
+      grid-template-columns: 1fr;
+    }
+
+    .cliente-cadastro-form__cols {
+      grid-template-columns: 1fr;
+    }
+
+    .endereco-grid {
+      max-width: none;
+      grid-template-columns: 1fr;
+
+      > label:nth-child(1),
+      > label:nth-child(2),
+      > label:nth-child(3),
+      > label:nth-child(4),
+      > label:nth-child(5),
+      > label:nth-child(6),
+      > label:nth-child(7) {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .cliente-discount {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      min-height: 44px;
+      grid-template-columns: 1fr;
+    }
+
+    .cliente-drawer-footer {
+      justify-content: stretch;
+      gap: 8px;
+      padding: 10px 12px 12px;
+    }
+
+    .cliente-footer-btn {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    app-cliente-painel-tab,
+    app-cliente-debitos-tab,
+    app-cliente-creditos-tab,
+    app-cliente-cashback-tab,
+    app-cliente-agendamentos-tab,
+    app-cliente-orcamentos-tab,
+    app-cliente-vendas-tab {
+      border-right: none;
+    }
   }
 }
 
@@ -1894,6 +2066,11 @@ app-produto-cadastro-drawer-host {
   }
 }
 
+/**
+ * ficha-stack (≤860): comportamento legado compartilhado (ex.: Profissionais).
+ * Para Cliente, a faixa 768–860 é forçada de volta ao desktop lateral
+ * no bloco seguinte — MEP só em ≤767.
+ */
 @include bp.bp-down(ficha-stack) {
   .cliente-body {
     grid-template-columns: 1fr;
@@ -1972,7 +2149,69 @@ app-produto-cadastro-drawer-host {
       }
     }
   }
+}
 
+/**
+ * Cliente ≥768 e ≤860: anula o stack do ficha-stack e restaura nav lateral.
+ * Não é MEP — só evita tabs no topo / body 1-col nessa faixa.
+ * Reset de grid-column NÃO é aplicado aqui (trilha 2/-1 é correta com nav lateral).
+ */
+@media (min-width: 768px) and (max-width: 860px) {
+  app-cliente-cadastro-drawer-host {
+    .cliente-body {
+      display: grid;
+      grid-template-columns: var(--cliente-nav-col-w) minmax(0, 1fr);
+      min-height: 100%;
+    }
+
+    .cliente-body:has(app-cliente-cadastro-form),
+    .cliente-body:has(app-cliente-cashback-tab),
+    .cliente-body:has(app-cliente-creditos-tab),
+    .cliente-body:has(app-cliente-debitos-tab),
+    .cliente-body:has(app-cliente-agendamentos-tab),
+    .cliente-body:has(app-cliente-vendas-tab) {
+      grid-template-columns: var(--cliente-nav-col-w) minmax(0, 1fr);
+    }
+
+    .cliente-nav {
+      display: flex;
+      flex-direction: column;
+      gap: var(--cliente-nav-gap, 0);
+      padding: 0 0 0 var(--cliente-nav-pad-start, 30px);
+      border-right: 1px solid #f1f1f1;
+      border-bottom: none;
+      min-height: 100%;
+      overflow: visible;
+
+      .cliente-nav__indicator {
+        display: block;
+      }
+
+      .cliente-nav__item {
+        width: var(--cliente-nav-item-w, 177px);
+        height: var(--cliente-nav-item-h, 35px);
+        min-height: var(--cliente-nav-item-h, 35px);
+        max-height: var(--cliente-nav-item-h, 35px);
+        padding: 0 12px 0 0;
+        text-align: left;
+        border-radius: 0;
+        box-shadow: none;
+        white-space: normal;
+
+        &--active {
+          box-shadow: none;
+        }
+      }
+    }
+
+    .cliente-main {
+      border-bottom: none;
+      border-right: 1px solid hsl(220, 13%, 91%);
+      padding: 20px 24px 24px;
+      width: auto;
+      max-width: none;
+    }
+  }
 }
 
 @include bp.bp-down(form-narrow) {

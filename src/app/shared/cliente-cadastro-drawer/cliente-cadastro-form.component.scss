@@ -8,6 +8,13 @@
   box-sizing: border-box;
 }
 
+/* Empilhar colunas do formulário só no MEP (≤767). */
+@media (max-width: 767px) {
+  .cliente-cadastro-form__cols {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* No drawer de perfil: main + aside ocupam toda a área à direita da nav. */
 .cliente-perfil-drawer .cliente-main--cadastro-embutido {
   display: flex;

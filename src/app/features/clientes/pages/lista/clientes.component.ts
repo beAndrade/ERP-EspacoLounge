@@ -1,5 +1,6 @@
 import {
   Component,
+  DestroyRef,
   HostListener,
   inject,
   LOCALE_ID,
@@ -10,6 +11,7 @@ import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AppShellUiService } from '../../../../core/services/app-shell-ui.service';
 import { Cliente } from '../../../../core/models/api.models';
 import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
@@ -25,7 +27,9 @@ import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-
 import { ymdValido } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-periodo-filtro.util';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
+import { mediaQueryMin } from '../../../../styles/breakpoints';
 
+const CLIENTES_BOTTOM_NAV_OWNER = 'clientes';
 type OrdenacaoNome = 'asc' | 'desc';
 
 export type ClienteColunaId =
@@ -105,6 +109,11 @@ const CLIENTES_COLUNAS_PADRAO: ClienteColunaId[] = [
 export class ClientesComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  private readonly shellUi = inject(AppShellUiService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Viewport do shell ≤767px — Bottom Nav visível (template + registry). */
+  shellBottomNavEligible = false;
 
   carregando = false;
   erro = '';
@@ -174,11 +183,73 @@ export class ClientesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.carregarColunasSalvas();
     this.carregar();
+    this.setupShellBottomNav();
   }
 
   ngOnDestroy(): void {
+    this.shellUi.clearMobileBottomNavActions(CLIENTES_BOTTOM_NAV_OWNER);
     this.clearNomeSortTipShowTimer();
     this.clearColunasMenuAnimTimer();
+  }
+
+  private setupShellBottomNav(): void {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const shellDesktopMq = window.matchMedia(mediaQueryMin('shellMobile'));
+    const apply = (): void => {
+      this.shellBottomNavEligible = !shellDesktopMq.matches;
+      this.syncShellBottomNavActions();
+    };
+    apply();
+    shellDesktopMq.addEventListener('change', apply);
+    this.destroyRef.onDestroy(() => {
+      shellDesktopMq.removeEventListener('change', apply);
+    });
+  }
+
+  /**
+   * Menu | Novo | Buscar | Filtro — só em ≤767.
+   * Triggers duplicados no header ficam ocultos via SCSS.
+   */
+  private syncShellBottomNavActions(): void {
+    if (!this.shellBottomNavEligible) {
+      this.shellUi.clearMobileBottomNavActions(CLIENTES_BOTTOM_NAV_OWNER);
+      return;
+    }
+    this.shellUi.setMobileBottomNavActions(CLIENTES_BOTTOM_NAV_OWNER, [
+      {
+        id: 'novo',
+        label: 'Novo',
+        ariaLabel: 'Novo cliente',
+        icon: 'plus',
+        accent: true,
+        onClick: () => this.onNovoCliente(),
+      },
+      {
+        id: 'buscar',
+        label: 'Buscar',
+        ariaLabel: 'Buscar clientes',
+        icon: 'search',
+        active: this.buscaAberta,
+        onClick: () => this.onBottomNavBuscar(),
+      },
+      {
+        id: 'filtro',
+        label: 'Filtro',
+        ariaLabel: 'Abrir filtros',
+        icon: 'filter',
+        active: this.filtrosAbertos,
+        onClick: () => this.toggleFiltros(),
+      },
+    ]);
+  }
+
+  /** Bottom Nav: abre a busca no lead (input permanece na página). */
+  private onBottomNavBuscar(): void {
+    if (this.buscaAberta) {
+      this.fecharPainelBusca();
+      return;
+    }
+    this.onBuscaWrapClick();
   }
 
   carregar(): void {
@@ -236,12 +307,14 @@ export class ClientesComponent implements OnInit, OnDestroy {
 
   fecharPainelBusca(): void {
     this.buscaAberta = false;
+    this.syncShellBottomNavActions();
   }
 
   onBuscaWrapClick(): void {
     if (!this.buscaAberta) {
       this.dispararPulsoToolbar('busca');
       this.buscaAberta = true;
+      this.syncShellBottomNavActions();
       queueMicrotask(() => {
         document.getElementById('clientes-busca-input')?.focus();
       });
@@ -265,6 +338,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
     ev?.stopPropagation();
     this.dispararPulsoToolbar('filtro');
     this.filtrosAbertos = !this.filtrosAbertos;
+    this.syncShellBottomNavActions();
   }
 
   toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
@@ -789,6 +863,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
       ev.preventDefault();
       ev.stopImmediatePropagation();
       this.filtrosAbertos = false;
+      this.syncShellBottomNavActions();
       return;
     }
     if (this.perPageMenuAberto) {

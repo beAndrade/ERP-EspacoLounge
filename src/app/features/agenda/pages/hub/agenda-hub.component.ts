@@ -783,7 +783,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.shellUi.clearMobileBottomNavActions();
+    this.shellUi.clearMobileBottomNavActions('agenda-hub');
     this.cancelarArrasteCard();
     this.cancelarPanGrelha();
     this.desativarLayoutAgendaNoMain();
@@ -3558,10 +3558,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
    */
   private syncShellBottomNavActions(): void {
     if (!this.shellBottomNavEligible) {
-      this.shellUi.clearMobileBottomNavActions();
+      this.shellUi.clearMobileBottomNavActions('agenda-hub');
       return;
     }
-    this.shellUi.setMobileBottomNavActions([
+    this.shellUi.setMobileBottomNavActions('agenda-hub', [
       {
         id: 'calendario',
         label: 'Calendário',

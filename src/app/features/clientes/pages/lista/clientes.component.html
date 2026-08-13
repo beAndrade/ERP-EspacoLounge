@@ -5,7 +5,10 @@
         <div class="list-head__left">
           <h1 class="list-head__title">Clientes</h1>
         </div>
-        <div class="list-head__actions">
+        <div
+          class="list-head__actions"
+          [class.list-head__actions--bottom-nav]="shellBottomNavEligible"
+        >
           <div
             class="list-head__busca-wrap"
             [class.list-head__busca-wrap--open]="buscaAberta"
