@@ -108,7 +108,24 @@ export function particionarLinhasPedidoEmCartoesAgenda(
     return [{ trackKey: trackKeyBase, linhas: sorted }];
   }
 
-  return clusters.map((c, i) => {
+  /** Cabelo e outros itens sem horário no mesmo pedido entram no cartão agendado. */
+  const comHorario = clusters.filter((c) => c.temHorario);
+  const semHorario = clusters.filter((c) => !c.temHorario);
+  let cartoes = clusters;
+  if (comHorario.length > 0 && semHorario.length > 0) {
+    const merged: Cluster[] = [...comHorario];
+    for (const u of semHorario) {
+      const alvo = comHorario.find((s) => s.status === u.status);
+      if (alvo) {
+        alvo.linhas.push(...u.linhas);
+      } else {
+        merged.push(u);
+      }
+    }
+    cartoes = merged;
+  }
+
+  return cartoes.map((c, i) => {
     const linhaIds = c.linhas
       .map((x) => x.linha_id)
       .filter((id): id is number => id != null && Number.isFinite(id))
