@@ -2976,8 +2976,19 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       );
     } else {
       const cur = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
-      if (cur != null && cur > 0) return;
-      g.patchValue({ valor_cabelo: formataMoedaBrl(calc) }, { emitEvent: false });
+      if (cur != null && cur > 0) {
+        if (detalhes && !String(g.get('detalhes_cabelo')?.value ?? '').trim()) {
+          g.patchValue({ detalhes_cabelo: detalhes }, { emitEvent: false });
+        }
+        return;
+      }
+      g.patchValue(
+        {
+          valor_cabelo: formataMoedaBrl(calc),
+          ...(detalhes ? { detalhes_cabelo: detalhes } : {}),
+        },
+        { emitEvent: false },
+      );
     }
     g.get('valor_cabelo')?.updateValueAndValidity({ emitEvent: false });
   }
@@ -3223,9 +3234,21 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       } else if (tipo === 'Cabelo') {
         const calc = this.valorTotalCabeloCalculadoLinha(i);
         if (calc == null || calc <= 0) continue;
+        const detalhes = this.montarDetalhesCabeloDaCalculadora(g);
         const cur = this.parseValorPt(String(g.get('valor_cabelo')?.value ?? ''));
         if (cur == null || cur <= 0) {
-          g.patchValue({ valor_cabelo: formataMoedaBrl(calc) }, { emitEvent: false });
+          g.patchValue(
+            {
+              valor_cabelo: formataMoedaBrl(calc),
+              ...(detalhes ? { detalhes_cabelo: detalhes } : {}),
+            },
+            { emitEvent: false },
+          );
+        } else if (
+          detalhes &&
+          !String(g.get('detalhes_cabelo')?.value ?? '').trim()
+        ) {
+          g.patchValue({ detalhes_cabelo: detalhes }, { emitEvent: false });
         }
       }
     }
@@ -5793,6 +5816,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private montarPayloadsDasLinhas(
     raw: Record<string, unknown>,
   ): CreateAtendimentoPayload[] {
+    this.sincronizarValorCabeloCalculadoNasLinhas();
     if (!this.exibirColunasValorLinha()) {
       this.preencherValoresCatalogoLinhasAntesPayload();
     }
@@ -6134,7 +6158,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       if (tipo === 'Cabelo') {
         const v = this.valorCabeloEfetivoLinha(i);
         if (v == null || v <= 0) continue;
-        const det = String(g.get('detalhes_cabelo')?.value ?? '').trim();
+        const det =
+          String(g.get('detalhes_cabelo')?.value ?? '').trim() ||
+          this.montarDetalhesCabeloDaCalculadora(g);
         const pid = this.resolverProfissionalIdCabelo(g, i);
         if (pid != null && pid > 0) {
           g.patchValue({ profissional_cabelo: pid }, { emitEvent: false });

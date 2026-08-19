@@ -3941,7 +3941,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   itensResumoBloco(b: AgendaHubBloco): string[] {
     const out: string[] = [];
     const seen = new Set<string>();
-    for (const l of b.linhas) {
+    /** Inclui linhas do pedido inteiro (ex.: Cabelo noutra coluna ou sem slot). */
+    const linhas = [...this.linhasPedidoDoBloco(b)];
+    ordenarLinhasAtendimentoInPlace(linhas);
+    for (const l of linhas) {
       const txt = linhaResumoAtendimentoLista(l).trim();
       if (!txt || seen.has(txt)) continue;
       seen.add(txt);
