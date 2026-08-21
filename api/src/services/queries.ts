@@ -248,6 +248,7 @@ export async function listProdutosApi(db: Db) {
 export async function listCabelosApi(db: Db) {
   const rows = await db.select().from(cabelos);
   return rows.map((r) => ({
+    id: r.id,
     cor: r.cor != null ? String(r.cor) : '',
     tamanho_cm: r.tamanhoCm,
     metodo: r.metodo != null ? String(r.metodo) : '',
