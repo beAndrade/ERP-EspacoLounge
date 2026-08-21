@@ -1,6 +1,16 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import type { Servico } from '../../../../core/models/api.models';
@@ -12,19 +22,42 @@ import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { tooltipOrdenacaoProximoClique } from '../../../../shared/table-sort-tip.util';
 import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
+import {
+  MegahairSubAba,
+  ServicosMegahairPanelComponent,
+} from './servicos-megahair-panel.component';
+
+export type ServicosAba = 'servicos' | 'megahair';
 
 @Component({
   selector: 'app-servicos',
   standalone: true,
   imports: [
-    FlipDropdownPanelDirective,TableEmptyComponent, FormsModule, CurrencyPipe, UiTipTriggerComponent],
+    FlipDropdownPanelDirective,
+    TableEmptyComponent,
+    FormsModule,
+    CurrencyPipe,
+    UiTipTriggerComponent,
+    ServicosMegahairPanelComponent,
+  ],
   templateUrl: './servicos.component.html',
   styleUrl: './servicos.component.scss',
 })
-export class ServicosComponent implements OnInit, OnDestroy {
+export class ServicosComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly api = inject(SheetsApiService);
   private readonly drawer = inject(ServicoCadastroDrawerService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private salvoSub: Subscription | null = null;
+
+  @ViewChild('tabsNav') private tabsNav?: ElementRef<HTMLElement>;
+  @ViewChild(ServicosMegahairPanelComponent)
+  private megahairPanel?: ServicosMegahairPanelComponent;
+
+  aba: ServicosAba = 'servicos';
+  megahairSub: MegahairSubAba = 'mega';
+  tabsIndicatorLeft = 0;
+  tabsIndicatorWidth = 0;
 
   carregando = false;
   erro = '';
@@ -72,10 +105,87 @@ export class ServicosComponent implements OnInit, OnDestroy {
   excluirErro = '';
 
   ngOnInit(): void {
+    this.aplicarDeepLinkAbasSeHouver();
     this.carregar();
     this.salvoSub = this.drawer.salvo$.subscribe((item) =>
       this.aplicarServicoSalvo(item),
     );
+  }
+
+  ngAfterViewInit(): void {
+    this.sincronizarIndicadorTabs();
+    // Prefetch Megahair com o painel já montado (sem remount ao trocar aba).
+    queueMicrotask(() => this.megahairPanel?.carregarSeNecessario());
+  }
+
+  /**
+   * Só para entrada via `/pacotes` (redirect com ?aba=megahair).
+   * Depois limpa a query — trocar abas não altera a URL (padrão Produtos).
+   */
+  private aplicarDeepLinkAbasSeHouver(): void {
+    const qm = this.route.snapshot.queryParamMap;
+    const aba = String(qm.get('aba') ?? '').trim().toLowerCase();
+    const sub = String(qm.get('sub') ?? '').trim().toLowerCase();
+    let mudou = false;
+    if (aba === 'megahair') {
+      this.aba = 'megahair';
+      mudou = true;
+    } else if (aba === 'servicos') {
+      this.aba = 'servicos';
+      mudou = true;
+    }
+    if (
+      sub === 'mega' ||
+      sub === 'pacote' ||
+      sub === 'pacote_queratina' ||
+      sub === 'cabelo'
+    ) {
+      this.megahairSub = sub;
+      mudou = true;
+    }
+    this.atualizarPlaceholderBusca();
+    if (mudou || qm.has('aba') || qm.has('sub')) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { aba: null, sub: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+  }
+
+  definirAba(aba: ServicosAba): void {
+    if (this.aba === aba) return;
+    this.aba = aba;
+    this.busca = '';
+    this.atualizarPlaceholderBusca();
+    this.sincronizarIndicadorTabs();
+  }
+
+  onMegahairSubChange(sub: MegahairSubAba): void {
+    if (this.megahairSub === sub) return;
+    this.megahairSub = sub;
+    this.busca = '';
+    this.atualizarPlaceholderBusca();
+  }
+
+  private atualizarPlaceholderBusca(): void {
+    this.buscaPlaceholder =
+      this.aba === 'megahair' ? 'Buscar no catálogo' : 'Buscar serviços';
+  }
+
+  private sincronizarIndicadorTabs(): void {
+    const medir = () => {
+      const nav = this.tabsNav?.nativeElement;
+      if (!nav) return;
+      const alvo = nav.querySelector(
+        `.list-page__tab[data-aba="${this.aba}"]`,
+      ) as HTMLElement | null;
+      if (!alvo) return;
+      this.tabsIndicatorLeft = alvo.offsetLeft;
+      this.tabsIndicatorWidth = alvo.offsetWidth;
+    };
+    requestAnimationFrame(medir);
   }
 
   ngOnDestroy(): void {
@@ -394,6 +504,9 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   get filtroAlgumAtivo(): boolean {
+    if (this.aba === 'megahair') {
+      return this.megahairSub !== 'mega';
+    }
     return (
       !this.filtroMostraSim ||
       !this.filtroMostraNao ||
@@ -427,6 +540,10 @@ export class ServicosComponent implements OnInit, OnDestroy {
   }
 
   abrirNovo(): void {
+    if (this.aba === 'megahair') {
+      this.megahairPanel?.abrirNovo();
+      return;
+    }
     this.drawer.abrirNovo({
       categorias: this.categoriasDisponiveis(),
     });

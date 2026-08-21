@@ -1,6 +1,13 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router, Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
+
+/** /pacotes → Serviços aba Megahair. */
+const redirectPacotesToMegahair: CanActivateFn = () =>
+  inject(Router).createUrlTree(['/servicos'], {
+    queryParams: { aba: 'megahair' },
+  });
 
 export const routes: Routes = [
   {
@@ -32,7 +39,7 @@ export const routes: Routes = [
     path: 'pacotes',
     loadComponent: () =>
       import('./pages/em-breve/em-breve.component').then((m) => m.EmBreveComponent),
-    canActivate: [authGuard, adminGuard],
+    canActivate: [authGuard, adminGuard, redirectPacotesToMegahair],
     title: 'Pacotes',
     data: { titulo: 'Pacotes' },
   },
@@ -135,6 +142,7 @@ export const routes: Routes = [
       ),
     canActivate: [authGuard, adminGuard],
     title: 'Serviços',
+    data: { titulo: 'Serviços' },
   },
   {
     path: 'estoque',

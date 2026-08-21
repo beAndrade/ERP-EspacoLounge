@@ -33,20 +33,15 @@ function extentLinhaMinutos(
   return { start: mi, end };
 }
 
-function intervalosSeTocamOuSobrepoem(
-  a: { start: number; end: number },
-  b: { start: number; end: number },
-): boolean {
-  return a.start <= b.end && b.start <= a.end;
-}
-
 /**
- * Parte linhas do **mesmo pedido** em cartões da grelha.
+ * Parte linhas do **mesmo pedido** (já filtradas por profissional na grelha)
+ * em cartões.
  *
- * Regra: um cartão = mesmo `agenda_status` + horários sobrepostos ou contíguos.
- * Assim multi-serviço / etapas Mega-Pacote no mesmo slot ficam juntos, mas
- * visitas distintas no mesmo dia (ex.: confirmado de manhã + cancelado à tarde)
- * — mesmo com `id_atendimento` partilhado por dados legados — aparecem separadas.
+ * Regra: um cartão = mesmo `agenda_status`. Não exige horários contíguos —
+ * Serviço/Cabelo com slot antigo (ex.: profissional alterado) continua no
+ * mesmo card das etapas Mega/Pacote daquele profissional.
+ * Visitas distintas no mesmo dia com status diferente (confirmado vs cancelado)
+ * continuam em cartões separados.
  */
 export function particionarLinhasPedidoEmCartoesAgenda(
   linhas: AtendimentoListaItem[],
@@ -65,7 +60,6 @@ export function particionarLinhasPedidoEmCartoesAgenda(
     start: number;
     end: number;
     linhas: AtendimentoListaItem[];
-    temHorario: boolean;
   };
 
   const clusters: Cluster[] = [];
@@ -73,59 +67,28 @@ export function particionarLinhasPedidoEmCartoesAgenda(
   for (const l of sorted) {
     const status = normalizarAgendaStatusId(l.agenda_status);
     const ex = extentLinhaMinutos(l, diaYmd);
-
-    let joined = false;
-    for (const c of clusters) {
-      if (c.status !== status) continue;
-      if (ex && c.temHorario) {
-        if (!intervalosSeTocamOuSobrepoem(c, ex)) continue;
-        c.linhas.push(l);
-        c.start = Math.min(c.start, ex.start);
-        c.end = Math.max(c.end, ex.end);
-        joined = true;
-        break;
+    const existing = clusters.find((c) => c.status === status);
+    if (existing) {
+      existing.linhas.push(l);
+      if (ex) {
+        existing.start = Math.min(existing.start, ex.start);
+        existing.end = Math.max(existing.end, ex.end);
       }
-      /** Sem horário: junta só se o cluster também não tem horário (mesmo status). */
-      if (!ex && !c.temHorario) {
-        c.linhas.push(l);
-        joined = true;
-        break;
-      }
+      continue;
     }
-
-    if (!joined) {
-      clusters.push({
-        status,
-        start: ex?.start ?? 0,
-        end: ex?.end ?? 0,
-        linhas: [l],
-        temHorario: !!ex,
-      });
-    }
+    clusters.push({
+      status,
+      start: ex?.start ?? 0,
+      end: ex?.end ?? 0,
+      linhas: [l],
+    });
   }
 
   if (clusters.length <= 1) {
     return [{ trackKey: trackKeyBase, linhas: sorted }];
   }
 
-  /** Cabelo e outros itens sem horário no mesmo pedido entram no cartão agendado. */
-  const comHorario = clusters.filter((c) => c.temHorario);
-  const semHorario = clusters.filter((c) => !c.temHorario);
-  let cartoes = clusters;
-  if (comHorario.length > 0 && semHorario.length > 0) {
-    const merged: Cluster[] = [...comHorario];
-    for (const u of semHorario) {
-      const alvo = comHorario.find((s) => s.status === u.status);
-      if (alvo) {
-        alvo.linhas.push(...u.linhas);
-      } else {
-        merged.push(u);
-      }
-    }
-    cartoes = merged;
-  }
-
-  return cartoes.map((c, i) => {
+  return clusters.map((c, i) => {
     const linhaIds = c.linhas
       .map((x) => x.linha_id)
       .filter((id): id is number => id != null && Number.isFinite(id))

@@ -34,7 +34,7 @@
               aria-hidden="true"
               >Buscar</span
             >
-            <label class="sr-only" for="servicos-busca-input">Buscar serviços</label>
+            <label class="sr-only" for="servicos-busca-input">Buscar</label>
             <input
               id="servicos-busca-input"
               type="text"
@@ -47,7 +47,7 @@
               autocomplete="off"
               (click)="$event.stopPropagation()"
               (input)="onBuscaInput()"
-              aria-label="Buscar serviços"
+              aria-label="Buscar"
               title="Buscar"
             />
           </div>
@@ -115,10 +115,11 @@
     <aside
       class="servicos-filtros-drawer"
       [class.servicos-filtros-drawer--open]="filtrosAbertos"
-      aria-label="Filtros de serviços"
+      aria-label="Filtros"
       [attr.aria-hidden]="filtrosAbertos ? null : 'true'"
     >
       <div class="servicos-filtros-drawer__inner">
+        @if (aba === 'servicos') {
         <section class="servicos-filtros-card">
           <h3 class="servicos-filtros-card__title">Status</h3>
           <div class="servicos-filtros-card__body">
@@ -192,10 +193,91 @@
             }
           </div>
         </section>
+        } @else {
+        <section class="servicos-filtros-card">
+          <h3 class="servicos-filtros-card__title">Catálogo</h3>
+          <div class="servicos-filtros-card__body">
+            <label class="servicos-filtros-check">
+              <input
+                type="radio"
+                name="megahair_tipo"
+                [checked]="megahairSub === 'mega'"
+                (change)="onMegahairSubChange('mega')"
+              />
+              Mega
+            </label>
+            <label class="servicos-filtros-check">
+              <input
+                type="radio"
+                name="megahair_tipo"
+                [checked]="megahairSub === 'pacote'"
+                (change)="onMegahairSubChange('pacote')"
+              />
+              Pacote
+            </label>
+            <label class="servicos-filtros-check">
+              <input
+                type="radio"
+                name="megahair_tipo"
+                [checked]="megahairSub === 'pacote_queratina'"
+                (change)="onMegahairSubChange('pacote_queratina')"
+              />
+              Pacote Adesivo+Queratina
+            </label>
+            <label class="servicos-filtros-check">
+              <input
+                type="radio"
+                name="megahair_tipo"
+                [checked]="megahairSub === 'cabelo'"
+                (change)="onMegahairSubChange('cabelo')"
+              />
+              Cabelo
+            </label>
+          </div>
+        </section>
+        }
       </div>
     </aside>
 
     <div class="list-layout__main">
+      <nav
+        #tabsNav
+        class="list-page__tabs"
+        aria-label="Seções de serviços"
+        [style.--tabs-indicator-left.px]="tabsIndicatorLeft"
+        [style.--tabs-indicator-width.px]="tabsIndicatorWidth"
+      >
+        <span class="list-page__tabs-indicator" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="list-page__tab"
+          data-aba="servicos"
+          [class.list-page__tab--active]="aba === 'servicos'"
+          [attr.aria-current]="aba === 'servicos' ? 'page' : null"
+          (click)="definirAba('servicos')"
+        >
+          Serviços
+        </button>
+        <button
+          type="button"
+          class="list-page__tab"
+          data-aba="megahair"
+          [class.list-page__tab--active]="aba === 'megahair'"
+          [attr.aria-current]="aba === 'megahair' ? 'page' : null"
+          (click)="definirAba('megahair')"
+        >
+          Megahair
+        </button>
+      </nav>
+
+      <div class="servicos-aba-painel" [hidden]="aba !== 'megahair'">
+        <app-servicos-megahair-panel
+          [subAba]="megahairSub"
+          [busca]="busca"
+        />
+      </div>
+
+      <div class="servicos-aba-painel" [hidden]="aba !== 'servicos'">
       @if (erro) {
         <p class="alert" role="alert">{{ erro }}</p>
       }
@@ -687,6 +769,7 @@
           </footer>
         </div>
       }
+      </div>
     </div>
   </div>
 </div>

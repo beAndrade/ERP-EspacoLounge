@@ -429,6 +429,7 @@ export interface EstoqueMovimentoItem {
 
 /** Referência da aba Cabelos (MVP: ajuda visual; valor vem manual). */
 export interface CabeloCatalogoItem {
+  id?: number;
   cor: string;
   tamanho_cm: unknown;
   metodo: string;

@@ -167,6 +167,51 @@ export class SheetsApiService {
       );
   }
 
+  createRegraMega(body: {
+    pacote: string;
+    etapa: string;
+    valor?: string | null;
+    comissao?: string | null;
+    duracao_minutos?: number | null;
+  }): Observable<RegraMegaItem> {
+    return this.http
+      .post<ApiResponse<{ item: RegraMegaItem }>>(
+        this.url('/api/regras-mega'),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  updateRegraMega(
+    id: number,
+    body: {
+      pacote: string;
+      etapa: string;
+      valor?: string | null;
+      comissao?: string | null;
+      duracao_minutos?: number | null;
+    },
+  ): Observable<RegraMegaItem> {
+    return this.http
+      .patch<ApiResponse<{ item: RegraMegaItem }>>(
+        this.url(`/api/regras-mega/${id}`),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  deleteRegraMega(id: number): Observable<{ ok: boolean }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean }>>(this.url(`/api/regras-mega/${id}`))
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
   listPacotes(): Observable<PacoteCatalogoItem[]> {
     return this.http
       .get<ApiResponse<{ items: PacoteCatalogoItem[] }>>(
@@ -176,6 +221,42 @@ export class SheetsApiService {
         map((r) => this.unwrap(r)),
         map((d) => d.items),
       );
+  }
+
+  createPacote(body: {
+    pacote: string;
+    preco?: string | null;
+  }): Observable<PacoteCatalogoItem> {
+    return this.http
+      .post<ApiResponse<{ item: PacoteCatalogoItem }>>(
+        this.url('/api/pacotes'),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  updatePacote(
+    id: number,
+    body: { pacote: string; preco?: string | null },
+  ): Observable<PacoteCatalogoItem> {
+    return this.http
+      .patch<ApiResponse<{ item: PacoteCatalogoItem }>>(
+        this.url(`/api/pacotes/${id}`),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  deletePacote(id: number): Observable<{ ok: boolean }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean }>>(this.url(`/api/pacotes/${id}`))
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   listRegrasMegaQueratina(): Observable<RegraMegaItem[]> {
@@ -189,6 +270,53 @@ export class SheetsApiService {
       );
   }
 
+  createRegraMegaQueratina(body: {
+    pacote: string;
+    etapa: string;
+    valor?: string | null;
+    comissao?: string | null;
+    duracao_minutos?: number | null;
+  }): Observable<RegraMegaItem> {
+    return this.http
+      .post<ApiResponse<{ item: RegraMegaItem }>>(
+        this.url('/api/regras-mega-queratina'),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  updateRegraMegaQueratina(
+    id: number,
+    body: {
+      pacote: string;
+      etapa: string;
+      valor?: string | null;
+      comissao?: string | null;
+      duracao_minutos?: number | null;
+    },
+  ): Observable<RegraMegaItem> {
+    return this.http
+      .patch<ApiResponse<{ item: RegraMegaItem }>>(
+        this.url(`/api/regras-mega-queratina/${id}`),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  deleteRegraMegaQueratina(id: number): Observable<{ ok: boolean }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/regras-mega-queratina/${id}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
   listPacotesQueratina(): Observable<PacoteCatalogoItem[]> {
     return this.http
       .get<ApiResponse<{ items: PacoteCatalogoItem[] }>>(
@@ -198,6 +326,44 @@ export class SheetsApiService {
         map((r) => this.unwrap(r)),
         map((d) => d.items),
       );
+  }
+
+  createPacoteQueratina(body: {
+    pacote: string;
+    preco?: string | null;
+  }): Observable<PacoteCatalogoItem> {
+    return this.http
+      .post<ApiResponse<{ item: PacoteCatalogoItem }>>(
+        this.url('/api/pacotes-queratina'),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  updatePacoteQueratina(
+    id: number,
+    body: { pacote: string; preco?: string | null },
+  ): Observable<PacoteCatalogoItem> {
+    return this.http
+      .patch<ApiResponse<{ item: PacoteCatalogoItem }>>(
+        this.url(`/api/pacotes-queratina/${id}`),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  deletePacoteQueratina(id: number): Observable<{ ok: boolean }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean }>>(
+        this.url(`/api/pacotes-queratina/${id}`),
+      )
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   listProdutos(): Observable<ProdutoCatalogoItem[]> {
@@ -324,6 +490,49 @@ export class SheetsApiService {
         map((r) => this.unwrap(r)),
         map((d) => d.items),
       );
+  }
+
+  createCabelo(body: {
+    cor?: string | null;
+    tamanho_cm?: string | null;
+    metodo?: string | null;
+    valor_base?: string | null;
+  }): Observable<CabeloCatalogoItem> {
+    return this.http
+      .post<ApiResponse<{ item: CabeloCatalogoItem }>>(
+        this.url('/api/cabelos'),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  updateCabelo(
+    id: number,
+    body: {
+      cor?: string | null;
+      tamanho_cm?: string | null;
+      metodo?: string | null;
+      valor_base?: string | null;
+    },
+  ): Observable<CabeloCatalogoItem> {
+    return this.http
+      .patch<ApiResponse<{ item: CabeloCatalogoItem }>>(
+        this.url(`/api/cabelos/${id}`),
+        body,
+      )
+      .pipe(
+        map((r) => this.unwrap(r)),
+        map((d) => d.item),
+      );
+  }
+
+  deleteCabelo(id: number): Observable<{ ok: boolean }> {
+    return this.http
+      .delete<ApiResponse<{ ok: boolean }>>(this.url(`/api/cabelos/${id}`))
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   /**

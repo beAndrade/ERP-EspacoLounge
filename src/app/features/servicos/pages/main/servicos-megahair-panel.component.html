@@ -1,0 +1,622 @@
+<div class="megahair-panel">
+  @if (erro) {
+    <p class="alert" role="alert">{{ erro }}</p>
+  }
+
+  @if (!erro) {
+    @if (subAba === 'mega') {
+      <div class="list-table-card">
+        <div class="table-wrap" role="region" aria-label="Etapas Mega">
+          <table class="list-table megahair-table">
+            <colgroup>
+              <col class="megahair-table__col-check" />
+              <col class="megahair-table__col-pacote" />
+              <col class="megahair-table__col-etapa" />
+              <col class="megahair-table__col-valor" />
+              <col class="megahair-table__col-comissao" />
+              <col class="megahair-table__col-duracao" />
+              <col class="megahair-table__col-acoes" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="col-check" scope="col">
+                  <input
+                    type="checkbox"
+                    [checked]="!carregando && todosRegrasMegaSelecionados()"
+                    [disabled]="carregando || regrasFiltradasMega.length === 0"
+                    (change)="toggleSelecionarTodosRegrasMega($event)"
+                    title="Selecionar página"
+                  />
+                </th>
+                <th scope="col">Pacote</th>
+                <th scope="col">Etapa</th>
+                <th scope="col" class="col-num">Valor</th>
+                <th scope="col" class="col-num">Comissão</th>
+                <th scope="col">Duração</th>
+                <th scope="col" class="col-acoes">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (carregando) {
+                @for (sk of [1, 2, 3, 4, 5, 6]; track sk) {
+                  <tr class="list-table__skeleton-row" aria-hidden="true">
+                    <td colspan="7">
+                      <span class="list-skeleton-bar"></span>
+                    </td>
+                  </tr>
+                }
+              } @else {
+                @for (r of regrasFiltradasMega; track r.id ?? r.pacote + r.etapa) {
+                  <tr>
+                    <td class="col-check">
+                      <input
+                        type="checkbox"
+                        [checked]="estaSelecionado(chaveRegra(r))"
+                        [disabled]="chaveRegra(r) == null"
+                        (change)="toggleSelecionado(chaveRegra(r), $event)"
+                        [attr.aria-label]="'Selecionar ' + r.pacote + ' — ' + r.etapa"
+                      />
+                    </td>
+                    <td>{{ r.pacote }}</td>
+                    <td>{{ r.etapa }}</td>
+                    <td class="col-num">
+                      @if (valorNum(r.valor) != null) {
+                        {{ valorNum(r.valor)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                      }
+                    </td>
+                    <td class="col-num">
+                      @if (valorNum(r.comissao) != null) {
+                        {{ valorNum(r.comissao)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                      }
+                    </td>
+                    <td>{{ rotuloDuracao(r.duracao_minutos) }}</td>
+                    <td class="col-acoes">
+                      <div class="list-row-acoes">
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--edit"
+                          (click)="abrirEditarRegra(r)"
+                          aria-label="Editar etapa"
+                          title="Editar"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" />
+                          </svg>
+                        </button>
+                        <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--delete"
+                          (click)="pedirExcluirRegra(r)"
+                          aria-label="Excluir etapa"
+                          title="Excluir"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="table-body__empty">
+                      <app-table-empty label="Nenhuma etapa Mega cadastrada." />
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="list-footer">
+          <span class="list-footer__total">
+            {{ carregando ? '…' : regrasFiltradasMega.length }} no total
+          </span>
+        </footer>
+      </div>
+    }
+
+    @if (subAba === 'pacote' || subAba === 'pacote_queratina') {
+      <div class="list-table-card">
+        <div class="table-wrap" role="region" aria-label="Pacotes">
+          <table class="list-table megahair-table">
+            <colgroup>
+              <col class="megahair-table__col-check" />
+              <col class="megahair-table__col-pacote" />
+              <col class="megahair-table__col-valor" />
+              <col class="megahair-table__col-acoes-wide" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="col-check" scope="col">
+                  <input
+                    type="checkbox"
+                    [checked]="!carregando && todosPacotesSelecionados()"
+                    [disabled]="carregando || pacotesFiltrados().length === 0"
+                    (change)="toggleSelecionarTodosPacotes($event)"
+                    title="Selecionar página"
+                  />
+                </th>
+                <th scope="col">Pacote</th>
+                <th scope="col" class="col-num">Preço</th>
+                <th scope="col" class="col-acoes">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (carregando) {
+                @for (sk of [1, 2, 3, 4]; track sk) {
+                  <tr class="list-table__skeleton-row" aria-hidden="true">
+                    <td colspan="4">
+                      <span class="list-skeleton-bar"></span>
+                    </td>
+                  </tr>
+                }
+              } @else {
+                @for (p of pacotesFiltrados(); track p.id ?? p.pacote) {
+                  <tr>
+                    <td class="col-check">
+                      <input
+                        type="checkbox"
+                        [checked]="estaSelecionado(chavePacote(p))"
+                        [disabled]="chavePacote(p) == null"
+                        (change)="toggleSelecionado(chavePacote(p), $event)"
+                        [attr.aria-label]="'Selecionar ' + p.pacote"
+                      />
+                    </td>
+                    <td>{{ p.pacote }}</td>
+                    <td class="col-num">
+                      @if (valorNum(p.preco) != null) {
+                        {{ valorNum(p.preco)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                      }
+                    </td>
+                    <td class="col-acoes">
+                      <div class="list-row-acoes">
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--edit"
+                          (click)="abrirEditarPacote(p)"
+                          aria-label="Editar pacote"
+                          title="Editar"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" />
+                          </svg>
+                        </button>
+                        <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--edit"
+                          (click)="abrirNovaEtapaParaPacote(p.pacote)"
+                          aria-label="Nova etapa"
+                          title="Nova etapa"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14" />
+                            <path d="M12 5v14" />
+                          </svg>
+                        </button>
+                        <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--delete"
+                          (click)="pedirExcluirPacote(p)"
+                          aria-label="Excluir pacote"
+                          title="Excluir"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="table-body__empty">
+                      <app-table-empty label="Nenhum pacote cadastrado." />
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="list-footer">
+          <span class="list-footer__total">
+            {{ carregando ? '…' : pacotesFiltrados().length }} pacotes
+          </span>
+        </footer>
+      </div>
+
+      <div class="list-table-card">
+        <div class="table-wrap" role="region" aria-label="Etapas do pacote">
+          <table class="list-table megahair-table">
+            <colgroup>
+              <col class="megahair-table__col-check" />
+              <col class="megahair-table__col-pacote" />
+              <col class="megahair-table__col-etapa" />
+              <col class="megahair-table__col-valor" />
+              <col class="megahair-table__col-comissao" />
+              <col class="megahair-table__col-duracao" />
+              <col class="megahair-table__col-acoes" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="col-check" scope="col">
+                  <input
+                    type="checkbox"
+                    [checked]="!carregando && todosRegrasPacoteSelecionados()"
+                    [disabled]="carregando || regrasParaAbaPacote().length === 0"
+                    (change)="toggleSelecionarTodosRegrasPacote($event)"
+                    title="Selecionar página"
+                  />
+                </th>
+                <th scope="col">Pacote</th>
+                <th scope="col">Etapa</th>
+                <th scope="col" class="col-num">Valor</th>
+                <th scope="col" class="col-num">Comissão</th>
+                <th scope="col">Duração</th>
+                <th scope="col" class="col-acoes">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (carregando) {
+                @for (sk of [1, 2, 3, 4, 5]; track sk) {
+                  <tr class="list-table__skeleton-row" aria-hidden="true">
+                    <td colspan="7">
+                      <span class="list-skeleton-bar"></span>
+                    </td>
+                  </tr>
+                }
+              } @else {
+                @for (r of regrasParaAbaPacote(); track r.id ?? r.pacote + r.etapa) {
+                  <tr>
+                    <td class="col-check">
+                      <input
+                        type="checkbox"
+                        [checked]="estaSelecionado(chaveRegra(r))"
+                        [disabled]="chaveRegra(r) == null"
+                        (change)="toggleSelecionado(chaveRegra(r), $event)"
+                        [attr.aria-label]="'Selecionar ' + r.pacote + ' — ' + r.etapa"
+                      />
+                    </td>
+                    <td>{{ r.pacote }}</td>
+                    <td>{{ r.etapa }}</td>
+                    <td class="col-num">
+                      @if (valorNum(r.valor) != null) {
+                        {{ valorNum(r.valor)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                      }
+                    </td>
+                    <td class="col-num">
+                      @if (valorNum(r.comissao) != null) {
+                        {{ valorNum(r.comissao)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                      }
+                    </td>
+                    <td>{{ rotuloDuracao(r.duracao_minutos) }}</td>
+                    <td class="col-acoes">
+                      <div class="list-row-acoes">
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--edit"
+                          (click)="abrirEditarRegra(r)"
+                          aria-label="Editar etapa"
+                          title="Editar"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" />
+                          </svg>
+                        </button>
+                        <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--delete"
+                          (click)="pedirExcluirRegra(r)"
+                          aria-label="Excluir etapa"
+                          title="Excluir"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="table-body__empty">
+                      <app-table-empty label="Nenhuma etapa cadastrada. Use + na linha do pacote." />
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="list-footer">
+          <span class="list-footer__total">
+            {{ carregando ? '…' : regrasParaAbaPacote().length }} etapas
+          </span>
+        </footer>
+      </div>
+    }
+
+    @if (subAba === 'cabelo') {
+      <div class="list-table-card">
+        <div class="table-wrap" role="region" aria-label="Catálogo Cabelo">
+          <table class="list-table megahair-table">
+            <colgroup>
+              <col class="megahair-table__col-check" />
+              <col class="megahair-table__col-cor" />
+              <col class="megahair-table__col-tamanho" />
+              <col class="megahair-table__col-metodo" />
+              <col class="megahair-table__col-valor" />
+              <col class="megahair-table__col-acoes" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="col-check" scope="col">
+                  <input
+                    type="checkbox"
+                    [checked]="!carregando && todosCabelosSelecionados()"
+                    [disabled]="carregando || cabelosFiltrados().length === 0"
+                    (change)="toggleSelecionarTodosCabelos($event)"
+                    title="Selecionar página"
+                  />
+                </th>
+                <th scope="col">Cor</th>
+                <th scope="col">Tamanho (cm)</th>
+                <th scope="col">Método</th>
+                <th scope="col" class="col-num">Valor base</th>
+                <th scope="col" class="col-acoes">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (carregando) {
+                @for (sk of [1, 2, 3, 4, 5, 6]; track sk) {
+                  <tr class="list-table__skeleton-row" aria-hidden="true">
+                    <td colspan="6">
+                      <span class="list-skeleton-bar"></span>
+                    </td>
+                  </tr>
+                }
+              } @else {
+                @for (c of cabelosFiltrados(); track c.id ?? c.cor + c.metodo + c.tamanho_cm) {
+                  <tr>
+                    <td class="col-check">
+                      <input
+                        type="checkbox"
+                        [checked]="estaSelecionado(chaveCabelo(c))"
+                        [disabled]="chaveCabelo(c) == null"
+                        (change)="toggleSelecionado(chaveCabelo(c), $event)"
+                        [attr.aria-label]="'Selecionar ' + c.cor"
+                      />
+                    </td>
+                    <td>{{ c.cor }}</td>
+                    <td>{{ c.tamanho_cm }}</td>
+                    <td>{{ c.metodo }}</td>
+                    <td class="col-num">
+                      @if (valorNum(c.valor_base) != null) {
+                        {{ valorNum(c.valor_base)! | currency: 'BRL' : 'symbol' : '1.2-2' }}
+                      }
+                    </td>
+                    <td class="col-acoes">
+                      <div class="list-row-acoes">
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--edit"
+                          (click)="abrirEditarCabelo(c)"
+                          aria-label="Editar cabelo"
+                          title="Editar"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" />
+                          </svg>
+                        </button>
+                        <span class="list-row-acoes__sep" aria-hidden="true"></span>
+                        <button
+                          type="button"
+                          class="list-row-acoes__btn list-row-acoes__btn--delete"
+                          (click)="pedirExcluirCabelo(c)"
+                          aria-label="Excluir cabelo"
+                          title="Excluir"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="table-body__empty">
+                      <app-table-empty label="Nenhuma linha de cabelo cadastrada." />
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer class="list-footer">
+          <span class="list-footer__total">
+            {{ carregando ? '…' : cabelosFiltrados().length }} no total
+          </span>
+        </footer>
+      </div>
+    }
+  }
+</div>
+
+@if (modalAberto) {
+  <div
+    class="overlay"
+    [class.overlay--open]="modalPanelOpen"
+    aria-hidden="true"
+    (click)="fecharModal()"
+  ></div>
+  <div
+    class="app-drawer cliente-drawer cliente-drawer--megahair-cadastro"
+    [class.app-drawer--open]="modalPanelOpen"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="modalTitulo"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="cliente-shell">
+      <header class="cliente-head">
+        <div class="cliente-head__title-wrap">
+          <div class="cliente-head__title-row">
+            <h2 class="cliente-head__title">{{ modalTitulo }}</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="cliente-head__close"
+          (click)="fecharModal()"
+          aria-label="Fechar"
+          [disabled]="salvando"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="cliente-body-scroll megahair-cadastro-scroll">
+        <div class="megahair-cadastro-form">
+          @if (modalModo === 'regra') {
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-pacote">Pacote</label>
+              <input id="mh-form-pacote" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formPacote" name="formPacote" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-etapa">Etapa</label>
+              <input id="mh-form-etapa" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formEtapa" name="formEtapa" placeholder="Ex.: Retirada" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-valor">Valor</label>
+              <input id="mh-form-valor" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formValor" name="formValor" placeholder="R$ 0,00" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-comissao">Comissão</label>
+              <input id="mh-form-comissao" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formComissao" name="formComissao" placeholder="R$ 0,00" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-duracao">Duração</label>
+              <select id="mh-form-duracao" class="megahair-cadastro-form__input" [(ngModel)]="formDuracao" name="formDuracao" [disabled]="salvando">
+                @for (m of opcoesDuracaoForm; track m) {
+                  <option [ngValue]="m">{{ m }} min</option>
+                }
+              </select>
+            </div>
+          }
+          @if (modalModo === 'pacote') {
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-pacote-nome">Nome do pacote</label>
+              <input id="mh-form-pacote-nome" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formPacote" name="formPacoteNome" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-preco">Preço</label>
+              <input id="mh-form-preco" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formPreco" name="formPreco" placeholder="R$ 0,00" [disabled]="salvando" />
+            </div>
+          }
+          @if (modalModo === 'cabelo') {
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-cor">Cor</label>
+              <input id="mh-form-cor" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formCor" name="formCor" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-tamanho">Tamanho (cm)</label>
+              <input id="mh-form-tamanho" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formTamanho" name="formTamanho" placeholder="Ex.: 45/47" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-metodo">Método</label>
+              <input id="mh-form-metodo" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formMetodo" name="formMetodo" [disabled]="salvando" />
+            </div>
+            <div class="megahair-cadastro-form__field">
+              <label class="megahair-cadastro-form__label" for="mh-form-valor-base">Valor base (R$/g)</label>
+              <input id="mh-form-valor-base" type="text" class="megahair-cadastro-form__input" [(ngModel)]="formValorBase" name="formValorBase" placeholder="R$ 0,00" [disabled]="salvando" />
+            </div>
+          }
+          @if (formErro) {
+            <p class="megahair-cadastro-form__error" role="alert">{{ formErro }}</p>
+          }
+        </div>
+      </div>
+
+      <footer class="cliente-drawer-footer">
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--ghost"
+          (click)="fecharModal()"
+          [disabled]="salvando"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="cliente-footer-btn cliente-footer-btn--primary"
+          (click)="salvarModal()"
+          [disabled]="salvando"
+        >
+          {{ salvando ? 'Salvando…' : 'Salvar' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (excluirModalAberto && excluirAlvo) {
+  <div class="comandas-modal-overlay" aria-hidden="true" (click)="fecharExcluir()"></div>
+  <div
+    class="comandas-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="megahair-excluir-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="comandas-modal__icon-wrap" aria-hidden="true">
+      <span class="comandas-modal__icon">!</span>
+    </div>
+    <h3 id="megahair-excluir-title" class="comandas-modal__title">Atenção</h3>
+    <p class="comandas-modal__text">
+      Tem certeza que deseja excluir <strong>{{ excluirAlvo.label }}</strong>?
+    </p>
+    @if (excluirErro) {
+      <p class="comandas-modal__erro" role="alert">{{ excluirErro }}</p>
+    }
+    <div class="comandas-modal__actions">
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--cancel"
+        [disabled]="excluindo"
+        (click)="fecharExcluir()"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="comandas-modal__btn comandas-modal__btn--confirm"
+        [disabled]="excluindo"
+        (click)="confirmarExcluir()"
+      >
+        {{ excluindo ? 'Excluindo…' : 'Sim, excluir' }}
+      </button>
+    </div>
+  </div>
+}
