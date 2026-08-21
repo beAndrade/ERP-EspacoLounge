@@ -14,7 +14,7 @@
       tabindex="0"
       (click)="onComboboxTriggerClick($event)"
       (keydown.enter)="onComboboxTriggerClick($event)"
-      (keydown.space)="onComboboxTriggerClick($event); $event.preventDefault()"
+      (keydown.space)="onComboboxTriggerKeySpace($event)"
     >
       @if (panelOpen) {
         <span class="saas-select__value-row saas-select__value-row--editing">
@@ -25,7 +25,9 @@
             [value]="filterText"
             (input)="onTriggerFilterInput($event)"
             (click)="$event.stopPropagation()"
+            (mousedown)="$event.stopPropagation()"
             (keydown)="onTriggerFilterKeydown($event)"
+            (keyup)="onTriggerFilterKeyup($event)"
             [placeholder]="displayLabel || placeholder"
             autocomplete="off"
             [disabled]="isDisabled"
@@ -75,16 +77,19 @@
       </span>
     </div>
   } @else {
-    <button
-      type="button"
+    <div
       class="saas-select__trigger"
       #triggerBtn
-      [disabled]="isDisabled"
+      role="button"
+      [attr.aria-disabled]="isDisabled ? 'true' : null"
+      [attr.tabindex]="isDisabled ? -1 : 0"
       [attr.aria-label]="ariaFieldLabel || placeholder"
       [attr.aria-expanded]="panelOpen"
       [attr.aria-haspopup]="'listbox'"
       (mousedown)="onTriggerMouseDown($event)"
       (click)="togglePanel($event)"
+      (keydown.enter)="onTriggerKeyActivate($event)"
+      (keydown.space)="onTriggerKeyActivate($event)"
     >
       @if (panelOpen && typeInTriggerWhenOpen) {
         <span class="saas-select__value-row saas-select__value-row--editing">
@@ -95,7 +100,9 @@
             [value]="filterText"
             (input)="onTriggerFilterInput($event)"
             (click)="$event.stopPropagation()"
+            (mousedown)="$event.stopPropagation()"
             (keydown)="onTriggerFilterKeydown($event)"
+            (keyup)="onTriggerFilterKeyup($event)"
             [placeholder]="displayLabel || placeholder"
             autocomplete="off"
             [disabled]="isDisabled"
@@ -144,7 +151,7 @@
           </svg>
         }
       </span>
-    </button>
+    </div>
   }
 
   <div
