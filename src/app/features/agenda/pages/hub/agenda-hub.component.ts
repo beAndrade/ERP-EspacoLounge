@@ -22,6 +22,7 @@ import {
   ProfissionalListaItem,
   Cliente,
   Servico,
+  RegraMegaItem,
 } from '../../../../core/models/api.models';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { SessaoUsuarioService } from '../../../../core/services/sessao-usuario.service';
@@ -246,6 +247,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   linhasSemana: AtendimentoListaItem[] = [];
   carregandoSemana = false;
   profissionais: ProfissionalListaItem[] = [];
+  /** Catálogo para altura do card (etapas Mega/Pacote e Serviços). */
+  private regrasMega: RegraMegaItem[] = [];
+  private regrasMegaQueratina: RegraMegaItem[] = [];
+  private servicosCatalogo: Servico[] = [];
   /** Profissionais ocultos na grelha (vazio = todos visíveis). */
   profOcultos = new Set<number>();
 
@@ -595,6 +600,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       }
     });
     this.carregarProfissionais();
+    this.carregarCatalogoDuracoesAgenda();
     this.recarregarVistaAtiva();
     this.route.queryParamMap
       .pipe(
@@ -1371,6 +1377,28 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.profissionais = [];
+      },
+    });
+  }
+
+  /** Regras Mega + Serviços: duração do card segue o catálogo, não só inicio/fim gravados. */
+  private carregarCatalogoDuracoesAgenda(): void {
+    this.api.listRegrasMega().pipe(take(1), catchError(() => of([]))).subscribe({
+      next: (items) => {
+        this.regrasMega = items ?? [];
+      },
+    });
+    this.api
+      .listRegrasMegaQueratina()
+      .pipe(take(1), catchError(() => of([])))
+      .subscribe({
+        next: (items) => {
+          this.regrasMegaQueratina = items ?? [];
+        },
+      });
+    this.api.listServicos().pipe(take(1), catchError(() => of([]))).subscribe({
+      next: (items) => {
+        this.servicosCatalogo = items ?? [];
       },
     });
   }
@@ -3675,13 +3703,16 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Duração de uma linha: primeiro `diffMinutesEntreHorarios` (funciona com ISO legado);
-   * depois `fim − inicio` no dia da grelha; fallback 30 min.
+   * Duração de uma linha: prioriza catálogo (Regras Mega / Serviços);
+   * fallback `fim − inicio`; mínimo 30 min.
    */
   private duracaoMinutosAgendamento(
     ev: AtendimentoListaItem,
     ymdCtx?: string,
   ): number {
+    const catalogo = this.duracaoMinutosCatalogoLinha(ev);
+    if (catalogo != null && catalogo > 0) return catalogo;
+
     const iniS = ev.inicio ? String(ev.inicio).trim() : '';
     const fS = ev.fim ? String(ev.fim).trim() : '';
     if (iniS && fS) {
@@ -3697,6 +3728,75 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       return mf - mi;
     }
     return 30;
+  }
+
+  /** Minutos no catálogo para a linha; null se não houver regra/serviço. */
+  private duracaoMinutosCatalogoLinha(
+    l: AtendimentoListaItem,
+  ): number | null {
+    const t = (l.tipo || '').trim().toLowerCase();
+    if (t === 'mega' || t === 'pacote' || isTipoPacoteQueratinaNorm(t)) {
+      const pac = (l.pacote || '').trim();
+      const et = (l.etapa || '').trim();
+      if (!pac || !et) return null;
+      const regras = isTipoPacoteQueratinaNorm(t)
+        ? this.regrasMegaQueratina
+        : this.regrasMega;
+      const r = regras.find(
+        (x) =>
+          String(x.pacote || '').trim() === pac &&
+          String(x.etapa || '').trim() === et,
+      );
+      const n = Number(r?.duracao_minutos);
+      if (Number.isFinite(n) && n >= 5) return Math.min(24 * 60, Math.round(n));
+      return null;
+    }
+    if (t === 'serviço' || t === 'servico') {
+      return this.duracaoMinutosServicoCatalogo(
+        (l.servicosRef || '').trim(),
+        (l.tamanho || '').trim(),
+      );
+    }
+    return null;
+  }
+
+  private duracaoMinutosServicoCatalogo(
+    nomeServico: string,
+    tamanho: string,
+  ): number | null {
+    if (!nomeServico) return null;
+    const s = this.servicosCatalogo.find(
+      (x) =>
+        String(x['servico'] ?? x['Serviço'] ?? x['Servico'] ?? '')
+          .trim()
+          .toLowerCase() === nomeServico.toLowerCase(),
+    );
+    if (!s) return null;
+    const padrao = (): number | null => {
+      const raw =
+        s['duracao_minutos'] ??
+        s['Duração Minutos'] ??
+        s['Duracao Minutos'] ??
+        s['duracaoMinutos'];
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 5 && n <= 24 * 60) return Math.round(n);
+      return null;
+    };
+    const tipo = String(s['Tipo'] ?? s['tipo'] ?? '')
+      .trim()
+      .toLowerCase();
+    if (tipo === 'fixo' || !tipo) return padrao();
+    const tam = (tamanho || 'Curto').trim();
+    const keyMap: Record<string, string> = {
+      Curto: 'duracao_curto',
+      Médio: 'duracao_medio',
+      'M/L': 'duracao_m_l',
+      Longo: 'duracao_longo',
+    };
+    const key = keyMap[tam] ?? 'duracao_curto';
+    const n = Number(s[key]);
+    if (Number.isFinite(n) && n >= 5 && n <= 24 * 60) return Math.round(n);
+    return padrao();
   }
 
   /**
@@ -3761,19 +3861,48 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     return Number.isFinite(mins) && mins >= 0 ? mins : null;
   }
 
-  private duracaoTotalBlocoMinutos(
+  /**
+   * Minutos que a linha contribui para a **altura** do card.
+   * Ignora cabeça Mega/Pacote sem etapa e linhas sem `inicio` (não ocupam grelha).
+   */
+  private duracaoContribuinteLinhaParaAltura(
+    l: AtendimentoListaItem,
+    ymdCtx?: string,
+  ): number {
+    const t = (l.tipo || '').trim().toLowerCase();
+    if (
+      (t === 'mega' || t === 'pacote' || isTipoPacoteQueratinaNorm(t)) &&
+      !(l.etapa || '').trim()
+    ) {
+      return 0;
+    }
+    const ini = l.inicio ? String(l.inicio).trim() : '';
+    if (!ini) return 0;
+    return this.duracaoMinutosAgendamento(l, ymdCtx);
+  }
+
+  /**
+   * Soma das durações das linhas **deste** card (etapas + serviços + etc.).
+   * É o que define a altura na grelha — não o span wall-clock (evita buracos
+   * quando um Serviço ficou com horário antigo após trocar profissional).
+   */
+  private duracaoSomaLinhasParaAlturaBloco(
     b: AgendaHubBloco,
     ymdCtx?: string,
   ): number {
     const dia = ymdCtx ?? this.diaYmd;
-    if (this.blocoEMegaOuPacoteComEtapas(b)) {
-      const sum = this.duracaoSomaEtapasMegaPacoteNoBloco(b, dia);
-      if (sum > 0) return sum;
-    }
     let sum = 0;
     for (const l of b.linhas) {
-      sum += this.duracaoMinutosAgendamento(l, dia);
+      sum += this.duracaoContribuinteLinhaParaAltura(l, dia);
     }
+    return sum;
+  }
+
+  private duracaoTotalBlocoMinutos(
+    b: AgendaHubBloco,
+    ymdCtx?: string,
+  ): number {
+    const sum = this.duracaoSomaLinhasParaAlturaBloco(b, ymdCtx);
     return sum > 0 ? sum : AGENDA_SLOT_MIN;
   }
 
@@ -3787,35 +3916,31 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Soma as durações só das **etapas** (ignora cabeça Pacote/Mega sem etapa).
-   * A cabeça tem `inicio`/`fim` nulos e `duracaoMinutosAgendamento` devolvia 30 min
-   * por defeito — inflacionava mal (ex.: 30+60=90 em vez de 60+60=120).
-   */
-  private duracaoSomaEtapasMegaPacoteNoBloco(
+  /** Mais cedo `inicio` entre as linhas **deste** card (não o pedido inteiro). */
+  private inicioMinutosLinhasDoBloco(
     b: AgendaHubBloco,
     ymdCtx?: string,
-  ): number {
+  ): number | null {
     const dia = ymdCtx ?? this.diaYmd;
-    let sum = 0;
+    let best: number | null = null;
     for (const l of b.linhas) {
-      const t = (l.tipo || '').trim().toLowerCase();
-      if (t !== 'mega' && t !== 'pacote' && !isTipoPacoteQueratinaNorm(t)) continue;
-      if (!(l.etapa || '').trim()) continue;
-      const ini = l.inicio ? String(l.inicio).trim() : '';
-      if (!ini) continue;
-      sum += this.duracaoMinutosAgendamento(l, dia);
+      if (this.duracaoContribuinteLinhaParaAltura(l, dia) <= 0) continue;
+      const mi = minutosMeiaNoiteEmBrasilia(l.inicio, dia);
+      if (mi == null || !Number.isFinite(mi)) continue;
+      if (best == null || mi < best) best = mi;
     }
-    return sum;
+    return best;
   }
 
   /**
    * Início / fim em minutos desde 00:00 (dia da grelha) para o bloco inteiro.
    *
-   * Mega/Pacote com vários profissionais: **topo** = horário inicial global do
-   * pedido; **altura** = soma das durações das etapas **deste** profissional
-   * (ex.: 120 min → até 12:00; outra com 60 min → até 11:00), não o último
-   * `fim` absoluto na coluna (que pode ser 12:00 só por encadeamento na API).
+   * Mega/Pacote multi-profissional: **topo** = 1.º horário global do pedido
+   * (alinha colunas). **Altura** = soma das durações das linhas **deste** card
+   * (etapas deste profissional + Serviços/etc. no mesmo card).
+   *
+   * Sem Mega: topo = início mais cedo das linhas do card; altura = mesma soma
+   * (não usa max(fim)−min(inicio), que abriria “buraco” entre horários).
    */
   private extentMinutosBloco(
     b: AgendaHubBloco,
@@ -3828,59 +3953,29 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
         ? this.inicioGlobalMinutosMegaPacote(idAt, dia)
         : null;
 
+    const sumDur = this.duracaoSomaLinhasParaAlturaBloco(b, dia);
+    const durEfetiva = Math.max(
+      AGENDA_SLOT_MIN,
+      sumDur > 0 ? sumDur : AGENDA_SLOT_MIN,
+    );
+
     if (globalStart != null && Number.isFinite(globalStart)) {
-      const sumDur = this.duracaoSomaEtapasMegaPacoteNoBloco(b, dia);
-      const durEfetiva = Math.max(
-        AGENDA_SLOT_MIN,
-        sumDur > 0 ? sumDur : AGENDA_SLOT_MIN,
-      );
       const end = Math.min(GRID_END_MIN, globalStart + durEfetiva);
       if (end <= globalStart) return null;
       return { start: globalStart, end };
     }
 
-    let startMin = Infinity;
-    let endMax = -Infinity;
-    for (const l of b.linhas) {
-      const mi = minutosMeiaNoiteEmBrasilia(l.inicio, dia);
-      if (mi == null) continue;
-      const iniS = l.inicio ? String(l.inicio).trim() : '';
-      const fS = l.fim ? String(l.fim).trim() : '';
-      /**
-       * Preferir duração = fim − inicio (strings completas). Assim o cartão
-       * ocupa o intervalo real (ex.: 90 min) mesmo quando `fim` não passa no
-       * mesmo critério de “mesmo dia” que `minutosMeiaNoiteEmBrasilia(fim)`.
-       */
-      const diffM =
-        iniS && fS ? diffMinutesEntreHorarios(iniS, fS) : null;
-      let endLine: number;
-      if (diffM != null && Number.isFinite(diffM) && diffM > 0) {
-        endLine = mi + diffM;
-      } else {
-        const mf = minutosMeiaNoiteEmBrasilia(l.fim, dia);
-        const d = this.duracaoMinutosAgendamento(l, dia);
-        endLine = mf != null && mf > mi ? mf : mi + d;
-      }
-      endLine = Math.min(endLine, GRID_END_MIN);
-      startMin = Math.min(startMin, mi);
-      endMax = Math.max(endMax, endLine);
-    }
-    if (
-      Number.isFinite(startMin) &&
-      Number.isFinite(endMax) &&
-      endMax > startMin
-    ) {
-      return { start: startMin, end: endMax };
+    const startLocal = this.inicioMinutosLinhasDoBloco(b, dia);
+    if (startLocal != null && Number.isFinite(startLocal)) {
+      const end = Math.min(GRID_END_MIN, startLocal + durEfetiva);
+      if (end <= startLocal) return null;
+      return { start: startLocal, end };
     }
 
     const fallbackStart = this.minutosInicioPreferencialBloco(b, dia);
     if (fallbackStart == null || !Number.isFinite(fallbackStart)) {
       return null;
     }
-    const durEfetiva = Math.max(
-      AGENDA_SLOT_MIN,
-      this.duracaoTotalBlocoMinutos(b, dia),
-    );
     const end = Math.min(GRID_END_MIN, fallbackStart + durEfetiva);
     if (end <= fallbackStart) return null;
     return { start: fallbackStart, end };
@@ -3935,20 +4030,39 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
 
   /**
    * Uma entrada por linha de atendimento (sem duplicar texto igual).
-   * Mega/Pacote/Queratina: `Pacote (N mechas) -- etapa` (uma linha por etapa).
-   * Cabelo: detalhes (`Cor: …; cm; método: …; g`).
+   * Mega/Pacote/Queratina: só etapas **desta coluna** (`b.linhas`) — profissionais
+   * diferentes no mesmo pedido não podem misturar etapas no card.
+   * Cabelo do mesmo pedido/profissional (ex.: sem horário no cluster) entra como
+   * suplemento para o detalhe `Cor: …` aparecer sem vazar etapas de outros.
    */
   itensResumoBloco(b: AgendaHubBloco): string[] {
     const out: string[] = [];
     const seen = new Set<string>();
-    /** Inclui linhas do pedido inteiro (ex.: Cabelo noutra coluna ou sem slot). */
-    const linhas = [...this.linhasPedidoDoBloco(b)];
-    ordenarLinhasAtendimentoInPlace(linhas);
-    for (const l of linhas) {
+    const idsNoCard = new Set(
+      b.linhas
+        .map((l) => l.linha_id)
+        .filter((id): id is number => id != null && Number.isFinite(id)),
+    );
+    const pidsNoCard = new Set(
+      b.linhas
+        .map((l) => Number(l.profissional_id))
+        .filter((n) => Number.isFinite(n) && n > 0),
+    );
+    const pushLinha = (l: AtendimentoListaItem): void => {
       const txt = linhaResumoAtendimentoLista(l).trim();
-      if (!txt || seen.has(txt)) continue;
+      if (!txt || seen.has(txt)) return;
       seen.add(txt);
       out.push(txt);
+    };
+    for (const l of b.linhas) pushLinha(l);
+    for (const l of this.linhasPedidoDoBloco(b)) {
+      const lid = l.linha_id;
+      if (lid != null && Number.isFinite(lid) && idsNoCard.has(lid)) continue;
+      const t = (l.tipo || '').trim().toLowerCase();
+      if (t !== 'cabelo') continue;
+      const pid = Number(l.profissional_id);
+      if (pid > 0 && pidsNoCard.size > 0 && !pidsNoCard.has(pid)) continue;
+      pushLinha(l);
     }
     return out;
   }

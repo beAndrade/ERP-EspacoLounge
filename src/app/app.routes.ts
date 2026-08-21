@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { CanActivateFn, Router, Routes } from '@angular/router';
 import { LoginComponent } from './pages/login/login.component';
 import { AgendaComponent } from './features/agenda/pages/main/agenda.component';
 import { AgendaHubComponent } from './features/agenda/pages/hub/agenda-hub.component';
@@ -28,6 +29,12 @@ import { PainelComponent } from './features/painel/pages/main/painel.component';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 
+/** /pacotes → Serviços aba Megahair. */
+const redirectPacotesToMegahair: CanActivateFn = () =>
+  inject(Router).createUrlTree(['/servicos'], {
+    queryParams: { aba: 'megahair' },
+  });
+
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, title: 'Entrar' },
   { path: 'agendar', component: AgendarPublicoComponent, title: 'Agendamento Online' },
@@ -42,7 +49,7 @@ export const routes: Routes = [
   {
     path: 'pacotes',
     component: EmBreveComponent,
-    canActivate: [authGuard, adminGuard],
+    canActivate: [authGuard, adminGuard, redirectPacotesToMegahair],
     title: 'Pacotes',
     data: { titulo: 'Pacotes' },
   },
@@ -99,6 +106,7 @@ export const routes: Routes = [
     component: ServicosComponent,
     canActivate: [authGuard, adminGuard],
     title: 'Serviços',
+    data: { titulo: 'Serviços' },
   },
   {
     path: 'estoque',

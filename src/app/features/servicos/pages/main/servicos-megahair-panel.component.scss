@@ -1,0 +1,191 @@
+@use '../../../../styles/list-page-shell';
+@use '../../../../styles/breakpoints' as bp;
+
+.megahair-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.megahair-table {
+  table-layout: fixed;
+
+  tbody td {
+    height: 47px;
+    min-height: 47px;
+    max-height: 47px;
+    box-sizing: border-box;
+  }
+}
+
+.megahair-table__col-check {
+  width: 48px;
+}
+
+.megahair-table__col-pacote,
+.megahair-table__col-etapa,
+.megahair-table__col-cor,
+.megahair-table__col-metodo {
+  width: auto;
+}
+
+.megahair-table__col-valor,
+.megahair-table__col-comissao {
+  width: 132px;
+}
+
+.megahair-table__col-duracao,
+.megahair-table__col-tamanho {
+  width: 110px;
+}
+
+.megahair-table__col-acoes,
+.megahair-table__col-acoes-wide {
+  width: 168px;
+}
+
+.megahair-table thead th.col-check,
+.megahair-table tbody td.col-check {
+  width: 48px;
+  min-width: 48px;
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.megahair-table thead th.col-check input[type='checkbox'],
+.megahair-table tbody td.col-check input[type='checkbox'] {
+  display: block;
+  margin: 0 auto;
+}
+
+.megahair-table thead th.col-acoes,
+.megahair-table tbody td.col-acoes {
+  width: 168px;
+  min-width: 168px;
+  text-align: center;
+}
+
+.megahair-table thead th.col-num,
+.megahair-table tbody td.col-num {
+  text-align: end;
+}
+
+.megahair-table .list-row-acoes {
+  justify-content: center;
+  width: 100%;
+  gap: 0.2rem;
+}
+
+.megahair-table .list-row-acoes__sep {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 14px;
+  margin: 0 0.05rem;
+  background: #ebebeb;
+}
+
+.cliente-drawer.cliente-drawer--megahair-cadastro.app-drawer {
+  --drawer-inset-x: 0;
+  --drawer-pad-x: 0;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #ffffff;
+  overflow: hidden;
+  padding: 0;
+  transform: translateX(100%);
+  transition: transform 0.43s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  @include bp.drawer-anchor-fixed-width(520px);
+
+  &.app-drawer--open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  > .cliente-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+.megahair-cadastro-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 24px 16px;
+}
+
+.megahair-cadastro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 420px;
+}
+
+.megahair-cadastro-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.megahair-cadastro-form__label {
+  font-weight: 500;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.megahair-cadastro-form__input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 11px;
+  min-height: 38px;
+  border: 1px solid #f1f1f1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: rgba(0, 0, 0, 0.75);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5714285714285714;
+  outline: none;
+  transition: all 0.2s;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &:hover:not(:disabled):not(:focus) {
+    border-color: var(--color-primary-hover);
+  }
+
+  &:focus {
+    outline: 0;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 6%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.megahair-cadastro-form__error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-error, #ff4d4f);
+}

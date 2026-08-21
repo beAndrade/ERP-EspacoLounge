@@ -112,6 +112,26 @@ import {
   excluirMarcaCatalogoApi,
   listMarcasCatalogoApi,
 } from './services/marcas-catalogo-domain';
+import {
+  createCabelo,
+  createPacote,
+  createPacoteQueratina,
+  createRegraMega,
+  createRegraMegaQueratina,
+  deleteCabelo,
+  deletePacote,
+  deletePacoteQueratina,
+  deleteRegraMega,
+  deleteRegraMegaQueratina,
+  updateCabelo,
+  updatePacote,
+  updatePacoteQueratina,
+  updateRegraMega,
+  updateRegraMegaQueratina,
+  type CabeloWriteInput,
+  type PacoteWriteInput,
+  type RegraMegaWriteInput,
+} from './services/megahair-catalog-domain';
 
 const clienteCadastroBodySchema = t.Object({
   nome: t.String(),
@@ -165,6 +185,26 @@ const servicoWriteBodySchema = t.Object({
   duracao_medio: t.Optional(t.Union([t.Number(), t.Null()])),
   duracao_m_l: t.Optional(t.Union([t.Number(), t.Null()])),
   duracao_longo: t.Optional(t.Union([t.Number(), t.Null()])),
+});
+
+const regraMegaWriteBodySchema = t.Object({
+  pacote: t.String(),
+  etapa: t.String(),
+  valor: t.Optional(t.Union([t.String(), t.Null()])),
+  comissao: t.Optional(t.Union([t.String(), t.Null()])),
+  duracao_minutos: t.Optional(t.Union([t.Number(), t.Null()])),
+});
+
+const pacoteWriteBodySchema = t.Object({
+  pacote: t.String(),
+  preco: t.Optional(t.Union([t.String(), t.Null()])),
+});
+
+const cabeloWriteBodySchema = t.Object({
+  cor: t.Optional(t.Union([t.String(), t.Null()])),
+  tamanho_cm: t.Optional(t.Union([t.String(), t.Null()])),
+  metodo: t.Optional(t.Union([t.String(), t.Null()])),
+  valor_base: t.Optional(t.Union([t.String(), t.Null()])),
 });
 
 const nullableStr = t.Optional(t.Union([t.String(), t.Null()]));
@@ -1315,12 +1355,227 @@ const app = new Elysia({ adapter: node() })
     },
   )
   .get('/api/regras-mega', async () => ok({ items: await listRegrasMegaApi(db) }))
+  .post(
+    '/api/regras-mega',
+    async ({ body }) => {
+      try {
+        const item = await createRegraMega(db, body as RegraMegaWriteInput);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|Já existe|Duração|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { body: regraMegaWriteBodySchema },
+  )
+  .patch(
+    '/api/regras-mega/:id',
+    async ({ params, body }) => {
+      try {
+        const item = await updateRegraMega(
+          db,
+          params.id,
+          body as RegraMegaWriteInput,
+        );
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrada/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/obrigatório|Já existe|Duração|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: regraMegaWriteBodySchema,
+    },
+  )
+  .delete(
+    '/api/regras-mega/:id',
+    async ({ params }) => {
+      try {
+        return ok(await deleteRegraMega(db, params.id));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrada/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/inválido/i.test(msg)) return fail('VALIDATION', msg);
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
   .get('/api/pacotes', async () => ok({ items: await listPacotesApi(db) }))
+  .post(
+    '/api/pacotes',
+    async ({ body }) => {
+      try {
+        const item = await createPacote(db, body as PacoteWriteInput);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|Já existe|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { body: pacoteWriteBodySchema },
+  )
+  .patch(
+    '/api/pacotes/:id',
+    async ({ params, body }) => {
+      try {
+        const item = await updatePacote(db, params.id, body as PacoteWriteInput);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/obrigatório|Já existe|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: pacoteWriteBodySchema,
+    },
+  )
+  .delete(
+    '/api/pacotes/:id',
+    async ({ params }) => {
+      try {
+        return ok(await deletePacote(db, params.id));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/inválido/i.test(msg)) return fail('VALIDATION', msg);
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
   .get('/api/regras-mega-queratina', async () =>
     ok({ items: await listRegrasMegaQueratinaApi(db) }),
   )
+  .post(
+    '/api/regras-mega-queratina',
+    async ({ body }) => {
+      try {
+        const item = await createRegraMegaQueratina(
+          db,
+          body as RegraMegaWriteInput,
+        );
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|Já existe|Duração|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { body: regraMegaWriteBodySchema },
+  )
+  .patch(
+    '/api/regras-mega-queratina/:id',
+    async ({ params, body }) => {
+      try {
+        const item = await updateRegraMegaQueratina(
+          db,
+          params.id,
+          body as RegraMegaWriteInput,
+        );
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrada/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/obrigatório|Já existe|Duração|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: regraMegaWriteBodySchema,
+    },
+  )
+  .delete(
+    '/api/regras-mega-queratina/:id',
+    async ({ params }) => {
+      try {
+        return ok(await deleteRegraMegaQueratina(db, params.id));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrada/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/inválido/i.test(msg)) return fail('VALIDATION', msg);
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
   .get('/api/pacotes-queratina', async () =>
     ok({ items: await listPacotesQueratinaApi(db) }),
+  )
+  .post(
+    '/api/pacotes-queratina',
+    async ({ body }) => {
+      try {
+        const item = await createPacoteQueratina(db, body as PacoteWriteInput);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|Já existe|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { body: pacoteWriteBodySchema },
+  )
+  .patch(
+    '/api/pacotes-queratina/:id',
+    async ({ params, body }) => {
+      try {
+        const item = await updatePacoteQueratina(
+          db,
+          params.id,
+          body as PacoteWriteInput,
+        );
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/obrigatório|Já existe|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: pacoteWriteBodySchema,
+    },
+  )
+  .delete(
+    '/api/pacotes-queratina/:id',
+    async ({ params }) => {
+      try {
+        return ok(await deletePacoteQueratina(db, params.id));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/inválido/i.test(msg)) return fail('VALIDATION', msg);
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
   )
   .get('/api/produtos', async () => ok({ items: await listProdutosApi(db) }))
   .get('/api/categorias', async ({ query }) => {
@@ -1734,6 +1989,56 @@ const app = new Elysia({ adapter: node() })
     }
   })
   .get('/api/cabelos', async () => ok({ items: await listCabelosApi(db) }))
+  .post(
+    '/api/cabelos',
+    async ({ body }) => {
+      try {
+        const item = await createCabelo(db, body as CabeloWriteInput);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/obrigatório|Já existe|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    { body: cabeloWriteBodySchema },
+  )
+  .patch(
+    '/api/cabelos/:id',
+    async ({ params, body }) => {
+      try {
+        const item = await updateCabelo(db, params.id, body as CabeloWriteInput);
+        return ok({ item });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/obrigatório|Já existe|inválido/i.test(msg)) {
+          return fail('VALIDATION', msg);
+        }
+        return fail('SERVER', msg);
+      }
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: cabeloWriteBodySchema,
+    },
+  )
+  .delete(
+    '/api/cabelos/:id',
+    async ({ params }) => {
+      try {
+        return ok(await deleteCabelo(db, params.id));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/não encontrado/i.test(msg)) return fail('NOT_FOUND', msg);
+        if (/inválido/i.test(msg)) return fail('VALIDATION', msg);
+        return fail('SERVER', msg);
+      }
+    },
+    { params: t.Object({ id: t.String() }) },
+  )
   .group('/api', (api) =>
     api
       /** POST antes do GET: evita edge cases em alguns ambientes com o mesmo prefixo. */
