@@ -30,7 +30,7 @@
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 
-  &:hover:not(:disabled) {
+  &:hover:not([aria-disabled='true']) {
     border-color: var(--color-primary);
   }
 
@@ -44,7 +44,7 @@
     );
   }
 
-  &:disabled {
+  &[aria-disabled='true'] {
     opacity: 0.55;
     cursor: not-allowed;
     background: #fafaf9;

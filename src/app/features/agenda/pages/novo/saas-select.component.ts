@@ -52,8 +52,8 @@ export class SaasSelectComponent
 {
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly injector = inject(Injector);
-  @ViewChild('triggerBtn', { static: true })
-  private readonly triggerBtn?: ElementRef<HTMLButtonElement>;
+  @ViewChild('triggerBtn')
+  private readonly triggerBtn?: ElementRef<HTMLElement>;
   @ViewChild('triggerInput')
   private readonly triggerInput?: ElementRef<HTMLInputElement>;
   @ViewChild('triggerInputBtn')
@@ -219,6 +219,8 @@ export class SaasSelectComponent
   togglePanel(ev?: Event): void {
     ev?.stopPropagation();
     if (this.isDisabled) return;
+    // Espaço/Enter no input de busca não pode abrir/fechar o painel.
+    if (this.isEventFromTriggerFilter(ev)) return;
     if (this.panelOpen) {
       this.closePanel();
       return;
@@ -227,7 +229,7 @@ export class SaasSelectComponent
   }
 
   /**
-   * Evita que o `<button>` roube o foco no 1.º clique — o input de pesquisa
+   * Evita que o gatilho roube o foco no 1.º clique — o input de pesquisa
    * (filho do gatilho) só existe depois de abrir o painel.
    */
   onTriggerMouseDown(ev: MouseEvent): void {
@@ -241,10 +243,34 @@ export class SaasSelectComponent
   onComboboxTriggerClick(ev: Event): void {
     ev.stopPropagation();
     if (this.isDisabled) return;
-    if ((ev.target as HTMLElement).closest('.saas-select__trigger-input')) return;
+    if (this.isEventFromTriggerFilter(ev)) return;
     if (!this.panelOpen) {
       this.openPanel();
     }
+  }
+
+  /** Espaço/Enter no gatilho (não no input) abrem/ativam o combobox. */
+  onComboboxTriggerKeySpace(ev: Event): void {
+    this.onTriggerKeyActivate(ev);
+  }
+
+  onTriggerKeyActivate(ev: Event): void {
+    if (this.isEventFromTriggerFilter(ev)) return;
+    ev.preventDefault();
+    this.togglePanel(ev);
+  }
+
+  private isEventFromTriggerFilter(ev?: Event | null): boolean {
+    const t = ev?.target;
+    if (t instanceof HTMLElement && t.closest('.saas-select__trigger-input')) {
+      return true;
+    }
+    const ae = document.activeElement;
+    return (
+      ae instanceof HTMLElement &&
+      ae.classList.contains('saas-select__trigger-input') &&
+      this.host.nativeElement.contains(ae)
+    );
   }
 
   onTriggerFilterInput(ev: Event): void {
@@ -255,6 +281,11 @@ export class SaasSelectComponent
   }
 
   onTriggerFilterKeydown(ev: KeyboardEvent): void {
+    // Não deixar Enter/Espaço/Escape “vazar” para o gatilho (role=button).
+    if (ev.key === ' ' || ev.code === 'Space') {
+      ev.stopPropagation();
+      return;
+    }
     if (ev.key === 'Escape') {
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -263,10 +294,18 @@ export class SaasSelectComponent
     }
     if (ev.key === 'Enter') {
       ev.preventDefault();
+      ev.stopPropagation();
       const first = this.filteredOptions[0];
       if (first) {
         this.choose(first, ev);
       }
+    }
+  }
+
+  /** Impede o gatilho de reagir ao keyup do Espaço enquanto digita. */
+  onTriggerFilterKeyup(ev: KeyboardEvent): void {
+    if (ev.key === ' ' || ev.code === 'Space' || ev.key === 'Enter') {
+      ev.stopPropagation();
     }
   }
 
