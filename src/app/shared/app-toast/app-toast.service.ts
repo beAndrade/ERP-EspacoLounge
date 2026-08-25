@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 export type AppToastState = {
   message: string;
   visible: boolean;
-  variant: 'success' | 'warning' | 'info';
+  variant: 'success' | 'warning' | 'info' | 'loading';
 };
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +26,10 @@ export class AppToastService {
 
   showInfo(message: string, durationMs = AppToastService.VISIBLE_MS): void {
     this.present(message, 'info', durationMs);
+  }
+
+  showLoading(message: string, durationMs = AppToastService.VISIBLE_MS): void {
+    this.present(message, 'loading', durationMs);
   }
 
   private present(

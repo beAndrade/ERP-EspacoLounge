@@ -4,7 +4,7 @@
 }
 
 .shell-bottom-nav {
-  --shell-bottom-nav-h: 3.25rem;
+  --shell-bottom-nav-h: 61.14px;
   --shell-bottom-nav-inset: 15px;
   --shell-bottom-nav-bg: rgba(255, 255, 255, 0.065);
   --shell-bottom-nav-filter: blur(2px) saturate(1.04);
@@ -42,16 +42,22 @@
   justify-content: center;
   gap: 0.2rem;
   min-width: 0;
+  height: var(--shell-bottom-nav-h);
   min-height: var(--shell-bottom-nav-h);
   margin: 0;
-  padding: 10px 0;
+  padding: 15px 0;
   border: none;
   border-radius: 0;
   background: transparent;
-  color: #595959;
+  color: #585858;
   box-shadow: none;
   cursor: pointer;
   font: inherit;
+  box-sizing: border-box;
+}
+
+.shell-bottom-nav > .shell-bottom-nav__btn:first-child {
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .shell-bottom-nav__btn--accent,
@@ -59,9 +65,40 @@
   color: var(--color-primary);
 }
 
+.shell-bottom-nav__btn--warn {
+  color: #eab308;
+
+  .shell-bottom-nav__icon {
+    fill: currentColor;
+    stroke: currentColor;
+
+    path,
+    circle,
+    rect,
+    line,
+    polyline,
+    polygon {
+      fill: currentColor;
+      stroke: currentColor;
+    }
+  }
+
+  .shell-bottom-nav__label {
+    color: #eab308;
+  }
+}
+
+.shell-bottom-nav__btn--warn.shell-bottom-nav__btn--active {
+  color: #eab308;
+
+  .shell-bottom-nav__label {
+    color: #eab308;
+  }
+}
+
 .shell-bottom-nav__icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: inherit;
 }
@@ -70,9 +107,18 @@
   display: block;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  word-break: keep-all;
+  text-align: center;
+  color: #585858;
   font-weight: 500;
-  line-height: 1.1;
+  font-size: 9px;
+  line-height: 1.2;
+  transition: transform 0.1s;
+}
+
+.shell-bottom-nav__btn--accent .shell-bottom-nav__label,
+.shell-bottom-nav__btn--active .shell-bottom-nav__label {
+  color: var(--color-primary);
 }

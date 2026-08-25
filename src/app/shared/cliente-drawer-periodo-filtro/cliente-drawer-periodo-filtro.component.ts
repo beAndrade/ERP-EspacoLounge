@@ -20,6 +20,7 @@ import {
   PERIODO_PRESETS,
   type CelulaCalendarioPeriodo,
   type PeriodoFiltroCampoAtivo,
+  type PeriodoPreset,
   type PeriodoPresetId,
   celulasMesCalendario,
   compararYmd,
@@ -28,6 +29,7 @@ import {
   periodoSegmentoLinha,
   periodoPreset,
   tituloMesCalendario,
+  tituloMesCalendarioExtenso,
   ymdExibicaoBelasis,
   ymdExibicaoDdMmAaaa,
   ymdValido,
@@ -35,6 +37,8 @@ import {
 
 /** Alinhado ao indicador lateral da ficha (`cliente-nav__indicator`). */
 export const PERIODO_FILTRO_ANIM_MS = 340;
+/** Mesmo timing dos drawers (`cliente-cadastro-drawer`, sheet de filtros). */
+export const PERIODO_DRAWER_ANIM_MS = 430;
 
 @Component({
   selector: 'app-cliente-drawer-periodo-filtro',
@@ -78,6 +82,12 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   /** `belasis`: `27 mai, 2026` + barra só com borda inferior. */
   exibicaoFormato = input<'padrao' | 'belasis'>('padrao');
 
+  /**
+   * Um único botão (label + chevron) que abre o calendário em tela cheia.
+   * 1º clique = data inicial; 2º = data final e fecha o painel.
+   */
+  triggerUnico = input(false);
+
   /** Emite o intervalo confirmado (YMD) para o pai não depender só do two-way binding. */
   periodoAlterado = output<{ inicioYmd: string; fimYmd: string }>();
 
@@ -85,6 +95,11 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   panelPos: { top: number; left: number } | null = null;
 
   readonly presets = PERIODO_PRESETS;
+  readonly presetsSheet: PeriodoPreset[] = [
+    { id: 'semana_passada', label: 'Semana passada' },
+    { id: 'essa_semana', label: 'Essa semana' },
+    { id: 'proxima_semana', label: 'Próxima semana' },
+  ];
   readonly diasSemana = PERIODO_DIAS_SEMANA;
   readonly hojeYmd = toYmd(new Date());
 
@@ -107,6 +122,8 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   private rascunhoInicio = '';
   private rascunhoFim = '';
   private campoEditando: PeriodoFiltroCampoAtivo | null = null;
+  /** Início escolhido no 1º clique do `triggerUnico` — só confirma no 2º. */
+  private pendingInicioYmd: string | null = null;
 
   get campoAtivoIndex(): number {
     return this.campoAtivo === 'fim' ? 1 : 0;
@@ -118,6 +135,26 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
 
   get exibicaoFim(): string {
     return this.textoCampoExibido('fim');
+  }
+
+  get rotuloTriggerUnico(): string {
+    const ini = this.inicioYmd().trim().slice(0, 10);
+    const fim = this.fimYmd().trim().slice(0, 10);
+    if (!ymdValido(ini) || !ymdValido(fim)) {
+      return 'Selecione um período';
+    }
+    return `${ymdExibicaoBelasis(ini)} → ${ymdExibicaoBelasis(fim)}`;
+  }
+
+  get triggerUnicoPreenchido(): boolean {
+    const ini = this.inicioYmd().trim().slice(0, 10);
+    const fim = this.fimYmd().trim().slice(0, 10);
+    return ymdValido(ini) && ymdValido(fim);
+  }
+
+  /** Painel no `body` (flutuante ou tela cheia). */
+  devePortalizarPainel(): boolean {
+    return this.painelFlutuante() || this.triggerUnico();
   }
 
   private textoCampoExibido(campo: PeriodoFiltroCampoAtivo): string {
@@ -154,13 +191,17 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     return tituloMesCalendario(this.mesDireita);
   }
 
+  tituloTriggerUnico(): string {
+    return tituloMesCalendarioExtenso(this.mesEsquerda);
+  }
+
   abrirCampo(campo: PeriodoFiltroCampoAtivo, ev?: Event): void {
     ev?.stopPropagation();
     this.campoAtivo = campo;
     this.agendarSublinhadoDeslizante();
     if (this.calendarioInterativo()) {
       this.limparHoverPainel();
-      if (this.painelFlutuante()) {
+      if (this.devePortalizarPainel() && !this.triggerUnico()) {
         queueMicrotask(() => this.atualizarPosicaoPainelFlutuante());
       }
       return;
@@ -273,6 +314,15 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     this.abrirPainelAnimado();
   }
 
+  abrirTriggerUnico(ev: Event): void {
+    ev.stopPropagation();
+    this.campoAtivo = 'inicio';
+    this.pendingInicioYmd = null;
+    this.limparHoverPainel();
+    if (this.calendarioInterativo()) return;
+    this.abrirPainelAnimado();
+  }
+
   @HostListener('document:mousedown', ['$event'])
   fecharSeCliqueFora(ev: MouseEvent): void {
     if (!this.panelAberto || !this.panelNoDom) return;
@@ -290,6 +340,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
 
   fecharPainel(): void {
     if (!this.panelNoDom) return;
+    this.pendingInicioYmd = null;
     this.limparHoverPainel();
     this.panelAberto = false;
     if (this.fecharPainelTimer != null) {
@@ -300,7 +351,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
       this.panelNoDom = false;
       this.panelPos = null;
       this.restaurarPainelNoHost();
-    }, PERIODO_FILTRO_ANIM_MS);
+    }, this.triggerUnico() ? PERIODO_DRAWER_ANIM_MS : PERIODO_FILTRO_ANIM_MS);
   }
 
   ngOnDestroy(): void {
@@ -357,6 +408,11 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   selecionarDia(ymd: string | null): void {
     if (!ymd || !ymdValido(ymd)) return;
 
+    if (this.triggerUnico()) {
+      this.selecionarDiaTriggerUnico(ymd);
+      return;
+    }
+
     if (this.campoAtivo === 'inicio') {
       const fimAtual = this.fimYmd().trim().slice(0, 10);
       if (ymdValido(fimAtual)) {
@@ -384,6 +440,27 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     this.fimYmd.set(norm.fimYmd);
     this.rascunhoFim = ymdExibicaoDdMmAaaa(norm.fimYmd);
     this.campoEditando = null;
+    this.emitPeriodoAlterado();
+    this.fecharPainel();
+  }
+
+  private selecionarDiaTriggerUnico(ymd: string): void {
+    if (this.campoAtivo === 'inicio') {
+      this.pendingInicioYmd = ymd;
+      this.campoAtivo = 'fim';
+      this.hoverYmd = null;
+      return;
+    }
+
+    const ini = (this.pendingInicioYmd ?? this.inicioYmd()).trim().slice(0, 10);
+    const inicio = ymdValido(ini) ? ini : ymd;
+    const norm = normalizarIntervaloYmd(inicio, ymd);
+    this.inicioYmd.set(norm.inicioYmd);
+    this.fimYmd.set(norm.fimYmd);
+    this.rascunhoInicio = ymdExibicaoDdMmAaaa(norm.inicioYmd);
+    this.rascunhoFim = ymdExibicaoDdMmAaaa(norm.fimYmd);
+    this.campoEditando = null;
+    this.pendingInicioYmd = null;
     this.emitPeriodoAlterado();
     this.fecharPainel();
   }
@@ -432,6 +509,10 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     const temIni = ymdValido(ini);
     const temFim = ymdValido(fim);
 
+    if (this.triggerUnico() && this.panelAberto) {
+      return this.intervaloVisualTriggerUnico(ini, fim, hover);
+    }
+
     if (!this.panelAberto || !ymdValido(hover)) {
       return { inicioYmd: ini, fimYmd: fim };
     }
@@ -452,6 +533,23 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
       return normalizarIntervaloYmd(ini, hover);
     }
 
+    return { inicioYmd: ini, fimYmd: fim };
+  }
+
+  private intervaloVisualTriggerUnico(
+    ini: string,
+    fim: string,
+    hover: string,
+  ): { inicioYmd: string; fimYmd: string } {
+    const pending = this.pendingInicioYmd?.trim().slice(0, 10) ?? '';
+    if (this.campoAtivo === 'inicio') {
+      if (ymdValido(hover)) return { inicioYmd: hover, fimYmd: hover };
+      return { inicioYmd: ini, fimYmd: fim };
+    }
+    if (ymdValido(pending)) {
+      if (ymdValido(hover)) return normalizarIntervaloYmd(pending, hover);
+      return { inicioYmd: pending, fimYmd: pending };
+    }
     return { inicioYmd: ini, fimYmd: fim };
   }
 
@@ -486,7 +584,9 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   @HostListener('window:scroll')
   @HostListener('window:resize')
   reposicionarPainelSeFlutuante(): void {
-    if (!this.painelFlutuante() || !this.panelAberto) return;
+    if (!this.devePortalizarPainel() || !this.panelAberto || this.triggerUnico()) {
+      return;
+    }
     this.atualizarPosicaoPainelFlutuante();
     this.agendarSublinhadoDeslizante();
   }
@@ -501,7 +601,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
       this.fecharPainelTimer = null;
     }
     this.ancorarMesesNoIntervalo();
-    if (this.painelFlutuante()) {
+    if (this.devePortalizarPainel() && !this.triggerUnico()) {
       this.atualizarPosicaoPainelFlutuante();
     } else {
       this.panelPos = null;
@@ -511,9 +611,20 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     this.agendarSublinhadoDeslizante();
     queueMicrotask(() => {
       requestAnimationFrame(() => {
-        if (this.painelFlutuante()) {
+        if (this.devePortalizarPainel()) {
           this.portalizarPainelFlutuante();
-          this.atualizarPosicaoPainelFlutuante();
+          if (!this.triggerUnico()) {
+            this.atualizarPosicaoPainelFlutuante();
+          } else {
+            this.portalPanel?.getBoundingClientRect();
+          }
+        }
+        if (this.triggerUnico()) {
+          requestAnimationFrame(() => {
+            this.panelAberto = true;
+            this.agendarSublinhadoDeslizante();
+          });
+          return;
         }
         this.panelAberto = true;
         this.agendarSublinhadoDeslizante();
@@ -550,7 +661,9 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
 
   /** Evita corte por `overflow`/`transform` em sidebars (fixed relativo ao ancestral). */
   private portalizarPainelFlutuante(): void {
-    if (!this.painelFlutuante() || !this.panelNoDom || this.painelPortalizado) return;
+    if (!this.devePortalizarPainel() || !this.panelNoDom || this.painelPortalizado) {
+      return;
+    }
 
     const wrap = this.hostEl.nativeElement.querySelector(
       '.periodo-filtro',

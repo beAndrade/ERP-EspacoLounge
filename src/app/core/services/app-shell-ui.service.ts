@@ -10,7 +10,10 @@ export type MobileBottomNavIconId =
   | 'filter'
   | 'bolt'
   | 'plus'
-  | 'search';
+  | 'search'
+  | 'check'
+  | 'x'
+  | 'more';
 
 /** Ação contextual registada pela página ativa. */
 export interface MobileBottomNavAction {
@@ -22,6 +25,8 @@ export interface MobileBottomNavAction {
   accent?: boolean;
   /** Estado expandido / ativo (aria + estilo). */
   active?: boolean;
+  /** Destaque âmbar (ex.: filtros aplicados). */
+  warn?: boolean;
   onClick: () => void;
 }
 

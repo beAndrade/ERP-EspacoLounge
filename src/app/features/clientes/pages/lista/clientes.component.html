@@ -2,19 +2,9 @@
   <div class="list-page__lead">
     <header class="list-head">
       <div class="list-head__title-row">
-        <div class="list-head__left">
+        <div class="list-head__brand">
           <h1 class="list-head__title">Clientes</h1>
-        </div>
-        <div
-          class="list-head__actions"
-          [class.list-head__actions--bottom-nav]="shellBottomNavEligible"
-        >
-          <div
-            class="list-head__busca-wrap"
-            [class.list-head__busca-wrap--open]="buscaAberta"
-            role="search"
-            (click)="onBuscaWrapClick()"
-          >
+          <div class="list-head__busca-wrap list-head__busca-wrap--open" role="search">
             <span class="list-head__busca-icon" aria-hidden="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -23,7 +13,7 @@
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 class="lucide lucide-search"
@@ -32,31 +22,26 @@
                 <circle cx="11" cy="11" r="8" />
               </svg>
             </span>
-            <span
-              class="list-head__busca-label"
-              [class.list-head__busca-label--hidden]="buscaAberta"
-              aria-hidden="true"
-              >Buscar</span
-            >
-            <label class="sr-only" for="clientes-busca-input">Buscar clientes</label>
+            <label class="sr-only" for="clientes-busca-input">Digite para buscar</label>
             <input
               id="clientes-busca-input"
               type="text"
-              class="list-head__busca-input"
+              class="list-head__busca-input list-head__busca-input--search-open"
               [(ngModel)]="busca"
               name="buscaClientes"
               [placeholder]="buscaPlaceholder"
-              [class.list-head__busca-input--search-open]="buscaAberta"
-              [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
               autocomplete="off"
-              (click)="$event.stopPropagation()"
               (input)="onBuscaInput()"
               (keydown.enter)="onBuscaEnter($event)"
-              [attr.aria-expanded]="buscaAberta"
-              aria-label="Buscar clientes"
+              aria-label="Digite para buscar"
               title="Buscar"
             />
           </div>
+        </div>
+        <div
+          class="list-head__actions"
+          [class.list-head__actions--bottom-nav]="shellBottomNavEligible"
+        >
           <button
             type="button"
             class="list-head__toolbar-btn"
@@ -217,23 +202,19 @@
                 class="clientes-filtros-stars__btn"
                 [class.clientes-filtros-stars__btn--on]="filtroAvaliacaoMin >= n"
                 [attr.aria-pressed]="filtroAvaliacaoMin >= n"
-                [attr.aria-label]="'Mínimo ' + n + ' estrelas'"
+                [attr.aria-label]="rotuloFiltroAvaliacao(n)"
                 (click)="definirFiltroAvaliacao(n)"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="22"
                   height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  viewBox="0 0 1024 1024"
+                  fill="currentColor"
                   aria-hidden="true"
                 >
-                  <polygon
-                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  <path
+                    d="M908.1 353.1l-253.9-36.9L540.7 86.1c-3.1-6.3-8.2-11.4-14.5-14.5-15.8-7.8-35-1.3-42.9 14.5L369.8 316.2l-253.9 36.9c-7 1-13.4 4.3-18.3 9.3a32.05 32.05 0 0 0 .6 45.3l183.7 179.1-43.4 252.9a31.95 31.95 0 0 0 46.4 33.7L512 754l227.1 119.4c6.2 3.3 13.4 4.4 20.3 3.2 17.4-3 29.1-19.5 26.1-36.9l-43.4-252.9 183.7-179.1c5-4.9 8.3-11.3 9.3-18.3 2.7-17.5-9.5-33.7-27-36.3z"
                   />
                 </svg>
               </button>
@@ -614,6 +595,58 @@
             </table>
           </div>
 
+          <div class="clientes-mobile-chips">
+            <button
+              type="button"
+              class="clientes-sort-chip"
+              (click)="onOrdenarNomeClick($event)"
+              [attr.aria-label]="'Ordenar por nome — ' + tooltipOrdenacaoNome()"
+            >
+              <span>Ordenando por Nome</span>
+              <svg
+                class="clientes-sort-chip__chev"
+                [class.clientes-sort-chip__chev--asc]="ordenacaoNome === 'asc'"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            @for (badge of filtrosAtivosBadges(); track badge.id) {
+              <button
+                type="button"
+                class="clientes-filter-chip"
+                (click)="removerFiltroBadge(badge.id, $event)"
+                [attr.aria-label]="'Remover filtro ' + badge.label"
+              >
+                <span>{{ badge.label }}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            }
+          </div>
+
           <div
             class="clientes-mobile-list"
             role="list"
@@ -626,38 +659,54 @@
                 <app-table-empty label="Nenhum cliente encontrado" />
               </div>
             } @else {
-              @for (c of itensPagina(); track c.id) {
+              @for (c of filtrados(); track c.id) {
                 <button
                   type="button"
-                  class="clientes-mobile-item"
+                  class="clientes-mobile-card"
+                  [class.clientes-mobile-card--selecao]="modoSelecao"
+                  [class.clientes-mobile-card--selected]="modoSelecao && estaSelecionado(c.id)"
                   role="listitem"
-                  (click)="abrirPerfilCliente(c, $event)"
-                  [attr.aria-label]="'Abrir cliente ' + (c.nome || '')"
+                  (click)="onMobileItemClick(c, $event)"
+                  [attr.aria-label]="
+                    modoSelecao
+                      ? (estaSelecionado(c.id) ? 'Desmarcar ' : 'Selecionar ') + (c.nome || '')
+                      : 'Abrir cliente ' + (c.nome || '')
+                  "
+                  [attr.aria-pressed]="modoSelecao ? estaSelecionado(c.id) : null"
                 >
+                  <span
+                    class="clientes-mobile-card__check-slot"
+                    [class.clientes-mobile-card__check-slot--open]="modoSelecao"
+                    aria-hidden="true"
+                  >
+                    <span
+                      class="clientes-mobile-card__check"
+                      [class.clientes-mobile-card__check--on]="estaSelecionado(c.id)"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    </span>
+                  </span>
                   <app-cliente-avatar
                     variant="lista"
                     [fotoUrl]="c.fotoUrl"
                   />
-                  <span class="clientes-mobile-item__text">
-                    <span class="clientes-mobile-item__title">{{ c.nome }}</span>
+                  <span class="clientes-mobile-card__text">
+                    <span class="clientes-mobile-card__title">{{ c.nome }}</span>
                     @if (exibirCelular(c); as fone) {
-                      <span class="clientes-mobile-item__sub">{{ fone }}</span>
+                      <span class="clientes-mobile-card__sub">{{ fone }}</span>
                     }
-                  </span>
-                  <span class="clientes-mobile-item__chevron" aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
                   </span>
                 </button>
               }
@@ -670,7 +719,7 @@
             role="tooltip"
           >{{ tooltipOrdenacaoNome() }}</span>
 
-          <footer class="list-footer">
+          <footer class="list-footer clientes-footer-desktop">
             <span class="list-footer__total">{{ carregando ? '…' : totalFiltrado() }} no total</span>
             <div class="list-footer__pager">
               <button
@@ -771,8 +820,196 @@
               </div>
             </div>
           </footer>
+
+          <p class="clientes-mobile-total" aria-live="polite">
+            @if (carregando) {
+              …
+            } @else {
+              {{ totalFiltrado() }}
+              {{ totalFiltrado() === 1 ? 'registro' : 'registros' }}
+              no total
+            }
+          </p>
         </div>
       }
+    </div>
+  </div>
+
+  <!-- Sheet de filtros (mobile ≤767): slide da direita → esquerda -->
+  <div
+    class="clientes-filtros-sheet-overlay"
+    [class.clientes-filtros-sheet-overlay--open]="shellBottomNavEligible && filtrosAbertos"
+    (click)="fecharFiltros()"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="clientes-filtros-sheet"
+    [class.clientes-filtros-sheet--open]="shellBottomNavEligible && filtrosAbertos"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Filtros"
+    [attr.aria-hidden]="shellBottomNavEligible && filtrosAbertos ? null : 'true'"
+  >
+    <header class="clientes-filtros-sheet__head">
+      <h2 class="clientes-filtros-sheet__title">Filtros</h2>
+      <button
+        type="button"
+        class="clientes-filtros-sheet__close"
+        (click)="fecharFiltros()"
+        aria-label="Fechar filtros"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="clientes-filtros-sheet__body">
+      <section class="clientes-filtros-sheet__section">
+        <h3 class="clientes-filtros-sheet__label">Status</h3>
+        <div class="clientes-filtros-sheet__card">
+          <label class="clientes-filtros-sheet__row">
+            <input
+              type="checkbox"
+              class="clientes-filtros-sheet__check"
+              name="cli_sheet_ativos"
+              [checked]="filtroStatusAtivos"
+              (change)="toggleFiltroStatus('ativos', $event)"
+            />
+            <span>Ativos</span>
+          </label>
+          <label class="clientes-filtros-sheet__row">
+            <input
+              type="checkbox"
+              class="clientes-filtros-sheet__check"
+              name="cli_sheet_inativos"
+              [checked]="filtroStatusInativos"
+              (change)="toggleFiltroStatus('inativos', $event)"
+            />
+            <span>Inativos</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="clientes-filtros-sheet__section">
+        <h3 class="clientes-filtros-sheet__label">Celular</h3>
+        <div class="clientes-filtros-sheet__card">
+          <label class="clientes-filtros-sheet__row">
+            <input
+              type="checkbox"
+              class="clientes-filtros-sheet__check"
+              name="cli_sheet_com_cel"
+              [checked]="filtroComCelular"
+              (change)="toggleFiltroCelular('com', $event)"
+            />
+            <span>Com celular</span>
+          </label>
+          <label class="clientes-filtros-sheet__row">
+            <input
+              type="checkbox"
+              class="clientes-filtros-sheet__check"
+              name="cli_sheet_sem_cel"
+              [checked]="filtroSemCelular"
+              (change)="toggleFiltroCelular('sem', $event)"
+            />
+            <span>Sem celular</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="clientes-filtros-sheet__section">
+        <h3 class="clientes-filtros-sheet__label">Débito</h3>
+        <div class="clientes-filtros-sheet__card">
+          <label class="clientes-filtros-sheet__row">
+            <input
+              type="checkbox"
+              class="clientes-filtros-sheet__check"
+              name="cli_sheet_com_debito"
+              [checked]="filtroComDebito"
+              (change)="toggleFiltroDebito('com', $event)"
+            />
+            <span>Com débito</span>
+          </label>
+          <label class="clientes-filtros-sheet__row">
+            <input
+              type="checkbox"
+              class="clientes-filtros-sheet__check"
+              name="cli_sheet_sem_debito"
+              [checked]="filtroSemDebito"
+              (change)="toggleFiltroDebito('sem', $event)"
+            />
+            <span>Sem débito</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="clientes-filtros-sheet__section">
+        <h3 class="clientes-filtros-sheet__label">Aniversário</h3>
+        <div class="clientes-filtros-sheet__periodo">
+          <app-cliente-drawer-periodo-filtro
+            [(inicioYmd)]="filtroAniversarioInicioYmd"
+            [(fimYmd)]="filtroAniversarioFimYmd"
+            exibicaoFormato="belasis"
+            [painelFlutuante]="true"
+            [triggerUnico]="true"
+            (periodoAlterado)="onAniversarioPeriodoAlterado()"
+          />
+        </div>
+      </section>
+
+      <section class="clientes-filtros-sheet__section">
+        <h3 class="clientes-filtros-sheet__label">Última avaliação</h3>
+        <div class="clientes-filtros-sheet__card clientes-filtros-sheet__card--stars">
+          <div class="clientes-filtros-stars clientes-filtros-stars--sheet">
+            @for (n of estrelasAvaliacao; track n) {
+              <button
+                type="button"
+                class="clientes-filtros-stars__btn ui-tip-trigger"
+                [class.clientes-filtros-stars__btn--on]="filtroAvaliacaoMin >= n"
+                [class.ui-tip-trigger--open]="avaliacaoBalaoAberto && filtroAvaliacaoMin === n"
+                [attr.data-estrela]="n"
+                [attr.aria-pressed]="filtroAvaliacaoMin >= n"
+                [attr.aria-label]="rotuloFiltroAvaliacao(n)"
+                (click)="definirFiltroAvaliacao(n, $event, true)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="22"
+                  height="22"
+                  viewBox="0 0 1024 1024"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M908.1 353.1l-253.9-36.9L540.7 86.1c-3.1-6.3-8.2-11.4-14.5-14.5-15.8-7.8-35-1.3-42.9 14.5L369.8 316.2l-253.9 36.9c-7 1-13.4 4.3-18.3 9.3a32.05 32.05 0 0 0 .6 45.3l183.7 179.1-43.4 252.9a31.95 31.95 0 0 0 46.4 33.7L512 754l227.1 119.4c6.2 3.3 13.4 4.4 20.3 3.2 17.4-3 29.1-19.5 26.1-36.9l-43.4-252.9 183.7-179.1c5-4.9 8.3-11.3 9.3-18.3 2.7-17.5-9.5-33.7-27-36.3z"
+                  />
+                </svg>
+              </button>
+            }
+            @if (avaliacaoBalaoAberto && filtroAvaliacaoMin > 0) {
+              <span
+                class="ui-tip clientes-filtros-stars__tip"
+                [class.clientes-filtros-stars__tip--animar]="avaliacaoBalaoAnimar"
+                [style.left.px]="avaliacaoBalaoLeft"
+                role="tooltip"
+                (click)="$event.stopPropagation()"
+              >{{ rotuloFiltroAvaliacao(filtroAvaliacaoMin) }}</span>
+            }
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 

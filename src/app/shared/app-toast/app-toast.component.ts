@@ -16,9 +16,24 @@ import { AppToastService } from './app-toast.service';
           class="app-toast__icon"
           [class.app-toast__icon--warning]="t.variant === 'warning'"
           [class.app-toast__icon--info]="t.variant === 'info'"
+          [class.app-toast__icon--loading]="t.variant === 'loading'"
           aria-hidden="true"
         >
-          @if (t.variant === 'info') {
+          @if (t.variant === 'loading') {
+            <svg
+              class="app-toast__spinner"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          } @else if (t.variant === 'info') {
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="14"
@@ -125,6 +140,21 @@ import { AppToastService } from './app-toast.service';
       .app-toast__icon--info {
         background: #3f769d;
         color: #fff;
+      }
+
+      .app-toast__icon--loading {
+        background: #3f769d;
+        color: #fff;
+      }
+
+      .app-toast__spinner {
+        animation: app-toast-spin 0.75s linear infinite;
+      }
+
+      @keyframes app-toast-spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       .app-toast__text {
