@@ -15,7 +15,7 @@ import {
   regrasMegaQueratina,
   servicos,
 } from '../db/schema';
-import { normalizeComissaoParaBD } from '../lib/normalize-comissao';
+import { normalizeComissaoParaBD } from '../modules/beauty/shared/normalize-comissao';
 import { mesTextoParaYyyyMm } from '../lib/periodo-mes';
 import {
   defaultXlsxPath,

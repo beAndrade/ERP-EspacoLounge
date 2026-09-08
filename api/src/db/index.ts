@@ -1389,6 +1389,7 @@ END $$;
     'servicos',
     'marcas',
     'categorias',
+    'fornecedores',
     'estoque_movimentos',
   ]);
 }
@@ -1398,6 +1399,7 @@ const SERIAL_ID_TABLES = new Set([
   'servicos',
   'marcas',
   'categorias',
+  'fornecedores',
   'estoque_movimentos',
 ]);
 

@@ -15,7 +15,7 @@ import { NgStyle } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
-import { AgendaModalCalendarComponent } from '../novo/agenda-modal-calendar.component';
+import { AgendaModalCalendarComponent } from '../../../../shared/components/agenda-modal-calendar/agenda-modal-calendar.component';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import {
   METODOS_COMANDA_FALLBACK,

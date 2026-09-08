@@ -1,5 +1,5 @@
 import type { Cliente } from '../../core/models/api.models';
-import type { ComandaDrawerContextoAgenda } from '../../features/agenda/pages/hub/comanda-drawer.types';
+import type { ComandaDrawerContextoAgenda } from '../comanda-drawer/comanda-drawer.types';
 import type {
   AbrirCadastroClientePayload,
   ClienteCadastroDrawerAbrirEdicaoOptions,

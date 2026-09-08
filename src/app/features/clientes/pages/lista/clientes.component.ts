@@ -1,5 +1,7 @@
 import {
   Component,
+  DestroyRef,
+  ElementRef,
   HostListener,
   inject,
   LOCALE_ID,
@@ -10,9 +12,11 @@ import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { SheetsApiService } from '../../../../core/services/sheets-api.service';
+import { AppShellUiService } from '../../../../core/services/app-shell-ui.service';
 import { Cliente } from '../../../../core/models/api.models';
 import { ClienteCadastroDrawerService } from '../../../../shared/cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { ClienteAvatarComponent } from '../../../../shared/cliente-avatar/cliente-avatar.component';
+import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import { formatarCpfBr } from '../../../../core/utils/br-document-masks';
 import { parseFiltroDataDdMm } from '../../../../core/utils/atendimento-display';
 import {
@@ -25,7 +29,9 @@ import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-
 import { ymdValido } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-periodo-filtro.util';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
 import { FlipDropdownPanelDirective } from '../../../../shared/flip-dropdown-panel/flip-dropdown-panel.directive';
+import { mediaQueryMin } from '../../../../styles/breakpoints';
 
+const CLIENTES_BOTTOM_NAV_OWNER = 'clientes';
 type OrdenacaoNome = 'asc' | 'desc';
 
 export type ClienteColunaId =
@@ -105,6 +111,13 @@ const CLIENTES_COLUNAS_PADRAO: ClienteColunaId[] = [
 export class ClientesComponent implements OnInit, OnDestroy {
   private readonly api = inject(SheetsApiService);
   private readonly cadastroDrawer = inject(ClienteCadastroDrawerService);
+  private readonly shellUi = inject(AppShellUiService);
+  private readonly toast = inject(AppToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly hostEl = inject(ElementRef<HTMLElement>);
+
+  /** Viewport do shell ≤767px — Bottom Nav visível (template + registry). */
+  shellBottomNavEligible = false;
 
   carregando = false;
   erro = '';
@@ -113,12 +126,11 @@ export class ClientesComponent implements OnInit, OnDestroy {
   private totaisDebitosPorCliente = new Map<string, TotaisDebitosCliente>();
 
   busca = '';
-  buscaAberta = false;
   filtrosAbertos = false;
-  pulsoToolbarBusca = false;
+  /** Mobile: exibe checkboxes na lista e permite seleção em lote. */
+  modoSelecao = false;
   pulsoToolbarFiltro = false;
   private readonly duracaoPulsoToolbarMs = 600;
-  private tPulsoBusca = 0;
   private tPulsoFiltro = 0;
 
   filtroStatusAtivos = true;
@@ -130,8 +142,17 @@ export class ClientesComponent implements OnInit, OnDestroy {
   filtroAniversarioInicioYmd = '';
   filtroAniversarioFimYmd = '';
   filtroAvaliacaoMin = 0;
-
+  avaliacaoBalaoAberto = false;
+  avaliacaoBalaoLeft = 0;
+  avaliacaoBalaoAnimar = false;
   readonly estrelasAvaliacao = [1, 2, 3, 4, 5] as const;
+  readonly avaliacaoRotulos: Record<number, string> = {
+    1: 'Péssimo',
+    2: 'Ruim',
+    3: 'Neutro',
+    4: 'Bom',
+    5: 'Ótimo',
+  };
 
   pagina = 1;
   itensPorPagina = 20;
@@ -174,11 +195,219 @@ export class ClientesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.carregarColunasSalvas();
     this.carregar();
+    this.setupShellBottomNav();
+    this.setupBalaoAvaliacaoCliqueFora();
   }
 
   ngOnDestroy(): void {
+    this.shellUi.clearMobileBottomNavActions(CLIENTES_BOTTOM_NAV_OWNER);
     this.clearNomeSortTipShowTimer();
     this.clearColunasMenuAnimTimer();
+  }
+
+  private setupShellBottomNav(): void {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const shellDesktopMq = window.matchMedia(mediaQueryMin('shellMobile'));
+    const apply = (): void => {
+      this.shellBottomNavEligible = !shellDesktopMq.matches;
+      if (!this.shellBottomNavEligible && this.modoSelecao) {
+        this.modoSelecao = false;
+        this.selecionados.clear();
+      }
+      if (!this.shellBottomNavEligible && this.filtrosAbertos) {
+        this.filtrosAbertos = false;
+      }
+      this.syncShellBottomNavActions();
+    };
+    apply();
+    shellDesktopMq.addEventListener('change', apply);
+    this.destroyRef.onDestroy(() => {
+      shellDesktopMq.removeEventListener('change', apply);
+    });
+  }
+
+  /**
+   * Menu | Filtro | Selecionar | Novo — só em ≤767.
+   * Em modo seleção: Cancelar | Selecionar tudo | Ações.
+   */
+  private syncShellBottomNavActions(): void {
+    if (!this.shellBottomNavEligible) {
+      this.shellUi.clearMobileBottomNavActions(CLIENTES_BOTTOM_NAV_OWNER);
+      return;
+    }
+    if (this.modoSelecao) {
+      this.shellUi.setMobileBottomNavActions(CLIENTES_BOTTOM_NAV_OWNER, [
+        {
+          id: 'cancelar-selecao',
+          label: 'Cancelar',
+          ariaLabel: 'Cancelar seleção',
+          icon: 'x',
+          onClick: () => this.sairModoSelecao(),
+        },
+        {
+          id: 'selecionar-tudo',
+          label: 'Selecionar tudo',
+          ariaLabel: 'Selecionar todos os clientes',
+          icon: 'check',
+          active: this.todosFiltradosSelecionados(),
+          onClick: () => this.selecionarTodosMobile(),
+        },
+        {
+          id: 'acoes',
+          label: 'Ações',
+          ariaLabel: 'Ações da seleção',
+          icon: 'more',
+          accent: true,
+          onClick: () => this.onAcoesSelecao(),
+        },
+      ]);
+      return;
+    }
+    this.shellUi.setMobileBottomNavActions(CLIENTES_BOTTOM_NAV_OWNER, [
+      {
+        id: 'filtro',
+        label: 'Filtro',
+        ariaLabel: 'Abrir filtros',
+        icon: 'filter',
+        active: this.filtrosAbertos,
+        warn: this.temFiltroAtivo(),
+        onClick: () => this.toggleFiltros(),
+      },
+      {
+        id: 'selecionar',
+        label: 'Selecionar',
+        ariaLabel: 'Selecionar clientes',
+        icon: 'check',
+        active: false,
+        onClick: () => this.entrarModoSelecao(),
+      },
+      {
+        id: 'novo',
+        label: 'Novo',
+        ariaLabel: 'Novo cliente',
+        icon: 'plus',
+        accent: true,
+        onClick: () => this.onNovoCliente(),
+      },
+    ]);
+  }
+
+  /** Filtros além do padrão (só Ativos). */
+  temFiltroAtivo(): boolean {
+    return this.filtrosAtivosBadges().length > 0;
+  }
+
+  filtrosAtivosBadges(): { id: string; label: string }[] {
+    const badges: { id: string; label: string }[] = [];
+    const soAtivos =
+      this.filtroStatusAtivos && !this.filtroStatusInativos;
+    if (!soAtivos) {
+      if (this.filtroStatusAtivos && this.filtroStatusInativos) {
+        badges.push({ id: 'status-ambos', label: 'Ativos e Inativos' });
+      } else if (this.filtroStatusInativos) {
+        badges.push({ id: 'status-inativos', label: 'Inativos' });
+      } else if (!this.filtroStatusAtivos && !this.filtroStatusInativos) {
+        badges.push({ id: 'status-nenhum', label: 'Sem status' });
+      }
+    }
+    if (this.filtroComCelular) {
+      badges.push({ id: 'cel-com', label: 'Com celular' });
+    }
+    if (this.filtroSemCelular) {
+      badges.push({ id: 'cel-sem', label: 'Sem celular' });
+    }
+    if (this.filtroComDebito) {
+      badges.push({ id: 'deb-com', label: 'Com débito' });
+    }
+    if (this.filtroSemDebito) {
+      badges.push({ id: 'deb-sem', label: 'Sem débito' });
+    }
+    const ini = this.filtroAniversarioInicioYmd.trim();
+    const fim = this.filtroAniversarioFimYmd.trim();
+    if (ini || fim) {
+      badges.push({ id: 'aniversario', label: 'Aniversário' });
+    }
+    if (this.filtroAvaliacaoMin > 0) {
+      badges.push({
+        id: 'avaliacao',
+        label: `${this.filtroAvaliacaoMin}+ estrelas`,
+      });
+    }
+    return badges;
+  }
+
+  removerFiltroBadge(id: string, ev?: Event): void {
+    ev?.stopPropagation();
+    switch (id) {
+      case 'status-ambos':
+      case 'status-inativos':
+      case 'status-nenhum':
+        this.filtroStatusAtivos = true;
+        this.filtroStatusInativos = false;
+        break;
+      case 'cel-com':
+        this.filtroComCelular = false;
+        break;
+      case 'cel-sem':
+        this.filtroSemCelular = false;
+        break;
+      case 'deb-com':
+        this.filtroComDebito = false;
+        break;
+      case 'deb-sem':
+        this.filtroSemDebito = false;
+        break;
+      case 'aniversario':
+        this.filtroAniversarioInicioYmd = '';
+        this.filtroAniversarioFimYmd = '';
+        break;
+      case 'avaliacao':
+        this.filtroAvaliacaoMin = 0;
+        break;
+      default:
+        break;
+    }
+    this.pagina = 1;
+    this.syncShellBottomNavActions();
+  }
+
+  entrarModoSelecao(): void {
+    if (this.filtrosAbertos) this.fecharFiltros();
+    this.modoSelecao = true;
+    this.syncShellBottomNavActions();
+  }
+
+  sairModoSelecao(): void {
+    this.modoSelecao = false;
+    this.selecionados.clear();
+    this.syncShellBottomNavActions();
+  }
+
+  /** @deprecated use entrar/sair — mantido para compat. */
+  toggleModoSelecao(): void {
+    if (this.modoSelecao) this.sairModoSelecao();
+    else this.entrarModoSelecao();
+  }
+
+  todosFiltradosSelecionados(): boolean {
+    const list = this.filtrados();
+    return list.length > 0 && list.every((c) => this.selecionados.has(c.id));
+  }
+
+  selecionarTodosMobile(): void {
+    this.toast.showLoading('Selecionando...');
+    for (const c of this.filtrados()) {
+      this.selecionados.add(c.id);
+    }
+    this.syncShellBottomNavActions();
+  }
+
+  onAcoesSelecao(): void {
+    if (this.selecionados.size === 0) {
+      this.toast.showWarning('Selecione ao menos um cliente.');
+      return;
+    }
+    this.toast.showInfo(`${this.selecionados.size} selecionado(s)`);
   }
 
   carregar(): void {
@@ -206,46 +435,17 @@ export class ClientesComponent implements OnInit, OnDestroy {
     });
   }
 
-  get buscaPlaceholder(): string {
-    return this.buscaAberta
-      ? 'Buscar por nome, celular, e-mail, cpf...'
-      : '';
-  }
+  readonly buscaPlaceholder = 'Digite para buscar';
 
-  private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
-    if (which === 'busca') {
-      window.clearTimeout(this.tPulsoBusca);
-      this.pulsoToolbarBusca = false;
-      queueMicrotask(() => {
-        this.pulsoToolbarBusca = true;
-        this.tPulsoBusca = window.setTimeout(() => {
-          this.pulsoToolbarBusca = false;
-        }, this.duracaoPulsoToolbarMs);
-      });
-    } else {
-      window.clearTimeout(this.tPulsoFiltro);
-      this.pulsoToolbarFiltro = false;
-      queueMicrotask(() => {
-        this.pulsoToolbarFiltro = true;
-        this.tPulsoFiltro = window.setTimeout(() => {
-          this.pulsoToolbarFiltro = false;
-        }, this.duracaoPulsoToolbarMs);
-      });
-    }
-  }
-
-  fecharPainelBusca(): void {
-    this.buscaAberta = false;
-  }
-
-  onBuscaWrapClick(): void {
-    if (!this.buscaAberta) {
-      this.dispararPulsoToolbar('busca');
-      this.buscaAberta = true;
-      queueMicrotask(() => {
-        document.getElementById('clientes-busca-input')?.focus();
-      });
-    }
+  private dispararPulsoToolbarFiltro(): void {
+    window.clearTimeout(this.tPulsoFiltro);
+    this.pulsoToolbarFiltro = false;
+    queueMicrotask(() => {
+      this.pulsoToolbarFiltro = true;
+      this.tPulsoFiltro = window.setTimeout(() => {
+        this.pulsoToolbarFiltro = false;
+      }, this.duracaoPulsoToolbarMs);
+    });
   }
 
   onBuscaInput(): void {
@@ -263,8 +463,33 @@ export class ClientesComponent implements OnInit, OnDestroy {
 
   toggleFiltros(ev?: Event): void {
     ev?.stopPropagation();
-    this.dispararPulsoToolbar('filtro');
+    if (this.modoSelecao) return;
+    this.dispararPulsoToolbarFiltro();
     this.filtrosAbertos = !this.filtrosAbertos;
+    this.syncShellBottomNavActions();
+  }
+
+  fecharFiltros(): void {
+    if (!this.filtrosAbertos) return;
+    this.avaliacaoBalaoAberto = false;
+    this.filtrosAbertos = false;
+    this.syncShellBottomNavActions();
+  }
+
+  onMobileItemClick(c: Cliente, ev: Event): void {
+    if (this.modoSelecao) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.toggleSelecionadoCliente(c);
+      this.syncShellBottomNavActions();
+      return;
+    }
+    this.abrirPerfilCliente(c, ev);
+  }
+
+  private toggleSelecionadoCliente(c: Cliente): void {
+    if (this.selecionados.has(c.id)) this.selecionados.delete(c.id);
+    else this.selecionados.add(c.id);
   }
 
   toggleFiltroStatus(which: 'ativos' | 'inativos', ev: Event): void {
@@ -272,6 +497,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
     if (which === 'ativos') this.filtroStatusAtivos = checked;
     else this.filtroStatusInativos = checked;
     this.pagina = 1;
+    this.syncShellBottomNavActions();
   }
 
   toggleFiltroCelular(which: 'com' | 'sem', ev: Event): void {
@@ -279,6 +505,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
     if (which === 'com') this.filtroComCelular = checked;
     else this.filtroSemCelular = checked;
     this.pagina = 1;
+    this.syncShellBottomNavActions();
   }
 
   toggleFiltroDebito(which: 'com' | 'sem', ev: Event): void {
@@ -286,15 +513,77 @@ export class ClientesComponent implements OnInit, OnDestroy {
     if (which === 'com') this.filtroComDebito = checked;
     else this.filtroSemDebito = checked;
     this.pagina = 1;
+    this.syncShellBottomNavActions();
   }
 
   onAniversarioPeriodoAlterado(): void {
     this.pagina = 1;
+    this.syncShellBottomNavActions();
   }
 
-  definirFiltroAvaliacao(n: number): void {
-    this.filtroAvaliacaoMin = this.filtroAvaliacaoMin === n ? 0 : n;
+  definirFiltroAvaliacao(n: number, ev?: Event, mostrarBalao = false): void {
+    ev?.stopPropagation();
+    if (this.filtroAvaliacaoMin === n) {
+      this.filtroAvaliacaoMin = 0;
+      this.avaliacaoBalaoAberto = false;
+      this.avaliacaoBalaoAnimar = false;
+      this.pagina = 1;
+      this.syncShellBottomNavActions();
+      return;
+    }
+    const balaoJaAberto = this.avaliacaoBalaoAberto && mostrarBalao;
+    this.filtroAvaliacaoMin = n;
+    this.avaliacaoBalaoAnimar = balaoJaAberto;
+    if (mostrarBalao) {
+      this.atualizarPosicaoBalaoAvaliacao();
+      this.avaliacaoBalaoAberto = true;
+      if (!balaoJaAberto) {
+        requestAnimationFrame(() => {
+          this.avaliacaoBalaoAnimar = true;
+        });
+      }
+    } else {
+      this.avaliacaoBalaoAberto = false;
+    }
     this.pagina = 1;
+    this.syncShellBottomNavActions();
+  }
+
+  rotuloFiltroAvaliacao(n: number): string {
+    return this.avaliacaoRotulos[n] ?? '';
+  }
+
+  private atualizarPosicaoBalaoAvaliacao(): void {
+    const wrap = this.hostEl.nativeElement.querySelector(
+      '.clientes-filtros-stars--sheet',
+    ) as HTMLElement | null;
+    const btn = wrap?.querySelector(
+      `[data-estrela="${this.filtroAvaliacaoMin}"]`,
+    ) as HTMLElement | null;
+    if (!wrap || !btn) return;
+    const wr = wrap.getBoundingClientRect();
+    const br = btn.getBoundingClientRect();
+    this.avaliacaoBalaoLeft = br.left - wr.left + br.width / 2;
+  }
+
+  private setupBalaoAvaliacaoCliqueFora(): void {
+    if (typeof document === 'undefined') return;
+    const fecharSeFora = (ev: Event): void => {
+      if (!this.avaliacaoBalaoAberto) return;
+      const alvo = ev.target;
+      if (
+        alvo instanceof Element &&
+        alvo.closest('.clientes-filtros-stars--sheet')
+      ) {
+        return;
+      }
+      this.avaliacaoBalaoAberto = false;
+      this.avaliacaoBalaoAnimar = false;
+    };
+    document.addEventListener('pointerdown', fecharSeFora, true);
+    this.destroyRef.onDestroy(() => {
+      document.removeEventListener('pointerdown', fecharSeFora, true);
+    });
   }
 
   onNovoCliente(): void {
@@ -786,9 +1075,22 @@ export class ClientesComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.filtrosAbertos) {
+      if (this.avaliacaoBalaoAberto) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        this.avaliacaoBalaoAberto = false;
+        return;
+      }
+      if (
+        document.querySelector(
+          '.periodo-filtro__panel--sheet.periodo-filtro__panel--open',
+        )
+      ) {
+        return;
+      }
       ev.preventDefault();
       ev.stopImmediatePropagation();
-      this.filtrosAbertos = false;
+      this.fecharFiltros();
       return;
     }
     if (this.perPageMenuAberto) {
@@ -797,19 +1099,16 @@ export class ClientesComponent implements OnInit, OnDestroy {
       this.perPageMenuAberto = false;
       return;
     }
-    if (this.buscaAberta) {
+    if (this.modoSelecao) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
-      this.fecharPainelBusca();
+      this.sairModoSelecao();
     }
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(ev: MouseEvent): void {
     const t = ev.target as HTMLElement | null;
-    if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
-      this.fecharPainelBusca();
-    }
     if (
       this.perPageMenuAberto &&
       t &&

@@ -17,9 +17,9 @@ import {
 } from '../cliente-cadastro-drawer/cliente-cadastro-drawer.service';
 import { AgendaNovoGlobalService } from './agenda-novo-global.service';
 import {
-  type OrcamentoPrintPayload,
-} from '../../features/orcamentos/pages/main/orcamento-print.component';
-import { OrcamentoPreviewOverlayComponent } from '../../features/orcamentos/pages/main/orcamento-preview-overlay.component';
+  OrcamentoPreviewOverlayComponent,
+} from '../../features/orcamentos/pages/main/orcamento-preview-overlay.component';
+import type { OrcamentoPrintPayload } from '../../core/models/orcamento-print.models';
 import { WhatsappEnviarModalComponent } from '../whatsapp/whatsapp-enviar-modal.component';
 import type { WhatsappEnviarContexto } from '../../core/models/whatsapp.model';
 import { SheetsApiService } from '../../core/services/sheets-api.service';

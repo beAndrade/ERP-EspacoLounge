@@ -1,5 +1,7 @@
 @use '../../../../styles/drawer-stack';
 @use '../../../../styles/list-page-shell';
+@use '../../../../styles/drawer-responsive' as dr;
+@use '../../../../styles/breakpoints' as bp;
 
 .orcamentos-page {
   display: flex;
@@ -555,6 +557,20 @@ tbody td.col-ticket {
     > app-agenda-novo {
       max-height: 100%;
     }
+  }
+}
+
+@include dr.drawer-mobile-column(
+  '.app-drawer',
+  '.agenda-modal__header',
+  '.form-shell__flow',
+  '.agenda-modal__footer'
+);
+
+@include bp.bp-down(shell-mobile) {
+  .app-drawer {
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
 }
 

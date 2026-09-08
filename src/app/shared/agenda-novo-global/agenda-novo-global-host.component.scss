@@ -1,4 +1,7 @@
 /* Mesmo shell/animação do drawer da grelha (agenda-hub). */
+@use '../../styles/drawer-responsive' as dr;
+@use '../../styles/breakpoints' as bp;
+
 app-agenda-novo-global-host {
   display: block;
   position: fixed;
@@ -76,5 +79,19 @@ app-agenda-novo-global-host {
     min-height: 0;
     max-height: 100%;
     width: 100%;
+  }
+}
+
+@include dr.drawer-mobile-column(
+  '.agenda-novo-global-drawer',
+  '.agenda-modal__header',
+  '.form-shell__flow',
+  '.agenda-modal__footer'
+);
+
+@include bp.bp-down(shell-mobile) {
+  .agenda-novo-global-drawer.app-drawer {
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
 }

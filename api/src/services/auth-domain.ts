@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { profissionais, usuarios } from '../db/schema';
-import { signAccessToken } from '../lib/jwt';
+import { signAccessToken } from '../platform/auth/jwt';
 
 export type UsuarioRole = 'admin' | 'profissional';
 
@@ -251,6 +251,9 @@ export async function upsertUsuarioForProfissional(
   }
 
   if (existing) {
+    if (existing.role === 'admin' && input.ativo === false) {
+      throw new Error('A conta do admin do sistema não pode ser desativada.');
+    }
     const patch: Partial<{
       email: string;
       senhaHash: string;

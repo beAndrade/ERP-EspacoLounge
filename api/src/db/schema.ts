@@ -344,6 +344,34 @@ export const marcas = pgTable(
   ],
 );
 
+/** Cadastro de fornecedores (contato + endereço; Compras futuro). */
+export const fornecedores = pgTable(
+  'fornecedores',
+  {
+    id: serial('id').primaryKey(),
+    nome: text('nome').notNull(),
+    email: text('email'),
+    celular: text('celular'),
+    telefone: text('telefone'),
+    inscricaoEstadual: text('inscricao_estadual'),
+    cnpj: text('cnpj'),
+    ativo: boolean('ativo').default(true).notNull(),
+    cep: text('cep'),
+    logradouro: text('logradouro'),
+    numero: text('numero'),
+    complemento: text('complemento'),
+    bairro: text('bairro'),
+    estado: text('estado'),
+    cidade: text('cidade'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('fornecedores_nome_lower_uidx').on(sql`lower(trim(${t.nome}))`),
+  ],
+);
+
 export const regrasMega = pgTable('regras_mega', {
   id: serial('id').primaryKey(),
   pacote: text('pacote').notNull(),

@@ -28,8 +28,8 @@ import { SheetsApiService } from '../../../../core/services/sheets-api.service';
 import { ClienteDrawerPeriodoFiltroComponent } from '../../../../shared/cliente-drawer-periodo-filtro/cliente-drawer-periodo-filtro.component';
 import { NovaComandaDrawerComponent } from '../../../agenda/pages/hub/nova-comanda-drawer.component';
 import { FaturarDrawerComponent } from '../../../agenda/pages/hub/faturar-drawer.component';
-import type { ComandaDrawerContextoAgenda } from '../../../agenda/pages/hub/comanda-drawer.types';
-import type { SaasSelectOption } from '../../../agenda/pages/novo/saas-select.component';
+import type { ComandaDrawerContextoAgenda } from '../../../../shared/comanda-drawer/comanda-drawer.types';
+import type { SaasSelectOption } from '../../../../shared/components/saas-select/saas-select.component';
 import {
   ClienteCadastroDrawerService,
   type AbrirCadastroClientePayload,
@@ -55,7 +55,7 @@ import { FinTransacaoNovoDrawerService } from '../../../../shared/fin-transacao-
 import { UI_TIP_SHOW_DELAY_MS } from '../../../../shared/ui-tip-trigger/ui-tip-delay';
 import { UiTipTriggerComponent } from '../../../../shared/ui-tip-trigger/ui-tip-trigger.component';
 import { TableEmptyComponent } from '../../../../shared/table-empty/table-empty.component';
-import { AgendaModalCalendarComponent } from '../../../agenda/pages/novo/agenda-modal-calendar.component';
+import { AgendaModalCalendarComponent } from '../../../../shared/components/agenda-modal-calendar/agenda-modal-calendar.component';
 import {
   mapFinTransacaoItemToUi,
   type FinTransacaoLinhaUi,

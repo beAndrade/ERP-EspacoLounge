@@ -131,6 +131,13 @@ export function tituloMesCalendario(ref: Date): string {
   return `${y} ${cap}`;
 }
 
+/** Ex.: `Setembro de 2026`. */
+export function tituloMesCalendarioExtenso(ref: Date): string {
+  const nome = ref.toLocaleDateString('pt-BR', { month: 'long' });
+  const cap = nome.charAt(0).toUpperCase() + nome.slice(1);
+  return `${cap} de ${ref.getFullYear()}`;
+}
+
 export function celulasMesCalendario(mesRef: Date): CelulaCalendarioPeriodo[] {
   const y = mesRef.getFullYear();
   const m = mesRef.getMonth();
@@ -154,7 +161,7 @@ export function celulasMesCalendario(mesRef: Date): CelulaCalendarioPeriodo[] {
   }
 
   let prox = 1;
-  while (out.length % 7 !== 0) {
+  while (out.length < 42) {
     const nm = (m + 1) % 12;
     const ny = m === 11 ? y + 1 : y;
     const ymd = `${ny}-${String(nm + 1).padStart(2, '0')}-${String(prox).padStart(2, '0')}`;

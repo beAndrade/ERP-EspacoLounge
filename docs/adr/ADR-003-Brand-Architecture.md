@@ -73,3 +73,11 @@ Requires careful brand governance.
 ## Future
 
 Every new module must follow the same visual identity system.
+
+---
+
+## Related documents
+
+- Long-term Brand Philosophy (canonical location; content pending): `docs/04-business/strategy/brand-philosophy.md`
+- Product brand expression: `docs/01-product/overview/brand.md`
+- Current market positioning: `docs/04-business/strategy/positioning.md`

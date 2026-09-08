@@ -122,6 +122,8 @@ export class ProfissionalCadastroDrawerService {
   enderecoCidade = '';
 
   ativo = true;
+  /** Papel da conta ligada (`usuarios.role`), carregado no detalhe. */
+  usuarioRole: 'admin' | 'profissional' | null = null;
   disponivelAgendamentoOnline = true;
   gerarAgenda = true;
   recebeComissao = true;
@@ -178,6 +180,11 @@ export class ProfissionalCadastroDrawerService {
   tituloCabecalho(): string {
     if (this.modo === 'novo') return 'Novo profissional';
     return this.cadastroNome.trim() || 'Profissional';
+  }
+
+  /** Mesma regra da lista: `usuarios.role === 'admin'` via `usuario_role` da API. */
+  ehAdminDoSistema(): boolean {
+    return this.usuarioRole === 'admin';
   }
 
   isAbaFutura(aba: ProfCadastroAbaOverflow): aba is ProfCadastroAbaFutura {
@@ -327,6 +334,11 @@ export class ProfissionalCadastroDrawerService {
           this.usuarioEmail = item.email;
           this.usuarioAtivo = item.ativo !== false;
           this.usuarioTemConta = true;
+          if (item.role === 'admin') {
+            this.usuarioRole = 'admin';
+          } else if (this.usuarioRole == null) {
+            this.usuarioRole = 'profissional';
+          }
         } else {
           this.usuarioEmail = '';
           this.usuarioAtivo = true;
@@ -352,13 +364,18 @@ export class ProfissionalCadastroDrawerService {
       this.usuarioErro = 'Senha é obrigatória ao criar o usuário.';
       return;
     }
+    if (this.ehAdminDoSistema() && !this.usuarioAtivo) {
+      this.usuarioAtivo = true;
+      this.usuarioErro = 'A conta do admin do sistema não pode ser desativada.';
+      return;
+    }
     this.usuarioErro = '';
     this.usuarioSalvando = true;
     this.api
       .saveProfissionalUsuario(this.profissionalId, {
         email,
         senha: this.usuarioSenha.trim() || undefined,
-        ativo: this.usuarioAtivo,
+        ativo: this.ehAdminDoSistema() ? true : this.usuarioAtivo,
       })
       .pipe(finalize(() => (this.usuarioSalvando = false)))
       .subscribe({
@@ -538,7 +555,7 @@ export class ProfissionalCadastroDrawerService {
       cpf_cnpj: this.cadastroCpfCnpj.replace(/\D/g, '') || null,
       rg: this.cadastroRg.replace(/\D/g, '') || null,
       anotacoes: this.cadastroAnotacoes.trim() || null,
-      ativo: this.ativo,
+      ativo: this.ehAdminDoSistema() ? true : this.ativo,
       disponivel_agendamento_online: this.disponivelAgendamentoOnline,
       gerar_agenda: this.gerarAgenda,
       recebe_comissao: this.recebeComissao,
@@ -636,6 +653,10 @@ export class ProfissionalCadastroDrawerService {
   }
 
   onAtivoToggleClick(ev: Event): void {
+    if (this.ehAdminDoSistema() && this.ativo) {
+      this.toast.show('O admin do sistema não pode ser inativado.');
+      return;
+    }
     this.pulseToggleVisual(ev);
     this.ativo = !this.ativo;
     if (!this.ativoToggleLiqArmed) this.ativoToggleLiqArmed = true;
@@ -814,6 +835,12 @@ export class ProfissionalCadastroDrawerService {
         this.cadastroRg = p.rg ?? '';
         this.cadastroAnotacoes = p.anotacoes ?? '';
         this.ativo = p.ativo !== false;
+        this.usuarioRole =
+          p.usuario_role === 'admin'
+            ? 'admin'
+            : p.usuario_role === 'profissional'
+              ? 'profissional'
+              : null;
         this.disponivelAgendamentoOnline =
           p.disponivel_agendamento_online !== false;
         this.gerarAgenda = p.gerar_agenda !== false;
@@ -866,6 +893,7 @@ export class ProfissionalCadastroDrawerService {
     this.enderecoEstado = '';
     this.enderecoCidade = '';
     this.ativo = true;
+    this.usuarioRole = null;
     this.disponivelAgendamentoOnline = true;
     this.gerarAgenda = true;
     this.recebeComissao = true;

@@ -468,6 +468,13 @@
       "idx": 66,
       "version": "7",
       "when": 1775699500000,
+      "tag": "0066_fornecedores",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1775699600000,
       "tag": "0066_regras_mega_1_mecha_duracao_60",
       "breakpoints": true
     }

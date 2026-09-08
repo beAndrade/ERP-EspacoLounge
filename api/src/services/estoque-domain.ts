@@ -10,7 +10,7 @@ import {
   usuarios,
 } from '../db/schema';
 import { normalizeMoneyTextForDb } from '../lib/normalize-money-text';
-import { normalizePercentTextForDb } from '../lib/normalize-percent-text';
+import { normalizePercentTextForDb } from '../shared/utils/normalize-percent-text';
 import { toNumberPt } from './finance-domain';
 
 export type EstoqueMovimentoTipo =

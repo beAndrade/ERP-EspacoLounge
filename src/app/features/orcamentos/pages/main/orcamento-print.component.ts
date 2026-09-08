@@ -1,30 +1,15 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, Input, ViewEncapsulation } from '@angular/core';
+import type {
+  OrcamentoPrintModo,
+  OrcamentoPrintPayload,
+} from '../../../../core/models/orcamento-print.models';
 
-export type OrcamentoPrintItem = {
-  descricao: string;
-  quantidade: number;
-  valorUnitario: number;
-  total: number;
-};
-
-export type OrcamentoPrintPayload = {
-  idAtendimento: string;
-  clienteNome: string;
-  telefone?: string;
-  clienteId?: string;
-  dataYmd: string;
-  dataFmt: string;
-  numeroComanda: string;
-  itens: OrcamentoPrintItem[];
-  subtotal: number;
-  desconto: number;
-  total: number;
-  observacoes?: string;
-  nomeEmpresa?: string;
-};
-
-export type OrcamentoPrintModo = 'print-only' | 'preview';
+export type {
+  OrcamentoPrintItem,
+  OrcamentoPrintModo,
+  OrcamentoPrintPayload,
+} from '../../../../core/models/orcamento-print.models';
 
 @Component({
   selector: 'app-orcamento-print',

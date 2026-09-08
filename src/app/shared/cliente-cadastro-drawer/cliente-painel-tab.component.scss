@@ -276,8 +276,20 @@ col.drawer-table__col-data {
   font-size: 0.8125rem;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
+  :host {
+    grid-column: auto;
+  }
+
+  .cliente-painel {
+    padding: 0 0 20px;
+    border-right: none;
+  }
+
   .painel-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+    width: 100%;
+    margin: 0;
+    gap: 10px;
   }
 }

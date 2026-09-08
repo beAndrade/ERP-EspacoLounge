@@ -1,10 +1,11 @@
 <div
   class="periodo-filtro"
   [class.periodo-filtro--bar-ativo]="panelAberto"
-  [class.periodo-filtro--painel-flutuante]="painelFlutuante() && panelNoDom"
-  [class.periodo-filtro--belasis]="exibicaoFormato() === 'belasis'"
+  [class.periodo-filtro--painel-flutuante]="devePortalizarPainel() && panelNoDom"
+  [class.periodo-filtro--belasis]="exibicaoFormato() === 'belasis' && !triggerUnico()"
+  [class.periodo-filtro--trigger-unico]="triggerUnico()"
   [class.periodo-filtro--comissoes-sidebar]="layoutComissoesSidebar()"
-  [class.periodo-filtro--underline-bar]="exibicaoFormato() !== 'belasis'"
+  [class.periodo-filtro--underline-bar]="exibicaoFormato() !== 'belasis' && !triggerUnico()"
   [class.periodo-filtro--sublinhado-slide]="sublinhadoDeslizante()"
   #anchor
 >
@@ -14,14 +15,42 @@
       class="periodo-filtro__backdrop"
       [class.periodo-filtro__backdrop--open]="panelAberto"
       [class.periodo-filtro__backdrop--transparente]="semBackdropEscuro()"
+      [class.periodo-filtro__backdrop--sheet]="triggerUnico()"
       [class.periodo-filtro__backdrop--comissoes-sidebar]="layoutComissoesSidebar()"
       aria-label="Fechar calendário"
       tabindex="-1"
+      (click)="fecharPainel()"
     ></button>
   }
 
   <div class="periodo-filtro__bar" aria-label="Filtrar por período">
-    @if (exibicaoFormato() === 'belasis') {
+    @if (triggerUnico()) {
+      <button
+        type="button"
+        class="periodo-filtro__trigger"
+        [class.periodo-filtro__trigger--placeholder]="!triggerUnicoPreenchido"
+        [attr.aria-expanded]="panelAberto"
+        aria-haspopup="dialog"
+        (click)="abrirTriggerUnico($event)"
+      >
+        <span class="periodo-filtro__trigger-label">{{ rotuloTriggerUnico }}</span>
+        <svg
+          class="periodo-filtro__trigger-chevron"
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+    } @else if (exibicaoFormato() === 'belasis') {
       <div class="periodo-filtro__inputs">
         <div class="periodo-filtro__field periodo-filtro__field--inicio"
              [class.periodo-filtro__field--ativo]="panelAberto && campoAtivo === 'inicio'">
@@ -228,93 +257,155 @@
   @if (panelNoDom) {
     <div
       class="periodo-filtro__panel"
-      [class.periodo-filtro__panel--flutuante]="painelFlutuante()"
+      [class.periodo-filtro__panel--flutuante]="devePortalizarPainel() && !triggerUnico()"
+      [class.periodo-filtro__panel--sheet]="triggerUnico()"
       [class.periodo-filtro__panel--open]="panelAberto"
       [class.periodo-filtro__panel--hover-preview]="painelComPreviewHover()"
-      [style.top.px]="painelFlutuante() && panelPos ? panelPos.top : null"
-      [style.left.px]="painelFlutuante() && panelPos ? panelPos.left : null"
+      [style.top.px]="devePortalizarPainel() && !triggerUnico() && panelPos ? panelPos.top : null"
+      [style.left.px]="devePortalizarPainel() && !triggerUnico() && panelPos ? panelPos.left : null"
       role="dialog"
       aria-label="Selecionar período"
       (click)="$event.stopPropagation()"
       (mouseleave)="limparHoverPainel()"
     >
-      <aside class="periodo-filtro__presets">
-        @for (p of presets; track p.id) {
+      @if (triggerUnico()) {
+        <header class="periodo-filtro__panel-head">
+          <h2 class="periodo-filtro__panel-title">Selecione um período</h2>
           <button
             type="button"
-            class="periodo-filtro__preset"
-            [class.periodo-filtro__preset--hover]="presetHoverId === p.id"
-            (mouseenter)="hoverPreset(p.id)"
-            (click)="aplicarPreset(p.id)"
+            class="periodo-filtro__panel-close"
+            (click)="fecharPainel()"
+            aria-label="Fechar calendário"
           >
-            {{ p.label }}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
           </button>
+        </header>
+      }
+
+      <div class="periodo-filtro__panel-body">
+        @if (!triggerUnico()) {
+          <aside class="periodo-filtro__presets">
+            @for (p of presets; track p.id) {
+              <button
+                type="button"
+                class="periodo-filtro__preset"
+                [class.periodo-filtro__preset--hover]="presetHoverId === p.id"
+                (mouseenter)="hoverPreset(p.id)"
+                (click)="aplicarPreset(p.id)"
+              >
+                {{ p.label }}
+              </button>
+            }
+          </aside>
         }
-      </aside>
 
-      <div class="periodo-filtro__calendarios">
-        <div class="periodo-filtro__cal-toolbar">
-          <div class="periodo-filtro__cal-nav">
-            <button type="button" class="periodo-filtro__nav" (click)="anoAnterior()" aria-label="Ano anterior">«</button>
-            <button type="button" class="periodo-filtro__nav" (click)="mesAnterior()" aria-label="Mês anterior">‹</button>
+        <div class="periodo-filtro__calendarios">
+          <div
+            class="periodo-filtro__cal-toolbar"
+            [class.periodo-filtro__cal-toolbar--titulo]="triggerUnico()"
+          >
+            <div class="periodo-filtro__cal-nav">
+              <button type="button" class="periodo-filtro__nav" (click)="anoAnterior()" aria-label="Ano anterior">«</button>
+              <button type="button" class="periodo-filtro__nav" (click)="mesAnterior()" aria-label="Mês anterior">‹</button>
+            </div>
+            @if (triggerUnico()) {
+              <p class="periodo-filtro__mes-titulo">{{ tituloTriggerUnico() }}</p>
+            }
+            <div class="periodo-filtro__cal-nav periodo-filtro__cal-nav--dir">
+              <button type="button" class="periodo-filtro__nav" (click)="mesSeguinte()" aria-label="Mês seguinte">›</button>
+              <button type="button" class="periodo-filtro__nav" (click)="anoSeguinte()" aria-label="Ano seguinte">»</button>
+            </div>
           </div>
-          <div class="periodo-filtro__cal-nav periodo-filtro__cal-nav--dir">
-            <button type="button" class="periodo-filtro__nav" (click)="mesSeguinte()" aria-label="Mês seguinte">›</button>
-            <button type="button" class="periodo-filtro__nav" (click)="anoSeguinte()" aria-label="Ano seguinte">»</button>
+
+          <div
+            class="periodo-filtro__meses"
+            [class.periodo-filtro__meses--unico]="triggerUnico()"
+          >
+            <div class="periodo-filtro__mes">
+              @if (!triggerUnico()) {
+                <p class="periodo-filtro__mes-titulo">{{ tituloEsquerda() }}</p>
+              }
+              <div class="periodo-filtro__weekdays">
+                @for (d of diasSemana; track $index) {
+                  <span class="periodo-filtro__weekday">{{ d }}</span>
+                }
+              </div>
+              <div class="periodo-filtro__days">
+                @for (c of celulasEsquerda(); track c.ymd ?? $index) {
+                  <button
+                    type="button"
+                    class="periodo-filtro__day-btn"
+                    [ngClass]="classeDia(c.ymd, c.foraMes)"
+                    [disabled]="!c.ymd"
+                    (mouseenter)="hoverDia(c.ymd)"
+                    (click)="selecionarDia(c.ymd)"
+                  >
+                    @if (c.dia != null) {
+                      <span class="periodo-filtro__day-num">{{ c.dia }}</span>
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (!triggerUnico()) {
+              <div class="periodo-filtro__mes">
+                <p class="periodo-filtro__mes-titulo">{{ tituloDireita() }}</p>
+                <div class="periodo-filtro__weekdays">
+                  @for (d of diasSemana; track $index) {
+                    <span class="periodo-filtro__weekday">{{ d }}</span>
+                  }
+                </div>
+                <div class="periodo-filtro__days">
+                  @for (c of celulasDireita(); track c.ymd ?? $index) {
+                    <button
+                      type="button"
+                      class="periodo-filtro__day-btn"
+                      [ngClass]="classeDia(c.ymd, c.foraMes)"
+                      [disabled]="!c.ymd"
+                      (mouseenter)="hoverDia(c.ymd)"
+                      (click)="selecionarDia(c.ymd)"
+                    >
+                      @if (c.dia != null) {
+                        <span class="periodo-filtro__day-num">{{ c.dia }}</span>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+            }
           </div>
         </div>
 
-        <div class="periodo-filtro__meses">
-          <div class="periodo-filtro__mes">
-            <p class="periodo-filtro__mes-titulo">{{ tituloEsquerda() }}</p>
-            <div class="periodo-filtro__weekdays">
-              @for (d of diasSemana; track $index) {
-                <span class="periodo-filtro__weekday">{{ d }}</span>
-              }
-            </div>
-            <div class="periodo-filtro__days">
-              @for (c of celulasEsquerda(); track c.ymd ?? $index) {
-                <button
-                  type="button"
-                  class="periodo-filtro__day-btn"
-                  [ngClass]="classeDia(c.ymd, c.foraMes)"
-                  [disabled]="!c.ymd"
-                  (mouseenter)="hoverDia(c.ymd)"
-                  (click)="selecionarDia(c.ymd)"
-                >
-                  @if (c.dia != null) {
-                    <span class="periodo-filtro__day-num">{{ c.dia }}</span>
-                  }
-                </button>
-              }
-            </div>
-          </div>
-
-          <div class="periodo-filtro__mes">
-            <p class="periodo-filtro__mes-titulo">{{ tituloDireita() }}</p>
-            <div class="periodo-filtro__weekdays">
-              @for (d of diasSemana; track $index) {
-                <span class="periodo-filtro__weekday">{{ d }}</span>
-              }
-            </div>
-            <div class="periodo-filtro__days">
-              @for (c of celulasDireita(); track c.ymd ?? $index) {
-                <button
-                  type="button"
-                  class="periodo-filtro__day-btn"
-                  [ngClass]="classeDia(c.ymd, c.foraMes)"
-                  [disabled]="!c.ymd"
-                  (mouseenter)="hoverDia(c.ymd)"
-                  (click)="selecionarDia(c.ymd)"
-                >
-                  @if (c.dia != null) {
-                    <span class="periodo-filtro__day-num">{{ c.dia }}</span>
-                  }
-                </button>
-              }
-            </div>
-          </div>
-        </div>
+        @if (triggerUnico()) {
+          <aside class="periodo-filtro__presets periodo-filtro__presets--sheet">
+            @for (p of presetsSheet; track p.id) {
+              <button
+                type="button"
+                class="periodo-filtro__preset"
+                [class.periodo-filtro__preset--hover]="presetHoverId === p.id"
+                (mouseenter)="hoverPreset(p.id)"
+                (click)="aplicarPreset(p.id)"
+              >
+                {{ p.label }}
+              </button>
+            }
+          </aside>
+        }
       </div>
     </div>
   }

@@ -1,11 +1,17 @@
 /**
  * Breakpoints oficiais (px) — manter alinhado com `styles/_breakpoints.scss`.
+ *
+ * `shellMobile` e `agendaMobile` compartilham 768px de propósito:
+ * o overlay da sidebar (CSS) e o matchMedia do shell (JS) devem coincidir.
+ * Valores abaixo de 768 (ex.: formNarrow 560) continuam para formulários/chrome.
  */
 export const BREAKPOINTS_PX = {
-  shellMobile: 640,
+  /** Sidebar overlay + JS `isMobileViewport` (alinhado ao CSS do shell). */
+  shellMobile: 768,
   formNarrow: 560,
   fichaStack: 860,
   drawerForm: 720,
+  /** Compactação da grelha da Agenda — mesmo limiar do shell mobile. */
   agendaMobile: 768,
   drawerSidebarHide: 1336,
   drawerTablet: 1024,

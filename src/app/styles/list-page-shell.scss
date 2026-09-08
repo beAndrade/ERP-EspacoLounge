@@ -1,5 +1,6 @@
 /* Shell reutilizável: toolbar + tabela + rodapé (comandas, clientes, …). */
 
+@use './breakpoints' as bp;
 @use './table-card-shell' as table-card;
 
 $list-surface-elev-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
@@ -310,7 +311,7 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
   appearance: none;
 }
 
-@media (max-width: 640px) {
+@include bp.bp-down(shell-mobile) {
   .list-head__actions {
     display: flex;
     flex-wrap: wrap;
@@ -501,9 +502,14 @@ input.list-head__busca-input[type='search']::-webkit-search-cancel-button {
   height: auto;
 
   > .table-wrap {
-    overflow-x: clip;
+    /**
+     * Scroll horizontal no wrap (não `clip`) — ações/colunas permanecem
+     * alcançáveis em mobile/tablet estreito.
+     */
+    overflow-x: auto;
     overflow-y: visible;
     border-radius: table-card.$list-table-card-radius;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

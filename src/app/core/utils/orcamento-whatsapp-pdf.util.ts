@@ -1,4 +1,4 @@
-import type { OrcamentoPrintPayload } from '../../features/orcamentos/pages/main/orcamento-print.component';
+import type { OrcamentoPrintPayload } from '../models/orcamento-print.models';
 
 function formataMoeda(n: number): string {
   return new Intl.NumberFormat('pt-BR', {

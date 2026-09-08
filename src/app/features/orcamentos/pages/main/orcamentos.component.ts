@@ -39,9 +39,7 @@ import { formatarCelularBr } from '../../../../core/utils/telefone-br';
 import { nomeClienteParaWhatsapp } from '../../../../core/utils/whatsapp-variaveis';
 import { AgendaNovoComponent } from '../../../agenda/pages/novo/agenda-novo.component';
 import { WhatsappEnviarModalComponent } from '../../../../shared/whatsapp/whatsapp-enviar-modal.component';
-import {
-  type OrcamentoPrintPayload,
-} from './orcamento-print.component';
+import type { OrcamentoPrintPayload } from '../../../../core/models/orcamento-print.models';
 import { OrcamentoPreviewOverlayComponent } from './orcamento-preview-overlay.component';
 import { AppToastService } from '../../../../shared/app-toast/app-toast.service';
 import {

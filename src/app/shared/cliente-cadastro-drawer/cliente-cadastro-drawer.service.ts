@@ -29,8 +29,8 @@ import {
   totalComandasAbertoCliente,
   totalDebitosCliente,
 } from '../../core/utils/comanda-status.util';
-import type { ComandaDrawerContextoAgenda } from '../../features/agenda/pages/hub/comanda-drawer.types';
-import type { SaasSelectOption } from '../../features/agenda/pages/novo/saas-select.component';
+import type { ComandaDrawerContextoAgenda } from '../comanda-drawer/comanda-drawer.types';
+import type { SaasSelectOption } from '../components/saas-select/saas-select.component';
 import {
   ClienteDuplicadoCampo,
   findClienteCadastroDuplicado,

@@ -1908,6 +1908,33 @@ $agenda-grid-stroke: #eeeeee;
 }
 
 /* Chrome cliente-head não se aplica ao shell da agenda. */
+@include dr.drawer-mobile-column(
+  '.app-drawer:not(.app-drawer--comanda):not(.app-drawer--faturar)',
+  '.agenda-modal__header',
+  '.form-shell__flow',
+  '.agenda-modal__footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.app-drawer--comanda',
+  '.nc-modal-header',
+  '.nc-drawer__flow',
+  '.nc-footer'
+);
+
+@include dr.drawer-mobile-column(
+  '.app-drawer--faturar',
+  '.fat-head',
+  '.fat-body',
+  '.fat-footer'
+);
+
+@include bp.bp-down(shell-mobile) {
+  .app-drawer:not(.app-drawer--comanda) {
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+}
 
 /* Camadas extra: edição de itens acima da comanda (alinhar com /comandas). */
 .app-drawer--edit-agendamento {
@@ -2642,8 +2669,8 @@ $month-num-fg-muted: #00000028;
 
 .hub-page--compact {
   --hub-compact-prof-col-min: 145.16px;
-  --hub-compact-footer-h: 3.25rem;
-  --hub-compact-footer-inset: 15px;
+  --hub-compact-footer-h: var(--shell-mobile-bottom-nav-h, 3.25rem);
+  --hub-compact-footer-inset: var(--shell-mobile-bottom-nav-inset, 15px);
   --hub-time-col-width: 2.5rem;
   /** Glass mobile unificado (header sticky, balão). */
   --hub-mobile-glass-bg: rgba(255, 255, 255, 0.03);
@@ -2667,10 +2694,8 @@ $month-num-fg-muted: #00000028;
   flex: none;
   min-height: min-content;
   overflow: visible;
-  padding-bottom: calc(
-    var(--hub-compact-footer-inset) + var(--hub-compact-footer-h) +
-      var(--hub-compact-footer-inset) + env(safe-area-inset-bottom, 0px)
-  );
+  /* Espaço da barra: `main` do shell (`--shell-mobile-bottom-nav-space`). */
+  padding-bottom: 0;
 
   /**
    * Scroll vertical no compacto: em `main.main--agenda-hub` (igual desktop — glass funciona).
@@ -2704,10 +2729,7 @@ $month-num-fg-muted: #00000028;
   }
 
   .hub-main {
-    padding-bottom: calc(
-      var(--hub-compact-footer-inset) + var(--hub-compact-footer-h) +
-        var(--hub-compact-footer-inset) + env(safe-area-inset-bottom, 0px)
-    );
+    padding-bottom: 0.5rem;
   }
 
   .hub-header__row--compact {
@@ -3199,6 +3221,29 @@ $month-num-fg-muted: #00000028;
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
+  }
+
+  /** Painéis Filtros/Ações ancorados ao shell (triggers no Bottom Nav). */
+  .hub-header__actions--mobile-panels {
+    position: static;
+    height: 0;
+    width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: none;
+    pointer-events: none;
+
+    .hub-toolbar-menu--shell-anchor {
+      position: static;
+      width: 0;
+      height: 0;
+      overflow: visible;
+    }
+
+    .hub-toolbar-menu__panel {
+      pointer-events: auto;
+    }
   }
 
   .hub-header__actions--footer {
