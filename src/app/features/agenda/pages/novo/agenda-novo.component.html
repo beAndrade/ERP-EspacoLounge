@@ -980,7 +980,7 @@
                 <p class="hint">
                   @if (!exibirColunasValorLinha()) {
                     Valores e descontos definem-se na <strong>comanda</strong> (botão
-                    «Criar comanda»). A comissão é por <strong>etapa</strong> — preencha o
+                    «Abrir comanda»). A comissão é por <strong>etapa</strong> — preencha o
                     profissional em cada etapa abaixo.
                   } @else {
                     O pacote define o <strong>valor cobrado</strong> na primeira linha.
@@ -1751,13 +1751,7 @@
                   (click)="onAbrirComandaClick($event)"
                   [disabled]="salvando || excluindo"
                 >
-                  {{
-                    salvando
-                      ? 'Salvando…'
-                      : comandaAbertaParaClienteNoDia
-                        ? 'Acessar comanda'
-                        : 'Criar comanda'
-                  }}
+                  {{ salvando ? 'Salvando…' : 'Abrir comanda' }}
                 </button>
               }
             }
