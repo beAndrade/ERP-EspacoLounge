@@ -485,6 +485,44 @@ BEGIN
   END IF;
 END $$;
 `));
+  /**
+   * Alinha com `0068_atendimento_itens_tipo_chk_pacote_queratina`:
+   * o CHECK antigo (0012) não incluía `pacote_queratina`.
+   */
+  await db.execute(sql.raw(`
+DO $$
+DECLARE
+  def text;
+BEGIN
+  SELECT pg_get_constraintdef(c.oid) INTO def
+  FROM pg_constraint c
+  WHERE c.conname = 'atendimento_itens_tipo_chk'
+    AND c.conrelid = 'atendimento_itens'::regclass;
+  IF def IS NULL OR position('pacote_queratina' in def) = 0 THEN
+    ALTER TABLE "atendimento_itens" DROP CONSTRAINT IF EXISTS "atendimento_itens_tipo_chk";
+    ALTER TABLE "atendimento_itens"
+      ADD CONSTRAINT "atendimento_itens_tipo_chk" CHECK (
+        (
+          "tipo"::text = 'servico'
+          AND "servico_id" IS NOT NULL
+          AND "produto_id" IS NULL
+        )
+        OR
+        (
+          "tipo"::text = 'produto'
+          AND "produto_id" IS NOT NULL
+          AND "servico_id" IS NULL
+        )
+        OR
+        (
+          "tipo"::text IN ('mega', 'pacote', 'pacote_queratina', 'cabelo')
+          AND "servico_id" IS NULL
+          AND "produto_id" IS NULL
+        )
+      );
+  END IF;
+END $$;
+`));
   /** Alinha com `0025_clientes_credito_saldo` quando `db:migrate` ainda não correu. */
   await db.execute(sql.raw(`
 DO $$

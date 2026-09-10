@@ -484,6 +484,13 @@
       "when": 1775699700000,
       "tag": "0067_atendimento_itens_duracao_minutos",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1775750000000,
+      "tag": "0068_atendimento_itens_tipo_chk_pacote_queratina",
+      "breakpoints": true
     }
   ]
 }

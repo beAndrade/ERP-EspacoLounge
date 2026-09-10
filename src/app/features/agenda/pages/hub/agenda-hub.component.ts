@@ -3243,7 +3243,7 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
       });
   }
 
-  /** Gravação: prioriza o editor de itens; senão só fecha a comanda. */
+  /** Gravação: prioriza o editor de itens; senão fecha comanda + agendamento e volta à agenda. */
   onSalvarAgendamentoDesdeDrawerComanda(): void {
     if (!this.comandaPainelAberto) return;
     if (this.editComandaAberto && this.editComandaDrawerRef) {
@@ -3257,6 +3257,10 @@ export class AgendaHubComponent implements OnInit, OnDestroy {
      */
     this.agendaDrawerRef?.fecharAvisoConflitoHorario();
     this.fecharComandaDrawer();
+    /** Fecha o drawer de agendamento por baixo (se houver) e volta à grelha. */
+    if (this.modalAberto) {
+      this.fecharModal();
+    }
     this.recarregarVistaAtiva();
   }
 

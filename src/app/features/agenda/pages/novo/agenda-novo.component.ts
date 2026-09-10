@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   ElementRef,
   EventEmitter,
@@ -245,6 +246,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private readonly wa = inject(WhatsappService);
   private readonly hostEl = inject(ElementRef<HTMLElement>);
   private readonly servicoDrawer = inject(ServicoCadastroDrawerService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   @HostBinding('class.agenda-novo--drawer')
   get isDrawerMode(): boolean {
@@ -3730,8 +3732,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Mega / Pacote / Pacote Adesivo+Queratina: ao escolher etapa + profissional na última
-   * linha, abre automaticamente uma linha vazia (sem botão «+»).
+   * Mega / Pacote / Pacote Adesivo+Queratina: ao escolher etapa + profissional
+   * na última linha, abre automaticamente uma linha vazia (sem botão «+»).
+   * Profissional nunca é preenchido sozinho — igual em todos esses tipos.
    */
   onCamposEtapaAlterados(linhaI: number): void {
     if (this.prefillEmCurso) return;
@@ -3751,6 +3754,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     this.garantirLinhaEtapaRascunho(linhaI);
     this.aplicarValidadoresLinhas();
     this.reencadearHorariosAPartirDe(linhaI);
+    this.cdr.markForCheck();
   }
 
   private etapaLinhaVazia(g: FormGroup): boolean {
