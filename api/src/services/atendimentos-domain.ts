@@ -77,6 +77,8 @@ export type CreateAtendimentoPayload = (
       valor_unitario?: number | string | null;
       /** Desconto aplicado ao item (R$). */
       desconto_item?: number | string | null;
+      /** Override de duração (minutos) só neste agendamento. */
+      duracao_minutos?: number | null;
       /** Vários serviços no mesmo pedido (`id_atendimento`); cada entrada gera linha em `atendimentos` + item na pivot. */
       itens_servicos?: {
         servico_id: string;
@@ -87,6 +89,8 @@ export type CreateAtendimentoPayload = (
         valor_unitario?: number | string | null;
         /** Desconto aplicado ao item (R$). */
         desconto?: number | string | null;
+        /** Override de duração (minutos) só neste agendamento. */
+        duracao_minutos?: number | null;
       }[];
     }
   | {
@@ -94,7 +98,11 @@ export type CreateAtendimentoPayload = (
       cliente_id: string;
       data: string;
       pacote: string;
-      etapas: { etapa: string; profissional_id: number }[];
+      etapas: {
+        etapa: string;
+        profissional_id: number;
+        duracao_minutos?: number | null;
+      }[];
       observacao?: string;
     }
   | {
@@ -104,7 +112,11 @@ export type CreateAtendimentoPayload = (
       /** Linha de cobrança; opcional. */
       profissional_id?: number | null;
       pacote: string;
-      etapas: { etapa: string; profissional_id: number }[];
+      etapas: {
+        etapa: string;
+        profissional_id: number;
+        duracao_minutos?: number | null;
+      }[];
       observacao?: string;
     }
   | {
@@ -113,7 +125,11 @@ export type CreateAtendimentoPayload = (
       data: string;
       profissional_id?: number | null;
       pacote: string;
-      etapas: { etapa: string; profissional_id: number }[];
+      etapas: {
+        etapa: string;
+        profissional_id: number;
+        duracao_minutos?: number | null;
+      }[];
       observacao?: string;
     }
   | {
@@ -597,6 +613,26 @@ function duracaoCatalogoMin(d: number | null | undefined): number {
   return Math.max(5, Math.min(24 * 60, n));
 }
 
+/**
+ * Override opcional do cliente (`duracao_minutos` no payload).
+ * Fora de 5..1440 → ignora e usa catálogo.
+ */
+function parseDuracaoOverrideMinutos(raw: unknown): number | null {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  const r = Math.round(n);
+  if (r < 5 || r > 24 * 60) return null;
+  return r;
+}
+
+function duracaoEfetivaMinutos(
+  overrideRaw: unknown,
+  catalogoMin: number,
+): number {
+  return parseDuracaoOverrideMinutos(overrideRaw) ?? duracaoCatalogoMin(catalogoMin);
+}
+
 /** Etapa seguinte começa quando a anterior termina (`fimAnterior` = início desta etapa). */
 function slotEncadeadoAposFim(
   fimAnterior: string,
@@ -901,6 +937,7 @@ async function insertPivotServico(
     tamanho: string | null;
     valorUnitario?: number | null;
     desconto?: number | null;
+    duracaoMinutos?: number | null;
   },
 ): Promise<void> {
   const tam = o.tamanho && o.tamanho.trim() ? o.tamanho.trim() : null;
@@ -917,6 +954,10 @@ async function insertPivotServico(
     detalhes: null,
     valorUnitario: numericOrNull(o.valorUnitario),
     desconto: numericOrNull(o.desconto),
+    duracaoMinutos:
+      o.duracaoMinutos != null && Number.isFinite(o.duracaoMinutos)
+        ? Math.round(o.duracaoMinutos)
+        : null,
   });
 }
 
@@ -956,6 +997,7 @@ async function insertPivotMega(
     profissionalId: number | null;
     regraMegaId: number;
     pacoteCatalogoId?: number | null;
+    duracaoMinutos?: number | null;
   },
 ): Promise<void> {
   const pac = o.pacote.trim();
@@ -974,6 +1016,10 @@ async function insertPivotMega(
     regraMegaId: o.regraMegaId,
     pacoteId: o.pacoteCatalogoId ?? null,
     detalhes: null,
+    duracaoMinutos:
+      o.duracaoMinutos != null && Number.isFinite(o.duracaoMinutos)
+        ? Math.round(o.duracaoMinutos)
+        : null,
   });
 }
 
@@ -987,6 +1033,7 @@ async function insertPivotPacote(
     profissionalId: number | null;
     pacoteCatalogoId: number;
     regraMegaId?: number | null;
+    duracaoMinutos?: number | null;
   },
 ): Promise<void> {
   const pac = o.pacote.trim();
@@ -1005,6 +1052,10 @@ async function insertPivotPacote(
     regraMegaId: o.regraMegaId ?? null,
     pacoteId: o.pacoteCatalogoId,
     detalhes: null,
+    duracaoMinutos:
+      o.duracaoMinutos != null && Number.isFinite(o.duracaoMinutos)
+        ? Math.round(o.duracaoMinutos)
+        : null,
   });
 }
 
@@ -1017,6 +1068,7 @@ async function insertPivotPacoteQueratina(
     profissionalId: number | null;
     pacoteQueratinaId: number;
     regraMegaQueratinaId?: number | null;
+    duracaoMinutos?: number | null;
   },
 ): Promise<void> {
   const pac = o.pacote.trim();
@@ -1035,6 +1087,10 @@ async function insertPivotPacoteQueratina(
     regraMegaQueratinaId: o.regraMegaQueratinaId ?? null,
     pacoteQueratinaId: o.pacoteQueratinaId,
     detalhes: null,
+    duracaoMinutos:
+      o.duracaoMinutos != null && Number.isFinite(o.duracaoMinutos)
+        ? Math.round(o.duracaoMinutos)
+        : null,
   });
 }
 
@@ -1098,6 +1154,7 @@ function mergeItensServicoNorm(
     tamanho?: string;
     valorUnitario: number | null;
     desconto: number | null;
+    duracaoMinutos: number | null;
   }[],
 ): typeof itens {
   const map = new Map<
@@ -1109,6 +1166,7 @@ function mergeItensServicoNorm(
       tamanho?: string;
       valorUnitario: number | null;
       desconto: number | null;
+      duracaoMinutos: number | null;
     }
   >();
   for (const it of itens) {
@@ -1123,6 +1181,7 @@ function mergeItensServicoNorm(
         tamanho: tam || undefined,
         valorUnitario: it.valorUnitario ?? null,
         desconto: it.desconto ?? null,
+        duracaoMinutos: it.duracaoMinutos ?? null,
       });
     } else {
       cur.quantidade += it.quantidade;
@@ -1133,13 +1192,14 @@ function mergeItensServicoNorm(
       ) {
         cur.profissional_id = it.profissional_id;
       }
-      if ((cur.valorUnitario == null) && it.valorUnitario != null) {
+      if (cur.valorUnitario == null && it.valorUnitario != null) {
         cur.valorUnitario = it.valorUnitario;
       }
       if (cur.desconto == null && it.desconto != null) {
         cur.desconto = it.desconto;
-      } else if (cur.desconto != null && it.desconto != null) {
-        cur.desconto = cur.desconto + it.desconto;
+      }
+      if (cur.duracaoMinutos == null && it.duracaoMinutos != null) {
+        cur.duracaoMinutos = it.duracaoMinutos;
       }
     }
   }
@@ -1484,6 +1544,7 @@ async function createAtendimentoServico(
     tamanho?: unknown;
     valor_unitario?: unknown;
     desconto?: unknown;
+    duracao_minutos?: unknown;
   };
 
   const rawItens = rec['itens_servicos'];
@@ -1496,6 +1557,7 @@ async function createAtendimentoServico(
     tamanho?: string;
     valorUnitario: number | null;
     desconto: number | null;
+    duracaoMinutos: number | null;
   }[] = [];
 
   if (fromArray) {
@@ -1514,6 +1576,7 @@ async function createAtendimentoServico(
         tamanho: it.tamanho != null ? String(it.tamanho) : undefined,
         valorUnitario: parseMonetarioParaNumero(it.valor_unitario),
         desconto: parseMonetarioParaNumero(it.desconto),
+        duracaoMinutos: parseDuracaoOverrideMinutos(it.duracao_minutos),
       });
     }
     const merged = mergeItensServicoNorm(itensNorm);
@@ -1535,6 +1598,7 @@ async function createAtendimentoServico(
       desconto:
         parseMonetarioParaNumero(rec['desconto_item']) ??
         parseMonetarioParaNumero(rec['desconto']),
+      duracaoMinutos: parseDuracaoOverrideMinutos(rec['duracao_minutos']),
     });
   }
 
@@ -1626,12 +1690,15 @@ async function createAtendimentoServico(
       comissaoLinha = String(cNum * qtd);
     }
 
-    const durForLine = duracaoMinutosServicoCatalogo(
+    const durCatalogo = duracaoMinutosServicoCatalogo(
       srv,
       cat,
       tamanhoParam || 'Curto',
       legacy,
     );
+    const durOverride =
+      it.duracaoMinutos ?? parseDuracaoOverrideMinutos(rec['duracao_minutos']);
+    const durForLine = duracaoEfetivaMinutos(durOverride, durCatalogo);
     let inicioLinha: string | null = null;
     let fimLinha: string | null = null;
     const slotPedido = parseInicioFimOpcional(
@@ -1650,7 +1717,7 @@ async function createAtendimentoServico(
         fimLinha = slotPedido.fim;
       }
     } else if (slotPedido.inicio) {
-      /** Mesmo slot do pedido em todas as linhas Serviço (ex.: vários itens no mesmo agendamento). */
+      /** Slot por linha (front pode enviar inicio/fim sequenciais com override). */
       inicioLinha = slotPedido.inicio;
       const pIni = parseSqlLocalDateTime(inicioLinha);
       fimLinha = pIni
@@ -1705,6 +1772,7 @@ async function createAtendimentoServico(
       tamanho: vc.tamanhoParaPlanilha || null,
       valorUnitario: valorUnitarioParaPivot,
       desconto: descontoPivotNum,
+      duracaoMinutos: durOverride,
     });
 
     linhas += 1;
@@ -1767,22 +1835,21 @@ async function createAtendimentoMega(
       throw new Error('Cada etapa exige etapa e profissional_id');
     }
     const regra = await findRegraMega(db, pacote, etapaNome);
+    const dm = duracaoEfetivaMinutos(
+      stRec['duracao_minutos'],
+      regra.duracaoMinutos,
+    );
+    const durOverride = parseDuracaoOverrideMinutos(stRec['duracao_minutos']);
     let iniLine: string | null = null;
     let fimLine: string | null = null;
     if (idx === 0) {
       const slot = parseInicioFimOpcional(
         pRec['inicio'],
         pRec['fim'],
-        regra.duracaoMinutos,
+        dm,
       );
       iniLine = slot.inicio;
       fimLine = slot.fim;
-      /**
-       * O cliente costuma mandar `fim` = fim do slot da grelha (30 min), não a
-       * duração da etapa em `regras_mega`. Etapas seguintes já usam o catálogo;
-       * alinhar a 1.ª etapa ao mesmo critério.
-       */
-      const dm = duracaoCatalogoMin(regra.duracaoMinutos);
       if (iniLine) {
         const pp = partesSqlLocalDeTextoSalao(iniLine);
         if (pp) {
@@ -1793,7 +1860,7 @@ async function createAtendimentoMega(
         cursorFim = fimLine;
       }
     } else if (cursorFim) {
-      const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
+      const enc = slotEncadeadoAposFim(cursorFim, dm);
       iniLine = enc.inicio;
       fimLine = enc.fim;
       cursorFim = fimLine;
@@ -1827,6 +1894,7 @@ async function createAtendimentoMega(
       profissionalId: profId,
       regraMegaId: regra.id,
       pacoteCatalogoId,
+      duracaoMinutos: durOverride,
     });
   }
   return {
@@ -1930,17 +1998,21 @@ async function createAtendimentoPacote(
       throw new Error('Cada etapa exige etapa e profissional_id');
     }
     const regra = await findRegraMega(db, pacote, etapaNome);
+    const dm = duracaoEfetivaMinutos(
+      stRec['duracao_minutos'],
+      regra.duracaoMinutos,
+    );
+    const durOverride = parseDuracaoOverrideMinutos(stRec['duracao_minutos']);
     let iniLine: string | null = null;
     let fimLine: string | null = null;
     if (idx === 0) {
       const slot = parseInicioFimOpcional(
         pRec['inicio'],
         pRec['fim'],
-        regra.duracaoMinutos,
+        dm,
       );
       iniLine = slot.inicio;
       fimLine = slot.fim;
-      const dm = duracaoCatalogoMin(regra.duracaoMinutos);
       if (iniLine) {
         const pp = partesSqlLocalDeTextoSalao(iniLine);
         if (pp) {
@@ -1949,7 +2021,7 @@ async function createAtendimentoPacote(
       }
       cursorFim = fimLine;
     } else if (cursorFim) {
-      const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
+      const enc = slotEncadeadoAposFim(cursorFim, dm);
       iniLine = enc.inicio;
       fimLine = enc.fim;
       cursorFim = fimLine;
@@ -1983,6 +2055,7 @@ async function createAtendimentoPacote(
       profissionalId: profId,
       pacoteCatalogoId: cat.id,
       regraMegaId: regra.id,
+      duracaoMinutos: durOverride,
     });
   }
   return {
@@ -2083,17 +2156,21 @@ async function createAtendimentoPacoteQueratina(
       throw new Error('Cada etapa exige etapa e profissional_id');
     }
     const regra = await findRegraMegaQueratina(db, pacote, etapaNome);
+    const dm = duracaoEfetivaMinutos(
+      stRec['duracao_minutos'],
+      regra.duracaoMinutos,
+    );
+    const durOverride = parseDuracaoOverrideMinutos(stRec['duracao_minutos']);
     let iniLine: string | null = null;
     let fimLine: string | null = null;
     if (idx === 0) {
       const slot = parseInicioFimOpcional(
         pRec['inicio'],
         pRec['fim'],
-        regra.duracaoMinutos,
+        dm,
       );
       iniLine = slot.inicio;
       fimLine = slot.fim;
-      const dm = duracaoCatalogoMin(regra.duracaoMinutos);
       if (iniLine) {
         const pp = partesSqlLocalDeTextoSalao(iniLine);
         if (pp) {
@@ -2102,7 +2179,7 @@ async function createAtendimentoPacoteQueratina(
       }
       cursorFim = fimLine;
     } else if (cursorFim) {
-      const enc = slotEncadeadoAposFim(cursorFim, regra.duracaoMinutos);
+      const enc = slotEncadeadoAposFim(cursorFim, dm);
       iniLine = enc.inicio;
       fimLine = enc.fim;
       cursorFim = fimLine;
@@ -2136,6 +2213,7 @@ async function createAtendimentoPacoteQueratina(
       profissionalId: profId,
       pacoteQueratinaId: cat.id,
       regraMegaQueratinaId: regra.id,
+      duracaoMinutos: durOverride,
     });
   }
   return {
@@ -2609,6 +2687,7 @@ export async function listAtendimentosRaw(
         pacote_queratina_id: row.pacoteQueratinaId ?? null,
         valor_unitario: valorUnitarioStr,
         desconto: descontoStr,
+        duracao_minutos: row.duracaoMinutos ?? null,
         total_linha: totalLinha,
       });
       itensPorPedido.set(k, arr);

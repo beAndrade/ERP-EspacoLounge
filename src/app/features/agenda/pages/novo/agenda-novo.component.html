@@ -368,6 +368,61 @@
                     />
                   </div>
                 }
+                <div
+                  class="servico-row__field servico-row__field--pro servico-row__field--ghost"
+                >
+                  <span>Profissional</span>
+                  <div class="servico-row__field-ghost" aria-hidden="true">
+                    Por etapas
+                  </div>
+                </div>
+                @if (ctrl.get('itemTipo')?.value === 'Mega') {
+                  <div
+                    class="servico-row__field servico-row__field--hora-linha-modal block-context__field--hora-slots"
+                  >
+                    <span>Horário</span>
+                    <app-agenda-horario-slots
+                      [formControl]="horaLinhaControl(i)"
+                      [intervalosOcupados]="intervalosOcupacaoDia"
+                      aria-label="Horário do bloco Mega"
+                      (painelAberto)="onHorarioPainelAbriu()"
+                      (valorAlterado)="onHoraLinhaServicoChange(i)"
+                    />
+                  </div>
+                  <div
+                    class="servico-row__field servico-row__field--duracao-linha-modal"
+                  >
+                    <span>Duração</span>
+                    <div
+                      class="servico-row__field-ghost"
+                      [attr.aria-label]="
+                        'Duração total: ' + duracaoTotalEtapasLinha(i) + ' min'
+                      "
+                    >
+                      {{ duracaoTotalEtapasLinha(i) }} min
+                    </div>
+                  </div>
+                } @else {
+                  <div
+                    class="servico-row__field servico-row__field--hora-linha-modal"
+                  >
+                    <span>Horário</span>
+                    <div class="servico-row__field-ghost" aria-hidden="true">—</div>
+                  </div>
+                  <div
+                    class="servico-row__field servico-row__field--duracao-linha-modal"
+                  >
+                    <span>Duração</span>
+                    <div
+                      class="servico-row__field-ghost"
+                      [attr.aria-label]="
+                        'Duração total: ' + duracaoTotalEtapasLinha(i) + ' min'
+                      "
+                    >
+                      {{ duracaoTotalEtapasLinha(i) }} min
+                    </div>
+                  </div>
+                }
                 @if (exibirColunasValorLinha(ctrl.get('itemTipo')?.value)) {
                   <div
                     class="servico-row__field servico-row__field--produto-total-estimado servico-row__field--linha-cab--col"
@@ -527,11 +582,25 @@
                 >
                   <span>Horário</span>
                   <app-agenda-horario-slots
-                    #horarioSlots
-                    [formControl]="form.controls.hora_inicial"
+                    [formControl]="horaLinhaControl(i)"
                     [intervalosOcupados]="intervalosOcupacaoDia"
-                    aria-label="Horário inicial"
+                    aria-label="Horário da linha"
                     (painelAberto)="onHorarioPainelAbriu()"
+                    (valorAlterado)="onHoraLinhaServicoChange(i)"
+                  />
+                </div>
+                <div
+                  class="servico-row__field servico-row__field--duracao-linha-modal"
+                >
+                  <span>Duração</span>
+                  <app-saas-select
+                    [showFilter]="false"
+                    [formControl]="duracaoLinhaControl(i)"
+                    [options]="opcoesDuracaoMinutosSaas()"
+                    [useNumericOutput]="true"
+                    placeholder="min"
+                    aria-label="Duração em minutos"
+                    (picked)="onDuracaoLinhaServicoChange(i)"
                   />
                 </div>
               }
@@ -610,6 +679,26 @@
                   aria-label="Quantidade"
                 />
               </div>
+              @if (modoModal) {
+                <div
+                  class="servico-row__field servico-row__field--pro servico-row__field--ghost"
+                >
+                  <span>Profissional</span>
+                  <div class="servico-row__field-ghost" aria-hidden="true">—</div>
+                </div>
+                <div
+                  class="servico-row__field servico-row__field--hora-linha-modal"
+                >
+                  <span>Horário</span>
+                  <div class="servico-row__field-ghost" aria-hidden="true">—</div>
+                </div>
+                <div
+                  class="servico-row__field servico-row__field--duracao-linha-modal"
+                >
+                  <span>Duração</span>
+                  <div class="servico-row__field-ghost" aria-hidden="true">—</div>
+                </div>
+              }
               @if (exibirColunasValorLinha(ctrl.get('itemTipo')?.value)) {
                 <div
                   class="servico-row__field servico-row__field--preco-unit-prod"

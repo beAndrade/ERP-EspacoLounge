@@ -20,11 +20,8 @@
 
   <div class="nc-drawer__main">
       <!--
-        Fora do scroller: `.nc-drawer__main` = `form-shell__main--modal` (não scrolla);
-        `.nc-drawer__flow` = `form-shell__flow--modal` (scrolla).
-        No agenda-novo o X é sticky *dentro* do flow; aqui o shell da comanda
-        (overflow no app-drawer + coluna) faz sticky acompanhar o scroll — por isso
-        o fechar fica absoluto no shell da coluna (mesmo resultado visual).
+        Shell `.nc-drawer__main` não scrolla; X absoluto no shell.
+        `.nc-drawer__scroll` preenche o shell (inset) e é o único overflow-y.
       -->
       <button
         type="button"
@@ -46,6 +43,7 @@
         </svg>
       </button>
 
+      <div class="nc-drawer__scroll">
       <div class="nc-drawer__flow">
         <header class="nc-modal-header nc-modal-header--drawer-scroll">
           <h1 class="nc-modal-title">{{ tituloComandaDrawer() }}</h1>
@@ -290,7 +288,7 @@
         </main>
       </div>
 
-      <!-- Fora do scroller: sempre visível acima do footer (como no agenda-novo). -->
+      <!-- Resumo + obs: dentro do scroller (`.nc-drawer__scroll`); footer fica fora. -->
       <div
         class="nc-drawer__resumo-sticky"
         [attr.data-nc-resumo-status]="resumoPagamentos.status"
@@ -317,6 +315,7 @@
             aria-label="Observações"
           ></textarea>
         </div>
+      </div>
       </div>
   </div>
 

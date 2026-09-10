@@ -545,6 +545,11 @@ export const atendimentoItens = pgTable(
     valorUnitario: numeric('valor_unitario', { precision: 14, scale: 2 }),
     /** Desconto aplicado à linha (em reais). Mega/Pacote: null. */
     desconto: numeric('desconto', { precision: 14, scale: 2 }),
+    /**
+     * Override de duração (minutos) só neste agendamento.
+     * `null` = usar catálogo (`servicos` / `regras_mega*`).
+     */
+    duracaoMinutos: integer('duracao_minutos'),
   },
   (t) => [index('atendimento_itens_id_atendimento_idx').on(t.idAtendimento)],
 );

@@ -472,6 +472,19 @@ BEGIN
   END IF;
 END $$;
 `));
+  /** Alinha com `0067_atendimento_itens_duracao_minutos` quando `db:migrate` ainda não correu. */
+  await db.execute(sql.raw(`
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns c
+    WHERE c.table_schema = current_schema()
+      AND c.table_name = 'atendimento_itens' AND c.column_name = 'duracao_minutos'
+  ) THEN
+    ALTER TABLE "atendimento_itens" ADD COLUMN "duracao_minutos" integer;
+  END IF;
+END $$;
+`));
   /** Alinha com `0025_clientes_credito_saldo` quando `db:migrate` ainda não correu. */
   await db.execute(sql.raw(`
 DO $$

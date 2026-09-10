@@ -350,6 +350,8 @@ export interface AtendimentoItemCatalogo {
   valor_unitario?: string | null;
   /** Desconto aplicado ao item (R$). String numérica ou null. */
   desconto?: string | null;
+  /** Override de duração (minutos) só neste agendamento; null = catálogo. */
+  duracao_minutos?: number | null;
   /** Total da linha calculado pelo backend: max(0, qtde × valor_unitario − desconto). */
   total_linha?: number | null;
 }
@@ -756,6 +758,8 @@ export type TipoLinhaAtendimento = TipoAtendimento;
 export interface AtendimentoEtapaPayload {
   etapa: string;
   profissional_id: number;
+  /** Override de duração (minutos) só neste agendamento. */
+  duracao_minutos?: number | null;
 }
 
 /** Opcional na criação: `YYYY-MM-DD HH:mm:ss` na primeira linha (ou única). */
@@ -805,6 +809,8 @@ export type CreateAtendimentoPayload = (
       valor_unitario?: number | string | null;
       /** Desconto aplicado ao item (R$). */
       desconto_item?: number | string | null;
+      /** Override de duração (minutos) só neste agendamento. */
+      duracao_minutos?: number | null;
       /** Vários serviços no mesmo pedido; cada entrada → linha em `atendimentos` + `atendimento_itens`. */
       itens_servicos?: {
         servico_id: string;
@@ -813,6 +819,7 @@ export type CreateAtendimentoPayload = (
         tamanho?: string;
         valor_unitario?: number | string | null;
         desconto?: number | string | null;
+        duracao_minutos?: number | null;
       }[];
     }
     | {

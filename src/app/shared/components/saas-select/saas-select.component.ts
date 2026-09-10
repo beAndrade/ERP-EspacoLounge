@@ -22,7 +22,12 @@ import {
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { resolveDropdownVerticalPlacement } from '../../../core/utils/dropdown-flip.util';
+import {
+  resolveDropdownVerticalPlacement,
+  findOverflowClipAncestor,
+  findScrollClipAncestor,
+  dropdownAvailableSpace,
+} from '../../../core/utils/dropdown-flip.util';
 
 export type SaasSelectOption = { value: string; label: string; hint?: string };
 
@@ -108,8 +113,8 @@ export class SaasSelectComponent
   private inner = '';
 
   /**
-   * Dentro de `.nc-itens--panel-fixed` (comanda no hub): painel em `position: fixed`
-   * para não ser recortado por `overflow` dos ascendentes.
+   * Painel em `position: fixed` quando há ancestral com overflow (drawer/scroll)
+   * ou dentro de `.nc-itens--panel-fixed` (comanda no hub).
    */
   panelFixedMode = false;
   fixedPanelStyle: Record<string, string> = {};
@@ -137,9 +142,15 @@ export class SaasSelectComponent
   }
 
   ngAfterViewInit(): void {
-    this.panelFixedMode = !!this.host.nativeElement.closest(
-      '.nc-itens--panel-fixed',
-    );
+    this.refreshPanelFixedMode();
+  }
+
+  /** Detecta drawer/scroll ou comanda com painel fixed. */
+  private refreshPanelFixedMode(): void {
+    const host = this.host.nativeElement;
+    this.panelFixedMode =
+      !!host.closest('.nc-itens--panel-fixed') ||
+      !!findOverflowClipAncestor(host);
   }
 
   ngOnDestroy(): void {
@@ -222,10 +233,24 @@ export class SaasSelectComponent
     // Espaço/Enter no input de busca não pode abrir/fechar o painel.
     if (this.isEventFromTriggerFilter(ev)) return;
     if (this.panelOpen) {
+      /** Se o painel ainda sobrepõe o gatilho, não interpretar como “fechar”. */
+      if (ev instanceof MouseEvent && this.isPointOverPanel(ev.clientX, ev.clientY)) {
+        return;
+      }
       this.closePanel();
       return;
     }
     this.openPanel();
+  }
+
+  private isPointOverPanel(x: number, y: number): boolean {
+    const panel = this.host.nativeElement.querySelector(
+      '.saas-select__panel-elev--open',
+    ) as HTMLElement | null;
+    if (!panel) return false;
+    const pr = panel.getBoundingClientRect();
+    if (pr.width <= 0 || pr.height <= 0) return false;
+    return x >= pr.left && x <= pr.right && y >= pr.top && y <= pr.bottom;
   }
 
   /**
@@ -310,22 +335,28 @@ export class SaasSelectComponent
   }
 
   private openPanel(resetFilter = true): void {
+    this.refreshPanelFixedMode();
     this.panelOpen = true;
     if (resetFilter) {
       this.filterText = '';
     }
     this.painelAberto.emit();
+    /** Posição inicial já no trigger (antes do paint do painel). */
+    if (this.panelFixedMode) {
+      this.syncPanelPlacement();
+      this.attachFixedPanelScrollListeners();
+    }
     afterNextRender(
       () => {
         if (!this.panelOpen) return;
         this.syncPanelPlacement();
-        requestAnimationFrame(() => this.syncPanelPlacement());
+        requestAnimationFrame(() => {
+          if (!this.panelOpen) return;
+          this.syncPanelPlacement();
+        });
       },
       { injector: this.injector },
     );
-    if (this.panelFixedMode) {
-      this.attachFixedPanelScrollListeners();
-    }
     this.focusSearchFieldAfterOpen();
   }
 
@@ -357,6 +388,7 @@ export class SaasSelectComponent
     this.panelOpenAbove = false;
     this.filterText = '';
     this.fixedPanelStyle = {};
+    this.clearPanelMaxHeightStyles();
     this.detachFixedPanelScrollListeners();
     this.notifyTouched();
     this.focusTriggerSoon();
@@ -373,6 +405,7 @@ export class SaasSelectComponent
     this.panelOpenAbove = false;
     this.filterText = '';
     this.fixedPanelStyle = {};
+    this.clearPanelMaxHeightStyles();
     this.detachFixedPanelScrollListeners();
     this.notifyTouched();
     this.picked.emit();
@@ -441,56 +474,119 @@ export class SaasSelectComponent
     this.scrollResizeUnsub = undefined;
   }
 
+  private clearPanelMaxHeightStyles(): void {
+    const panelElev = this.host.nativeElement.querySelector(
+      '.saas-select__panel-elev',
+    ) as HTMLElement | null;
+    if (!panelElev) return;
+    panelElev.style.maxHeight = '';
+    const list = panelElev.querySelector(
+      '.saas-select__list',
+    ) as HTMLElement | null;
+    if (list) list.style.maxHeight = '';
+  }
+
   private syncPanelPlacement(): void {
-    if (!this.panelOpen || !this.triggerBtn?.nativeElement) return;
-    const el = this.triggerBtn.nativeElement;
+    if (!this.panelOpen) return;
+    const el =
+      this.triggerBtn?.nativeElement ??
+      (this.host.nativeElement.querySelector(
+        '.saas-select__trigger',
+      ) as HTMLElement | null);
+    if (!el) return;
     const r = el.getBoundingClientRect();
     const gap = 4;
     const panelElev = this.host.nativeElement.querySelector(
       '.saas-select__panel-elev',
     ) as HTMLElement | null;
     const measuredH = panelElev?.offsetHeight ?? 0;
-    const estPanelH = Math.max(
-      measuredH,
-      Math.min(320, window.innerHeight * 0.5),
+    const optionCount = Math.max(1, this.filteredOptions.length);
+    const rowH = 40;
+    const chrome = this.showFilter ? 56 : 12;
+    const fallbackH = Math.min(280, Math.max(80, optionCount * rowH + chrome));
+    /** Altura natural; se ainda não medimos, usa estimativa. */
+    const estPanelH = measuredH > 0 ? measuredH : fallbackH;
+
+    /**
+     * Espaço útil = viewport ∩ scroll real (drawer).
+     * Nunca usar overflow:hidden de wrappers — clipRect minúsculo cobria o trigger.
+     */
+    const clipEl =
+      findScrollClipAncestor(this.host.nativeElement) ??
+      (this.host.nativeElement.closest(
+        '.nc-itens--panel-fixed',
+      ) as HTMLElement | null);
+    const clipRect = clipEl?.getBoundingClientRect();
+    const placeOpts = { gap, clipRect };
+    const space = dropdownAvailableSpace(r, placeOpts);
+    const placement = resolveDropdownVerticalPlacement(
+      r,
+      estPanelH,
+      placeOpts,
     );
-    const placement = resolveDropdownVerticalPlacement(r, estPanelH, { gap });
     this.panelOpenAbove = placement === 'above';
+
+    const avail = placement === 'below' ? space.below : space.above;
+    const naturalH = Math.min(estPanelH, 280);
+    const maxListH = Math.max(72, Math.min(naturalH, Math.floor(avail)));
+    if (panelElev) {
+      panelElev.style.maxHeight = `${maxListH}px`;
+      const list = panelElev.querySelector(
+        '.saas-select__list',
+      ) as HTMLElement | null;
+      if (list) {
+        list.style.maxHeight = `${Math.max(56, maxListH - (this.showFilter ? 48 : 0))}px`;
+      }
+    }
 
     if (!this.panelFixedMode) return;
 
-    let topPx =
-      placement === 'above' ? r.top - estPanelH - gap : r.bottom + gap;
-    topPx = Math.max(
-      gap,
-      Math.min(topPx, window.innerHeight - estPanelH - gap),
-    );
-
-    /** Piso só quando o trigger encolhe abaixo do padrão (CSS var resolvida). */
-    const minRaw = getComputedStyle(this.host.nativeElement)
-      .getPropertyValue('--saas-select-panel-min-width')
-      .trim();
-    let widthPx = r.width;
-    if (minRaw && minRaw !== '100%') {
-      const parsed = Number.parseFloat(minRaw);
-      if (Number.isFinite(parsed) && parsed > widthPx) {
-        widthPx = parsed;
-      }
+    const hForTop = maxListH;
+    let topPx: number;
+    if (placement === 'below') {
+      /** Nunca subir o painel por cima do trigger (clamp antigo causava o bug). */
+      topPx = r.bottom + gap;
+    } else {
+      topPx = r.top - hForTop - gap;
+      topPx = Math.max(gap, topPx);
     }
-    widthPx = Math.min(widthPx, window.innerWidth - 16);
-    /** Alinha à esquerda do input; se não couber, desloca para caber na VW. */
+
+    const widthPx = this.resolveFixedPanelWidthPx(r.width);
     let leftPx = r.left;
     if (leftPx + widthPx > window.innerWidth - 8) {
       leftPx = Math.max(8, window.innerWidth - widthPx - 8);
     }
     leftPx = Math.max(8, leftPx);
+    /**
+     * `min-width`/`max-width` em px: o CSS usa `min-width: 100%`, e em
+     * `position: fixed` 100% = viewport (painel estourava ~largura da tela).
+     */
     this.fixedPanelStyle = {
       position: 'fixed',
       top: `${topPx}px`,
       left: `${leftPx}px`,
       width: `${widthPx}px`,
+      'min-width': `${widthPx}px`,
+      'max-width': `${widthPx}px`,
+      'max-height': `${maxListH}px`,
       'z-index': '10060',
     };
+  }
+
+  /**
+   * Largura do painel fixed = trigger, com piso opcional em px
+   * (`--saas-select-panel-min-width`). Ignora `100%` e valores não-px.
+   */
+  private resolveFixedPanelWidthPx(triggerWidth: number): number {
+    let widthPx = Math.max(0, triggerWidth);
+    const minRaw = getComputedStyle(this.host.nativeElement)
+      .getPropertyValue('--saas-select-panel-min-width')
+      .trim();
+    const minPx = parseCssLengthPxPreferringMax(minRaw);
+    if (minPx != null && minPx > widthPx) {
+      widthPx = minPx;
+    }
+    return Math.min(widthPx, Math.max(16, window.innerWidth - 16));
   }
 
   private emitValue(): void {
@@ -519,4 +615,25 @@ export class SaasSelectComponent
       this.onChange(this.inner === '' ? '' : this.inner);
     }
   }
+}
+
+/**
+ * Aceita `420px` ou `max(210px, 180px)`. Ignora `100%`, `none` e valores complexos
+ * (evita parseFloat('100%') === 100).
+ */
+function parseCssLengthPxPreferringMax(raw: string): number | null {
+  const v = raw.trim();
+  if (!v || v === 'none' || v === '100%') return null;
+  const simple = /^([\d.]+)px$/i.exec(v);
+  if (simple) {
+    const n = Number.parseFloat(simple[1]);
+    return Number.isFinite(n) ? n : null;
+  }
+  const maxPx = /^max\(\s*([\d.]+)px\s*,\s*([\d.]+)px\s*\)$/i.exec(v);
+  if (maxPx) {
+    const a = Number.parseFloat(maxPx[1]);
+    const b = Number.parseFloat(maxPx[2]);
+    if (Number.isFinite(a) && Number.isFinite(b)) return Math.max(a, b);
+  }
+  return null;
 }

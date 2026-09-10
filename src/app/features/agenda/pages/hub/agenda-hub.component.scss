@@ -1839,7 +1839,7 @@ $agenda-grid-stroke: #eeeeee;
    */
   &--comanda {
     z-index: 1003;
-    /* Scroll só em `.nc-drawer__main` — evita salto de foco no painel exterior. */
+    /* Scroll em `.nc-drawer__scroll`; fechar absoluto no shell `.nc-drawer__main`. */
     overflow: hidden !important;
     overscroll-behavior: none;
 
@@ -1918,7 +1918,7 @@ $agenda-grid-stroke: #eeeeee;
 @include dr.drawer-mobile-column(
   '.app-drawer--comanda',
   '.nc-modal-header',
-  '.nc-drawer__flow',
+  '.nc-drawer__scroll',
   '.nc-footer'
 );
 

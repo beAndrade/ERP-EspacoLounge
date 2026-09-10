@@ -1230,7 +1230,7 @@ tbody td.col-ticket {
 @include dr.drawer-mobile-column(
   '.app-drawer--comanda:not(.app-drawer--faturar)',
   '.nc-modal-header',
-  '.nc-drawer__flow',
+  '.nc-drawer__scroll',
   '.nc-footer'
 );
 

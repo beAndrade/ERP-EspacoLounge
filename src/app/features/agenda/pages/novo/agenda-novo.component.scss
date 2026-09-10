@@ -428,8 +428,7 @@
 
 /**
  * Com resumo: colado abaixo dos itens (gap pequeno) e desce com as linhas.
- * Observações ficam perto do footer (`margin-top: auto` + gap moderado).
- * Sem resumo: observações sobem com `margin-top: auto`.
+ * Observações segue o fluxo (sem sticky / sem margin-top auto).
  */
 :host.agenda-novo--drawer
   .form-shell__flow--modal:has(> .agenda-modal__resumo-wrap)
@@ -438,18 +437,6 @@
   margin-top: calc(
     var(--drawer-itens-resumo-gap, 0.9rem) - var(--drawer-flow-modal-gap, 1.25rem)
   );
-}
-
-:host.agenda-novo--drawer
-  .form-shell__flow--modal:has(> .agenda-modal__resumo-wrap)
-  > .block-obs {
-  margin-top: auto;
-}
-
-:host.agenda-novo--drawer
-  .form-shell__flow--modal:not(:has(> .agenda-modal__resumo-wrap))
-  > .block-obs {
-  margin-top: auto;
 }
 
 .block-context {
@@ -1480,6 +1467,18 @@ textarea {
   width: 100%;
 }
 
+/**
+ * Drawer: calculadora de Cabelo com a mesma estética do bloco de etapas
+ * (fundo branco + borda sutil).
+ */
+.cabelo-calc.cabelo-calc--nested {
+  background: #fff;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
+  border-radius: var(--radius, 14px);
+  padding: 0.75rem;
+  box-sizing: border-box;
+}
+
 .etapas-block--etapas-modal {
   flex: 1 1 100%;
   min-width: 0;
@@ -1487,8 +1486,8 @@ textarea {
 }
 
 /**
- * Largura do bloco de etapas = Tipo + Pacote do cabeçalho; rail com o mesmo
- * espaço que a coluna de ações (gap + 2× ícones) para alinhar a borda direita.
+ * Largura do bloco de etapas = Tipo + Pacote (até o fim do Pacote);
+ * o rail flex preenche Pro + Horário + Duração + [Total] + ações.
  */
 .servico-row__etapas-wrap {
   display: flex;
@@ -1502,24 +1501,22 @@ textarea {
     --servico-cabecalho-col-gap: 0.55rem;
     --servico-cabecalho-actions-w: calc(40px * 2 + 0.4rem);
     /**
-     * Largura = coluna «Tipo de linha»: Tipo e Pacote dividem o espaço após
-     * Total (money) + ações.
+     * Cabeçalho: Tipo | Pacote | Pro | Horário | Duração | Ações (5 gaps após Pacote → 4).
+     * Etapas alinham à direita do Pacote.
      */
     --mega-etapas-col-w: calc(
-      (
-          100% - var(--servico-cabecalho-actions-w) - var(--drawer-money-col, 112px) -
-            3 * var(--servico-cabecalho-col-gap)
-        ) /
-        2
+      100% - var(--drawer-pro-col, 148px) - var(--drawer-hora-linha-col, 148px) -
+        var(--drawer-duracao-col, 110px) - var(--servico-cabecalho-actions-w) -
+        4 * var(--servico-cabecalho-col-gap)
     );
   }
 
   &__rail {
-    flex: 0 0 var(--servico-cabecalho-actions-w, calc(40px * 2 + 0.4rem));
-    width: var(--servico-cabecalho-actions-w, calc(40px * 2 + 0.4rem));
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
     min-height: 0.25rem;
     box-sizing: border-box;
-    flex-shrink: 0;
   }
 
   .etapas-block--etapas-modal {
@@ -1527,6 +1524,18 @@ textarea {
     min-width: 0;
     max-width: 100%;
   }
+}
+
+/** Com coluna Total no cabeçalho: um gap + money a mais à direita. */
+.servico-row--drawer:has(
+    .servico-row__linha-cabecalho-modal .servico-row__field--produto-total-estimado
+  )
+  .servico-row__etapas-wrap--modal-cabecalho {
+  --mega-etapas-col-w: calc(
+    100% - var(--drawer-pro-col, 148px) - var(--drawer-hora-linha-col, 148px) -
+      var(--drawer-duracao-col, 110px) - var(--drawer-money-col, 124px) -
+      var(--servico-cabecalho-actions-w) - 5 * var(--servico-cabecalho-col-gap)
+  );
 }
 
 .etapas-block,
@@ -1548,11 +1557,21 @@ textarea {
 }
 
 /**
- * Bloco de etapas: fundo = total estimado; borda = trigger do saas-select.
+ * Bloco de etapas (página full / nested genérico).
  */
-.etapas-block:not(.etapas-block--modal) {
+.etapas-block:not(.etapas-block--modal):not(.etapas-block--etapas-modal) {
   border: 1px solid var(--drawer-field-border, #e7e5e4);
   background: #f5f5f4;
+}
+
+/**
+ * Drawer modal Mega/Pacote: fundo branco + borda sutil (sem cinza).
+ */
+.etapas-block.etapas-block--etapas-modal {
+  background: #fff;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
+  border-radius: var(--radius, 14px);
+  padding: 0.75rem;
 }
 
 .etapas-header,
@@ -1625,15 +1644,79 @@ textarea {
   margin: 0;
 }
 
-/** Tipo + Pacote dividem o espaço restante em partes iguais. */
-.servico-row--drawer
-  .servico-row__linha-cabecalho-modal
+/**
+ * Cabeçalho Mega/Pacote: mesma grelha que Serviço —
+ * Tipo fixo · Pacote (= Descrição, flex) · Pro · Horário · Duração · ações.
+ */
+.servico-row--drawer .servico-row__linha-cabecalho-modal {
   .servico-row__field--mega-cabecalho,
-.servico-row--drawer
-  .servico-row__linha-cabecalho-modal
+  .servico-row__field--tipo-linha {
+    flex: 0 0 var(--drawer-tipo-linha-col, 148px);
+    width: var(--drawer-tipo-linha-col, 148px);
+    min-width: var(--drawer-tipo-linha-col, 148px);
+    max-width: var(--drawer-tipo-linha-col, 148px);
+    box-sizing: border-box;
+  }
+
   .servico-row__field--pacote-mega {
-  flex: 1 1 0;
-  min-width: 0;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: var(--drawer-descricao-col-max, none);
+    overflow: visible;
+    --saas-select-panel-width: 100%;
+    --saas-select-panel-min-width: var(--drawer-descricao-panel-min, 420px);
+    --saas-select-panel-max-width: none;
+
+    app-saas-select,
+    ::ng-deep .saas-select,
+    ::ng-deep .saas-select__trigger {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    ::ng-deep .saas-select__value,
+    ::ng-deep .saas-select__trigger-input {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .servico-row__field--pro {
+    flex: 0 0 var(--drawer-pro-col, 148px);
+    width: var(--drawer-pro-col, 148px);
+    min-width: var(--drawer-pro-col, 148px);
+    max-width: var(--drawer-pro-col, 148px);
+    box-sizing: border-box;
+  }
+
+  .servico-row__field--hora-linha-modal {
+    flex: 0 0 var(--drawer-hora-linha-col, 148px);
+    width: var(--drawer-hora-linha-col, 148px);
+    min-width: var(--drawer-hora-linha-col, 148px);
+    max-width: var(--drawer-hora-linha-col, 148px);
+    box-sizing: border-box;
+
+    app-agenda-horario-slots {
+      display: block;
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  .servico-row__field--duracao-linha-modal {
+    flex: 0 0 var(--drawer-duracao-col, 110px);
+    width: var(--drawer-duracao-col, 110px);
+    min-width: var(--drawer-duracao-col, 110px);
+    max-width: var(--drawer-duracao-col, 110px);
+    box-sizing: border-box;
+  }
+
+  .servico-row__actions--linha-cab {
+    flex: 0 0 calc(40px * 2 + 0.4rem);
+    margin-left: 0;
+  }
 }
 
 /** Total: coluna estreita de moeda (não compete com Tipo/Pacote). */
@@ -1656,7 +1739,7 @@ textarea {
   align-self: flex-end;
 }
 
-/** Cabelo (modal): Detalhes (flex) | Valor unit. | Desconto | Total | +/lixeira. */
+/** Cabelo (modal): Detalhes (flex) | V.unit≈Pro | Desconto≈Horário | Total≈Duração | ações. */
 .servico-row__cabelo-rodape--drawer {
   display: grid;
   width: 100%;
@@ -1667,9 +1750,9 @@ textarea {
   column-gap: 0.55rem;
   grid-template-columns:
     minmax(0, 1fr)
-    minmax(0, var(--drawer-money-col, 112px))
-    minmax(0, var(--drawer-money-col, 112px))
-    minmax(0, var(--drawer-money-col, 112px))
+    var(--drawer-pro-col, 148px)
+    var(--drawer-hora-linha-col, 148px)
+    var(--drawer-duracao-col, 110px)
     auto;
 
   @media (max-width: 900px) {
@@ -1713,10 +1796,11 @@ textarea {
 }
 
 .servico-row--drawer .servico-row__field--produto-qtd-drawer {
-  /** Mesma coluna que «Duração» na linha Serviço (`5.9rem` / `5.2rem`). */
-  flex: 0 0 5.9rem;
-  min-width: 5.2rem;
-  max-width: 5.9rem;
+  /** Mesma coluna que «Duração» na linha Serviço. */
+  flex: 0 0 var(--drawer-duracao-col, 110px);
+  width: var(--drawer-duracao-col, 110px);
+  min-width: var(--drawer-duracao-col, 110px);
+  max-width: var(--drawer-duracao-col, 110px);
 
   input {
     box-sizing: border-box;
@@ -1725,6 +1809,19 @@ textarea {
     height: var(--touch-min, 38px);
     text-align: center;
   }
+}
+
+/** Produto no drawer: Descrição cresce até o eixo do Pro (como Serviço). */
+.servico-row--drawer.servico-row--layout-produto-drawer
+  > .servico-row__field--produto-catalogo {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
+  --saas-select-panel-width: 100%;
+  --saas-select-panel-min-width: var(--drawer-descricao-panel-min, 420px);
+  --saas-select-panel-max-width: none;
 }
 
 .servico-row--drawer .servico-row__field--modal-prod-money {
@@ -1863,23 +1960,57 @@ textarea {
 }
 
 .servico-row__horario-readonly {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-text);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch-min, 38px);
+  height: var(--touch-min, 38px);
+  padding: 0 0.75rem;
+  border-radius: var(--radius, 14px);
+  border: none;
+  background: #f5f5f5;
+  font-size: 15px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
+  color: rgba(0, 0, 0, 0.38);
+  cursor: default;
+  user-select: none;
+
+  &--vazio {
+    color: rgba(0, 0, 0, 0.25);
+  }
+
+  &--conflito {
+    color: #c2410c;
+    background: #fff7ed;
+  }
 }
 
-.servico-row__duracao {
+.servico-row__field--duracao-linha-modal {
+  flex: 0 0 var(--drawer-duracao-col, 110px);
+  width: var(--drawer-duracao-col, 110px);
+  min-width: var(--drawer-duracao-col, 110px);
+  max-width: var(--drawer-duracao-col, 110px);
   box-sizing: border-box;
-  min-height: var(--touch-min);
-  padding: 0.5rem 0.65rem;
-  border-radius: var(--radius);
-  border: 1px solid #e7e5e4;
-  background: #f4f2f0;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-muted, #57534e);
-  font-variant-numeric: tabular-nums;
+}
+
+.servico-row__field-ghost {
+  min-height: var(--touch-min, 38px);
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  box-sizing: border-box;
+  background: #f5f5f5;
+  border: 1px solid var(--drawer-field-border, #e7e5e4);
+  border-radius: var(--radius, 14px);
+  color: var(--drawer-input-text-idle, rgba(0, 0, 0, 0.38));
+  font-size: var(--drawer-field-font-size, 15px);
+  font-weight: var(--drawer-input-font-weight, 400);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
 }
 
 .servico-row__actions {
@@ -1910,17 +2041,29 @@ textarea {
   border: 1px solid #e7e5e4;
   background: #fafaf9;
   margin-bottom: 0.25rem;
+
+  &.cabelo-calc--nested {
+    background: #fff;
+    border-color: var(--drawer-field-border, #e7e5e4);
+    padding: 0.75rem;
+  }
 }
 
 .cabelo-calc__titulo {
   font-weight: 700;
   font-size: 0.95rem;
-  color: var(--color-text);
+  /** Mesma cor de `.itens-atendimento__titulo` no drawer. */
+  color: #404040;
 }
 
 .cabelo-calc__hint {
   margin: 0;
   font-size: 0.85rem;
+}
+
+/** Menos respiro entre título e texto de ajuda. */
+.cabelo-calc__titulo + .cabelo-calc__hint {
+  margin-top: -0.35rem;
 }
 
 .cabelo-calc__grid {
@@ -1933,6 +2076,11 @@ textarea {
 .cabelo-calc__field {
   margin: 0;
   min-width: 0;
+
+  &:has(app-saas-select.saas-select-host--open) {
+    position: relative;
+    z-index: 25;
+  }
 
   &--gramas {
     grid-column: 1 / -1;
@@ -1949,7 +2097,7 @@ textarea {
   color: var(--color-muted);
 
   &--total {
-    color: var(--color-text);
+    color: #404040;
     font-weight: 600;
   }
 }
@@ -1968,8 +2116,8 @@ textarea {
    * `padding-inline` aqui — ver contrato em `agenda-hub.component.scss` (`.app-drawer`).
    */
   padding-inline: 0;
-  /** Gap padrão entre o último bloco do fluxo (obs) e o footer. */
-  --drawer-obs-footer-gap: 3rem;
+  /** Gap entre o último bloco do fluxo (obs) e o footer. */
+  --drawer-obs-footer-gap: 1.5rem;
   /**
    * Gap itens → resumo (= cabeçalho Mega ↔ etapas:
    * row-gap 0.4rem + margin-top do `.etapas-block--nested` 0.5rem).
@@ -2239,9 +2387,9 @@ textarea {
   /** Inset horizontal: só `.app-drawer`; ver `agenda-hub.component.scss`. */
   padding-inline: 0;
   /** Colunas Tipo / Profissional / Horário: mesma largura no drawer. */
-  --drawer-tipo-linha-col: 148px;
-  --drawer-tipo-linha-col-padrao: 148px;
-  --drawer-tipo-linha-panel-min: 240px;
+  --drawer-tipo-linha-col: 210px;
+  --drawer-tipo-linha-col-padrao: 210px;
+  --drawer-tipo-linha-panel-min: 280px;
   /**
    * Descrição (Serviço/Produto): ocupa o espaço restante da linha.
    */
@@ -2269,6 +2417,8 @@ textarea {
   --drawer-descricao-panel-min: 420px;
   /** Horário — mesma largura que Tipo e Profissional. */
   --drawer-hora-linha-col: 148px;
+  /** Duração — coluna estável alinhada à linha Serviço e ao cabeçalho Mega. */
+  --drawer-duracao-col: 110px;
   /** Padrão do drawer: inputs com 38px de altura. */
   --touch-min: 38px;
   --radius: 14px;
@@ -2348,13 +2498,18 @@ textarea {
   }
 
   /**
-   * Rótulos em `<span>` sem `<label>` (ex.: cabeçalho do `block-context`, “Observações” em modal).
-   * `margin-bottom` = `--drawer-label-below` (8px) em todo o hub.
+   * Rótulos em `<span>` sem `<label>` (cabeçalho, serviços, calculadora Cabelo, etapas).
+   * Mesma tipografia do “Cliente”: size / weight / cor / line-height do drawer.
    */
   .block-context--modal .block-context__field > span:first-of-type,
   .data-field.block-context__field > span:first-of-type,
   .block-obs > div > span:first-of-type,
-  .block-hora--no-time-field > div > span:first-of-type {
+  .block-hora--no-time-field > div > span:first-of-type,
+  .servico-row--drawer .servico-row__field > span:first-of-type,
+  .servico-row--drawer .cabelo-calc__field > span:first-of-type,
+  .etapa-row--etapas-modal .etapa-row__etapa-cel > span:first-of-type,
+  .etapa-row--etapas-modal .etapa-row__field > span:first-of-type {
+    display: block;
     font-size: var(--drawer-label-size);
     line-height: var(--drawer-label-line-height);
     font-weight: var(--drawer-label-weight);
@@ -2370,7 +2525,8 @@ textarea {
   /**
    * Linhas de serviço / células de etapa: `div.servico-row__field` com `<span>` + control.
    */
-  .servico-row--drawer .servico-row__field {
+  .servico-row--drawer .servico-row__field,
+  .servico-row--drawer .cabelo-calc__field {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -2386,11 +2542,6 @@ textarea {
 
   .servico-row--drawer .servico-row__mega-topo {
     align-items: flex-end;
-  }
-
-  .servico-row--drawer .servico-row__field > span:first-of-type,
-  .etapa-row--etapas-modal .etapa-row__etapa-cel > span:first-of-type {
-    margin-bottom: var(--drawer-label-below);
   }
 
   /**
@@ -2588,7 +2739,8 @@ textarea {
   /* Glow no próprio trilho (não em pseudo interno) para não ser cortado pelo overflow. */
 
   /**
-   * Padrão: itens → resumo (gap pequeno) → espaço flex → observações → gap → footer.
+   * Fluxo natural: itens → (gap fixo) → Observações → gap → fim do scroller.
+   * Novas linhas empurram o que está abaixo; o footer fica fora do flow.
    */
   .form-shell__flow--modal > .agenda-modal__resumo-wrap {
     flex-shrink: 0;
@@ -2602,10 +2754,11 @@ textarea {
   .form-shell__flow--modal > .block-obs {
     flex-shrink: 0;
     align-self: stretch;
+    /** Extra além do `gap` do flow: respiro entre repetir/itens e Observações. */
+    margin-top: 10rem;
     padding-top: 0;
     padding-bottom: 0;
-    /** Gap padrão obs → footer (também usado no drawer de comanda). */
-    margin-bottom: var(--drawer-obs-footer-gap, 2rem);
+    margin-bottom: var(--drawer-obs-footer-gap, 1.5rem);
     background: #fff;
     position: relative;
     z-index: 1;
@@ -2840,6 +2993,28 @@ textarea {
         width: 100%;
         min-width: 0;
       }
+
+      .servico-row__horario-readonly {
+        width: 100%;
+        color: var(--drawer-input-text-idle, rgba(0, 0, 0, 0.38));
+        background: #f5f5f5;
+        border-radius: var(--radius, 14px);
+        font-weight: var(--drawer-input-font-weight, 400);
+        font-size: var(--drawer-field-font-size, 15px);
+
+        &--conflito {
+          color: #c2410c;
+          background: #fff7ed;
+        }
+      }
+    }
+
+    .servico-row__field--duracao-linha-modal {
+      flex: 0 0 var(--drawer-duracao-col, 110px);
+      width: var(--drawer-duracao-col, 110px);
+      min-width: var(--drawer-duracao-col, 110px);
+      max-width: var(--drawer-duracao-col, 110px);
+      box-sizing: border-box;
     }
 
     .servico-row__field--money,
@@ -2960,6 +3135,28 @@ textarea {
         width: 100%;
         min-width: 0;
       }
+
+      .servico-row__horario-readonly {
+        width: 100%;
+        color: var(--drawer-input-text-idle, rgba(0, 0, 0, 0.38));
+        background: #f5f5f5;
+        border-radius: var(--radius, 14px);
+        font-weight: var(--drawer-input-font-weight, 400);
+        font-size: var(--drawer-field-font-size, 15px);
+
+        &--conflito {
+          color: #c2410c;
+          background: #fff7ed;
+        }
+      }
+    }
+
+    .servico-row__field--duracao-linha-modal {
+      flex: 0 0 var(--drawer-duracao-col, 110px);
+      width: var(--drawer-duracao-col, 110px);
+      min-width: var(--drawer-duracao-col, 110px);
+      max-width: var(--drawer-duracao-col, 110px);
+      box-sizing: border-box;
     }
 
     .servico-row__actions--drawer {
@@ -2968,9 +3165,9 @@ textarea {
     }
   }
 
-  /** Mega/Pacote (modal): largura = coluna «Tipo de linha» do cabeçalho. */
+  /** Mega/Pacote (modal): largura = Tipo + Pacote (até o fim do Pacote). */
   .servico-row__etapas-wrap--modal-cabecalho .etapas-block--etapas-modal {
-    flex: 0 1 var(--mega-etapas-col-w);
+    flex: 0 0 var(--mega-etapas-col-w);
     width: var(--mega-etapas-col-w);
     max-width: var(--mega-etapas-col-w);
     margin-left: 0;
@@ -2992,21 +3189,21 @@ textarea {
     --drawer-money-col: 124px;
     --drawer-money-col-min: 124px;
     --drawer-tamanho-col: 112px;
-    --drawer-tipo-linha-col: 120px;
+    --drawer-tipo-linha-col: 190px;
     --drawer-pro-col: 120px;
     --drawer-hora-linha-col: 120px;
-    --drawer-tipo-linha-panel-min: 220px;
+    --drawer-tipo-linha-panel-min: 260px;
     --drawer-descricao-panel-min: 400px;
   }
 
   @media (max-width: 1200px) {
-    --drawer-tipo-linha-col: 110px;
+    --drawer-tipo-linha-col: 170px;
     --drawer-pro-col: 110px;
     --drawer-hora-linha-col: 110px;
     --drawer-tamanho-col: 104px;
     --drawer-money-col: 120px;
     --drawer-money-col-min: 120px;
-    --drawer-tipo-linha-panel-min: 200px;
+    --drawer-tipo-linha-panel-min: 240px;
     --drawer-descricao-panel-min: 360px;
   }
 
@@ -3017,7 +3214,7 @@ textarea {
       --drawer-money-col: 120px;
       --drawer-money-col-min: 120px;
       --drawer-tamanho-col: 110px;
-      --drawer-tipo-linha-col: 112px;
+      --drawer-tipo-linha-col: 180px;
       --drawer-pro-col: 112px;
       --drawer-hora-linha-col: 112px;
     }
@@ -3030,7 +3227,7 @@ textarea {
       --drawer-money-col: 116px;
       --drawer-money-col-min: 116px;
       --drawer-tamanho-col: 100px;
-      --drawer-tipo-linha-col: 100px;
+      --drawer-tipo-linha-col: 160px;
       --drawer-pro-col: 100px;
       --drawer-hora-linha-col: 100px;
     }
@@ -3189,11 +3386,12 @@ textarea {
   }
 
   .cabelo-calc--nested .saas-select__list {
-    max-height: min(52vh, 30rem);
+    /* Altura limitada pelo syncPanelPlacement (espaço útil no drawer). */
+    max-height: none;
   }
 
   .cabelo-calc--nested .saas-select__list--com-criar {
-    max-height: min(48vh, 28rem);
+    max-height: none;
   }
 
   app-agenda-horario-slots {

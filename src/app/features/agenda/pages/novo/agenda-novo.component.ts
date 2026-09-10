@@ -106,6 +106,7 @@ import type { OrcamentoPrintPayload } from '../../../../core/models/orcamento-pr
 import { precoUnitarioServicoCatalogo } from '../../../../core/utils/servico-preco';
 import {
   AtendimentoCriadoResumo,
+  AtendimentoEtapaPayload,
   AtendimentoItemCatalogo,
   AtendimentoListaItem,
   CabeloCatalogoItem,
@@ -312,17 +313,329 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Horário ao lado do Profissional na 1.ª linha Serviço.
-   * Se não houver Serviço, permanece no cabeçalho (`exibirHorarioNoCabecalhoModal`).
+   * Horário editável ao lado do Profissional em **toda** linha Serviço no drawer.
    */
   exibirHorarioNaLinhaServico(linhaIndex: number): boolean {
     if (!this.modoModal || this.fluxoSomenteComanda) return false;
-    for (let j = 0; j < this.linhasItensArray.length; j++) {
-      if (this.linhasItensArray.at(j)?.get('itemTipo')?.value === 'Serviço') {
-        return j === linhaIndex;
+    return (
+      this.linhasItensArray.at(linhaIndex)?.get('itemTipo')?.value === 'Serviço'
+    );
+  }
+
+  /** Coluna duração editável nas linhas Serviço do drawer. */
+  exibirDuracaoNaLinhaServico(linhaIndex: number): boolean {
+    return this.exibirHorarioNaLinhaServico(linhaIndex);
+  }
+
+  /**
+   * @deprecated Mantido por compat — horário sugerido readonly foi substituído por picker.
+   */
+  exibirHorarioSugeridoNaLinhaServico(_linhaIndex: number): boolean {
+    return false;
+  }
+
+  /** Opções de duração (5 em 5 min) para o select da linha. */
+  opcoesDuracaoMinutosSelect(): { value: number; label: string }[] {
+    const out: { value: number; label: string }[] = [];
+    for (let m = 5; m <= 240; m += 5) {
+      out.push({ value: m, label: `${m} min` });
+    }
+    return out;
+  }
+
+  opcoesDuracaoMinutosSaas(): { value: string; label: string }[] {
+    return this.opcoesDuracaoMinutosSelect().map((o) => ({
+      value: String(o.value),
+      label: o.label,
+    }));
+  }
+
+  horaLinhaControl(linhaIndex: number): FormControl<string | null> {
+    return this.linhasItensArray
+      .at(linhaIndex)
+      ?.get('hora_linha') as FormControl<string | null>;
+  }
+
+  duracaoLinhaControl(linhaIndex: number): FormControl<number | null> {
+    return this.linhasItensArray
+      .at(linhaIndex)
+      ?.get('duracao_minutos') as FormControl<number | null>;
+  }
+
+  /**
+   * Duração efetiva da linha Serviço (override ou catálogo).
+   */
+  duracaoEfetivaLinhaServico(linhaIndex: number): number {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return 30;
+    const ov = Number(g.get('duracao_minutos')?.value);
+    if (Number.isFinite(ov) && ov >= 5 && ov <= 24 * 60) return Math.round(ov);
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+    return this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
+  }
+
+  /** Fim previsto HH:mm da linha Serviço (início + duração efetiva). */
+  horarioFimLinhaServico(linhaIndex: number): string {
+    const hi = normalizarHoraHHmm(
+      String(this.linhasItensArray.at(linhaIndex)?.get('hora_linha')?.value ?? ''),
+    );
+    if (!hi) return '';
+    const [hs, ms] = hi.split(':').map(Number);
+    if (!Number.isFinite(hs) || !Number.isFinite(ms)) return '';
+    const end = hs! * 60 + ms! + this.duracaoEfetivaLinhaServico(linhaIndex);
+    return `${pad2(Math.floor(end / 60) % 24)}:${pad2(end % 60)}`;
+  }
+
+  /**
+   * Início sugerido encadeado a partir das linhas agendáveis anteriores
+   * (Serviço / Mega / Pacote — ignora Produto/Cabelo).
+   * Linha sem `hora_linha` usa `hora_inicial` do form ou `08:00` (placeholder UI).
+   */
+  horarioSugeridoLinhaServico(linhaIndex: number): string {
+    let cursor: string | null = null;
+    const horaForm = (): string =>
+      normalizarHoraHHmm(String(this.form.controls.hora_inicial.value ?? '')) ??
+      '';
+    const inicioFallback = (): string => horaForm() || '08:00';
+    for (let j = 0; j < linhaIndex; j++) {
+      const g = this.linhasItensArray.at(j);
+      const tipo = String(g?.get('itemTipo')?.value ?? '');
+      if (tipo === 'Serviço') {
+        const fromLinha =
+          normalizarHoraHHmm(String(g?.get('hora_linha')?.value ?? '')) ?? '';
+        const hi: string = fromLinha || (!cursor ? inicioFallback() : '');
+        if (!hi) continue;
+        const parts: number[] = hi.split(':').map(Number);
+        const hs: number = parts[0]!;
+        const ms: number = parts[1]!;
+        if (!Number.isFinite(hs) || !Number.isFinite(ms)) continue;
+        const endMin: number =
+          hs * 60 + ms + this.duracaoEfetivaLinhaServico(j);
+        cursor = `${pad2(Math.floor(endMin / 60) % 24)}:${pad2(endMin % 60)}`;
+      } else if (tipo === 'Mega') {
+        const fromLinha = normalizarHoraHHmm(
+          String(g?.get('hora_linha')?.value ?? ''),
+        );
+        const hi: string = fromLinha || cursor || inicioFallback();
+        if (!hi) continue;
+        const parts: number[] = hi.split(':').map(Number);
+        const hs: number = parts[0]!;
+        const ms: number = parts[1]!;
+        if (!Number.isFinite(hs) || !Number.isFinite(ms)) continue;
+        const endMin: number =
+          hs * 60 + ms + this.duracaoTotalEtapasLinha(j);
+        cursor = `${pad2(Math.floor(endMin / 60) % 24)}:${pad2(endMin % 60)}`;
+      } else if (isTipoPacoteFamilia(tipo)) {
+        const start: string = cursor || inicioFallback();
+        if (!start) continue;
+        const parts: number[] = start.split(':').map(Number);
+        const hs: number = parts[0]!;
+        const ms: number = parts[1]!;
+        if (!Number.isFinite(hs) || !Number.isFinite(ms)) continue;
+        const endMin: number =
+          hs * 60 + ms + this.duracaoTotalEtapasLinha(j);
+        cursor = `${pad2(Math.floor(endMin / 60) % 24)}:${pad2(endMin % 60)}`;
       }
     }
+    if (cursor) return cursor;
+    return inicioFallback();
+  }
+
+  horarioSugeridoConflita(linhaIndex: number): boolean {
+    const sug = normalizarHoraHHmm(
+      String(
+        this.linhasItensArray.at(linhaIndex)?.get('hora_linha')?.value ??
+          this.horarioSugeridoLinhaServico(linhaIndex),
+      ),
+    );
+    if (!sug) return false;
+    const [hs, ms] = sug.split(':').map(Number);
+    if (!Number.isFinite(hs) || !Number.isFinite(ms)) return false;
+    const start = hs! * 60 + ms!;
+    const end = start + Math.max(5, this.duracaoEfetivaLinhaServico(linhaIndex));
+    for (const r of this.intervalosOcupacaoDia) {
+      if (start < r.b && end > r.a) return true;
+    }
     return false;
+  }
+
+  /** Soma das durações efetivas das etapas (Mega/Pacote). */
+  duracaoTotalEtapasLinha(linhaIndex: number): number {
+    const etapas = this.etapasArrayDaLinha(linhaIndex);
+    const g = this.linhasItensArray.at(linhaIndex);
+    const pacote = String(g?.get('pacote')?.value ?? '').trim();
+    const tipo = String(g?.get('itemTipo')?.value ?? '');
+    let sum = 0;
+    for (let j = 0; j < etapas.length; j++) {
+      const eg = etapas.at(j);
+      const etapa = String(eg?.get('etapa')?.value ?? '').trim();
+      if (!etapa) continue;
+      const ov = Number(eg?.get('duracao_minutos')?.value);
+      if (Number.isFinite(ov) && ov >= 5) {
+        sum += Math.round(ov);
+        continue;
+      }
+      const cat =
+        tipo === 'Pacote Adesivo+Queratina'
+          ? this.duracaoMinutosRegraMegaQueratina(pacote, etapa)
+          : this.duracaoMinutosRegraMega(pacote, etapa);
+      sum += cat ?? 30;
+    }
+    return Math.max(5, sum || 30);
+  }
+
+  /** Início efetivo do bloco Mega (hora_linha) ou Pacote (fim da anterior). */
+  inicioEfetivoBlocoMegaPacote(linhaIndex: number): string {
+    const g = this.linhasItensArray.at(linhaIndex);
+    const tipo = String(g?.get('itemTipo')?.value ?? '');
+    if (tipo === 'Mega') {
+      return (
+        normalizarHoraHHmm(String(g?.get('hora_linha')?.value ?? '')) ||
+        this.horarioSugeridoLinhaServico(linhaIndex)
+      );
+    }
+    if (isTipoPacoteFamilia(tipo)) {
+      return this.horarioSugeridoLinhaServico(linhaIndex);
+    }
+    return '';
+  }
+
+  /** Fim HH:mm do bloco Mega/Pacote (início + soma das etapas). */
+  horarioFimUltimaEtapaLinha(linhaIndex: number): string {
+    const hi = this.inicioEfetivoBlocoMegaPacote(linhaIndex);
+    if (!hi) return '';
+    const [hs, ms] = hi.split(':').map(Number);
+    if (!Number.isFinite(hs) || !Number.isFinite(ms)) return '';
+    const end = hs! * 60 + ms! + this.duracaoTotalEtapasLinha(linhaIndex);
+    return `${pad2(Math.floor(end / 60) % 24)}:${pad2(end % 60)}`;
+  }
+
+  /** Duração efetiva de uma etapa (override ou catálogo). */
+  duracaoEfetivaEtapa(linhaIndex: number, etapaIndex: number): number {
+    const g = this.linhasItensArray.at(linhaIndex);
+    const eg = this.etapasArrayDaLinha(linhaIndex)?.at(etapaIndex);
+    if (!g || !eg) return 30;
+    const ov = Number(eg.get('duracao_minutos')?.value);
+    if (Number.isFinite(ov) && ov >= 5) return Math.round(ov);
+    const pacote = String(g.get('pacote')?.value ?? '').trim();
+    const etapa = String(eg.get('etapa')?.value ?? '').trim();
+    const tipo = String(g.get('itemTipo')?.value ?? '');
+    if (!etapa) return 30;
+    const cat =
+      tipo === 'Pacote Adesivo+Queratina'
+        ? this.duracaoMinutosRegraMegaQueratina(pacote, etapa)
+        : this.duracaoMinutosRegraMega(pacote, etapa);
+    return cat ?? 30;
+  }
+
+  /** Horário sugerido (readonly) da etapa j no bloco Mega/Pacote. */
+  horarioSugeridoEtapaLinha(linhaIndex: number, etapaIndex: number): string {
+    const hi = this.inicioEfetivoBlocoMegaPacote(linhaIndex);
+    if (!hi) return '';
+    const [hs, ms] = hi.split(':').map(Number);
+    if (!Number.isFinite(hs) || !Number.isFinite(ms)) return '';
+    let mins = hs! * 60 + ms!;
+    for (let j = 0; j < etapaIndex; j++) {
+      const eg = this.etapasArrayDaLinha(linhaIndex)?.at(j);
+      if (!eg || !String(eg.get('etapa')?.value ?? '').trim()) continue;
+      mins += this.duracaoEfetivaEtapa(linhaIndex, j);
+    }
+    return `${pad2(Math.floor(mins / 60) % 24)}:${pad2(mins % 60)}`;
+  }
+
+  /**
+   * Reencadeia `hora_linha` das linhas Serviço/Mega seguintes que ainda
+   * não estão marcadas como manuais.
+   */
+  reencadearHorariosAPartirDe(fromIndex: number): void {
+    for (let i = fromIndex + 1; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const tipo = String(g?.get('itemTipo')?.value ?? '');
+      if (tipo !== 'Serviço' && tipo !== 'Mega') continue;
+      if (g?.get('hora_linha_manual')?.value === true) continue;
+      const sug = this.horarioSugeridoLinhaServico(i);
+      if (sug) {
+        g?.get('hora_linha')?.setValue(sug, { emitEvent: false });
+      }
+      if (this.indicePrimeiraLinhaAgendavelComHora() === i && sug) {
+        this.form.controls.hora_inicial.setValue(sug, { emitEvent: false });
+      }
+    }
+  }
+
+  indicePrimeiraLinhaServico(): number {
+    for (let j = 0; j < this.linhasItensArray.length; j++) {
+      if (this.linhasItensArray.at(j)?.get('itemTipo')?.value === 'Serviço') {
+        return j;
+      }
+    }
+    return -1;
+  }
+
+  /** Primeira linha Serviço ou Mega (âncora de horário do formulário). */
+  indicePrimeiraLinhaAgendavelComHora(): number {
+    for (let j = 0; j < this.linhasItensArray.length; j++) {
+      const t = this.linhasItensArray.at(j)?.get('itemTipo')?.value;
+      if (t === 'Serviço' || t === 'Mega') return j;
+    }
+    return -1;
+  }
+
+  onHoraLinhaServicoChange(linhaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g) return;
+    const atual = normalizarHoraHHmm(String(g.get('hora_linha')?.value ?? ''));
+    const sug = this.horarioSugeridoLinhaServico(linhaIndex);
+    const isFirst = this.indicePrimeiraLinhaAgendavelComHora() === linhaIndex;
+    if (isFirst) {
+      g.get('hora_linha_manual')?.setValue(false, { emitEvent: false });
+      if (atual) {
+        this.form.controls.hora_inicial.setValue(atual, { emitEvent: false });
+      }
+    } else {
+      g.get('hora_linha_manual')?.setValue(
+        Boolean(atual && sug && atual !== sug),
+        { emitEvent: false },
+      );
+    }
+    this.reencadearHorariosAPartirDe(linhaIndex);
+  }
+
+  onDuracaoLinhaServicoChange(linhaIndex: number): void {
+    this.reencadearHorariosAPartirDe(linhaIndex);
+  }
+
+  onDuracaoEtapaChange(linhaIndex: number, _etapaIndex: number): void {
+    this.reencadearHorariosAPartirDe(linhaIndex);
+  }
+
+  /** Ao escolher serviço/tamanho: preenche duração default do catálogo. */
+  aplicarDuracaoCatalogoNaLinha(linhaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    if (!g || g.get('itemTipo')?.value !== 'Serviço') return;
+    const sid = String(g.get('servico_id')?.value ?? '').trim();
+    const tam = String(g.get('tamanho')?.value ?? 'Curto').trim();
+    const d = this.duracaoMinutosDoServico(this.servicoPorId(sid), tam);
+    g.get('duracao_minutos')?.setValue(d, { emitEvent: false });
+    this.reencadearHorariosAPartirDe(linhaIndex);
+  }
+
+  /** Preenche duração da etapa a partir de Regras Mega / Queratina. */
+  aplicarDuracaoCatalogoNaEtapa(linhaIndex: number, etapaIndex: number): void {
+    const g = this.linhasItensArray.at(linhaIndex);
+    const eg = this.etapasArrayDaLinha(linhaIndex)?.at(etapaIndex);
+    if (!g || !eg) return;
+    const etapa = String(eg.get('etapa')?.value ?? '').trim();
+    if (!etapa) return;
+    const pacote = String(g.get('pacote')?.value ?? '').trim();
+    const tipo = String(g.get('itemTipo')?.value ?? '');
+    const d =
+      tipo === 'Pacote Adesivo+Queratina'
+        ? this.duracaoMinutosRegraMegaQueratina(pacote, etapa)
+        : this.duracaoMinutosRegraMega(pacote, etapa);
+    eg.get('duracao_minutos')?.setValue(d ?? 30, { emitEvent: false });
+    this.reencadearHorariosAPartirDe(linhaIndex);
   }
 
   /** Fallback: Horário no cabeçalho quando não há linha Serviço. */
@@ -929,19 +1242,32 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /**
    * Intervalo do novo agendamento cruza algum já ocupado no dia
-   * (exceto o próprio em edição).
+   * (exceto o próprio em edição). Usa horários/durações por linha.
    */
   private horarioNovoConflitaComOcupacao(): boolean {
-    const hi = normalizarHoraHHmm(
-      String(this.form.controls.hora_inicial.value ?? ''),
-    );
-    if (!hi) return false;
-    const [hs, ms] = hi.split(':').map(Number);
-    if (!Number.isFinite(hs) || !Number.isFinite(ms)) return false;
-    const start = hs! * 60 + ms!;
-    const end = start + Math.max(5, this.duracaoMinutosAgendaServicos());
-    for (const r of this.intervalosOcupacaoDia) {
-      if (start < r.b && end > r.a) return true;
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const tipo = String(g?.get('itemTipo')?.value ?? '');
+      let hi = '';
+      let dur = 0;
+      if (tipo === 'Serviço') {
+        hi = normalizarHoraHHmm(String(g?.get('hora_linha')?.value ?? '')) ?? '';
+        if (!hi) continue;
+        dur = this.duracaoEfetivaLinhaServico(i);
+      } else if (tipo === 'Mega') {
+        hi = this.inicioEfetivoBlocoMegaPacote(i);
+        if (!hi) continue;
+        dur = this.duracaoTotalEtapasLinha(i);
+      } else {
+        continue;
+      }
+      const [hs, ms] = hi.split(':').map(Number);
+      if (!Number.isFinite(hs) || !Number.isFinite(ms)) continue;
+      const start = hs! * 60 + ms!;
+      const end = start + Math.max(5, dur);
+      for (const r of this.intervalosOcupacaoDia) {
+        if (start < r.b && end > r.a) return true;
+      }
     }
     return false;
   }
@@ -1912,6 +2238,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       }
       if (hn) {
         this.form.patchValue({ hora_inicial: hn }, { emitEvent: false });
+        this.sincronizarHoraLinhaPrimeiraAgendavel(hn);
       }
       this.prefillEmCurso = false;
     };
@@ -1933,6 +2260,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
                     { hora_inicial: h },
                     { emitEvent: false },
                   );
+                  this.sincronizarHoraLinhaPrimeiraAgendavel(h);
                   this.prefillEmCurso = false;
                   this.aplicarValidadoresLinhas();
                   this.form.controls.hora_inicial.updateValueAndValidity({
@@ -1958,6 +2286,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         { data: datOk, hora_inicial: hn },
         { emitEvent: false },
       );
+      this.sincronizarHoraLinhaPrimeiraAgendavel(hn);
       this.prefillEmCurso = false;
     }
     terminarPrefillQueryParams();
@@ -2275,6 +2604,20 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return valorMonetarioParaNumero(r.valor);
   }
 
+  private valorRegraMegaQueratinaEtapa(
+    pacote: string,
+    etapa: string,
+  ): number | null {
+    const p = pacote.trim();
+    const e = etapa.trim();
+    if (!p || !e) return null;
+    const r = this.regrasMegaQueratina.find(
+      (x) => x.pacote.trim() === p && x.etapa.trim() === e,
+    );
+    if (!r) return null;
+    return valorMonetarioParaNumero(r.valor);
+  }
+
   /**
    * Auto-preenche `valor_unitario` da linha de Serviço a partir do catálogo
    * quando o utilizador ainda não tocou no campo. Disparado em mudanças de
@@ -2309,6 +2652,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!g || g.get('itemTipo')?.value !== 'Serviço') return;
     g.get('valor_unitario_tocado')?.setValue(false, { emitEvent: false });
     this.atualizarValorUnitarioServicoSeIntacto(linhaIndex);
+    this.aplicarDuracaoCatalogoNaLinha(linhaIndex);
   }
 
   /**
@@ -2486,12 +2830,15 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     const pacote = String(g?.get('pacote')?.value ?? '').trim();
     return this.etapasSelectOptionsLinha(i).map((e) => {
       const opt: SaasSelectOption = { value: e, label: e };
-      if (itemTipo === 'Mega' && pacote) {
-        const hint = this.hintPrecoCatalogo(
-          this.valorRegraMegaEtapa(pacote, e),
-        );
-        if (hint) opt.hint = hint;
+      if (!pacote) return opt;
+      let valor: number | null = null;
+      if (itemTipo === 'Mega' || itemTipo === 'Pacote') {
+        valor = this.valorRegraMegaEtapa(pacote, e);
+      } else if (itemTipo === 'Pacote Adesivo+Queratina') {
+        valor = this.valorRegraMegaQueratinaEtapa(pacote, e);
       }
+      const hint = this.hintPrecoCatalogo(valor);
+      if (hint) opt.hint = hint;
       return opt;
     });
   }
@@ -3260,7 +3607,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   adicionarLinhaItens(): void {
-    this.linhasItensArray.push(this.novoGrupoLinhaItem('Serviço'));
+    const idx = this.linhasItensArray.length;
+    const g = this.novoGrupoLinhaItem('Serviço');
+    const sug = this.horarioSugeridoLinhaServico(idx);
+    if (sug) {
+      g.patchValue({ hora_linha: sug, hora_linha_manual: false }, { emitEvent: false });
+    }
+    g.patchValue({ duracao_minutos: 30 }, { emitEvent: false });
+    this.linhasItensArray.push(g);
     this.aplicarValidadoresLinhas();
   }
 
@@ -3274,6 +3628,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   ): void {
     const tipoNorm: TipoLinhaAtendimento =
       tipo === 'Mega' || isTipoPacoteFamilia(tipo) ? tipo : 'Serviço';
+    const idx = this.linhasItensArray.length;
     const g = this.novoGrupoLinhaItem(tipoNorm);
     if (linhaOrigemIndex != null && linhaOrigemIndex >= 0) {
       const origem = this.linhasItensArray.at(linhaOrigemIndex);
@@ -3283,6 +3638,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           g.patchValue({ pacote }, { emitEvent: false });
         }
       }
+    }
+    if (tipoNorm === 'Mega' || tipoNorm === 'Serviço') {
+      const sug = this.horarioSugeridoLinhaServico(idx);
+      if (sug) {
+        g.patchValue(
+          { hora_linha: sug, hora_linha_manual: false },
+          { emitEvent: false },
+        );
+      }
+    }
+    if (tipoNorm === 'Serviço') {
+      g.patchValue({ duracao_minutos: 30 }, { emitEvent: false });
     }
     this.linhasItensArray.push(g);
     this.aplicarValidadoresLinhas();
@@ -3326,6 +3693,31 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     }
     if (t === 'Serviço') {
       this.atualizarValorUnitarioServicoSeIntacto(i);
+      const sug = this.horarioSugeridoLinhaServico(i);
+      g.patchValue(
+        {
+          hora_linha: sug,
+          hora_linha_manual: false,
+          duracao_minutos: 30,
+        },
+        { emitEvent: false },
+      );
+      this.aplicarDuracaoCatalogoNaLinha(i);
+    }
+    if (t === 'Mega') {
+      const sug = this.horarioSugeridoLinhaServico(i);
+      g.patchValue(
+        { hora_linha: sug, hora_linha_manual: false },
+        { emitEvent: false },
+      );
+      this.reencadearHorariosAPartirDe(i);
+    }
+    if (isTipoPacoteFamilia(t)) {
+      g.patchValue(
+        { hora_linha: '', hora_linha_manual: false },
+        { emitEvent: false },
+      );
+      this.reencadearHorariosAPartirDe(i);
     }
   }
 
@@ -3347,8 +3739,18 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     if (!g || !isTipoMegaOuPacoteFamilia(String(g.get('itemTipo')?.value ?? ''))) {
       return;
     }
+    const et = this.etapasArrayDaLinha(linhaI);
+    for (let j = 0; j < et.length; j++) {
+      const eg = et.at(j);
+      if (!eg || !this.etapaLinhaCompleta(eg)) continue;
+      const ov = Number(eg.get('duracao_minutos')?.value);
+      if (!(Number.isFinite(ov) && ov >= 5)) {
+        this.aplicarDuracaoCatalogoNaEtapa(linhaI, j);
+      }
+    }
     this.garantirLinhaEtapaRascunho(linhaI);
     this.aplicarValidadoresLinhas();
+    this.reencadearHorariosAPartirDe(linhaI);
   }
 
   private etapaLinhaVazia(g: FormGroup): boolean {
@@ -3411,12 +3813,39 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private etapasCompletasRaw(
-    etapasRaw: { etapa: string; profissional: number | null }[],
-  ): { etapa: string; profissional: number | null }[] {
+    etapasRaw: {
+      etapa: string;
+      profissional: number | null;
+      duracao_minutos?: number | null;
+    }[],
+  ): {
+    etapa: string;
+    profissional: number | null;
+    duracao_minutos?: number | null;
+  }[] {
     return etapasRaw.filter((x) => {
       const e = String(x.etapa ?? '').trim();
       const p = x.profissional;
       return !!e && p != null && Number(p) > 0;
+    });
+  }
+
+  private mapEtapasPayloadComDuracao(
+    etapas: {
+      etapa: string;
+      profissional: number | null;
+      duracao_minutos?: number | null;
+    }[],
+  ): AtendimentoEtapaPayload[] {
+    return etapas.map((x) => {
+      const d = Number(x.duracao_minutos);
+      return {
+        etapa: String(x.etapa ?? '').trim(),
+        profissional_id: Number(x.profissional),
+        ...(Number.isFinite(d) && d >= 5
+          ? { duracao_minutos: Math.round(d) }
+          : {}),
+      };
     });
   }
 
@@ -4630,10 +5059,20 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           consumidos,
         );
         const money = this.moneyDoItem(itemPivot);
+        const tam = (row.tamanho || 'Curto').trim() || 'Curto';
+        const hi = this.horaInicialEdicaoDeInicio(row.inicio, dataYmd);
+        const durOv = Number(itemPivot?.duracao_minutos);
+        const dur =
+          Number.isFinite(durOv) && durOv >= 5
+            ? Math.round(durOv)
+            : this.duracaoMinutosDoServico(
+                this.servicoPorIdQualquerComanda(sid),
+                tam,
+              );
         g.patchValue(
           {
             servico_id: sid,
-            tamanho: (row.tamanho || 'Curto').trim() || 'Curto',
+            tamanho: tam,
             profissional: this.profissionalValorForm(row),
             desconto: money.desconto || '',
             valor_unitario:
@@ -4641,10 +5080,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               formataMoedaBrl(
                 precoUnitarioServicoCatalogo(
                   this.servicoPorIdQualquerComanda(sid),
-                  (row.tamanho || 'Curto').trim() || 'Curto',
+                  tam,
                 ) ?? 0,
               ),
             valor_unitario_tocado: !!money.valor_unitario,
+            hora_linha: hi,
+            hora_linha_manual: !!hi,
+            duracao_minutos: dur,
           },
           { emitEvent: false },
         );
@@ -4713,14 +5155,6 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               ? 'Pacote Adesivo+Queratina'
               : 'Pacote';
         const g = this.novoGrupoLinhaItem(tipoForm);
-        g.patchValue(
-          { pacote: head.pacote || '', desconto: '' },
-          { emitEvent: false },
-        );
-        const et = g.get('etapas') as FormArray<FormGroup>;
-        while (et.length) {
-          et.removeAt(0);
-        }
         const comEtapa = blockRows.filter((r) => (r.etapa || '').trim());
         comEtapa.sort((a, b) =>
           compararEtapasMegaPacoteFluxo(
@@ -4728,13 +5162,47 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             String(b.etapa ?? ''),
           ),
         );
+        const firstSlotRow =
+          comEtapa.find((r) => String(r.inicio ?? '').trim()) ?? head;
+        const hiBloco = this.horaInicialEdicaoDeInicio(
+          firstSlotRow.inicio,
+          dataYmd,
+        );
+        g.patchValue(
+          {
+            pacote: head.pacote || '',
+            desconto: '',
+            ...(tipoForm === 'Mega'
+              ? {
+                  hora_linha: hiBloco,
+                  hora_linha_manual: !!hiBloco,
+                }
+              : { hora_linha: '', hora_linha_manual: false }),
+          },
+          { emitEvent: false },
+        );
+        const et = g.get('etapas') as FormArray<FormGroup>;
+        while (et.length) {
+          et.removeAt(0);
+        }
         for (const row of comEtapa) {
+          const itemPivot = this.acharItemPivotParaRow(
+            itensCatalogoPedido,
+            row,
+            consumidos,
+          );
+          const durOv = Number(itemPivot?.duracao_minutos);
           et.push(
             this.fb.group({
               etapa: [row.etapa || '', Validators.required],
               profissional: [
                 this.profissionalValorForm(row),
                 Validators.required,
+              ],
+              duracao_minutos: [
+                Number.isFinite(durOv) && durOv >= 5
+                  ? Math.round(durOv)
+                  : (null as number | null),
               ],
             }),
           );
@@ -4852,6 +5320,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         null as number | null,
         rascunho ? [] : Validators.required,
       ],
+      /** Override de duração (min); vazio/null = catálogo da regra. */
+      duracao_minutos: [null as number | null],
     });
   }
 
@@ -4865,6 +5335,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       servico_id: [''],
       tamanho: this.fb.nonNullable.control<string>('Curto'),
       profissional: [null as number | null],
+      /** Horário da linha (HH:mm); Serviço/Mega editável. */
+      hora_linha: [''],
+      /** true = utilizador desencaixou do sequenciamento automático. */
+      hora_linha_manual: [false],
+      /** Override de duração (min); null = catálogo. */
+      duracao_minutos: [null as number | null],
       produto: [''],
       quantidade: [1, [Validators.min(0.01)]],
       /** Usado quando o catálogo não tem preço (API `preco_unitario`). */
@@ -5258,9 +5734,34 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         { hora_inicial: hn ?? '' },
         { emitEvent: false },
       );
+      /** Grelha: preenche `hora_linha` (texto filled). Botão Novo: vazio → placeholder neutro. */
+      this.sincronizarHoraLinhaPrimeiraAgendavel(hn);
     }
     this.prefillEmCurso = false;
     this.slotAgenda = null;
+  }
+
+  /**
+   * Alinha `hora_linha` da 1.ª linha Serviço/Mega com o horário do contexto
+   * (`null`/vazio = placeholder UI; valor = clique na grelha).
+   */
+  private sincronizarHoraLinhaPrimeiraAgendavel(
+    hn: string | null | undefined,
+  ): void {
+    const hora = normalizarHoraHHmm(String(hn ?? '')) ?? '';
+    for (let i = 0; i < this.linhasItensArray.length; i++) {
+      const g = this.linhasItensArray.at(i);
+      const tipo = String(g?.get('itemTipo')?.value ?? '');
+      if (tipo !== 'Serviço' && tipo !== 'Mega') continue;
+      g?.patchValue(
+        {
+          hora_linha: hora,
+          hora_linha_manual: false,
+        },
+        { emitEvent: false },
+      );
+      break;
+    }
   }
 
   /**
@@ -5708,30 +6209,27 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   private slotsSequenciaisParaPayloadServico(
     dataYmd: string,
-    horaIniBruto: string,
-    preparados: { servico_id: string; tamanho?: string }[],
+    preparados: {
+      servico_id: string;
+      tamanho?: string;
+      hora?: string;
+      duracao?: number;
+    }[],
   ): ({ inicio: string; fim: string } | null)[] {
-    const hi = normalizarHoraHHmm(horaIniBruto);
-    if (!hi || !/^\d{4}-\d{2}-\d{2}$/.test(dataYmd)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataYmd)) {
       return preparados.map(() => null);
     }
-    const d0 = preparados.length
-      ? this.duracaoMinutosDoServico(
-          this.servicoPorId(preparados[0].servico_id),
-          preparados[0].tamanho,
-        )
-      : 30;
-    const anchor = slotInicioFimBrasilia(dataYmd, hi, d0);
-    let cur = anchor ? parseSqlLocalDateTime(anchor.inicio) : null;
-    if (!cur) return preparados.map(() => null);
     return preparados.map((pr) => {
+      const hi = normalizarHoraHHmm(String(pr.hora ?? ''));
+      if (!hi) return null;
       const svc = this.servicoPorId(pr.servico_id);
-      const d = this.duracaoMinutosDoServico(svc, pr.tamanho);
-      const ini = formatSqlLocalDateTime(cur!);
-      const next = addMinutesToParts(cur!, d);
-      const fim = formatSqlLocalDateTime(next);
-      cur = next;
-      return { inicio: ini, fim };
+      const d =
+        pr.duracao != null && Number.isFinite(pr.duracao) && pr.duracao >= 5
+          ? Math.min(24 * 60, Math.round(pr.duracao))
+          : this.duracaoMinutosDoServico(svc, pr.tamanho);
+      const anchor = slotInicioFimBrasilia(dataYmd, hi, d);
+      if (!anchor) return null;
+      return { inicio: anchor.inicio, fim: anchor.fim };
     });
   }
 
@@ -5856,6 +6354,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         observacao?: string;
       };
       tamanho?: string;
+      hora?: string;
+      duracao?: number;
     };
     const servicosPrep: Prep[] = [];
     for (let i = 0; i < this.linhasItensArray.length; i++) {
@@ -5875,22 +6375,28 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         observacao,
       };
       const st = String(svc?.['Tipo'] ?? '').toLowerCase();
+      const horaLinha =
+        normalizarHoraHHmm(String(g.get('hora_linha')?.value ?? '')) ||
+        normalizarHoraHHmm(horaIni);
       servicosPrep.push({
         servico_id,
         profissional_id,
         st,
         base,
         tamanho: String(g.get('tamanho')?.value ?? 'Curto').trim(),
+        hora: horaLinha || undefined,
+        duracao: this.duracaoEfetivaLinhaServico(i),
       });
     }
     const slotPairs = !gravarSlotGrelha
       ? []
       : this.slotsSequenciaisParaPayloadServico(
           dataYmd,
-          horaIni,
           servicosPrep.map((p) => ({
             servico_id: p.servico_id,
             tamanho: p.tamanho,
+            hora: p.hora,
+            duracao: p.duracao,
           })),
         );
     const out: CreateAtendimentoPayload[] = [];
@@ -5937,6 +6443,9 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
             : {}),
           ...(descontoItemNum != null && descontoItemNum > 0
             ? { desconto_item: descontoItemNum }
+            : {}),
+          ...(pr.duracao != null && pr.duracao >= 5
+            ? { duracao_minutos: pr.duracao }
             : {}),
         };
         if (pr.st === 'fixo') {
@@ -6037,7 +6546,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!pacote) continue;
         const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
-        ).getRawValue() as { etapa: string; profissional: number | null }[];
+        ).getRawValue() as {
+          etapa: string;
+          profissional: number | null;
+          duracao_minutos?: number | null;
+        }[];
         const etapas = this.etapasCompletasRaw(etapasRaw).sort((a, b) =>
           compararEtapasMegaPacoteFluxo(
             String(a.etapa ?? ''),
@@ -6045,10 +6558,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           ),
         );
         if (etapas.length < 1) continue;
-        const dPrimeira = this.duracaoMinutosRegraMega(
-          pacote,
-          String(etapas[0]?.etapa ?? '').trim(),
-        );
+        const dOv0 = Number(etapas[0]?.duracao_minutos);
+        const dPrimeira =
+          Number.isFinite(dOv0) && dOv0 >= 5
+            ? Math.round(dOv0)
+            : this.duracaoMinutosRegraMega(
+                pacote,
+                String(etapas[0]?.etapa ?? '').trim(),
+              );
+        const horaMega =
+          normalizarHoraHHmm(String(g.get('hora_linha')?.value ?? '')) ||
+          horaIni;
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -6056,16 +6576,13 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               cliente_id,
               data: dataYmd,
               pacote,
-              etapas: etapas.map((x) => ({
-                etapa: String(x.etapa ?? '').trim(),
-                profissional_id: Number(x.profissional),
-              })),
+              etapas: this.mapEtapasPayloadComDuracao(etapas),
               observacao,
               ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
-            horaIni,
+            horaMega,
             dPrimeira,
           ),
         );
@@ -6078,7 +6595,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!pacote) continue;
         const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
-        ).getRawValue() as { etapa: string; profissional: number | null }[];
+        ).getRawValue() as {
+          etapa: string;
+          profissional: number | null;
+          duracao_minutos?: number | null;
+        }[];
         const etapas = this.etapasCompletasRaw(etapasRaw).sort((a, b) =>
           compararEtapasMegaPacoteFluxo(
             String(a.etapa ?? ''),
@@ -6090,6 +6611,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           pacote,
           String(etapas[0]?.etapa ?? '').trim(),
         );
+        const dOv = Number(etapas[0]?.duracao_minutos);
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -6097,17 +6619,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               cliente_id,
               data: dataYmd,
               pacote,
-              etapas: etapas.map((x) => ({
-                etapa: String(x.etapa ?? '').trim(),
-                profissional_id: Number(x.profissional),
-              })),
+              etapas: this.mapEtapasPayloadComDuracao(etapas),
               observacao,
               ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
             horaIni,
-            dPrimeira,
+            Number.isFinite(dOv) && dOv >= 5 ? Math.round(dOv) : dPrimeira,
           ),
         );
         primeiroMerge = false;
@@ -6119,7 +6638,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
         if (!pacote) continue;
         const etapasRaw = (
           g.get('etapas') as FormArray<FormGroup>
-        ).getRawValue() as { etapa: string; profissional: number | null }[];
+        ).getRawValue() as {
+          etapa: string;
+          profissional: number | null;
+          duracao_minutos?: number | null;
+        }[];
         const etapas = this.etapasCompletasRaw(etapasRaw).sort((a, b) =>
           compararEtapasMegaPacoteFluxo(
             String(a.etapa ?? ''),
@@ -6131,6 +6654,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           pacote,
           String(etapas[0]?.etapa ?? '').trim(),
         );
+        const dOv = Number(etapas[0]?.duracao_minutos);
         out.push(
           this.mergeSlotOuHoraInicial(
             {
@@ -6138,17 +6662,14 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
               cliente_id,
               data: dataYmd,
               pacote,
-              etapas: etapas.map((x) => ({
-                etapa: String(x.etapa ?? '').trim(),
-                profissional_id: Number(x.profissional),
-              })),
+              etapas: this.mapEtapasPayloadComDuracao(etapas),
               observacao,
               ...agendaCartao,
             },
             primeiroMerge,
             dataYmd,
             horaIni,
-            dPrimeira,
+            Number.isFinite(dOv) && dOv >= 5 ? Math.round(dOv) : dPrimeira,
           ),
         );
         primeiroMerge = false;

@@ -477,6 +477,13 @@
       "when": 1775699600000,
       "tag": "0066_regras_mega_1_mecha_duracao_60",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1775699700000,
+      "tag": "0067_atendimento_itens_duracao_minutos",
+      "breakpoints": true
     }
   ]
 }

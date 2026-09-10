@@ -58,6 +58,8 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
   /** Mantido por compatibilidade; conflito passa a ser tratado no Salvar. */
   @Output() conflitoHorario = new EventEmitter<string>();
   @Output() painelAberto = new EventEmitter<void>();
+  /** Emitido após o utilizador escolher um horário no painel. */
+  @Output() valorAlterado = new EventEmitter<string>();
 
   @ViewChild('triggerInput') triggerInput?: ElementRef<HTMLInputElement>;
 
@@ -199,6 +201,7 @@ export class AgendaHorarioSlotsComponent implements ControlValueAccessor {
     this.inner = hhmm;
     this.onChange(hhmm);
     this.onTouched();
+    this.valorAlterado.emit(hhmm);
     this.panelOpen = false;
     this.filterText = '';
   }
