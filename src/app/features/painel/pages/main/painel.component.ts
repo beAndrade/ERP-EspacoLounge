@@ -59,10 +59,10 @@ import {
   periodoAnteriorSimetrico,
 } from '../../utils/painel-dashboard.util';
 
-function periodoPadraoUltimos15Dias(): { inicio: string; fim: string } {
+/** Padrão do filtro: 1º dia do mês atual → hoje. */
+function periodoPadraoMesAtualAteHoje(): { inicio: string; fim: string } {
   const fim = new Date();
-  const inicio = new Date(fim);
-  inicio.setDate(inicio.getDate() - 14);
+  const inicio = new Date(fim.getFullYear(), fim.getMonth(), 1);
   return { inicio: toYmd(inicio), fim: toYmd(fim) };
 }
 
@@ -215,7 +215,7 @@ export class PainelComponent implements OnInit {
     emptyVendasCategoriaVm(),
   );
 
-  private readonly padrao = periodoPadraoUltimos15Dias();
+  private readonly padrao = periodoPadraoMesAtualAteHoje();
   periodoInicio = this.padrao.inicio;
   periodoFim = this.padrao.fim;
 

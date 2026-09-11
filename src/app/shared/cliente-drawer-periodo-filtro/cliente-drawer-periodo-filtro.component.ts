@@ -54,6 +54,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   private painelPortalizado = false;
   private portalBackdrop: HTMLElement | null = null;
   private portalPanel: HTMLElement | null = null;
+  private scrollCloseUnsub?: () => void;
 
   inicioYmd = model('');
   fimYmd = model('');
@@ -231,6 +232,14 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
   onBlurCampo(campo: PeriodoFiltroCampoAtivo): void {
     const texto = (campo === 'inicio' ? this.rascunhoInicio : this.rascunhoFim).trim();
     this.campoEditando = null;
+    /**
+     * Com o calendário aberto, o blur do input (ao clicar num dia) não pode
+     * reaplicar a data antiga nem fechar o painel — senão a data final
+     * selecionada no calendário nunca entra.
+     */
+    if (this.calendarioInterativo()) {
+      return;
+    }
     if (!texto) {
       return;
     }
@@ -343,6 +352,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     this.pendingInicioYmd = null;
     this.limparHoverPainel();
     this.panelAberto = false;
+    this.detachScrollCloseListeners();
     if (this.fecharPainelTimer != null) {
       clearTimeout(this.fecharPainelTimer);
     }
@@ -359,6 +369,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
       clearTimeout(this.fecharPainelTimer);
       this.fecharPainelTimer = null;
     }
+    this.detachScrollCloseListeners();
     this.restaurarPainelNoHost();
   }
 
@@ -424,6 +435,8 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
         this.fimYmd.set(ymd);
       }
       this.rascunhoInicio = ymdExibicaoDdMmAaaa(this.inicioYmd());
+      this.rascunhoFim = ymdExibicaoDdMmAaaa(this.fimYmd());
+      this.campoEditando = null;
       this.campoAtivo = 'fim';
       this.agendarSublinhadoDeslizante();
       return;
@@ -438,6 +451,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     const norm = normalizarIntervaloYmd(ini, fim);
     this.inicioYmd.set(norm.inicioYmd);
     this.fimYmd.set(norm.fimYmd);
+    this.rascunhoInicio = ymdExibicaoDdMmAaaa(norm.inicioYmd);
     this.rascunhoFim = ymdExibicaoDdMmAaaa(norm.fimYmd);
     this.campoEditando = null;
     this.emitPeriodoAlterado();
@@ -581,7 +595,40 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
     this.fecharPainel();
   }
 
-  @HostListener('window:scroll')
+  /**
+   * Dropdown comum: ao rolar a página (ou um ancestral com scroll), fecha o
+   * calendário — evita o painel `fixed` “flutuar” no meio da tela sem o input.
+   * Scroll dentro do próprio painel não fecha. Usa capture porque `scroll` não sobe.
+   */
+  private attachScrollCloseListeners(): void {
+    this.detachScrollCloseListeners();
+    if (this.triggerUnico()) return;
+    const onScroll = (ev: Event) => {
+      if (!this.panelAberto || !this.panelNoDom) return;
+      const t = ev.target;
+      if (t instanceof Node) {
+        const painel =
+          this.portalPanel ??
+          (this.hostEl.nativeElement.querySelector(
+            '.periodo-filtro__panel',
+          ) as HTMLElement | null);
+        if (painel?.contains(t)) return;
+      }
+      this.fecharPainel();
+    };
+    document.addEventListener('scroll', onScroll, true);
+    window.addEventListener('scroll', onScroll, true);
+    this.scrollCloseUnsub = () => {
+      document.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }
+
+  private detachScrollCloseListeners(): void {
+    this.scrollCloseUnsub?.();
+    this.scrollCloseUnsub = undefined;
+  }
+
   @HostListener('window:resize')
   reposicionarPainelSeFlutuante(): void {
     if (!this.devePortalizarPainel() || !this.panelAberto || this.triggerUnico()) {
@@ -627,6 +674,7 @@ export class ClienteDrawerPeriodoFiltroComponent implements OnDestroy {
           return;
         }
         this.panelAberto = true;
+        this.attachScrollCloseListeners();
         this.agendarSublinhadoDeslizante();
       });
     });

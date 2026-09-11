@@ -65,7 +65,7 @@
           }
         </g>
 
-        @for (xl of xLabels(); track xl.x) {
+        @for (xl of xLabels(); track xl.label) {
           <text
             class="painel-tend__xlabel"
             [attr.x]="xl.x"
@@ -73,7 +73,7 @@
             fill="#000000bf"
             font-size="12"
             font-weight="normal"
-            text-anchor="middle"
+            [attr.text-anchor]="xl.anchor"
           >
             {{ xl.label }}
           </text>

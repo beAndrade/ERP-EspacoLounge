@@ -71,10 +71,10 @@ export class PainelChartTendenciaComponent implements AfterViewInit, OnDestroy {
   readonly innerH = computed(() => this.height() - this.pad.t - this.pad.b);
   readonly plotBottom = computed(() => this.pad.t + this.innerH());
 
-  /** Eixo Y adaptativo: valores altos → menos ticks, passo maior. */
+  /** Eixo Y em inteiros (contagem de agendamentos — sem 0,25 / 0,5). */
   private readonly yScale = computed(() => {
     const max = Math.max(...this.series().map((p) => p.value), 0);
-    return niceYAxis(max, 4);
+    return niceYAxis(max, 4, { integer: true });
   });
 
   readonly niceMax = computed(() => this.yScale().max);
@@ -118,44 +118,80 @@ export class PainelChartTendenciaComponent implements AfterViewInit, OnDestroy {
   });
 
   /**
-   * Rótulos de data adaptativos: quantos couberem sem colidir.
-   * Cada `DD/MM/AAAA` ocupa ~62px; o total sobe/desce conforme a largura do
-   * gráfico (ResizeObserver → `width`), até um teto de 8 em telas grandes.
+   * Rótulos de data sem colisão (~70px para `DD/MM/AAAA`).
+   * A primeira começa depois do eixo Y; as demais acompanham o mesmo deslocamento.
+   * A última recua para não vazar para o gráfico da direita.
    */
   readonly xLabels = computed(() => {
     const bars = this.bars();
     if (!bars.length) return [];
 
-    const minSpacing = 62;
-    const maxLabels = Math.min(
-      8,
-      Math.max(2, Math.floor(this.innerW() / minSpacing)),
+    const labelW = 70;
+    const gap = 12;
+    const minSpacing = labelW + gap;
+    const half = labelW / 2;
+    const lastRightInset = 18;
+    /** Início do texto, à direita do eixo e dos números verticais. */
+    const firstLeft = this.pad.l + 10;
+    const lastMaxCenter = this.width() - half - lastRightInset;
+
+    const usable = Math.max(minSpacing, lastMaxCenter - (firstLeft + half));
+    const maxLabels = Math.max(
+      2,
+      Math.min(bars.length, Math.floor(usable / minSpacing) + 1),
     );
 
-    const build = (b: (typeof bars)[number]) => ({
-      x: b.cx,
-      label: labelDataCompleta(b.p.ymd ?? ''),
-    });
+    const picked: (typeof bars)[number][] = [];
+    if (bars.length <= maxLabels) {
+      picked.push(...bars);
+    } else {
+      const last = bars.length - 1;
+      const step = Math.max(1, Math.ceil(last / (maxLabels - 1)));
+      for (let i = 0; i <= last; i += step) picked.push(bars[i]!);
+      if (picked[picked.length - 1] !== bars[last]) picked.push(bars[last]!);
+    }
 
-    if (bars.length <= maxLabels) return bars.map(build);
+    const firstBar = picked[0]!;
+    /** Quanto a primeira data precisa ir à direita para começar depois do eixo Y. */
+    const shift = Math.max(0, firstLeft - (firstBar.cx - half));
 
-    const step = Math.ceil((bars.length - 1) / (maxLabels - 1));
-    const idx = new Set<number>();
-    for (let i = 0; i < bars.length; i += step) idx.add(i);
-    idx.add(bars.length - 1);
+    type XLabel = { x: number; label: string; anchor: 'start' | 'middle' };
+    const out: XLabel[] = [];
 
-    const out: { x: number; label: string }[] = [];
-    const ordered = [...idx].sort((a, b) => a - b);
-    ordered.forEach((i, k) => {
-      const item = build(bars[i]);
-      const prev = out[out.length - 1];
-      if (prev && item.x - prev.x < minSpacing * 0.75) {
-        /** Colidiu com o anterior: se for a borda direita, ela tem prioridade. */
-        if (k === ordered.length - 1) out[out.length - 1] = item;
-        return;
+    const rightEdge = (item: XLabel) =>
+      item.anchor === 'start' ? item.x + labelW : item.x + half;
+
+    for (let i = 0; i < picked.length; i++) {
+      const b = picked[i]!;
+      const isFirst = i === 0;
+      const isLast = i === picked.length - 1;
+      const label = labelDataCompleta(b.p.ymd ?? '');
+
+      if (isFirst) {
+        out.push({ x: firstLeft, label, anchor: 'start' });
+        continue;
       }
-      out.push(item);
-    });
+
+      let x = b.cx + shift;
+      const prev = out[out.length - 1]!;
+      x = Math.max(x, rightEdge(prev) + gap + half);
+
+      if (isLast) {
+        x = Math.min(x, lastMaxCenter);
+        while (out.length > 1 && x < rightEdge(out[out.length - 1]!) + gap + half) {
+          out.pop();
+        }
+        const prev = out[out.length - 1]!;
+        if (x >= rightEdge(prev) + gap + half) {
+          out.push({ x, label, anchor: 'middle' });
+        }
+        continue;
+      }
+
+      if (x > lastMaxCenter - minSpacing) continue;
+      out.push({ x, label, anchor: 'middle' });
+    }
+
     return out;
   });
 
