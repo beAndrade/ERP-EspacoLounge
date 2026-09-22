@@ -130,8 +130,23 @@ export class AppComponent implements OnInit {
     parent: HTMLElement;
     next: ChildNode | null;
   } | null = null;
+  private flyoutCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Fecha ao sair do botão/painel; ponte para o mouse cruzar o gap. */
+  private flyoutHoverCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * Após clicar para fechar com o cursor ainda no botão, evita reabrir
+   * até o mouse sair e entrar de novo.
+   */
+  private flyoutHoverSuppressed = false;
+  /** Duração alinhada ao CSS de saída do flyout (~0,2s). */
+  private static readonly FLYOUT_CLOSE_MS = 220;
+  private static readonly FLYOUT_HOVER_BRIDGE_MS = 180;
   private readonly closeCollapsedNavFlyoutBound = () =>
     this.closeCollapsedNavFlyout();
+  private readonly onFlyoutPanelEnterBound = () =>
+    this.onCollapsedNavFlyoutPanelEnter();
+  private readonly onFlyoutPanelLeaveBound = () =>
+    this.onCollapsedNavFlyoutPanelLeave();
 
   /**
    * Grupos com um único filho no HTML: no colapsado navegam direto.
@@ -204,7 +219,14 @@ export class AppComponent implements OnInit {
         this.closeMobileNav();
       });
     this.syncPublicRoute(this.router.url);
-    this.destroyRef.onDestroy(() => this.closeCollapsedNavFlyout());
+    this.destroyRef.onDestroy(() => {
+      this.cancelFlyoutHoverCloseTimer();
+      this.cancelFlyoutCloseTimer();
+      this.collapsedNavFlyoutId = null;
+      this.flyoutTrigger = null;
+      this.sidebarFlyout.release(this.closeCollapsedNavFlyoutBound);
+      this.restoreFlyoutPortal();
+    });
   }
 
   private syncPublicRoute(url: string): void {
@@ -300,6 +322,8 @@ export class AppComponent implements OnInit {
         return;
       }
       if (this.collapsedNavFlyoutId === id) {
+        /** Clique com menu aberto = fechar (não reabre até o mouse sair). */
+        this.flyoutHoverSuppressed = true;
         this.closeCollapsedNavFlyout();
         return;
       }
@@ -342,6 +366,7 @@ export class AppComponent implements OnInit {
     ev.stopPropagation();
     if (this.sidebarIconRail) {
       if (this.collapsedNavFlyoutId === 'principal') {
+        this.flyoutHoverSuppressed = true;
         this.closeCollapsedNavFlyout();
         return;
       }
@@ -351,12 +376,72 @@ export class AppComponent implements OnInit {
     this.principalExpanded = !this.principalExpanded;
   }
 
-  closeCollapsedNavFlyout(): void {
+  /** Hover no ícone (rail): abre o menu rápido. */
+  onCollapsedNavTriggerEnter(
+    id: NavCollapsedFlyoutId,
+    ev: MouseEvent,
+  ): void {
+    if (!this.sidebarIconRail) return;
+    if (this.flyoutHoverSuppressed) return;
+    this.cancelFlyoutHoverCloseTimer();
+    if (this.collapsedNavFlyoutId === id) return;
+    this.openCollapsedNavFlyout(id, ev.currentTarget as HTMLElement);
+  }
+
+  /** Sai do ícone: agenda fecho (cancela se entrar no painel). */
+  onCollapsedNavTriggerLeave(): void {
+    if (!this.sidebarIconRail) return;
+    this.flyoutHoverSuppressed = false;
+    this.scheduleFlyoutHoverClose();
+  }
+
+  private onCollapsedNavFlyoutPanelEnter(): void {
+    this.cancelFlyoutHoverCloseTimer();
+  }
+
+  private onCollapsedNavFlyoutPanelLeave(): void {
+    this.scheduleFlyoutHoverClose();
+  }
+
+  private scheduleFlyoutHoverClose(): void {
     if (!this.collapsedNavFlyoutId && !this.flyoutPortal) return;
-    this.restoreFlyoutPortal();
+    this.cancelFlyoutHoverCloseTimer();
+    this.flyoutHoverCloseTimer = setTimeout(() => {
+      this.flyoutHoverCloseTimer = null;
+      this.closeCollapsedNavFlyout();
+    }, AppComponent.FLYOUT_HOVER_BRIDGE_MS);
+  }
+
+  private cancelFlyoutHoverCloseTimer(): void {
+    if (this.flyoutHoverCloseTimer == null) return;
+    clearTimeout(this.flyoutHoverCloseTimer);
+    this.flyoutHoverCloseTimer = null;
+  }
+
+  closeCollapsedNavFlyout(): void {
+    this.cancelFlyoutHoverCloseTimer();
+    if (!this.collapsedNavFlyoutId && !this.flyoutPortal) return;
+    const panel = this.flyoutPortal?.el ?? null;
     this.collapsedNavFlyoutId = null;
     this.flyoutTrigger = null;
     this.sidebarFlyout.release(this.closeCollapsedNavFlyoutBound);
+    if (!panel) {
+      this.restoreFlyoutPortal();
+      return;
+    }
+    panel.classList.remove('nav-expand-flyout-panel--open');
+    this.cancelFlyoutCloseTimer();
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (reduced) {
+      this.restoreFlyoutPortal();
+      return;
+    }
+    this.flyoutCloseTimer = setTimeout(() => {
+      this.flyoutCloseTimer = null;
+      this.restoreFlyoutPortal();
+    }, AppComponent.FLYOUT_CLOSE_MS);
   }
 
   private openCollapsedNavFlyout(
@@ -364,7 +449,10 @@ export class AppComponent implements OnInit {
     trigger: HTMLElement,
   ): void {
     if (!this.sidebarIconRail) return;
+    this.cancelFlyoutHoverCloseTimer();
     this.sidebarFlyout.open(this.closeCollapsedNavFlyoutBound);
+    this.cancelFlyoutCloseTimer();
+    this.restoreFlyoutPortal();
     this.collapsedNavFlyoutId = id;
     this.flyoutTrigger = trigger;
     queueMicrotask(() => {
@@ -372,6 +460,10 @@ export class AppComponent implements OnInit {
         if (this.collapsedNavFlyoutId !== id) return;
         this.portalizeFlyoutPanel(id);
         this.positionFlyoutPanel(trigger);
+        requestAnimationFrame(() => {
+          if (this.collapsedNavFlyoutId !== id) return;
+          this.flyoutPortal?.el.classList.add('nav-expand-flyout-panel--open');
+        });
       });
     });
   }
@@ -388,13 +480,20 @@ export class AppComponent implements OnInit {
     const parent = panel.parentElement;
     const next = panel.nextSibling;
     panel.classList.add('nav-expand-flyout-panel');
+    panel.classList.remove('nav-expand-flyout-panel--open');
     document.body.appendChild(panel);
+    panel.addEventListener('mouseenter', this.onFlyoutPanelEnterBound);
+    panel.addEventListener('mouseleave', this.onFlyoutPanelLeaveBound);
     this.flyoutPortal = { el: panel, parent, next };
   }
 
   private restoreFlyoutPortal(): void {
+    this.cancelFlyoutCloseTimer();
     const p = this.flyoutPortal;
     if (!p) return;
+    p.el.removeEventListener('mouseenter', this.onFlyoutPanelEnterBound);
+    p.el.removeEventListener('mouseleave', this.onFlyoutPanelLeaveBound);
+    p.el.classList.remove('nav-expand-flyout-panel--open');
     p.el.classList.remove('nav-expand-flyout-panel');
     p.el.style.top = '';
     p.el.style.left = '';
@@ -405,6 +504,12 @@ export class AppComponent implements OnInit {
       p.parent.appendChild(p.el);
     }
     this.flyoutPortal = null;
+  }
+
+  private cancelFlyoutCloseTimer(): void {
+    if (this.flyoutCloseTimer == null) return;
+    clearTimeout(this.flyoutCloseTimer);
+    this.flyoutCloseTimer = null;
   }
 
   private positionFlyoutPanel(trigger: HTMLElement): void {

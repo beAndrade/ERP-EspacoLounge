@@ -720,6 +720,8 @@
   --sidebar-hover-ms: 320ms;
   --sidebar-nav-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --sidebar-icon-size: 14px;
+  --flyout-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --flyout-spring: cubic-bezier(0.34, 1.25, 0.64, 1);
 
   position: fixed;
   z-index: 1400;
@@ -738,6 +740,29 @@
   color: var(--sidebar-fg);
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.22);
   grid-template-rows: none !important;
+  transform-origin: left center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-10px) scale(0.96);
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in,
+    visibility 0.2s,
+    box-shadow 0.2s ease-in;
+
+  &.nav-expand-flyout-panel--open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0) scale(1);
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.28);
+    transition:
+      opacity 0.3s var(--flyout-ease-out),
+      transform 0.36s var(--flyout-spring),
+      visibility 0.3s,
+      box-shadow 0.32s var(--flyout-ease-out);
+  }
 
   .nav-expand__sub,
   .nav-group__sub {
@@ -747,6 +772,32 @@
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  .nav-expand__sub > li,
+  .nav-group__sub > li {
+    opacity: 0;
+    transform: translateX(-6px);
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  &.nav-expand-flyout-panel--open .nav-expand__sub > li,
+  &.nav-expand-flyout-panel--open .nav-group__sub > li {
+    opacity: 1;
+    transform: translateX(0);
+
+    @for $i from 1 through 10 {
+      &:nth-child(#{$i}) {
+        transition-delay: #{0.04 + ($i - 1) * 0.028}s;
+      }
+    }
+  }
+
+  &:not(.nav-expand-flyout-panel--open) .nav-expand__sub > li,
+  &:not(.nav-expand-flyout-panel--open) .nav-group__sub > li {
+    transition-delay: 0s;
   }
 
   .nav-item {
@@ -811,6 +862,29 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     border: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-expand-flyout-panel,
+  .nav-expand-flyout-panel.nav-expand-flyout-panel--open {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .nav-expand-flyout-panel .nav-expand__sub > li,
+  .nav-expand-flyout-panel .nav-group__sub > li,
+  .nav-expand-flyout-panel.nav-expand-flyout-panel--open .nav-expand__sub > li,
+  .nav-expand-flyout-panel.nav-expand-flyout-panel--open .nav-group__sub > li {
+    transition: none !important;
+    transition-delay: 0s !important;
+    transform: none !important;
+    opacity: 1;
+  }
+
+  .nav-expand-flyout-panel:not(.nav-expand-flyout-panel--open) {
+    opacity: 0;
+    visibility: hidden;
   }
 }
 
