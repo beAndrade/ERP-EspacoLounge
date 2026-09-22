@@ -2,9 +2,19 @@
   <div class="list-page__lead">
     <header class="list-head">
       <div class="list-head__title-row">
-        <div class="list-head__brand">
+        <div class="list-head__left">
           <h1 class="list-head__title">Clientes</h1>
-          <div class="list-head__busca-wrap list-head__busca-wrap--open" role="search">
+        </div>
+        <div
+          class="list-head__actions"
+          [class.list-head__actions--bottom-nav]="shellBottomNavEligible"
+        >
+          <div
+            class="list-head__busca-wrap"
+            [class.list-head__busca-wrap--open]="buscaAberta"
+            role="search"
+            (click)="onBuscaWrapClick()"
+          >
             <span class="list-head__busca-icon" aria-hidden="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -13,7 +23,7 @@
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.5"
+                stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 class="lucide lucide-search"
@@ -22,26 +32,31 @@
                 <circle cx="11" cy="11" r="8" />
               </svg>
             </span>
-            <label class="sr-only" for="clientes-busca-input">Digite para buscar</label>
+            <span
+              class="list-head__busca-label"
+              [class.list-head__busca-label--hidden]="buscaAberta"
+              aria-hidden="true"
+              >Buscar</span
+            >
+            <label class="sr-only" for="clientes-busca-input">Buscar clientes</label>
             <input
               id="clientes-busca-input"
               type="text"
-              class="list-head__busca-input list-head__busca-input--search-open"
+              class="list-head__busca-input"
               [(ngModel)]="busca"
               name="buscaClientes"
               [placeholder]="buscaPlaceholder"
+              [class.list-head__busca-input--search-open]="buscaAberta"
+              [class.list-head__busca-input--pulse-once-busca]="pulsoToolbarBusca"
               autocomplete="off"
+              (click)="$event.stopPropagation()"
               (input)="onBuscaInput()"
               (keydown.enter)="onBuscaEnter($event)"
-              aria-label="Digite para buscar"
+              [attr.aria-expanded]="buscaAberta"
+              aria-label="Buscar clientes"
               title="Buscar"
             />
           </div>
-        </div>
-        <div
-          class="list-head__actions"
-          [class.list-head__actions--bottom-nav]="shellBottomNavEligible"
-        >
           <button
             type="button"
             class="list-head__toolbar-btn"

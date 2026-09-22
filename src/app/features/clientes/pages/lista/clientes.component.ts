@@ -126,12 +126,15 @@ export class ClientesComponent implements OnInit, OnDestroy {
   private totaisDebitosPorCliente = new Map<string, TotaisDebitosCliente>();
 
   busca = '';
+  buscaAberta = false;
   filtrosAbertos = false;
   /** Mobile: exibe checkboxes na lista e permite seleção em lote. */
   modoSelecao = false;
   pulsoToolbarFiltro = false;
+  pulsoToolbarBusca = false;
   private readonly duracaoPulsoToolbarMs = 600;
   private tPulsoFiltro = 0;
+  private tPulsoBusca = 0;
 
   filtroStatusAtivos = true;
   filtroStatusInativos = false;
@@ -435,9 +438,22 @@ export class ClientesComponent implements OnInit, OnDestroy {
     });
   }
 
-  readonly buscaPlaceholder = 'Digite para buscar';
+  get buscaPlaceholder(): string {
+    return this.buscaAberta ? 'Digite para buscar' : '';
+  }
 
-  private dispararPulsoToolbarFiltro(): void {
+  private dispararPulsoToolbar(which: 'busca' | 'filtro'): void {
+    if (which === 'busca') {
+      window.clearTimeout(this.tPulsoBusca);
+      this.pulsoToolbarBusca = false;
+      queueMicrotask(() => {
+        this.pulsoToolbarBusca = true;
+        this.tPulsoBusca = window.setTimeout(() => {
+          this.pulsoToolbarBusca = false;
+        }, this.duracaoPulsoToolbarMs);
+      });
+      return;
+    }
     window.clearTimeout(this.tPulsoFiltro);
     this.pulsoToolbarFiltro = false;
     queueMicrotask(() => {
@@ -446,6 +462,20 @@ export class ClientesComponent implements OnInit, OnDestroy {
         this.pulsoToolbarFiltro = false;
       }, this.duracaoPulsoToolbarMs);
     });
+  }
+
+  fecharPainelBusca(): void {
+    this.buscaAberta = false;
+  }
+
+  onBuscaWrapClick(): void {
+    if (!this.buscaAberta) {
+      this.dispararPulsoToolbar('busca');
+      this.buscaAberta = true;
+      queueMicrotask(() => {
+        document.getElementById('clientes-busca-input')?.focus();
+      });
+    }
   }
 
   onBuscaInput(): void {
@@ -464,7 +494,7 @@ export class ClientesComponent implements OnInit, OnDestroy {
   toggleFiltros(ev?: Event): void {
     ev?.stopPropagation();
     if (this.modoSelecao) return;
-    this.dispararPulsoToolbarFiltro();
+    this.dispararPulsoToolbar('filtro');
     this.filtrosAbertos = !this.filtrosAbertos;
     this.syncShellBottomNavActions();
   }
@@ -1093,6 +1123,12 @@ export class ClientesComponent implements OnInit, OnDestroy {
       this.fecharFiltros();
       return;
     }
+    if (this.buscaAberta) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      this.fecharPainelBusca();
+      return;
+    }
     if (this.perPageMenuAberto) {
       ev.preventDefault();
       ev.stopImmediatePropagation();
@@ -1109,6 +1145,9 @@ export class ClientesComponent implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocumentClick(ev: MouseEvent): void {
     const t = ev.target as HTMLElement | null;
+    if (this.buscaAberta && !t?.closest?.('.list-head__busca-wrap')) {
+      this.fecharPainelBusca();
+    }
     if (
       this.perPageMenuAberto &&
       t &&
