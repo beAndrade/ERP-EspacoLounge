@@ -215,7 +215,7 @@ export class FinanceiroComissoesComponent implements OnInit, AfterViewInit, OnDe
   );
 
   ngOnInit(): void {
-    const { inicio, fim } = this.periodoPadraoUltimos30Dias();
+    const { inicio, fim } = this.periodoPadraoMesAtualAteHoje();
     this.periodoInicio = inicio;
     this.periodoFim = fim;
     this.recarregarProfissionais();
@@ -844,11 +844,11 @@ export class FinanceiroComissoesComponent implements OnInit, AfterViewInit, OnDe
     };
   }
 
-  private periodoPadraoUltimos30Dias(): { inicio: string; fim: string } {
+  /** Padrão do filtro: 1º dia do mês atual → hoje. */
+  private periodoPadraoMesAtualAteHoje(): { inicio: string; fim: string } {
     const fim = new Date();
-    const ini = new Date(fim);
-    ini.setDate(ini.getDate() - 30);
-    return { inicio: this.dateParaYmd(ini), fim: this.dateParaYmd(fim) };
+    const inicio = new Date(fim.getFullYear(), fim.getMonth(), 1);
+    return { inicio: this.dateParaYmd(inicio), fim: this.dateParaYmd(fim) };
   }
 
   private dateParaYmd(d: Date): string {

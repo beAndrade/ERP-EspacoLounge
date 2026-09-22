@@ -27,6 +27,7 @@ import {
   findOverflowClipAncestor,
   findScrollClipAncestor,
   dropdownAvailableSpace,
+  fixedContainingBlockOrigin,
 } from '../../../core/utils/dropdown-flip.util';
 
 export type SaasSelectOption = { value: string; label: string; hint?: string };
@@ -519,11 +520,18 @@ export class SaasSelectComponent
     const clipRect = clipEl?.getBoundingClientRect();
     const placeOpts = { gap, clipRect };
     const space = dropdownAvailableSpace(r, placeOpts);
-    const placement = resolveDropdownVerticalPlacement(
+    let placement = resolveDropdownVerticalPlacement(
       r,
       estPanelH,
       placeOpts,
     );
+    /** Sidebar de comissões: abrir abaixo do campo quando houver espaço útil. */
+    if (
+      this.layout === 'sidebar' &&
+      space.below >= Math.min(estPanelH, 120)
+    ) {
+      placement = 'below';
+    }
     this.panelOpenAbove = placement === 'above';
 
     const avail = placement === 'below' ? space.below : space.above;
@@ -541,22 +549,27 @@ export class SaasSelectComponent
 
     if (!this.panelFixedMode) return;
 
+    /**
+     * Sidebar com `transform` vira containing block do `position: fixed`.
+     * Sem esse desconto o painel some / não cola abaixo do input.
+     */
+    const origin = fixedContainingBlockOrigin(this.host.nativeElement);
     const hForTop = maxListH;
     let topPx: number;
     if (placement === 'below') {
       /** Nunca subir o painel por cima do trigger (clamp antigo causava o bug). */
-      topPx = r.bottom + gap;
+      topPx = r.bottom + gap - origin.top;
     } else {
-      topPx = r.top - hForTop - gap;
-      topPx = Math.max(gap, topPx);
+      topPx = r.top - hForTop - gap - origin.top;
+      topPx = Math.max(gap - origin.top, topPx);
     }
 
     const widthPx = this.resolveFixedPanelWidthPx(r.width);
-    let leftPx = r.left;
-    if (leftPx + widthPx > window.innerWidth - 8) {
-      leftPx = Math.max(8, window.innerWidth - widthPx - 8);
+    let leftPx = r.left - origin.left;
+    if (leftPx + origin.left + widthPx > window.innerWidth - 8) {
+      leftPx = Math.max(8, window.innerWidth - widthPx - 8) - origin.left;
     }
-    leftPx = Math.max(8, leftPx);
+    leftPx = Math.max(8 - origin.left, leftPx);
     /**
      * `min-width`/`max-width` em px: o CSS usa `min-width: 100%`, e em
      * `position: fixed` 100% = viewport (painel estourava ~largura da tela).
@@ -565,6 +578,7 @@ export class SaasSelectComponent
       position: 'fixed',
       top: `${topPx}px`,
       left: `${leftPx}px`,
+      right: 'auto',
       width: `${widthPx}px`,
       'min-width': `${widthPx}px`,
       'max-width': `${widthPx}px`,

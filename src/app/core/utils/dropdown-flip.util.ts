@@ -107,6 +107,35 @@ export function dropdownAvailableSpace(
   };
 }
 
+/**
+ * Ancestral que vira containing block de `position: fixed`
+ * (`transform`, `filter`, etc.). Coordenadas fixed precisam subtrair a origem dele.
+ */
+export function fixedContainingBlockOrigin(
+  el: HTMLElement | null,
+): { top: number; left: number } {
+  let cur = el?.parentElement ?? null;
+  while (cur && cur !== document.documentElement && cur !== document.body) {
+    const st = getComputedStyle(cur);
+    const will = st.willChange
+      .split(',')
+      .some((p) => /transform|filter|perspective|contain/.test(p.trim()));
+    const creates =
+      (st.transform && st.transform !== 'none') ||
+      (st.filter && st.filter !== 'none') ||
+      (st.perspective && st.perspective !== 'none') ||
+      (st.backdropFilter && st.backdropFilter !== 'none') ||
+      will ||
+      /(paint|layout|strict|content)/.test(st.contain);
+    if (creates) {
+      const r = cur.getBoundingClientRect();
+      return { top: r.top, left: r.left };
+    }
+    cur = cur.parentElement;
+  }
+  return { top: 0, left: 0 };
+}
+
 /** Classes CSS usadas pela diretiva e pelos shells de lista. */
 export const DROPDOWN_FLIP_ABOVE_CLASS = 'dropdown-flip--above';
 export const DROPDOWN_FLIP_BELOW_CLASS = 'dropdown-flip--below';
