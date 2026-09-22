@@ -773,7 +773,7 @@
                     class="etapas-block etapas-block--nested etapas-block--etapas-modal"
                     formArrayName="etapas"
                   >
-                    @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
+                    @for (etCtrl of etapasArrayDaLinha(i).controls; track trackEtapa(etCtrl); let j = $index) {
                       <div
                         class="etapa-row etapa-row--etapas-modal"
                         [formGroupName]="j"
@@ -879,7 +879,7 @@
                   <div class="etapas-header">
                     <span>Etapas</span>
                   </div>
-                  @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
+                  @for (etCtrl of etapasArrayDaLinha(i).controls; track trackEtapa(etCtrl); let j = $index) {
                     <div class="etapa-row" [formGroupName]="j">
                       <div>
                         <span>Etapa</span>
@@ -949,7 +949,7 @@
                     class="etapas-block etapas-block--nested etapas-block--etapas-modal"
                     formArrayName="etapas"
                   >
-                    @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
+                    @for (etCtrl of etapasArrayDaLinha(i).controls; track trackEtapa(etCtrl); let j = $index) {
                       <div
                         class="etapa-row etapa-row--etapas-modal"
                         [formGroupName]="j"
@@ -1082,7 +1082,7 @@
                   <div class="etapas-header">
                     <span>Etapas</span>
                   </div>
-                  @for (_ of etapasArrayDaLinha(i).controls; track $index; let j = $index) {
+                  @for (etCtrl of etapasArrayDaLinha(i).controls; track trackEtapa(etCtrl); let j = $index) {
                     <div class="etapa-row" [formGroupName]="j">
                       <div>
                         <span>Etapa</span>

@@ -120,10 +120,19 @@ export class SaasSelectComponent
   panelFixedMode = false;
   fixedPanelStyle: Record<string, string> = {};
   private scrollResizeUnsub?: () => void;
+  /** Mantém top/left no fade de fecho (senão o painel salta para absolute). */
+  private clearFixedStyleTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Duração alinhada ao CSS (0,2s) + folga. */
+  private static readonly FIXED_CLOSE_MS = 220;
 
   /** Exposto ao template para realce da opção activa. */
   get selectedValue(): string {
     return this.inner;
+  }
+
+  /** Inline style do painel fixed enquanto aberto ou a fechar. */
+  get fixedPanelStyleActive(): boolean {
+    return this.panelFixedMode && !!this.fixedPanelStyle['top'];
   }
 
   private onChange: (v: unknown) => void = () => {};
@@ -155,6 +164,7 @@ export class SaasSelectComponent
   }
 
   ngOnDestroy(): void {
+    this.cancelClearFixedStyleTimer();
     this.detachFixedPanelScrollListeners();
     this.bindSyncSub?.unsubscribe();
     this.bindSyncSub = null;
@@ -214,6 +224,7 @@ export class SaasSelectComponent
     if (isDisabled) {
       this.panelOpen = false;
       this.panelOpenAbove = false;
+      this.cancelClearFixedStyleTimer();
       this.fixedPanelStyle = {};
       this.detachFixedPanelScrollListeners();
     }
@@ -336,6 +347,7 @@ export class SaasSelectComponent
   }
 
   private openPanel(resetFilter = true): void {
+    this.cancelClearFixedStyleTimer();
     this.refreshPanelFixedMode();
     this.panelOpen = true;
     if (resetFilter) {
@@ -386,11 +398,9 @@ export class SaasSelectComponent
 
   private closePanel(): void {
     this.panelOpen = false;
-    this.panelOpenAbove = false;
     this.filterText = '';
-    this.fixedPanelStyle = {};
-    this.clearPanelMaxHeightStyles();
     this.detachFixedPanelScrollListeners();
+    this.scheduleCloseCleanup();
     this.notifyTouched();
     this.focusTriggerSoon();
   }
@@ -403,11 +413,9 @@ export class SaasSelectComponent
         : String(opt.value);
     this.emitValue();
     this.panelOpen = false;
-    this.panelOpenAbove = false;
     this.filterText = '';
-    this.fixedPanelStyle = {};
-    this.clearPanelMaxHeightStyles();
     this.detachFixedPanelScrollListeners();
+    this.scheduleCloseCleanup();
     this.notifyTouched();
     this.picked.emit();
     this.focusTriggerSoon();
@@ -417,11 +425,31 @@ export class SaasSelectComponent
     ev.stopPropagation();
     ev.preventDefault();
     this.panelOpen = false;
-    this.panelOpenAbove = false;
-    this.fixedPanelStyle = {};
     this.detachFixedPanelScrollListeners();
+    this.scheduleCloseCleanup();
     this.criarCliente.emit();
     this.focusTriggerSoon();
+  }
+
+  /**
+   * Após o fade de fecho: limpa above + top/left fixed.
+   * Limpar no mesmo frame que `panelOpen=false` faz o painel saltar.
+   */
+  private scheduleCloseCleanup(): void {
+    this.cancelClearFixedStyleTimer();
+    this.clearFixedStyleTimer = setTimeout(() => {
+      this.clearFixedStyleTimer = null;
+      if (this.panelOpen) return;
+      this.panelOpenAbove = false;
+      this.fixedPanelStyle = {};
+      this.clearPanelMaxHeightStyles();
+    }, SaasSelectComponent.FIXED_CLOSE_MS);
+  }
+
+  private cancelClearFixedStyleTimer(): void {
+    if (this.clearFixedStyleTimer == null) return;
+    clearTimeout(this.clearFixedStyleTimer);
+    this.clearFixedStyleTimer = null;
   }
 
   onFilterInput(ev: Event): void {

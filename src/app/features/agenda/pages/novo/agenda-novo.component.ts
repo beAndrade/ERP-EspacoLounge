@@ -284,13 +284,17 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
 
   /**
    * Colunas monetárias por linha (V.unit., desconto, total estimado).
-   * Hub: só «Cabelo» (calculadora); Comandas walk-in / edição de itens: todos os tipos.
+   * Hub agenda: só «Cabelo». Comandas / orçamento: Serviço, Produto, Cabelo.
+   * Mega/Pacote: nunca no cabeçalho — libera a mesma largura do bloco de
+   * etapas do drawer de agenda (Total fica no resumo da comanda).
    */
   exibirColunasValorLinha(itemTipo?: string | null): boolean {
     if (!this.modoModal) return true;
+    const t = String(itemTipo ?? '').trim();
+    if (isTipoMegaOuPacoteFamilia(t)) return false;
     if (this.fluxoSomenteComanda || this.fluxoOrcamento || this.fluxoConverterAgenda)
       return true;
-    return String(itemTipo ?? '').trim() === 'Cabelo';
+    return t === 'Cabelo';
   }
 
   /**
@@ -3729,6 +3733,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     et.removeAt(j);
     this.garantirLinhaEtapaRascunho(i);
     this.aplicarValidadoresLinhas();
+    this.cdr.markForCheck();
   }
 
   /**
@@ -3769,7 +3774,11 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return !!e && p != null && Number(p) > 0;
   }
 
-  /** Garante no máximo uma linha vazia no fim; se a última estiver completa, acrescenta rascunho. */
+  /**
+   * Invariante: no máximo um rascunho vazio no fim.
+   * Se a última etapa está completa (ou o array está vazio), acrescenta rascunho.
+   * Idempotente se a última já for vazia; não empilha vazio atrás de linha parcial.
+   */
   private garantirLinhaEtapaRascunho(linhaI: number): void {
     const et = this.etapasArrayDaLinha(linhaI);
     if (!et) return;
@@ -3785,7 +3794,12 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     const last = et.at(et.length - 1);
-    if (last && this.etapaLinhaCompleta(last)) {
+    if (!last) {
+      et.push(this.novoGrupoEtapa({ rascunho: true }));
+      return;
+    }
+    if (this.etapaLinhaVazia(last)) return;
+    if (this.etapaLinhaCompleta(last)) {
       et.push(this.novoGrupoEtapa({ rascunho: true }));
     }
   }
@@ -5198,6 +5212,7 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
           const durOv = Number(itemPivot?.duracao_minutos);
           et.push(
             this.fb.group({
+              _etapaKey: this.fb.nonNullable.control(this.gerarEtapaKey()),
               etapa: [row.etapa || '', Validators.required],
               profissional: [
                 this.profissionalValorForm(row),
@@ -5319,6 +5334,8 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
   private novoGrupoEtapa(opts?: { rascunho?: boolean }): FormGroup {
     const rascunho = opts?.rascunho === true;
     return this.fb.group({
+      /** Identidade estável para `@for track` (não vai para a API). */
+      _etapaKey: this.fb.nonNullable.control(this.gerarEtapaKey()),
       etapa: ['', rascunho ? [] : Validators.required],
       profissional: [
         null as number | null,
@@ -5381,10 +5398,20 @@ export class AgendaNovoComponent implements OnInit, OnChanges, OnDestroy {
     return `ln-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
+  private gerarEtapaKey(): string {
+    return `et-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
   /** Track estável do `@for` das linhas (evita apagar a linha errada com `track $index`). */
   trackLinhaItens(ctrl: FormGroup): string {
     const key = ctrl.get('_rowKey')?.value;
     return typeof key === 'string' && key ? key : `fallback-${this.linhasItensArray.controls.indexOf(ctrl)}`;
+  }
+
+  /** Track estável do `@for` das etapas (evita dessincronia após `removeAt`). */
+  trackEtapa(ctrl: FormGroup): string {
+    const key = ctrl.get('_etapaKey')?.value;
+    return typeof key === 'string' && key ? key : 'et-fallback';
   }
 
   removerLinhaItens(linhaOuIndex: FormGroup | number): void {

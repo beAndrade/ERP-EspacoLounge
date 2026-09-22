@@ -148,7 +148,11 @@
   visibility: visible;
 }
 
-/** Comanda no hub: posição via `fixedPanelStyle` (evita clip por overflow do drawer). */
+/**
+ * Posição via `fixedPanelStyle` (evita clip do drawer).
+ * Mesma animação do `agenda-horario-slots` (translateY + scale, 0,2s).
+ * `top`/`left` vêm do JS — não usar bottom absoluto do modo above.
+ */
 .saas-select__panel-elev--fixed {
   top: auto;
   left: auto;
@@ -158,13 +162,26 @@
   width: auto;
   min-width: 0;
   max-width: none;
-  transform: none !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transform: translateY(-6px) scale(0.99);
   transition:
-    opacity 0.15s ease,
-    visibility 0.15s;
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s;
+  will-change: transform, opacity;
+
+  &.saas-select__panel-elev--above,
+  &.dropdown-flip--above {
+    top: auto;
+    bottom: auto;
+    transform: translateY(6px) scale(0.99);
+  }
+
+  &.saas-select__panel-elev--open {
+    transform: translateY(0) scale(1);
+  }
 
   .saas-select__panel {
     display: flex;
