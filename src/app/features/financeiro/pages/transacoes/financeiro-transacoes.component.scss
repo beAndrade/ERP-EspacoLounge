@@ -398,7 +398,8 @@
   width: 40px;
 }
 .fin-transacoes-table__col-data {
-  width: clamp(88px, 7vw, 108px);
+  /** Cabem «DD/MM/AAAA» centrados sem cortar (88px era apertado demais). */
+  width: clamp(108px, 9vw, 124px);
 }
 .fin-transacoes-table__col-origem {
   width: clamp(64px, 5.5vw, 92px);
@@ -516,6 +517,17 @@
   tbody td.col-bruto,
   tbody td.col-liq {
     text-align: right;
+  }
+
+  thead th.col-data,
+  tbody td.col-data {
+    text-align: center;
+  }
+
+  tbody td.col-data {
+    white-space: nowrap;
+    overflow: visible;
+    font-variant-numeric: tabular-nums;
   }
 
   thead th.col-status,
